@@ -272,11 +272,15 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
         // Set observer
         showProgressIndicator(true);
-        updateMainListState(0);
+        updateMainListState(0, 0);
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) mAdapter.setDefaultList(applicationItems);
             showProgressIndicator(false);
-            updateMainListState(applicationItems.size());
+            int trackerSum = 0;
+            for (io.github.muntashirakon.AppManager.main.ApplicationItem item : applicationItems) {
+                if (item.trackerCount != null) trackerSum += item.trackerCount;
+            }
+            updateMainListState(applicationItems.size(), trackerSum);
         });
         viewModel.getOperationStatus().observe(this, status -> {
             mProgressIndicator.hide();
@@ -558,6 +562,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_running, MainListOptions.FILTER_RUNNING_APPS},
             {R.id.chip_backups, MainListOptions.FILTER_APPS_WITH_BACKUPS},
             {R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS},
+            {R.id.chip_trackers, MainListOptions.FILTER_APPS_WITH_TRACKERS},
     };
 
     private void bindQuickFilterChips() {
@@ -587,6 +592,29 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             else viewModel.removeFilterFlag(flag);
             refreshQuickFilterChips();
         });
+    }
+
+    /**
+     * Build a comma-separated list of the chip labels that are currently active so the
+     * filtered-empty-state can tell users <em>which</em> filters are hiding their apps,
+     * not just that "filters are active". Returns {@code null} if no quick chip is on
+     * (the view model may still report active filters from the long-form sort/filter
+     * sheet — fall back to the generic message in that case).
+     */
+    @Nullable
+    private String describeActiveQuickFilters() {
+        if (viewModel == null) return null;
+        StringBuilder sb = new StringBuilder();
+        for (int[] entry : QUICK_FILTER_CHIPS) {
+            if (!viewModel.hasFilterFlag(entry[1])) continue;
+            Chip chip = findViewById(entry[0]);
+            if (chip == null) continue;
+            CharSequence label = chip.getText();
+            if (label == null || label.length() == 0) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(label);
+        }
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     private void refreshQuickFilterChips() {
@@ -671,7 +699,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else mProgressIndicator.hide();
     }
 
-    private void updateMainListState(int displayedItemCount) {
+    private void updateMainListState(int displayedItemCount, int trackerSum) {
         if (viewModel == null || mEmptyState == null) {
             return;
         }
@@ -680,10 +708,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         boolean hasFilters = viewModel.hasActiveFilters();
         if (mListStatusView != null) {
             mListStatusView.setVisibility(View.VISIBLE);
+            String base;
             if (displayedItemCount == totalItemCount) {
-                mListStatusView.setText(getString(R.string.main_status_all_apps, displayedItemCount));
+                base = getString(R.string.main_status_all_apps, displayedItemCount);
             } else {
-                mListStatusView.setText(getString(R.string.main_status_showing_apps, displayedItemCount, totalItemCount));
+                base = getString(R.string.main_status_showing_apps, displayedItemCount, totalItemCount);
+            }
+            if (trackerSum > 0) {
+                String trackerSuffix = getResources().getQuantityString(
+                        R.plurals.main_status_tracker_suffix, trackerSum, trackerSum);
+                mListStatusView.setText(getString(R.string.main_status_with_tracker_suffix, base, trackerSuffix));
+            } else {
+                mListStatusView.setText(base);
             }
         }
         if (displayedItemCount > 0) {
@@ -696,7 +732,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mEmptyStateAction.setIconResource(com.google.android.material.R.drawable.mtrl_ic_cancel);
         } else if (hasFilters) {
             mEmptyStateTitle.setText(R.string.main_empty_title_no_matches);
-            mEmptyStateSummary.setText(R.string.main_empty_message_no_matches);
+            String activeLabels = describeActiveQuickFilters();
+            if (activeLabels != null) {
+                mEmptyStateSummary.setText(getString(R.string.main_empty_message_no_matches_with_filters, activeLabels));
+            } else {
+                mEmptyStateSummary.setText(R.string.main_empty_message_no_matches);
+            }
             mEmptyStateAction.setText(R.string.main_empty_action_clear_filters);
             mEmptyStateAction.setIconResource(R.drawable.ic_filter_list);
         } else {
@@ -720,6 +761,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (viewModel.hasActiveFilters()) {
             showProgressIndicator(true);
             viewModel.clearFilters();
+            refreshQuickFilterChips();
         } else {
             showProgressIndicator(true);
             viewModel.loadApplicationItems();
