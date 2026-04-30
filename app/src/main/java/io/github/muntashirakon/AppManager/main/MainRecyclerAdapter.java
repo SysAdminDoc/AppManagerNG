@@ -26,9 +26,11 @@ import android.widget.TextView;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
@@ -203,15 +205,24 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         Context context = cardView.getContext();
         // Add click listeners
         cardView.setOnClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+            ApplicationItem currentItem = getItemAtPosition(currentPosition);
+            if (currentItem == null) {
+                return;
+            }
             // If selection mode is on, select/deselect the current item instead of the default behaviour
             if (isInSelectionMode()) {
-                toggleSelection(position);
+                toggleSelection(currentPosition);
                 AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
                 return;
             }
-            handleClick(item);
+            handleClick(currentItem);
         });
         cardView.setOnLongClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+            if (currentPosition == RecyclerView.NO_POSITION) {
+                return false;
+            }
             // Long click listener: Select/deselect an app.
             // 1) Turn selection mode on if this is the first item in the selection list
             // 2) Select between last selection position and this position (inclusive) if selection mode is on
@@ -220,17 +231,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 int lastSelectedItemPosition = lastSelectedItem == null ? -1 : mAdapterList.indexOf(lastSelectedItem);
                 if (lastSelectedItemPosition >= 0) {
                     // Select from last selection to this selection
-                    selectRange(lastSelectedItemPosition, position);
+                    selectRange(lastSelectedItemPosition, currentPosition);
                 } else {
-                    toggleSelection(position);
+                    toggleSelection(currentPosition);
                     AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
                 }
             }
             return true;
         });
         holder.icon.setOnClickListener(v -> {
-            toggleSelection(position);
-            AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
+            int currentPosition = holder.getBindingAdapterPosition();
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                toggleSelection(currentPosition);
+                AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
+            }
         });
         // Box-stroke colors: selected > uninstalled > disabled > force-stopped > regular
         if (item.isSelected) {
@@ -359,6 +373,19 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         cardView.setContentDescription(context.getString(R.string.main_list_app_content_description,
                 item.label, installedState, item.packageName, item.versionTag, sdkState));
         super.onBindViewHolder(holder, position);
+    }
+
+    @Nullable
+    private ApplicationItem getItemAtPosition(int position) {
+        if (position == RecyclerView.NO_POSITION) {
+            return null;
+        }
+        synchronized (mAdapterList) {
+            if (position < 0 || position >= mAdapterList.size()) {
+                return null;
+            }
+            return mAdapterList.get(position);
+        }
     }
 
     @GuardedBy("mAdapterList")

@@ -120,7 +120,7 @@ public class DexFileSystem extends VirtualFileSystem {
         File file = FileCache.getGlobalFileCache().createCachedFile(extension);
         Map<String, ClassInfo> classInfoMap = new HashMap<>();
         for (String className : Objects.requireNonNull(mDexClasses).getClassNames()) {
-            classInfoMap.put(File.separator + className, new ClassInfo(null, true));
+            classInfoMap.put(Paths.PATH_SEPARATOR + className, new ClassInfo(null, true));
         }
         for (String path : actionList.keySet()) {
             // Perform action for each path
@@ -199,7 +199,7 @@ public class DexFileSystem extends VirtualFileSystem {
         checkMounted();
         Node<ClassDef> targetNode = mCache.get(path);
         if (targetNode == null) {
-            if (path.equals(File.separator)) {
+            if (path.equals(Paths.PATH_SEPARATOR)) {
                 targetNode = mRootNode;
             } else {
                 targetNode = Objects.requireNonNull(mRootNode).getLastChild(Paths.sanitize(path, true));
@@ -292,7 +292,7 @@ public class DexFileSystem extends VirtualFileSystem {
 
     @NonNull
     private static Node<ClassDef> buildTree(@NonNull DexClasses dexClasses) {
-        Node<ClassDef> rootNode = new Node<>(null, File.separator);
+        Node<ClassDef> rootNode = new Node<>(null, Paths.PATH_SEPARATOR);
         List<String> classNames = dexClasses.getClassNames();
         for (String className : classNames) {
             ClassDef classDef;

@@ -36,9 +36,10 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.fs.VirtualFileSystem;
 
-@SuppressWarnings("SuspiciousRegexArgument") // Not Windows, Android is Linux
 public final class Paths {
     public static final String TAG = Paths.class.getSimpleName();
+    public static final String PATH_SEPARATOR = "/";
+    public static final char PATH_SEPARATOR_CHAR = '/';
 
     /**
      * Replace spaces with replacement
@@ -309,20 +310,20 @@ public final class Paths {
             return null;
         }
         path = path.replaceAll("[\r\n]", "");
-        boolean isAbsolute = path.startsWith(File.separator);
-        String[] parts = path.split(File.separator);
+        boolean isAbsolute = path.startsWith(PATH_SEPARATOR);
+        String[] parts = path.split(PATH_SEPARATOR);
         List<String> newParts = new ArrayList<>(parts.length);
         for (String part : parts) {
             if (part.isEmpty() || part.equals(".")) continue;
             newParts.add(part);
         }
-        path = TextUtils.join(File.separator, newParts);
+        path = TextUtils.join(PATH_SEPARATOR, newParts);
         if (isAbsolute) {
             if (path.isEmpty()) {
-                return File.separator;
+                return PATH_SEPARATOR;
             }
             if (!omitRoot) {
-                return File.separator + path;
+                return PATH_SEPARATOR + path;
             }
         }
         return path.isEmpty() ? null : path;
@@ -345,8 +346,8 @@ public final class Paths {
             return null;
         }
         path = path.replaceAll("[\r\n]", "");
-        boolean isAbsolute = path.startsWith(File.separator);
-        String[] parts = path.split(File.separator);
+        boolean isAbsolute = path.startsWith(PATH_SEPARATOR);
+        String[] parts = path.split(PATH_SEPARATOR);
         Stack<String> newParts = new Stack<>();
         for (String part : parts) {
             if (part.isEmpty() || part.equals(".")) continue;
@@ -356,9 +357,9 @@ public final class Paths {
                 newParts.pop();
             }
         }
-        path = TextUtils.join(File.separator, newParts);
+        path = TextUtils.join(PATH_SEPARATOR, newParts);
         if (isAbsolute) {
-            return File.separator + path;
+            return PATH_SEPARATOR + path;
         }
         return path.isEmpty() ? null : path;
     }
@@ -376,10 +377,10 @@ public final class Paths {
     public static String getLastPathSegment(@NonNull String path) {
         path = sanitize(path, false);
         // path has no trailing / or .
-        if (path == null || path.equals(File.separator)) {
+        if (path == null || path.equals(PATH_SEPARATOR)) {
             return "";
         }
-        int separatorIndex = path.lastIndexOf(File.separator);
+        int separatorIndex = path.lastIndexOf(PATH_SEPARATOR);
         if (separatorIndex == -1) {
             // There are no `/` in the string, so return as is.
             return path;
@@ -398,8 +399,8 @@ public final class Paths {
         if (path.isEmpty()) {
             return "";
         }
-        boolean isAbsolute = path.startsWith(File.separator);
-        String[] parts = path.split(File.separator);
+        boolean isAbsolute = path.startsWith(PATH_SEPARATOR);
+        String[] parts = path.split(PATH_SEPARATOR);
         Stack<String> newParts = new Stack<>();
         for (String part : parts) {
             if (part.isEmpty() || part.equals(".")) continue;
@@ -408,9 +409,9 @@ public final class Paths {
         if (!newParts.isEmpty() && !newParts.peek().equals("..")) {
             newParts.pop();
         }
-        path = TextUtils.join(File.separator, newParts);
+        path = TextUtils.join(PATH_SEPARATOR, newParts);
         if (isAbsolute) {
-            return File.separator + path;
+            return PATH_SEPARATOR + path;
         }
         return path;
     }
@@ -421,20 +422,20 @@ public final class Paths {
             return path;
         }
         lastPathSegment = lastPathSegment.replaceAll("[\r\n]", "");
-        String[] parts = lastPathSegment.split(File.separator);
+        String[] parts = lastPathSegment.split(PATH_SEPARATOR);
         List<String> newParts = new ArrayList<>(parts.length);
         for (String part : parts) {
             if (part.isEmpty() || part.equals(".")) continue;
             newParts.add(part);
         }
-        String name = TextUtils.join(File.separator, newParts);
+        String name = TextUtils.join(PATH_SEPARATOR, newParts);
         if (name.isEmpty()) {
             return path;
         }
-        if (path.endsWith(File.separator)) {
+        if (path.endsWith(PATH_SEPARATOR)) {
             return path + name;
         }
-        return path + File.separator + name;
+        return path + PATH_SEPARATOR + name;
     }
 
     @AnyThread
@@ -443,15 +444,15 @@ public final class Paths {
         if (path.isEmpty()) {
             return "";
         }
-        boolean isAbsolute = path.startsWith(File.separator);
-        String[] parts = path.split(File.separator);
+        boolean isAbsolute = path.startsWith(PATH_SEPARATOR);
+        String[] parts = path.split(PATH_SEPARATOR);
         Stack<String> newParts = new Stack<>();
         for (String part : parts) {
             if (part.isEmpty() || part.equals(".")) continue;
             newParts.push(part);
         }
         if (newParts.isEmpty()) {
-            return isAbsolute ? File.separator : "";
+            return isAbsolute ? PATH_SEPARATOR : "";
         }
         String lastPart = newParts.peek();
         if (!lastPart.equals("..")) {
@@ -462,9 +463,9 @@ public final class Paths {
                 newParts.push(lastPart.substring(0, lastIndexOfDot));
             }
         }
-        path = TextUtils.join(File.separator, newParts);
+        path = TextUtils.join(PATH_SEPARATOR, newParts);
         if (isAbsolute) {
-            return File.separator + path;
+            return PATH_SEPARATOR + path;
         }
         return path;
     }
@@ -489,13 +490,13 @@ public final class Paths {
         return new Uri.Builder()
                 .scheme(uri.getScheme())
                 .authority(uri.getAuthority())
-                .path(sanitize(uri.getPath() + File.separator + lastPathSegment, false))
+                .path(sanitize(uri.getPath() + PATH_SEPARATOR + lastPathSegment, false))
                 .build();
     }
 
     public static Uri removeLastPathSegment(@NonNull Uri uri) {
         String path = uri.getPath();
-        if (path.equals(File.separator)) return uri;
+        if (path.equals(PATH_SEPARATOR)) return uri;
         return new Uri.Builder()
                 .scheme(uri.getScheme())
                 .authority(uri.getAuthority())
@@ -726,19 +727,21 @@ public final class Paths {
 
     @NonNull
     public static String relativePath(@NonNull Path file, @NonNull Path basePath) {
-        String baseDir = basePath.getUri().getPath() + (basePath.isDirectory() ? File.separator : "");
-        String targetPath = file.getUri().getPath() + (file.isDirectory() ? File.separator : "");
+        String baseDir = basePath.getUri().getPath() + (basePath.isDirectory() ? PATH_SEPARATOR : "");
+        String targetPath = file.getUri().getPath() + (file.isDirectory() ? PATH_SEPARATOR : "");
         return relativePath(targetPath, baseDir);
     }
 
     @NonNull
     public static String relativePath(@NonNull String targetPath, @NonNull String baseDir) {
-        return relativePath(targetPath, baseDir, File.separator);
+        return relativePath(targetPath, baseDir, PATH_SEPARATOR);
     }
 
     @VisibleForTesting
     @NonNull
     public static String relativePath(@NonNull String targetPath, @NonNull String baseDir, @NonNull String separator) {
+        targetPath = normalizeForRelativePath(targetPath, separator);
+        baseDir = normalizeForRelativePath(baseDir, separator);
         String[] base = baseDir.split(Pattern.quote(separator));
         String[] target = targetPath.split(Pattern.quote(separator));
 
@@ -760,5 +763,26 @@ public final class Paths {
         }
         if (commonLength < targetLength) relative.append(targetPath.substring(commonLength));
         return relative.toString();
+    }
+
+    @NonNull
+    private static String normalizeForRelativePath(@NonNull String path, @NonNull String separator) {
+        if (PATH_SEPARATOR.equals(separator)) {
+            return path.replace('\\', PATH_SEPARATOR_CHAR);
+        }
+        if ("\\".equals(separator)) {
+            path = path.replace(PATH_SEPARATOR_CHAR, '\\');
+            if (path.length() > 2 && path.charAt(0) == '\\' && isWindowsDrivePrefix(path, 1)) {
+                return path.substring(1);
+            }
+        }
+        return path;
+    }
+
+    private static boolean isWindowsDrivePrefix(@NonNull String path, int offset) {
+        return path.length() > offset + 1
+                && path.charAt(offset + 1) == ':'
+                && ((path.charAt(offset) >= 'A' && path.charAt(offset) <= 'Z')
+                || (path.charAt(offset) >= 'a' && path.charAt(offset) <= 'z'));
     }
 }

@@ -255,14 +255,13 @@ public final class TarUtils {
     @VisibleForTesting
     @NonNull
     static String getAbsolutePathToDataApp(@NonNull String brokenPath, @Nullable String realPath) {
-        brokenPath = brokenPath.endsWith(File.separator) ? brokenPath.substring(0, brokenPath.length() - 1) : brokenPath;
+        brokenPath = brokenPath.endsWith(Paths.PATH_SEPARATOR) ? brokenPath.substring(0, brokenPath.length() - 1) : brokenPath;
         if (realPath == null) return brokenPath;
         if ("/data/app".equals(brokenPath)) {
             return brokenPath;
         }
-        //noinspection SuspiciousRegexArgument
-        String[] brokenPathParts = brokenPath.split(File.separator);
-        // The initial number of File.separator is 4, and the rests could be either part of the app path or
+        String[] brokenPathParts = brokenPath.split(Paths.PATH_SEPARATOR);
+        // The initial number of separators is 4, and the rests could be either part of the app path or
         // point to lib, oat or apk files
         // Index 4-1 = 3 is always a link to app
         if (brokenPathParts.length <= 4) {
@@ -271,7 +270,7 @@ public final class TarUtils {
         if ("lib".equals(brokenPathParts[4]) || "oat".equals(brokenPathParts[4]) || brokenPathParts[4].endsWith(".apk")) {
             StringBuilder sb = new StringBuilder(realPath);
             for (int i = 4; i < brokenPathParts.length; ++i) {
-                sb.append(File.separator).append(brokenPathParts[i]);
+                sb.append(Paths.PATH_SEPARATOR).append(brokenPathParts[i]);
             }
             return sb.toString();
         }
@@ -282,7 +281,7 @@ public final class TarUtils {
         // Index 6-1 = 5 and later are currently not a part of the app
         StringBuilder sb = new StringBuilder(realPath);
         for (int i = 5; i < brokenPathParts.length; ++i) {
-            sb.append(File.separator).append(brokenPathParts[i]);
+            sb.append(Paths.PATH_SEPARATOR).append(brokenPathParts[i]);
         }
         return sb.toString();
     }

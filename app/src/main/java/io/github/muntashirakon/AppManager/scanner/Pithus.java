@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -17,7 +16,7 @@ public class Pithus {
     @WorkerThread
     @Nullable
     public static String resolveReport(@NonNull String sha256Sum) throws IOException {
-        URL url = new URL(BASE_URL + File.separator + sha256Sum);
+        URL url = new URL(BASE_URL + "/" + sha256Sum);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setUseCaches(false);

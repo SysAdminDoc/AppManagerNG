@@ -470,8 +470,10 @@ public class MultiSelectionActionsView extends LinearLayoutCompat implements Men
         boolean wasLayoutRequested = isLayoutRequested();
         int widthDp = UiUtils.pxToDp(getContext(), getWidth());
         int minButtonWidthDp = 80;
-        int maxButtons = widthDp / minButtonWidthDp;
-        int usableButtonCount = mVisibleMenuItems.size() <= maxButtons ? mVisibleMenuItems.size() : maxButtons - 1;
+        int maxButtons = Math.max(1, widthDp / minButtonWidthDp);
+        int usableButtonCount = mVisibleMenuItems.size() <= maxButtons
+                ? mVisibleMenuItems.size()
+                : Math.max(0, maxButtons - 1);
         int allocatedWidth = getWidth() / maxButtons;
 
         List<MenuItemImpl> renderableItems = mVisibleMenuItems.subList(0, usableButtonCount);

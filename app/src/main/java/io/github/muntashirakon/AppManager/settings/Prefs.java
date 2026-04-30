@@ -21,7 +21,6 @@ import androidx.core.util.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Objects;
 
@@ -203,7 +202,7 @@ public final class Prefs {
                 // Append AppManager only if storage permissions are granted
                 String newPath = uri.getPath();
                 if (SelfPermissions.checkStoragePermission()) {
-                    newPath += File.separator + "AppManager";
+                    newPath += Paths.PATH_SEPARATOR + "AppManager";
                 }
                 path = Paths.get(newPath);
             } else path = Paths.get(uri);
@@ -652,7 +651,7 @@ public final class Prefs {
             Path path;
             if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                 // Append AppManager
-                String newPath = uri.getPath() + File.separator + "AppManager";
+                String newPath = uri.getPath() + Paths.PATH_SEPARATOR + "AppManager";
                 path = Paths.get(newPath);
             } else path = Paths.get(uri);
             if (!path.exists()) path.mkdirs();

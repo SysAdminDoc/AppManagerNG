@@ -18,13 +18,13 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.transition.MaterialSharedAxis;
 
-import java.io.File;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.fm.FmActivity;
 import io.github.muntashirakon.AppManager.fm.FmUtils;
+import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 
 public class FileManagerPreferences extends PreferenceFragment {
@@ -62,7 +62,7 @@ public class FileManagerPreferences extends PreferenceFragment {
                         }
                         String newHome = inputText.toString();
                         Uri uri;
-                        if (newHome.startsWith(File.separator)) {
+                        if (newHome.startsWith(Paths.PATH_SEPARATOR)) {
                             uri = new Uri.Builder().scheme(ContentResolver.SCHEME_FILE).path(newHome).build();
                         } else uri = Uri.parse(newHome);
                         Prefs.FileManager.setHome(uri);

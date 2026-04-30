@@ -11,7 +11,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,12 +40,12 @@ public class VirtualDocumentFile extends DocumentFile {
     public VirtualDocumentFile(@Nullable DocumentFile parent, @NonNull VirtualFileSystem fs) {
         super(parent);
         mFs = fs;
-        mFullPath = File.separator;
+        mFullPath = Paths.PATH_SEPARATOR;
     }
 
     protected VirtualDocumentFile(@NonNull VirtualDocumentFile parent, @NonNull String displayName) {
         super(Objects.requireNonNull(parent));
-        if (displayName.contains(File.separator)) {
+        if (displayName.contains(Paths.PATH_SEPARATOR)) {
             throw new IllegalArgumentException("displayName cannot contain a separator");
         }
         mFs = parent.mFs;
@@ -56,7 +55,7 @@ public class VirtualDocumentFile extends DocumentFile {
     @Nullable
     @Override
     public DocumentFile createFile(@NonNull String mimeType, @NonNull String displayName) {
-        if (displayName.contains(File.separator)) {
+        if (displayName.contains(Paths.PATH_SEPARATOR)) {
             // displayName cannot contain a separator
             return null;
         }
@@ -72,7 +71,7 @@ public class VirtualDocumentFile extends DocumentFile {
     @Nullable
     @Override
     public DocumentFile createDirectory(@NonNull String displayName) {
-        if (displayName.contains(File.separator)) {
+        if (displayName.contains(Paths.PATH_SEPARATOR)) {
             // displayName cannot contain a separator
             return null;
         }
@@ -93,8 +92,8 @@ public class VirtualDocumentFile extends DocumentFile {
     @NonNull
     @Override
     public String getName() {
-        if (mFullPath.equals(File.separator)) {
-            return File.separator;
+        if (mFullPath.equals(Paths.PATH_SEPARATOR)) {
+            return Paths.PATH_SEPARATOR;
         }
         return Paths.getLastPathSegment(mFullPath);
     }
@@ -219,7 +218,7 @@ public class VirtualDocumentFile extends DocumentFile {
     @Override
     public VirtualDocumentFile findFile(@NonNull String displayName) {
         displayName =  Paths.sanitize(displayName, true);
-        if (displayName == null || displayName.contains(File.separator)) {
+        if (displayName == null || displayName.contains(Paths.PATH_SEPARATOR)) {
             return null;
         }
         VirtualDocumentFile documentFile = new VirtualDocumentFile(this, displayName);
@@ -243,7 +242,7 @@ public class VirtualDocumentFile extends DocumentFile {
 
     @Override
     public boolean renameTo(@NonNull String displayName) {
-        if (displayName.contains(File.separator)) {
+        if (displayName.contains(Paths.PATH_SEPARATOR)) {
             // displayName cannot contain a separator
             return false;
         }

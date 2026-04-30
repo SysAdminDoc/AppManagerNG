@@ -51,7 +51,7 @@ public class CsvWriter {
             mWriter.write(mSeparator);
         } else if (previouslyInitialized) {
             // This is the first field since the last line
-            mWriter.append(System.lineSeparator());
+            mWriter.append(NEW_LINE_UNIX);
         }
         mWriter.append(getFormattedField(field, addQuotes));
     }
@@ -77,7 +77,7 @@ public class CsvWriter {
         mCurrentFieldCount = 0;
         if (previouslyInitialized) {
             // There were other lines
-            mWriter.append(System.lineSeparator());
+            mWriter.append(NEW_LINE_UNIX);
         }
         mWriter.append(getFormattedLine(line, addQuotes));
     }

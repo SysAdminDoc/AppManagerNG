@@ -109,7 +109,7 @@ public abstract class VirtualFileSystem {
         return new Uri.Builder()
                 .scheme(SCHEME)
                 .authority(String.valueOf(fsId))
-                .path(path != null ? path : File.separator)
+                .path(path != null ? path : Paths.PATH_SEPARATOR)
                 .build();
     }
 
@@ -727,7 +727,7 @@ public abstract class VirtualFileSystem {
             parent = Paths.removeLastPathSegment(parent);
             parts.add(filename);
             parentNode = getNode(parent);
-        } while (parentNode == null && !parent.equals(File.separator));
+        } while (parentNode == null && !parent.equals(Paths.PATH_SEPARATOR));
         // Found a parent node
         if (!checkAccess(parent, OsConstants.W_OK) || parentNode == null || !parentNode.isDirectory()) {
             // Parent node is inaccessible
@@ -1245,9 +1245,9 @@ public abstract class VirtualFileSystem {
         }
 
         private static String calculateFullPath(@Nullable Node<?> parent, @NonNull Node<?> child) {
-            String basePath = parent == null ? File.separator : parent.getFullPath();
-            return (basePath.equals(File.separator) ? (child.mName.equals(File.separator) ? "" : File.separator)
-                    : basePath + File.separatorChar) + child.mName;
+            String basePath = parent == null ? Paths.PATH_SEPARATOR : parent.getFullPath();
+            return (basePath.equals(Paths.PATH_SEPARATOR) ? (child.mName.equals(Paths.PATH_SEPARATOR) ? "" : Paths.PATH_SEPARATOR)
+                    : basePath + Paths.PATH_SEPARATOR_CHAR) + child.mName;
         }
 
         @SuppressWarnings("SuspiciousRegexArgument") // Not on Windows
@@ -1258,7 +1258,7 @@ public abstract class VirtualFileSystem {
             if (path == null) {
                 return baseNode;
             }
-            String[] components = path.split(File.separator);
+            String[] components = path.split(Paths.PATH_SEPARATOR);
             Node<T> lastNode = baseNode;
             for (String component : components) {
                 lastNode = lastNode.getChild(component);

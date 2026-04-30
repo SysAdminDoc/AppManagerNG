@@ -75,6 +75,9 @@ public class AppUsageStatsManager {
             }
             long tx = 0, rx = 0;
             for (DataUsage dataUsage : dataUsages) {
+                if (dataUsage == null) {
+                    continue;
+                }
                 tx += dataUsage.getTx();
                 rx += dataUsage.getRx();
             }
