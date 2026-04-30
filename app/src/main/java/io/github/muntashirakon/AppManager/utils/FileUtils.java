@@ -19,6 +19,7 @@ import android.system.Os;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -29,6 +30,7 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.zip.ZipEntry;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -41,6 +43,7 @@ import io.github.muntashirakon.io.Paths;
 
 public final class FileUtils {
     public static final String TAG = FileUtils.class.getSimpleName();
+    private static final Executor DIRECT_EXECUTOR = Runnable::run;
 
     @AnyThread
     public static boolean isZip(@NonNull Path path) throws IOException {
@@ -131,12 +134,31 @@ public final class FileUtils {
     @AnyThread
     public static long copy(@NonNull InputStream in, @NonNull OutputStream out, long totalSize,
                             @Nullable ProgressHandler progressHandler) throws IOException {
-        float lastProgress = progressHandler != null ? progressHandler.getLastProgress() : 0;
-        return IoUtils.copy(in, out, ThreadUtils.getBackgroundThreadExecutor(), progress -> {
-            if (progressHandler != null) {
-                progressHandler.postUpdate(100, lastProgress + (progress * 100f / totalSize));
-            }
-        });
+        if (progressHandler == null) {
+            return IoUtils.copy(in, out);
+        }
+        if (totalSize < 0) {
+            progressHandler.postUpdate(-1, 0);
+            return IoUtils.copy(in, out);
+        }
+        if (totalSize == 0) {
+            long copied = IoUtils.copy(in, out);
+            progressHandler.postUpdate(100, 100);
+            return copied;
+        }
+        float lastProgress = progressHandler.getLastProgress();
+        long copied = IoUtils.copy(in, out, DIRECT_EXECUTOR, progress ->
+                progressHandler.postUpdate(100, calculateProgress(lastProgress, progress, totalSize)));
+        progressHandler.postUpdate(100, calculateProgress(lastProgress, copied, totalSize));
+        return copied;
+    }
+
+    @VisibleForTesting
+    static float calculateProgress(float baseProgress, long copiedBytes, long totalSize) {
+        if (copiedBytes <= 0 || totalSize <= 0) {
+            return baseProgress;
+        }
+        return Math.min(100f, baseProgress + (copiedBytes * 100f / totalSize));
     }
 
     @WorkerThread
