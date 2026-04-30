@@ -29,6 +29,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/list_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingTop="@dimen/padding_very_small"
+            android:paddingBottom="@dimen/padding_small"
+            android:text="@string/main_status_loading"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
     </io.github.muntashirakon.widget.AppBarLayout>
 
     <io.github.muntashirakon.widget.SwipeRefreshLayout
@@ -38,16 +51,28 @@
         android:focusable="false"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
-        <io.github.muntashirakon.widget.RecyclerView
-            android:id="@+id/item_list"
+        <FrameLayout
+            android:id="@+id/main_list_content"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="none"
-            android:focusable="false"
-            android:clipToPadding="false"
-            android:fitsSystemWindows="true"
-            app:fastScrollerEnabled="true"
-            tools:listitem="@layout/item_main" />
+            android:layout_height="match_parent">
+
+            <io.github.muntashirakon.widget.RecyclerView
+                android:id="@+id/item_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:fitsSystemWindows="true"
+                android:focusable="false"
+                android:scrollbars="none"
+                app:fastScrollerEnabled="true"
+                tools:listitem="@layout/item_main" />
+
+            <include
+                android:id="@android:id/empty"
+                layout="@layout/view_main_empty_state"
+                android:visibility="gone" />
+
+        </FrameLayout>
 
     </io.github.muntashirakon.widget.SwipeRefreshLayout>
 

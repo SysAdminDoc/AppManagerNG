@@ -38,8 +38,6 @@ import com.google.android.material.internal.ThemeEnforcement;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 import java.lang.reflect.Field;
-import java.util.Locale;
-
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.ui.R;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -118,7 +116,7 @@ public class MultiSelectionView extends MaterialCardView implements OnApplyWindo
         mDivider = findViewById(R.id.divider);
 
         // Set heights
-        mMaxHeight = UiUtils.dpToPx(context, 36 + 1 + 75); // This is a pessimistic approximation, not a real height
+        mMaxHeight = UiUtils.dpToPx(context, 48 + 1 + 80); // This is a pessimistic approximation, not a real height
         mTitleHeight = UiUtils.dpToPx(context, 48);
         mCurrentHeight = mMaxHeight;
 
@@ -394,8 +392,10 @@ public class MultiSelectionView extends MaterialCardView implements OnApplyWindo
             if (getVisibility() != VISIBLE) show();
         }
         int totalItems = mAdapter.getTotalItemCount();
-        mSelectionCounter.setText(String.format(Locale.getDefault(), "%d/%d", selectionCount, totalItems));
-        mSelectionCounter.setContentDescription(getContext().getString(R.string.selected_items_accessibility_description, selectionCount, totalItems));
+        String selectionSummary = getContext().getString(R.string.selected_items_accessibility_description,
+                selectionCount, totalItems);
+        mSelectionCounter.setText(selectionSummary);
+        mSelectionCounter.setContentDescription(selectionSummary);
         mSelectAllView.setChecked(mAdapter.areAllSelected(), false);
         if (mSelectionChangeListener != null && mSelectionChangeListener.onSelectionChange(selectionCount)) {
             mSelectionActionsView.updateMenuView();

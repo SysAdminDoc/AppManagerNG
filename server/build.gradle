@@ -56,6 +56,10 @@ android.libraryVariants.configureEach { variant ->
             String androidJar = "${android.sdkDirectory.path}/platforms/android-${target_sdk}/android.jar"
             String amJar = "${rootDir}/app/src/main/assets/am.jar"
             String mainJar = "${rootDir}/app/src/main/assets/main.jar"
+            File d8Executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8")
+            if (!d8Executable.exists()) {
+                d8Executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8.bat")
+            }
 
             println("Creating am.jar...")
             def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
@@ -67,7 +71,7 @@ android.libraryVariants.configureEach { variant ->
             }.map { it.toString() }.collect(Collectors.toList()))
             injected.execOps.exec {
                 workingDir = project.rootDir
-                executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8")
+                executable = d8Executable
                 args = buildArgs
             }
             println("Created ${amJar}")
@@ -82,7 +86,7 @@ android.libraryVariants.configureEach { variant ->
             }.map { it.toString() }.collect(Collectors.toList()))
             injected.execOps.exec {
                 workingDir = project.rootDir
-                executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8")
+                executable = d8Executable
                 args = buildArgs
             }
             println("Created ${mainJar}")

@@ -1,5 +1,3 @@
-import javax.inject.Inject
-
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 plugins {
@@ -21,20 +19,48 @@ android {
     }
 }
 
-// https://docs.gradle.org/current/userguide/service_injection.html#execoperations
-interface InjectedExecOps {
-    @Inject
-    ExecOperations getExecOps()
-}
-
 tasks.register('buildDocs') {
-    def injected = project.objects.newInstance(InjectedExecOps)
     doLast {
         println("=== docs: start ===")
-        String buildExec = "${rootProject.projectDir.absolutePath}/scripts/make_docs.sh"
-        injected.execOps.exec {
-            workingDir = project.rootDir
-            executable = buildExec
+        File resFolder = file("${projectDir}/src/main/res")
+        File assetsFolder = file("${projectDir}/src/main/assets")
+        File docsFolder = file("${projectDir}/raw")
+        List<String> supportedLanguages = ['de', 'es', 'ja', 'ru', 'zh-rCN']
+
+        mkdir resFolder
+        mkdir assetsFolder
+        delete file("${assetsFolder}/docs")
+
+        Closure<String> rewriteDocsPaths = { String line ->
+            line.replace('src="../images/', 'src="')
+                    .replace('href="../css/', 'href="')
+                    .replace('data="../images/', 'data="')
+        }
+
+        File rawFolder = file("${resFolder}/raw")
+        mkdir rawFolder
+        copy {
+            from "${docsFolder}/css"
+            into rawFolder
+        }
+        copy {
+            from "${docsFolder}/images"
+            into rawFolder
+        }
+        copy {
+            from "${docsFolder}/en/index.html"
+            into rawFolder
+            filter { String line -> rewriteDocsPaths(line) }
+        }
+
+        supportedLanguages.each { lang ->
+            File localizedRawFolder = file("${resFolder}/raw-${lang}")
+            mkdir localizedRawFolder
+            copy {
+                from "${docsFolder}/${lang}/index.html"
+                into localizedRawFolder
+                filter { String line -> rewriteDocsPaths(line) }
+            }
         }
         println("=== docs: finish ===")
     }

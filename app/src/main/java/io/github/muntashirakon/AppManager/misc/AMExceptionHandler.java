@@ -26,6 +26,7 @@ import java.util.Locale;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import io.github.muntashirakon.io.Paths;
 
 public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
     static final String CRASHES_DIR = "crashes";
@@ -106,7 +107,7 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
                     new FileOutputStream(crashFile), StandardCharsets.UTF_8)) {
                 writer.write(report);
             }
-            return FmProvider.getContentUri(Uri.fromFile(crashFile));
+            return FmProvider.getContentUri(Paths.get(crashFile));
         } catch (IOException ignored) {
             return null;
         }

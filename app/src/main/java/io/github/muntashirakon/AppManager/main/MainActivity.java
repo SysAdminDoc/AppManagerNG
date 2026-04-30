@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,8 +28,8 @@ import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -88,6 +89,7 @@ import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.MultiSelectionView;
+import io.github.muntashirakon.widget.RecyclerView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
 
 public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQueryTextListener,
@@ -105,6 +107,11 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private LinearProgressIndicator mProgressIndicator;
     private SwipeRefreshLayout mSwipeRefresh;
     private MultiSelectionView mMultiSelectionView;
+    private View mEmptyState;
+    private TextView mEmptyStateTitle;
+    private TextView mEmptyStateSummary;
+    private MaterialButton mEmptyStateAction;
+    private TextView mListStatusView;
     MainBatchOpsHandler mBatchOpsHandler;
     private MenuItem mAppUsageMenu;
 
@@ -229,10 +236,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
+        mListStatusView = findViewById(R.id.list_status);
+        mEmptyState = findViewById(android.R.id.empty);
+        mEmptyStateTitle = mEmptyState.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = mEmptyState.findViewById(R.id.empty_state_summary);
+        mEmptyStateAction = mEmptyState.findViewById(R.id.empty_state_action);
+        mEmptyStateAction.setOnClickListener(v -> handleEmptyStateAction());
         RecyclerView recyclerView = findViewById(R.id.item_list);
         recyclerView.requestFocus(); // Initially (the view isn't actually focusable)
+        recyclerView.setEmptyView(mEmptyState);
         mSwipeRefresh = findViewById(R.id.swipe_refresh);
         mSwipeRefresh.setOnRefreshListener(this);
+        mSwipeRefresh.setOnChildScrollUpCallback((parent, child) -> recyclerView.canScrollVertically(-1));
 
         mAdapter = new MainRecyclerAdapter(MainActivity.this);
         mAdapter.setHasStableIds(true);
@@ -266,9 +281,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         }
 
         // Set observer
+        showProgressIndicator(true);
+        updateMainListState(0);
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) mAdapter.setDefaultList(applicationItems);
             showProgressIndicator(false);
+            updateMainListState(applicationItems.size());
         });
         viewModel.getOperationStatus().observe(this, status -> {
             mProgressIndicator.hide();
@@ -566,7 +584,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                         }
                         runOnUiThread(() -> {
                             View view = View.inflate(this, R.layout.dialog_whats_new, null);
-                            RecyclerView recyclerView = view.findViewById(android.R.id.list);
+                            androidx.recyclerview.widget.RecyclerView recyclerView = view.findViewById(android.R.id.list);
                             recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
                             ChangelogRecyclerAdapter adapter = new ChangelogRecyclerAdapter();
                             recyclerView.setAdapter(adapter);
@@ -624,8 +642,71 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     void showProgressIndicator(boolean show) {
-        if (show) mProgressIndicator.show();
-        else mProgressIndicator.hide();
+        if (show) {
+            mProgressIndicator.show();
+            if (mEmptyState != null) {
+                mEmptyState.setVisibility(View.GONE);
+            }
+            if (mListStatusView != null) {
+                mListStatusView.setVisibility(View.VISIBLE);
+                mListStatusView.setText(R.string.main_status_loading);
+            }
+        } else mProgressIndicator.hide();
+    }
+
+    private void updateMainListState(int displayedItemCount) {
+        if (viewModel == null || mEmptyState == null) {
+            return;
+        }
+        int totalItemCount = viewModel.getApplicationItemCount();
+        boolean hasSearchQuery = !TextUtils.isEmpty(viewModel.getSearchQuery());
+        boolean hasFilters = viewModel.hasActiveFilters();
+        if (mListStatusView != null) {
+            mListStatusView.setVisibility(View.VISIBLE);
+            if (displayedItemCount == totalItemCount) {
+                mListStatusView.setText(getString(R.string.main_status_all_apps, displayedItemCount));
+            } else {
+                mListStatusView.setText(getString(R.string.main_status_showing_apps, displayedItemCount, totalItemCount));
+            }
+        }
+        if (displayedItemCount > 0) {
+            return;
+        }
+        if (hasSearchQuery) {
+            mEmptyStateTitle.setText(R.string.main_empty_title_no_matches);
+            mEmptyStateSummary.setText(R.string.main_empty_message_no_matches);
+            mEmptyStateAction.setText(R.string.main_empty_action_clear_search);
+            mEmptyStateAction.setIconResource(com.google.android.material.R.drawable.mtrl_ic_cancel);
+        } else if (hasFilters) {
+            mEmptyStateTitle.setText(R.string.main_empty_title_no_matches);
+            mEmptyStateSummary.setText(R.string.main_empty_message_no_matches);
+            mEmptyStateAction.setText(R.string.main_empty_action_clear_filters);
+            mEmptyStateAction.setIconResource(R.drawable.ic_filter_list);
+        } else {
+            mEmptyStateTitle.setText(R.string.main_empty_title_no_apps);
+            mEmptyStateSummary.setText(R.string.main_empty_message_no_apps);
+            mEmptyStateAction.setText(R.string.refresh);
+            mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+        }
+    }
+
+    private void handleEmptyStateAction() {
+        if (viewModel == null) {
+            return;
+        }
+        if (!TextUtils.isEmpty(viewModel.getSearchQuery())) {
+            if (mSearchView != null) {
+                mSearchView.setQuery("", true);
+            } else {
+                viewModel.setSearchQuery("", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+            }
+        } else if (viewModel.hasActiveFilters()) {
+            showProgressIndicator(true);
+            viewModel.clearFilters();
+        } else {
+            showProgressIndicator(true);
+            viewModel.loadApplicationItems();
+        }
     }
 
     @Override
