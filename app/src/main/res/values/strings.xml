@@ -642,6 +642,7 @@
     <string name="no_profiles">No profiles</string>
     <string name="profiles_empty_title">No profiles yet</string>
     <string name="profiles_empty_message">Create a profile to save repeatable app actions and run them later.</string>
+    <string name="profile_delete_confirmation">This profile will be permanently deleted. Existing shortcuts that use it may stop working.</string>
     <string name="keystore">KeyStore</string>
     <string name="apply_now">Apply now…</string>
     <string name="routine_ops">Routine ops</string>
@@ -1533,8 +1534,11 @@
     <string name="no_history">No history</string>
     <string name="op_history_empty_title">No operation history</string>
     <string name="op_history_empty_message">Operations you run from profiles and batch actions will appear here for review or rerun.</string>
+    <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
+    <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
     <string name="shared_prefs_empty_title">No preferences yet</string>
     <string name="shared_prefs_empty_message">Add the first key-value entry to make this shared preferences file easier to inspect.</string>
+    <string name="shared_prefs_delete_confirmation">This shared preferences file will be permanently deleted. This action cannot be undone.</string>
     <string name="title_confirm_execution">Confirm execution</string>
     <string name="clear_history">Clear history</string>
     <string name="favorites">Favorites</string>

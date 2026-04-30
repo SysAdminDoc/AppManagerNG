@@ -65,10 +65,10 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
         public void handleOnBackPressed() {
             if (model != null && model.isModified()) {
                 new MaterialAlertDialogBuilder(AppsBaseProfileActivity.this)
-                        .setTitle(R.string.exit_confirmation)
+                        .setTitle(R.string.changes_not_saved)
                         .setMessage(R.string.profile_modified_are_you_sure)
-                        .setPositiveButton(R.string.no, null)
-                        .setNegativeButton(R.string.yes, (dialog, which) -> {
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.discard, (dialog, which) -> {
                             setEnabled(false);
                             getOnBackPressedDispatcher().onBackPressed();
                         })
@@ -175,9 +175,9 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
         } else if (id == R.id.action_delete) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(getString(R.string.delete_filename, model.getProfileName()))
-                    .setMessage(R.string.are_you_sure)
-                    .setPositiveButton(R.string.cancel, null)
-                    .setNegativeButton(R.string.ok, (dialog, which) -> model.delete())
+                    .setMessage(R.string.profile_delete_confirmation)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.delete, (dialog, which) -> model.delete())
                     .show();
         } else if (id == R.id.action_duplicate) {
             new TextInputDialogBuilder(this, R.string.input_profile_name)

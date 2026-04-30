@@ -59,11 +59,11 @@ public class SharedPrefsActivity extends BaseActivity implements
         public void handleOnBackPressed() {
             if (mViewModel.isModified()) {
                 new MaterialAlertDialogBuilder(SharedPrefsActivity.this)
-                        .setTitle(R.string.exit_confirmation)
+                        .setTitle(R.string.changes_not_saved)
                         .setMessage(R.string.file_modified_are_you_sure)
                         .setCancelable(false)
-                        .setPositiveButton(R.string.no, null)
-                        .setNegativeButton(R.string.yes, (dialog, which) -> {
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.discard, (dialog, which) -> {
                             setEnabled(false);
                             getOnBackPressedDispatcher().onBackPressed();
                         })
@@ -208,7 +208,12 @@ public class SharedPrefsActivity extends BaseActivity implements
         } else if (id == R.id.action_discard) {
             finish();
         } else if (id == R.id.action_delete) {
-            mViewModel.deleteSharedPrefFile();
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(getString(R.string.delete_filename, mViewModel.getSharedPrefFilename()))
+                    .setMessage(R.string.shared_prefs_delete_confirmation)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.delete, (dialog, which) -> mViewModel.deleteSharedPrefFile())
+                    .show();
         } else if (id == R.id.action_save) {
             mViewModel.writeSharedPrefs();
         } else if (id == R.id.action_separate_window) {

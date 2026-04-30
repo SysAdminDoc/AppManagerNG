@@ -71,9 +71,9 @@ public class OpHistoryActivity extends BaseActivity {
         fab.hide();
         fab.setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.clear_history)
-                .setMessage(R.string.are_you_sure)
-                .setNegativeButton(R.string.no, null)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
+                .setMessage(R.string.op_history_clear_confirmation)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.clear_history, (dialog, which) -> {
                     mProgressIndicator.show();
                     mViewModel.clearHistory();
                 })
@@ -203,9 +203,9 @@ public class OpHistoryActivity extends BaseActivity {
             });
             holder.execBtn.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(R.string.title_confirm_execution)
-                    .setMessage(R.string.are_you_sure)
-                    .setNegativeButton(R.string.no, null)
-                    .setPositiveButton(R.string.yes, (dialog, which) ->
+                    .setMessage(R.string.op_history_execute_confirmation)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.action_run, (dialog, which) ->
                             mActivity.mViewModel.getServiceLauncherIntent(history))
                     .show());
         }
