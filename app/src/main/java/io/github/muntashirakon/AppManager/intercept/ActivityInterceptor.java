@@ -273,6 +273,7 @@ public class ActivityInterceptor extends BaseActivity {
     private ExtrasRecyclerViewAdapter mExtrasAdapter;
     private MatchingActivitiesRecyclerViewAdapter mMatchingActivitiesAdapter;
     private TextView mActivitiesHeader;
+    private TextView mActivitiesEmptyView;
     private Button mResendIntentButton;
     private Button mResetIntentButton;
 
@@ -542,14 +543,15 @@ public class ActivityInterceptor extends BaseActivity {
     private void checkAndShowMatchingActivities() {
         if (mMutableIntent == null) return;
         List<ResolveInfo> resolveInfo = getMatchingActivities();
+        mActivitiesHeader.setText(getString(R.string.matching_activities));
+        mActivitiesHeader.setVisibility(View.VISIBLE);
         if (resolveInfo.isEmpty()) {
             mResendIntentButton.setEnabled(false);
-            mActivitiesHeader.setVisibility(View.GONE);
+            mActivitiesEmptyView.setVisibility(View.VISIBLE);
         } else {
             mResendIntentButton.setEnabled(true);
-            mActivitiesHeader.setVisibility(View.VISIBLE);
+            mActivitiesEmptyView.setVisibility(View.GONE);
         }
-        mActivitiesHeader.setText(getString(R.string.matching_activities));
         mMatchingActivitiesAdapter.setDefaultList(resolveInfo);
     }
 
@@ -684,9 +686,11 @@ public class ActivityInterceptor extends BaseActivity {
 
         // Setup matching activities
         mActivitiesHeader = findViewById(R.id.intent_matching_activities_header);
+        mActivitiesEmptyView = findViewById(R.id.intent_matching_activities_empty);
         if (mRequestedComponent != null) {
             // Hide matching activities since specific component requested
             mActivitiesHeader.setVisibility(View.GONE);
+            mActivitiesEmptyView.setVisibility(View.GONE);
         }
         RecyclerView matchingActivitiesRecyclerView = findViewById(R.id.intent_matching_activities);
         matchingActivitiesRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
@@ -875,6 +879,7 @@ public class ActivityInterceptor extends BaseActivity {
         } else {
             // Hide matching activities since specific component requested
             mActivitiesHeader.setVisibility(View.GONE);
+            mActivitiesEmptyView.setVisibility(View.GONE);
             mResendIntentButton.setEnabled(true);
         }
         updateTitle(mMutableIntent.getPackage());

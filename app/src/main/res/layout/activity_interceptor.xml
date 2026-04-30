@@ -226,6 +226,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/padding_small"
+                android:minHeight="48dp"
                 android:orientation="horizontal"
                 android:paddingStart="@dimen/padding_medium"
                 android:paddingEnd="@dimen/padding_medium">
@@ -244,10 +245,10 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/intent_categories_add_btn"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="0"
-                    android:contentDescription="@string/add_item"
+                    android:contentDescription="@string/interceptor_add_category"
                     android:focusable="true"
                     app:icon="@drawable/ic_add" />
 
@@ -264,6 +265,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/padding_small"
+                android:minHeight="48dp"
                 android:orientation="horizontal"
                 android:paddingStart="@dimen/padding_medium"
                 android:paddingEnd="@dimen/padding_medium">
@@ -281,10 +283,10 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/intent_flags_add_btn"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="0"
-                    android:contentDescription="@string/add_item"
+                    android:contentDescription="@string/interceptor_add_flag"
                     android:focusable="true"
                     app:icon="@drawable/ic_add" />
 
@@ -301,6 +303,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/padding_small"
+                android:minHeight="48dp"
                 android:orientation="horizontal"
                 android:paddingStart="@dimen/padding_medium"
                 android:paddingEnd="@dimen/padding_medium">
@@ -318,10 +321,10 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/intent_extras_add_btn"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="0"
-                    android:contentDescription="@string/add_item"
+                    android:contentDescription="@string/interceptor_add_extra"
                     android:focusable="true"
                     app:icon="@drawable/ic_add" />
 
@@ -345,6 +348,21 @@
                 android:text="@string/matching_activities"
                 android:textAppearance="@style/TextAppearance.AppTheme.TitleMedium"
                 android:textColor="?attr/colorPrimary" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/intent_matching_activities_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:paddingStart="@dimen/padding_medium"
+                android:paddingTop="@dimen/padding_very_small"
+                android:paddingEnd="@dimen/padding_medium"
+                android:paddingBottom="@dimen/padding_small"
+                android:text="@string/interceptor_no_matching_activities"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/intent_matching_activities"
