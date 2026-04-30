@@ -158,6 +158,10 @@
     <string name="word_wrap">Toggle word wrap</string>
     <string name="class_viewer">Class viewer</string>
     <string name="toggle_class_listing">Toggle class listing</string>
+    <plurals name="main_list_tracker_count_badge_a11y">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> trackers</item>
+    </plurals>
     <plurals name="tracker_and_classes">
         <item quantity="one">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> class</item>
         <item quantity="other">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> classes</item>
