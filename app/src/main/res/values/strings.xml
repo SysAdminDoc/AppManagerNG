@@ -521,6 +521,7 @@
     <string name="skip_signature_checks">Skip signature checks</string>
     <string name="clear_data_message">Are you sure want to clear data from this app?</string>
     <string name="clear">Clear</string>
+    <string name="clear_filters">Clear filters</string>
     <string name="block">Block</string>
     <string name="unblock">Unblock</string>
     <string name="block_unblock_trackers">Block/unblock trackers</string>
