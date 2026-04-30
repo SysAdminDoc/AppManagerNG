@@ -8,5 +8,5 @@ include ':libcore:ui'
 include ':libopenpgp'
 include ':libserver'
 include ':server'
-rootProject.name = "AppManager"
+rootProject.name = "AppManagerNG"
 gradle.ext.appManagerRoot = settingsDir
