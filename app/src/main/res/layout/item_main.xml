@@ -9,7 +9,7 @@
     android:focusable="true"
     android:checkable="true"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
-    android:layout_marginVertical="?attr/listItemMarginVertical">
+    android:layout_marginVertical="2dp">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -17,14 +17,14 @@
         android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="?attr/listItemPaddingHorizontal"
-        android:paddingVertical="?attr/listItemPaddingVertical">
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingVertical="8dp">
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="56dp"
+            android:layout_width="48dp"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:layout_marginEnd="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_small"
             android:orientation="vertical">
 
             <androidx.appcompat.widget.AppCompatImageView
@@ -39,13 +39,13 @@
                 android:id="@+id/backup_indicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/padding_very_small"
+                android:layout_marginTop="2dp"
                 android:background="@drawable/badge_background"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:minHeight="22dp"
-                android:paddingHorizontal="@dimen/padding_small"
-                android:paddingVertical="2dp"
+                android:minHeight="20dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="1dp"
                 android:textAppearance="?attr/textAppearanceLabelSmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:text="@string/backup"
@@ -84,7 +84,6 @@
                     android:id="@+id/packageName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
                     android:ellipsize="middle"
                     android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
@@ -99,7 +98,6 @@
                         android:id="@+id/date"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_very_small"
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textAppearance="?attr/textAppearanceBodySmall"
@@ -123,7 +121,6 @@
                     android:id="@+id/issuer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
                     android:ellipsize="middle"
                     android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
@@ -134,7 +131,6 @@
                     android:id="@+id/backup_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
