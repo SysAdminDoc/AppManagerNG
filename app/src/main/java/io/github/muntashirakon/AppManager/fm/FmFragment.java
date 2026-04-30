@@ -571,9 +571,10 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         } else if (id == R.id.action_delete) {
             new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(R.string.title_confirm_deletion)
-                    .setMessage(R.string.are_you_sure)
-                    .setPositiveButton(R.string.cancel, null)
-                    .setNegativeButton(R.string.confirm_file_deletion, (dialog, which) -> startBatchDeletion(selectedFiles))
+                    .setMessage(getResources().getQuantityString(R.plurals.file_deletion_confirmation,
+                            selectedFiles.size(), selectedFiles.size()))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.confirm_file_deletion, (dialog, which) -> startBatchDeletion(selectedFiles))
                     .show();
         } else if (id == R.id.action_cut) {
             FmTasks.FmTask fmTask = new FmTasks.FmTask(TYPE_CUT, selectedFiles);

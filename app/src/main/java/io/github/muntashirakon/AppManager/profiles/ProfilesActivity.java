@@ -262,9 +262,9 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     } else if (id == R.id.action_delete) {
                         new MaterialAlertDialogBuilder(mActivity)
                                 .setTitle(mActivity.getString(R.string.delete_filename, profile.name))
-                                .setMessage(R.string.are_you_sure)
-                                .setPositiveButton(R.string.cancel, null)
-                                .setNegativeButton(R.string.ok, (dialog, which) -> {
+                                .setMessage(R.string.profile_delete_confirmation)
+                                .setNegativeButton(R.string.cancel, null)
+                                .setPositiveButton(R.string.delete, (dialog, which) -> {
                                     if (ProfileManager.deleteProfile(profile.profileId)) {
                                         UIUtils.displayShortToast(R.string.deleted_successfully);
                                     } else {
