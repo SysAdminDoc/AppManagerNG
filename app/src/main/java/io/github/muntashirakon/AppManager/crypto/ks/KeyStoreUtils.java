@@ -41,14 +41,19 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.CharArrayWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyException;
@@ -203,8 +208,7 @@ public class KeyStoreUtils {
             boolean pkcs8Format = false;
             boolean rsaFormat = false;
             boolean dsaFormat = false;
-            // FIXME: Read securely using char[]
-            StringBuilder base64EncodedKey = new StringBuilder();
+            CharArrayWriter base64EncodedKey = new CharArrayWriter();
             while ((line = in.readLine()) != null) {
                 line = line.trim();
                 if (readingKey) {
@@ -215,7 +219,7 @@ public class KeyStoreUtils {
                             readingKey = false;
                             break;
                         default:
-                            base64EncodedKey.append(line);
+                            base64EncodedKey.write(line);
                             break;
                     }
                 } else {
@@ -235,12 +239,20 @@ public class KeyStoreUtils {
                     }
                 }
             }
-            if (base64EncodedKey.length() == 0) {
+            if (base64EncodedKey.size() == 0) {
                 throw new IOException("Stream does not contain an unencrypted private key.");
             }
 
+            // Convert char[] → byte[] via ASCII without creating a String, so we can zero it.
+            char[] chars = base64EncodedKey.toCharArray();
+            ByteBuffer bb = StandardCharsets.US_ASCII.encode(CharBuffer.wrap(chars));
+            byte[] base64Bytes = new byte[bb.limit()];
+            bb.get(base64Bytes);
+            Arrays.fill(chars, '\0');
+
             BASE64Decoder decoder = new BASE64Decoder();
-            byte[] bytes = decoder.decodeBuffer(base64EncodedKey.toString());
+            byte[] bytes = decoder.decodeBuffer(new ByteArrayInputStream(base64Bytes));
+            Arrays.fill(base64Bytes, (byte) 0);
 
             KeyFactory kf;
             KeySpec spec;
@@ -282,7 +294,9 @@ public class KeyStoreUtils {
             } else {
                 throw new NoSuchAlgorithmException("Couldn't find any suitable algorithm");
             }
-            return kf.generatePrivate(spec);
+            PrivateKey privateKey = kf.generatePrivate(spec);
+            Arrays.fill(bytes, (byte) 0);
+            return privateKey;
         }
     }
 

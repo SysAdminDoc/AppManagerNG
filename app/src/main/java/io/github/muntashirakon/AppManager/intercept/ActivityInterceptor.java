@@ -957,7 +957,11 @@ public class ActivityInterceptor extends BaseActivity {
                     ActivityManagerCompat.startActivity(intent, mUserHandle);
                 } else {
                     try {
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        // FLAG_ACTIVITY_NEW_TASK is incompatible with startActivityForResult():
+                        // it prevents result delivery, which breaks ACTION_OPEN_DOCUMENT and
+                        // any other intent that expects a result (Issue #1767). Strip it so the
+                        // launched activity stays in our task and the result is forwarded.
+                        intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         mIntentLauncher.launch(intent);
                     } catch (SecurityException e) {
                         // TODO: 4/6/24 Support sending activity result back to the original app

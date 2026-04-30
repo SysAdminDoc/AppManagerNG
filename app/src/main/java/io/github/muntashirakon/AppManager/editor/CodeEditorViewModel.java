@@ -159,10 +159,11 @@ public class CodeEditorViewModel extends AndroidViewModel {
                         content = new Content(AndroidBinXmlDecoder.decode(bytes));
                         mXmlType = XML_TYPE_AXML;
                     } else if (Xml.isBinaryXml(buffer)) {
-                        // FIXME: 19/5/23 Unfortunately, converting ABX to XML is lossy. Find a way to fix this.
-                        //  Until then, the feature is disabled.
-                        // content = getXmlFromAbx(bytes);
-                        // xmlType = XML_TYPE_ABX;
+                        // ABX (Android Binary XML) decoding is enabled for viewing.
+                        // Write-back is blocked in canWrite() because the text→ABX path is lossy
+                        // (typed attributes like int/boolean become strings). See copyXml().
+                        content = new Content(getXmlFromAbx(bytes));
+                        mXmlType = XML_TYPE_ABX;
                     }
                 } catch (IOException e) {
                     Log.e(TAG, "Unable to convert XML bytes to plain text.", e);
@@ -219,6 +220,8 @@ public class CodeEditorViewModel extends AndroidViewModel {
     }
 
     public boolean canWrite() {
+        // ABX files are view-only: text→ABX is lossy (typed attrs become strings).
+        if (mXmlType == XML_TYPE_ABX) return false;
         return !isReadOnly() && mSourceFile != null && mSourceFile.canWrite();
     }
 
