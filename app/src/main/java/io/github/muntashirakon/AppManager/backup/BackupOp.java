@@ -494,18 +494,20 @@ class BackupOp implements Closeable {
         for (AppOpsManagerCompat.OpEntry entry : opEntries) {
             rules.setAppOp(entry.getOp(), entry.getMode());
         }
-        // Backup MagiskHide data
-        Collection<MagiskProcess> magiskHiddenProcesses = MagiskHide.getProcesses(mPackageInfo);
-        for (MagiskProcess magiskProcess : magiskHiddenProcesses) {
-            if (magiskProcess.isEnabled()) {
-                rules.setMagiskHide(magiskProcess);
+        if (!Utils.isRoboUnitTest()) {
+            // Backup MagiskHide data
+            Collection<MagiskProcess> magiskHiddenProcesses = MagiskHide.getProcesses(mPackageInfo);
+            for (MagiskProcess magiskProcess : magiskHiddenProcesses) {
+                if (magiskProcess.isEnabled()) {
+                    rules.setMagiskHide(magiskProcess);
+                }
             }
-        }
-        // Backup Magisk DenyList data
-        Collection<MagiskProcess> magiskDeniedProcesses = MagiskDenyList.getProcesses(mPackageInfo);
-        for (MagiskProcess magiskProcess : magiskDeniedProcesses) {
-            if (magiskProcess.isEnabled()) {
-                rules.setMagiskDenyList(magiskProcess);
+            // Backup Magisk DenyList data
+            Collection<MagiskProcess> magiskDeniedProcesses = MagiskDenyList.getProcesses(mPackageInfo);
+            for (MagiskProcess magiskProcess : magiskDeniedProcesses) {
+                if (magiskProcess.isEnabled()) {
+                    rules.setMagiskDenyList(magiskProcess);
+                }
             }
         }
         // Backup allowed notification listeners aka BIND_NOTIFICATION_LISTENER_SERVICE

@@ -640,7 +640,7 @@ public final class SettingsStateV26 implements SettingsState {
                 for (int i = 0; i < settingCount; i++) {
                     Setting setting = settings.valueAt(i);
 
-                    if (writeSingleSetting(mVersion, serializer, setting.getId(), setting.getName(),
+                    if (writeSingleSetting(version, serializer, setting.getId(), setting.getName(),
                             setting.getValue(), setting.getDefaultValue(), setting.getPackageName(),
                             setting.getTag(), setting.isDefaultFromSystem(),
                             setting.isValuePreservedInRestore())) {
@@ -649,8 +649,6 @@ public final class SettingsStateV26 implements SettingsState {
                         }
                     }
                 }
-                serializer.endTag(null, TAG_SETTINGS);
-
                 serializer.startTag(null, TAG_NAMESPACE_HASHES);
                 for (int i = 0; i < namespaceBannedHashes.size(); i++) {
                     String namespace = namespaceBannedHashes.keyAt(i);
@@ -662,6 +660,7 @@ public final class SettingsStateV26 implements SettingsState {
                     }
                 }
                 serializer.endTag(null, TAG_NAMESPACE_HASHES);
+                serializer.endTag(null, TAG_SETTINGS);
                 serializer.endDocument();
                 destination.finishWrite(out);
 

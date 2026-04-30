@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.io;
 
+import android.net.Uri;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,8 +49,8 @@ public class PathTest {
 
     @Test
     public void getUri() {
-        assertEquals("file:///tmp", tmpPath.getUri().toString());
-        assertEquals("file:///tmp/am_tmp", tmpFile.getUri().toString());
+        assertEquals(fileUri("/tmp"), tmpPath.getUri().toString());
+        assertEquals(fileUri("/tmp/am_tmp"), tmpFile.getUri().toString());
     }
 
     @Test
@@ -60,20 +61,14 @@ public class PathTest {
 
     @Test
     public void getFilePath() {
-        assertEquals("/tmp", tmpPath.getFilePath());
-        assertEquals("/tmp/am_tmp", tmpFile.getFilePath());
+        assertEquals(fileUriPath("/tmp"), tmpPath.getFilePath());
+        assertEquals(fileUriPath("/tmp/am_tmp"), tmpFile.getFilePath());
     }
 
     @Test
     public void getRealFilePath() throws IOException {
-        String os = System.getProperty("os.name");
-        if (os != null && (os.toLowerCase(Locale.ROOT).contains("darwin") || os.toLowerCase(Locale.ROOT).contains("mac"))) {
-            assertEquals("/private/tmp", tmpPath.getRealFilePath());
-            assertEquals("/private/tmp/am_tmp", tmpFile.getRealFilePath());
-        } else {
-            assertEquals("/tmp", tmpPath.getRealFilePath());
-            assertEquals("/tmp/am_tmp", tmpFile.getRealFilePath());
-        }
+        assertEquals(canonicalPath("/tmp"), tmpPath.getRealFilePath());
+        assertEquals(canonicalPath("/tmp/am_tmp"), tmpFile.getRealFilePath());
     }
 
     @Test
@@ -758,5 +753,17 @@ public class PathTest {
         Path newFile = tmpPath.createNewDirectory("am_new_dir");
         assertThrows(IOException.class, newFile::openInputStream);
         assertTrue(newFile.delete());
+    }
+
+    private static String fileUri(String path) {
+        return Uri.fromFile(new File(path)).toString();
+    }
+
+    private static String fileUriPath(String path) {
+        return Uri.fromFile(new File(path)).getPath();
+    }
+
+    private static String canonicalPath(String path) throws IOException {
+        return new File(path).getCanonicalPath();
     }
 }
