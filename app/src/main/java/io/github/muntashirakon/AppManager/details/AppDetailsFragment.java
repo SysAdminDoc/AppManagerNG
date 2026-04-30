@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.details;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,11 +14,13 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import java.lang.annotation.Retention;
@@ -105,7 +108,15 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
     protected SwipeRefreshLayout swipeRefresh;
     protected LinearProgressIndicator progressIndicator;
     protected RecyclerView recyclerView;
-    protected TextView emptyView;
+    protected View emptyView;
+    private TextView mEmptyStateTitle;
+    private TextView mEmptyStateSummary;
+    private MaterialButton mEmptyStateAction;
+    @Nullable
+    private CharSequence mEmptyStateDefaultTitle;
+    @Nullable
+    private CharSequence mEmptyStateDefaultSummary;
+    private boolean mEmptyStateRefreshEnabled = true;
     @Nullable
     protected AppDetailsViewModel viewModel;
 
@@ -136,6 +147,10 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
         recyclerView = view.findViewById(R.id.scrollView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(activity));
         emptyView = view.findViewById(android.R.id.empty);
+        mEmptyStateTitle = emptyView.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = emptyView.findViewById(R.id.empty_state_summary);
+        mEmptyStateAction = emptyView.findViewById(R.id.empty_state_action);
+        mEmptyStateAction.setOnClickListener(v -> handleEmptyStateAction());
         recyclerView.setEmptyView(emptyView);
         progressIndicator = view.findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
@@ -146,6 +161,61 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
         alertView.setEndIconContentDescription(R.string.close);
         swipeRefresh.setOnChildScrollUpCallback((parent, child) -> recyclerView.canScrollVertically(-1));
         requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    @Property
+    protected abstract int getProperty();
+
+    protected void setEmptyStateText(@StringRes int titleRes) {
+        setEmptyStateText(getText(titleRes));
+    }
+
+    protected void setEmptyStateText(@NonNull CharSequence title) {
+        setEmptyState(title, null, true);
+    }
+
+    protected void setEmptyState(@NonNull CharSequence title, @Nullable CharSequence summary, boolean refreshEnabled) {
+        mEmptyStateDefaultTitle = title;
+        mEmptyStateDefaultSummary = summary;
+        mEmptyStateRefreshEnabled = refreshEnabled;
+        updateEmptyState();
+    }
+
+    protected void updateEmptyState() {
+        if (mEmptyStateTitle == null || mEmptyStateSummary == null || mEmptyStateAction == null) {
+            return;
+        }
+        boolean hasSearchQuery = viewModel != null && !TextUtils.isEmpty(viewModel.getSearchQuery());
+        if (hasSearchQuery) {
+            mEmptyStateTitle.setText(R.string.app_details_empty_title_no_matches);
+            mEmptyStateSummary.setText(R.string.app_details_empty_message_no_matches);
+            mEmptyStateAction.setVisibility(View.VISIBLE);
+            mEmptyStateAction.setText(R.string.main_empty_action_clear_search);
+            mEmptyStateAction.setIconResource(com.google.android.material.R.drawable.mtrl_ic_cancel);
+            return;
+        }
+        mEmptyStateTitle.setText(mEmptyStateDefaultTitle != null ? mEmptyStateDefaultTitle : getText(R.string.empty));
+        mEmptyStateSummary.setText(mEmptyStateDefaultSummary != null
+                ? mEmptyStateDefaultSummary : getText(R.string.app_details_empty_message_no_items));
+        mEmptyStateAction.setVisibility(mEmptyStateRefreshEnabled ? View.VISIBLE : View.GONE);
+        mEmptyStateAction.setText(R.string.refresh);
+        mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+    }
+
+    private void handleEmptyStateAction() {
+        if (viewModel != null && !TextUtils.isEmpty(viewModel.getSearchQuery())) {
+            if (activity.searchView != null && activity.searchView.getVisibility() == View.VISIBLE) {
+                activity.searchView.setQuery("", true);
+            } else {
+                viewModel.setSearchQuery("", AdvancedSearchView.SEARCH_TYPE_CONTAINS, getProperty());
+            }
+            updateEmptyState();
+            return;
+        }
+        if (mEmptyStateRefreshEnabled) {
+            swipeRefresh.setRefreshing(true);
+            onRefresh();
+        }
     }
 
     @CallSuper

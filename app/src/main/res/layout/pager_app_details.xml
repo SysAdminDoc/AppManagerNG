@@ -32,12 +32,11 @@
                 app:fastScrollerEnabled="true"
                 tools:listitem="@layout/item_app_details_primary" />
 
-            <com.google.android.material.textview.MaterialTextView
+            <include
                 android:id="@android:id/empty"
+                layout="@layout/view_app_details_empty_state"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                tools:text="@tools:sample/lorem[2]"
                 tools:visibility="gone" />
 
         </FrameLayout>

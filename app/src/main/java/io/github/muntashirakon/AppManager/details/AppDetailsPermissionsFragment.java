@@ -93,7 +93,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        emptyView.setText(getNotFoundString(mNeededProperty));
+        setEmptyStateText(getNotFoundString(mNeededProperty));
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
         alertView.setEndIconOnClickListener(v -> {
@@ -316,8 +316,14 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     public boolean onQueryTextChange(String searchQuery, int type) {
         if (viewModel != null) {
             viewModel.setSearchQuery(searchQuery, type, mNeededProperty);
+            updateEmptyState();
         }
         return true;
+    }
+
+    @Override
+    protected int getProperty() {
+        return mNeededProperty;
     }
 
     private int getNotFoundString(@PermissionProperty int index) {
