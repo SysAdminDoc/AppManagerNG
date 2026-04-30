@@ -25,6 +25,7 @@ import io.github.muntashirakon.AppManager.filters.options.ComponentsOption;
 import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
 import io.github.muntashirakon.AppManager.filters.options.InstalledOption;
 import io.github.muntashirakon.AppManager.filters.options.RunningAppsOption;
+import io.github.muntashirakon.AppManager.filters.options.TrackersOption;
 import io.github.muntashirakon.AppManager.misc.ListOptions;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -100,6 +101,7 @@ public class MainListOptions extends ListOptions {
             FILTER_APPS_WITH_SAF,
             FILTER_APPS_WITH_SSAID,
             FILTER_STOPPED_APPS,
+            FILTER_APPS_WITH_TRACKERS,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Filter {
@@ -122,6 +124,7 @@ public class MainListOptions extends ListOptions {
     public static final int FILTER_APPS_WITH_SSAID = 1 << 13;
     public static final int FILTER_STOPPED_APPS = 1 << 14;
     public static final int FILTER_UNFROZEN_APPS = 1 << 15;
+    public static final int FILTER_APPS_WITH_TRACKERS = 1 << 16;
 
     // For now, just generate FilterItem
     @NonNull
@@ -192,6 +195,11 @@ public class MainListOptions extends ListOptions {
         }
         if ((flags & FILTER_STOPPED_APPS) != 0) {
             appTypeWithFlags |= AppTypeOption.APP_TYPE_STOPPED;
+        }
+        if ((flags & FILTER_APPS_WITH_TRACKERS) != 0) {
+            TrackersOption option = new TrackersOption();
+            option.setKeyValue("ge", "1");
+            filterItem.addFilterOption(option);
         }
         if (appTypeWithFlags > 0) {
             AppTypeOption appTypeWithFlagsOption = new AppTypeOption();
@@ -338,6 +346,7 @@ public class MainListOptions extends ListOptions {
             put(FILTER_APPS_WITHOUT_BACKUPS, R.string.filter_apps_without_backups);
             put(FILTER_RUNNING_APPS, R.string.filter_running_apps);
             put(FILTER_APPS_WITH_SPLITS, R.string.filter_apps_with_splits);
+            put(FILTER_APPS_WITH_TRACKERS, R.string.filter_apps_with_trackers);
             if (Ops.isWorkingUidRoot()) {
                 put(FILTER_APPS_WITH_KEYSTORE, R.string.filter_apps_with_keystore);
                 put(FILTER_APPS_WITH_SAF, R.string.filter_apps_with_saf);
