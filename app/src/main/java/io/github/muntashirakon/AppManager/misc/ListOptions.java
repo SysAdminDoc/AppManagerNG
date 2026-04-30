@@ -156,6 +156,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
         mSortText.setVisibility(sortingEnabled ? View.VISIBLE : View.GONE);
         mSortGroup.setVisibility(sortingEnabled ? View.VISIBLE : View.GONE);
         mReverseSort.setVisibility(sortingEnabled ? View.VISIBLE : View.GONE);
+        mSortGroup.removeAllViews();
         if (sortingEnabled) {
             int i = 0;
             for (int sortId : sortIdLocaleMap.keySet()) {
@@ -176,6 +177,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
         boolean filteringEnabled = filterFlagLocaleMap != null;
         mFilterText.setVisibility(filteringEnabled ? View.VISIBLE : View.GONE);
         mFilterOptions.setVisibility(filteringEnabled ? View.VISIBLE : View.GONE);
+        mFilterOptions.removeAllViews();
         if (filteringEnabled) {
             int i = 0;
             for (int flag : filterFlagLocaleMap.keySet()) {
@@ -190,6 +192,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
         boolean optionsEnabled = optionIdLocaleMap != null;
         mOptionsText.setVisibility(optionsEnabled ? View.VISIBLE : View.GONE);
         mOptionsView.setVisibility(optionsEnabled ? View.VISIBLE : View.GONE);
+        mOptionsView.removeAllViews();
         if (optionsEnabled) {
             int i = 0;
             for (int option : optionIdLocaleMap.keySet()) {
@@ -236,6 +239,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
     private Chip getFilterChip(int flag, @StringRes int strRes) {
         Chip chip = new Chip(mFilterOptions.getContext());
         chip.setFocusable(true);
+        chip.setCheckable(true);
         chip.setCloseIconVisible(false);
         chip.setId(flag);
         chip.setText(strRes);
@@ -254,6 +258,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
     private Chip getRadioChip(int sortOrder, @StringRes int strRes) {
         Chip chip = new Chip(mSortGroup.getContext());
         chip.setFocusable(true);
+        chip.setCheckable(true);
         chip.setCloseIconVisible(false);
         chip.setId(sortOrder);
         chip.setText(strRes);

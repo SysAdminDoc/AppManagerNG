@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
     android:layout_width="match_parent"
@@ -13,32 +14,40 @@
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="?attr/listItemPaddingHorizontal"
         android:paddingVertical="?attr/listItemPaddingVertical">
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="@dimen/icon_size"
+            android:layout_width="56dp"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:layout_marginEnd="@dimen/padding_small"
+            android:layout_marginEnd="@dimen/padding_medium"
             android:orientation="vertical">
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/icon"
-                android:layout_width="@dimen/icon_size"
-                android:layout_height="@dimen/icon_size"
-                android:layout_weight="1"
+                android:layout_width="@dimen/main_list_icon_size"
+                android:layout_height="@dimen/main_list_icon_size"
                 android:layout_gravity="center"
                 tools:srcCompat="@mipmap/ic_launcher_round"
                 android:contentDescription="@string/str_logo" />
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/backup_indicator"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="@dimen/padding_very_small"
+                android:background="@drawable/badge_background"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:minHeight="22dp"
+                android:paddingHorizontal="@dimen/padding_small"
+                android:paddingVertical="2dp"
                 android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:text="@string/backup"
                 tools:ignore="SmallSp" />
 
@@ -55,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:src="@drawable/item_favorite"
                 android:layout_gravity="end|top"
-                tools:ignore="ContentDescription" />
+                android:contentDescription="@string/main_list_debuggable_indicator" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -66,7 +75,8 @@
                     android:id="@+id/label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:textAppearance="?android:attr/textAppearanceListItem"
                     tools:text="@string/app_name" />
 
@@ -74,9 +84,10 @@
                     android:id="@+id/packageName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:singleLine="true"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="middle"
+                    android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textStyle="italic"
                     tools:text="io.github.muntashirakon.AppManager" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -88,7 +99,9 @@
                         android:id="@+id/date"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:singleLine="true"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         tools:text="@tools:sample/date/mmddyy" />
 
@@ -97,12 +110,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="end"
-                        android:paddingEnd="25sp"
-                        android:singleLine="true"
+                        android:paddingEnd="@dimen/padding_medium"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textAppearance="?attr/textAppearanceBodySmall"
-                        android:textSize="10sp"
                         tools:text="@tools:sample/us_zipcodes"
-                        tools:ignore="RtlSymmetry,SmallSp" />
+                        tools:ignore="RtlSymmetry" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -110,9 +123,10 @@
                     android:id="@+id/issuer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:singleLine="true"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="middle"
+                    android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textSize="9sp"
                     tools:text="CN=Android,OU=Android"
                     tools:ignore="SmallSp" />
 
@@ -120,9 +134,10 @@
                     android:id="@+id/backup_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:singleLine="true"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textSize="10sp"
                     tools:text="@tools:sample/lorem[6]"
                     tools:ignore="SmallSp" />
 
@@ -135,13 +150,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="2"
             android:orientation="vertical"
-            android:layout_marginStart="@dimen/padding_small">
+            android:layout_marginStart="@dimen/padding_medium">
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/version"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="v3.0.0" />
 
@@ -149,7 +165,8 @@
                 android:id="@+id/isSystem"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 tools:text="User" />
 
@@ -157,7 +174,8 @@
                 android:id="@+id/size"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 tools:text="SDK 30" />
 
@@ -165,18 +183,18 @@
                 android:id="@+id/sha"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="middle"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textSize="11sp"
                 tools:text="SHA256withRSA" />
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/backup_info_ext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textSize="10sp"
                 tools:text="APK+Data"
                 tools:ignore="SmallSp" />
 

@@ -120,6 +120,12 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         return mApplicationItems.size();
     }
 
+    public boolean hasActiveFilters() {
+        return mFilterFlags != MainListOptions.FILTER_NO_FILTER
+                || mFilterProfileName != null
+                || mSelectedUsers != null;
+    }
+
     @NonNull
     public LiveData<List<ApplicationItem>> getApplicationItems() {
         if (mApplicationItemsLiveData.getValue() == null) {
@@ -316,6 +322,19 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
         mSelectedUsers = selectedUsers;
         // TODO: 5/6/23 Store value to prefs
+        cancelIfRunning();
+        mFilterResult = executor.submit(this::filterItemsByFlags);
+    }
+
+    public void clearFilters() {
+        if (!hasActiveFilters()) {
+            return;
+        }
+        mFilterFlags = MainListOptions.FILTER_NO_FILTER;
+        mFilterProfileName = null;
+        mSelectedUsers = null;
+        Prefs.MainPage.setFilters(mFilterFlags);
+        Prefs.MainPage.setFilteredProfileName(null);
         cancelIfRunning();
         mFilterResult = executor.submit(this::filterItemsByFlags);
     }

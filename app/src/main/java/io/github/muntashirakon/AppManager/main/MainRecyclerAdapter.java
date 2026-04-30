@@ -31,6 +31,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
@@ -77,6 +78,10 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     private final int mColorOrange;
     private final int mColorPrimary;
     private final int mColorSecondary;
+    private final int mColorError;
+    private final int mColorTertiary;
+    private final int mColorSelectedStroke;
+    private final int mColorRegularStroke;
     private final int mQueryStringHighlight;
 
     MainRecyclerAdapter(@NonNull MainActivity activity) {
@@ -84,9 +89,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         mActivity = activity;
         mColorGreen = ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.stopped);
         mColorOrange = ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.orange);
-        mColorPrimary = ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.textColorPrimary);
-        mColorSecondary = ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.textColorSecondary);
+        mColorPrimary = getThemeColor(activity, "colorOnSurface",
+                ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.textColorPrimary));
+        mColorSecondary = getThemeColor(activity, "colorOnSurfaceVariant",
+                ContextCompat.getColor(activity, io.github.muntashirakon.ui.R.color.textColorSecondary));
+        mColorError = getThemeColor(activity, "colorError", Color.RED);
+        mColorTertiary = getThemeColor(activity, "colorTertiary", mColorOrange);
+        mColorSelectedStroke = getThemeColor(activity, "colorPrimary", mColorOrange);
+        mColorRegularStroke = getThemeColor(activity, "colorOutlineVariant", Color.TRANSPARENT);
         mQueryStringHighlight = ColorCodes.getQueryStringHighlightColor(activity);
+    }
+
+    private static int getThemeColor(@NonNull Context context, @NonNull String attrName, int fallbackColor) {
+        int attrId = context.getResources().getIdentifier(attrName, "attr", context.getPackageName());
+        return attrId != 0 ? MaterialColors.getColor(context, attrId, fallbackColor) : fallbackColor;
     }
 
     @GuardedBy("mAdapterList")
@@ -216,18 +232,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             toggleSelection(position);
             AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
         });
-        // Box-stroke colors: uninstalled > disabled > force-stopped > regular
-        if (!item.isInstalled) {
+        // Box-stroke colors: selected > uninstalled > disabled > force-stopped > regular
+        if (item.isSelected) {
+            cardView.setStrokeColor(mColorSelectedStroke);
+        } else if (!item.isInstalled) {
             cardView.setStrokeColor(ColorCodes.getAppUninstalledIndicatorColor(context));
         } else if (item.isDisabled) {
             cardView.setStrokeColor(ColorCodes.getAppDisabledIndicatorColor(context));
         } else if (item.isStopped) {
             cardView.setStrokeColor(ColorCodes.getAppForceStoppedIndicatorColor(context));
         } else {
-            cardView.setStrokeColor(Color.TRANSPARENT);
+            cardView.setStrokeColor(mColorRegularStroke);
         }
         // Display yellow star if the app is in debug mode
-        holder.debugIcon.setVisibility(item.debuggable ? View.VISIBLE : View.INVISIBLE);
+        holder.debugIcon.setVisibility(item.debuggable ? View.VISIBLE : View.GONE);
         // Set date and (if available,) days between first installation and last update
         String lastUpdateDate = DateUtils.formatDate(context, item.lastUpdateTime);
         if (item.firstInstallTime == item.lastUpdateTime) {
@@ -263,6 +281,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         }
         // Load app icon
         holder.icon.setTag(item.packageName);
+        holder.icon.setContentDescription(context.getString(R.string.main_list_select_app, item.label));
         ImageLoader.getInstance().displayImage(item.packageName, item, holder.icon);
         // Set app label
         if (!TextUtils.isEmpty(mSearchQuery) && item.label.toLowerCase(Locale.ROOT).contains(mSearchQuery)) {
@@ -271,7 +290,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         } else holder.label.setText(item.label);
         // Set app label color to red if clearing user data not allowed
         if (item.isInstalled && !item.allowClearingUserData) {
-            holder.label.setTextColor(Color.RED);
+            holder.label.setTextColor(mColorError);
         } else holder.label.setTextColor(mColorPrimary);
         // Set package name
         if (!TextUtils.isEmpty(mSearchQuery) && item.packageName.toLowerCase(Locale.ROOT).contains(mSearchQuery)) {
@@ -295,7 +314,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.isSystemApp.setText("-");
         }
         // Set app type text color to magenta if the app is persistent
-        holder.isSystemApp.setTextColor(item.isPersistent ? Color.MAGENTA : mColorSecondary);
+        holder.isSystemApp.setTextColor(item.isPersistent ? mColorTertiary : mColorSecondary);
         // Set SDK
         if (item.sdkString != null) {
             holder.size.setText(item.sdkString);
@@ -334,6 +353,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.backupInfo.setVisibility(View.GONE);
             holder.backupInfoExt.setVisibility(View.GONE);
         }
+        String installedState = context.getString(item.isInstalled
+                ? R.string.main_list_installed_state : R.string.main_list_uninstalled_state);
+        String sdkState = item.sdkString != null ? item.sdkString : "-";
+        cardView.setContentDescription(context.getString(R.string.main_list_app_content_description,
+                item.label, installedState, item.packageName, item.versionTag, sdkState));
         super.onBindViewHolder(holder, position);
     }
 

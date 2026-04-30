@@ -23,6 +23,7 @@ import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
+import io.github.muntashirakon.io.Paths;
 
 public class DiagnosticUtils {
     private static final int MAX_LOGCAT_LINES = 2000;
@@ -50,7 +51,7 @@ public class DiagnosticUtils {
                 writeCrashLogs(context, zos);
                 writeLogcat(zos);
             }
-            return FmProvider.getContentUri(Uri.fromFile(zipFile));
+            return FmProvider.getContentUri(Paths.get(zipFile));
         } catch (IOException e) {
             return null;
         }
