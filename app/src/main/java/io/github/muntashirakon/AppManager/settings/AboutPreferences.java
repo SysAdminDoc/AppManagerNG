@@ -2,10 +2,12 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,7 +24,9 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.changelog.ChangelogRecyclerAdapter;
+import io.github.muntashirakon.AppManager.misc.DiagnosticUtils;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.dialog.AlertDialogBuilder;
 import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 
@@ -81,6 +85,28 @@ public class AboutPreferences extends PreferenceFragment {
                             .enableAnchors()
                             .setNegativeButton(R.string.close, null)
                             .show();
+                    return true;
+                });
+        // Diagnostic dump
+        ((Preference) Objects.requireNonNull(findPreference("export_diagnostics")))
+                .setOnPreferenceClickListener(preference -> {
+                    Toast.makeText(requireContext(), R.string.diagnostic_preparing, Toast.LENGTH_SHORT).show();
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        Uri reportUri = DiagnosticUtils.buildDiagnosticReport(requireContext());
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (reportUri == null) {
+                                Toast.makeText(requireContext(), R.string.diagnostic_failed, Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            Intent share = new Intent(Intent.ACTION_SEND);
+                            share.setType("application/zip");
+                            share.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diagnostic_report_subject));
+                            share.putExtra(Intent.EXTRA_STREAM, reportUri);
+                            share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            share.setClipData(ClipData.newRawUri("", reportUri));
+                            startActivity(Intent.createChooser(share, getString(R.string.pref_export_diagnostics)));
+                        });
+                    });
                     return true;
                 });
     }
