@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** post-v0.3.0 (second full research cycle, 2026-04-30).  
+**Last updated:** post-v0.3.0 (third full research cycle, 2026-04-30).  
 **Next revision due:** v0.5.0 release.
 
 ---
@@ -114,6 +114,7 @@ Shizuku support is the single most-requested upstream feature with 31 reactions 
 | **Factory-Reset Before System App Uninstall** | Factory-reset a system app to its shipping state before uninstalling; prevents stub-app stalling issues on some ROMs. Canta model ([S43]). | Low |
 | **Debloat Presets** | Named debloat configurations (e.g. "Privacy", "Gaming", "Minimal OEM") that batch-apply recommended freeze/remove actions. Canta model ([S43]). | Medium |
 | **Install Without Staging APK** | Direct `PackageInstaller` session without staging to cache; faster installs on constrained storage (Issue #1671 [S17]) | Medium |
+| **Install Existing Apps via `package:` URI** | Support `package:package-name` installer URI to install an already-present APK for the current user (e.g. system apps installed for another user); pull upstream v4.0.5 model ([S01]). Combine-safe with `SEND_MULTIPLE` for mixed-URI install batches. | Low (pull) |
 | **Onboarding Capability Wizard** | Detect root/Shizuku/wireless-ADB at first launch; show plain-language capability matrix ("What you can do with each privilege level"). Include Shizuku v13.6.0 auto-start on trusted WLAN tip for Android 13+ ([S22]). | Medium |
 
 ### T6 — Backup Polish
@@ -132,6 +133,9 @@ Neo Backup ([S20]) and Titanium Backup are the benchmark. AM's backup engine is 
 | **Launcher Shortcuts for Backup Schedules** | Pin a specific backup schedule as a home screen launcher shortcut for one-tap execution. Neo Backup v8.3.17 model ([S41]). | Low |
 | **Rich Backup Result Notifications** | Show per-app name, backup count, and total size in the completion notification rather than a generic "done" message. SD Maid SE scheduler model ([S42]). Distinct from the in-progress backup progress notification item. | Low |
 | **Backup Progress Notifications** | Rich ongoing notification with per-app name, progress bar, and ETA | Low |
+| **Pre-Backup Storage Check** | Verify available storage is sufficient before starting a backup operation; alert user with dismiss-able dialog if likely to fail mid-way. Neo Backup v8.3.15 model ([S41]). | Low |
+| **Separated Active/Paused Schedule Lists** | Display enabled and disabled backup schedules in distinct sections rather than a flat unsorted list; mirrors how the system separates active vs. silent alarms. Neo Backup v8.3.15 model ([S41]). | Low |
+| **Backup Tag Autocomplete** | When labeling a backup, suggest existing tags as autocomplete chip options to encourage consistent tagging across devices and schedules. Neo Backup v8.3.17 model ([S41]). | Low |
 | **Export/Import App List** | Export selected/filtered app list to JSON; import to recreate filter or drive batch ops (Issue #122 [S05], 8 reactions) | Medium |
 
 ### T7 — Finder (Cross-App Search)
@@ -290,6 +294,9 @@ Items that need architectural decisions or external dependencies resolved before
 | **F-Droid / Aurora Store In-App Update** | Issue #464 ([S08], 12 reactions). Deep-link to app's store listing rather than replicate a store. Obtainium ([S26]) solves the full update tracking problem better. Decision: implement deep-link badges (store button on app detail page); reject full in-app store. |
 | **Storage Trend Tracking** | Track per-app storage usage over time and display a trend graph. SD Maid SE v1.6.5 model ([S42]). Requires persistent historical data (~1 row/day/app). Non-trivial storage overhead for large app counts; may fit a future "Storage Analyzer" view that's opt-in. |
 | **android-debloat-list Safety Ratings in App Detail** | Surface UAD-NG removal rating ("safe", "unsafe", "expert", "untested") directly in the App Details page for system apps. Requires resolving the debloat list JSON at install time vs. at query time. Low network impact if list is bundled. |
+| **KernelSU as Third Root Provider** | KernelSU v3.2.3+ added `adb root` pathway ([S56]); the project has ~10 M active users. May warrant first-class detection alongside Magisk and libadb in the T5 capability wizard. Architecture decision needed: whether `libsu`-based root shell works seamlessly against KernelSU's `su` binary without modifications. |
+| **Android 17 Advanced Protection Mode (AAPM) Integration** | `AdvancedProtectionManager` API (Android 17, API 37 [S53]) lets apps detect if the user has opted into AAPM. NG could surface "Device in Advanced Protection Mode" in the Privacy & Security section and automatically restrict high-risk operations (e.g. USB-debugging auto-pair, unknown-source installs) when active. Gated on minSdk raise to 37. |
+| **JADX Plugin API for Analysis Extensions** | JADX 1.5.0+ ships an external plugin ecosystem ([S60]); scripts are now loadable as ZIP artifacts. Could expose custom class detectors (e.g. tracker pattern matching, hardcoded-secret detection) as user-installable NG analysis plugins. Architecture decisions: plugin trust model, sandboxing, GPL-compatible licensing chain. |
 
 ---
 
@@ -328,6 +335,13 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | libsu `6.0.0` | API | `Shell.sh/su` removed in 6.0.0; replaced by `Shell.cmd` — verify no legacy `Shell.sh/su` calls survive in NG source. `FLAG_REDIRECT_STDERR` also deprecated ([S47]). | Medium | All root ops |
 | All layouts | Compliance | Audit for `elegantTextHeight` attribute usage — ignored for targetSdk=36; text rendering affected for Arabic/Thai/Indic scripts ([S44]) | Low | T2 |
 | WorkManager/JobScheduler | Compliance | Backup scheduler must be tested under Android 16 quota model; log stop reasons with `WorkInfo.getStopReason()` ([S45]) | Low | T6 |
+| JADX `1.4.7` | Dependency | Latest is `1.5.5` (7 releases behind [S60]); includes critical multi-thread UI fix (v1.5.5), `.apks` support, CJK font rendering, and an external plugin system (v1.5.4+). Upgrade before T12 work begins. | Medium | T12 |
+| Gson `2.13.2` | Dependency | Latest is `2.14.0` ([S58]); new `java.time` adapters; stricter integer ASCII validation; `Serializable` removed from internal Type impl classes (minor security hygiene). Low-risk upgrade. | Low | All |
+| Material Components `1.13.x` | Ceiling | Material `1.14.0-rc01` raises `minSdkVersion` to 23 ([S57]); blocked until NG raises `minSdk` from 21. Action: document in `versions.gradle` comment; schedule minSdk raise to 23 before any Material 1.14.x adoption. | Medium | All |
+| AGP `8.13.2` | Dependency | Latest stable is AGP `9.2`; requires Gradle 9.4.1 and SDK Build Tools 36 ([S59]). R8 tightens `-keepattributes *Annotation*` wildcard behavior in 9.x — auditing ProGuard rules required at upgrade. Not urgent but track for annual build-toolchain cycle. | Medium | Build |
+| MagiskSU capability drop | Behavior | MagiskSU `≥v30.5` no longer drops Linux capabilities by default; explicit `--drop-cap` now required ([S52]). Audit all root shell invocations in NG that assumed automatic capability restriction before shipping T15 systemless ops. | Medium | T15 |
+| Android 17 targetSdk=37 compliance | Compliance batch | Four items required before bumping `targetSdkVersion` to 37: (1) declare `ACCESS_LOCAL_NETWORK` runtime permission for wireless ADB LAN discovery ([S55]); (2) audit hidden-API bypass code paths for `static final` field reflection — `IllegalAccessException` for targetSdk=37 apps ([S54]); (3) migrate `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` → `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE` in all `ActivityOptions` usage ([S54]); (4) verify Network Security Config for Certificate Transparency (CT default-on for targetSdk=37 [S54]). | High | T5, T8, T9 |
+| Android 17 memory limits | Compliance | All-apps change: Android 17 introduces RAM-based per-app `AnonSwap` memory limits; exit detected via `ApplicationExitInfo.REASON_OTHER` with `"MemoryLimiter:AnonSwap"` description ([S55]). JADX decompile and APK-signature parsing are the heaviest NG operations; profile under low-memory devices before T12 ships. | Medium | T12 |
 
 ---
 
@@ -358,6 +372,9 @@ AppManagerNG is not a hard fork. The intent is to stay semantically close to ups
 | Import app list | Issue #122, not shipped | Implement in NG (T6) |
 | Overlay management | Shipped v4.0.1 ([S39]) | Pull into T18 |
 | app-manager:// deep link | Shipped v4.0.x ([S40]) | Pull into T18 |
+| Installer `package:` URI | Shipped v4.0.5 ([S01]) | Pull into T5 |
+| Profile shortcut configured-state execution | Shipped v4.0.4 ([S01]) | Pull into T8 |
+| v4.1.0 milestone (24 issues, 0 closed) | Due 2026-09-18; not yet started ([S40]) | Monitor; cherry-pick security/bug fixes when they land |
 
 ---
 
@@ -418,3 +435,12 @@ All external sources cited above.
 | S49 | https://osv.dev/vulnerability/GHSA-8xfc-gm6g-vgpv | BouncyCastle CVE: affects <1.78; fixed in 1.78; NG uses 1.83 (clean) |
 | S50 | https://www.bouncycastle.org/releasenotes.html | BouncyCastle 1.84 current; NG on 1.83 |
 | S51 | https://github.com/ImranR98/Obtainium/releases | Obtainium v1.3.0: certificate hash display; v1.4.x: dynamic color fix, GitHub repo rename detection |
+| S52 | https://github.com/topjohnwu/Magisk/releases | Magisk v30.5–v30.7: MagiskSU no longer drops capabilities by default; Android 16 QPR2 Zygisk support; Rust migration |
+| S53 | https://developer.android.com/about/versions/17/features | Android 17 features: ProfilingManager triggers, JobDebugInfo APIs, ECH, AAPM, PQC APK signing, contact picker |
+| S54 | https://developer.android.com/about/versions/17/behavior-changes-17 | Android 17 targetSdk=37: static-final field restriction, ACCESS_LOCAL_NETWORK, BAL IntentSender, CT default, native DCL |
+| S55 | https://developer.android.com/about/versions/17/behavior-changes-all | Android 17 all-apps: RAM-based memory limits (AnonSwap), Keystore per-app key cap, usesCleartextTraffic deprecation plan |
+| S56 | https://github.com/tiann/KernelSU/releases | KernelSU v3.2.3: adb root feature; v3.2.4: seccomp status display, su log screen |
+| S57 | https://github.com/material-components/material-components-android/releases | Material 1.14.0-rc01: minSdkVersion raised to 23 — blocks upgrade while NG remains on minSdk 21 |
+| S58 | https://github.com/google/gson/releases | Gson 2.14.0: java.time adapters, stricter integer validation, Serializable removed from internal types |
+| S59 | https://developer.android.com/build/releases/gradle-plugin | AGP 9.2 release notes: Gradle 9.4.1 required; R8 annotation keepattr wildcard tightened; unified test/coverage dashboards |
+| S60 | https://github.com/skylot/jadx/releases | JADX 1.5.5: critical multi-thread UI fix; 1.5.4: plugin system (external ZIP artifacts), .apks support, CJK fonts, UI zoom |
