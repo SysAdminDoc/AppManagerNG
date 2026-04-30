@@ -114,7 +114,9 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private LinearLayoutCompat mEmptyView;
     private ImageView mEmptyViewIcon;
     private TextView mEmptyViewTitle;
+    private TextView mEmptyViewSummary;
     private TextView mEmptyViewDetails;
+    private MaterialButton mEmptyViewAction;
     @Nullable
     private FmAdapter mAdapter;
     @Nullable
@@ -241,7 +243,15 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         mEmptyView = view.findViewById(android.R.id.empty);
         mEmptyViewIcon = view.findViewById(R.id.icon);
         mEmptyViewTitle = view.findViewById(R.id.title);
+        mEmptyViewSummary = view.findViewById(R.id.summary);
         mEmptyViewDetails = view.findViewById(R.id.message);
+        mEmptyViewAction = view.findViewById(R.id.empty_action);
+        mEmptyViewAction.setOnClickListener(v -> {
+            if (mSwipeRefresh != null) {
+                mSwipeRefresh.setRefreshing(true);
+            }
+            onRefresh();
+        });
         mRecyclerView = view.findViewById(R.id.list_item);
         mRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(mActivity));
         mAdapter = new FmAdapter(mModel, mActivity);
@@ -314,14 +324,17 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             }
             mAdapter.setFmList(fmItems);
             if (fmItems.isEmpty()) {
-                handleEmptyView(R.drawable.ic_file, getString(R.string.empty_folder), null);
+                handleEmptyView(R.drawable.ic_file, getString(R.string.fm_empty_folder_title),
+                        getText(R.string.fm_empty_folder_message), null);
             }
         });
         mModel.getFmErrorLiveData().observe(getViewLifecycleOwner(), throwable -> {
             if (mSwipeRefresh != null) {
                 mSwipeRefresh.setRefreshing(false);
             }
-            handleEmptyView(io.github.muntashirakon.ui.R.drawable.ic_caution, throwable.getMessage(), throwable);
+            CharSequence title = !TextUtils.isEmpty(throwable.getMessage()) ? throwable.getMessage() : getText(R.string.error);
+            handleEmptyView(io.github.muntashirakon.ui.R.drawable.ic_caution, title,
+                    getText(R.string.fm_folder_error_message), throwable);
         });
         mModel.getUriLiveData().observe(getViewLifecycleOwner(), uri1 -> {
             FmActivity.Options options1 = mModel.getOptions();
@@ -657,12 +670,16 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         mModel.loadFiles(b.build());
     }
 
-    private void handleEmptyView(@DrawableRes int icon, @Nullable CharSequence title, @Nullable Throwable th) {
+    private void handleEmptyView(@DrawableRes int icon, @Nullable CharSequence title,
+                                 @Nullable CharSequence summary, @Nullable Throwable th) {
         if (!mEmptyView.isShown()) {
             mEmptyView.setVisibility(View.VISIBLE);
         }
         mEmptyViewIcon.setImageResource(icon);
         mEmptyViewTitle.setText(title);
+        mEmptyViewSummary.setText(summary);
+        mEmptyViewSummary.setVisibility(TextUtils.isEmpty(summary) ? View.GONE : View.VISIBLE);
+        mEmptyViewAction.setVisibility(View.VISIBLE);
         if (th == null) {
             mEmptyViewDetails.setVisibility(View.GONE);
             return;

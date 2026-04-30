@@ -50,8 +50,8 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/uri_edit"
                         style="@style/Widget.AppTheme.Button.IconButton"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_gravity="center_vertical"
                         android:layout_weight="0"
                         android:contentDescription="@string/item_edit"
@@ -78,44 +78,69 @@
                         android:id="@android:id/empty"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:gravity="center_vertical"
+                        android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="8dp"
+                        android:paddingHorizontal="@dimen/padding_very_large"
+                        android:paddingVertical="@dimen/padding_large"
                         android:visibility="gone"
                         tools:visibility="visible">
 
-                        <androidx.appcompat.widget.AppCompatImageView
+                        <com.google.android.material.imageview.ShapeableImageView
                             android:id="@+id/icon"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_horizontal"
-                            android:adjustViewBounds="true"
-                            android:maxHeight="72dp"
-                            android:minHeight="48dp"
-                            app:srcCompat="@drawable/ic_caution" />
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:alpha="0.86"
+                            android:background="@drawable/main_empty_icon_background"
+                            android:contentDescription="@null"
+                            android:padding="@dimen/padding_large"
+                            app:srcCompat="@drawable/ic_caution"
+                            app:tint="?attr/colorOnSecondaryContainer" />
 
                         <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/title"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:textAppearance="?attr/textAppearanceBodyLarge"
-                            tools:text="Folder does not exist." />
+                            android:layout_marginTop="@dimen/padding_large"
+                            android:gravity="center"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="@string/fm_empty_folder_title" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/summary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_small"
+                            android:gravity="center"
+                            android:maxWidth="360dp"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            tools:text="@string/fm_empty_folder_message" />
 
                         <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/message"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_medium"
                             android:fontFamily="monospace"
                             android:maxLines="10"
                             android:overScrollMode="ifContentScrolls"
                             android:scrollbars="vertical"
                             android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textIsSelectable="true"
                             android:visibility="gone"
                             tools:text="Folder does not exist."
                             tools:visibility="visible" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/empty_action"
+                            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_large"
+                            android:text="@string/refresh"
+                            app:icon="@drawable/ic_refresh" />
 
                     </androidx.appcompat.widget.LinearLayoutCompat>
 

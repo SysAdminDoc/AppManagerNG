@@ -1399,6 +1399,9 @@
     <string name="debloat_removal_caution">Caution</string>
     <string name="static_shared_library">Static shared library</string>
     <string name="empty_folder">Empty</string>
+    <string name="fm_empty_folder_title">Empty folder</string>
+    <string name="fm_empty_folder_message">There are no files here yet. Use Add to create a file or folder, or refresh if the folder changed elsewhere.</string>
+    <string name="fm_folder_error_message">App Manager could not open this location. Review storage access or try refreshing.</string>
     <plurals name="folder_count">
         <item quantity="one">%d folder</item>
         <item quantity="other">%d folders</item>
