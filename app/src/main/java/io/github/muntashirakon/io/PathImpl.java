@@ -203,12 +203,12 @@ class PathImpl extends Path {
                     Path rootPath = VirtualFileSystem.getFsRoot(parsedUri.first);
                     if (rootPath != null) {
                         String path = Paths.sanitize(parsedUri.second, true);
-                        if (TextUtils.isEmpty(path) || path.equals(File.separator)) {
+                        if (TextUtils.isEmpty(path) || path.equals(Paths.PATH_SEPARATOR)) {
                             // Root requested
                             documentFile = rootPath.documentFile;
                         } else {
                             // Find file is acceptable here since the file always exists
-                            String[] pathComponents = path.split(File.separator);
+                            String[] pathComponents = path.split(Paths.PATH_SEPARATOR);
                             DocumentFile finalDocumentFile = rootPath.documentFile;
                             for (String pathComponent : pathComponents) {
                                 finalDocumentFile = Objects.requireNonNull(finalDocumentFile.findFile(pathComponent));
@@ -371,7 +371,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        if (displayName.indexOf(File.separatorChar) != -1) {
+        if (displayName.indexOf(Paths.PATH_SEPARATOR_CHAR) != -1) {
             throw new IllegalArgumentException("Display name contains file separator.");
         }
         DocumentFile documentFile = getRealDocumentFile(this.documentFile);
@@ -390,7 +390,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        String[] names = displayName.split(File.separator);
+        String[] names = displayName.split(Paths.PATH_SEPARATOR);
         if (names.length == 0) {
             throw new IllegalArgumentException("Display name is empty.");
         }
@@ -409,7 +409,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        String[] dirNames = displayName.split(File.separator);
+        String[] dirNames = displayName.split(Paths.PATH_SEPARATOR);
         if (dirNames.length == 0) {
             throw new IllegalArgumentException("Display name is empty");
         }
@@ -428,7 +428,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        String[] dirNames = displayName.split(File.separator);
+        String[] dirNames = displayName.split(Paths.PATH_SEPARATOR);
         if (dirNames.length == 0) {
             throw new IllegalArgumentException("Display name is empty");
         }
@@ -447,7 +447,7 @@ class PathImpl extends Path {
         }
         t = file.createDirectory(lastSegment);
         if (t == null) {
-            throw new IOException("Directory" + file.getUri() + File.separator + lastSegment + " could not be created.");
+            throw new IOException("Directory" + file.getUri() + Paths.PATH_SEPARATOR + lastSegment + " could not be created.");
         }
         return new PathImpl(context, t);
     }
@@ -466,7 +466,7 @@ class PathImpl extends Path {
     public Path findFile(@NonNull String displayName) throws FileNotFoundException {
         DocumentFile nextPath = findFileInternal(documentFile, displayName);
         if (nextPath == null) {
-            throw new FileNotFoundException("Cannot find " + this + File.separatorChar + displayName);
+            throw new FileNotFoundException("Cannot find " + this + Paths.PATH_SEPARATOR_CHAR + displayName);
         }
         return new PathImpl(context, nextPath);
     }
@@ -477,7 +477,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        if (displayName.indexOf(File.separatorChar) != -1) {
+        if (displayName.indexOf(Paths.PATH_SEPARATOR_CHAR) != -1) {
             throw new IllegalArgumentException("Display name contains file separator.");
         }
         DocumentFile documentFile = getRealDocumentFile(this.documentFile);
@@ -499,7 +499,7 @@ class PathImpl extends Path {
         }
         file = documentFile.createFile(mimeType, displayName);
         if (file == null) {
-            throw new IOException("Could not create " + documentFile.getUri() + File.separatorChar + nameWithExtension + " with type " + mimeType);
+            throw new IOException("Could not create " + documentFile.getUri() + Paths.PATH_SEPARATOR_CHAR + nameWithExtension + " with type " + mimeType);
         }
         return new PathImpl(context, file);
     }
@@ -510,7 +510,7 @@ class PathImpl extends Path {
         if (displayName == null) {
             throw new IOException("Empty display name.");
         }
-        if (displayName.indexOf(File.separatorChar) != -1) {
+        if (displayName.indexOf(Paths.PATH_SEPARATOR_CHAR) != -1) {
             throw new IllegalArgumentException("Display name contains file separator.");
         }
         DocumentFile documentFile = getRealDocumentFile(this.documentFile);
@@ -722,7 +722,7 @@ class PathImpl extends Path {
             // Empty display name
             return false;
         }
-        if (displayName.contains(File.separator)) {
+        if (displayName.contains(Paths.PATH_SEPARATOR)) {
             // Display name must belong to the same directory.
             return false;
         }
@@ -914,8 +914,8 @@ class PathImpl extends Path {
             return null;
         }
         // Add separator to avoid matching wrong files
-        String destStr = dest.getUri() + File.separator;
-        String srcStr = source.getUri() + File.separator;
+        String destStr = dest.getUri() + Paths.PATH_SEPARATOR;
+        String srcStr = source.getUri() + Paths.PATH_SEPARATOR;
         if (destStr.startsWith(srcStr)) {
             // Destination cannot be the same or a subdirectory of source
             Log.d(TAG, "Destination is a subdirectory of source.");
@@ -1271,7 +1271,7 @@ class PathImpl extends Path {
                                                 @NonNull DocumentFile documentFile,
                                                 @NonNull String displayName,
                                                 @Nullable String mimeType) throws IOException {
-        if (displayName.indexOf(File.separatorChar) != -1) {
+        if (displayName.indexOf(Paths.PATH_SEPARATOR_CHAR) != -1) {
             throw new IllegalArgumentException("Display name contains file separator.");
         }
         documentFile = getRealDocumentFile(documentFile);
@@ -1294,7 +1294,7 @@ class PathImpl extends Path {
         }
         DocumentFile file = documentFile.createFile(mimeType, displayName);
         if (file == null) {
-            throw new IOException("Could not create " + documentFile.getUri() + File.separatorChar + nameWithExtension + " with type " + mimeType);
+            throw new IOException("Could not create " + documentFile.getUri() + Paths.PATH_SEPARATOR_CHAR + nameWithExtension + " with type " + mimeType);
         }
         return new PathImpl(context, file);
     }
@@ -1306,7 +1306,7 @@ class PathImpl extends Path {
             // Empty display name
             return null;
         }
-        String[] parts = displayName.split(File.separator);
+        String[] parts = displayName.split(Paths.PATH_SEPARATOR);
         documentFile = getRealDocumentFile(documentFile);
         for (String part : parts) {
             // Check for mount point
@@ -1344,7 +1344,7 @@ class PathImpl extends Path {
                 throw new IOException(t.getUri() + " exists and it is not a directory.");
             }
             if (t == null) {
-                throw new IOException("Could not create directory " + file.getUri() + File.separatorChar + names[i]);
+                throw new IOException("Could not create directory " + file.getUri() + Paths.PATH_SEPARATOR_CHAR + names[i]);
             }
             file = t;
         }

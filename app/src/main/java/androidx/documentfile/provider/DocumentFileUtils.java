@@ -12,7 +12,6 @@ import android.provider.DocumentsContract;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,7 +54,7 @@ public final class DocumentFileUtils {
             return primaryName;
         }
         String secondaryName = segments.get(3);
-        if (secondaryName.startsWith(primaryName + File.separator)) {
+        if (secondaryName.startsWith(primaryName + Paths.PATH_SEPARATOR)) {
             secondaryName = Paths.getLastPathSegment(secondaryName.substring(primaryName.length() + 1));
         }
         if (!secondaryName.isEmpty()) {

@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.color.MaterialColors;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,8 +48,8 @@ class FmPathListAdapter extends RecyclerView.Adapter<FmPathListAdapter.PathHolde
         mCurrentUri = currentUri;
         List<String> paths = FmUtils.uriToPathParts(currentUri);
         String currentPathStr = currentUri.toString();
-        if (!currentPathStr.endsWith(File.separator)) {
-            currentPathStr += File.separator;
+        if (!currentPathStr.endsWith(Paths.PATH_SEPARATOR)) {
+            currentPathStr += Paths.PATH_SEPARATOR;
         }
         // Two cases:
         // 1. currentPath is a subset of lastPath, update currentPosition

@@ -48,7 +48,6 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -611,9 +610,11 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     }
 
     public int getRecyclerViewFirstChildPosition() {
-        if (mRecyclerView != null) {
+        if (mRecyclerView != null && mRecyclerView.getChildCount() > 0) {
             View v = mRecyclerView.getChildAt(0);
-            return mRecyclerView.getChildAdapterPosition(v);
+            if (v != null) {
+                return mRecyclerView.getChildAdapterPosition(v);
+            }
         }
         return RecyclerView.NO_POSITION;
     }
@@ -629,7 +630,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             return;
         }
         // Bad Uri, consider it to be a file://
-        if (p.startsWith(File.separator)) {
+        if (p.startsWith(Paths.PATH_SEPARATOR)) {
             // absolute file
             Uri checkedUri = FmUtils.sanitizeContentInput(uncheckedUri.buildUpon().scheme(ContentResolver.SCHEME_FILE).build());
             if (checkedUri != null) {
@@ -639,7 +640,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         }
         // Relative path
         String goodPath = Paths.sanitize(p, false);
-        if (goodPath == null || goodPath.equals(File.separator)) {
+        if (goodPath == null || goodPath.equals(Paths.PATH_SEPARATOR)) {
             // No relative path means current path which is already loaded
             return;
         }
@@ -648,7 +649,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             List<String> pathSegments = currentUri.getPathSegments();
             if (pathSegments.size() == 4) {
                 // For a tree URI, the 3rd index is the path
-                String lastPathSegment = pathSegments.get(3) + File.separator + goodPath;
+                String lastPathSegment = pathSegments.get(3) + Paths.PATH_SEPARATOR + goodPath;
                 Uri.Builder b = new Uri.Builder()
                         .scheme(currentUri.getScheme())
                         .authority(currentUri.getAuthority())
@@ -662,8 +663,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             return;
         }
         // For others, simply append path segments at the end
-        @SuppressWarnings("SuspiciousRegexArgument") // We aren't on Windows
-        String[] segments = goodPath.split(File.separator);
+        String[] segments = goodPath.split(Paths.PATH_SEPARATOR);
         Uri.Builder b = currentUri.buildUpon();
         for (String segment : segments) {
             b.appendPath(segment);

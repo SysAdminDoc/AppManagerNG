@@ -128,7 +128,7 @@ final class LocalFileOverlay {
         if (children != null) {
             // Check for potential alias
             for (String child : children) {
-                if (child.startsWith(File.separator)) {
+                if (child.startsWith(Paths.PATH_SEPARATOR)) {
                     return ReadOnlyLocalFile.getAliasInstance(path, child);
                 }
             }
@@ -179,7 +179,7 @@ final class LocalFileOverlay {
             }
             path = path.substring(10); // "/data/app/".length()
             // Remaining path is required one. It can contain either two or one paths
-            String[] pathParts = path.split(File.separator);
+            String[] pathParts = path.split(Paths.PATH_SEPARATOR);
             switch (pathParts.length) {
                 case 1:
                     paths.put(pathParts[0], null);

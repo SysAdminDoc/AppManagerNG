@@ -165,8 +165,12 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
                 ++i;
             }
             mSortGroup.check(requireListOptionActions().getSortBy());
-            mSortGroup.setOnCheckedStateChangeListener((group, checkedIds) ->
-                    requireListOptionActions().setSortBy(mSortGroup.getCheckedChipId()));
+            mSortGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                int checkedChipId = mSortGroup.getCheckedChipId();
+                if (checkedChipId != View.NO_ID) {
+                    requireListOptionActions().setSortBy(checkedChipId);
+                }
+            });
             mReverseSort.setChecked(requireListOptionActions().isReverseSort());
             mReverseSort.setOnCheckedChangeListener((buttonView, isChecked) ->
                     requireListOptionActions().setReverseSort(isChecked));

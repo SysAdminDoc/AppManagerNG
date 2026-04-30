@@ -24,7 +24,6 @@ import org.apache.commons.compress.archivers.tar.TarConstants;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,6 +41,7 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.io.SplitInputStream;
 
 public class AndroidBackupCreator implements AutoCloseable {
@@ -135,7 +135,7 @@ public class AndroidBackupCreator implements AutoCloseable {
     }
 
     private void addManifestEntry(@NonNull TarArchiveOutputStream taos) throws IOException {
-        String manifestPath = Constants.APPS_PREFIX + mPackageName + File.separator + Constants.BACKUP_MANIFEST_FILENAME;
+        String manifestPath = Constants.APPS_PREFIX + mPackageName + Paths.PATH_SEPARATOR + Constants.BACKUP_MANIFEST_FILENAME;
         byte[] manifestContent = getManifestBytes(mCategoryFilesMap.get(CAT_SRC) != null);
 
         TarArchiveEntry manifestEntry = new TarArchiveEntry(manifestPath);
@@ -223,22 +223,22 @@ public class AndroidBackupCreator implements AutoCloseable {
 
     @NonNull
     private String transformEntryPath(@NonNull String originalPath, int category) {
-        String basePath = Constants.APPS_PREFIX + mPackageName + File.separator;
-        if (originalPath.endsWith(File.separator)) {
+        String basePath = Constants.APPS_PREFIX + mPackageName + Paths.PATH_SEPARATOR;
+        if (originalPath.endsWith(Paths.PATH_SEPARATOR)) {
             // AB expects no trailing slashes
             originalPath = originalPath.substring(0, originalPath.length() - 1);
         }
         switch (category) {
             case CAT_SRC:
-                return basePath + Constants.APK_TREE_TOKEN + File.separator + originalPath;
+                return basePath + Constants.APK_TREE_TOKEN + Paths.PATH_SEPARATOR + originalPath;
             case CAT_INT_CE:
                 return transformInternalPath(basePath, originalPath, false);
             case CAT_INT_DE:
                 return transformInternalPath(basePath, originalPath, true);
             case CAT_EXT:
-                return basePath + Constants.MANAGED_EXTERNAL_TREE_TOKEN + File.separator + originalPath;
+                return basePath + Constants.MANAGED_EXTERNAL_TREE_TOKEN + Paths.PATH_SEPARATOR + originalPath;
             case CAT_OBB:
-                return basePath + Constants.OBB_TREE_TOKEN + File.separator + originalPath;
+                return basePath + Constants.OBB_TREE_TOKEN + Paths.PATH_SEPARATOR + originalPath;
             default:
                 throw new IllegalArgumentException("Invalid category: " + category);
         }
@@ -265,6 +265,6 @@ public class AndroidBackupCreator implements AutoCloseable {
             prefix = isDE ? Constants.DEVICE_CACHE_TREE_TOKEN : Constants.CACHE_TREE_TOKEN;
             path = path.substring(7); // Remove "caches/"
         } else prefix = isDE ? Constants.DEVICE_ROOT_TREE_TOKEN : Constants.ROOT_TREE_TOKEN;
-        return basePath + prefix + File.separator + path;
+        return basePath + prefix + Paths.PATH_SEPARATOR + path;
     }
 }

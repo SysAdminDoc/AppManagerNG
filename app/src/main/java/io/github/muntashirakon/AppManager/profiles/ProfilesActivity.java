@@ -267,6 +267,8 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                                 .setPositiveButton(R.string.delete, (dialog, which) -> {
                                     if (ProfileManager.deleteProfile(profile.profileId)) {
                                         UIUtils.displayShortToast(R.string.deleted_successfully);
+                                        mActivity.mProgressIndicator.show();
+                                        mActivity.mModel.loadProfiles();
                                     } else {
                                         UIUtils.displayShortToast(R.string.deletion_failed);
                                     }

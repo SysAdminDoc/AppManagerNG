@@ -17,7 +17,6 @@ import androidx.annotation.WorkerThread;
 
 import org.jetbrains.annotations.Contract;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,21 +83,21 @@ public final class BackupUtils {
     @NonNull
     public static String getV5RelativeDir(@NonNull String backupUuid) {
         // backups/{backupUuid}
-        return BackupItems.BACKUP_DIRECTORY + File.separator + backupUuid;
+        return BackupItems.BACKUP_DIRECTORY + Paths.PATH_SEPARATOR + backupUuid;
     }
 
     @NonNull
     public static String getV4RelativeDir(@NonNull String backupNameWithUser, @NonNull String packageName) {
         // Relative directory needs to be inferred: {packageName}/{backupNameWithUser}
         // where backupNameWithUser = {userid}[_{backup_name}]
-        return packageName + File.separator + backupNameWithUser;
+        return packageName + Paths.PATH_SEPARATOR + backupNameWithUser;
     }
 
     @NonNull
     public static String getV4RelativeDir(@UserIdInt int userId, @Nullable String backupName, @NonNull String packageName) {
         // Relative directory needs to be inferred: {packageName}/{backupName}
         // where backupName = {userid}[_{backup_name}]
-        return packageName + File.separator + getV4BackupName(userId, backupName);
+        return packageName + Paths.PATH_SEPARATOR + getV4BackupName(userId, backupName);
     }
 
     @Nullable

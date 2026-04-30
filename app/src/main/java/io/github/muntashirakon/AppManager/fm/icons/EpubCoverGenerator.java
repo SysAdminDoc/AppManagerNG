@@ -35,10 +35,11 @@ final class EpubCoverGenerator {
             if (coverImage == null) {
                 return null;
             }
-            String parent = new File(opfFile).getParent();
+            int parentSeparator = opfFile.lastIndexOf('/');
+            String parent = parentSeparator != -1 ? opfFile.substring(0, parentSeparator) : null;
             String coverImageLocation;
             if (parent != null) {
-                coverImageLocation = parent + File.separator + coverImage;
+                coverImageLocation = parent + "/" + coverImage;
             } else coverImageLocation = coverImage;
             ZipEntry coverEntry = zipFile.getEntry(coverImageLocation);
             if (coverEntry != null) {

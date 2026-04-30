@@ -57,7 +57,7 @@ public class AndroidBackupExtractor implements AutoCloseable {
 
     public AndroidBackupExtractor(@NonNull Path abFile, @NonNull Path temporaryDir, @NonNull String packageName) throws IOException {
         mWorkingDir = temporaryDir;
-        String relativeDirInAb = Constants.APPS_PREFIX + packageName + File.separator;
+        String relativeDirInAb = Constants.APPS_PREFIX + packageName + Paths.PATH_SEPARATOR;
         String abFilename = Paths.trimPathExtension(abFile.getName());
         Path tarFile = temporaryDir.createNewFile(abFilename + ".tar", null);
         mFilesToBeDeleted.add(tarFile);
@@ -208,8 +208,7 @@ public class AndroidBackupExtractor implements AutoCloseable {
     }
 
     private int getCategory(@NonNull String filename) {
-        //noinspection SuspiciousRegexArgument Not on Windows
-        String firstPart = filename.split(File.separator, 2)[0];
+        String firstPart = filename.split(Paths.PATH_SEPARATOR, 2)[0];
         switch (firstPart) {
             case Constants.APK_TREE_TOKEN:
                 return CAT_SRC;
@@ -259,8 +258,7 @@ public class AndroidBackupExtractor implements AutoCloseable {
 
     @NonNull
     private String getRealFilename(@NonNull String filename) {
-        //noinspection SuspiciousRegexArgument Not on Windows
-        String[] parts = filename.split(File.separator, 2);
+        String[] parts = filename.split(Paths.PATH_SEPARATOR, 2);
         String firstPart = parts[0];
         String secondPart = parts[1];
         switch (firstPart) {

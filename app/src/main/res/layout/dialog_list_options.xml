@@ -48,6 +48,7 @@
             android:paddingVertical="@dimen/padding_very_small"
             app:itemSpacing="@dimen/padding_very_small"
             app:lineSpacing="@dimen/padding_very_small"
+            app:selectionRequired="true"
             app:singleSelection="true" />
 
         <androidx.appcompat.widget.LinearLayoutCompat

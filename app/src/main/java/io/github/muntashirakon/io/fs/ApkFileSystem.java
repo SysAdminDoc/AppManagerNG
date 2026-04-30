@@ -104,7 +104,7 @@ class ApkFileSystem extends VirtualFileSystem {
         checkMounted();
         Node<CentralDirectoryRecord> targetNode = mCache.get(path);
         if (targetNode == null) {
-            if (path.equals(File.separator)) {
+            if (path.equals(Paths.PATH_SEPARATOR)) {
                 targetNode = mRootNode;
             } else {
                 targetNode = Objects.requireNonNull(mRootNode).getLastChild(Paths.sanitize(path, true));
@@ -190,7 +190,7 @@ class ApkFileSystem extends VirtualFileSystem {
 
     @NonNull
     private static Node<CentralDirectoryRecord> buildTree(@NonNull List<CentralDirectoryRecord> cdRecords) {
-        Node<CentralDirectoryRecord> rootNode = new Node<>(null, File.separator);
+        Node<CentralDirectoryRecord> rootNode = new Node<>(null, Paths.PATH_SEPARATOR);
         rootNode.addExtra("mtime", System.currentTimeMillis());
         for (CentralDirectoryRecord cdRecord : cdRecords) {
             buildTree(rootNode, cdRecord);
@@ -204,7 +204,7 @@ class ApkFileSystem extends VirtualFileSystem {
         if (filename == null) {
             return;
         }
-        String[] components = filename.split(File.separator);
+        String[] components = filename.split(Paths.PATH_SEPARATOR);
         if (components.length < 1) return;
         long lastModTime = convertToUnixMillis(cdRecord.getLastModificationDate(), cdRecord.getLastModificationTime());
         Node<CentralDirectoryRecord> lastNode = rootNode;
@@ -219,7 +219,7 @@ class ApkFileSystem extends VirtualFileSystem {
             lastNode = newNode;
         }
         Node<CentralDirectoryRecord> finalNode = new Node<>(lastNode, components[components.length - 1],
-                cdRecord.getName().endsWith(File.separator) ? null : cdRecord);
+                cdRecord.getName().endsWith(Paths.PATH_SEPARATOR) ? null : cdRecord);
         finalNode.addExtra("mtime", lastModTime);
         lastNode.addChild(finalNode);
     }

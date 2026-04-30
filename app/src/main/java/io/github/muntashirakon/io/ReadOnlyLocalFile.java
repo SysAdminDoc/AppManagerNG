@@ -54,7 +54,7 @@ class ReadOnlyLocalFile extends LocalFile {
             // Emulated directory
             // Check for potential alias
             for (String child : children) {
-                if (child.startsWith(File.separator)) {
+                if (child.startsWith(Paths.PATH_SEPARATOR)) {
                     // Alias
                     return getAliasInstance(path, child);
                 }
@@ -108,7 +108,7 @@ class ReadOnlyLocalFile extends LocalFile {
         }
         List<String> childList = new ArrayList<>(children.length);
         for (String child : children) {
-            if (!child.startsWith(File.separator)) {
+            if (!child.startsWith(Paths.PATH_SEPARATOR)) {
                 // Check if the path actually exist
                 if (new File(this, child).exists()) {
                     childList.add(child);

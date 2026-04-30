@@ -11,7 +11,6 @@ import android.provider.DocumentsContract;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,7 +91,7 @@ public final class FmUtils {
             case ContentResolver.SCHEME_FILE: {
                 // Sanitize the path which must be an absolute URL
                 String path = uri.getPath();
-                path = Paths.relativePath(path, File.separator);
+                path = Paths.relativePath(path, Paths.PATH_SEPARATOR);
                 return uri.buildUpon().path(path).build();
             }
             case VirtualFileSystem.SCHEME: {
@@ -102,10 +101,10 @@ public final class FmUtils {
                 }
                 // VFS path must be absolute URL
                 String path = uri.getPath();
-                if (!path.startsWith(File.separator)) {
-                    path = File.separator + path;
+                if (!path.startsWith(Paths.PATH_SEPARATOR)) {
+                    path = Paths.PATH_SEPARATOR + path;
                 }
-                path = Paths.relativePath(path, File.separator);
+                path = Paths.relativePath(path, Paths.PATH_SEPARATOR);
                 return uri.buildUpon().path(path).build();
             }
             case "package":
@@ -120,7 +119,6 @@ public final class FmUtils {
         }
     }
 
-    @SuppressWarnings("SuspiciousRegexArgument") // We're not on Windows
     public static List<String> uriToPathParts(@NonNull Uri uri) {
         switch (uri.getScheme()) {
             case ContentResolver.SCHEME_CONTENT: {
@@ -141,7 +139,7 @@ public final class FmUtils {
                             List<String> pathParts = new ArrayList<>();
                             pathParts.add(id);
                             if (actualPath != null) {
-                                pathParts.addAll(Arrays.asList(actualPath.split(File.separator)));
+                                pathParts.addAll(Arrays.asList(actualPath.split(Paths.PATH_SEPARATOR)));
                             }
                             return pathParts;
                         }
@@ -153,7 +151,7 @@ public final class FmUtils {
             case ContentResolver.SCHEME_FILE:
             case VirtualFileSystem.SCHEME: {
                 List<String> pathParts = new ArrayList<>();
-                pathParts.add(File.separator);
+                pathParts.add(Paths.PATH_SEPARATOR);
                 pathParts.addAll(uri.getPathSegments());
                 return pathParts;
             }
@@ -189,7 +187,7 @@ public final class FmUtils {
                             builder.appendPath("document");
                             StringBuilder pathBuilder = new StringBuilder();
                             for (int i = 0; i < endPosition; ++i) {
-                                pathBuilder.append(pathParts.get(i)).append(File.separator);
+                                pathBuilder.append(pathParts.get(i)).append(Paths.PATH_SEPARATOR);
                             }
                             pathBuilder.append(pathParts.get(endPosition));
                             builder.appendPath(pathBuilder.toString());

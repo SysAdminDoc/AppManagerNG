@@ -236,13 +236,16 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     @Override
     public void setReverseSort(boolean reverseSort) {
+        if (mReverseSort == reverseSort) {
+            return;
+        }
         cancelIfRunning();
+        mReverseSort = reverseSort;
+        Prefs.MainPage.setReverseSort(mReverseSort);
         mFilterResult = executor.submit(() -> {
             sortApplicationList(mSortBy, mReverseSort);
             filterItemsByFlags();
         });
-        mReverseSort = reverseSort;
-        Prefs.MainPage.setReverseSort(mReverseSort);
     }
 
     @Override
@@ -254,13 +257,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     public void setSortBy(int sortBy) {
         if (mSortBy != sortBy) {
             cancelIfRunning();
+            mSortBy = sortBy;
+            Prefs.MainPage.setSortOrder(mSortBy);
             mFilterResult = executor.submit(() -> {
-                sortApplicationList(sortBy, mReverseSort);
+                sortApplicationList(mSortBy, mReverseSort);
                 filterItemsByFlags();
             });
         }
-        mSortBy = sortBy;
-        Prefs.MainPage.setSortOrder(mSortBy);
     }
 
     @Override
@@ -493,13 +496,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                                     PackageUsageInfo oldInfo = packageUsageInfoList.get(info.packageName);
                                     if (oldInfo != null) {
                                         oldInfo.screenTime += info.screenTime;
-                                        oldInfo.lastUsageTime += info.lastUsageTime;
+                                        oldInfo.lastUsageTime = Math.max(oldInfo.lastUsageTime, info.lastUsageTime);
                                         oldInfo.timesOpened += info.timesOpened;
                                         oldInfo.mobileData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.mobileData, info.mobileData);
                                         oldInfo.wifiData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.wifiData, info.wifiData);
                                         if (info.entries != null) {
                                             if (oldInfo.entries == null) {
-                                                oldInfo.entries = info.entries;
+                                                oldInfo.entries = new ArrayList<>(info.entries);
                                             } else oldInfo.entries.addAll(info.entries);
                                         }
                                     } else packageUsageInfoList.put(info.packageName, info);
