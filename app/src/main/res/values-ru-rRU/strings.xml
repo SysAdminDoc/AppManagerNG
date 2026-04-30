@@ -1329,10 +1329,7 @@
     <string name="option_display_dot_files">Скрытые файлы</string>
     <string name="option_display_folders_on_top">Папки сверху</string>
     <string name="export_app_list">Экспорт списка приложений</string>
-    <string name="export_app_list_select_format">Выбор формата для экспорта списка приложений</string>
-    <string name="funding_campaign_text">Мы проводим <b>кампанию по сбору средств</b> для App Manager в течение ограниченного периода времени.
-\n<a href="https://opencollective.com/app-manager#category-ABOUT">узнать подробнее...</a></string>
-    <string name="adb_incomplete_usb_debugging_title">Незавершенная отладка по USB</string>
+    <string name="export_app_list_select_format">Выбор формата для экспорта списка приложений</string>    <string name="adb_incomplete_usb_debugging_title">Незавершенная отладка по USB</string>
     <string name="confirm_uninstallation">Подтвердить удаление</string>
     <string name="action_continue">Продолжить</string>
     <string name="grant_required_permission">Предоставить необходимое разрешение</string>
@@ -1340,9 +1337,7 @@
     <string name="app_can_write_and_execute_in_same_place">Это приложение нарушает <a href="https://en.wikipedia.org/wiki/W%5EX">политику W^X</a> и может выполнять запись и выполнение в том же каталоге или в той же части памяти. Это позволяет выполнять произвольные исполняемые файлы либо путем модификации исполняемых файлов, встроенных в приложение, либо путем их загрузки из Интернета. Если это не является предполагаемым поведением приложения (например, эмуляторы терминала), рекомендуется найти более новую версию приложения, предназначенную для SDK 29 (Android 10) и более поздних версий, или поискать альтернативы.</string>
     <string name="filter_apps_with_keystore">С хранилищем ключей</string>
     <string name="export_option_markdown">Markdown</string>
-    <string name="export_option_xml">XML</string>
-    <string name="funding_campaign_dialog_message">Мы проводим <b>кампанию по сбору средств</b> для App Manager в течение ограниченного периода времени. Посетите <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a>, чтобы узнать больше о кампании. Это уведомление больше не будет отображаться, но вы можете найти его на странице настроек в течение всей кампании.</string>
-    <string name="filter_apps_with_saf">С SAF</string>
+    <string name="export_option_xml">XML</string>    <string name="filter_apps_with_saf">С SAF</string>
     <string name="sort_by_data_usage">Использование данных</string>
     <string name="adb_incomplete_usb_debugging_message">Похоже, отладка по USB не настроена должным образом. Прочтите <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">документацию</a>, чтобы узнать о дополнительных шагах. Если вы уже известен процесс, нажмите «Открыть», чтобы открыть параметры разработчика, или нажмите «Закрыть», чтобы продолжить использовать режим без полномочий root.</string>
     <string name="class_hierarchy">Иерархия</string>

@@ -1382,9 +1382,7 @@
     </plurals>
     <string name="browse_files">Parcourir</string>
     <string name="pref_files_msg">Configurer le gestionnaire de fichiers.</string>
-    <string name="module_name">Nom du module</string>
-    <string name="funding_campaign_text">Nous menons une <b>campagne de financement</b> pour App Manager pour une durée limitée. <a href="https://opencollective.com/app-manager#category-ABOUT">en savoir plus…</a></string>
-    <string name="filter_apps_with_ssaid">Avec SSAID</string>
+    <string name="module_name">Nom du module</string>    <string name="filter_apps_with_ssaid">Avec SSAID</string>
     <string name="warning_working_on_system_mode">Avertissement : Travailler sur le système au lieu du mode ADB.</string>
     <string name="calculating_file_size">Calcul en cours…</string>
     <string name="grant_required_permission">Accorder l\'autorisation requise</string>
@@ -1394,9 +1392,7 @@
     <string name="pref_toggle_internet_msg">Activer les fonctionnalités Internet dans App Manager</string>
     <string name="create_new_file">Nouveau fichier</string>
     <string name="sort_by_last_modified">Dernière modification</string>
-    <string name="export_option_markdown">Markdown</string>
-    <string name="funding_campaign_dialog_message">Nous menons une <b>campagne de financement</b> pour App Manager pour une durée limitée. Visitez <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> pour en savoir plus sur la campagne. Cet avis ne sera plus affiché, mais vous pourrez le retrouver dans la page Paramètres pendant toute la campagne.</string>
-    <string name="sort_by_file_type">Type du fichier</string>
+    <string name="export_option_markdown">Markdown</string>    <string name="sort_by_file_type">Type du fichier</string>
     <string name="adb_incomplete_usb_debugging_title">Débogage USB incomplet</string>
     <string name="adb_incomplete_usb_debugging_message">Il semble que le débogage USB ne soit pas configuré correctement. Veuillez lire <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">la documentation</a> pour connaître les étapes supplémentaires. Si vous connaissez déjà les étapes, veuillez cliquer sur « Ouvrir » pour ouvrir les options du développeur, ou cliquez sur « Fermer » pour continuer à utiliser le mode sans root.</string>
     <string name="confirm_uninstallation">Confirmer la désinstallation</string>

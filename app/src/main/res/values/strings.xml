@@ -1342,10 +1342,7 @@
     <string name="export_app_list">Export app list</string>
     <string name="export_app_list_select_format">Select format for exporting app list</string>
     <string name="export_option_xml">XML</string>
-    <string name="export_option_markdown">Markdown</string>
-    <string name="funding_campaign_dialog_message">We\'re running a <b>funding campaign</b> for App Manager for a limited period. Visit <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> to learn more about the campaign. This notice will not be displayed again, but you can find it in the Settings page during the entire campaign.</string>
-    <string name="funding_campaign_text">We\'re running a <b>funding campaign</b> for App Manager for a limited period. <a href="https://opencollective.com/app-manager#category-ABOUT">learn more…</a></string>
-    <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
+    <string name="export_option_markdown">Markdown</string>    <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
     <string name="adb_incomplete_usb_debugging_message">It looks like USB debugging is not configured properly. Please read <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">the documentation</a> for additional steps. If you already know the steps, please click “Open” to open the developer options, or click “Close” to continue to use no-root mode.</string>
     <string name="sort_by_data_usage">Data usage</string>
     <string name="filter_apps_with_keystore">With KeyStore</string>

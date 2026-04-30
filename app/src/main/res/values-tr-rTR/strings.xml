@@ -1247,10 +1247,7 @@
     <string name="export_app_list">Uygulama listesini dışa aktar</string>
     <string name="export_option_xml">XML</string>
     <string name="option_display_folders_on_top">Klasörler üstte</string>
-    <string name="adb_incomplete_usb_debugging_title">Eksik USB Hata Ayıklama</string>
-    <string name="funding_campaign_dialog_message">Sınırlı bir süre boyunca App Manager için bir <b>fonlama kampanyası</b> yapıyoruz. Kampanya hakkında daha fazla bilgi edinmek için <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> adresini ziyaret edin. Bu bildirim bir daha gösterilmeyecektir, ancak tüm kampanya süresince Ayarlar sayfasında bulabilirsiniz.</string>
-    <string name="funding_campaign_text">Sınırlı bir süre boyunca App Manager için bir <b>fonlama kampanyası</b> yapıyoruz. <a href="https://opencollective.com/app-manager#category-ABOUT">Daha fazla bilgi edinin…</a></string>
-    <string name="confirm_uninstallation">Kaldırma işlemini onayla</string>
+    <string name="adb_incomplete_usb_debugging_title">Eksik USB Hata Ayıklama</string>    <string name="confirm_uninstallation">Kaldırma işlemini onayla</string>
     <string name="class_hierarchy">Hiyerarşi</string>
     <string name="title_ui_tracker">Kullanıcı Arayüzü İzleyici</string>
     <string name="grant_accessibility_permission_for_tracking_window_contents">App Manager\'ın öndeki pencerenin içeriğini izlemek için erişilebilirlik özelliğini kullanmasına izin verin.</string>

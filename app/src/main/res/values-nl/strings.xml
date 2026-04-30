@@ -806,9 +806,7 @@
     <string name="fm_always_open_with">Altijd openen</string>
     <string name="debloat_list_google">Google</string>
     <string name="export_app_list_select_format">Selecteer indeling voor het exporteren van de applijst</string>
-    <string name="redo">Opnieuw uitvoeren</string>
-    <string name="funding_campaign_dialog_message">Voor een korte periode voeren we een <b>financieringscampagne</b> voor App Manager. Ga naar <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> voor meer informatie over de campagne. Deze melding wordt niet nogmaals weergegeven, maar is gedurende de gehele campagne wel te vinden op de pagina Instellingen.</string>
-    <string name="action_continue">Verder</string>
+    <string name="redo">Opnieuw uitvoeren</string>    <string name="action_continue">Verder</string>
     <string name="app_info_tag_open_links">Open links</string>
     <string name="pref_zip_align_msg">Het uitlijnen van een APK-bestand vermindert het geheugengebruik, omdat de bestanden in de APK direct toegankelijk zijn zonder de gegevens naar het RAM-geheugen te kopiëren. Deze stap is vereist als <tt>extractNativeLibs</tt> is ingesteld op <tt>true</tt>.</string>
     <plurals name="alert_failed_to_unfreeze">
@@ -849,9 +847,7 @@
     <string name="search_option_match_case">Match zoekopdracht</string>
     <string name="search_option_regex">Regex</string>
     <string name="pref_enable_persistent_session_msg">Het uitvoeren van App Manager op de achtergrond vermindert de vertraging bij opstarten. Handig als u App Manager veelvuldig gebruikt.</string>
-    <string name="pref_enable_auto_lock">Automatische vergrendeling</string>
-    <string name="funding_campaign_text">Voor een korte periode voeren we een <b>financieringscampagne</b> voor App Manager. <a href="https://opencollective.com/app-manager#category-ABOUT">learn more…</a></string>
-    <string name="action_replace_all">Alles vervangen</string>
+    <string name="pref_enable_auto_lock">Automatische vergrendeling</string>    <string name="action_replace_all">Alles vervangen</string>
     <string name="adb_incomplete_usb_debugging_message">Het lijkt erop dat USB-foutopsporing niet correct is geconfigureerd. Lees <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">de documentatie</a> voor aanvullende stappen. Als u de stappen al kent, klik dan op \"Openen\" om de ontwikkelaarsopties te openen of klik op \"Sluiten\" om de no-rootmodus te blijven gebruiken.</string>
     <string name="pref_files_remember_last_path_msg">Wanneer deze optie is ingeschakeld, wordt bij het openen van een nieuw venster de laatst geopende map geopend in plaats van de thuismap.</string>
     <string name="install_for_another_user">Installeer voor…</string>

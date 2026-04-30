@@ -1276,9 +1276,7 @@
     <string name="app_manager_build_expired">Necessário atualizar</string>
     <string name="app_can_write_and_execute_in_same_place">A aplicação viola a <a href="https://en.wikipedia.org/wiki/W%5EX">política W^X </a> e é capaz de gravar e executar no mesmo diretório ou na mesma parte da memória. Isto permite a execução de executáveis arbitrários pela modificação de executáveis incorporados na aplicação ou descarregando-os da Internet. A não ser que esse seja o comportamento pretendido da aplicação (por exemplo, emuladores de terminal), recomenda-se encontrar uma versão mais recente da aplicação que tenha como alvo o SDK 29 (Android 10) e posterior, ou encontrar alternativas.</string>
     <string name="filter_apps_with_saf">Com SAF</string>
-    <string name="option_display_folders_on_top">Pastas no topo</string>
-    <string name="funding_campaign_dialog_message">Estamos a realizar uma <b>campanha de financiamento</b> para o App Manager por um período limitado. Visite <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> para saber mais sobre a campanha. Este aviso não será mostrado novamente, mas poderá encontrá-lo no ecrã \"Configurações\" durante toda a campanha.</string>
-    <string name="filter_apps_with_keystore">Com KeyStore</string>
+    <string name="option_display_folders_on_top">Pastas no topo</string>    <string name="filter_apps_with_keystore">Com KeyStore</string>
     <string name="filter_apps_with_ssaid">Com SSAID</string>
     <string name="action_continue">Continuar</string>
     <string name="install_for_another_user">Instalar para…</string>
@@ -1304,9 +1302,7 @@
     <string name="export_app_list">Exportar lista de aplicações</string>
     <string name="export_app_list_select_format">Selecione o formato para exportar a lista de aplicações</string>
     <string name="export_option_xml">XML</string>
-    <string name="export_option_markdown">Markdown</string>
-    <string name="funding_campaign_text">Estamos a realizar uma <b>campanha de financiamento</b> para o App Manager por um período limitado. <a href="https://opencollective.com/app-manager#category-ABOUT">Mais informações…</a></string>
-    <string name="adb_incomplete_usb_debugging_title">Depuração USB incompleta</string>
+    <string name="export_option_markdown">Markdown</string>    <string name="adb_incomplete_usb_debugging_title">Depuração USB incompleta</string>
     <string name="optimize_option_clear_profile_data">Limpar dados de perfil anteriores</string>
     <string name="optimize_option_check_profiles">Considere os dados de perfil durante a otimização DEX</string>
     <string name="optimize_option_force_compilation">Forçar compilação mesmo quando não for necessário</string>
