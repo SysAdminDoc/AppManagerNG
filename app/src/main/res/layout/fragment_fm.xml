@@ -1,0 +1,160 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".fm.FmActivity">
+
+    <com.leinardi.android.speeddial.SpeedDialOverlayLayout
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="fill"
+        android:fitsSystemWindows="true" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <io.github.muntashirakon.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:focusable="false">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/path_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fitsSystemWindows="true"
+                    android:orientation="horizontal">
+
+                    <io.github.muntashirakon.widget.RecyclerView
+                        android:id="@+id/path_list"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:clipToPadding="false"
+                        android:fitsSystemWindows="false"
+                        android:focusable="false"
+                        android:paddingHorizontal="@dimen/padding_medium"
+                        android:scrollbars="horizontal"
+                        tools:listitem="@layout/m3_preference" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/uri_edit"
+                        style="@style/Widget.AppTheme.Button.IconButton"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="0"
+                        android:contentDescription="@string/item_edit"
+                        app:icon="@drawable/ic_edit" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <io.github.muntashirakon.widget.RecyclerView
+                        android:id="@+id/list_item"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:fitsSystemWindows="true"
+                        android:focusable="false"
+                        android:scrollbars="none"
+                        app:fastScrollerEnabled="true"
+                        tools:listitem="@layout/m3_preference" />
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@android:id/empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/icon"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:adjustViewBounds="true"
+                            android:maxHeight="72dp"
+                            android:minHeight="48dp"
+                            app:srcCompat="@drawable/ic_caution" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            tools:text="Folder does not exist." />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/message"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:maxLines="10"
+                            android:overScrollMode="ifContentScrolls"
+                            android:scrollbars="vertical"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textIsSelectable="true"
+                            android:visibility="gone"
+                            tools:text="Folder does not exist."
+                            tools:visibility="visible" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                </FrameLayout>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </io.github.muntashirakon.widget.SwipeRefreshLayout>
+
+        <io.github.muntashirakon.widget.MultiSelectionView
+            android:id="@+id/selection_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fitsSystemWindows="true"
+            android:focusable="false"
+            app:menu="@menu/fragment_fm_selection_actions" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/fab_holder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="@dimen/sd_open_elevation"
+        android:fitsSystemWindows="true">
+
+        <io.github.muntashirakon.widget.FloatingActionButtonGroup
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/padding_medium"
+            android:accessibilityTraversalBefore="@id/list_item"
+            android:contentDescription="@string/add"
+            app:sdMainFabClosedSrc="@drawable/ic_add"
+            app:sdOverlayLayout="@id/overlay"
+            tools:targetApi="22" />
+    </FrameLayout>
+
+</FrameLayout>

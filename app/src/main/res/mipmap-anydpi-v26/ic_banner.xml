@@ -1,0 +1,9 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_banner_background" />
+    <foreground>
+        <inset
+            android:drawable="@mipmap/ic_banner_foreground"
+            android:inset="16.75%" />
+    </foreground>
+</adaptive-icon>

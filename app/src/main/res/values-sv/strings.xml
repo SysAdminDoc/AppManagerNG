@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permissions">användarbehörigheter</string>
+    <string name="uninstall">avinstallera</string>
+    <string name="launch">starta</string>
+    <string name="no_service">inga tjänster</string>
+    <string name="group">grupp</string>
+    <string name="no_receivers">inga mottagare</string>
+    <string name="service">tjänst</string>
+    <string name="launch_mode">startläge</string>
+    <string name="error">fel</string>
+    <string name="authority">auktoritet</string>
+    <string name="receivers">mottagare</string>
+    <string name="write">skriv</string>
+    <string name="providers">leverantörer</string>
+    <string name="read">läs</string>
+    <string name="no_providers">inga leverantörer</string>
+    <string name="require_no_permission">inga behörigheter krävs</string>
+    <string name="refresh">uppdatera</string>
+    <string name="activities">aktiviteter</string>
+    <string name="signatures">signaturer</string>
+    <string name="no_activities">inga aktiviteter</string>
+    <string name="sort_by_last_update">senaste uppdateringen</string>
+    <string name="settings">Inställningar</string>
+    <string name="flags">Flaggor</string>
+    <string name="patterns_allowed">tillåtna mönster</string>
+    <string name="source_code">Källkod</string>
+    <string name="app_signing_signatures">Signaturer</string>
+    <string name="app_signing_no_signatures">Inga giltiga signaturer</string>
+    <string name="shared_user_id">Delat användar-ID</string>
+    <string name="sort_by_shared_user_id">Delat användar-ID</string>
+    <string name="orientation">Orientering</string>
+    <string name="sort_by_sha">Signatur</string>
+    <string name="declared_permission">Behörigheter</string>
+    <string name="uses_feature">Använder funktioner</string>
+    <string name="configurations">Konfigurationer</string>
+    <string name="shared_libs">Delade bibliotek</string>
+    <string name="path_permissions">Sökvägsbehörigheter</string>
+    <string name="no_feature">Inga funktioner</string>
+    <string name="no_configurations">Inga konfigurationer</string>
+    <string name="loading">Laddar…</string>
+    <string name="user">Användare</string>
+    <string name="sort">Sortera</string>
+    <string name="system_app">Systemapp</string>
+    <string name="user_app">Användarapp</string>
+    <string name="license">Licens</string>
+</resources>

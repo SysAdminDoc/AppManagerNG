@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <array name="TAB_TITLES">
+        <item>@string/app_info</item>
+        <item>@string/activities</item>
+        <item>@string/service</item>
+        <item>@string/receivers</item>
+        <item>@string/providers</item>
+        <item>@string/app_ops</item>
+        <item>@string/permissions</item>
+        <item>@string/declared_permission</item>
+        <item>@string/uses_feature</item>
+        <item>@string/configurations</item>
+        <item>@string/app_signing_signatures</item>
+        <item>@string/shared_libs</item>
+        <item>@string/overlays</item>
+    </array>
+    <array name="rule_types">
+        <item>@string/activities</item>
+        <item>@string/service</item>
+        <item>@string/receivers</item>
+        <item>@string/providers</item>
+        <item>@string/app_ops</item>
+        <item>@string/permissions</item>
+    </array>
+    <array name="themes">
+        <item>@string/follow_system</item>
+        <item>@string/battery_mode</item>
+        <item>@string/day</item>
+        <item>@string/night</item>
+    </array>
+    <array name="modes">
+        <item>@string/auto</item>
+        <item>@string/root</item>
+        <item>@string/adb_over_tcp</item>
+        <item>@string/wireless_debugging</item>
+        <item>@string/no_root</item>
+    </array>
+    <string-array name="shared_pref_types">
+        <item>@string/type_boolean</item>
+        <item>@string/type_float</item>
+        <item>@string/type_int</item>
+        <item>@string/type_long</item>
+        <item>@string/type_string</item>
+        <item>@string/type_string_set</item>
+    </string-array>
+    <string-array name="extras_types">
+        <item>@string/type_boolean</item>
+        <item>@string/type_component_name</item>
+        <item>@string/type_float</item>
+        <item>@string/type_float_array</item>
+        <item>@string/type_float_array_list</item>
+        <item>@string/type_int</item>
+        <item>@string/type_int_array</item>
+        <item>@string/type_int_array_list</item>
+        <item>@string/type_long</item>
+        <item>@string/type_long_array</item>
+        <item>@string/type_long_array_list</item>
+        <item>@string/type_null</item>
+        <item>@string/type_string</item>
+        <item>@string/type_string_array</item>
+        <item>@string/type_string_array_list</item>
+        <item>@string/type_uri</item>
+        <item>@string/type_uri_array</item>
+        <item>@string/type_uri_array_list</item>
+    </string-array>
+    <string-array name="usage_interval_dropdown_list">
+        <item>@string/usage_daily</item>
+        <item>@string/usage_weekly</item>
+    </string-array>
+    <string-array name="whats_new_titles">
+        <item>@string/version</item>
+        <item>@string/trackers</item>
+        <item>@string/app_signing_signatures</item>
+        <item>@string/declared_permission</item>
+        <item>@string/components</item>
+        <item>@string/features</item>
+        <item>@string/sdk</item>
+    </string-array>
+    <string-array name="sys_config_names">
+        <!-- Must be aligned with SysConfigType -->
+        <item>group</item>
+        <item>permission</item>
+        <item>assign-permission</item>
+        <item>split-permission</item>
+        <item>library</item>
+        <item>feature</item>
+        <item>unavailable-feature</item>
+        <item>allow-in-power-save-except-idle</item>
+        <item>allow-in-power-save</item>
+        <item>allow-in-data-usage-save</item>
+        <item>allow-unthrottled-location</item>
+        <item>allow-ignore-location-settings</item>
+        <item>allow-implicit-broadcast</item>
+        <item>app-link</item>
+        <item>system-user-whitelisted-app</item>
+        <item>system-user-blacklisted-app</item>
+        <item>default-enabled-vr-app</item>
+        <item>component-override</item>
+        <item>backup-transport-whitelisted-service</item>
+        <item>disabled-until-used-preinstalled-carrier-associated-app</item>
+        <item>disabled-until-used-preinstalled-carrier-app</item>
+        <item>privapp-permissions</item>
+        <item>oem-permissions</item>
+        <item>hidden-api-whitelisted-app</item>
+        <item>allow-association</item>
+        <item>app-data-isolation-whitelisted-app</item>
+        <item>bugreport-whitelisted</item>
+        <item>install-in-user-type</item>
+        <item>named-actor</item>
+        <item>rollback-whitelisted-app</item>
+        <item>whitelisted-staged-installer</item>
+    </string-array>
+    <string-array name="sig_schemes">
+        <item>@string/v1_scheme</item>
+        <item>@string/v2_scheme</item>
+        <item>@string/v3_scheme</item>
+        <item>@string/v4_scheme</item>
+    </string-array>
+    <string-array name="crypto_import_types">
+        <!-- The order must be preserved -->
+        <item>@string/java_keystore</item>
+        <item>@string/pkcs12_keystore</item>
+        <item>@string/bouncy_castle_keystore</item>
+        <item>@string/pem_and_pk8</item>
+    </string-array>
+    <string-array name="profile_types">
+        <item>@string/apps</item>
+        <item>@string/filters</item>
+    </string-array>
+    <integer-array name="random_colors">
+        <item>@color/original_orange</item>
+        <item>@color/dark_orange</item>
+        <item>@color/pink</item>
+        <item>@color/ocean_blue</item>
+        <item>@color/pure_red</item>
+        <item>@color/bright_green</item>
+        <item>@color/electric_red</item>
+        <item>@color/deep_green</item>
+        <item>@color/power_blue</item>
+        <item>@color/purple_y</item>
+        <item>@color/yellow_gloves</item>
+        <item>@color/readhead</item>
+        <item>@color/sand_tan</item>
+        <item>@color/sand_tan_shadow</item>
+        <item>@color/night_blue</item>
+        <item>@color/night_blue_shadow</item>
+        <item>@color/coral_pink</item>
+        <item>@color/sleuthe_yellow</item>
+        <item>@color/pink_leaf</item>
+        <item>@color/grassy_green</item>
+        <item>@color/purple_mountains_majesty</item>
+        <item>@color/misty_mountain_pink</item>
+        <item>@color/factory_stone_purple</item>
+        <item>@color/green_treeline</item>
+        <item>@color/pink_highlight</item>
+        <item>@color/bluewater_lowlight</item>
+        <item>@color/yellow_background</item>
+        <item>@color/pink_red_circle</item>
+        <item>@color/orange_circle</item>
+        <item>@color/old_makeup_pink</item>
+        <item>@color/goldenrod_yellow</item>
+        <item>@color/bluebell_light_blue</item>
+        <item>@color/bold_2019_green</item>
+        <item>@color/lightning_blue</item>
+        <item>@color/lightning_purple</item>
+        <item>@color/apricot</item>
+        <item>@color/citrus</item>
+        <item>@color/left_blue</item>
+        <item>@color/right_blue_muted</item>
+        <item>@color/blue_green</item>
+        <item>@color/red_orange</item>
+        <item>@color/redder_than_you</item>
+        <item>@color/goldi_lots</item>
+        <item>@color/darker_gold</item>
+        <item>@color/silver_tongue</item>
+        <item>@color/the_brown_shirts</item>
+        <item>@color/blondey</item>
+        <item>@color/green_mountain</item>
+        <item>@color/blue_mountain</item>
+        <item>@color/light_blue_backdrop</item>
+        <item>@color/orange</item>
+        <item>@color/yellowbrite</item>
+        <item>@color/painful_red</item>
+        <item>@color/_35_years_old_purple</item>
+        <item>@color/lighter_purple_on_the_gradient</item>
+        <item>@color/shadow_purple_red</item>
+        <item>@color/green</item>
+        <item>@color/ironic_blues</item>
+        <item>@color/pinky_ring</item>
+        <item>@color/egg_yellows</item>
+    </integer-array>
+    <string-array name="log_levels">
+        <item>@string/log_level_verbose</item>
+        <item>@string/log_level_debug</item>
+        <item>@string/log_level_info</item>
+        <item>@string/log_level_warn</item>
+        <item>@string/log_level_error</item>
+        <item>@string/log_level_fatal</item>
+    </string-array>
+    <string-array name="layout_orientations">
+        <item>@string/orientation_follow_locale</item>
+        <item>@string/orientation_left_to_right</item>
+        <item>@string/orientation_right_to_left</item>
+    </string-array>
+    <string-array name="import_backup_options">
+        <item>@string/import_from_oab</item>
+        <item>@string/import_from_tb</item>
+        <item>@string/import_from_sb</item>
+    </string-array>
+    <string-array name="backup_restore_tabs_single">
+        <item>@string/backup</item>
+        <item>@string/restore_dots</item>
+    </string-array>
+    <string-array name="backup_restore_tabs_multiple">
+        <item>@string/backup</item>
+        <item>@string/restore</item>
+    </string-array>
+    <string-array name="file_open_as_options">
+        <item>@string/open_as_text</item>
+        <item>@string/open_as_image</item>
+        <item>@string/open_as_video</item>
+        <item>@string/open_as_archive</item>
+        <item>@string/open_as_folder</item>
+        <item>@string/open_as_other</item>
+    </string-array>
+    <string-array name="file_open_as_option_types">
+        <item>text/plain</item>
+        <item>image/*</item>
+        <item>video/*</item>
+        <item>application/x-7z-compressed</item>
+        <item>resource/folder</item>
+        <item>*/*</item>
+    </string-array>
+    <string-array name="freeze_unfreeze_flags">
+        <item>@string/on_unfreeze_open_application</item>
+        <item>@string/on_open_application_no_recents</item>
+        <item>@string/freeze_on_phone_locked</item>
+    </string-array>
+    <string-array name="export_app_list_options">
+        <item>CSV</item>
+        <item>JSON</item>
+        <item>@string/export_option_xml</item>
+        <item>@string/export_option_markdown</item>
+    </string-array>
+    <string-array name="finder_filters">
+        <item>apk_size</item>
+        <item>app_label</item>
+        <item>app_type</item>
+        <item>backup</item>
+        <item>bloatware</item>
+        <item>cache_size</item>
+        <item>compile_sdk</item>
+        <item>components</item>
+        <item>data_size</item>
+        <item>data_usage</item>
+        <item>freeze_unfreeze</item>
+        <item>installed</item>
+        <item>installer</item>
+        <item>last_update</item>
+        <item>min_sdk</item>
+        <item>permissions</item>
+        <item>pkg_name</item>
+        <item>running_apps</item>
+        <item>screen_time</item>
+        <item>signature</item>
+        <item>target_sdk</item>
+        <item>times_opened</item>
+        <item>total_size</item>
+        <item>trackers</item>
+        <item>uid</item>
+        <item>version_name</item>
+    </string-array>
+    <string name="usage_daily">Daily</string>
+</resources>

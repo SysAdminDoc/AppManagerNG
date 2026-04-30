@@ -1,0 +1,27 @@
+% SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+\section{ADB over TCP}\label{sec:faq:adb-over-tcp} %%##$section-title>>
+
+\subsection{Do I have to enable ADB over TCP everytime I restart?}\label{subsec:faq:enable-adb-on-every-restart} %%##$restart-title>>
+%%!!restart<<
+Unfortunately, yes. This is because the ADB daemon, the process responsible for ADB connection, is also restarted after
+a reboot, and it does not re-enable ADB over TCP\@.
+%%!!>>
+
+\subsection{Cannot enable USB debugging. What to do?}\label{subsec:faq:usb-debugging} %%##$usb-debugging-title>>
+%%!!usb-debugging<<
+See \Sref{subsec:enable-usb-debugging} in \Cref{ch:guides}.
+%%!!>>
+
+\subsection{Can I block tracker or any other application components using ADB over TCP?}\label{subsec:faq:block-components-using-adb} %%##$block-tracker-title>>
+%%!!block-tracker<<
+ADB has limited number of \href{https://github.com/aosp-mirror/platform_frameworks_base/blob/master/packages/Shell/AndroidManifest.xml}{permissions}
+and controlling application components is not one of them. However, the components of a \textit{test-only} app can be
+controlled via ADB\@. If App Manager detects such an application, it enables the blocking options automatically.
+%%!!>>
+
+\subsection{Which features can be used in ADB mode?}\label{subsec:faq:adb-features} %%##$feature-adb-title>>
+%%!!feature-adb<<
+Supported features are enabled automatically in the ADB mode. Supported features include disabling, force-stopping,
+clearing application data, granting or revoking app ops and permissions, and so on. It is also possible to install or
+uninstall applications without any prompt from the system.
+%%!!>>

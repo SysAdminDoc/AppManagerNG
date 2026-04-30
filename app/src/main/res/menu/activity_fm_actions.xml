@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?><!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_list_options"
+        android:icon="@drawable/ic_list_status"
+        android:title="@string/list_options"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_refresh"
+        android:title="@string/refresh"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_new_window"
+        android:icon="@drawable/ic_tab"
+        android:title="@string/open_in_new_window"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_paste"
+        android:icon="@drawable/ic_content_paste"
+        android:title="@string/paste"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_shortcut"
+        android:icon="@drawable/ic_link"
+        android:title="@string/create_shortcut"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_add_to_favorites"
+        android:icon="@drawable/ic_star_outline"
+        android:title="@string/add_to_favorites"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/settings"
+        app:showAsAction="never" />
+
+</menu>

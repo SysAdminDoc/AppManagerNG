@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <color name="textColorPrimary">@android:color/white</color>
+    <color name="textColorSecondary">#FFBEBEBE</color>
+
+    <color name="disabled_user">#BF4F1C14</color>
+    <color name="highlight">#6f5f4f</color>
+    <color name="red">#790D0D</color>
+    <color name="running">@color/purple</color>
+    <color name="semi_transparent">#10FFFFFF</color>
+    <color name="sixty_percent_white">#9A000000</color>
+    <color name="sixty_percent_black">#9AFFFFFF</color>
+    <color name="tracker">#80FF8017</color>
+</resources>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_share_apk"
+        android:icon="@drawable/ic_share"
+        android:title="@string/share_apk"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_refresh_detail"
+        android:icon="@drawable/ic_refresh"
+        android:title="@string/refresh"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_view_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/view_in_settings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_backup"
+        android:icon="@drawable/ic_backup_restore"
+        android:title="@string/backup_restore"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_export_blocking_rules"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/export_blocking_rules"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_open_in_termux"
+        android:icon="@drawable/ic_frost_termux"
+        android:title="@string/open_in_termux"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_run_in_termux"
+        android:icon="@drawable/ic_frost_termux"
+        android:title="@string/run_in_termux"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_magisk_hide"
+        android:icon="@drawable/ic_security"
+        android:title="@string/magisk_hide_enabled"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_magisk_denylist"
+        android:icon="@drawable/ic_security"
+        android:title="@string/magisk_denylist"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_battery_opt"
+        android:icon="@drawable/ic_battery_plus"
+        android:title="@string/battery_optimization"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_sensor"
+        android:icon="@drawable/ic_pulse"
+        android:title="@string/sensors"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_net_policy"
+        android:icon="@drawable/ic_security_network"
+        android:title="@string/net_policy"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_extract_icon"
+        android:icon="@drawable/ic_image"
+        android:title="@string/export_icon"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_optimize"
+        android:icon="@drawable/ic_run_fast"
+        android:title="@string/action_optimize_app"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_add_to_profile"
+        android:icon="@drawable/ic_file_plus"
+        android:title="@string/add_to_profile"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_install"
+        android:icon="@drawable/ic_get_app"
+        android:title="@string/install_for_another_user"
+        app:showAsAction="never" />
+
+</menu>

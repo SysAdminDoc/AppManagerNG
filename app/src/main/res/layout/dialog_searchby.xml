@@ -1,0 +1,80 @@
+<!-- SPDX-License-Identifier: WTFPL AND GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="vertical"
+    android:paddingVertical="@dimen/padding_small"
+    android:paddingHorizontal="@dimen/padding_medium">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/search_by_pkg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/package_name"
+        app:hintEnabled="true"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_search">
+
+        <io.github.muntashirakon.widget.TextInputTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true"
+            tools:text="@tools:sample/full_names" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/search_by_tag"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/filter_choice_tag"
+        app:hintEnabled="true"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_search">
+
+        <io.github.muntashirakon.widget.TextInputTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true"
+            tools:text="@tools:sample/full_names" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/search_by_uid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/file_owner_id"
+        app:hintEnabled="true"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_search">
+
+        <io.github.muntashirakon.widget.TextInputTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true"
+            tools:text="@tools:sample/us_zipcodes" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/search_by_pid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/filter_choice_pid"
+        app:hintEnabled="true"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_search">
+
+        <io.github.muntashirakon.widget.TextInputTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textIsSelectable="true"
+            tools:text="@tools:sample/us_zipcodes" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

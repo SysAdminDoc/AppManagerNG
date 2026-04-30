@@ -1,0 +1,1408 @@
+<!-- SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission
+        android:name="android.permission.ADJUST_RUNTIME_PERMISSIONS_POLICY"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.BACKUP"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.CHANGE_OVERLAY_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.CLEAR_APP_CACHE"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.CLEAR_APP_USER_DATA"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.DELETE_CACHE_FILES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.DELETE_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.DEVICE_POWER"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.DUMP"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.ENFORCE_UPDATE_OWNERSHIP" />
+    <uses-permission
+        android:name="android.permission.FORCE_STOP_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission
+        android:name="android.permission.GET_PACKAGE_SIZE"
+        android:maxSdkVersion="25" />
+    <uses-permission
+        android:name="android.permission.GET_APP_OPS_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.GET_RUNTIME_PERMISSIONS"
+        tools:ignore="ProtectedPermissions" />
+    <!--suppress DeprecatedClassUsageInspection -->
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission
+        android:name="android.permission.GRANT_RUNTIME_PERMISSIONS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INJECT_EVENTS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="com.android.permission.INSTALL_EXISTING_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INSTALL_TEST_ONLY_PACKAGE"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INSTALL_PACKAGES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INTERACT_ACROSS_USERS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.INTERNAL_DELETE_CACHE_FILES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.KILL_UID"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_APP_OPS_MODES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_APPOPS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission
+        android:name="android.permission.MANAGE_NETWORK_POLICY"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_NOTIFICATION_LISTENERS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_USERS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.MANAGE_SENSORS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.NETWORK_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.READ_LOGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission
+        android:name="android.permission.REAL_GET_TASKS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission
+        android:name="android.permission.REVOKE_RUNTIME_PERMISSIONS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.START_ANY_ACTIVITY"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.SUSPEND_APPS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission
+        android:name="android.permission.UPDATE_APP_OPS_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.UPDATE_DOMAIN_VERIFICATION_USER_SELECTION"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <application
+        android:name=".AppManager"
+        android:allowBackup="true"
+        android:banner="@mipmap/ic_banner"
+        android:dataExtractionRules="@xml/backup_rules"
+        android:fullBackupContent="@xml/full_backup_rules"
+        android:hasFragileUserData="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:localeConfig="@xml/locales_config"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:requestLegacyExternalStorage="true"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        tools:ignore="UnusedAttribute">
+        <activity
+            android:name=".filters.FinderActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/finder_title" />
+        <activity
+            android:name=".oneclickops.OneClickOpsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/one_click_ops" />
+        <activity
+            android:name=".runningapps.RunningAppsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/running_apps" />
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/app_settings"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="app-manager" />
+                <data android:host="settings" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".sharedpref.SharedPrefsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:taskAffinity="" />
+        <activity
+            android:name=".usage.AppUsageActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true" />
+        <activity
+            android:name=".editor.CodeEditorActivity"
+            android:configChanges="keyboard|keyboardHidden|locale|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/title_code_editor"
+            android:taskAffinity=".editor.CodeEditorActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity-alias
+            android:name=".editor.EditorActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|uiMode"
+            android:exported="true"
+            android:label="@string/title_code_editor"
+            android:targetActivity=".editor.CodeEditorActivity"
+            android:taskAffinity=".editor.CodeEditorActivity"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.ALTERNATIVE" />
+
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/axml" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/xml" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/xml" />
+                <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="application/vnd.wap.xhtml+xml" />
+                <data android:mimeType="application/javascript" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/x-php" />
+                <data android:mimeType="application/x-httpd-php" />
+                <data android:mimeType="application/x-tcl" />
+                <data android:mimeType="application/x-sh" />
+                <data android:mimeType="application/x-csh" />
+                <data android:mimeType="application/bat" />
+                <data android:mimeType="application/mpegurl" />
+                <data android:mimeType="application/x-mpegurl" />
+                <data android:mimeType="application/x-bittorrent" />
+                <data android:mimeType="application/vnd.google-earth.kml+xml" />
+                <data android:mimeType="application/vnd.google-earth.kmz" />
+                <data android:mimeType="application/x-sql" />
+                <data android:mimeType="application/x-latex" />
+                <data android:mimeType="application/x-subrip" />
+                <data android:mimeType="application/x-yaml" />
+                <data android:mimeType="application/axml" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:pathPattern="/.*\.TXT" />
+                <data android:pathPattern="/.*\.txt" />
+                <data android:pathPattern="/.*\.txt?.*" />
+                <data android:pathPattern="/.*\..*\.TXT" />
+                <data android:pathPattern="/.*\..*\.txt" />
+                <data android:pathPattern="/.*\..*\.txt?.*" />
+                <data android:pathPattern="/.*\.tex" />
+                <data android:pathPattern="/.*\.tex?.*" />
+                <data android:pathPattern="/.*\.micfg" />
+                <data android:pathPattern="/.*\.micfg?.*" />
+                <data android:pathPattern="/.*\..*\.micfg" />
+                <data android:pathPattern="/.*\..*\.micfg?.*" />
+                <data android:pathPattern="/.*\.mic" />
+                <data android:pathPattern="/.*\.mic?.*" />
+                <data android:pathPattern="/.*\..*\.mic" />
+                <data android:pathPattern="/.*\..*\.mic?.*" />
+                <data android:pathPattern="/.*\.JAVA" />
+                <data android:pathPattern="/.*\.java" />
+                <data android:pathPattern="/.*\.java?.*" />
+                <data android:pathPattern="/.*\..*\.JAVA" />
+                <data android:pathPattern="/.*\..*\.java" />
+                <data android:pathPattern="/.*\..*\.java?.*" />
+                <data android:pathPattern="/.*\.KT" />
+                <data android:pathPattern="/.*\.kt" />
+                <data android:pathPattern="/.*\.kt?.*" />
+                <data android:pathPattern="/.*\..*\.KT" />
+                <data android:pathPattern="/.*\..*\.kt" />
+                <data android:pathPattern="/.*\..*\.kt?.*" />
+                <data android:pathPattern="/.*\.KTS" />
+                <data android:pathPattern="/.*\.kts" />
+                <data android:pathPattern="/.*\.kts?.*" />
+                <data android:pathPattern="/.*\..*\.KTS" />
+                <data android:pathPattern="/.*\..*\.kts" />
+                <data android:pathPattern="/.*\..*\.kts?.*" />
+                <data android:pathPattern="/.*\.SMALI" />
+                <data android:pathPattern="/.*\.smali" />
+                <data android:pathPattern="/.*\.smali?.*" />
+                <data android:pathPattern="/.*\..*\.SMALI" />
+                <data android:pathPattern="/.*\..*\.smali" />
+                <data android:pathPattern="/.*\..*\.smali?.*" />
+                <data android:pathPattern="/.*\.CSS" />
+                <data android:pathPattern="/.*\.css" />
+                <data android:pathPattern="/.*\.css?.*" />
+                <data android:pathPattern="/.*\..*\.CSS" />
+                <data android:pathPattern="/.*\..*\.css" />
+                <data android:pathPattern="/.*\..*\.css?.*" />
+                <data android:pathPattern="/.*\.HTM" />
+                <data android:pathPattern="/.*\.htm" />
+                <data android:pathPattern="/.*\.htm?.*" />
+                <data android:pathPattern="/.*\..*\.HTM" />
+                <data android:pathPattern="/.*\..*\.htm" />
+                <data android:pathPattern="/.*\..*\.htm?.*" />
+                <data android:pathPattern="/.*\.HTML" />
+                <data android:pathPattern="/.*\.html" />
+                <data android:pathPattern="/.*\.html?.*" />
+                <data android:pathPattern="/.*\..*\.HTML" />
+                <data android:pathPattern="/.*\..*\.html" />
+                <data android:pathPattern="/.*\..*\.html?.*" />
+                <data android:pathPattern="/.*\.PROP" />
+                <data android:pathPattern="/.*\.prop" />
+                <data android:pathPattern="/.*\.prop?.*" />
+                <data android:pathPattern="/.*\..*\.PROP" />
+                <data android:pathPattern="/.*\..*\.prop" />
+                <data android:pathPattern="/.*\..*\.prop?.*" />
+                <data android:pathPattern="/.*\.SQL" />
+                <data android:pathPattern="/.*\.sql" />
+                <data android:pathPattern="/.*\.sql?.*" />
+                <data android:pathPattern="/.*\..*\.SQL" />
+                <data android:pathPattern="/.*\..*\.sql" />
+                <data android:pathPattern="/.*\..*\.sql?.*" />
+                <data android:pathPattern="/.*\.TORRENT" />
+                <data android:pathPattern="/.*\.torrent" />
+                <data android:pathPattern="/.*\.torrent?.*" />
+                <data android:pathPattern="/.*\..*\.TORRENT" />
+                <data android:pathPattern="/.*\..*\.torrent" />
+                <data android:pathPattern="/.*\..*\.torrent?.*" />
+                <data android:pathPattern="/.*\.XML" />
+                <data android:pathPattern="/.*\.xml" />
+                <data android:pathPattern="/.*\.xml?.*" />
+                <data android:pathPattern="/.*\..*\.XML" />
+                <data android:pathPattern="/.*\..*\.xml" />
+                <data android:pathPattern="/.*\..*\.xml?.*" />
+                <data android:pathPattern="/.*\.GPG" />
+                <data android:pathPattern="/.*\.gpg" />
+                <data android:pathPattern="/.*\.gpg?.*" />
+                <data android:pathPattern="/.*\..*\.GPG" />
+                <data android:pathPattern="/.*\..*\.gpg" />
+                <data android:pathPattern="/.*\..*\.gpg?.*" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity
+            android:name=".scanner.ScannerActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/scanner">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".viewer.ExplorerActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/explore"
+            android:noHistory="true"
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/java-archive" />
+                <data android:mimeType="application/x-dex" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/java-archive" />
+                <data android:mimeType="application/x-dex" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".main.MainActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true">
+            <intent-filter android:label="@string/search">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="search"
+                    android:scheme="market" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".terminal.TermActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/title_terminal_emulator"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateUnchanged" />
+        <activity
+            android:name=".accessibility.activity.LeadingActivityTrackerActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/title_ui_tracker"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".misc.LabsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/title_labs_activity" />
+
+        <activity-alias
+            android:name=".apk.installer.AppInfoActivity"
+            android:exported="true"
+            android:label="@string/app_info"
+            android:targetActivity=".details.AppDetailsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SHOW_APP_INFO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".details.AppInfoActivity"
+            android:exported="true"
+            android:label="@string/app_info"
+            android:targetActivity=".details.AppDetailsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="details"
+                    android:scheme="app-manager" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/vnd.apkm" />
+                <data android:mimeType="application/xapk-package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/vnd.apkm" />
+                <data android:mimeType="application/xapk-package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\.apks" />
+                <data android:pathPattern=".*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.xapk" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity
+            android:name=".debloat.DebloaterActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/debloater_title" />
+        <activity
+            android:name=".details.AppDetailsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false" />
+        <activity
+            android:name=".details.manifest.ManifestViewerActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/manifest_viewer">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".apk.installer.PackageInstallerActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/install"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/vnd.apkm" />
+                <data android:mimeType="application/xapk-package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.INSTALL_PACKAGE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/vnd.apkm" />
+                <data android:mimeType="application/xapk-package-archive" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.INSTALL_PACKAGE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="content" />
+                <data android:scheme="package" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.apkm" />
+                <data android:pathPattern=".*\\.apks" />
+                <data android:pathPattern=".*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.apks" />
+                <data android:pathPattern=".*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.xapk" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.xapk" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".crypto.OpenPGPCryptoActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".crypto.ks.KeyStoreActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".profiles.ProfilesActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:label="@string/profiles" />
+        <activity
+            android:name=".profiles.AppsProfileActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false" />
+        <activity
+            android:name=".profiles.AppsFilterProfileActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false" />
+        <activity
+            android:name=".sysconfig.SysConfigActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/sys_config" />
+        <activity
+            android:name=".batchops.BatchOpsResultsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity="" />
+        <activity
+            android:name=".history.ops.OpHistoryActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:icon="@drawable/ic_history"
+            android:label="@string/op_history" />
+        <activity
+            android:name=".intercept.ActivityInterceptor"
+            android:enableOnBackInvokedCallback="true"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/interceptor"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateUnchanged">
+
+            <!-- matching any given mime type -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+                <action android:name="android.intent.action.INSERT" />
+                <action android:name="android.intent.action.INSERT_OR_EDIT" />
+                <action android:name="android.intent.action.CALL_BUTTON" />
+                <action android:name="android.intent.action.DIAL" />
+                <!-- Used by camera to view photo taken -->
+                <action android:name="android.provider.action.REVIEW" />
+                <action android:name="android.provider.action.REVIEW_SECURE" />
+                <action android:name="com.android.camera.action.REVIEW" />
+                <action android:name="com.android.camera.action.SPLIT_SCREEN_REVIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.OPENABLE" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <!-- same as above matching when no mime type is available (null) -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+                <action android:name="android.intent.action.INSERT" />
+                <action android:name="android.intent.action.INSERT_OR_EDIT" />
+                <action android:name="android.intent.action.CALL_BUTTON" />
+                <action android:name="android.intent.action.DIAL" />
+                <!-- Used by camera to view photo taken -->
+                <action android:name="android.provider.action.REVIEW" />
+                <action android:name="android.provider.action.REVIEW_SECURE" />
+                <action android:name="com.android.camera.action.REVIEW" />
+                <action android:name="com.android.camera.action.SPLIT_SCREEN_REVIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.OPENABLE" />
+            </intent-filter>
+            <!-- scheme-intents without mime (mime==null) -->
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+                <action android:name="android.intent.action.INSERT" />
+                <action android:name="android.intent.action.INSERT_OR_EDIT" />
+                <action android:name="android.intent.action.CALL_BUTTON" />
+                <action android:name="android.intent.action.DIAL" />
+                <!-- Used by camera to view photo taken -->
+                <action android:name="android.provider.action.REVIEW" />
+                <action android:name="android.provider.action.REVIEW_SECURE" />
+                <action android:name="com.android.camera.action.REVIEW" />
+                <action android:name="com.android.camera.action.SPLIT_SCREEN_REVIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.OPENABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="about" />
+                <data android:scheme="javascript" />
+                <data android:scheme="mailto" />
+                <data android:scheme="geo" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+
+                <data android:scheme="rtsp" />
+                <data android:scheme="rtmp" />
+                <data android:scheme="ftp" />
+                <data android:scheme="sftp" />
+
+                <data android:scheme="skype" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+                <data android:scheme="zxing" />
+                <data android:scheme="spotify" />
+                <data android:scheme="tel" />
+                <data android:scheme="voicemail" />
+                <data android:scheme="view-source" />
+                <data android:scheme="sqlite" />
+
+                <!-- Intercept Alipay links -->
+                <data android:scheme="alipays" />
+
+                <!-- Intercept Google play links -->
+                <data android:scheme="market" />
+                <data android:scheme="store" />
+                <data android:scheme="android" />
+
+                <!-- Intercept WeChat links -->
+                <data android:scheme="weixin" />
+
+                <!-- Intercept WhatsApp links -->
+                <data android:scheme="whatsapp" />
+                <data android:scheme="whatsapp-sheet" />
+                <data android:scheme="whatsapp-consumer" />
+            </intent-filter>
+            <!-- same scheme-intents but with mime (mime!=null) -->
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT" />
+                <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+                <action android:name="android.intent.action.INSERT" />
+                <action android:name="android.intent.action.INSERT_OR_EDIT" />
+                <action android:name="android.intent.action.CALL_BUTTON" />
+                <action android:name="android.intent.action.DIAL" />
+                <!-- Used by camera to view photo taken -->
+                <action android:name="android.provider.action.REVIEW" />
+                <action android:name="android.provider.action.REVIEW_SECURE" />
+                <action android:name="com.android.camera.action.REVIEW" />
+                <action android:name="com.android.camera.action.SPLIT_SCREEN_REVIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.OPENABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="about" />
+                <data android:scheme="javascript" />
+                <data android:scheme="mailto" />
+                <data android:scheme="geo" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+
+                <data android:scheme="rtsp" />
+                <data android:scheme="rtmp" />
+                <data android:scheme="ftp" />
+                <data android:scheme="sftp" />
+
+                <data android:scheme="skype" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+                <data android:scheme="zxing" />
+                <data android:scheme="spotify" />
+                <data android:scheme="tel" />
+                <data android:scheme="voicemail" />
+                <data android:scheme="view-source" />
+                <data android:scheme="sqlite" />
+
+                <!-- Intercept Alipay links -->
+                <data android:scheme="alipays" />
+
+                <!-- Intercept Google play links -->
+                <data android:scheme="market" />
+                <data android:scheme="store" />
+                <data android:scheme="android" />
+
+                <!-- Intercept WeChat links -->
+                <data android:scheme="weixin" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PICK" />
+                <!-- Intercept wallpaper -->
+                <action android:name="android.intent.action.ATTACH_DATA" />
+                <action android:name="android.intent.action.SET_WALLPAPER" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="mailto" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+                <action android:name="android.intent.action.MEDIA_SEARCH" />
+                <action android:name="android.intent.action.WEB_SEARCH" />
+                <action android:name="android.speech.action.VOICE_SEARCH_HANDS_FREE" />
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <action android:name="android.media.action.TEXT_OPEN_FROM_SEARCH" />
+                <action android:name="android.media.action.VIDEO_PLAY_FROM_SEARCH" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+                <action android:name="android.intent.action.MEDIA_SEARCH" />
+                <action android:name="android.intent.action.WEB_SEARCH" />
+                <action android:name="android.speech.action.VOICE_SEARCH_HANDS_FREE" />
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <action android:name="android.media.action.TEXT_OPEN_FROM_SEARCH" />
+                <action android:name="android.media.action.VIDEO_PLAY_FROM_SEARCH" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <!-- Google Now note to self -->
+            <intent-filter>
+                <action android:name="com.google.android.gm.action.AUTO_SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.zxing.client.android.SCAN" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="scan"
+                    android:path="/"
+                    android:scheme="zxing" />
+            </intent-filter>
+            <!-- Intercept Samsung file manager -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:host="*" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern="/external/file/.*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.android.camera.action.CROP" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.ALTERNATIVE" />
+                <category android:name="android.intent.category.SELECTED_ALTERNATIVE" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.INSTALL_PACKAGE" />
+                <action android:name="android.intent.action.UNINSTALL_PACKAGE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:scheme="package" />
+                <data android:host="*" />
+                <data android:mimeType="application/*" />
+            </intent-filter>
+            <!-- Camera -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.media.action.IMAGE_CAPTURE" />
+                <action android:name="android.media.action.IMAGE_CAPTURE_SECURE" />
+                <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
+                <action android:name="android.media.action.STILL_IMAGE_CAMERA_SECURE" />
+                <action android:name="android.media.action.VIDEO_CAMERA" />
+                <action android:name="android.media.action.VIDEO_CAPTURE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.VOICE" />
+            </intent-filter>
+            <!-- Music player -->
+            <intent-filter>
+                <action android:name="android.intent.action.MUSIC_PLAYER" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.APP_MUSIC" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".misc.HelpActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="" />
+        <activity
+            android:name=".crypto.auth.AuthManagerActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/auth_manager_title" />
+        <activity
+            android:name=".crypto.auth.AuthFeatureDemultiplexer"
+            android:enableOnBackInvokedCallback="false"
+            android:exported="true" />
+        <activity
+            android:name=".details.ActivityLauncherShortcutActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:taskAffinity=".details.ActivityLauncherShortcutActivity"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".apk.behavior.FreezeUnfreezeActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=".apk.behavior.FreezeUnfreezeActivity"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".profiles.ProfileApplierActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=".profiles.ProfileApplierActivity"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".main.SplashActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:theme="@style/AppTheme.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".logcat.LogViewerActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/log_viewer"
+            android:launchMode="singleTop"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:pathPattern=".*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.am.log" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:pathPattern=".*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.am.log" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.am.log" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".logcat.RecordLogDialogActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:exported="true"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".fm.FmActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_fm"
+            android:label="@string/files"
+            android:roundIcon="@mipmap/ic_launcher_fm_round"
+            android:taskAffinity=".fm.FmActivity">
+            <intent-filter android:label="@string/browse_files">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="org.openintents.action.VIEW_DIRECTORY" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:mimeType="inode/directory" />
+                <data android:mimeType="resource/folder" />
+                <data android:mimeType="vnd.android.document/directory" />
+                <data android:mimeType="vnd.android.cursor.dir/*" />
+                <data android:mimeType="x-directory/normal" />
+                <data
+                    android:scheme=""
+                    tools:ignore="AppLinkUrlError" />
+                <data android:scheme="file" />
+                <data android:scheme="folder" />
+                <data android:scheme="directory" />
+                <data android:scheme="content" />
+            </intent-filter>
+        </activity>
+
+        <activity-alias
+            android:name=".fm.FilesActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_fm"
+            android:label="@string/files"
+            android:roundIcon="@mipmap/ic_launcher_fm_round"
+            android:targetActivity=".fm.FmActivity"
+            android:taskAffinity=".fm.FmActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity
+            android:name=".fm.OpenWithActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:exported="false"
+            android:label="@string/file_open_with"
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
+            android:name=".viewer.audio.AudioPlayerActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/title_audio_player"
+            android:process=":audio_player"
+            android:taskAffinity=".misc.music.AudioPlayerActivity"
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.ALTERNATIVE" />
+
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="vnd.android.cursor.dir/audio" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.ALTERNATIVE" />
+
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="vnd.android.cursor.dir/audio" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="vnd.android.cursor.dir/audio" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".DummyActivity"
+            android:allowTaskReparenting="true"
+            android:alwaysRetainTaskState="false"
+            android:clearTaskOnLaunch="true"
+            android:enableOnBackInvokedCallback="false"
+            android:enabled="true"
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true"
+            android:noHistory="true"
+            android:stateNotNeeded="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+
+        <service
+            android:name=".apk.installer.PackageInstallerService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".batchops.BatchOpsService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".profiles.ProfileApplierService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".logcat.LogcatRecordingService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".apk.behavior.FreezeUnfreezeService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".accessibility.NoRootAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+        <service
+            android:name=".self.filecache.InternalCacheCleanerService"
+            android:exported="false" />
+        <service
+            android:name=".session.SessionMonitoringService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse" />
+        <service
+            android:name=".servermanager.WifiWaitService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse"
+            tools:targetApi="30" />
+        <service
+            android:name=".adb.AdbPairingService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|specialUse"
+            tools:targetApi="r" />
+
+        <receiver
+            android:name=".servermanager.ServerStatusChangeReceiver"
+            android:exported="true"
+            android:permission="android.permission.UPDATE_APP_OPS_STATS" />
+        <receiver
+            android:name=".usage.ScreenTimeAppWidget"
+            android:exported="true"
+            android:label="@string/screen_time">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE_OPTIONS" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_RESTORED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_info_screen_time" />
+        </receiver>
+        <receiver
+            android:name=".usage.DataUsageAppWidget"
+            android:exported="true"
+            android:label="@string/data_usage_msg">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE_OPTIONS" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_RESTORED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_info_data_usage" />
+        </receiver>
+        <receiver
+            android:name=".oneclickops.ClearCacheAppWidget"
+            android:exported="true"
+            android:label="@string/clear_cache">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_info_clear_cache" />
+        </receiver>
+        <receiver
+            android:name=".logcat.RecordingWidgetProvider"
+            android:exported="true"
+            android:label="@string/record_log">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+
+                <data android:scheme="log_viewer_widget" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="${applicationId}.action.RECORD_OR_STOP" />
+
+                <data android:scheme="log_viewer_widget" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recording_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".self.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name=".fm.FmProvider"
+            android:authorities="${applicationId}.file"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <meta-data
+            android:name="android.permission.INTERNET.mode"
+            android:value="runtime" />
+    </application>
+
+</manifest>

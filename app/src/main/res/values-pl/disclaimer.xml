@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later --><resources>
+    <string name="disclaimer_exit">Wyjdź</string>
+    <string name="disclaimer_agree">Zgadzam się</string>
+    <string name="disclaimer_agree_forever">Nie pokazuj więcej tego okna</string>
+    <string name="disclaimer_footer">© 2020-2024 Muntashir Al-Islam</string>
+    <string name="disclaimer_header">Zastrzeżenie</string>
+    <string name="disclaimer_body">Menedżer aplikacji oferuje funkcje root, która może uszkodzić urządzenie, jeśli jest używana nieprawidłowo. Menedżer aplikacji nie ponosi odpowiedzialności za jakiekolwiek szkody wyrządzone za pomocą tej aplikacji. Jeśli nie jesteś w pełni świadomy tego, jak działa root, należy unikać korzystania z opcji root, dopóki nie jesteś w pełni świadom ryzyka.
+\n
+\nKażdy link, który podaję innym aplikacjom i stronom internetowym, jest dla użytkowników. Nie ponosimy odpowiedzialności za treści, które możesz znaleźć, przechodząc na linki zewnętrzne.
+\n
+\nKorzystając z Menedżera aplikacji, przyjmujesz pełną odpowiedzialność za własne użycie i nie akceptujesz żadnych szkód, roszczeń ani wartości pieniężnej z powodu niewłaściwego użycia.
+\n
+\nKorzystając z tej aplikacji, przyjmujesz na siebie wszelką odpowiedzialność za korzystanie z niej i zgadzasz się, że nie jesteśmy odpowiedzialni za jakiekolwiek działania podejmowane przez ciebie ,które mają negatywny wpływ na Twoje urządzenie.</string>
+</resources>

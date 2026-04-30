@@ -1,0 +1,83 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <io.github.muntashirakon.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="vertical"
+        android:scrollIndicators="top|bottom"
+        tools:ignore="UnusedAttribute">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@android:id/text1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/padding_medium"
+                android:overScrollMode="never"
+                tools:text="@tools:sample/lorem[100]" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </io.github.muntashirakon.widget.NestedScrollView>
+
+    <RelativeLayout
+        android:id="@+id/action_container"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:layout_gravity="bottom"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/action_primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerInParent="true"
+            android:layout_marginStart="@dimen/padding_small"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="Primary" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+            android:id="@+id/action_secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/action_primary"
+            android:layout_centerInParent="true"
+            android:layout_marginStart="@dimen/padding_small"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="Secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:id="@+id/action_more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/action_secondary"
+            android:layout_centerInParent="true"
+            android:minWidth="48dp"
+            android:maxWidth="0dp"
+            android:maxHeight="0dp"
+            app:icon="@drawable/ic_more_vert"
+            app:iconSize="24dp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </RelativeLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

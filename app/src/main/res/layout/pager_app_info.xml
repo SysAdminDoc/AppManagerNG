@@ -1,0 +1,133 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<io.github.muntashirakon.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/swipe_refresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <io.github.muntashirakon.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:fitsSystemWindows="true"
+        app:fastScrollerEnabled="true">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progress_linear"
+                style="@style/Widget.AppTheme.LinearProgressIndicator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/padding_medium">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/icon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/padding_medium"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:background="@drawable/item_transparent"
+                    android:contentDescription="@string/str_logo"
+                    android:nextFocusDown="@id/label"
+                    tools:ignore="contentDescription"
+                    tools:srcCompat="@mipmap/ic_launcher" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/item_transparent"
+                    android:nextFocusUp="@id/icon"
+                    android:nextFocusDown="@id/packageName"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textIsSelectable="true"
+                    tools:ignore="TouchTargetSizeCheck"
+                    tools:text="@string/app_name" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/packageName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/item_transparent"
+                    android:nextFocusUp="@id/label"
+                    android:nextFocusDown="@id/version"
+                    android:textIsSelectable="true"
+                    android:textStyle="italic"
+                    tools:ignore="TouchTargetSizeCheck"
+                    tools:text="io.github.muntashirakon.AppManager.debug" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/version"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/item_transparent"
+                    android:nextFocusUp="@id/packageName"
+                    android:nextFocusDown="@id/tag_cloud"
+                    android:textIsSelectable="true"
+                    tools:ignore="TouchTargetSizeCheck"
+                    tools:text="v10.2.0 (1001)" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <io.github.muntashirakon.widget.FlowLayout
+                android:id="@+id/tag_cloud"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:nextFocusUp="@id/version"
+                android:nextFocusDown="@id/horizontal_layout"
+                android:paddingHorizontal="@dimen/padding_medium"
+                tools:listItem="@layout/item_chip" />
+
+            <io.github.muntashirakon.widget.NestedScrollableHost
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layoutDirection="ltr">
+
+                    <io.github.muntashirakon.widget.RoundedFirstAndLastChildViewGroup
+                        android:id="@+id/horizontal_layout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:nextFocusUp="@id/tag_cloud"
+                        android:nextFocusDown="@android:id/list"
+                        android:paddingHorizontal="@dimen/padding_medium"
+                        android:paddingVertical="@dimen/padding_small"
+                        tools:listItem="@layout/item_app_info_action" />
+
+                </HorizontalScrollView>
+
+            </io.github.muntashirakon.widget.NestedScrollableHost>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@android:id/list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nextFocusUp="@id/horizontal_layout"
+                android:overScrollMode="never"
+                tools:listitem="@layout/m3_preference" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </io.github.muntashirakon.widget.NestedScrollView>
+
+</io.github.muntashirakon.widget.SwipeRefreshLayout>

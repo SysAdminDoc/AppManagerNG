@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <dimen name="icon_size">40dp</dimen>
+    <dimen name="title_font">16sp</dimen>
+    <dimen name="subtitle_font">14sp</dimen>
+    <dimen name="app_widget_background_padding">16dp</dimen>
+</resources>

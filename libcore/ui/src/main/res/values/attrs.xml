@@ -1,0 +1,137 @@
+<!-- SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later -->
+<resources>
+    <attr name="listItemMarginVertical" format="dimension" />
+    <attr name="listItemMarginHorizontal" format="dimension" />
+    <attr name="listItemPaddingVertical" format="dimension" />
+    <attr name="listItemPaddingHorizontal" format="dimension" />
+    <attr name="listItemCornerRadius" format="dimension" />
+    <attr name="listItemIndicatorWidth" format="dimension" />
+
+    <attr name="materialAlertViewStyle" format="reference" />
+    <attr name="materialAlertDialogListItemTextStyle" format="reference" />
+    <attr name="materialFullScreenAlertDialogTheme" format="reference" />
+    <attr name="materialSpinnerStyle" format="reference" />
+    <attr name="multiSelectionActionsView" format="reference" />
+
+    <attr name="topSwitchPreferenceStyle" format="reference" />
+    <attr name="alertPreferenceStyle" format="reference" />
+    <attr name="primaryButtonPreferenceStyle" format="reference" />
+
+    <declare-styleable name="SearchView">
+        <!-- Tint to apply to the SearchView's close icon. -->
+        <attr name="closeIconTint" />
+        <attr name="queryHint" />
+        <attr name="searchHintIcon" />
+        <attr name="android:textAppearance" />
+        <attr name="android:popupBackground" />
+        <attr name="android:dropDownSelector" />
+        <!-- Horizontal margin of the edit frame -->
+        <attr name="frameMarginHorizontal" format="dimension" />
+    </declare-styleable>
+    <declare-styleable name="FlowLayout">
+        <!-- Constrains items to a single horizontal line. By default, this is false and items will reflow to multiple
+             lines. If this is set to true, the view should be wrapped inside a HorizontalScrollView. -->
+        <attr name="singleLine" />
+        <!-- Horizontal spacing between two items being laid out. Either "auto", or a fixed size. Default is 0dp. -->
+        <attr name="childSpacing" format="enum|dimension">
+            <enum name="auto" value="-65536" />
+        </attr>
+        <!-- Minimum horizontal spacing between two items. Default is 0dp. -->
+        <attr name="minChildSpacing" format="dimension" />
+        <!-- Horizontal spacing between two items of the last row. Either "auto", "align" or a fixed size.
+             If not set, childSpacing will be used instead. -->
+        <attr name="childSpacingForLastRow" format="enum|dimension">
+            <enum name="auto" value="-65536" />
+            <enum name="align" value="-65537" />
+        </attr>
+        <!-- Vertical Spacing between two lines of items being laid out. Either "auto", or a fixed size.
+             Default is 0dp. -->
+        <attr name="rowSpacing" format="enum|dimension">
+            <enum name="auto" value="-65536" />
+        </attr>
+        <!-- The maximum height of FlowLayout in terms of number of rows. -->
+        <attr name="maxRows" format="integer" />
+        <!-- Vertical gravity of each line -->
+        <attr name="rowVerticalGravity" format="enum">
+            <enum name="auto" value="-65536" />
+            <enum name="top" value="0x30" />
+            <enum name="center" value="0x10" />
+            <enum name="bottom" value="0x50" />
+        </attr>
+        <attr name="android:gravity" />
+        <!-- Preview only: set items to be displayed inside the layout -->
+        <attr name="listItem" format="reference" />
+        <!-- Preview only: Number of times the list item has to be displayed inside the layout. Default is 10. -->
+        <attr name="itemCount" format="integer" />
+    </declare-styleable>
+    <declare-styleable name="MaterialAlertView">
+        <attr name="alertType" format="enum">
+            <enum name="info" value="0" />
+            <enum name="warn" value="1" />
+            <enum name="custom" value="-1" />
+        </attr>
+        <attr name="android:text" />
+        <attr name="android:textAppearance" />
+        <attr name="android:textColor" />
+    </declare-styleable>
+    <declare-styleable name="MaterialAutoCompleteTextView">
+        <attr name="android:dropDownSelector" />
+    </declare-styleable>
+    <declare-styleable name="MaxHeightScrollView">
+        <attr name="maxHeight" format="dimension" />
+    </declare-styleable>
+    <declare-styleable name="MultiSelectionView">
+        <!-- The menu resource to inflate and populate items from. Attribute type definition is in
+             navigation package. -->
+        <attr name="menu" format="reference" />
+    </declare-styleable>
+    <declare-styleable name="NestedScrollView">
+        <!-- Whether fast scroller is enabled. Default is false. -->
+        <attr name="fastScrollerEnabled" />
+    </declare-styleable>
+    <declare-styleable name="RecyclerView">
+        <!-- Whether fast scroller is enabled. Default is false. -->
+        <attr name="fastScrollerEnabled" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="MultiSelectionActionsView">
+        <!-- Background tint for the navigation bar. -->
+        <attr name="backgroundTint" />
+        <!-- The menu resource to inflate and populate items from. Attribute type definition is in
+             navigation package. -->
+        <attr name="menu" />
+        <!-- The background for the navigation items. Attribute type definition is in navigation
+             package. -->
+        <attr name="itemBackground" />
+        <!-- The size to provide for the navigation item icons. -->
+        <attr name="itemIconSize" />
+        <!-- The tint to apply to the navigation item icons. Attribute type definition is in navigation
+             package. -->
+        <attr name="itemIconTint" />
+        <!-- The text appearance to apply to the inactive navigation item labels. Setting
+             android:textColor in itemTextAppearanceInactive will take precedence over android:textColor
+             in itemTextAppearanceActive. Instead, set itemTextColor with a ColorStateList to make
+             the text color stateful. -->
+        <attr name="itemTextAppearanceInactive" format="reference" />
+        <!-- The text appearance to apply to the active navigation item label. You should not set
+             android:textColor in itemTextAppearanceActive. Instead, set itemTextColor to a
+             ColorStateList to make the text color stateful. -->
+        <attr name="itemTextAppearanceActive" format="reference" />
+        <!-- The color to apply to the navigation items' text. Setting itemTextColor will take
+             precedence over android:textColor in itemTextAppearanceInactive or
+             itemTextAppearanceActive. Attribute type definition is in navigation package. -->
+        <attr name="itemTextColor" />
+        <!-- The elevation to use for the navigation bar view -->
+        <attr name="elevation" />
+    </declare-styleable>
+    <declare-styleable name="SwipeRefreshLayout">
+        <!-- The background color of the progress spinner disc. Default is colorSurface.  -->
+        <attr name="progressBackgroundColor" format="color" />
+        <!-- The colors used in the progress animation. The first color will also be the color of the bar that grows in response to a user swipe gesture. -->
+        <attr name="indicatorColor" />
+    </declare-styleable>
+    <declare-styleable name="AppWidgetAttrs">
+        <attr name="appWidgetPadding" format="dimension" />
+        <attr name="appWidgetInnerRadius" format="dimension" />
+        <attr name="appWidgetRadius" format="dimension" />
+    </declare-styleable>
+</resources>

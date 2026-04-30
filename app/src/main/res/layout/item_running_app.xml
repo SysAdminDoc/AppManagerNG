@@ -1,0 +1,109 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
+    android:layout_marginVertical="?attr/listItemMarginVertical"
+    android:checkable="true"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardElevation="0dp">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="?attr/listItemPaddingHorizontal"
+        android:paddingVertical="?attr/listItemPaddingVertical">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/icon_size"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:layout_weight="0"
+            android:contentDescription="@string/str_logo"
+            tools:srcCompat="@mipmap/ic_launcher" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/process_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center"
+                android:singleLine="true"
+                android:textAppearance="?android:attr/textAppearanceListItem"
+                tools:text="@string/app_name" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/package_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textStyle="italic"
+                tools:text="io.github.muntashirakon.AppManager" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/process_ids"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textSize="10sp"
+                tools:ignore="SmallSp"
+                tools:text="Process ID: 10000, Parent Process ID: 1000" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/memory_usage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textSize="10sp"
+                tools:ignore="SmallSp"
+                tools:text="Memory: 162 MB, Virtual Memory: 14.72 GB" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/user_state_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textSize="10sp"
+                tools:ignore="SmallSp"
+                tools:text="User: u0_a167 (10167), State: Sleeping (Unknown)" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/selinux_context"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textSize="10sp"
+                tools:ignore="SmallSp"
+                tools:text="SELinux: u:r:untrusted_app:s0:c110,c257" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/more"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="@dimen/icon_size"
+            android:layout_height="@dimen/icon_size"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/padding_small"
+            android:layout_weight="0"
+            android:contentDescription="@string/abc_action_menu_overflow_description"
+            android:padding="@dimen/padding_small"
+            app:icon="@drawable/ic_more_vert"
+            app:iconSize="20dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>
