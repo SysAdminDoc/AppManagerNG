@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Next revision due:** v0.2.0 release.
+**Next revision due:** v0.4.0 release.
 
 ---
 
@@ -52,15 +52,15 @@ Required before any APK reaches real users. Every item here is blocking F-Droid 
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **applicationId Rename** | Change `io.github.muntashirakon.AppManager` → `io.github.sysadmindoc.AppManagerNG`; update all `BuildConfig` references | Low |
-| **New Release Keystore** | Generate NG-specific signing key; document SHA-256 fingerprint in README for AppVerifier compatibility | Low |
-| **GitHub Actions Release Pipeline** | `release.yml`: tag push → build → sign → upload APK to GitHub Releases; parallel arm64-v8a / universal ABIs | Medium |
+| ~~**applicationId Rename**~~ ✅ v0.2.0 | Change `io.github.muntashirakon.AppManager` → `io.github.sysadmindoc.AppManagerNG`; update all `BuildConfig` references | Low |
+| ~~**New Release Keystore**~~ ✅ v0.2.0 | Generate NG-specific signing key; document SHA-256 fingerprint in README for AppVerifier compatibility | Low |
+| ~~**GitHub Actions Release Pipeline**~~ ✅ v0.2.0 | `release.yml`: tag push → build → sign → upload APK to GitHub Releases; parallel arm64-v8a / universal ABIs | Medium |
 | **Reproducible Builds** | Match upstream's reproducible build config (added in upstream v4.0.5); CI diff step compares release APK binary hash | Medium |
 | **IzzyOnDroid Listing** | Submit after rename; IzzyOnDroid is faster than F-Droid proper and the primary privacy-community distribution channel | Low |
 | **F-Droid Listing** | Submit to F-Droid proper after IzzyOnDroid pass; requires REUSE compliance (already in place) | Low–Med |
 | **Obtainium Config** | Publish pre-built app config at `apps.obtainium.imranr.dev` so users can track NG updates directly | Trivial |
-| **NG-Specific CONTRIBUTING.md** | Replace upstream's CONTRIBUTING.rst; define AI code policy, commit format, PR expectations, upstream sync protocol | Low |
-| **AppVerifier Fingerprint** | Add signing certificate SHA-256 to README (model: SAI, Obtainium, Canta all do this) | Trivial |
+| ~~**NG-Specific CONTRIBUTING.md**~~ ✅ v0.2.0 | Replace upstream's CONTRIBUTING.rst; define AI code policy, commit format, PR expectations, upstream sync protocol | Low |
+| ~~**AppVerifier Fingerprint**~~ ✅ v0.2.0 | Add signing certificate SHA-256 to README (model: SAI, Obtainium, Canta all do this) | Trivial |
 
 ### T2 — Platform Compliance (Android 15/16)
 
@@ -68,11 +68,11 @@ Unaddressed items here will become regressions when targetSdk=36 is enforced on 
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Edge-to-Edge Enforcement** | Remove `windowOptOutEdgeToEdgeEnforcement` (removed in Android 16 targetSdk=36); handle all window insets across every screen | Medium |
-| **Predictive Back (Android 16)** | `enableOnBackInvokedCallback = true` is now the default for targetSdk=36; audit and migrate all `onBackPressed` / `KEYCODE_BACK` consumers | Medium |
-| **Themed App Icons** | Add monochrome adaptive icon variant (Android 16 auto-applies themed icons; supply the vector to control the output) | Low |
-| **16KB Page Size Compliance** | Recompile all NDK `.so` libraries with `-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON` and verify linker 16KB alignment; required for Android 15+ physical devices | Medium |
-| **`announceForAccessibility` Migration** | Replace deprecated `announceForAccessibility` calls (deprecated Android 16) with `ViewCompat.performAccessibilityAction` equivalents | Low |
+| ~~**Edge-to-Edge Enforcement**~~ ✅ v0.3.0 | Remove `windowOptOutEdgeToEdgeEnforcement` (removed in Android 16 targetSdk=36); handle all window insets across every screen | Medium |
+| ~~**Predictive Back (Android 16)**~~ ✅ v0.3.0 | `enableOnBackInvokedCallback = true` is now the default for targetSdk=36; audit and migrate all `onBackPressed` / `KEYCODE_BACK` consumers | Medium |
+| ~~**Themed App Icons**~~ ✅ v0.3.0 | Add monochrome adaptive icon variant (Android 16 auto-applies themed icons; supply the vector to control the output) | Low |
+| ~~**16KB Page Size Compliance**~~ ✅ v0.3.0 | Recompile all NDK `.so` libraries with `-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON` and verify linker 16KB alignment; required for Android 15+ physical devices | Medium |
+| ~~**`announceForAccessibility` Migration**~~ ✅ v0.3.0 | Replace deprecated `announceForAccessibility` calls (deprecated Android 16) with `ViewCompat.performAccessibilityAction` equivalents | Low |
 
 ### T3 — Critical Bug Fixes & Security Debt
 
@@ -80,18 +80,18 @@ These are `FIXME` / security issues identified in source that should not wait fo
 
 | Item | File | Description | Effort |
 |------|------|-------------|--------|
-| **Keystore Password Security** | `KeyStoreUtils.java` | Use `char[]` instead of `String` for keystore passwords (String is interned in heap; not clearable) | Low |
-| **ABX-to-XML Lossless Fix** | `CodeEditorViewModel.java` | Current ABX→XML conversion is lossy; update serializer to round-trip without data loss | Medium |
-| **Intent Interceptor OPEN_DOCUMENT** | `ActivityInterceptor.java` | Interceptor permanently breaks `android.intent.action.OPEN_DOCUMENT` (Issue #1767, 2 reactions); fix dispatch logic | Medium |
-| **Utils.java i18n (×5)** | `Utils.java` | Five hardcoded string instances that bypass Android's localization pipeline | Low |
+| ~~**Keystore Password Security**~~ ✅ v0.3.0 | `KeyStoreUtils.java` | Use `char[]` instead of `String` for keystore passwords (String is interned in heap; not clearable) | Low |
+| ~~**ABX-to-XML Lossless Fix**~~ ✅ v0.3.0 | `CodeEditorViewModel.java` | Current ABX→XML conversion is lossy; update serializer to round-trip without data loss | Medium |
+| ~~**Intent Interceptor OPEN_DOCUMENT**~~ ✅ v0.3.0 | `ActivityInterceptor.java` | Interceptor permanently breaks `android.intent.action.OPEN_DOCUMENT` (Issue #1767, 2 reactions); fix dispatch logic | Medium |
+| **Utils.java i18n (×5)** ⚠️ deferred v0.4.0 | `Utils.java` | Five hardcoded string instances that bypass Android's localization pipeline | Low |
 
 ### T4 — Observability & Process
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Opt-In Crash Reporting** | On uncaught exception: write crash log to app-private storage + show "Share crash report" dialog that deep-links to GitHub Issues. Zero network egress without explicit user action. | Low |
-| **In-App Diagnostic Dump** | Export logcat (filtered to AM process) + app state snapshot as shareable ZIP for bug reports | Low |
-| **CodeQL Alert Triage** | Audit all open CodeQL alerts (`.github/workflows/codeql.yml` already present); ensure zero blanket suppressions | Low |
+| ~~**Opt-In Crash Reporting**~~ ✅ v0.3.0 | On uncaught exception: write crash log to app-private storage + show "Share crash report" dialog that deep-links to GitHub Issues. Zero network egress without explicit user action. | Low |
+| ~~**In-App Diagnostic Dump**~~ ✅ v0.3.0 | Export logcat (filtered to AM process) + app state snapshot as shareable ZIP for bug reports | Low |
+| ~~**CodeQL Alert Triage**~~ ✅ v0.3.0 | Audit all open CodeQL alerts (`.github/workflows/codeql.yml` already present); ensure zero blanket suppressions | Low |
 
 ---
 

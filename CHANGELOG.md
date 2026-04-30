@@ -3,7 +3,41 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## v0.2.0 — 2026-04-30
+## v0.3.0 — 2026-06-05
+
+Platform compliance, bug fixes, and observability hardening.
+
+### Fixed
+- **BarChartView accessibility** (`usage/BarChartView.java`): replaced deprecated
+  `announceForAccessibility()` (ignored by TalkBack on Android 16+) with
+  `ViewCompat.setAccessibilityLiveRegion(ACCESSIBILITY_LIVE_REGION_POLITE)`. The 3
+  redundant announcement calls alongside virtual-view events were removed; 1 was replaced
+  with `updateOverallContentDescription()` so the live region fires on data change.
+- **KeyStoreUtils secure memory** (`crypto/ks/KeyStoreUtils.java`): `StringBuilder`
+  (non-zeroable) replaced with `CharArrayWriter`; key material byte arrays explicitly zeroed
+  after `generatePrivate()` to reduce key-in-memory exposure window.
+- **ABX editor** (`editor/CodeEditorViewModel.java`): Android Binary XML files can now be
+  opened for inspection in the code editor. Write-back is blocked via `canWrite() = false`
+  when `mXmlType == XML_TYPE_ABX` to prevent lossy typed-value → string round-trip.
+- **ActivityInterceptor `ACTION_OPEN_DOCUMENT`** (`intercept/ActivityInterceptor.java`):
+  `FLAG_ACTIVITY_NEW_TASK` was being added to the document-picker intent, which broke result
+  delivery (Android bug: new-task flag + `startActivityForResult` never delivers result).
+  Flag is now stripped with `removeFlags()` before launching the picker.
+
+### Added
+- **Crash log persistence** (`misc/AMExceptionHandler.java`): crashes are written to
+  `getFilesDir()/crashes/crash_TIMESTAMP.log` (capped at 10 files). The crash share
+  notification now attaches the log file as a `content://` URI via FmProvider. Upstream
+  hardcoded email removed; subject updated to "AppManager NG: Crash Report".
+- **Diagnostic export** (`misc/DiagnosticUtils.java` + Settings → About): new "Export
+  Diagnostic Report" preference bundles device info, all crash logs, and the last 2 000
+  logcat lines (main/system/crash buffers) into a ZIP file and opens the share chooser.
+- **CodeQL on main** (`.github/workflows/codeql.yml`): analysis now triggers on pushes to
+  `main` (was limited to `master`); `workflow_dispatch` added for on-demand scans.
+
+### Deferred
+- `Utils.java` flag-string i18n (5 methods × ~50 string resources) — deferred to v0.4.0.
+  Caller Context injection required before extracting strings.
 
 Identity milestone: AppManagerNG now has its own install identity, signing key, and release
 pipeline, fully separated from the upstream package.
