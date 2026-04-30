@@ -702,7 +702,7 @@
     <string name="view_missing_signatures">Tap to view or send in signatures not yet present in App Manager\'s database of libraries.</string>
     <string name="copy">Copy</string>
     <string name="filter_running_apps">Running apps</string>
-    <string name="am_crashed">App Manager has just crashed</string>
+    <string name="am_crashed">AppManagerNG has just crashed</string>
     <string name="tap_to_submit_crash_report">Tap to submit the crash report.</string>
     <string name="send_crash_report">Send crash report</string>
     <string name="pref_export_diagnostics">Export Diagnostic Report</string>
@@ -880,9 +880,9 @@
     <string name="internal_storage">Internal storage</string>
     <string name="external_storage">External storage</string>
     <string name="sd_card">SD card</string>
-    <string name="unlock_app_manager">Unlock App Manager</string>
+    <string name="unlock_app_manager">Unlock AppManagerNG</string>
     <string name="screen_lock">Screen lock</string>
-    <string name="screen_lock_msg">Lock App Manager using Android screen lock</string>
+    <string name="screen_lock_msg">Lock AppManagerNG using Android screen lock</string>
     <string name="type_null">No value</string>
     <string name="type_component_name">Component name</string>
     <string name="type_int_array">Array of integers</string>
@@ -1467,9 +1467,9 @@
     <string name="xposed_module_info">Xposed module info</string>
     <string name="title_description">Description</string>
     <string name="module_name">Module name</string>
-    <string name="app_manager_is_running">App Manager is running</string>
+    <string name="app_manager_is_running">AppManagerNG is running</string>
     <string name="tap_to_open_notification_settings">Tap to hide</string>
-    <string name="app_manager_is_unlocked">App Manager is unlocked</string>
+    <string name="app_manager_is_unlocked">AppManagerNG is unlocked</string>
     <string name="action_lock_app">Lock</string>
     <string name="pref_enable_persistent_session">Run App Manager in the background</string>
     <string name="pref_enable_persistent_session_msg">Running App Manager in the background reduces initialisation delay. Useful if you use App Manager frequently.</string>
