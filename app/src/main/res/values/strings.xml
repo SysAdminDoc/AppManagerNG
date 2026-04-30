@@ -795,6 +795,10 @@
     <string name="uri">URI</string>
     <string name="category">Categories</string>
     <string name="extras">Extras</string>
+    <string name="interceptor_add_category">Add category</string>
+    <string name="interceptor_add_flag">Add flag</string>
+    <string name="interceptor_add_extra">Add extra</string>
+    <string name="interceptor_no_matching_activities">No installed activity can handle this intent. Adjust the action, data, type, package, or user and try again.</string>
     <string name="share">Share</string>
     <string name="resend_intent">Resend intent</string>
     <string name="interceptor">Interceptor</string>
