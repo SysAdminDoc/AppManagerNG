@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/padding_very_large"
+    android:paddingVertical="@dimen/padding_large"
+    tools:visibility="visible">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/empty_state_icon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:alpha="0.86"
+        android:background="@drawable/main_empty_icon_background"
+        android:contentDescription="@null"
+        android:padding="@dimen/padding_large"
+        android:src="@drawable/ic_information_circle"
+        app:tint="?attr/colorOnSecondaryContainer" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/empty_state_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_large"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textColor="?attr/colorOnSurface"
+        tools:text="@string/no_content" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/empty_state_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_small"
+        android:gravity="center"
+        android:maxWidth="360dp"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        tools:text="@string/app_details_empty_message_no_items" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/empty_state_action"
+        style="@style/Widget.AppTheme.Button.FilledTonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_large"
+        android:visibility="gone"
+        tools:text="@string/refresh"
+        tools:visibility="visible" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

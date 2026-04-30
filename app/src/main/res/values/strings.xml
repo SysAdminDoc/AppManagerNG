@@ -250,6 +250,8 @@
     <string name="disabled_app">Disabled</string>
     <string name="no_usage_in_this_time_range">No usage in this time range</string>
     <string name="no_content">No content</string>
+    <string name="app_usage_empty_title">No usage data</string>
+    <string name="app_usage_empty_message">Try another time range or refresh after Android has collected usage stats.</string>
     <string name="view_in_settings">View in Settings</string>
     <string name="uninstall_app_message">Do you want to uninstall this app?</string>
     <string name="failed_to_uninstall">Could not uninstall <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
@@ -638,6 +640,8 @@
     <string name="open_pgp_provider">OpenPGP provider</string>
     <string name="profiles">Profiles</string>
     <string name="no_profiles">No profiles</string>
+    <string name="profiles_empty_title">No profiles yet</string>
+    <string name="profiles_empty_message">Create a profile to save repeatable app actions and run them later.</string>
     <string name="keystore">KeyStore</string>
     <string name="apply_now">Apply now…</string>
     <string name="routine_ops">Routine ops</string>
@@ -688,6 +692,8 @@
     <string name="app_signing_install_without_data_loss">If you have turned off signature verification, you can use the <b>Only install</b> option to install the app without losing data.</string>
     <string name="only_install">Only install</string>
     <string name="sys_config">System config</string>
+    <string name="sys_config_empty_title">No entries found</string>
+    <string name="sys_config_empty_message">This device did not report entries for the selected system configuration category.</string>
     <string name="scanner">Scanner</string>
     <string name="no_libs">No libraries</string>
     <string name="lib_details">Library details</string>
@@ -1525,6 +1531,10 @@
     <string name="android_verified_bootloader_version">AVB version</string>
     <string name="op_history">History</string>
     <string name="no_history">No history</string>
+    <string name="op_history_empty_title">No operation history</string>
+    <string name="op_history_empty_message">Operations you run from profiles and batch actions will appear here for review or rerun.</string>
+    <string name="shared_prefs_empty_title">No preferences yet</string>
+    <string name="shared_prefs_empty_message">Add the first key-value entry to make this shared preferences file easier to inspect.</string>
     <string name="title_confirm_execution">Confirm execution</string>
     <string name="clear_history">Clear history</string>
     <string name="favorites">Favorites</string>

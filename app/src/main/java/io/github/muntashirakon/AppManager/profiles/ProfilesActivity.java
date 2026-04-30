@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,6 +28,7 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -123,22 +125,37 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
         RecyclerView listView = findViewById(android.R.id.list);
         listView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
-        listView.setEmptyView(findViewById(android.R.id.empty));
+        View emptyView = findViewById(android.R.id.empty);
+        setupEmptyState(emptyView);
+        listView.setEmptyView(emptyView);
         UiUtils.applyWindowInsetsAsPaddingNoTop(listView);
         mAdapter = new ProfilesAdapter(this);
         listView.setAdapter(mAdapter);
         FloatingActionButton fab = findViewById(R.id.floatingActionButton);
         UiUtils.applyWindowInsetsAsMargin(fab);
-        fab.setOnClickListener(v -> {
-            NewProfileDialogFragment dialog = NewProfileDialogFragment.getInstance(this);
-            dialog.show(getSupportFragmentManager(), NewProfileDialogFragment.TAG);
-        });
+        fab.setOnClickListener(v -> showNewProfileDialog());
         mModel.getProfilesLiveData().observe(this, profiles -> {
             mProgressIndicator.hide();
             mAdapter.setDefaultList(profiles);
         });
         mProgressIndicator.show();
         mModel.loadProfiles();
+    }
+
+    private void setupEmptyState(@NonNull View emptyView) {
+        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_view_agenda);
+        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.profiles_empty_title);
+        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.profiles_empty_message);
+        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
+        action.setText(R.string.new_profile);
+        action.setIconResource(R.drawable.ic_add);
+        action.setVisibility(View.VISIBLE);
+        action.setOnClickListener(v -> showNewProfileDialog());
+    }
+
+    private void showNewProfileDialog() {
+        NewProfileDialogFragment dialog = NewProfileDialogFragment.getInstance(this);
+        dialog.show(getSupportFragmentManager(), NewProfileDialogFragment.TAG);
     }
 
     @Override

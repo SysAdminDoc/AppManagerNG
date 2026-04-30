@@ -16,7 +16,7 @@
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical">
 
             <io.github.muntashirakon.widget.MaterialSpinner
@@ -33,24 +33,22 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="0dp"
+                android:layout_weight="1">
 
                 <io.github.muntashirakon.widget.RecyclerView
                     android:id="@+id/scrollView"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:fitsSystemWindows="true"
                     app:fastScrollerEnabled="true"
                     tools:listitem="@layout/item_app_usage" />
 
-                <com.google.android.material.textview.MaterialTextView
+                <include
                     android:id="@android:id/empty"
+                    layout="@layout/view_list_empty_state"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:focusable="false"
-                    android:gravity="center"
-                    android:text="@string/no_usage_in_this_time_range"
-                    tools:visibility="visible" />
+                    android:layout_height="match_parent" />
 
             </FrameLayout>
 

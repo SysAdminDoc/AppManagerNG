@@ -11,7 +11,9 @@ import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -20,6 +22,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
@@ -86,9 +89,12 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         // Get usage stats
         mAppUsageAdapter = new AppUsageAdapter(this);
         recyclerView = findViewById(R.id.scrollView);
-        recyclerView.setEmptyView(findViewById(android.R.id.empty));
+        View emptyView = findViewById(android.R.id.empty);
+        setupEmptyState(emptyView);
+        recyclerView.setEmptyView(emptyView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         recyclerView.setAdapter(mAppUsageAdapter);
+        UiUtils.applyWindowInsetsAsPaddingNoTop(recyclerView);
 
         mSwipeRefresh = findViewById(R.id.swipe_refresh);
         mSwipeRefresh.setOnRefreshListener(this);
@@ -113,6 +119,17 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
             fragment.show(getSupportFragmentManager(), AppUsageDetailsDialog.TAG);
         });
         checkPermissions();
+    }
+
+    private void setupEmptyState(@NonNull View emptyView) {
+        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_data_usage);
+        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.app_usage_empty_title);
+        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.app_usage_empty_message);
+        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
+        action.setText(R.string.refresh);
+        action.setIconResource(R.drawable.ic_refresh);
+        action.setVisibility(View.VISIBLE);
+        action.setOnClickListener(v -> onRefresh());
     }
 
     @Override
