@@ -311,10 +311,26 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             // Highlight searched query
             holder.packageName.setText(UIUtils.getHighlightedText(item.packageName, mSearchQuery, mQueryStringHighlight));
         } else holder.packageName.setText(item.packageName);
-        // Set package name color to orange if the app has known tracker components
+        // Set package name color + show a tracker count badge. Icon column is only 48dp
+        // wide, so the visible label is just the count; the screen-reader description
+        // expands to "N trackers". Pairs with the orange-tinted package name for an
+        // at-a-glance privacy signal without forcing users into the Scanner.
         if (item.trackerCount > 0) {
-            holder.packageName.setTextColor(ColorCodes.getComponentTrackerIndicatorColor(context));
-        } else holder.packageName.setTextColor(mColorSecondary);
+            int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(context);
+            holder.packageName.setTextColor(trackerColor);
+            if (holder.trackerIndicator != null) {
+                holder.trackerIndicator.setVisibility(View.VISIBLE);
+                holder.trackerIndicator.setText(String.valueOf(item.trackerCount));
+                holder.trackerIndicator.setTextColor(trackerColor);
+                holder.trackerIndicator.setContentDescription(context.getResources().getQuantityString(
+                        R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount));
+            }
+        } else {
+            holder.packageName.setTextColor(mColorSecondary);
+            if (holder.trackerIndicator != null) {
+                holder.trackerIndicator.setVisibility(View.GONE);
+            }
+        }
         // Set version (along with HW accelerated, debug and test only flags)
         holder.version.setText(item.versionTag);
         // Set version color to dark cyan if the app is inactive
@@ -560,6 +576,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         TextView backupIndicator;
         TextView backupInfo;
         TextView backupInfoExt;
+        TextView trackerIndicator;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -578,6 +595,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             backupIndicator = itemView.findViewById(R.id.backup_indicator);
             backupInfo = itemView.findViewById(R.id.backup_info);
             backupInfoExt = itemView.findViewById(R.id.backup_info_ext);
+            trackerIndicator = itemView.findViewById(R.id.tracker_indicator);
         }
     }
 }
