@@ -135,6 +135,46 @@ class PathImpl extends Path {
         return true;
     }
 
+    private static boolean isSameOrDescendant(@NonNull DocumentFile source, @NonNull DocumentFile dest) {
+        if (source.getUri().equals(dest.getUri())) {
+            return true;
+        }
+        if (source instanceof ExtendedRawDocumentFile && dest instanceof ExtendedRawDocumentFile) {
+            ExtendedFile srcFile = Objects.requireNonNull(((ExtendedRawDocumentFile) source).getFile());
+            ExtendedFile dstFile = Objects.requireNonNull(((ExtendedRawDocumentFile) dest).getFile());
+            if (isSameOrDescendant(srcFile, dstFile)) {
+                return true;
+            }
+        }
+        String srcUri = appendPathSeparator(source.getUri().toString(), Paths.PATH_SEPARATOR);
+        String dstUri = appendPathSeparator(dest.getUri().toString(), Paths.PATH_SEPARATOR);
+        return dstUri.startsWith(srcUri);
+    }
+
+    private static boolean isSameOrDescendant(@NonNull File source, @NonNull File dest) {
+        try {
+            source = source.getCanonicalFile();
+            dest = dest.getCanonicalFile();
+        } catch (IOException ignore) {
+            source = source.getAbsoluteFile();
+            dest = dest.getAbsoluteFile();
+        }
+        if (source.equals(dest)) {
+            return true;
+        }
+        String sourcePath = appendPathSeparator(source.getPath(), File.separator);
+        String destPath = appendPathSeparator(dest.getPath(), File.separator);
+        if (File.separatorChar == '\\') {
+            return destPath.equalsIgnoreCase(sourcePath) || destPath.regionMatches(true, 0, sourcePath, 0, sourcePath.length());
+        }
+        return destPath.startsWith(sourcePath);
+    }
+
+    @NonNull
+    private static String appendPathSeparator(@NonNull String path, @NonNull String separator) {
+        return path.endsWith(separator) ? path : path + separator;
+    }
+
     @NonNull
     private static DocumentFile getRequiredRawDocument(@NonNull String path) {
         if (needPrivilegedAccess(path) && LocalServices.alive()) {
@@ -762,7 +802,7 @@ class PathImpl extends Path {
             // There's no point is attempting to move if the destination is read-only.
             return false;
         }
-        if (dest.getUri().toString().startsWith(source.getUri().toString())) {
+        if (isSameOrDescendant(source, dest)) {
             // Destination cannot be the same or a subdirectory of source
             return false;
         }
@@ -913,10 +953,7 @@ class PathImpl extends Path {
             Log.d(TAG, "Read-only destination.");
             return null;
         }
-        // Add separator to avoid matching wrong files
-        String destStr = dest.getUri() + Paths.PATH_SEPARATOR;
-        String srcStr = source.getUri() + Paths.PATH_SEPARATOR;
-        if (destStr.startsWith(srcStr)) {
+        if (isSameOrDescendant(source, dest)) {
             // Destination cannot be the same or a subdirectory of source
             Log.d(TAG, "Destination is a subdirectory of source.");
             return null;

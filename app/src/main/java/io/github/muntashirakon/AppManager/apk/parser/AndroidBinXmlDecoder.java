@@ -32,6 +32,8 @@ import io.github.muntashirakon.AppManager.utils.IntegerUtils;
 import io.github.muntashirakon.io.IoUtils;
 
 public class AndroidBinXmlDecoder {
+    private static final String NEWLINE = "\n";
+
     public static boolean isBinaryXml(@NonNull ByteBuffer buffer) {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.mark();
@@ -69,14 +71,14 @@ public class AndroidBinXmlDecoder {
 
     public static void decode(@NonNull ByteBuffer byteBuffer, @NonNull OutputStream os) throws IOException {
         try (BlockReader reader = new BlockReader(byteBuffer.array());
-             PrintStream out = new PrintStream(os)) {
+             PrintStream out = new PrintStream(os, false, StandardCharsets.UTF_8.name())) {
             ResXmlDocument resXmlDocument = new ResXmlDocument();
             resXmlDocument.readBytes(reader);
             resXmlDocument.setPackageBlock(getFrameworkPackageBlock());
             try (ResXmlPullParser parser = new ResXmlPullParser(resXmlDocument)) {
                 StringBuilder indent = new StringBuilder(10);
                 final String indentStep = "  ";
-                out.println("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                out.print("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + NEWLINE);
                 XML_BUILDER:
                 while (true) {
                     int type = parser.next();
@@ -88,24 +90,25 @@ public class AndroidBinXmlDecoder {
                             int nsStart = parser.getNamespaceCount(parser.getDepth() - 1);
                             int nsEnd = parser.getNamespaceCount(parser.getDepth());
                             for (int i = nsStart; i < nsEnd; ++i) {
-                                out.printf("\n%sxmlns:%s=\"%s\"", indent,
+                                out.printf(NEWLINE + "%sxmlns:%s=\"%s\"", indent,
                                         parser.getNamespacePrefix(i),
                                         parser.getNamespaceUri(i));
                             }
 
                             for (int i = 0; i != parser.getAttributeCount(); ++i) {
-                                out.printf("\n%s%s%s=\"%s\"",
+                                out.printf(NEWLINE + "%s%s%s=\"%s\"",
                                         indent,
                                         getNamespacePrefix(parser.getAttributePrefix(i)),
                                         parser.getAttributeName(i),
                                         parser.getAttributeValue(i));
                             }
-                            out.println(">");
+                            out.print(">" + NEWLINE);
                             break;
                         }
                         case END_TAG: {
                             indent.setLength(indent.length() - indentStep.length());
-                            out.printf("%s</%s%s>%n", indent, getNamespacePrefix(parser.getPrefix()), parser.getName());
+                            out.printf("%s</%s%s>%s", indent, getNamespacePrefix(parser.getPrefix()), parser.getName(),
+                                    NEWLINE);
                             break;
                         }
                         case END_DOCUMENT:

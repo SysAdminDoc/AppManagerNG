@@ -304,7 +304,7 @@ public class TarUtilsTest {
         File workingBase = new File("C:\\Windows\\Speech\\Common\\");
 
         assertNotEquals("..\\..\\Boot\\Fonts", getRelativePath(target, base, "\\"));
-        assertEquals("..\\..\\Boot\\Fonts", getRelativePath(target, workingBase, "\\"));
+        assertEquals(directoryPathIfPresent(target, "..\\..\\Boot\\Fonts", "\\"), getRelativePath(target, workingBase, "\\"));
     }
 
     @Test
@@ -314,7 +314,7 @@ public class TarUtilsTest {
         File workingBase = new File("C:\\");
 
         assertNotEquals("Windows\\Boot\\Fonts", getRelativePath(target, base, "\\"));
-        assertEquals("Windows\\Boot\\Fonts", getRelativePath(target, workingBase, "\\"));
+        assertEquals(directoryPathIfPresent(target, "Windows\\Boot\\Fonts", "\\"), getRelativePath(target, workingBase, "\\"));
     }
 
     @Test
@@ -444,5 +444,10 @@ public class TarUtilsTest {
         String baseDir = basePath.toURI().getPath();
         String targetPath = file.toURI().getPath();
         return Paths.relativePath(targetPath, baseDir, separator);
+    }
+
+    @NonNull
+    private static String directoryPathIfPresent(@NonNull File file, @NonNull String path, @NonNull String separator) {
+        return file.isDirectory() ? path + separator : path;
     }
 }

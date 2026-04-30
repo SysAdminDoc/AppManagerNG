@@ -18,6 +18,9 @@ import io.github.muntashirakon.io.Paths;
 
 public final class KeyStoreUtils {
     public static boolean hasKeyStore(int uid) {
+        if (Utils.isRoboUnitTest()) {
+            return false;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return hasKeyStoreV2(uid);
         }

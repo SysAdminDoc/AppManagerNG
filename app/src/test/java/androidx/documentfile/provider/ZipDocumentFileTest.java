@@ -48,7 +48,7 @@ public class ZipDocumentFileTest {
         assertFalse(doc.isFile());
         assertTrue(doc.exists());
         assertEquals(doc.length(), 0);
-        assertEquals(doc.getName(), File.separator);
+        assertEquals(Paths.PATH_SEPARATOR, doc.getName());
         // Children checks
         List<String> tmpList = getChildNames(doc);
         Collections.sort(tmpList);

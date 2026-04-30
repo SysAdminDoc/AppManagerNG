@@ -227,13 +227,21 @@ public class AtomicExtendedFile {
         // case because there are callers who erroneously called mBaseName.mkdirs() (instead of
         // mBaseName.getParentFile().mkdirs()) before creating the AtomicFile, and it worked
         // regardless, so this deletion became some kind of API.
-        if (target.isDirectory()) {
+        if (target.isDirectory() && !target.delete()) {
+            Log.e(TAG, "Failed to delete file which is a directory " + target);
+        }
+        if (source.renameTo(target)) {
+            return;
+        }
+        if (target.exists()) {
             if (!target.delete()) {
-                Log.e(TAG, "Failed to delete file which is a directory " + target);
+                Log.e(TAG, "Failed to delete existing target " + target);
+                return;
+            }
+            if (source.renameTo(target)) {
+                return;
             }
         }
-        if (!source.renameTo(target)) {
-            Log.e(TAG, "Failed to rename " + source + " to " + target);
-        }
+        Log.e(TAG, "Failed to rename " + source + " to " + target);
     }
 }
