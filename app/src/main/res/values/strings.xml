@@ -679,6 +679,12 @@
     <string name="am_crashed">App Manager has just crashed</string>
     <string name="tap_to_submit_crash_report">Tap to submit the crash report.</string>
     <string name="send_crash_report">Send crash report</string>
+    <string name="pref_export_diagnostics">Export Diagnostic Report</string>
+    <string name="pref_export_diagnostics_summary">Bundle device info, recent crash logs, and logcat into a ZIP for bug reports</string>
+    <string name="diagnostic_report_subject">AppManager NG: Diagnostic Report</string>
+    <string name="diagnostic_preparing">Collecting diagnostic data…</string>
+    <string name="diagnostic_ready">Diagnostic report ready. Tap to share.</string>
+    <string name="diagnostic_failed">Failed to collect diagnostic data.</string>
     <string name="select_apk">Select APK</string>
     <string name="conversion_failed">Conversion failed.</string>
     <string name="in_progress">In progress</string>

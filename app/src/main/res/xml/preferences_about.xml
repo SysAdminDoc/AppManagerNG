@@ -54,4 +54,10 @@
         app:title="@string/credits"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="export_diagnostics"
+        app:title="@string/pref_export_diagnostics"
+        app:summary="@string/pref_export_diagnostics_summary"
+        app:iconSpaceReserved="false" />
+
 </PreferenceScreen>
