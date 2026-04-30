@@ -1232,7 +1232,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         componentItem.setRule(mBlocker.getComponent(activityInfo.name));
                     }
                 }
-                componentItem.setTracker(ComponentUtils.isTracker(activityInfo.name));
+                String activityTrackerLabel = ComponentUtils.getTrackerLabel(activityInfo.name);
+                componentItem.setTracker(activityTrackerLabel != null);
+                componentItem.setTrackerLabel(activityTrackerLabel);
                 componentItem.setDisabled(isComponentDisabled(activityInfo));
                 // An activity is allowed to launch only if it's
                 // 1) Not from an external APK
@@ -1275,7 +1277,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         serviceItem.setRule(mBlocker.getComponent(serviceInfo.name));
                     }
                 }
-                serviceItem.setTracker(ComponentUtils.isTracker(serviceInfo.name));
+                String serviceTrackerLabel = ComponentUtils.getTrackerLabel(serviceInfo.name);
+                serviceItem.setTracker(serviceTrackerLabel != null);
+                serviceItem.setTrackerLabel(serviceTrackerLabel);
                 serviceItem.setDisabled(isComponentDisabled(serviceInfo));
                 for (ActivityManager.RunningServiceInfo runningServiceInfo : runningServiceInfoList) {
                     if (runningServiceInfo.service.getClassName().equals(serviceInfo.name)) {
@@ -1319,7 +1323,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         componentItem.setRule(mBlocker.getComponent(activityInfo.name));
                     }
                 }
-                componentItem.setTracker(ComponentUtils.isTracker(activityInfo.name));
+                String activityTrackerLabel = ComponentUtils.getTrackerLabel(activityInfo.name);
+                componentItem.setTracker(activityTrackerLabel != null);
+                componentItem.setTrackerLabel(activityTrackerLabel);
                 componentItem.setDisabled(isComponentDisabled(activityInfo));
                 mReceiverItems.add(componentItem);
             }
@@ -1352,7 +1358,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         componentItem.setRule(mBlocker.getComponent(providerInfo.name));
                     }
                 }
-                componentItem.setTracker(ComponentUtils.isTracker(providerInfo.name));
+                String providerTrackerLabel = ComponentUtils.getTrackerLabel(providerInfo.name);
+                componentItem.setTracker(providerTrackerLabel != null);
+                componentItem.setTrackerLabel(providerTrackerLabel);
                 componentItem.setDisabled(isComponentDisabled(providerInfo));
                 mProviderItems.add(componentItem);
             }
