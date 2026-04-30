@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -79,13 +79,26 @@ interface that doesn't punish casual users for opening it.
 
 ## Roadmap
 
-AppManagerNG-specific direction (subject to change):
+See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
 
-- **v0.2.0** — Package rename to `io.github.sysadmindoc.AppManagerNG`, namespace migration, fresh keystore
-- **v0.3.0** — Material 3 dashboard refresh — friendlier home screen, progressive disclosure of advanced features, "Pro mode" toggle
-- **v0.4.0** — Onboarding flow for new users (root/ADB capability detection + plain-language explanation of what each tier unlocks)
-- **v0.5.0** — Settings reorganization, search, in-app help
-- **Later** — New features called out in upstream's "Upcoming features" list (Finder, basic APK editing, routine operations, crash monitor, etc.)
+- **v0.2.0** — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
+- **v0.3.0** — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance)
+- **v0.4.0** — Onboarding flow (root/Shizuku/ADB capability detection + plain-language explainer)
+- **v0.5.0** — Settings reorganization, global in-app search, contextual help
+
+## Verifying releases
+
+APK signing certificate SHA-256 fingerprint:
+
+```
+21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C
+```
+
+Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
+
+```bash
+apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
+```
 
 ## Build instructions
 
@@ -97,7 +110,7 @@ git submodule update --init --recursive
 
 ## Contributing
 
-See [CONTRIBUTING.rst](CONTRIBUTING.rst).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Translation contributions go through Weblate (link TBD).
 
 ## License
 

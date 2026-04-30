@@ -3,6 +3,31 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.2.0 — 2026-04-30
+
+Identity milestone: AppManagerNG now has its own install identity, signing key, and release
+pipeline, fully separated from the upstream package.
+
+### Added
+- **`applicationId` rename**: install identity changed from `io.github.muntashirakon.AppManager`
+  to `io.github.sysadmindoc.AppManagerNG`. Source namespace kept at
+  `io.github.muntashirakon.AppManager` (full namespace rename is future work).
+- **New release keystore**: `AppManagerNG-release.jks` — 4096-bit RSA, 10,000-day validity.
+  SHA-256: `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
+- **GitHub Actions release pipeline** (`.github/workflows/release.yml`): tag push → build →
+  sign → upload arm64-v8a + universal APKs to GitHub Releases.
+- **CONTRIBUTING.md**: NG-specific contribution guidelines (replaces upstream CONTRIBUTING.rst
+  reference); covers AI code policy, commit format, upstream sync protocol, translation note.
+- **ROADMAP.md**: comprehensive prioritized roadmap through v0.6.0+ (17 themes, 37 sources).
+- **AppVerifier fingerprint** in README for release verification.
+- **16KB page size compliance**: `-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON` CMake argument
+  added to `app/build.gradle` for Android 15+ physical device compatibility.
+
+### Fixed
+- `LocalFileOverlay.java`: hardcoded application ID fallback now uses `BuildConfig.APPLICATION_ID`
+  instead of a literal string, so it tracks applicationId changes automatically.
+- `settings.gradle`: `rootProject.name` updated to `AppManagerNG`.
+
 ## v0.1.0 — 2026-04-30
 
 Initial AppManagerNG release. Repo bootstrap from upstream

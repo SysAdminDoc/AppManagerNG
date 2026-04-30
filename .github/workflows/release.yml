@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Triggered by a vX.Y.Z tag push.
+# Builds a signed release APK (arm64-v8a + universal), creates a GitHub Release,
+# and uploads both APK variants as release assets.
+#
+# Required GitHub Secrets:
+#   SIGNING_KEYSTORE_BASE64  — base64-encoded AppManagerNG-release.jks
+#   SIGNING_STORE_PASSWORD   — keystore store password
+#   SIGNING_KEY_ALIAS        — key alias (release)
+#   SIGNING_KEY_PASSWORD     — key password
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & publish release APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle', '**/versions.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Extract tag version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Decode signing keystore
+        run: |
+          echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > app/AppManagerNG-release.jks
+
+      - name: Write keystore.properties
+        run: |
+          cat > app/keystore.properties <<EOF
+          storeFile=AppManagerNG-release.jks
+          storePassword=${{ secrets.SIGNING_STORE_PASSWORD }}
+          keyAlias=${{ secrets.SIGNING_KEY_ALIAS }}
+          keyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
+          EOF
+
+      - name: Grant Gradle execute permission
+        run: chmod +x gradlew
+
+      - name: Build release APKs
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Locate APK artifacts
+        id: apks
+        run: |
+          ARM64=$(find app/build/outputs/apk/release -name "*arm64*" | head -1)
+          UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal*" | head -1)
+          # Rename to versioned filenames
+          mv "$ARM64" "app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-arm64-v8a.apk"
+          mv "$UNIVERSAL" "app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk"
+          echo "ARM64=app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-arm64-v8a.apk" >> "$GITHUB_OUTPUT"
+          echo "UNIVERSAL=app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release and upload APKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "AppManagerNG ${{ github.ref_name }}" \
+            --generate-notes \
+            "${{ steps.apks.outputs.ARM64 }}" \
+            "${{ steps.apks.outputs.UNIVERSAL }}"
