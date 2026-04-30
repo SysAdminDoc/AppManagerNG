@@ -1417,10 +1417,7 @@
     <string name="export_app_list">تصدير قائمة التطبيقات</string>
     <string name="export_app_list_select_format">حدد تنسيقا لتصدير قائمة التطبيقات</string>
     <string name="export_option_xml">ملف XML</string>
-    <string name="export_option_markdown">ماركداون</string>
-    <string name="funding_campaign_dialog_message">نحن ندير حملة تمويل <b> </b> App Manager لـ لفترة محدودة. قم بزيارة <a href="https://opencollective.com/app-manager#category-ABOUT"> opencollective.com/app-manager </a> لمعرفة المزيد عن الحملة. لن يتم عرض هذا الإشعار مرة أخرى، ولكن يمكنك العثور عليه في صفحة الإعدادات أثناء الحملة بأكملها.</string>
-    <string name="funding_campaign_text">نحن ندير حملة تمويل <b> </b> لـ App Manager لفترة محدودة. <a href="https://opencollective.com/app-manager#category-ABOUT"> تعرف على المزيد... </a></string>
-    <string name="adb_incomplete_usb_debugging_title">تصحيح أخطاء USB غير مكتمل</string>
+    <string name="export_option_markdown">ماركداون</string>    <string name="adb_incomplete_usb_debugging_title">تصحيح أخطاء USB غير مكتمل</string>
     <string name="adb_incomplete_usb_debugging_message">يبدو أن تصحيح أخطاء USB لم يتم تكوينه بشكل صحيح. يرجى قراءة <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging"> الوثائق </a> للحصول على خطوات إضافية. إذا كنت تعرف الخطوات بالفعل ، فالرجاء النقر فوق \"فتح\" لفتح خيارات المطور ، أو النقر فوق \"إغلاق\" لمواصلة استخدام وضع عدم الجذر.</string>
     <string name="select_a_dex2oat_compiler_filter"><tt> dex2oat </tt> فلتر المجمع</string>
     <string name="optimize_option_compile_layouts">تجميع موارد التصميم</string>

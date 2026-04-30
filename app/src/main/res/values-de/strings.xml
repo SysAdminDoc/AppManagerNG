@@ -1211,9 +1211,7 @@
     <string name="file_change_open_with">Wechseln zu öffnen mit</string>
     <string name="renamed_successfully">Umbenannt</string>
     <string name="calculating_file_size">Berechne …</string>
-    <string name="sort_by_filename">Name</string>
-    <string name="funding_campaign_dialog_message">Wir unternehmen eine <b>Spendenaktion</b> für den App Manager für einen begrenzten Zeitraum. Besuche <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a>, um mehr über die Aktion zu erfahren. Diese Benachrichtigung wird nicht mehr angezeigt, aber du kannst sie in der Einstellungsseite während des gesamten Spendenaktionszeitraums finden.</string>
-    <string name="sort_by_data_usage">Datenbenutzung</string>
+    <string name="sort_by_filename">Name</string>    <string name="sort_by_data_usage">Datenbenutzung</string>
     <string name="filter_apps_with_keystore">Mit KeyStore</string>
     <string name="filter_apps_with_saf">Mit SAF</string>
     <string name="filter_apps_with_ssaid">Mit SSAID</string>
@@ -1242,9 +1240,7 @@
     <string name="export_app_list_select_format">Format für den Export der App-Liste auswählen</string>
     <string name="export_option_xml">XML</string>
     <string name="export_option_markdown">Markdown</string>
-    <string name="option_display_dot_files">Versteckte Dateien</string>
-    <string name="funding_campaign_text">Wir unternehmen gerade eine <b>Spendenaktion</b> für den App Manager für einen begrenzten Zeitraum. <a href="https://opencollective.com/app-manager#category-ABOUT">mehr erfahren …</a></string>
-    <string name="adb_incomplete_usb_debugging_title">Unvollständiges USB-Debugging</string>
+    <string name="option_display_dot_files">Versteckte Dateien</string>    <string name="adb_incomplete_usb_debugging_title">Unvollständiges USB-Debugging</string>
     <string name="adb_incomplete_usb_debugging_message">Es scheint, dass USB-Debugging nicht korrekt eingestellt ist. Bitte lies <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">die englische Dokumentation</a> für weitere Schritte. Wenn du schon weißt, wie es geht, tippe auf „Öffnen“, um die Entwickleroptionen zu öffnen, oder „Schließen“, um weiterhin den Nicht-Root-Modus zu benutzen.</string>
     <string name="source_stamp_verified_and_identified_to_be_from_source">Quellstempel verifiziert und identifiziert als von <xliff:g id="source" example="Google Play">%1$s</xliff:g>.</string>
     <string name="optimize_option_force_dexopt">DEX-Optimierung sofort durchführen</string>

@@ -9,12 +9,6 @@
         app:selectable="false"
         app:summary="@string/app_manager_build_expiring_soon_warning" />
 
-    <io.github.muntashirakon.preference.InfoAlertPreference
-        app:icon="@drawable/ic_charity"
-        app:key="funding_campaign_notice"
-        app:selectable="false"
-        app:summary="@string/funding_campaign_text" />
-
     <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.ChangeLanguageFragment"
         app:icon="@drawable/ic_translate"

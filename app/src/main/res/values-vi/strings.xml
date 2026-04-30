@@ -1193,9 +1193,7 @@
     <string name="on_open_application_no_recents">Không hiện ứng dụng đã khởi chạy ở mục Gần đây</string>
     <string name="tap_to_freeze_app">Nhấn để đóng băng</string>
     <string name="waiting_for_the_phone_to_be_locked">Đang đợi điện thoại khóa…</string>
-    <string name="action_stop_service">Dừng</string>
-    <string name="funding_campaign_dialog_message">Chúng tôi đang chạy <b>chiến dịch tài trợ</b> cho App Manager trong một khoảng thời gian giới hạn. Truy cập <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> để tìm hiểu thêm về chiến dịch. Thông báo này sẽ không được hiển thị lại, nhưng bạn có thể tìm thấy nó trong trang Thiết đặt trong toàn bộ chiến dịch.</string>
-    <string name="adb_incomplete_usb_debugging_message">Có vẻ như Gỡ lỗi USB không được định cấu hình đúng cách. Vui lòng đọc <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">tài liệu</a> để biết các bước bổ sung. Nếu bạn đã biết các bước, vui lòng nhấp vào “Mở” để mở tùy chọn nhà phát triển hoặc nhấp vào “Đóng” để tiếp tục sử dụng chế độ không root.</string>
+    <string name="action_stop_service">Dừng</string>    <string name="adb_incomplete_usb_debugging_message">Có vẻ như Gỡ lỗi USB không được định cấu hình đúng cách. Vui lòng đọc <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">tài liệu</a> để biết các bước bổ sung. Nếu bạn đã biết các bước, vui lòng nhấp vào “Mở” để mở tùy chọn nhà phát triển hoặc nhấp vào “Đóng” để tiếp tục sử dụng chế độ không root.</string>
     <string name="sort_by_data_usage">Dữ liệu đã dùng</string>
     <string name="filter_apps_with_keystore">Với KeyStore</string>
     <string name="filter_apps_with_saf">Với SAF</string>
@@ -1244,9 +1242,7 @@
     <string name="export_app_list_select_format">Chọn định dạng xuất danh sách ứng dụng</string>
     <string name="export_option_xml">XML</string>
     <string name="export_option_markdown">Markdown</string>
-    <string name="adb_incomplete_usb_debugging_title">Gỡ lỗi USB chưa hoàn thành</string>
-    <string name="funding_campaign_text">Chúng tôi đang chạy <b>chiến dịch tài trợ</b> cho App Manager trong một khoảng thời gian giới hạn. <a href="https://opencollective.com/app-manager#category-ABOUT">tìm hiểu thêm…</a></string>
-    <string name="source_stamp_verified_and_identified_to_be_from_source">SourceStamp đã được xác minh và xác định là từ <xliff:g id="source" example="Google Play">%1$s</xliff:g>.</string>
+    <string name="adb_incomplete_usb_debugging_title">Gỡ lỗi USB chưa hoàn thành</string>    <string name="source_stamp_verified_and_identified_to_be_from_source">SourceStamp đã được xác minh và xác định là từ <xliff:g id="source" example="Google Play">%1$s</xliff:g>.</string>
     <string name="title_domains_supported_by_the_app">Miền được hỗ trợ</string>
     <string name="block_unblock_components_dots">Chặn/bỏ chặn các thành phần…</string>
     <string name="unblock_components_dots">Bỏ chặn các thành phần…</string>

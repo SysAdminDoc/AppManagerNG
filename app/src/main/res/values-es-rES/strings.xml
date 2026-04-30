@@ -1259,11 +1259,7 @@
     <string name="sort_by_last_modified">Última modificación</string>
     <string name="sort_by_file_type">Tipo de archivo</string>
     <string name="export_app_list">Exportar lista de aplicaciones</string>
-    <string name="export_option_xml">XML</string>
-    <string name="funding_campaign_text">Estamos ejecutando una <b>campaña de financiación</b> para App Manager por un período limitado. <a href="https://opencollective.com/app-manager#category-ABOUT">más información...</a></string>
-    <string name="adb_incomplete_usb_debugging_message">Parece que la depuración de USB no está configurada correctamente. Lea <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">la documentación</a> para conocer los pasos adicionales. Si ya conoce los pasos, haga clic en \"Abrir\" para abrir las opciones de desarrollador, o haga clic en \"Cerrar\" para continuar usando el Root.</string>
-    <string name="funding_campaign_dialog_message">Nosotros estamos ejecutando una <b>campaña de financiación</b> para App Manager por un período limitado. Visita <a href="https://opencollective.com/app-manager#category-ABOUT">opencollective.com/app-manager</a> para saber más sobre la campaña. Este aviso no se volverá a mostrar, pero puede encontrarlo en la página Configuración durante toda la campaña.</string>
-    <string name="title_ui_tracker">Rastreador de interfaz de usuario</string>
+    <string name="export_option_xml">XML</string>    <string name="adb_incomplete_usb_debugging_message">Parece que la depuración de USB no está configurada correctamente. Lea <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">la documentación</a> para conocer los pasos adicionales. Si ya conoce los pasos, haga clic en \"Abrir\" para abrir las opciones de desarrollador, o haga clic en \"Cerrar\" para continuar usando el Root.</string>    <string name="title_ui_tracker">Rastreador de interfaz de usuario</string>
     <string name="title_terminal_emulator">Terminal</string>
     <string name="class_hierarchy">Jerarquía</string>
     <string name="title_labs_activity">Laboratorios</string>
