@@ -1,0 +1,37 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingTop="@dimen/padding_small"
+    android:paddingBottom="@dimen/padding_small"
+    android:paddingStart="@dimen/padding_medium"
+    android:paddingEnd="@dimen/padding_medium"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/ssaid_info" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/ssaid_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:counterEnabled="true"
+        app:endIconMode="custom"
+        app:endIconDrawable="@drawable/ic_autorenew">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@android:id/text1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="25sp"
+            android:inputType="text"
+            android:fontFamily="monospace"
+            tools:text="@tools:sample/full_names" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

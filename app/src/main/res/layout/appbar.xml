@@ -1,0 +1,23 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<io.github.muntashirakon.widget.AppBarLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/appbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fitsSystemWindows="true"
+    app:liftOnScroll="true"
+    app:liftOnScrollTargetViewId="@+id/scrollView">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progress_linear"
+        style="@style/Widget.AppTheme.LinearProgressIndicator"
+        android:indeterminate="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</io.github.muntashirakon.widget.AppBarLayout>

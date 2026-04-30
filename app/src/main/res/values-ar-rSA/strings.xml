@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later --><resources>
+    <string name="uninstall">إلغاء التثبيت</string>
+    <string name="permissions">إستخدام الأذونات</string>
+    <string name="require_no_permission">لا توجد أذونات مطلوبة</string>
+    <string name="activities">الأنشطة</string>
+    <string name="launch">البدء</string>
+    <string name="refresh">تحديث</string>
+    <string name="no_activities">لا توجد أي أنشطة</string>
+    <string name="receivers">الاستقبال</string>
+    <string name="no_receivers">لا يوجد إستقبال</string>
+    <string name="providers">مقدمي الخدمات</string>
+    <string name="no_providers">لا يوجد مقدمي</string>
+    <string name="launch_mode">وضع التشغيل</string>
+    <!-- &#8230; = ... -->
+    <string name="import_options">خيارات الاستيراد</string>
+    <string name="export_options">خيارات التصدير</string>
+    <string name="import_failed">فشل في الاستيراد!</string>
+    <string name="export_failed">فشل في التصدير!</string>
+    <string name="soft_input">وضع الادخال السهل</string>
+    <string name="input_features">مميزات الادخال</string>
+    <string name="no_configurations">لا يوجد مكونات</string>
+    <string name="configurations">مكونات</string>
+    <string name="app_signing_no_signatures">لا يوجد انطباعات مميزة</string>
+    <string name="signatures">التوقيع المميز</string>
+    <string name="sort_by_sha">ترتيب حسب التوقيع SHA</string>
+    <string name="shared_user_id">رقم تعريف المستخدم المميز المشارك</string>
+    <string name="sort_by_shared_user_id">ترتيب حسب رقم تعريف المستخدم المميز المشارك</string>
+    <string name="no_feature">لايوجد مميزات</string>
+    <string name="uses_feature">مستخدم للمميزات</string>
+    <string name="group">مجموعة</string>
+    <string name="shared_libs">مكتبات رئيسية و مشاركة مع الجميع</string>
+    <string name="declared_permission">أذونات</string>
+    <string name="patterns_allowed">تم السماح بالأنماط</string>
+    <string name="write">كتابة</string>
+    <string name="read">قراءة</string>
+    <string name="path_permissions">مسار الأذونات</string>
+    <string name="grant_uri_permission">السماح للوصول الى مزود المحتوى</string>
+    <string name="flags">محددات</string>
+    <string name="orientation">توجه</string>
+    <string name="no_service">لا يوجد خدمات</string>
+    <string name="service">خدمات</string>
+    <string name="authority">السلطة</string>
+    <string name="sort_by_last_update">آخر تحديث</string>
+    <string name="task_affinity">تقارب المهمة</string>
+</resources>

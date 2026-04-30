@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_uninstall"
+        android:icon="@drawable/ic_trash_can"
+        android:title="@string/uninstall" />
+    <item
+        android:id="@+id/action_freeze_unfreeze"
+        android:icon="@drawable/ic_snowflake"
+        android:title="@string/freeze_unfreeze" />
+    <item
+        android:id="@+id/action_force_stop"
+        android:title="@string/force_stop"
+        android:icon="@drawable/ic_power_settings" />
+    <item
+        android:id="@+id/action_clear_data_cache"
+        android:icon="@drawable/ic_brush"
+        android:title="@string/clear" />
+    <item
+        android:id="@+id/action_save_apk"
+        android:title="@string/save_apk"
+        android:icon="@drawable/ic_get_app" />
+    <item
+        android:id="@+id/action_backup"
+        android:title="@string/backup_restore"
+        android:icon="@drawable/ic_backup_restore" />
+    <item
+        android:id="@+id/action_disable_background"
+        android:title="@string/disable_background"
+        android:icon="@drawable/ic_block" />
+    <item
+        android:id="@+id/action_block_unblock_trackers"
+        android:title="@string/block_unblock_trackers"
+        android:icon="@drawable/ic_cctv_off" />
+    <item
+        android:id="@+id/action_net_policy"
+        android:title="@string/net_policy"
+        android:icon="@drawable/ic_security_network" />
+    <item
+        android:id="@+id/action_optimize"
+        android:title="@string/action_optimize_app"
+        android:icon="@drawable/ic_run_fast" />
+    <item
+        android:id="@+id/action_export_blocking_rules"
+        android:title="@string/export_blocking_rules"
+        android:icon="@drawable/ic_file_export" />
+    <item
+        android:id="@+id/action_export_app_list"
+        android:title="@string/export_app_list"
+        android:icon="@drawable/ic_file_export" />
+    <item
+        android:id="@+id/action_add_to_profile"
+        android:icon="@drawable/ic_file_plus"
+        android:title="@string/add_to_profile" />
+</menu>

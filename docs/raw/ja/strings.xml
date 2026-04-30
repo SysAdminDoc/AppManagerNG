@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="faq$aot$$section-title">TCP経由のADB</string>
+    <string name="faq$aot$$restart-title">再起動するたびにTCP経由のADBを再度有効にしなければなりませんか？</string>
+    <string name="faq$aot$$usb-debugging-title">USBデバッグを有効にできません。どうすればよいですか？</string>
+    <string name="faq$aot$$block-tracker-title">ADBモードでもトラッカーやその他のアプリコンポーネントをブロックすることができますか？</string>
+    <string name="faq$aot$$feature-adb-title">ADBモードではどのような機能が利用できますか？</string>
+    <string name="faq$aot$restart">残念ながらそうです。しかしv2.5.13以降では、サーバー・クライアント方式によりシステムと対話的に動作するため、
+\nTCP経由のADBを常に有効にしておく必要はありません。但し\\textbf{開発者向けオプション}の
+\n\\textbf{USBデバッグ}を有効にしておく必要があります。そのためには、\\hyperref[sec:adb-over-tcp]{TCP経由のADB}を有効にした状態でApp Manager
+\nを起動してください。そうすると、\\textit{ADBモードで動作中}とトースト通知が画面下部に表示されます。その後はTCPサーバーを停止させて構いません。
+\nLineageやその派生システムではTCP経由のADBをPCなしでも切り替えできます。
+\n\\textbf{ネットワーク経由のADB} オプションが\\textbf{USBデバッグ}オプションの下部に存在します。但し後者の場合ではTCPサーバーを停止できません。</string>
+    <string name="faq$aot$usb-debugging">チャプター \\ref{ch:guides}の§\\ref{subsec:enable-usb-debugging}をご確認ください。</string>
+    <string name="faq$aot$block-tracker">残念ながらできません。ADBでは限られた \\href{https://github.com/aosp-mirror/platform_frameworks_base/blob/master/packages/Shell/AndroidManifest.xml}{権限}
+\nしか利用できず、アプリのコンポーネント制御はこの中に含まれません。</string>
+    <string name="faq$aot$feature-adb">ADBモードではAppManagerの殆どの機能が利用でき、ADBモードが検出された際、自動的に有効になります。
+\nアプリを無効化、強制停止、データーを消去、AppOpsやアプリ権限を拒否/許可などの機能も含まれます。
+\nまたアプリを確認画面無しでインストールしたり、 \\hyperref[subsubsec:main:running-apps]{実行中のアプリ/プロセス}の確認も可能です。</string>
+    <string name="intro$main$$introduction-chapter-title">はじめに</string>
+    <string name="intro$main$$terminologies-title">用語の定義</string>
+    <string name="intro$main$$supported-versions-title">対応バージョン</string>
+    <string name="intro$main$$official-sources-title">公式ソース</string>
+    <string name="intro$main$$bin-sources-title">バイナリ配布ソース</string>
+    <string name="intro$main$$source-code-links-title">ソースコードへのリンク</string>
+    <string name="intro$main$$translations-title">翻訳</string>
+    <string name="intro$main$$contributing-title">貢献する</string>
+    <string name="intro$main$$buiding-title">ビルド手順</string>
+    <string name="intro$main$$submit-patches-title">パッチを提出する</string>
+    <string name="intro$main$$donation-title">寄付、出資</string>
+    <string name="intro$main$$contact-title">連絡先</string>
+    <string name="intro$main$supported-versions">現在、サポートされているバージョンは、v2.6.0 (安定版)、 v3.0.0 (alpha と デバッグビルド)です。
+\nApp Managerの旧バージョンは、セキュリティ上の脆弱性が含まれている可能性があるため、使用しないでください。</string>
+    <string name="intro$main$translations">App Managerは、プル/マージリクエストによる翻訳を直接受け付けていません。翻訳は、Weblate を介して自動的に管理されます。
+\n翻訳チームに参加するには、\\url{https://hosted.weblate.org/engage/app-manager/}をご覧ください。</string>
+    <string name="intro$main$buiding">ビルド手順は、ソースコードのルートディレクトリにあるBUILDINGファイルに記載されています。</string>
+    <string name="pages$main$$pages-chapter-title">ページ</string>
+    <string name="pages$main-page$$section-title">メインページ</string>
+    <string name="pages$main-page$$how-app-ops-work-title">メインページのアプリケーションリスト内の表示項目</string>
+    <string name="pages$main-page$$batch-operations-title">バッチ処理</string>
+    <string name="pages$main-page$$colour-codes-title">カラーコード</string>
+    <string name="pages$main-page$$application-types-title">アプリケーションタイプ</string>
+    <string name="pages$main-page$$version-info-title">バージョン情報</string>
+    <string name="pages$main-page$$instructions-title">手順</string>
+    <string name="pages$main-page$$sort-title">並び替え</string>
+    <string name="pages$main-page$$filter-title">フィルタ</string>
+    <string name="pages$main-page$$profile_name-title">プロファイル名</string>
+    <string name="pages$main-page$$1-click-ops-title">ワンタップ一括処理</string>
+    <string name="pages$main-page$$running-apps-title">実行中のアプリ</string>
+    <string name="pages$main-page$$profiles-title">プロファイル</string>
+    <string name="pages$main-page$$apk-updater-title">APK Updater</string>
+    <string name="pages$main-page$$settings-title">設定</string>
+    <string name="pages$main-page$instructions">\\textbf{ヘルプ}をタップすると、オフライン版のApp Managerユーザーマニュアルが開きます。
+\n対応する機能スプリット\\texttt{feat\\_docs}がインストールされていない場合や、
+\nマニュアルを読み込むためのWebViewがシステムに存在しない場合、オンライン版が開かれることもあります。</string>
+    <string name="pages$main-page$list-options">\\textbf{表示オプション}には、メインページのリストの並び替えやフィルタリングのためのオプションが含まれています。</string>
+    <string name="pages$main-page$1-click-ops">\\textbf{ワンタップ一括処理} では様々な操作をワンタップで行うことができます。
+\n\\hyperref[sec:1-click-ops-page]{対応するページ}を新しいアクティビティで開きます。</string>
+    <string name="titlepage$quotation">\\begin{quotation}
+\n ``賢明に、そして、ゆっくりと。速く走る者たちは、つまずきますからな\'\'
+\n %\\sourceatright
+\n {--- 修道士ロレンス, \\textit{ロメオとジュリエット}}
+\n \\end{quotation}</string>
+    <string name="titlepage$user_manual">{\\huge\\bfseries ユーザーマニュアル\\par}</string>
+    <string name="intro$main$intro">App Manager は、Android 用の高度なパッケージマネージャです。
+\n数え切れないほどの機能を備えているため、ユーザーを支援するためのユーザーマニュアルが必要です。
+\nこのドキュメントは、App Manager が提供するすべての機能を説明することを目的としており、App Manager のユーザーマニュアルとして機能します。
+\nまた、このドキュメントは、App Managerの「公式」ガイドラインと考えることもでき、App Managerに期待される動作を表しています。
+\n翻訳によって、このドキュメント（英語で書かれている）が誤解される可能性があります。
+\nしたがって、すべての有能なユーザは、App Managerを最大限に活用するために、英語版のドキュメントを読む必要があります。
+\nブログ記事、ビデオ、チャットグループなど、他の非公式またはサードパーティのリソースも同様に存在するかもしれません。
+\nこれらのリソースは多くの人にとって有用かもしれませんが、App Managerの最新バージョンに対応していない可能性があります。App Managerでこのドキュメントからの逸脱が検出された場合、App Managerの\\href{https://github.com/MuntashirAkon/AppManager/issues}{イシュートラッカー}からご報告ください。</string>
+    <string name="intro$main$terminologies">\\begin{itemize}
+\n \\item \\textbf{AM} --- App Managerの略称です。
+\n \\item \\textbf{ブロック/ブロック解除} --- コンポーネントのブロックまたはブロック解除に使用されます。コンポーネントをどのようにブロックするかは、ユーザーの設定に依存します。
+\n \\item \\textbf{IFW} --- インテントファイアウォールの略称です。
+\n \\item \\textbf{Ops} --- Operations（操作)の略称です。例：AppOps、バッチ操作
+\n \\item \\textbf{SSAID} --- \\texttt{Settings.Secure.ANDROID\\_ID}の略称です。各アプリに割り当てられる端末識別子（Android Oreo以降）で、
+\nアプリの署名証明書とパッケージ\\texttt{android}に設定されたSSAIDの組み合わせから生成されます。
+\nそのため、ユーザーが端末のフォーマットを選択しない限り、
+\nアプリに対して同一であることが保証されます。ユーザーの追跡に広く利用されています。
+\n \\item \\textbf{トラッカー} --- \\hyperref[sec:scanner-page]{スキャナーページ}を除き、このドキュメント全体およびApp Managerでトラッカーコンポーネントのことを表します。トラッカーには、クラッシュレポーター、アナリティクス、プロファイリング、識別、広告、位置情報などのライブラリが含まれます。したがって、これらの機能は同等ではありません。また、トラッキングを促進するライブラリにはオープンソース、クローズドソースの区別や偏りはありません。
+\n\\end{itemize}</string>
+    <string name="pages$main-page$$list-options-title">表示オプション</string>
+    <string name="pages$main-page$$termux-title">Termux</string>
+    <string name="pages$main-page$intro">メインページには、インストールされているアプリケーション、アンインストールされているアプリケーション、バックアップされているアプリケーションがすべて表示されます。
+\nインストールされているアプリケーションの項目をタップすると、それぞれのアプリケーションの\\hyperref[sec:app-details-page]{詳細ページ}が表示されます。
+\nアンインストールされたシステムアプリの場合は、アプリの再インストールを行うことができるプロンプトが表示されます。
+\n表示オプションの\\hyperlink{par:main-page-sort}{並び替え} を使用して、アプリの項目をさまざまな方法でソートし、終了時に保存することができます。
+\nまた、\\hyperlink{par:main-page-filter}{フィルタ}を使用して、項目を絞り込むことも可能です。
+\n検索バーを使ったフィルタリングも可能で、正規表現もサポートされています。</string>
+    <string name="pages$main-page$batch-operations">このページでは、一括操作や複数のアプリケーションに対する操作も可能です。
+\n複数選択モードは、アプリのアイコンをタップするか、リスト内の任意の項目を長押しすることで有効になります。
+\n一度アクティブにすると、アプリの詳細ページを開く代わりに、リストの項目をシングルクリックすることでそのアプリが選択されます。
+\nこのモードで、一括操作はページ下部の複数選択メニューに表示されます。次のような操作が含まれます:
+\n\\begin{itemize}
+\n \\item 選択したアプリケーションを\\hyperref[sec:profiles-page]{プロファイル}に追加する
+\n \\item アプリケーションの\\hyperref[sec:backup-restore]{バックアップ、リストア、削除}
+\n \\item アプリケーションからのトラッカーをブロックする
+\n \\item アプリケーションのデータまたはキャッシュを消去する
+\n \\item アプリケーションの有効化/無効化/強制停止/アンインストール
+\n \\item App Managerに保存したブロッキングルールをエクスポート
+\n \\item アプリケーションのバックグラウンド動作を禁止する（Android 7以降）
+\n \\item APKファイルを \\texttt{AppManager/apks} に保存する
+\n \\item \\hyperref[sec:net-policy]{ネット接続ポリシー}を適用する
+\n\\end{itemize}
+\n
+\n\\begin{tip}{Accessibility}
+\n複数選択モードを有効にした後、キーボードまたはリモコンの左右キーで複数選択メニューにナビゲートすることが可能です。
+\n\\end{tip}</string>
+    <string name="pages$main-page$colour-codes">\\begin{itemize}
+\n \\item \\colorbox{AMLightGreyishOrange}{\\textcolor{black}{ライトグレーオレンジ(ライトモード)}} / \\colorbox{AMDarkBlue}{
+\n \\textcolor{white}{紺色 (ナイトモード)}} -- バッチ処理で選択したアプリ
+\n \\item \\colorbox{AMLightRed}{\\textcolor{black}{薄い赤色(ライトモード)}} / \\colorbox{AMVeryDarkRed}{\\textcolor{white}
+\n {茶色(ナイトモード)}} -- 無効化されたアプリ
+\n \\item \\colorbox{AMYellow}{\\textcolor{black}{黄色}} -- デバッグ可能なアプリ
+\n \\item \\textcolor{AMOrange}{オレンジ色の \\textit{日付}} -- アプリはシステムログにアクセス可能
+\n \\item \\textcolor{AMOrange}{オレンジ色の \\textit{UID}} -- 複数のアプリでユーザーIDを共有している
+\n \\item \\textcolor{AMOrange}{オレンジ色の \\textit{SDK}} -- アプリケーションが平文（HTTPなど）のトラフィックを使用している可能性がある
+\n \\item \\textcolor{red}{赤色の \\textit{パッケージ名}} -- データの消去を許可していないアプリ
+\n \\item \\textcolor{red}{赤色の \\textit{バックアップ}} -- AppManager に 1 つ以上のバックアップが存在するアンインストールされたアプリケーション
+\n \\item \\textcolor{AMOrange}{オレンジ色の \\textit{バックアップ}} -- 古いバックアップ,つまり、ベースバックアップにインストールされたアプリケーションの古いバージョンが含まれています
+\n \\item \\textcolor{AMDarkCyan}{シアン色の \\textit{バックアップ}} -- 最新のバックアップ, つまり、ベースバックアップには、インストールされたアプリケーションと同じかそれ以上のバージョンが含まれています
+\n \\item \\textcolor{AMDarkCyan}{シアン色の \\textit{パッケージ名}} -- 強制停止されたアプリ
+\n \\item \\textcolor{AMDarkCyan}{シアン色の \\textit{バージョン}} -- 非アクティブなアプリ
+\n \\item \\textcolor{magenta}{マゼンダ} -- 永続的なアプリケーション、つまり、常に実行状態のままです
+\n\\end{itemize}</string>
+    <string name="pages$main-page$application-types">アプリには、\\textbf{ユーザー}アプリと\\textbf{システム}アプリがあり、次の接尾辞が付きます:
+\n\\begin{itemize}
+\n \\item \\texttt{X} -- マルチアーキテクチャをサポートしています
+\n \\item \\texttt{0} -- アプリにDEXファイルが存在しません
+\n \\item \\texttt{°} -- 休止したアプリ
+\n \\item \\texttt{\\#} -- アプリはシステムに大きなヒープ、すなわち大きな実行時メモリを割り当てるよう要求しています
+\n \\item \\texttt{\?} -- アプリは仮想マシンをセーフモードにするよう要求しています
+\n\\end{itemize}</string>
+    <string name="pages$main-page$version-info">バージョン名の後には、次の接頭辞が付きます:
+\n\\begin{itemize}
+\n \\item \\texttt{\\_} -- ハードウェアアクセラレーションを使用していません（アプリ内のアニメーションや透明度が壊れる）
+\n \\item \\texttt{\\textasciitilde} -- テストビルドのアプリ
+\n \\item \\texttt{debug} -- デバッグ可能なアプリ
+\n\\end{itemize}</string>
+    <string name="pages$main-page$options-menu">オプションメニューには、表示されたアプリの並べ替えやフィルタリング、App Manager内外のさまざまなページへの移動に使用できるオプションが
+\nいくつか用意されています。</string>
+    <string name="intro$main$bin-sources">App Managerは、以下のソースを使用して配布されています。非公式なソースは、App Managerの修正されたバージョンを配布する可能性があり、
+\nそのようなバージョンを使用した結果について、一切の責任を負わないものとします。
+\n\\begin{enumerate}
+\n \\item Official F-Droid repository.\\footnote{安定版リリースのみ}\\\\
+\n \\textit{リンク:} \\url{https://f-droid.org/packages/io.github.muntashirakon.AppManager}
+\n \\item GitHub repository.\\\\
+\n \\textit{安定版:} \\url{https://github.com/MuntashirAkon/AppManager/releases}\\\\
+\n \\textit{デバッグビルド:} \\url{https://github.com/MuntashirAkon/AppManager/actions}
+\n \\item Telegram.\\\\
+\n \\textit{安定版:} \\url{https://t.me/AppManagerChannel}\\\\
+\n \\textit{デバッグビルド:} \\url{https://t.me/AppManagerDebug}
+\n\\end{enumerate}</string>
+    <string name="intro$main$contributing">ユーザーは、役に立つ課題の作成、議論への参加、ドキュメントや翻訳の改善、未認識のライブラリやトラッカーの追加、
+\nソースコードのレビュー、セキュリティ脆弱性の報告など、さまざまな方法でAppManagerの開発に貢献することができます。</string>
+    <string name="intro$main$donation">\\emph{App Managerを使用するのに、寄付や購入は必須ではありません。}App Managerは購入をサポートしていませんが、
+\nOpen Source Collectiveを通じてApp Managerの開発者に寄付を送ることができます。
+\n
+\nOpen Source Collectiveは、オープンソースプロジェクトの財政管理を支援するOpen Collectiveプラットフォーム内の財政ホストです。
+\n現在は銀行振り込み、PayPal、クレジットカード、デビットカード、暗号通貨による寄付に対応しています。
+\n
+\n\\textit{リンク:} \\url{https://opencollective.com/muntashir}.
+\n
+\n寄付を送ることにより、あなたは寄付を利用して要求された機能を優先させないことに同意するものとします。
+\n機能リクエストは、賞金や寄付を必要とせず、開発者の好みに応じて優先順位がつけられます。
+\n
+\n\\emph{App Managerは、資金提供や助成金の申し出を受け付けています。}利害関係のある組織の代表者は、§\\ref{sec:contact}に記載されている連絡先を使用して開発者に直接連絡することができます。</string>
+    <string name="intro$main$source-code-links">GitHub以外はそのミラーです。タグは常に最新であるべきですが、masterブランチが最新であることは保証されていません。
+\nmasterブランチのクローンを作成することが目的であれば、他のリンクではなくGitHubのリンクを使用してください。</string>
+    <string name="pages$main-page$$options-menu-title">オプションメニュー</string>
+    <string name="pages$main-page$$app-usage-title">アプリの使用状況</string>
+    <string name="intro$main$submit-patches">現在、GitHub以外のリポジトリはそのミラーであり、これらのサイトで提出されたプル/マージリクエストは受け付けていません。\\footnote{GitHubのプルリクエストは、対応するパッチを使用して手動でマージされます。そのため、GitHub は誤ってそれらをマージせずにクローズしたとして認識してしまいます。}
+\nその代わり、パッチ（\\texttt{.patch}ファイル）を電子メールに添付して提出することができます。コミットに\\textit{サインオフを行う}必要があります。
+\n詳細は、ソースのルートディレクトリにあるCONTRIBUTINGファイルをご参照してください。
+\n
+\n\\begin{warning}{Notice}
+\n電子メールでパッチを提出する場合、将来的に会話全体が公にアクセス可能となる可能性があります。
+\nそのため、名前とメールアドレス以外の個人を特定できる情報（PII）は記載しないでください。
+\n\\end{warning}</string>
+    <string name="intro$main$contact">Muntashir Al-Islam\\footnote{``Muntashir Akon\'\'と呼ぶこともできます。}\\\\
+\nEメール: \\href{mailto:muntashirakon@riseup.net}{muntashirakon [at] riseup [dot] net}\\\\
+\nGPG鍵フィンガープリント: \\texttt{7bad37c2981e41f8f6abea7f58f0b4f26c346fce}\\\\
+\nGitHub: \\url{https://github.com/MuntashirAkon}\\\\
+\nTwitter: \\url{https://twitter.com/Muntashir}</string>
+    <string name="pages$main-page$sort">メインページに表示されるアプリケーションは、次の方法で並び替えることができます:
+\n\\begin{itemize}
+\n \\item \\textbf{ユーザーアプリを優先} ユーザーアプリが上位に表示します
+\n \\item \\textbf{アプリ名} アプリ名で昇順にリストを並べ替えます。これはデフォルトの並べ替え設定です
+\n \\item \\textbf{パッケージ名} パッケージ名で昇順に並び替えます
+\n \\item \\textbf{最後の更新} 最終更新日を基準に降順で並べ替えます
+\n \\item \\textbf{共有UID} カーネルユーザーIDを基準に降順で並べ替えます
+\n \\item \\textbf{ターゲットSDK} ターゲットSDKに基づいてリストを昇順で並べ替えます
+\n \\item \\textbf{署名} 署名情報をもとに昇順に並べ替えます
+\n \\item \\textbf{無効のものを優先} 無効にされたアプリを上位に表示します
+\n \\item \\textbf{ブロック済みのものを優先} 各アプリケーションが持つブロックされたコンポーネントの数に基づいて、リストを降順に並べ替えます
+\n \\item \\textbf{バックアップ済みを優先} バックアップをとっているアプリケーションを上位に表示します
+\n \\item \\textbf{トラッカー} 各アプリケーションが持つトラッカーコンポーネントの数に基づいて、リストを降順に並べ替えます
+\n \\item \\textbf{最終アクション} App Manager内でアプリケーションに行われたアクションの最新日時に基づいて、リストを降順に並べ替えます。
+\n\\end{itemize}
+\n
+\nさらに、リストを反転させる\\textit{リバース}オプションもあります。ソートの設定にかかわらず、ランダムなソート結果を生成しないようにするために、アプリは最初にアルファベット順にソートされます。</string>
+    <string name="pages$main-page$profile_name">また、\\hyperref[sec:profiles-page]{プロファイル}に存在するアプリケーションのみを表示することも可能です。
+\nこれは、\\hyperref[sec:profiles-page]{プロファイルページ}では行えない特定の操作（プロファイル内のすべてのアプリケーションのアンインストールなど）
+\nをプロファイルに対して行う場合に便利です。</string>
+    <string name="pages$main-page$filter">メインページに表示されるアプリケーションは、次の方法でフィルタリングすることができます:
+\n\\begin{itemize}
+\n \\item \\textbf{ユーザーアプリ} ユーザーアプリのみを表示します
+\n \\item \\textbf{システムアプリ} システムアプリのみを表示します
+\n \\item \\textbf{無効になっているアプリ} 無効になっているアプリを表示します
+\n \\item \\textbf{ルールを適用済みのアプリ} 1つ以上のブロッキングルールがあるアプリを表示します
+\n \\item \\textbf{アクティビティが存在するアプリ} 1つ以上のアクティビティを持つアプリを表示します
+\n \\item \\textbf{バックアップ済みのアプリ} バックアップが1つ以上あるアプリを表示します
+\n \\item \\textbf{起動中のアプリ} 現在実行されているアプリを表示します
+\n \\item \\textbf{分割データを含むアプリ} 1つ以上の分割APKファイルを持つアプリを表示します
+\n \\item \\textbf{インストール済みのアプリ} インストールされているアプリのみを表示します
+\n \\item \\textbf{未インストールのアプリ} インストールされていないアプリのみを表示します
+\n \\item \\textbf{バックアップされたいないアプリ}バックアップが存在しないアプリを表示します
+\n\\end{itemize}
+\n
+\n並べ替えとは異なり、複数のフィルタリングを同時に適用することが可能です。たとえば、「\\textit{ユーザーアプリ}」と「\\textit{無効のアプリ}」の両方を選択して無効になっているユーザーアプリを一覧表示することができます。この機能は、特定の操作を安全に実行するためにユーザーアプリのフィルタリングが必要な\\hyperref[subsec:batch-operations]{バッチ処理}に特に役立ちます。</string>
+    <string name="pages$app-details-page$$section-title">アプリ詳細画面</string>
+    <string name="pages$app-details-page$$colour-codes-title">カラーコード</string>
+    <string name="pages$app-details-page$$app-info-tab-title">アプリ情報タブ</string>
+    <string name="pages$app-details-page$$app-info-general-information-title">基本情報</string>
+    <string name="pages$app-details-page$$horizontal-action-panel-title">横長アクションパネル</string>
+    <string name="pages$app-details-page$$activities-title">アクティビティ</string>
+    <string name="pages$app-details-page$$servcies-title">サービス</string>
+    <string name="pages$app-details-page$$providers-title">プロバイダ</string>
+    <string name="pages$app-details-page$$additional-features-for-rooted-phones-title">Root化された端末向けの追加機能</string>
+    <string name="pages$app-details-page$$blocking-trackers-title">トラッカーをブロックする</string>
+    <string name="pages$app-details-page$$permission-tabs-title">権限タブ</string>
+    <string name="pages$app-details-page$$uses-permissions-title">使用する権限</string>
+    <string name="pages$app-details-page$$signatures-tab-title">署名情報タブ</string>
+    <string name="pages$main-page$app-usage">\\textit{画面の使用時間}、\\textit{データ使用量}（モバイルとWi-Fiの両方）、\\textit{アプリを開いた回数}などのアプリ使用統計は、
+\nメニューの\\textbf{アプリ使用状況}オプションをクリックすることでアクセス可能です。
+\nただし、これには\\textit{使用状況へのアクセス権限}が必要です。
+\n\\hyperref[subsec:enable/disable-features]{設定}で使用状況アクセス機能を無効にしている場合、このメニュー項目は表示されません。</string>
+    <string name="pages$main-page$running-apps">このメニューでは、実行中のアプリケーションまたはプロセスの一覧を表示する新しいページを開きます。
+\nまた、現在のメモリとキャッシュ（利用可能な場合）の使用量も表示されます。
+\nルートまたはADBがApp Managerで利用できない場合、Androidの最近のバージョンでのみ表示されます。
+\n実行中のアプリケーションまたはプロセスは、結果ページ内で強制停止またはキルすることもできます。
+\n\\hyperref[subsubsec:log-viewer]{ログビューア}でプロセスID（PID）ごとのログを確認することもできます。
+\nまた、アイコンをタップするか、項目を長押しすることで、バッチ処理を行うことができます。各項目をタップすると、より詳細な情報が表示されるダイアログが開きます。</string>
+    <string name="pages$main-page$profiles">このメニュー項目は、\\hyperref[sec:profiles-page]{プロファイルページ}を開きます。プロファイルは、定期的に実行するタスクを設定するための方法です。
+\nまた、ショートカットで呼び出すこともできます。</string>
+    <string name="pages$main-page$apk-updater">\\href{https://github.com/rumboalla/apkupdater}{APK Updater}というアプリがシステムにインストールされている場合、
+\nこのメニュー項目から直接開くことができます。アプリがシステムにインストールされていない場合、このオプションは表示されません。</string>
+    <string name="pages$app-details-page$$permissions-title">権限</string>
+    <string name="pages$main-page$termux">\\href{https://github.com/termux/termux-app}{Termux}アプリがシステムにインストールされている場合、
+\nこのメニュー項目から実行中のセッション(または新しいセッション)を直接開くことができます。
+\nアプリがシステムにインストールされていない場合、このオプションは表示されません。</string>
+    <string name="pages$app-details-page$$app-info-options-menu-title">オプションメニュー</string>
+    <string name="pages$app-details-page$$config-termux-title">Termuxを構成</string>
+    <string name="pages$app-details-page$$component-tabs-title">コンポーネントタブ</string>
+    <string name="pages$app-details-page$$receivers-title">レシーバ</string>
+    <string name="pages$app-details-page$$blocking-components-title">コンポーネントをブロックする</string>
+    <string name="pages$app-details-page$$app-ops-title">App Ops</string>
+    <string name="pages$main-page$settings">アプリ内の\\hyperref[sec:settings-page]{設定画面}を表示するメニューです。</string>
+    <string name="pages$app-details-page$colour-codes">このページで使用している背景色とその意味の一覧です:
+\n\\begin{itemize}
+\n \\item \\colorbox{AMRed}{\\textcolor{black}{赤 (ライト)}} / \\colorbox{AMDarkRed}{\\textcolor{white}{紅赤 (ナイト)}}
+\n -- Dangerousフラグを持つAppOpsや権限、またはApp Manager内でブロックされたコンポーネントを表します。
+\n
+\n \\item \\colorbox{AMLightRed}{\\textcolor{black}{うすだいだい (ライト)}} / \\colorbox{AMVeryDarkRed}{\\textcolor{white}{茶色
+\n(ナイト)}} -- App Managerの外部で無効化されているコンポーネントを表します。
+\n
+\n \\begin{tip}{Note}
+\n無効とマークされたコンポーネントは、必ずしもユーザーによって無効化されたことを意味するものではありません。
+\nシステムによって無効にされているか、マニフェストで無効とマークされている可能性もあります。
+\n無効なアプリケーションのコンポーネントは、システム (および App Manager) によっても無効とみなされます。
+\n \\end{tip}
+\n
+\n \\item \\colorbox{AMVividOrange}{\\textcolor{black}{オレンジ (ライト)}} / \\colorbox{AMVeryDarkOrange}{
+\n \\textcolor{white}{うすいオレンジ (night)}} -- トラッカーコンポーネントを表します。
+\n
+\n \\item \\colorbox{AMSoftMagenta}{\\textcolor{black}{Soft magenta (day)}} / \\colorbox{AMVeryDarkViolet}{
+\n \\textcolor{white}{very dark violet (night)}} -- 実行中のサービスを表します。
+\n\\end{itemize}</string>
+    <string name="pages$app-details-page$intro">\\textbf{アプリ詳細}ページは、11個のタブで構成されています。
+\nマニフェストのすべての属性、\\hyperref[ch:app-ops]{AppOps}、署名情報、ライブラリなど、
+\nアプリが持ちうるほぼすべての情報が記述されています。</string>
+    <string name="pages$app-details-page$app-info-tab">\\textbf{アプリ情報}タブには、アプリケーションに関する一般的な情報が含まれています。
+\nまた、このタブ内で実行可能な多くのアクションが表示されます。</string>
+    <string name="pages$app-details-page$app-info-general-information">以下のリストは、アプリ情報タブに記載されている順番と同じです。
+\n\\begin{itemize}
+\n \\item \\textbf{アプリ名} アプリのアイコンです。アプリにアイコンがない場合は、システムデフォルトのアイコンが表示されます。
+\n
+\n \\item \\textbf{アプリ名} アプリの名称です。
+\n
+\n \\item \\textbf{バージョン} アプリケーションのバージョンは、2つの部分に分かれています。最初の部分は\\textit{バージョン名}と呼ばれ、この部分のフォーマットは様々ですが、多くの場合ドットで区切られた複数の整数から構成されています。2つ目の部分は\\textit{バージョンコード}と呼ばれ、バージョン名の横の括弧内に記載されています。バージョンコードは整数で、通常はアプリのバージョンを区別するために使用されます。（バージョン名は機械では読めないことが多いため）一般に、新しいバージョンのアプリは、古いバージョンのアプリよりもバージョンコードが高くなります。たとえば、あるアプリのバージョンコードが\\texttt{123}と\\texttt{125}の場合、後者のバージョンコードの方が高いので、後者は前者よりも更新されていると言えます。プラットフォーム（モバイル、タブ、デスクトップなど）に依存するアプリケーションの場合、これらのバージョン名は、プラットフォームごとに接頭辞を使用しているため、誤解を招く可能性があります。
+\n
+\n \\item \\textbf{タグ} タグには、アプリの基本的で簡潔な、有用な情報が含まれています。例えば、\\textit{トラッカー情報}（トラッカーコンポーネントの数など）、\\textit{アプリの種類}（ユーザーアプリかシステムアプリか、アプリがシステムアプリの更新版かMagiskを使ってシステムレスでインストールされたか）、\\textit{実行中}（アプリのサービスがバックグラウンドで実行されているか）、\\textit{分割APK情報}（例. split APK info（分割数）、\\textit{debuggable}（アプリはデバッグバージョン）、\\textit{test only}（アプリはテスト専用アプリ）、\\textit{ラージヒープ}（アプリは大きなヒープサイズを要求）、\\textit{停止}（アプリは強制停止）、\\textit{無効}（アプリは無効）、\\textit{キーストア}（アプリはAndroid KeyStoreにアイテムがある）、\\textit{no code}（アプリにはコードが関連付けられていない）、\\hyperref[sec:terminologies]{\\textit{SSAID}}、\\textit{netpolicy}（バックグラウンドデータ使用などネットワークポリシー）、\\textit{バッテリー最適化}が表示されます。\\textit{test only}と\\textit{debuggable}を含めることの重要性は、これらのプロパティを持つアプリが追加のタスクを実行できること、またはこれらのアプリが個人情報を保存する場合、セキュリティ上の問題を引き起こす可能性のあるルートなしで実行できることにあります。\\textit{ラージヒープ}は、アプリが必要に応じてより多くのメモリ（RAM）を割り当てられることを意味します。ほとんどの場合、これは有害ではないかもしれませんが、大きなヒープを要求する不審なアプリは慎重に考慮する必要があります。
+\n
+\n \\item \\textbf{アクションパネル} アプリに関する様々なアクションを含むアクションパネルです。ここで利用できるアクションの一覧は、\\ref{subsubsec:horizontal-action-panel}節を参照してください。
+\n
+\n \\item \\textbf{パスとディレクトリ} \\textit{アプリディレクトリ}（APK ファイルが格納される場所）、\\textit{データディレクトリ}（内部、デバイス保護、外部）、\\textit{分割 APK ディレクトリ}（分割名と共に）、\\textit{ネイティブ JNI ライブラリ}（存在する場合）を含むアプリケーションパスに関するさまざまな情報が含まれています。JNI ライブラリは、通常 C/C++ で記述されたネイティブコードを呼び出すために使用されます。ネイティブライブラリを使用すると、アプリの実行速度が向上したり、ほとんどのゲームのようにJava以外の言語で書かれたサードパーティライブラリをアプリが使用できるようになります。これらのディレクトリは、各項目の右側にある起動アイコンをクリックして、お気に入りのファイルマネージャ（サポートしており、必要なパーミッションがある場合）を使用して開くこともできます。
+\n
+\n \\item \\textbf{最終起動時からのデータ使用量} 説明不要のオプションです。しかし、いくつかの問題のために、結果はしばしば誤解を招き、単に間違っている可能性があることに注意してください。この部分は、新しいデバイスで\\textit{使用状況}へのアクセス許可が与えられていない場合、隠されたままになります。
+\n
+\n \\item \\textbf{ストレージとキャッシュ} アプリ（APKファイル）、データ、キャッシュのサイズに関する情報を表示します。古い端末では、外部データ、キャッシュ、メディア、OBBフォルダのサイズも表示されます。この部分は、新しいデバイスで \\textit{使用状況}へのアクセス許可が与えられていない場合、隠されたままになります。
+\n
+\n \\item \\textbf{詳細情報} 次のような情報を表示します。
+\n \\begin{itemize}
+\n \\item \\textbf{SDK} Android SDKに関連する情報を表示します。値は2つ（古い端末では1つ）あります。\\textit{最大}はターゲットSDK、\\textit{最小}は最小SDKを表します（後者はそれ以上古い端末では利用できません）。現在プラットフォームがサポートしている最大のSDKを持つアプリを使用するのが好ましいです。SDKは、\\textbf{APIレベル}とも呼ばれます。
+\n \\seealsoinline{\\href{https://ja.wikipedia.org/wiki/Android\\%E3\\%81\\%AE\\%E3\\%83\\%90\\%E3\\%83\\%BC\\%E3\\%82\\%B8\\%E3\\%83\\%A7\\%E3\\%83\\%B3\\%E5\\%B1\\%A5\\%E6\\%AD\\%B4}{Androidのバージョン履歴}}
+\n
+\n \\item \\textbf{フラグ} The application flags used at the time of building the app. For a complete list of flags
+\n and what they do, visit the
+\n \\href{https://developer.android.com/reference/android/content/pm/ApplicationInfo\\#flags}{official documentation}.
+\nアプリのビルド時に使用するアプリケーションフラグです。フラグの完全なリストとその役割については、\\href{https://developer.android.com/reference/android/content/pm/ApplicationInfo\\#flags}{公式ドキュメント}を参照してください。
+\n
+\n \\item \\textbf{インストール日時} アプリが最初にインストールされた日時です。
+\n
+\n \\item \\textbf{アップデート日時} アプリが最後に更新された日時です。アプリが更新されていない場合は、\\textit{インストール日時}と同じになります。
+\n
+\n \\item \\textbf{インストール日時} このアプリをインストールしたアプリです。すべてのアプリが、インストーラアプリを登録するためにパッケージマネージャに使用する情報を提供するわけではありません。そのため、この値を鵜呑みにするべきではありません。
+\n
+\n \\item \\textbf{ユーザーID} Androidシステムがアプリに設定した固有のユーザーIDです。共有アプリケーションの場合、同じ\\textit{共有ユーザーID}を持つ複数のアプリケーションに同じユーザーIDが割り当てられます。
+\n
+\n \\item \\textbf{共有UID} 一緒に共有するアプリケーションに適用されます。IDとありますが、実際は文字列の値です。共有するアプリケーションは、同じ\\hyperref[subsec:signatures-tab]{署名}を持つ必要があります。
+\n
+\n \\item \\textbf{メインアクティビティ} アプリ起動時の\\hyperref[subsubsec:activities]{アクティビティ}です。アプリにアクティビティがあり、そのいずれかがランチャーから開くことができる場合にのみ表示されます。また、右側には起動ボタンがあり、このアクティビティを起動するために使用することができます。
+\n \\end{itemize}
+\n\\end{itemize}</string>
+    <string name="pages$app-details-page$horizontal-action-panel">前項のアクションパネルは、次のようなアプリに関連するさまざまなアクションで構成されています。
+\n\\begin{itemize}
+\n \\item \\textbf{起動} ランチャー\\hyperref[subsubsec:activities]{アクティビティ}を持つアプリケーションは、このボタンから起動することができます。
+\n
+\n \\item \\textbf{無効化} アプリを無効化します。アプリがすでに無効になっている場合や、Rootアクセスや\\hyperref[sec:adb-over-tcp]{ADB}を持っていないユーザーには、このボタンは表示されません。アプリを無効にすると、そのアプリはランチャーアプリに表示されなくなります。また、そのアプリのショートカットも削除されます。ユーザーアプリを無効にした場合、App Managerまたはそれに対応する他のツールからのみ有効にすることができます。Androidの設定には、無効にしたユーザーアプリを有効にするオプションはありません。
+\n
+\n \\item \\textbf{アンインストール} アプリをアンインストールします。
+\n
+\n \\item \\textbf{有効化} アプリを有効化します。アプリがすでに有効化されている場合や、RootアクセスやADBを持っていないユーザーには、このボタンは表示されません。
+\n
+\n \\item \\textbf{強制終了} アプリを強制停止します。 アプリを強制停止すると、明示的にアプリを開いてからでないと、そのアプリはバックグラウンドで実行できなくなります。しかし、これは必ずしも正しいとは限りません。
+\n
+\n \\item \\textbf{データを消去} アプリのデータを消去します。これには、アカウント（アプリによって設定されている場合）、キャッシュなど、内部および多くの場合外部のディレクトリに保存されているすべての情報が含まれます。例えば、App Managerからデータを消去すると、アプリ内に保存されているすべてのルールが削除されます（ただし、ブロックは削除されません）。そのため、ルールのバックアップを常に取っておく必要があります。このボタンは、RootアクセスまたはADBを持っていないユーザーには表示されません。
+\n
+\n \\item \\textbf{キャッシュを消去} アプリのキャッシュのみをクリアします。アプリのキャッシュをクリアする方法は、Android自体にはありません。そのため、アプリの内部ストレージからキャッシュをクリアするには、Root権限が必要です。
+\n
+\n \\item \\textbf{インストール} サードパーティのアプリで開いたAPKをインストールします。このボタンは、インストールされていない外部APKの場合のみ表示されます。
+\n
+\n \\item \\textbf{最新情報} インストールされているAPKよりもバージョンコードの高いAPKに対して表示されるボタンです。このボタンをクリックすると、バージョン間の差分がダイアログで表示されます。表示される情報は、\\textit{バージョン}、\\textit{トラッカー}、\\textit{パーミッション}、\\textit{コンポーネント}、\\textit{署名情報}（チェックサムの変更）、\\textit{機能}、\\textit{共有ライブラリ}、\\textit{SDK}などです。
+\n
+\n \\item \\textbf{アップデート} インストールされているアプリよりバージョンコードが高いアプリに対して表示されます。
+\n
+\n \\item \\textbf{再インストール} インストールされているアプリと同じバージョンコードを持つアプリに対して表示されます。
+\n
+\n \\item \\textbf{ダウングレード} インストールされているアプリよりバージョンコードが低いアプリに対して表示されます。
+\n
+\n \\item \\textbf{マニフェスト} このボタンをクリックすると、アプリのマニフェストファイルが別ページで表示されます。マニフェストファイルは、対応するトグルボタン (右上) を使用してラップまたはアンラップすることができ、保存ボタンを使用して共有ストレージに保存することができます。
+\n
+\n \\item \\textbf{スキャナー} このボタンをクリックすると、アプリのトラッカーとライブラリの情報が表示されます。まず、アプリをスキャンして、クラスのリストを抽出し、クラス一覧と複数のシグネチャをマッチングさせます。その後、スキャン結果が表示されます。\\\\
+\n \\seealsoinline{\\hyperref[sec:scanner-page]{スキャナーページ}}
+\n
+\n \\item \\textbf{共有設定} このボタンをクリックすると、アプリで使用されている共有環境設定の一覧が表示されます。リスト内の設定項目をクリックすると、\\hyperref[sec:shared-preferences-editor-page]{共有設定エディター}が表示されます。このオプションは、Rootユーザーのみに表示されます。
+\n
+\n \\item \\textbf{データベース} このボタンをクリックすると、アプリが使用しているデータベースの一覧が表示されます。これはもっと改良が必要で、将来的にはデータベース・エディターが追加されるかもしれません。このオプションは、Rootユーザーのみに表示されます。
+\n
+\n \\item \\textbf{F-Droid} 任意の\\textit{F-Droid}クライアントでアプリのページを開きます。
+\n
+\n \\item \\textbf{ストア} \\textit{Aurora Store}でアプリのページを開きます。このオプションは、\\textit{Aurora Store}がインストールされている場合のみ表示されます。
+\n\\end{itemize}</string>
+    <string name="pages$app-details-page$app-info-options-menu">ページの右上にあるのが、オプションメニューです。そこにあるオプションとその説明は以下の通りです:
+\n\\begin{itemize}
+\n \\item \\textbf{共有} 共有ボタンでAPKファイルを共有したり、\\textit{APKSファイル}（アプリが複数分割されている場合）を\\href{https://github.com/Aefyr/SAI}{SAI}にインポートすることができます。任意のファイルマネージャーから共有し、ストレージにファイルを保存することができます。
+\n
+\n \\item \\textbf{更新} アプリ情報タブの内容を更新します。
+\n \\item \\textbf{設定画面で開く} Android設定画面でアプリの詳細画面を開きます。
+\n \\item \\textbf{バックアップ/復元} バックアップ・復元を行うダイアログを開きます。
+\n \\item \\textbf{ブロッキングルールをエクスポート} App Managerでこのアプリに対して設定されたルールをエクスポートします。
+\n
+\n \\item \\textbf{Termuxで開く} Termuxでアプリを開きます。これは実際には \\texttt{su - user\\_id} を実行します。ここで \\texttt{user\\_id} はアプリのカーネルユーザーID（\\hyperref[subsubsec:app-info-general-information]{基本情報セクション}で説明されています）を表します。このオプションはRootユーザーにのみ表示されます。サードパーティアプリケーションからコマンドを実行するように Termux を設定する方法については §\\ref{subsubsec:config-termux} を参照してください。
+\n
+\n \\item \\textbf{Termuxで実行} Termuxで\\texttt{run-as package\\_name}を使用してアプリを開きます。これはデバッグ可能アプリにのみ適用され、Root及びADBの両方で動作します。サードパーティアプリケーションからコマンドを実行するように Termux を設定する方法については §\\ref{subsubsec:config-termux} を参照してください。
+\n
+\n \\item \\textbf{アイコンを抽出} アプリのアイコンを抽出して任意の場所に保存します。
+\n\\end{itemize}</string>
+    <string name="pages$app-details-page$servcies">ユーザーが閲覧することができる\\hyperref[subsubsec:activities]{アクティビティ}とは異なり、\\textbf{サービス}はバックグラウンドタスクを処理します。
+\n例えば、スマートフォンのブラウザを使ってインターネットからファイルをダウンロードする場合、ブラウザはコンテンツをダウンロードするためにバックグラウンドサービスを使用しています。
+\n
+\nアクティビティを終了すると、通常はすぐにメモリ上から破棄されます（端末の空きメモリの量など、多くの要因に依存します）。しかしサービスは、必要に応じて無期限に実行することができます。より多くのサービスがバックグラウンドで実行されている場合、メモリや処理能力が不足するため、携帯電話の動作が遅くなり、携帯電話のバッテリーがより速く消耗する可能性があります。新しいAndroidのバージョンでは、すべてのアプリでバッテリーの最適化機能がデフォルトで有効になっています。この機能を有効にすると、システムは任意のサービスをランダムに終了させることができます。
+\n
+\nところで、アクティビティもサービスもメイン\\href{https://stackoverflow.com/questions/7597742}{ルーパー}と呼ばれる同じルーパーで実行されるため、サービスが本当にバックグラウンドで実行されているとは限りません。それを保証するのは、アプリケーションの開発者の仕事です。アプリケーションとサービスは\\hyperref[subsubsec:app-details-receivers]{ブロードキャストレシーバー}を使って通信しています。</string>
+    <string name="pages$app-details-page$receivers">\\textbf{レシーバー}（\\textit{ブロードキャストレシーバー}とも呼ばれる）は、特定のイベントに対して特定のタスクの実行を呼び出すために使用することができます。これらのコンポーネントは、ブロードキャストメッセージを受信するとすぐに実行されるため、ブロードキャストレシーバーと呼ばれます。これらのブロードキャストメッセージは、インテントと呼ばれるメソッドを使用して送信されます。インテントはAndroidの特別な機能で、アプリケーションやアクティビティ、サービスを開いたり、ブロードキャストメッセージを送信したりするために使われます。そのため、\\hyperref[subsubsec:activities]{アクティビティ}と同様に、ブロードキャストレシーバもインテントフィルターを用いて、必要なブロードキャストメッセージのみを受信することができます。ブロードキャストメッセージは、システムまたはアプリケーション自体のいずれかによって送信することができます。ブロードキャストメッセージが送信されると、対応するレシーバーはシステムによって起動され、タスクを実行できるようになります。例えば、メモリが少ない場合、モバイルデータを有効にしたり、Wifiに接続した後に、端末がフリーズしたり、一瞬ラグが発生することがあります。なぜだか不思議に思ったことはありませんか？これは、「android.net.conn.CONNECTIVITY_CHANGE」を受信できるブロードキャストレシーバーが、データ接続を有効にすると同時に、システムによって起こされるからです。多くのアプリがこのインテントフィルタを使っているため、これらのアプリはすべて、システムによってほとんどすぐに起こされ、フリーズや遅延の原因になっています。要するに、レシーバはプロセス間通信（IPC）、つまり異なるアプリ間（必要な権限がある場合）、あるいは単一アプリケーションの異なるコンポーネント間の通信に使用できます。</string>
+    <string name="pages$app-details-page$providers">\\textbf{プロバイダ}（\\textit{コンテンツプロバイダ}ともいう）は、アプリ内のデータ管理に使用されます。例えば、App ManagerでAPKファイルの保存やルールのエクスポートを行う場合、「androidx.core.content.FileProvider」というコンテンツプロバイダを使用します。データベース管理、トラッキング、検索など、様々なコンテンツ関連のタスクを管理するために、他のコンテンツプロバイダや、カスタムプロバイダーもあります。各コンテンツプロバイダは、パッケージ名と同様に、Androidエコシステム全体でその特定のアプリケーションに固有のAuthorityと呼ばれるフィールドを持っています。</string>
+    <string name="pages$app-details-page$config-termux">デフォルトでは、Termuxはサードパーティアプリケーションからのコマンドの実行が許可されていません。
+\nこのオプションを有効にするには、\\texttt{\\textasciitilde/.termux/termux.properties} に \\texttt{allow-external-apps=true} を追加し、
+\nTermux v0.96 以降を実行している必要があります。
+\n
+\n\\begin{tip}{Info}
+\nこのオプションを有効にしても、Termuxのセキュリティは低下しません。
+\nサードパーティアプリは、他の権限と同様に、Termuxで任意のコマンドを実行できるようにユーザーに要求する必要があります。
+\n\\end{tip}</string>
+    <string name="pages$app-details-page$component-tabs">\\textbf{アクティビティ}、\\textbf{サービス}、\\textbf{レシーバ}（\\textit{ブロードキャストレシーバ}）、\\textbf{プロバイダ}（\\textit{コンテンツプロバイダ}）を合わせてアプリケーションコンポーネントと呼びます。
+\nそれらは多くの点で同様の機能を共有しているからです。例えば、それらはすべて\\textit{名前}と\\textit{ラベル}を持っています。
+\nコンポーネントは、あらゆるアプリケーションの構成要素であり、そのほとんどはアプリケーションマニフェストで宣言されなければなりません。
+\nアプリケーションマニフェストは、アプリケーション固有のメタデータが格納されるファイルです。
+\nAndroidシステムは、メタデータを読み取ることで、アプリケーションで何を行うかを学習します。
+\nこれらのタブで使用される色については、§\\ref{subsec:app-details-colour-codes}で説明しています。
+\nまた、オーバーフローメニューのソートオプションを使用して、ブロックされたコンポーネントやトラッカーコンポーネントをリストの上位に表示するよう、
+\nコンポーネントのリストを\\textbf{並び替え}る機能があります。</string>
+    <string name="pages$app-details-page$activities">\\textbf{アクティビティ}は、アプリ内の閲覧できるウィンドウやページです（例えば、\\textit{メインページ}と\\textit{アプリ詳細ページ}は別のアクティビティです）。つまり、アクティビティは、ユーザーインターフェース（UI）のコンポーネントです。各アクティビティは、\\textit{ウィジェット}や\\textit{フラグメント}と呼ばれる複数のUIコンポーネントを持つことができ、同様に、後者のコンポーネントも、それぞれ複数のものを入れ子にしたり、オーバーレイすることができます。しかし、アクティビティはマスターコンポーネントです。アクティビティを2つネストさせることはできません。アプリケーションの開発者は、\\textit{インテントフィルター}と呼ばれる方法を使用して、アクティビティ内で外部ファイルを開くことを選択することもできます。ファイルマネージャーを使ってファイルを開こうとすると、ファイルマネージャーかシステムがインテントフィルターをスキャンして、どのアクティビティーがその特定のファイルを開けるかを決め、これらのアクティビティーでファイルを開けるように提案します。（したがって、アプリケーション自体には何の関係もありません）
+\n
+\n\\textit{エクスポート可能}なアクティビティは、通常、サードパーティアプリで開くことができます（一部のアクティビティには権限が必要なため、その場合はその権限を持つアプリケーションのみが開くことができます）。\\textit{アクティビティ}タブでは、アクティビティ名（各リスト項目の上部）がボタンとなっています。これは、\\textit{エクスポート可能}なアクティビティでは有効で、それ以外では無効になっています（Rootユーザーはどのアクティビティでも開くことができます）。ボタンをクリックすると、App Managerでアクティビティを直接開くことができます。また、アクティビティを長押しすることで、インタセプターのページを開くことができます。現在は、\\textit{エクスポート可能}なアクティビティに対してのみ機能します。
+\n
+\n\\begin{warning}{Notice}
+\n例えば、\\textit{アプリ詳細アクティビティ}は、少なくともパッケージ名を提供する必要があるため、開くことができません。これらの依存関係は、常にプログラムで推論することはできません。したがって、App Managerを使用してそれらを開くことはできません。
+\n\\end{warning}
+\n
+\nまた、これらのエクスポート可能なアクティビティのショートカットを作成し（専用ボタンを使用）、必要であれば、ショートカットの編集ボタンでショートカットも編集することができます。
+\n
+\n\\begin{danger}{Caution}
+\nApp Managerをアンインストールすると、App Managerで作成したショートカットはすべて失われます。
+\n\\end{danger}</string>
+    <string name="pages$app-details-page$additional-features-for-rooted-phones">これらのタブでは非Rootユーザーよりも、Rootユーザーは様々な操作を行うことができます。</string>
+    <string name="pages$app-details-page$blocking-trackers">トラッカーコンポーネントを無効にするには、三点メニューの「トラッカーをブロック」を使用します。
+\n現在表示されているタブに関係なく、すべてのトラッカーコンポーネントがブロックされます。
+\n
+\n\\begin{tip}{Info}
+\nトラッカーコンポーネントは、アプリのコンポーネントの部分集合です。
+\nしたがって、他のコンポーネントのブロックに使用されるのと同じ方法によりブロックされます。
+\n\\end{tip}
+\n
+\n\\begin{amseealso}
+\n \\item \\hyperref[subsec:tracker-classes-versus-tracker-components]{FAQ: トラッカーのクラスとトラッカーコンポーネント}
+\n \\item \\hyperref[sec:scanner-page]{スキャナーページ}
+\n \\item \\hyperref[subsec:block-unblock-trackers]{ワンタップ一括処理: トラッカーをブロック/ブロック解除}
+\n\\end{amseealso}</string>
+    <string name="pages$app-details-page$signatures-tab_2">ここに表示されるチェックサムは、\\textit{MD5}、\\textit{SHA1}、\\textit{SHA256}の3種類です。
+\n
+\n\\begin{danger}{Caution}
+\n署名情報の検証には、\\textit{SHA256}チェックサムのみ、もしくはこれら3つすべてを使用することを推奨します。
+\n\\textit{MD5}や\\textit{SHA1}のチェックサムだけでは、複数の証明書に対して同じハッシュを生成する可能性あるので、
+\nそれらのみに依存しないようにしてください。
+\n\\end{danger}</string>
+    <string name="pages$app-details-page$blocking-components">各コンポーネント項目の右端には、「ブロック」ボタンがあります。（ブロックされているときは「ブロック解除」ボタンとなります）
+\nこのボタンを使って、そのコンポーネントのブロックの状態を切り替えることができます。
+\n\\hyperref[subsubsec:instant-component-blocking]{インスタントブロッキング}を有効にしていない場合、
+\nまたは以前にアプリケーションにブロックを適用していない場合は、
+\n3点メニューの\\textbf{ルールを反映}オプションで変更を適用する必要があります。
+\nまた、\\textbf{ルールを除去}オプションから、すでに適用されたルールを削除することもできます。
+\n
+\n\\seealsoinline{\\hyperref[sec:faq:app-components]{FAQ: アプリのコンポーネント}}</string>
+    <string name="pages$app-details-page$permission-tabs">\\textbf{App Ops}、\\textbf{Uses Permissions}、\\textbf{Permissions}タブは、権限に関連しています。
+\nAndroidでは、同じID(\\textit{共有ID}として知られます)を持たないアプリやプロセス間の通信は、しばしばパーミッション（複数可）を必要とします。
+\nこれらの権限は、権限コントローラーによって管理されます。
+\nアプリケーションのマニフェストに記載されていれば自動的に付与される\\textit{通常}の権限もありますが、
+\n\\textit{dangerous}、\\textit{development}パーミッションはユーザーの確認が必要です。
+\nこれらのタブで使用される色については、\\ref{subsec:app-details-colour-codes}節で説明しています。</string>
+    <string name="pages$app-details-page$app-ops">\\textbf{App Ops} は、\\textbf{Application Operations}(アプリケーションの操作)の略です。
+\nAndroid 4.3以降、\\textit{App Ops}はAndroidシステムによってアプリ権限の大部分を制御するために使用されています。
+\n各AppOpsは、それらに関連付けられた一意の番号を持っており、それはApp Opsタブの最初の括弧内に閉じられています。
+\nまた、プライベート名を持ち、任意でパブリック名を持つことができます。
+\nいくつかのAppOpsは、\\textit{権限}とも関連付けられています。
+\nAppOpsの保護レベルは、関連付けられた権限に基づいて決定されます。
+\n\\textit{フラグ}、\\textit{権限名}、\\textit{権限の説明}、\\textit{パッケージ名}、\\textit{グループ}のような情報は、
+\n関連付けられた\\hyperref[subsubsec:permissions]{権限}から取得されます。
+\nその他の情報としては、以下のようなものがあります:
+\n\\begin{itemize}
+\n \\item \\textbf{モード} 現在の認可状態を表し、
+\nallow、deny（やや語弊がありますが、単にエラーを意味します）、
+\nignore（実際には拒否を意味します）、default（ベンダーが内部で設定したデフォルトのリストから推測されます）、
+\nforeground（新しいAndroidシステムでは、アプリケーションがフォアグラウンドで実行中のときのみAppOpsが使用できることを意味します）があります。
+\nまた、ベンダーが設定したいくつかのカスタムモード（例えば、MIUIの場合はask）があります。
+\n
+\n \\item \\textbf{使用した時間} このAppOpsが使用された時間を表します。
+\n
+\n \\item \\textbf{許可した時間} このAppOpsが最後に許可された時間を表します。
+\n
+\n \\item \\textbf{拒否した時間} このAppOpsが最後に拒否された時間を表します。
+\n\\end{itemize}
+\n
+\n\\begin{tip}{Info}
+\n このタブの内容は、ADBにてtexttt{android.permission.GET\\_APP\\_OPS\\_STATS}権限が付与されている場合、非Rootユーザーでも見ることができます。
+\n\\end{tip}
+\n
+\n各AppOpsの項目の横にトグルボタンがあり、AppOpsを許可または拒否（無視）するために使用することができます。
+\nデバイスで利用可能な他のモードを設定する必要がある場合は、項目を長押ししてください。
+\nタブに表示されていないAppOpsを追加で設定する必要がある場合は、
+\nメニューの\\textit{カスタムAppOpsを適用}オプションを使用します。
+\nまた、\\textit{デフォルトに戻す}オプションを使用して変更内容をリセットしたり、
+\nメニューの対応するオプションを使用して危険なAppOpsをすべて拒否したりすることができます。
+\nまた、AppOpsの名前と関連する一意の番号（または値）で昇順に並べ替えることもできます。
+\nまた、対応するソートオプションを使用して、拒否されたAppOpsを最初に表示することができます。
+\n
+\n\\begin{warning}{Warning}
+\nAppOpsを拒否すると、アプリケーションが誤動作することがあります。
+\nそのような場合は、\\textit{デフォルトに戻す}オプションを使用してください。
+\nAppOpsの動作の性質上、システムがそれを適用するのに時間がかかることがあります。
+\n\\end{warning}
+\n
+\n\\seealsoinline{\\hyperref[ch:app-ops]{付録: App Ops}}</string>
+    <string name="pages$app-details-page$uses-permissions">\\textbf{Uses Permissions}は、アプリケーションで使用される権限です。マニフェストで\\texttt{uses-permission}タグを使用して宣言されます。
+\n\\textit{フラグ}、\\textit{パーミッション名}、\\textit{パーミッションの説明}、\\textit{パッケージ名}、\\textit{グループ}などの情報は、
+\n関連する\\hyperref[subsubsec:permissions]{権限}から取得されます。
+\n
+\n\\textbf{RootおよびADBユーザー}は、各権限項目の右側にあるトグルボタンを使用して、
+\n\\textit{dangerous}権限と\\textit{development}権限を許可したり、取り消したりすることができます。
+\nまた、メニューの対応するオプションを使用して、危険なパーミッションを一度に取り消すこともできます。
+\nAndroidは\\textit{通常の} パーミッション（そのほとんどがそうですが）を変更することができないので、
+\nこの2種類のパーミッションのみ取り消すことができます。
+\n唯一の選択肢は、アプリケーションマニフェストを編集し、そこからこれらの権限を削除することです。
+\n
+\n\\begin{tip}{Info}
+\ndangerous権限はシステムによってデフォルトで拒否されているため、
+\nすべてのdangerous権限を取り消すことは、すべての権限をリセットすることと同じです。
+\n\\end{tip}
+\n
+\n\\begin{tip}{Notice}
+\nAPI23以前を対象としたアプリは、権限を変更することができません。
+\nそのため、そのようなアプリではパーミッションの切り替えは無効です。
+\n\\end{tip}
+\n
+\nユーザーは、権限名でソートしたり（昇順）、メニューの対応するオプションを使用して、拒否された権限や
+\ndangerous権限を最初に表示するように選択することができます。</string>
+    <string name="pages$app-details-page$signatures-tab_1">\\textbf{署名}は、実際には署名情報と呼ばれ、アプリケーションは公開する前に、
+\nアプリケーション開発者によって1つ以上の署名証明書によって署名されます。
+\nアプリケーションの完全性（そのアプリケーションが実際の開発者のものかどうか、
+\n他の人によって変更されていないかどうか）は、署名情報を使って確認できます。
+\nなぜなら、アプリケーションを第三者が変更した場合、署名情報は実際の開発者によって秘密にされているため、
+\n元の証明書を使って再び署名することができないからです。
+\nこれらの署名はチェックサムで検証することができます。チェックサムは、証明書自体から生成されます。
+\n開発者がチェックサムを提供する場合、\\textbf{署名}タブで表示されたチェックサムを照合することができます。
+\n例えば、Github、Telegramチャンネル、IzzyOnDroidのリポジトリからApp Managerをダウンロードした場合、次の\\textit{SHA256}チェックサムをこのタブに表示されるものと照合するだけで、そのアプリケーションが実際に私がリリースしたものかどうか確認することができます:</string>
+    <string name="pages$app-details-page$permissions">\\textbf{パーミッション}は通常、アプリケーション自身によって定義されるカスタム権限です。
+\n主に古いアプリケーションでは、通常の権限も含まれることがあります。そこに表示される各項目の完全な説明は次の通りです:
+\n\\begin{itemize}
+\n \\item \\textbf{権限名} 各権限は\\texttt{android.permission.INTERNET}のような一意の名前を持っており、
+\n複数のアプリケーションがその権限を要求することができます。
+\n
+\n \\item \\textbf{アイコン} 各権限は任意のアイコンを持つことができます。
+\n他の権限タブでは、アプリケーションマニフェストにアイコンが含まれていないため、アイコンを持ちません。
+\n
+\n \\item \\textbf{詳細} このフィールドは、権限についての詳細な説明です。権限に関連する説明がない場合、このフィールドは表示されません。
+\n
+\n \\item \\textbf{フラグ} (フラグシンボルまたは\\textbf{保護レベル}名を使用） 
+\ntextit{normal}, \\textit{development}, \\textit{dangerous}, \\textit{instant}, \\textit{granted}, \\textit{revoked},\\textit{signature}, \\textit{privileged}などの権限フラグを表します。
+\n
+\n \\item \\textbf{パッケージ名} 権限に関連するパッケージ名、すなわちその権限を定義したパッケージを表します。
+\n
+\n \\item \\textbf{グループ} 権限に関連するグループ名を表します。新しいAndroidシステムではグループ名を使用しないため、
+\n通常\\texttt{android.permission-group.UNDEFINED}やグループ名が全く表示されないことになるでしょう。
+\n\\end{itemize}</string>
+    <string name="keywords$see_also">\\newcommand{\\KeywordSeeAlso}{こちらもご覧ください:}</string>
+    <string name="keywords$end_of_keyword_in_alert">\\newcommand{\\KeywordEndOfKeyWordInAlert}{.}</string>
+    <string name="pages$one-click-ops-page$$block-unblock-trackers-title">トラッカーのブロック/ブロック解除</string>
+    <string name="pages$one-click-ops-page$$set-mode-for-app-ops-dots-title">AppOpsモードの設定\\dots</string>
+    <string name="pages$one-click-ops-page$$1-click-restore-title">復元</string>
+    <string name="pages$one-click-ops-page$$section-title">ワンタップ一括処理</string>
+    <string name="pages$one-click-ops-page$$block-components-dots-title">コンポーネントのブロック\\dots</string>
+    <string name="pages$one-click-ops-page$$1-click-back-up-title">バックアップ</string>
+    <string name="pages$app-details-page$$shared-libs-tab-title">共有ライブラリタブ</string>
+</resources>

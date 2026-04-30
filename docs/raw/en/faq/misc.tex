@@ -1,0 +1,67 @@
+% SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+\section{Miscellanea}\label{sec:faq:miscellanea} %%##$section-title>>
+
+\subsection{I don't use root/ADB. Am I completely safe from any harms?}\label{subsec:faq:no-root-no-harms} %%##$i-dont-use-root-adb-title>>
+%%!!i-dont-use-root-adb<<
+Yes. AM cannot modify any system settings without root or ADB\@.
+%%!!>>
+
+\subsection{How are the trackers and libraries are updated?}\label{subsec:faq:how-trackers-libs-updated} %%##$how-tracker-updated-title>>
+%%!!how-tracker-updated<<
+Trackers and libraries are updated manually before making a new release.
+%%!!>>
+
+\subsection{Are APKs deleted after installed?}\label{subsec:faq:apks-deleted-after-installed} %%##$apks-deleted-after-installed>>
+%%!!apks-deleted-after-installed<<
+No, APKs aren't deleted by App Manager after they are installed.
+%%!!>>
+
+\subsection{Any plans for Shizuku?}\label{subsec:faq:shizuku-support} %%##$shizuku-title>>
+%%!!shizuku<<
+App Manager's use of hidden API and privileged code execution is now much more complex and cannot be integrated with
+other third party apps such as \href{https://shizuku.rikka.app}{Shizuku}. Here are some reasons for not considering
+Shizuku (which now has Apache 2.0 license) for App Manager:
+\begin{enumerate}
+    \item Shizuku was initially non-free which led me to use a similar approach for App Manager to support both root
+    and ADB
+    \item App Manager already supports both ADB and root which in some cases is more capable than Shizuku
+    \item Relying on a third-party app for the major functionalities is not a good design choice
+    \item Integration of Shizuku will increase the complexity of App Manager.
+\end{enumerate}
+%%!!>>
+
+\subsection{What are bloatware and how to remove them?}\label{subsec:faq:what-are-bloatware} %%##$bloatware-title>>
+%%!!bloatware<<
+Bloatware are the unnecessary pre-installed apps, usually system apps. Some of the apps are often
+used to track users and collect user data which they might sell for profits. Many system apps do not
+need to request any permission to access device info, contacts and messaging data, and other usage
+info, such as your phone usage habits and everything you store on your shared storage(s).
+
+The bloatware may also include Google apps, Meta apps, and Twitter/X which can also track users
+and/or collect user data without consent. You can disable a few permissions from Android settings
+but be aware that Android settings hides many permissions a security researcher would call
+potentially \emph{dangerous} (e.g., internet, sensor).
+
+Were the bloatware user apps, they could be easily uninstalled either from Android settings or AM\@.
+Uninstalling system apps is not possible without privileged permission, but even then, it cannot
+\emph{remove} the system apps completely as they are located in the \emph{system} partition which is
+a read-only partition. If you have root, you can remount this partition to manually \emph{purge}
+these apps but this will break Over the Air (OTA) updates since data in the system partition has
+been modified. There are two kind of updates, delta (small-size, consisting of only the changes
+between two versions) and full updates. You may still be able to apply full updates, but the
+bloatware will be installed again, and consequently, you have to delete them all over again.
+
+Another solution is to disable these apps either from Android settings or AM, but certain services
+can still run in the background as they can be started by other system apps using Inter-process
+Communication (IPC). One possible solution is to disable all bloatware until the service has finally
+stopped (after a restart). However, due to heavy modifications of the Android frameworks by the
+vendors, removing or disabling certain bloatware may cause the System UI to crash or even cause
+bootloop. From v4.0.0, AM has a new feature called \textbf{Debloater} which can be used as a
+starting point to monitor, disable, and remove the bloatware from a proprietary Android operating
+system.
+
+\begin{warning}{Note}
+    In most cases, you cannot completely debloat your device. Therefore, it is recommended that you
+    use a custom ROM free from bloatware, such as Graphene OS, Lineage OS or their derivatives.
+\end{warning}
+%%!!>>

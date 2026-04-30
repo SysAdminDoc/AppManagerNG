@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><!-- SPDX-License-Identifier: Apache-2.0 -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_copy"
+        android:icon="@drawable/ic_content_copy"
+        android:title="@string/copy"
+        app:showAsAction="always">
+        <menu>
+            <item
+                android:id="@+id/action_copy_as_default"
+                android:title="@string/copy" />
+            <item
+                android:id="@+id/action_copy_as_command"
+                android:title="@string/am_command" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/action_paste"
+        android:icon="@drawable/ic_content_paste"
+        android:title="@string/paste"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_shortcut"
+        android:icon="@drawable/ic_link"
+        android:title="@string/create_shortcut"
+        app:showAsAction="ifRoom" />
+
+</menu>

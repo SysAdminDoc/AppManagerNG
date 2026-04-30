@@ -1,0 +1,48 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <io.github.muntashirakon.widget.MaterialAlertView
+        android:id="@+id/message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_medium"
+        android:layout_marginVertical="@dimen/padding_small"
+        android:visibility="gone"
+        app:alertType="warn"
+        tools:text="Some filters may increase the loading time if used in the Main page."
+        tools:visibility="visible" />
+
+    <io.github.muntashirakon.widget.RecyclerView
+        android:id="@android:id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scrollbars="vertical"
+        tools:listitem="@layout/item_icon_title_subtitle" />
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/editor_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_medium"
+        app:hintEnabled="false">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="85dp"
+            android:gravity="left|top"
+            android:inputType="textMultiLine"
+            tools:ignore="RtlHardcoded"
+            tools:text="@tools:sample/lorem/random" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

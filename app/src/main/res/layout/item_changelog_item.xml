@@ -1,0 +1,19 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:focusable="true"
+    android:paddingHorizontal="@dimen/padding_medium">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/item_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textIsSelectable="true"
+        android:gravity="center_vertical"
+        tools:text="@tools:sample/lorem[5]" />
+</androidx.appcompat.widget.LinearLayoutCompat>

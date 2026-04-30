@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_kill"
+        android:icon="@drawable/ic_clear"
+        android:title="@string/kill_process" />
+
+    <item
+        android:id="@+id/action_force_stop"
+        android:icon="@drawable/ic_power_settings"
+        android:title="@string/force_stop" />
+
+    <item
+        android:id="@+id/action_disable_background"
+        android:icon="@drawable/ic_block"
+        android:title="@string/disable_background_run" />
+
+    <item
+        android:id="@+id/action_view_logs"
+        android:icon="@drawable/ic_view_list"
+        android:title="@string/view_logs" />
+
+    <item
+        android:id="@+id/action_scan_vt"
+        android:icon="@drawable/ic_vt"
+        android:title="@string/scan_in_vt" />
+
+</menu>

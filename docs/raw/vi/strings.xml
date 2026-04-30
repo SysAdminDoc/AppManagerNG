@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="intro$main$$introduction-chapter-title">Giới thiệu</string>
+    <string name="titlepage$user_manual">{\\huge\\bfseries Hướng dẫn sử dụng cho người dùng\\par}</string>
+    <string name="keywords$see_also">\\newcommand{\\KeywordSeeAlso}{Bạn cũng có thể xem:}</string>
+    <string name="keywords$end_of_keyword_in_alert">\\newcommand{\\KeywordEndOfKeyWordInAlert}{.}</string>
+    <string name="keywords$chapter">\\newcommand{\\KeywordChapter}{Chương}</string>
+    <string name="titlepage$quotation">\\begin{quotation}
+\n ``Khôn ngoan và chậm rãi. Những người chạy nhanh sẽ bị vấp.\'\'
+\n %\\sourceatright
+\n {--- Friar Laurence, \\textit{Romeo và Juliet}}
+\n \\end{quotation}</string>
+    <string name="intro$main$$submit-patches-title">Gửi bản vá</string>
+    <string name="intro$main$$donation-title">Ủng hộ \\&amp; Tài chính</string>
+    <string name="intro$main$$contact-title">Liên hệ</string>
+    <string name="intro$main$intro">App Manager là ứng dụng quản lý các ứng dụng khác dành cho Android. Nó có vô số các tính năng, và do đó cần hướng dẫn
+\nsử dụng để hỗ trợ người dùng. Tài liệu này đóng vai trò là hướng dẫn sử dụng cho App Manager theo nghĩa là nó miêu tả
+\nmọi tính năng mà App Manager có. Tài liệu này cũng có thể được coi là ``hướng dẫn\'\' chính thức cho
+\nApp Manager, và đại diện cho hành vi thông thường của App Manager. Các bản dịch có thể làm lệch ý của tài liệu (được viết bằng
+\ntiếng Anh) này. Do đó, những người dùng có hiểu biết nên đọc bản tiếng Anh của tài liệu để tận dụng tối đa
+\ncông năng của App Manager. Ngoài ra có thể có các tài nguyên không chính thức khác như bài viết blog, video, nhóm
+\nchat, v.v. Các tài nguyên đó có thể giúp ích được nhiều người, nhưng chúng có khả năng là cũ hơn phiên bản
+\nhiện tại của App Manager. Nếu App Manager có hoạt động sai lệch so với tài liệu này, thì bạn nên báo cáo ở 
+\n\\href{https://github.com/MuntashirAkon/AppManager/issues}{nơi theo dõi vấn đề của App Manager}.</string>
+    <string name="intro$main$$terminologies-title">Thuật ngữ</string>
+    <string name="intro$main$$supported-versions-title">Phiên bản được hỗ trợ</string>
+    <string name="intro$main$$official-sources-title">Nguồn chính thức</string>
+    <string name="intro$main$$bin-sources-title">Nguồn phân phối tệp nhị phân</string>
+    <string name="intro$main$$source-code-links-title">Liên kết đến mã nguồn</string>
+    <string name="intro$main$$translations-title">Bản dịch</string>
+    <string name="intro$main$$contributing-title">Đóng góp</string>
+    <string name="intro$main$$buiding-title">Hướng dẫn xây dựng</string>
+    <string name="intro$main$terminologies">Hieucandy</string>
+    <string name="intro$main$source-code-links">Tất cả trừ GitHub là các liên kết nhân bản. Các thẻ phải luôn được cập nhật, nhưng nhánh chính không được đảm bảo là
+\ncập nhật. Nếu mục tiêu là sao chép nhánh chính, hãy sử dụng liên kết GitHub thay vì các liên kết khác.</string>
+    <string name="intro$main$buiding">Hướng dẫn xây dựng có sẵn trong tệp BUILDING nằm ở thư mục gốc của mã nguồn.</string>
+    <string name="pages$main$$pages-chapter-title">Trang</string>
+    <string name="pages$main-page$$section-title">Trang chính</string>
+    <string name="pages$main-page$$how-app-ops-work-title">Một mục danh sách ứng dụng trong trang chính</string>
+    <string name="pages$main-page$$settings-title">Cài đặt</string>
+    <string name="pages$main-page$$profiles-title">Hồ sơ</string>
+    <string name="pages$main-page$$apk-updater-title">Trình cập nhật APK</string>
+    <string name="pages$main-page$$batch-operations-title">Hoạt động hàng loạt</string>
+    <string name="pages$main-page$$1-click-ops-title">1-Nhấp vào Hoạt động</string>
+    <string name="pages$main-page$$running-apps-title">Đang chạy các ứng dụng</string>
+    <string name="pages$main-page$options-menu">Menu tùy chọn cung cấp một số tùy chọn có thể được sử dụng để sắp xếp và lọc các ứng dụng được liệt kê cũng như để điều hướng
+\nđến các trang khác nhau trong hoặc ngoài Trình quản lý ứng dụng.</string>
+    <string name="pages$main-page$list-options">\\textbf{Liệt kê các tùy chọn} chứa các tùy chọn để sắp xếp và lọc danh sách trong trang chính.</string>
+    <string name="intro$main$supported-versions">Hiện tại, các phiên bản được hỗ trợ là v3.0.4 và v3.1.0 (ổn định), v3.2.0 (bản phát hành alpha và gỡ lỗi).
+\nCác phiên bản trước của Trình quản lý ứng dụng có thể chứa các lỗ hổng bảo mật và không nên được sử dụng.</string>
+    <string name="intro$main$translations">Trình quản lý ứng dụng không chấp nhận bản dịch trực tiếp thông qua yêu cầu kéo/hợp nhất. Các bản dịch được quản lý thông qua Hosted Weblate.
+\nĐể dịch Trình quản lý ứng dụng, hãy truy cập \\url{https://hosted.weblate.org/engage/app-manager/}.</string>
+    <string name="intro$main$contributing">Có nhiều cách người dùng có thể đóng góp, chẳng hạn như tạo các vấn đề hữu ích, tham dự các cuộc thảo luận, cải thiện
+\ntài liệu và bản dịch, thêm các thư viện hoặc trình theo dõi không được công nhận, xem lại mã nguồn cũng như
+\nbáo cáo lỗ hổng bảo mật.</string>
+    <string name="pages$main-page$$app-usage-title">Sử dụng ứng dụng</string>
+    <string name="pages$main-page$$sort-title">Sắp xếp</string>
+    <string name="pages$main-page$$filter-title">Lọc</string>
+    <string name="pages$main-page$$colour-codes-title">Mã màu</string>
+    <string name="pages$main-page$$application-types-title">Các loại ứng dụng</string>
+    <string name="pages$main-page$$version-info-title">Thông tin phiên bản</string>
+    <string name="pages$main-page$$options-menu-title">Trình đơn tùy chọn</string>
+    <string name="pages$main-page$$list-options-title">Tùy chọn danh sách</string>
+    <string name="pages$main-page$$profile_name-title">Tên hồ sơ</string>
+    <string name="pages$main-page$$instructions-title">Hướng dẫn sử dụng</string>
+    <string name="appendices$changelogs$$chapter-title">Nhật ký thay đổi</string>
+    <string name="faq$app-components$$tracker-classes-versus-tracker-components-title">Các lớp theo dõi so với các thành phần theo dõi</string>
+    <string name="faq$app-components$$also-blocked-by-other-tools-title">Điều gì xảy ra với các thành phần bị chặn bởi App Manager mà trước đây đã bị các công cụ khác chặn?</string>
+</resources>

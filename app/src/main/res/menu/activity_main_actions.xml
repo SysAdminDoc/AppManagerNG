@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_instructions"
+        android:icon="@drawable/ic_information"
+        android:title="@string/user_manual"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_list_options"
+        android:icon="@drawable/ic_list_status"
+        android:title="@string/list_options"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_refresh"
+        android:title="@string/refresh"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_one_click_ops"
+        android:icon="@drawable/ic_cursor_default_click"
+        android:title="@string/one_click_ops" />
+
+    <item
+        android:id="@+id/action_finder"
+        android:icon="@drawable/ic_search"
+        android:title="@string/finder_title" />
+
+    <item
+        android:id="@+id/action_app_usage"
+        android:icon="@drawable/ic_data_usage"
+        android:title="@string/app_usage" />
+
+    <item
+        android:id="@+id/action_running_apps"
+        android:icon="@drawable/ic_pulse"
+        android:title="@string/running_apps" />
+
+    <item
+        android:id="@+id/action_profiles"
+        android:icon="@drawable/ic_file_document_multiple"
+        android:title="@string/profiles" />
+
+    <item
+        android:id="@+id/action_apk_updater"
+        android:icon="@drawable/ic_sync"
+        android:title="@string/apk_updater" />
+
+    <item
+        android:id="@+id/action_debloater"
+        android:icon="@drawable/ic_liquid_spot_off"
+        android:title="@string/debloater_title" />
+
+    <item
+        android:id="@+id/action_labs"
+        android:icon="@drawable/ic_package"
+        android:title="@string/title_labs_activity" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/app_settings" />
+
+</menu>

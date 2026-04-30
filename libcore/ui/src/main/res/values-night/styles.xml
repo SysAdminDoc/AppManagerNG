@@ -1,0 +1,19 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+
+    <style name="AppThemeOverlay" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="AppTheme.Black" parent="AppTheme">
+        <item name="colorSurface">@android:color/black</item>
+        <item name="android:windowBackground">@android:drawable/screen_background_dark</item>
+        <item name="materialFullScreenAlertDialogTheme">@style/AppTheme.Black</item>
+    </style>
+
+    <style name="AppTheme.TransparentBackground.Black" parent="AppTheme.TransparentBackground">
+        <item name="colorSurface">@android:color/black</item>
+        <item name="materialFullScreenAlertDialogTheme">@style/AppTheme.Black</item>
+    </style>
+</resources>

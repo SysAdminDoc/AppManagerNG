@@ -1,0 +1,25 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/padding_medium"
+    android:paddingVertical="@dimen/padding_large">
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@android:id/text1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:paddingBottom="@dimen/padding_small"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/in_progress" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progress_linear"
+        style="@style/Widget.AppTheme.LinearProgressIndicator"
+        android:indeterminate="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

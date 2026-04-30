@@ -1,0 +1,70 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardElevation="0dp"
+    android:focusable="true"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
+    android:layout_marginVertical="?attr/listItemMarginVertical">
+
+    <com.google.android.material.chip.Chip
+        android:id="@+id/lib_type"
+        style="@style/Widget.AppTheme.CardView.Outlined.DiagonallyRounded"
+        android:layout_width="wrap_content"
+        android:layout_height="12dp"
+        android:layout_gravity="end"
+        android:textSize="@dimen/font_size_smaller"
+        tools:text=".so" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/item_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/item_transparent"
+        android:paddingHorizontal="?attr/listItemPaddingHorizontal"
+        android:paddingVertical="?attr/listItemPaddingVertical">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/item_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceListItem"
+                tools:text="@tools:sample/lorem" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/item_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textIsSelectable="true"
+                android:nextFocusRight="@id/item_open"
+                tools:text="@tools:sample/lorem" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/item_open"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="@dimen/padding_medium"
+            android:layout_weight="0"
+            android:nextFocusLeft="@id/item_subtitle"
+            app:icon="@drawable/ic_open_in_new"
+            app:iconTint="?attr/colorPrimary"
+            app:iconSize="24dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>

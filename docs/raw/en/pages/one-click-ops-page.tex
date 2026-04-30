@@ -1,0 +1,84 @@
+% SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
+\section{1-Click Ops Page}\label{sec:1-click-ops-page} %%##$section-title>>
+%%!!intro<<
+This page is displayed on selecting the \hyperref[subsubsec:main:1-click-ops]{1-Click Ops option} in the \hyperref[subsec:main-page-options-menu]{main menu}.
+%%!!>>
+
+\subsection{Block/Unblock Trackers}\label{subsec:block-unblock-trackers} %%##$block-unblock-trackers-title>>
+%%!!block-unblock-trackers<<
+This option can be used to block or unblock the ad/tracker components from the installed applications.
+On selecting this option, App Manager will ask if it should list trackers from all the applications or only from the user applications.
+Novice users should avoid blocking trackers from the system applications in order to avoid bad consequences.
+After that, a multi-choice dialog box will appear where it is possible to exclude one or more applications from this operation.
+The changes are applied immediately on pressing the \textit{block} or \textit{unblock} button.
+
+\begin{warning}{Notice}
+    Certain applications may not function as expected after blocking their trackers.
+    If that is the case, remove the blocking rules all at once or one by one in the component tabs of the \hyperref[sec:app-details-page]{App Details page} for the corresponding application.
+\end{warning}
+
+\seealsoinline{\hyperref[par:appdetails:blocking-trackers]{App Details Page: Blocking Trackers}}
+%%!!>>
+
+\subsection{Block Components\dots}\label{subsec:block-components-dots} %%##$block-components-dots-title>>
+%%!!block-components-dots<<
+This option can be used to block certain application components as specified by their signatures.
+A signature of a component is the full name or partial name of the component.
+For safety, it is recommended to add a \texttt{.} (dot) at the end of each partial signature, because the underlying
+algorithm searches and matches the components in a greedy manner.
+It is also possible to insert more than one signature in which case all the signatures have to be separated by white spaces.
+Similar to the option above, there is also an option to apply blocking to the system applications.
+
+\begin{danger}{Caution}
+    If you are not aware of the consequences of blocking applcations components by their signatures, you should avoid
+    using this option as it may result in bootloop or soft brick, and you may have to apply factory reset as a result.
+\end{danger}
+%%!!>>
+
+\subsection{Set Mode for App Ops\dots}\label{subsec:set-mode-for-app-ops-dots} %%##$set-mode-for-app-ops-dots-title>>
+%%!!set-mode-for-app-ops-dots<<
+This option can be used to configure certain \hyperref[ch:app-ops]{applcation operations} of all or selected applications.
+There are two fields. The first field can be used to insert more than one app op constants (either names or values) separated by white spaces.
+It is not always possible to know in advance about all the app op constants as they vary from device to device and from OS to OS\@.
+Desired app op constant can be found in the \textit{App Ops} tab located in the \hyperref[sec:app-details-page]{App Details page}.
+The second field can be used to insert or select one of the \hyperref[subsec:mode-constants]{modes} that will be set against the specified app ops.
+
+\begin{danger}{Caution}
+    Unless you are well-informed about app ops and the consequences of blocking them, you should avoid using this option.
+\end{danger}
+%%!!>>
+
+\subsection{Back up}\label{subsec:1-click-back-up} %%##$1-click-back-up-title>>
+%%!!back-up<<
+1-Click options for back up. As a precaution, it lists the affected backups before performing any operation.
+
+\paragraph{Back up all apps.} Back up all the installed applications.
+
+\paragraph{Redo existing backups.} Back up all the installed applications that have a previous backup.
+
+\paragraph{Back up apps without backups.} Back up all the installed applications without a previous backup.
+
+\paragraph{Verify and redo backups.} Verify the recently made backups of the installed applications and redo backup if necessary.
+
+\paragraph{Back up apps with changes.} If an app has changed since the last backup, redo its backup.
+It checks a number of indices including application version, last update date, last launch date, integrity and file hashes.
+Directory hashes are taken during the backup process and are stored in a database.
+On running this operation, new hashes are taken and compared with the ones kept in the database.
+%%!!>>
+
+\subsection{Restore}\label{subsec:1-click-restore} %%##$1-click-restore-title>>
+%%!!restore<<
+1-Click options for restore. As a precaution, it lists the affected backups before performing any operation.
+
+\paragraph{Restore all apps.} Restore \textit{base backup} of all the backed up applications.
+
+\paragraph{Restore not installed apps.} Restore \textit{base backup} of all the backed up applications that are not currently installed.
+
+\paragraph{Restore latest backups.} Restore \textit{base backup} of already installed applications whose version codes are higher than the installed version code.
+%%!!>>
+
+\subsection{Trim Caches in All Apps}\label{subsec:trim-caches-in-all-apps} %%##$trim-caches-in-all-apps-title>>
+%%!!trim-caches-in-all-apps<<
+Delete caches from all applications, including Android system. During this operation, caches of all the running
+applications may not be cleared as expected.
+%%!!>>

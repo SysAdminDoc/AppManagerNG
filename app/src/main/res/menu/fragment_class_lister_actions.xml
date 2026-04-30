@@ -1,0 +1,22 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".scanner.ScannerActivity">
+    <group android:menuCategory="container">
+
+        <item
+            android:id="@+id/action_search"
+            android:title="@string/search"
+            app:actionViewClass="io.github.muntashirakon.AppManager.misc.AdvancedSearchView"
+            app:showAsAction="always"
+            tools:ignore="AlwaysShowAction" />
+
+        <item
+            android:id="@+id/action_toggle_class_listing"
+            android:icon="@drawable/ic_code"
+            android:title="@string/toggle_class_listing"
+            app:showAsAction="never" />
+
+    </group>
+</menu>

@@ -1,0 +1,76 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_weight="0"
+    android:orientation="vertical"
+    android:focusable="false"
+    tools:theme="@style/AppTheme">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        android:focusable="false">
+
+        <io.github.muntashirakon.widget.CheckBox
+            android:id="@+id/action_select_all"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0"
+            android:layout_gravity="center_vertical"
+            android:layout_marginHorizontal="@dimen/padding_small"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusRight="@id/action_cancel"
+            android:nextFocusDown="@id/selection_actions"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:text="@android:string/selectAll" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/selection_counter"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:paddingHorizontal="@dimen/padding_small"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            tools:text="10/11" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/action_cancel"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_weight="0"
+            android:layout_gravity="center_vertical"
+            android:layout_marginHorizontal="@dimen/padding_small"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusLeft="@id/action_select_all"
+            android:nextFocusDown="@id/selection_actions"
+            android:contentDescription="@android:string/cancel"
+            app:icon="@drawable/mtrl_ic_cancel"
+            app:iconTint="@color/m3_textfield_indicator_text_color"
+            app:iconSize="24dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <io.github.muntashirakon.multiselection.MultiSelectionActionsView
+        android:id="@+id/selection_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="false"
+        android:nextFocusUp="@id/action_select_all" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

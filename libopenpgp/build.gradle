@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'org.openintents.openpgp'
+    compileSdk compile_sdk
+    buildToolsVersion = build_tools
+
+    defaultConfig {
+        minSdk min_sdk
+        targetSdk target_sdk
+    }
+
+    compileOptions {
+        encoding "UTF-8"
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        aidl true
+    }
+}
+
+dependencies {
+    implementation "androidx.annotation:annotation:${annotation_version}"
+}

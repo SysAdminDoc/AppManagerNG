@@ -1,0 +1,53 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical">
+
+    <!-- We cannot afford 48dp height -->
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:id="@+id/capsule"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="35dp"
+        app:srcCompat="@null"
+        tools:srcCompat="@drawable/bottom_sheet_drag_handle" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+<!--        <include layout="@layout/dialog_title_with_two_icons" />-->
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <RelativeLayout
+            android:id="@+id/loader"
+            android:layout_width="match_parent"
+            android:layout_height="240dp">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:indeterminate="true" />
+
+        </RelativeLayout>
+
+    </FrameLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

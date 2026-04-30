@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="ImpliedQuantity" severity="ignore" />
+    <issue id="WakelockTimeout" severity="ignore" />
+
+    <issue id="LogConditional" severity="informational" />
+    <issue id="Registered" severity="informational" />
+    <issue id="UnknownNullness" severity="informational" />
+
+    <issue id="DuplicateStrings" severity="warning" />
+    <!-- In some cases, the linter produces wrong results for WrongConstant -->
+    <issue id="WrongConstant" severity="warning" />
+    <issue id="WrongThreadInterprocedural" severity="warning" />
+
+    <issue id="HardcodedText" severity="error" />
+</lint>
