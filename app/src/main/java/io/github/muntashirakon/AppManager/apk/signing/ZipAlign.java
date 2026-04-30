@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.apk.signing;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.reandroid.archive.ArchiveEntry;
 import com.reandroid.archive.ArchiveFile;
@@ -28,8 +29,8 @@ public class ZipAlign {
     public static void align(@NonNull File input, @NonNull File output, int alignment, boolean pageAlignSharedLibs)
             throws IOException {
         File dir = output.getParentFile();
-        if (!Paths.exists(dir)) {
-            dir.mkdirs();
+        if (dir != null && !Paths.exists(dir) && !dir.mkdirs()) {
+            throw new IOException("Could not create output directory " + dir);
         }
 
         try (ArchiveFile archive = new ArchiveFile(input);
@@ -44,15 +45,53 @@ public class ZipAlign {
 
     public static void align(@NonNull File inFile, int alignment, boolean pageAlignSharedLibs) throws IOException {
         File tmp = toTmpFile(inFile);
-        tmp.delete();
+        deleteIfExists(tmp, "temporary aligned APK");
+        boolean replaced = false;
         try {
             align(inFile, tmp, alignment, pageAlignSharedLibs);
-            inFile.delete();
-            tmp.renameTo(inFile);
+            replaceFile(tmp, inFile);
+            replaced = true;
         } catch (IOException e) {
-            tmp.delete();
             throw e;
+        } finally {
+            if (!replaced && tmp.exists() && !tmp.delete()) {
+                Log.w(TAG, "Unable to delete temporary aligned APK '%s'", tmp);
+            }
         }
+    }
+
+    @VisibleForTesting
+    static void replaceFile(@NonNull File source, @NonNull File target) throws IOException {
+        if (!source.exists()) {
+            throw new IOException("Replacement source does not exist: " + source);
+        }
+        File backup = toBackupFile(target);
+        deleteIfExists(backup, "stale zipalign backup");
+
+        boolean backedUp = false;
+        if (target.exists()) {
+            if (!target.renameTo(backup)) {
+                throw new IOException("Could not back up original APK file " + target);
+            }
+            backedUp = true;
+        }
+
+        if (source.renameTo(target)) {
+            if (backedUp && backup.exists() && !backup.delete()) {
+                Log.w(TAG, "Unable to delete zipalign backup '%s'", backup);
+            }
+            return;
+        }
+
+        if (backedUp) {
+            if (target.exists() && !target.delete()) {
+                Log.w(TAG, "Unable to delete incomplete zipalign target '%s'", target);
+            }
+            if (!backup.renameTo(target)) {
+                throw new IOException("Could not install aligned APK and failed to restore original APK " + target);
+            }
+        }
+        throw new IOException("Could not replace original APK with aligned APK " + target);
     }
 
     public static boolean verify(@NonNull File file, int alignment, boolean pageAlignSharedLibs) {
@@ -128,5 +167,21 @@ public class ZipAlign {
             return new File(name);
         }
         return new File(dir, name);
+    }
+
+    @NonNull
+    private static File toBackupFile(@NonNull File file) {
+        String name = file.getName() + ".align.bak";
+        File dir = file.getParentFile();
+        if (dir == null) {
+            return new File(name);
+        }
+        return new File(dir, name);
+    }
+
+    private static void deleteIfExists(@NonNull File file, @NonNull String description) throws IOException {
+        if (file.exists() && !file.delete()) {
+            throw new IOException("Could not delete " + description + " " + file);
+        }
     }
 }
