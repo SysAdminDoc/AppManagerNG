@@ -14,8 +14,8 @@ android {
         applicationId 'io.github.sysadmindoc.AppManagerNG'
         minSdk min_sdk
         targetSdk target_sdk
-        versionCode 2
-        versionName "0.2.0"
+        versionCode 3
+        versionName "0.3.0"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += [

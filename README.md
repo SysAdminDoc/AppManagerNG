@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.3.0-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
