@@ -540,6 +540,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mBatchOpsHandler.updateConstraints();
             mMultiSelectionView.updateCounter(false);
         }
+        refreshQuickFilterChips();
         ContextCompat.registerReceiver(this, mBatchOpsBroadCastReceiver,
                 new IntentFilter(BatchOpsService.ACTION_BATCH_OPS_COMPLETED), ContextCompat.RECEIVER_NOT_EXPORTED);
     }
@@ -550,24 +551,68 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         unregisterReceiver(mBatchOpsBroadCastReceiver);
     }
 
+    private static final int[][] QUICK_FILTER_CHIPS = {
+            {R.id.chip_user, MainListOptions.FILTER_USER_APPS},
+            {R.id.chip_system, MainListOptions.FILTER_SYSTEM_APPS},
+            {R.id.chip_frozen, MainListOptions.FILTER_FROZEN_APPS},
+            {R.id.chip_running, MainListOptions.FILTER_RUNNING_APPS},
+            {R.id.chip_backups, MainListOptions.FILTER_APPS_WITH_BACKUPS},
+            {R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS},
+    };
+
     private void bindQuickFilterChips() {
-        bindQuickFilterChip(R.id.chip_user, MainListOptions.FILTER_USER_APPS);
-        bindQuickFilterChip(R.id.chip_system, MainListOptions.FILTER_SYSTEM_APPS);
-        bindQuickFilterChip(R.id.chip_frozen, MainListOptions.FILTER_FROZEN_APPS);
-        bindQuickFilterChip(R.id.chip_running, MainListOptions.FILTER_RUNNING_APPS);
-        bindQuickFilterChip(R.id.chip_backups, MainListOptions.FILTER_APPS_WITH_BACKUPS);
-        bindQuickFilterChip(R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS);
+        for (int[] entry : QUICK_FILTER_CHIPS) {
+            bindQuickFilterChip(entry[0], entry[1]);
+        }
+        Chip clearChip = findViewById(R.id.chip_clear_filters);
+        if (clearChip != null) {
+            View.OnClickListener clearListener = v -> {
+                if (viewModel != null) viewModel.clearFilters();
+                refreshQuickFilterChips();
+            };
+            clearChip.setOnClickListener(clearListener);
+            clearChip.setOnCloseIconClickListener(clearListener);
+        }
+        refreshQuickFilterChips();
     }
 
     private void bindQuickFilterChip(int chipId, @MainListOptions.Filter int flag) {
         Chip chip = findViewById(chipId);
         if (chip == null || viewModel == null) return;
+        chip.setOnCheckedChangeListener(null);
         chip.setChecked(viewModel.hasFilterFlag(flag));
         chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (viewModel == null) return;
             if (isChecked) viewModel.addFilterFlag(flag);
             else viewModel.removeFilterFlag(flag);
+            refreshQuickFilterChips();
         });
+    }
+
+    private void refreshQuickFilterChips() {
+        if (viewModel == null) return;
+        boolean anyActive = false;
+        for (int[] entry : QUICK_FILTER_CHIPS) {
+            Chip chip = findViewById(entry[0]);
+            if (chip == null) continue;
+            boolean active = viewModel.hasFilterFlag(entry[1]);
+            if (chip.isChecked() != active) {
+                chip.setOnCheckedChangeListener(null);
+                chip.setChecked(active);
+                final int flag = entry[1];
+                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (viewModel == null) return;
+                    if (isChecked) viewModel.addFilterFlag(flag);
+                    else viewModel.removeFilterFlag(flag);
+                    refreshQuickFilterChips();
+                });
+            }
+            if (active) anyActive = true;
+        }
+        Chip clearChip = findViewById(R.id.chip_clear_filters);
+        if (clearChip != null) {
+            clearChip.setVisibility(anyActive ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void showFreezeUnfreezeDialog(int freezeType) {

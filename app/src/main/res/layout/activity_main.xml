@@ -92,6 +92,16 @@
                     android:text="@string/filter_force_stopped_apps"
                     android:checkable="true" />
 
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_clear_filters"
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/clear_filters"
+                    android:visibility="gone"
+                    app:closeIconVisible="true"
+                    android:checkable="false" />
+
             </com.google.android.material.chip.ChipGroup>
 
         </HorizontalScrollView>
