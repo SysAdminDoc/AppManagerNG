@@ -209,6 +209,9 @@ public class BarChartView extends View {
     private void initializeAccessibility() {
         mAccessibilityHelper = new BarChartAccessibilityHelper(this);
         ViewCompat.setAccessibilityDelegate(this, mAccessibilityHelper);
+        // Live region: content description changes will be announced to accessibility services.
+        // This replaces announceForAccessibility() which is ignored by Android 16+ TalkBack.
+        ViewCompat.setAccessibilityLiveRegion(this, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE);
 
         // Make the view focusable for keyboard navigation
         setFocusable(true);
@@ -625,12 +628,7 @@ public class BarChartView extends View {
         if (newFocusedIndex != mFocusedBarIndex) {
             mFocusedBarIndex = newFocusedIndex;
 
-            // Announce the newly focused bar
-            BarData bar = mBarDataList.get(mFocusedBarIndex);
-            String announcement = getAccessibleBarDescription(mFocusedBarIndex, bar);
-            announceForAccessibility(announcement);
-
-            // Update accessibility focus
+            // Update accessibility focus — invalidateVirtualView causes TalkBack to re-read the bar
             if (mAccessibilityHelper != null) {
                 mAccessibilityHelper.invalidateVirtualView(mFocusedBarIndex);
             }
@@ -661,8 +659,8 @@ public class BarChartView extends View {
             mTouchedBarIndex = -1;
             mShowTouchLine = false;
             invalidate();
-            // TODO: 9/22/25 Support localization
-            announceForAccessibility("Selection cleared");
+            // Update the overall content description; the live region announces the change.
+            updateOverallContentDescription();
             return true;
         }
         return false;
@@ -918,13 +916,8 @@ public class BarChartView extends View {
             mShowTouchLine = true;
             invalidate();
 
-            // Announce the selection
-            BarData bar = mBarDataList.get(barIndex);
-            String announcement = getAccessibleBarDescription(barIndex, bar);
-            // TODO: 9/22/25 Localization
-            announceForAccessibility("Selected. " + announcement);
-
-            // Notify accessibility helper
+            // Announce the selection — sendEventForVirtualView(TYPE_VIEW_SELECTED) fires the
+            // accessibility event; announceForAccessibility is redundant and ignored on Android 16+.
             if (mAccessibilityHelper != null) {
                 mAccessibilityHelper.invalidateVirtualView(barIndex);
                 mAccessibilityHelper.sendEventForVirtualView(barIndex,
@@ -1032,8 +1025,8 @@ public class BarChartView extends View {
                         mTouchedBarIndex = -1;
                         mShowTouchLine = false;
                         invalidate();
-                        // TODO: 9/22/25 Localization
-                        announceForAccessibility("Bar deselected");
+                        // invalidateVirtualView updates the virtual view state; no separate
+                        // announcement needed. announceForAccessibility is ignored on Android 16+.
                     }
                     return true;
             }
