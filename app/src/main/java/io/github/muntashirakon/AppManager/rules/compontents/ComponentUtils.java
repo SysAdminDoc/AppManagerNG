@@ -48,6 +48,25 @@ public final class ComponentUtils {
         return StaticDataset.getSearchableTrackerSignatures().search(componentName).length > 0;
     }
 
+    /**
+     * Resolve a human-readable tracker name for a component class, or {@code null} if the
+     * component does not match any known tracker signature. When multiple signatures match
+     * (rare; usually different SDK versions of the same vendor), the first match wins.
+     */
+    @Nullable
+    public static String getTrackerLabel(String componentName) {
+        int[] matches = StaticDataset.getSearchableTrackerSignatures().search(componentName);
+        if (matches.length == 0) {
+            return null;
+        }
+        String[] names = StaticDataset.getTrackerNames();
+        int idx = matches[0];
+        if (idx < 0 || idx >= names.length) {
+            return null;
+        }
+        return names[idx];
+    }
+
     public static int getTrackerComponentsCountForPackage(PackageInfo packageInfo) {
         HashMap<String, RuleType> components = PackageUtils.collectComponentClassNames(packageInfo);
         return (int) components.keySet().stream()

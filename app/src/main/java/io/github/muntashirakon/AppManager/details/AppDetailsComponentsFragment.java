@@ -305,6 +305,28 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         }
     }
 
+    /**
+     * Show the tracker chip with the matched vendor name (e.g. "Google AdMob") when known,
+     * falling back to a generic "Tracker" label. Hidden for non-tracker components. The
+     * chip text doubles as a tooltip so users see the full name even when truncated.
+     */
+    private void applyTrackerChip(@NonNull Chip chip, @NonNull AppDetailsComponentItem item) {
+        if (!item.isTracker()) {
+            chip.setVisibility(View.GONE);
+            chip.setTooltipText(null);
+            return;
+        }
+        String label = item.getTrackerLabel();
+        if (label == null || label.isEmpty()) {
+            chip.setText(R.string.tracker);
+            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint));
+        } else {
+            chip.setText(label);
+            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint_with_name, label));
+        }
+        chip.setVisibility(View.VISIBLE);
+    }
+
     @UiThread
     private class AppDetailsRecyclerAdapter extends RecyclerView.Adapter<AppDetailsRecyclerAdapter.ViewHolder> {
         @NonNull
@@ -525,10 +547,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
-            if (componentItem.isTracker()) {
-                holder.chipType.setText(R.string.tracker);
-                holder.chipType.setVisibility(View.VISIBLE);
-            } else holder.chipType.setVisibility(View.GONE);
+            applyTrackerChip(holder.chipType, componentItem);
             // Name
             if (mConstraint != null && activityName.toLowerCase(Locale.ROOT).contains(mConstraint)) {
                 // Highlight searched query
@@ -646,10 +665,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
-            if (serviceItem.isTracker()) {
-                holder.chipType.setText(R.string.tracker);
-                holder.chipType.setVisibility(View.VISIBLE);
-            } else holder.chipType.setVisibility(View.GONE);
+            applyTrackerChip(holder.chipType, serviceItem);
             // Label
             holder.labelView.setText(serviceItem.label);
             // Name
@@ -718,10 +734,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
-            if (componentItem.isTracker()) {
-                holder.chipType.setText(R.string.tracker);
-                holder.chipType.setVisibility(View.VISIBLE);
-            } else holder.chipType.setVisibility(View.GONE);
+            applyTrackerChip(holder.chipType, componentItem);
             // Label
             holder.labelView.setText(componentItem.label);
             // Name
@@ -782,10 +795,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
-            if (componentItem.isTracker()) {
-                holder.chipType.setText(R.string.tracker);
-                holder.chipType.setVisibility(View.VISIBLE);
-            } else holder.chipType.setVisibility(View.GONE);
+            applyTrackerChip(holder.chipType, componentItem);
             // Label
             holder.labelView.setText(componentItem.label);
             // Icon

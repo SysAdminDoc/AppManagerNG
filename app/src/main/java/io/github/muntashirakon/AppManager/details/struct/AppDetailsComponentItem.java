@@ -18,6 +18,8 @@ public class AppDetailsComponentItem extends AppDetailsItem<ComponentInfo> {
 
     private boolean mIsTracker;
     @Nullable
+    private String mTrackerLabel;
+    @Nullable
     private ComponentRule mRule;
     private boolean mIsDisabled;
 
@@ -33,6 +35,15 @@ public class AppDetailsComponentItem extends AppDetailsItem<ComponentInfo> {
 
     public void setTracker(boolean tracker) {
         mIsTracker = tracker;
+    }
+
+    @Nullable
+    public String getTrackerLabel() {
+        return mTrackerLabel;
+    }
+
+    public void setTrackerLabel(@Nullable String trackerLabel) {
+        mTrackerLabel = trackerLabel;
     }
 
     public boolean isBlocked() {
