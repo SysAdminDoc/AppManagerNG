@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -23,6 +24,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -103,18 +105,14 @@ public class SharedPrefsActivity extends BaseActivity implements
         mProgressIndicator.show();
         RecyclerView recyclerView = findViewById(android.R.id.list);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
-        recyclerView.setEmptyView(findViewById(android.R.id.empty));
+        View emptyView = findViewById(android.R.id.empty);
+        setupEmptyState(emptyView);
+        recyclerView.setEmptyView(emptyView);
         mAdapter = new SharedPrefsListingAdapter(this);
         recyclerView.setAdapter(mAdapter);
         FloatingActionButton fab = findViewById(R.id.floatingActionButton);
         UiUtils.applyWindowInsetsAsMargin(fab);
-        fab.setOnClickListener(v -> {
-            DialogFragment dialogFragment = new EditPrefItemFragment();
-            Bundle args = new Bundle();
-            args.putInt(EditPrefItemFragment.ARG_MODE, EditPrefItemFragment.MODE_CREATE);
-            dialogFragment.setArguments(args);
-            dialogFragment.show(getSupportFragmentManager(), EditPrefItemFragment.TAG);
-        });
+        fab.setOnClickListener(v -> showCreatePrefDialog());
         mViewModel.getSharedPrefsMapLiveData().observe(this, sharedPrefsMap -> {
             mProgressIndicator.hide();
             mAdapter.setDefaultList(sharedPrefsMap);
@@ -151,6 +149,25 @@ public class SharedPrefsActivity extends BaseActivity implements
             }
         });
         mViewModel.loadSharedPrefs();
+    }
+
+    private void setupEmptyState(@NonNull View emptyView) {
+        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_database);
+        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.shared_prefs_empty_title);
+        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.shared_prefs_empty_message);
+        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
+        action.setText(R.string.add_item);
+        action.setIconResource(R.drawable.ic_add);
+        action.setVisibility(View.VISIBLE);
+        action.setOnClickListener(v -> showCreatePrefDialog());
+    }
+
+    private void showCreatePrefDialog() {
+        DialogFragment dialogFragment = new EditPrefItemFragment();
+        Bundle args = new Bundle();
+        args.putInt(EditPrefItemFragment.ARG_MODE, EditPrefItemFragment.MODE_CREATE);
+        dialogFragment.setArguments(args);
+        dialogFragment.show(getSupportFragmentManager(), EditPrefItemFragment.TAG);
     }
 
     @Override

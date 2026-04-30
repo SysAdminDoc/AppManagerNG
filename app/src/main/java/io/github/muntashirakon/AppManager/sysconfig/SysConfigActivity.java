@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import java.util.ArrayList;
@@ -61,7 +62,9 @@ public class SysConfigActivity extends BaseActivity {
         // Make spinner the first item to focus on
         spinner.requestFocus();
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
-        recyclerView.setEmptyView(findViewById(android.R.id.empty));
+        View emptyView = findViewById(android.R.id.empty);
+        setupEmptyState(emptyView);
+        recyclerView.setEmptyView(emptyView);
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
 
@@ -69,6 +72,7 @@ public class SysConfigActivity extends BaseActivity {
         ArrayAdapter<String> intervalSpinnerAdapter = new SelectedArrayAdapter<>(this,
                 io.github.muntashirakon.ui.R.layout.auto_complete_dropdown_item_small, android.R.id.text1, sysConfigTypes);
         spinner.setAdapter(intervalSpinnerAdapter);
+        spinner.setSelection(0);
         spinner.setOnItemClickListener((parent, view, position, id) -> {
             mProgressIndicator.show();
             mType = sysConfigTypes[position];
@@ -87,6 +91,14 @@ public class SysConfigActivity extends BaseActivity {
         });
 
         mViewModel.loadSysConfigInfo(mType);
+    }
+
+    private void setupEmptyState(@NonNull View emptyView) {
+        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_settings);
+        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.sys_config_empty_title);
+        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.sys_config_empty_message);
+        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
+        action.setVisibility(View.GONE);
     }
 
     @Override

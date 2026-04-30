@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,6 +22,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -58,12 +60,15 @@ public class OpHistoryActivity extends BaseActivity {
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
         RecyclerView listView = findViewById(android.R.id.list);
         listView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
-        listView.setEmptyView(findViewById(android.R.id.empty));
+        View emptyView = findViewById(android.R.id.empty);
+        setupEmptyState(emptyView);
+        listView.setEmptyView(emptyView);
         UiUtils.applyWindowInsetsAsPaddingNoTop(listView);
         mAdapter = new OpHistoryAdapter(this);
         listView.setAdapter(mAdapter);
         FloatingActionButton fab = findViewById(R.id.floatingActionButton);
         UiUtils.applyWindowInsetsAsMargin(fab);
+        fab.hide();
         fab.setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.clear_history)
                 .setMessage(R.string.are_you_sure)
@@ -75,6 +80,11 @@ public class OpHistoryActivity extends BaseActivity {
                 .show());
         mViewModel.getOpHistoriesLiveData().observe(this, opHistories -> {
             mProgressIndicator.hide();
+            if (opHistories.isEmpty()) {
+                fab.hide();
+            } else {
+                fab.show();
+            }
             mAdapter.setDefaultList(opHistories);
         });
         mViewModel.getClearHistoryLiveData().observe(this, cleared ->
@@ -93,6 +103,14 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mProgressIndicator.show();
         mViewModel.loadOpHistories();
+    }
+
+    private void setupEmptyState(@NonNull View emptyView) {
+        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_history);
+        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.op_history_empty_title);
+        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.op_history_empty_message);
+        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
+        action.setVisibility(View.GONE);
     }
 
     @Override
