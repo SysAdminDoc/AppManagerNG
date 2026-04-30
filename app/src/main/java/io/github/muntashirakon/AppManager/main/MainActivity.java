@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -250,6 +251,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         mMultiSelectionView.updateCounter(true);
         mBatchOpsHandler = new MainBatchOpsHandler(mMultiSelectionView, viewModel);
         mMultiSelectionView.setOnSelectionChangeListener(mBatchOpsHandler);
+
+        bindQuickFilterChips();
 
         if (SHOW_DISCLAIMER && AppPref.getBoolean(AppPref.PrefKey.PREF_SHOW_DISCLAIMER_BOOL)) {
             // Disclaimer will only be shown the first time it is loaded.
@@ -545,6 +548,26 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     protected void onPause() {
         super.onPause();
         unregisterReceiver(mBatchOpsBroadCastReceiver);
+    }
+
+    private void bindQuickFilterChips() {
+        bindQuickFilterChip(R.id.chip_user, MainListOptions.FILTER_USER_APPS);
+        bindQuickFilterChip(R.id.chip_system, MainListOptions.FILTER_SYSTEM_APPS);
+        bindQuickFilterChip(R.id.chip_frozen, MainListOptions.FILTER_FROZEN_APPS);
+        bindQuickFilterChip(R.id.chip_running, MainListOptions.FILTER_RUNNING_APPS);
+        bindQuickFilterChip(R.id.chip_backups, MainListOptions.FILTER_APPS_WITH_BACKUPS);
+        bindQuickFilterChip(R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS);
+    }
+
+    private void bindQuickFilterChip(int chipId, @MainListOptions.Filter int flag) {
+        Chip chip = findViewById(chipId);
+        if (chip == null || viewModel == null) return;
+        chip.setChecked(viewModel.hasFilterFlag(flag));
+        chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (viewModel == null) return;
+            if (isChecked) viewModel.addFilterFlag(flag);
+            else viewModel.removeFilterFlag(flag);
+        });
     }
 
     private void showFreezeUnfreezeDialog(int freezeType) {
