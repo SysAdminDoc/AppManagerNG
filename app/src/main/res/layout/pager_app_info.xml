@@ -34,23 +34,25 @@
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/icon"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/padding_medium"
+                    android:layout_marginTop="@dimen/padding_large"
                     android:layout_marginBottom="@dimen/padding_small"
                     android:background="@drawable/item_transparent"
-                    android:contentDescription="@string/str_logo"
+                    android:contentDescription="@string/app_details_app_icon"
                     android:nextFocusDown="@id/label"
-                    tools:ignore="contentDescription"
                     tools:srcCompat="@mipmap/ic_launcher" />
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/label"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/item_transparent"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="2"
                     android:nextFocusUp="@id/icon"
                     android:nextFocusDown="@id/packageName"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
@@ -60,25 +62,34 @@
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/packageName"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/item_transparent"
+                    android:ellipsize="middle"
+                    android:gravity="center"
+                    android:maxLines="1"
                     android:nextFocusUp="@id/label"
                     android:nextFocusDown="@id/version"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textIsSelectable="true"
-                    android:textStyle="italic"
                     tools:ignore="TouchTargetSizeCheck"
                     tools:text="io.github.muntashirakon.AppManager.debug" />
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/version"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/item_transparent"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
                     android:nextFocusUp="@id/packageName"
                     android:nextFocusDown="@id/tag_cloud"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textIsSelectable="true"
                     tools:ignore="TouchTargetSizeCheck"
                     tools:text="v10.2.0 (1001)" />
@@ -93,6 +104,7 @@
                 android:nextFocusUp="@id/version"
                 android:nextFocusDown="@id/horizontal_layout"
                 android:paddingHorizontal="@dimen/padding_medium"
+                android:paddingTop="@dimen/padding_small"
                 tools:listItem="@layout/item_chip" />
 
             <io.github.muntashirakon.widget.NestedScrollableHost
@@ -102,6 +114,8 @@
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:fadeScrollbars="false"
+                    android:overScrollMode="never"
                     android:layoutDirection="ltr">
 
                     <io.github.muntashirakon.widget.RoundedFirstAndLastChildViewGroup

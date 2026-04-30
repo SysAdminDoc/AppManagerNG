@@ -57,6 +57,11 @@
     <string name="main_list_uninstalled_state">Not installed</string>
     <string name="main_list_app_content_description">%1$s, %2$s, package %3$s, %4$s, %5$s</string>
     <string name="main_list_select_app">Select %1$s</string>
+    <string name="app_details_app_icon">App icon</string>
+    <string name="app_details_empty_title_no_matches">No matching details</string>
+    <string name="app_details_empty_message_no_matches">Search is hiding every item in this tab.</string>
+    <string name="app_details_empty_message_no_items">Refresh details if this app should expose items here.</string>
+    <string name="app_details_empty_message_unavailable">This section is unavailable with the current Android version or permissions.</string>
     <string name="sort_by_app_label">App label</string>
     <string name="sort_by_package_name">Package name</string>
     <string name="sort_by_domain">User apps first</string>

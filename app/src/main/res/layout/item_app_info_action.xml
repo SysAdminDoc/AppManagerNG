@@ -4,7 +4,8 @@
     style="@style/Widget.AppTheme.Button.TextIconButton"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="1dp"
+    android:layout_marginHorizontal="@dimen/padding_very_small"
     android:focusable="true"
+    android:minWidth="48dp"
     tools:text="@tools:sample/cities"
     tools:icon="@tools:sample/avatars" />

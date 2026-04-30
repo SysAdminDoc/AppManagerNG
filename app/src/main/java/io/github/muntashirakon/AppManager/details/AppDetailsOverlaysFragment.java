@@ -73,7 +73,9 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
         } else {
             emptyStringText = getString(R.string.no_overlays);
         }
-        emptyView.setText(emptyStringText);
+        setEmptyState(emptyStringText,
+                overlayManager == null ? getText(R.string.app_details_empty_message_unavailable) : null,
+                overlayManager != null);
 
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
@@ -130,6 +132,7 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
 
     @Override
     public void onRefresh() {
+        refreshDetails();
         swipeRefresh.setRefreshing(false);
     }
 
@@ -137,8 +140,14 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
     public boolean onQueryTextChange(String newText, int type) {
         if (viewModel != null) {
             viewModel.setSearchQuery(newText, type, OVERLAYS);
+            updateEmptyState();
         }
         return true;
+    }
+
+    @Override
+    protected int getProperty() {
+        return OVERLAYS;
     }
 
     private class AppDetailsRecyclerAdapter extends RecyclerView.Adapter<AppDetailsRecyclerAdapter.ViewHolder> {

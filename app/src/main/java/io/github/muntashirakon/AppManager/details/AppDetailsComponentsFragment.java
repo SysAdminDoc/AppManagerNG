@@ -102,7 +102,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        emptyView.setText(getNotFoundString(mNeededProperty));
+        setEmptyStateText(getNotFoundString(mNeededProperty));
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
         alertView.setEndIconOnClickListener(v -> alertView.hide());
@@ -220,8 +220,14 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     public boolean onQueryTextChange(String searchQuery, int type) {
         if (viewModel != null) {
             viewModel.setSearchQuery(searchQuery, type, mNeededProperty);
+            updateEmptyState();
         }
         return true;
+    }
+
+    @Override
+    protected int getProperty() {
+        return mNeededProperty;
     }
 
     private void updateBlockMenuItem(int status) {
