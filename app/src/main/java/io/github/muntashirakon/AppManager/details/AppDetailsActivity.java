@@ -53,12 +53,30 @@ public class AppDetailsActivity extends BaseActivity {
     private static final String EXTRA_APK_SOURCE = "src";
     private static final String EXTRA_USER_HANDLE = "user";
     private static final String EXTRA_BACK_TO_MAIN = "main";
+    private static final String EXTRA_INITIAL_TAB = "tab";
+    private static final String EXTRA_APPLY_TRACKER_SORT = "tracker_sort";
 
     @NonNull
     public static Intent getIntent(@NonNull Context context, @NonNull String packageName, @UserIdInt int userId) {
         Intent intent = new Intent(context, AppDetailsActivity.class);
         intent.putExtra(EXTRA_PACKAGE_NAME, packageName);
         intent.putExtra(EXTRA_USER_HANDLE, userId);
+        return intent;
+    }
+
+    /**
+     * Open the app details with the Activities tab pre-selected and tracker sort applied
+     * across all four component tabs, so known tracker components float to the top of
+     * each list. Used by the per-app tracker badge tap on the main list.
+     */
+    @NonNull
+    public static Intent getIntentForTrackers(@NonNull Context context, @NonNull String packageName,
+                                              @UserIdInt int userId) {
+        Intent intent = new Intent(context, AppDetailsActivity.class);
+        intent.putExtra(EXTRA_PACKAGE_NAME, packageName);
+        intent.putExtra(EXTRA_USER_HANDLE, userId);
+        intent.putExtra(EXTRA_INITIAL_TAB, AppDetailsFragment.ACTIVITIES);
+        intent.putExtra(EXTRA_APPLY_TRACKER_SORT, true);
         return intent;
     }
 
@@ -171,6 +189,21 @@ public class AppDetailsActivity extends BaseActivity {
         mViewPager.setAdapter(new AppDetailsFragmentPagerAdapter(this));
         new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> tab.setText(mTabTitleIds.getString(position)))
                 .attach();
+        // Apply incoming deep-link hints (initial tab + tracker sort) only on the first
+        // creation; on rotation/restoration the user's last tab/sort selection wins.
+        if (savedInstanceState == null) {
+            Intent launchIntent = getIntent();
+            int initialTab = launchIntent.getIntExtra(EXTRA_INITIAL_TAB, -1);
+            if (initialTab >= 0 && initialTab < mTabTitleIds.length()) {
+                mViewPager.setCurrentItem(initialTab, false);
+            }
+            if (launchIntent.getBooleanExtra(EXTRA_APPLY_TRACKER_SORT, false)) {
+                model.setSortOrder(AppDetailsFragment.SORT_BY_TRACKERS, AppDetailsFragment.ACTIVITIES);
+                model.setSortOrder(AppDetailsFragment.SORT_BY_TRACKERS, AppDetailsFragment.SERVICES);
+                model.setSortOrder(AppDetailsFragment.SORT_BY_TRACKERS, AppDetailsFragment.RECEIVERS);
+                model.setSortOrder(AppDetailsFragment.SORT_BY_TRACKERS, AppDetailsFragment.PROVIDERS);
+            }
+        }
         // Load package info
         (mPackageName != null
                 ? model.setPackage(mPackageName)

@@ -324,11 +324,28 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.trackerIndicator.setTextColor(trackerColor);
                 holder.trackerIndicator.setContentDescription(context.getResources().getQuantityString(
                         R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount));
+                if (item.isInstalled) {
+                    holder.trackerIndicator.setClickable(true);
+                    holder.trackerIndicator.setFocusable(true);
+                    holder.trackerIndicator.setOnClickListener(v -> {
+                        int userId = item.userIds != null && item.userIds.length > 0
+                                ? item.userIds[0]
+                                : UserHandleHidden.myUserId();
+                        Intent intent = AppDetailsActivity.getIntentForTrackers(
+                                mActivity, item.packageName, userId);
+                        mActivity.startActivity(intent);
+                    });
+                } else {
+                    holder.trackerIndicator.setClickable(false);
+                    holder.trackerIndicator.setOnClickListener(null);
+                }
             }
         } else {
             holder.packageName.setTextColor(mColorSecondary);
             if (holder.trackerIndicator != null) {
                 holder.trackerIndicator.setVisibility(View.GONE);
+                holder.trackerIndicator.setOnClickListener(null);
+                holder.trackerIndicator.setClickable(false);
             }
         }
         // Set version (along with HW accelerated, debug and test only flags)
