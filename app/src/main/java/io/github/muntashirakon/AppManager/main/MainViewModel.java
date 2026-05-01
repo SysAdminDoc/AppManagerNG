@@ -789,6 +789,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             item.hasSplits = app.hasSplits;
             item.blockedCount = app.rulesCount;
             item.trackerCount = app.trackerCount;
+            item.trackerBlockedCount = app.trackerBlockedCount;
             item.lastActionTime = app.lastActionTime;
             if (item.backup == null) {
                 item.backup = BackupUtils.getLatestBackupMetadataFromDbNoLockValidate(packageName);

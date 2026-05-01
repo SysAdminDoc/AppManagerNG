@@ -384,6 +384,21 @@ public class AppDb {
             int userId = app.userId;
             try (ComponentsBlocker cb = ComponentsBlocker.getInstance(app.packageName, userId, false)) {
                 app.rulesCount = cb.entryCount();
+                // Count blocked tracker components so the main list can render a
+                // "blocked X / N" badge. Reuses the already-open ComponentsBlocker
+                // so this is one extra in-memory iteration per app, no new I/O.
+                int blockedTrackers = 0;
+                if (app.rulesCount > 0) {
+                    for (io.github.muntashirakon.AppManager.rules.struct.ComponentRule rule
+                            : cb.getAllComponents()) {
+                        if (rule.isBlocked()
+                                && io.github.muntashirakon.AppManager.rules.compontents
+                                        .ComponentUtils.isTracker(rule.name)) {
+                            blockedTrackers++;
+                        }
+                    }
+                }
+                app.trackerBlockedCount = blockedTrackers;
             }
             app.codeSize = app.dataSize = 0;
             if (hasUsageAccess) {

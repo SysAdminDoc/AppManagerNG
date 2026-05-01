@@ -17,29 +17,51 @@
             android:layout_height="wrap_content"
             android:indeterminate="true" />
 
-        <FrameLayout
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@+id/progress_linear">
+            android:layout_below="@+id/progress_linear"
+            android:orientation="vertical">
 
-            <!-- We need to use scrollView id in order to preserve compatibility -->
-            <io.github.muntashirakon.widget.RecyclerView
-                android:id="@+id/scrollView"
+            <!-- Per-tab tracker-block CTA. Component fragments (Activities/Services/
+                 Receivers/Providers) toggle this on when the current tab contains
+                 unblocked tracker components; every other tab leaves it hidden so
+                 there's no layout impact. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tracker_block_in_tab"
+                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:fitsSystemWindows="true"
-                android:clipToPadding="false"
-                app:fastScrollerEnabled="true"
-                tools:listitem="@layout/item_app_details_primary" />
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/padding_small"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:text="Block 12 trackers in Activities" />
 
-            <include
-                android:id="@android:id/empty"
-                layout="@layout/view_app_details_empty_state"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                tools:visibility="gone" />
+                android:layout_height="match_parent">
 
-        </FrameLayout>
+                <!-- We need to use scrollView id in order to preserve compatibility -->
+                <io.github.muntashirakon.widget.RecyclerView
+                    android:id="@+id/scrollView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fitsSystemWindows="true"
+                    android:clipToPadding="false"
+                    app:fastScrollerEnabled="true"
+                    tools:listitem="@layout/item_app_details_primary" />
+
+                <include
+                    android:id="@android:id/empty"
+                    layout="@layout/view_app_details_empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    tools:visibility="gone" />
+
+            </FrameLayout>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <io.github.muntashirakon.widget.MaterialAlertView
             android:id="@+id/alert_text"

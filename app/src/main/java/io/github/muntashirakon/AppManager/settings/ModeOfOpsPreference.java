@@ -108,6 +108,7 @@ public class ModeOfOpsPreference extends Fragment {
         mRemoteServerStatusView = view.findViewById(R.id.remote_server_status);
         mRemoteServicesStatusView = view.findViewById(R.id.remote_services_status);
         mModeOfOpsView = view.findViewById(R.id.op_name);
+        bindCapabilities(view);
         MaterialButton changeModeView = view.findViewById(R.id.action_settings);
         List<String> disabledItems;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Utils.isTv(requireContext())) {
@@ -253,6 +254,57 @@ public class ModeOfOpsPreference extends Fragment {
         }
         mRemoteServicesStatusView.setCompoundDrawablesRelativeWithIntrinsicBounds(servicesActive ? mIconActive : mIconInactive, 0, 0, 0);
         mRemoteServicesStatusView.setText(servicesActive ? R.string.status_remote_services_active : R.string.status_remote_services_inactive);
+    }
+
+    /**
+     * Mirror onboarding's live capability hints inside the Settings mode picker so a
+     * user changing modes here gets the same context onboarding gave them on first
+     * launch (root present? USB debugging on? wireless debugging active?). Reads
+     * {@code adb_enabled} and {@code adb_wifi_enabled} from {@link android.provider
+     * .Settings.Global} -- both readable without permissions. Fails closed (reports
+     * inactive) on read errors.
+     */
+    private void bindCapabilities(@NonNull View view) {
+        com.google.android.material.textview.MaterialTextView rootRow = view.findViewById(R.id.capability_root);
+        com.google.android.material.textview.MaterialTextView adbWifiRow = view.findViewById(R.id.capability_adb_wifi);
+        com.google.android.material.textview.MaterialTextView adbUsbRow = view.findViewById(R.id.capability_adb_usb);
+        if (rootRow != null) {
+            rootRow.setText(getString(R.string.mode_of_op_capability_root,
+                    getString(Ops.hasRoot()
+                            ? R.string.mode_of_op_capability_status_detected
+                            : R.string.mode_of_op_capability_status_missing)));
+        }
+        if (adbWifiRow != null) {
+            adbWifiRow.setText(getString(R.string.mode_of_op_capability_adb_wifi,
+                    getString(isWirelessDebuggingActive()
+                            ? R.string.mode_of_op_capability_status_active
+                            : R.string.mode_of_op_capability_status_inactive)));
+        }
+        if (adbUsbRow != null) {
+            adbUsbRow.setText(getString(R.string.mode_of_op_capability_adb_usb,
+                    getString(isUsbDebuggingEnabled()
+                            ? R.string.mode_of_op_capability_status_enabled
+                            : R.string.mode_of_op_capability_status_disabled)));
+        }
+    }
+
+    private boolean isUsbDebuggingEnabled() {
+        try {
+            return android.provider.Settings.Global.getInt(
+                    requireContext().getContentResolver(), "adb_enabled", 0) != 0;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private boolean isWirelessDebuggingActive() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false;
+        try {
+            return android.provider.Settings.Global.getInt(
+                    requireContext().getContentResolver(), "adb_wifi_enabled", 0) != 0;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     private static boolean requireRemoteServer(@NonNull String mode) {

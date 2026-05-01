@@ -105,6 +105,11 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private MaterialButton mEmptyStateAction;
     private TextView mListStatusView;
     MainBatchOpsHandler mBatchOpsHandler;
+
+    /** Async breakdown computation; cancelled when superseded by a new list. */
+    @Nullable
+    private java.util.concurrent.Future<?> mCategoryBreakdownFuture;
+
     private MenuItem mAppUsageMenu;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
@@ -288,6 +293,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             }
             updateMainListState(applicationItems.size(), trackerSum);
             refreshSortChipLabel();
+            scheduleAggregateCategoryBreakdown(applicationItems, trackerSum);
         });
         viewModel.getOperationStatus().observe(this, status -> {
             mProgressIndicator.hide();
@@ -572,6 +578,86 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_trackers, MainListOptions.FILTER_APPS_WITH_TRACKERS},
             {R.id.chip_rules, MainListOptions.FILTER_APPS_WITH_RULES},
     };
+
+    /**
+     * Walk the visible apps on a worker thread, fetch each one's tracker components,
+     * categorize via TrackerCategory, and append a breakdown ("320 ad · 280 analytics
+     * · 191 push") to the list status line. Runs on a background thread because each
+     * app needs a PackageInfo lookup + Aho-Corasick search per component — for a
+     * 600-app list that's a noticeable burst we don't want on the UI thread.
+     *
+     * <p>Cancels any in-flight computation before starting a new one so a fast filter
+     * switch doesn't queue redundant passes. No caching — the visible set changes on
+     * every filter/sort, so a fresh pass is always correct.
+     */
+    private void scheduleAggregateCategoryBreakdown(
+            @NonNull java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> items,
+            int trackerSum) {
+        if (mCategoryBreakdownFuture != null) {
+            mCategoryBreakdownFuture.cancel(true);
+            mCategoryBreakdownFuture = null;
+        }
+        if (trackerSum == 0 || items.isEmpty()) return;
+        // Snapshot the list for the worker thread.
+        java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> snapshot =
+                new java.util.ArrayList<>(items);
+        mCategoryBreakdownFuture = io.github.muntashirakon.AppManager.utils.ThreadUtils
+                .postOnBackgroundThread(() -> {
+            java.util.EnumMap<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> counts =
+                    new java.util.EnumMap<>(io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.class);
+            for (io.github.muntashirakon.AppManager.main.ApplicationItem appItem : snapshot) {
+                if (Thread.currentThread().isInterrupted()) return;
+                if (appItem.trackerCount == null || appItem.trackerCount == 0
+                        || !appItem.isInstalled) continue;
+                int userId = appItem.userIds != null && appItem.userIds.length > 0
+                        ? appItem.userIds[0]
+                        : android.os.UserHandleHidden.myUserId();
+                android.content.pm.PackageInfo pi;
+                try {
+                    pi = io.github.muntashirakon.AppManager.compat.PackageManagerCompat.getPackageInfo(
+                            appItem.packageName,
+                            android.content.pm.PackageManager.GET_ACTIVITIES
+                                    | android.content.pm.PackageManager.GET_SERVICES
+                                    | android.content.pm.PackageManager.GET_RECEIVERS
+                                    | android.content.pm.PackageManager.GET_PROVIDERS,
+                            userId);
+                } catch (Throwable t) {
+                    continue;
+                }
+                if (pi == null) continue;
+                java.util.Map<String, io.github.muntashirakon.AppManager.rules.RuleType> trackers =
+                        io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
+                                .getTrackerComponentsForPackage(pi);
+                for (String componentName : trackers.keySet()) {
+                    String vendor = io.github.muntashirakon.AppManager.rules.compontents
+                            .ComponentUtils.getTrackerLabel(componentName);
+                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
+                            io.github.muntashirakon.AppManager.rules.compontents
+                                    .TrackerCategory.categorize(vendor);
+                    counts.merge(cat, 1, Integer::sum);
+                }
+            }
+            if (Thread.currentThread().isInterrupted()) return;
+            StringBuilder sb = new StringBuilder();
+            for (java.util.Map.Entry<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> e
+                    : counts.entrySet()) {
+                if (e.getKey() == io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) continue;
+                if (sb.length() > 0) sb.append(" · ");
+                sb.append(e.getValue()).append(' ').append(getString(e.getKey().getLabelRes())
+                        .toLowerCase(java.util.Locale.ROOT));
+            }
+            if (sb.length() == 0) return; // only OTHER -> skip update
+            String breakdown = sb.toString();
+            io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() -> {
+                if (mListStatusView == null) return;
+                CharSequence current = mListStatusView.getText();
+                // Don't append to a status line that's been replaced (e.g. "loading").
+                if (current == null || current.length() == 0) return;
+                mListStatusView.setText(getString(R.string.main_status_with_category_breakdown,
+                        current.toString(), breakdown));
+            });
+        });
+    }
 
     private void maybeShowOnboarding() {
         if (!OnboardingFragment.shouldShow()) return;

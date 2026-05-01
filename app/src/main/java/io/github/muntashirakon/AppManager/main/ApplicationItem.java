@@ -139,6 +139,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
      */
     public Integer blockedCount = 0;
     public Integer trackerCount = 0;
+    /** How many of {@link #trackerCount} components are currently blocked. */
+    public Integer trackerBlockedCount = 0;
     public Long lastActionTime = 0L;
     public Long dataUsage = 0L;
     public Long totalSize = 0L;
