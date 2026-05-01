@@ -1254,6 +1254,15 @@
     <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="failed_to_launch_app">Could not launch this app.</string>
+    <string name="tracker_category_ad">Ad</string>
+    <string name="tracker_category_analytics">Analytics</string>
+    <string name="tracker_category_crash">Crash</string>
+    <string name="tracker_category_push">Push</string>
+    <string name="tracker_category_location">Location</string>
+    <string name="tracker_category_identification">Fingerprint</string>
+    <string name="tracker_category_social">Social</string>
+    <string name="tracker_category_other">Tracker</string>
+    <string name="tracker_chip_with_category" translatable="false"><xliff:g id="vendor" example="Google AdMob">%1$s</xliff:g> · <xliff:g id="category" example="Ad">%2$s</xliff:g></string>
     <string name="tracker_chip_safe_to_block_hint_with_name"><xliff:g id="tracker_name" example="Google AdMob">%1$s</xliff:g> — known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="input_ssaid_instruction">SSAID is a %1$d byte hexadecimal number i.e. a string of length %2$d containing 0 to 9 and a to f.</string>
     <string name="screen_time">Screen time</string>

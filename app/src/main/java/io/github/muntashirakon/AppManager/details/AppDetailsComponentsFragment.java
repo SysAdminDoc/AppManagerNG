@@ -306,9 +306,12 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     }
 
     /**
-     * Show the tracker chip with the matched vendor name (e.g. "Google AdMob") when known,
-     * falling back to a generic "Tracker" label. Hidden for non-tracker components. The
-     * chip text doubles as a tooltip so users see the full name even when truncated.
+     * Show the tracker chip with the matched vendor name and a heuristic category
+     * suffix (e.g. "Google AdMob · Ad", "Firebase Analytics · Analytics") when both
+     * are known. The category is derived in {@link io.github.muntashirakon.AppManager
+     * .rules.compontents.TrackerCategory#categorize(String)} from substring matches
+     * against the vendor name; OTHER trackers render the vendor name alone. Tooltip
+     * confirms safety to disable.
      */
     private void applyTrackerChip(@NonNull Chip chip, @NonNull AppDetailsComponentItem item) {
         if (!item.isTracker()) {
@@ -321,7 +324,13 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             chip.setText(R.string.tracker);
             chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint));
         } else {
-            chip.setText(label);
+            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory category =
+                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.categorize(label);
+            if (category == io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) {
+                chip.setText(label);
+            } else {
+                chip.setText(getString(R.string.tracker_chip_with_category, label, getString(category.getLabelRes())));
+            }
             chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint_with_name, label));
         }
         chip.setVisibility(View.VISIBLE);
