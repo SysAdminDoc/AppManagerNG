@@ -400,6 +400,50 @@ public class AppDb {
                 }
                 app.trackerBlockedCount = blockedTrackers;
             }
+            // Dangerous-permission scan: fetch a GET_PERMISSIONS-flagged
+            // PackageInfo for this app, walk requestedPermissions, classify
+            // each via PermissionInfoCompat, and tally REQUESTED_PERMISSION
+            // _GRANTED bits from the parallel flags array. Lookup failures are
+            // skipped so a single broken permission resolution doesn't drop the
+            // whole count. Cost: one extra PackageManager.getPackageInfo per
+            // installed app (~50-200ms total over a full scan).
+            try {
+                android.content.pm.PackageInfo packageInfoForPerms = io.github.muntashirakon
+                        .AppManager.compat.PackageManagerCompat.getPackageInfo(
+                                app.packageName,
+                                android.content.pm.PackageManager.GET_PERMISSIONS,
+                                userId);
+                if (packageInfoForPerms != null
+                        && packageInfoForPerms.requestedPermissions != null) {
+                    String[] perms = packageInfoForPerms.requestedPermissions;
+                    int[] permFlags = packageInfoForPerms.requestedPermissionsFlags;
+                    int total = 0;
+                    int granted = 0;
+                    android.content.pm.PackageManager pm = context.getPackageManager();
+                    for (int i = 0; i < perms.length; i++) {
+                        if (ThreadUtils.isInterrupted()) return;
+                        try {
+                            android.content.pm.PermissionInfo info =
+                                    pm.getPermissionInfo(perms[i], 0);
+                            int prot = androidx.core.content.pm.PermissionInfoCompat
+                                    .getProtection(info);
+                            if (prot == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS) {
+                                total++;
+                                boolean isGranted = permFlags != null && i < permFlags.length
+                                        && (permFlags[i] & android.content.pm.PackageInfo
+                                                .REQUESTED_PERMISSION_GRANTED) != 0;
+                                if (isGranted) granted++;
+                            }
+                        } catch (Throwable ignore) {
+                            // unknown / removed permission; skip
+                        }
+                    }
+                    app.dangerousPermTotal = total;
+                    app.dangerousPermGranted = granted;
+                }
+            } catch (Throwable ignore) {
+                // PackageInfo lookup failed; leave counts at 0
+            }
             app.codeSize = app.dataSize = 0;
             if (hasUsageAccess) {
                 PackageSizeInfo sizeInfo = PackageUtils.getPackageSizeInfo(context, app.packageName, userId, null);

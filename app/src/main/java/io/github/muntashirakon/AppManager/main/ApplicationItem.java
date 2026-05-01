@@ -141,6 +141,10 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     public Integer trackerCount = 0;
     /** How many of {@link #trackerCount} components are currently blocked. */
     public Integer trackerBlockedCount = 0;
+    /** Number of dangerous permissions declared by the app. */
+    public Integer dangerousPermTotal = 0;
+    /** Subset of {@link #dangerousPermTotal} currently granted to the app. */
+    public Integer dangerousPermGranted = 0;
     public Long lastActionTime = 0L;
     public Long dataUsage = 0L;
     public Long totalSize = 0L;

@@ -131,9 +131,98 @@ public class AppsDbMigrationTest {
                         AppsDb.class,
                         TEST_DB)
                 .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
-                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8)
+                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9)
                 .build();
         // Force Room to materialize and validate the schema.
+        assertNotNull(db.appDao());
+        db.close();
+    }
+
+    /**
+     * v9 adds {@code dangerous_perm_total} and {@code dangerous_perm_granted}
+     * for the per-app permissions badge + aggregate status counter. Migration
+     * must preserve every existing row's columns including
+     * {@code tracker_blocked_count} that v8 added, and default both new columns
+     * to 0.
+     */
+    @Test
+    public void migrate8To9_preservesRow_andDefaultsBothNewColumns() throws IOException {
+        SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 8);
+        db.execSQL("INSERT INTO `app` (`package_name`, `user_id`, `label`, `version_name`, "
+                + "`version_code`, `flags`, `uid`, `is_installed`, `tracker_count`, "
+                + "`rules_count`, `tracker_blocked_count`) "
+                + "VALUES ('com.example.test', 0, 'Test', '1.0', 1, 0, 10000, 1, 5, 2, 1)");
+        db.close();
+
+        SupportSQLiteDatabase migrated = helper.runMigrationsAndValidate(TEST_DB, 9, true,
+                AppsDb.M_8_9);
+
+        try (android.database.Cursor c = migrated.query(
+                "SELECT package_name, tracker_count, tracker_blocked_count, "
+                        + "dangerous_perm_total, dangerous_perm_granted FROM app "
+                        + "WHERE package_name = 'com.example.test'")) {
+            assertTrue("row must survive migration", c.moveToFirst());
+            assertEquals("com.example.test", c.getString(0));
+            assertEquals("tracker_count must be preserved", 5, c.getInt(1));
+            assertEquals("tracker_blocked_count must be preserved", 1, c.getInt(2));
+            assertEquals("dangerous_perm_total must default to 0", 0, c.getInt(3));
+            assertEquals("dangerous_perm_granted must default to 0", 0, c.getInt(4));
+        }
+        migrated.close();
+    }
+
+    /**
+     * Apply the migration on an empty schema to catch ALTER TABLE failures that
+     * a populated table might mask, and confirm both new columns land with the
+     * expected NOT NULL + default 0 shape.
+     */
+    @Test
+    public void migrate8To9_emptyDb_addsBothColumns() throws IOException {
+        SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 8);
+        db.close();
+
+        SupportSQLiteDatabase migrated = helper.runMigrationsAndValidate(TEST_DB, 9, true,
+                AppsDb.M_8_9);
+
+        boolean foundTotal = false;
+        boolean foundGranted = false;
+        try (android.database.Cursor c = migrated.query("PRAGMA table_info(`app`)")) {
+            while (c.moveToNext()) {
+                String columnName = c.getString(c.getColumnIndexOrThrow("name"));
+                if ("dangerous_perm_total".equals(columnName)
+                        || "dangerous_perm_granted".equals(columnName)) {
+                    String defaultValue = c.getString(c.getColumnIndexOrThrow("dflt_value"));
+                    int notNull = c.getInt(c.getColumnIndexOrThrow("notnull"));
+                    assertNotNull("new column must declare a default", defaultValue);
+                    assertEquals("default value must be 0", "0", defaultValue);
+                    assertEquals("new column must be NOT NULL", 1, notNull);
+                    if ("dangerous_perm_total".equals(columnName)) foundTotal = true;
+                    else foundGranted = true;
+                }
+            }
+        }
+        assertTrue("v9 must add dangerous_perm_total", foundTotal);
+        assertTrue("v9 must add dangerous_perm_granted", foundGranted);
+        migrated.close();
+    }
+
+    /**
+     * End-to-end ladder test: start at v7, apply both M_7_8 and M_8_9, open via
+     * Room itself. Catches schema regressions in either step that only manifest
+     * when the runtime validator runs against the compiled @Entity.
+     */
+    @Test
+    public void migrate7To9_runtimeRoomOpenSucceeds() throws IOException {
+        helper.createDatabase(TEST_DB, 7).close();
+        helper.runMigrationsAndValidate(TEST_DB, 9, true, AppsDb.M_7_8, AppsDb.M_8_9).close();
+
+        AppsDb db = Room.databaseBuilder(
+                        ApplicationProvider.getApplicationContext(),
+                        AppsDb.class,
+                        TEST_DB)
+                .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
+                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9)
+                .build();
         assertNotNull(db.appDao());
         db.close();
     }

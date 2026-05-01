@@ -542,6 +542,15 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                             && item.info.trackerBlockedCount >= item.info.trackerCount) {
                         continue;
                     }
+                    // 'With granted dangerous perms' filter — drops apps that don't
+                    // have any granted dangerous permissions. The Room column is
+                    // populated by the AppDb refresh pass; uses the cached value
+                    // directly so no per-render lookup is needed.
+                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS) != 0
+                            && (item.info.dangerousPermGranted == null
+                                    || item.info.dangerousPermGranted == 0)) {
+                        continue;
+                    }
                     filteredApplicationItems.add(item.info);
                 }
                 if (!TextUtils.isEmpty(mSearchQuery)) {
@@ -813,6 +822,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             item.blockedCount = app.rulesCount;
             item.trackerCount = app.trackerCount;
             item.trackerBlockedCount = app.trackerBlockedCount;
+            item.dangerousPermTotal = app.dangerousPermTotal;
+            item.dangerousPermGranted = app.dangerousPermGranted;
             item.lastActionTime = app.lastActionTime;
             if (item.backup == null) {
                 item.backup = BackupUtils.getLatestBackupMetadataFromDbNoLockValidate(packageName);

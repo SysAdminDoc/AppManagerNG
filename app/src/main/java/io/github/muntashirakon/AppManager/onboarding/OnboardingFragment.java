@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.onboarding;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,8 +11,11 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.color.MaterialColors;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -82,23 +86,17 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         // than caching at fragment construction so a user who toggles ADB and
         // returns to the sheet sees the new state.
         TextView rootStatus = view.findViewById(R.id.status_root);
-        if (rootStatus != null) {
-            rootStatus.setText(Ops.hasRoot()
-                    ? R.string.onboarding_mode_root_status_detected
-                    : R.string.onboarding_mode_root_status_missing);
-        }
+        bindCapabilityStatus(rootStatus, Ops.hasRoot(),
+                R.string.onboarding_mode_root_status_detected,
+                R.string.onboarding_mode_root_status_missing);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
-        if (adbWifiStatus != null) {
-            adbWifiStatus.setText(isWirelessDebuggingActive()
-                    ? R.string.onboarding_mode_adb_wifi_status_active
-                    : R.string.onboarding_mode_adb_wifi_status_inactive);
-        }
+        bindCapabilityStatus(adbWifiStatus, isWirelessDebuggingActive(),
+                R.string.onboarding_mode_adb_wifi_status_active,
+                R.string.onboarding_mode_adb_wifi_status_inactive);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
-        if (adbTcpStatus != null) {
-            adbTcpStatus.setText(isUsbDebuggingEnabled()
-                    ? R.string.onboarding_mode_adb_tcp_status_active
-                    : R.string.onboarding_mode_adb_tcp_status_inactive);
-        }
+        bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
+                R.string.onboarding_mode_adb_tcp_status_active,
+                R.string.onboarding_mode_adb_tcp_status_inactive);
         bindCardActions(view, R.id.card_mode_auto, Ops.MODE_AUTO,
                 R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_explainer);
         bindCardActions(view, R.id.card_mode_root, Ops.MODE_ROOT,
@@ -109,6 +107,26 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 R.string.onboarding_mode_adb_tcp_title, R.string.onboarding_mode_adb_tcp_explainer);
         bindCardActions(view, R.id.card_mode_no_root, Ops.MODE_NO_ROOT,
                 R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_explainer);
+    }
+
+    private void bindCapabilityStatus(@Nullable TextView statusView, boolean available,
+                                      int availableTextRes, int unavailableTextRes) {
+        if (statusView == null) return;
+        int color = MaterialColors.getColor(statusView, available
+                ? com.google.android.material.R.attr.colorOnPrimaryContainer
+                : com.google.android.material.R.attr.colorOnSurfaceVariant);
+        statusView.setText(available ? availableTextRes : unavailableTextRes);
+        statusView.setTextColor(color);
+        statusView.setCompoundDrawablePadding(getResources()
+                .getDimensionPixelSize(io.github.muntashirakon.ui.R.dimen.padding_very_small));
+        Drawable icon = ContextCompat.getDrawable(requireContext(), available
+                ? R.drawable.ic_check_circle
+                : io.github.muntashirakon.ui.R.drawable.ic_caution);
+        if (icon != null) {
+            icon = DrawableCompat.wrap(icon.mutate());
+            DrawableCompat.setTint(icon, color);
+        }
+        statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
     }
 
     /**

@@ -295,15 +295,17 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
         // Set observer
         showProgressIndicator(true);
-        updateMainListState(0, 0);
+        updateMainListState(0, 0, 0);
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) mAdapter.setDefaultList(applicationItems);
             showProgressIndicator(false);
             int trackerSum = 0;
+            int permGrantedSum = 0;
             for (io.github.muntashirakon.AppManager.main.ApplicationItem item : applicationItems) {
                 if (item.trackerCount != null) trackerSum += item.trackerCount;
+                if (item.dangerousPermGranted != null) permGrantedSum += item.dangerousPermGranted;
             }
-            updateMainListState(applicationItems.size(), trackerSum);
+            updateMainListState(applicationItems.size(), trackerSum, permGrantedSum);
             refreshSortChipLabel();
             scheduleAggregateCategoryBreakdown(applicationItems, trackerSum);
         });
@@ -589,6 +591,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS},
             {R.id.chip_trackers, MainListOptions.FILTER_APPS_WITH_TRACKERS},
             {R.id.chip_rules, MainListOptions.FILTER_APPS_WITH_RULES},
+            {R.id.chip_granted_perms, MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS},
     };
 
     /**
@@ -664,8 +667,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 String currentStr = current.toString();
                 int newline = currentStr.indexOf('\n');
                 String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
-                mListStatusView.setText(getString(R.string.main_status_with_category_breakdown,
-                        base, breakdown));
+                String statusWithBreakdown = getString(R.string.main_status_with_category_breakdown,
+                        base, breakdown);
+                mListStatusView.setText(statusWithBreakdown);
+                mListStatusView.setContentDescription(statusWithBreakdown);
             });
         });
     }
@@ -724,8 +729,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         // Avoid stacking multiple placeholders if observer fires re-entrantly.
         int newline = currentStr.indexOf('\n');
         String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
-        mListStatusView.setText(getString(R.string.main_status_with_category_breakdown,
-                base, getString(R.string.main_status_breakdown_calculating)));
+        String status = getString(R.string.main_status_with_category_breakdown,
+                base, getString(R.string.main_status_breakdown_calculating));
+        mListStatusView.setText(status);
+        mListStatusView.setContentDescription(status);
     }
 
     private void clearBreakdownProgress() {
@@ -735,7 +742,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         String currentStr = current.toString();
         int newline = currentStr.indexOf('\n');
         if (newline >= 0) {
-            mListStatusView.setText(currentStr.substring(0, newline));
+            String base = currentStr.substring(0, newline);
+            mListStatusView.setText(base);
+            mListStatusView.setContentDescription(base);
         }
     }
 
@@ -932,11 +941,14 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             if (mListStatusView != null) {
                 mListStatusView.setVisibility(View.VISIBLE);
                 mListStatusView.setText(R.string.main_status_loading);
+                mListStatusView.setContentDescription(getString(R.string.main_status_loading));
+                mListStatusView.setOnClickListener(null);
+                mListStatusView.setClickable(false);
             }
         } else mProgressIndicator.hide();
     }
 
-    private void updateMainListState(int displayedItemCount, int trackerSum) {
+    private void updateMainListState(int displayedItemCount, int trackerSum, int permGrantedSum) {
         if (viewModel == null || mEmptyState == null) {
             return;
         }
@@ -951,30 +963,47 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             } else {
                 base = getString(R.string.main_status_showing_apps, displayedItemCount, totalItemCount);
             }
+            // Build suffix incrementally so we can chain '· N trackers · M dangerous perms'.
+            StringBuilder line = new StringBuilder(base);
             if (trackerSum > 0) {
-                String trackerSuffix = getResources().getQuantityString(
-                        R.plurals.main_status_tracker_suffix, trackerSum, trackerSum);
-                mListStatusView.setText(getString(R.string.main_status_with_tracker_suffix, base, trackerSuffix));
-                // Make the status line a quick filter shortcut: tap when a tracker
-                // suffix is showing and the with-trackers filter is off -> enable it.
-                // No-op when the filter is already active so the tap doesn't visually
-                // do nothing on a second press; the user can tap the chip Clear to undo.
-                if (!viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS)) {
-                    mListStatusView.setClickable(true);
-                    mListStatusView.setFocusable(true);
-                    mListStatusView.setOnClickListener(v -> {
-                        if (viewModel == null) return;
-                        viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
-                        refreshQuickFilterChips();
-                    });
-                } else {
-                    mListStatusView.setOnClickListener(null);
-                    mListStatusView.setClickable(false);
-                }
+                line.append(" · ").append(getResources().getQuantityString(
+                        R.plurals.main_status_tracker_suffix, trackerSum, trackerSum));
+            }
+            if (permGrantedSum > 0) {
+                line.append(" · ").append(getResources().getQuantityString(
+                        R.plurals.main_status_perm_suffix, permGrantedSum, permGrantedSum));
+            }
+            String statusLine = line.toString();
+            mListStatusView.setText(statusLine);
+            // Tap-to-filter shortcut: prefers trackers when present (the bigger user
+            // goal), falls back to perms-granted otherwise. No-op when both filters
+            // are already on; user uses the Clear chip to undo.
+            if (trackerSum > 0
+                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS)) {
+                mListStatusView.setClickable(true);
+                mListStatusView.setFocusable(true);
+                mListStatusView.setContentDescription(statusLine + ". "
+                        + getString(R.string.main_status_filter_trackers_a11y));
+                mListStatusView.setOnClickListener(v -> {
+                    if (viewModel == null) return;
+                    viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
+                    refreshQuickFilterChips();
+                });
+            } else if (permGrantedSum > 0
+                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS)) {
+                mListStatusView.setClickable(true);
+                mListStatusView.setFocusable(true);
+                mListStatusView.setContentDescription(statusLine + ". "
+                        + getString(R.string.main_status_filter_permissions_a11y));
+                mListStatusView.setOnClickListener(v -> {
+                    if (viewModel == null) return;
+                    viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
+                    refreshQuickFilterChips();
+                });
             } else {
-                mListStatusView.setText(base);
                 mListStatusView.setOnClickListener(null);
                 mListStatusView.setClickable(false);
+                mListStatusView.setContentDescription(statusLine);
             }
         }
         if (displayedItemCount > 0) {
