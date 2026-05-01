@@ -281,6 +281,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 if (item.trackerCount != null) trackerSum += item.trackerCount;
             }
             updateMainListState(applicationItems.size(), trackerSum);
+            refreshSortChipLabel();
         });
         viewModel.getOperationStatus().observe(this, status -> {
             mProgressIndicator.hide();
@@ -578,7 +579,35 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             clearChip.setOnClickListener(clearListener);
             clearChip.setOnCloseIconClickListener(clearListener);
         }
+        Chip sortChip = findViewById(R.id.chip_sort);
+        if (sortChip != null) {
+            sortChip.setOnClickListener(v -> {
+                if (viewModel == null) return;
+                MainListOptions listOptions = new MainListOptions();
+                listOptions.setListOptionActions(viewModel);
+                listOptions.show(getSupportFragmentManager(), MainListOptions.TAG);
+            });
+        }
         refreshQuickFilterChips();
+        refreshSortChipLabel();
+    }
+
+    /**
+     * Resolve the human-readable name of the active sort order from MainListOptions'
+     * canonical sort id -> string-res map and display it on the sort chip with a
+     * downward arrow when the order is reversed. The chip stays in sync via the
+     * applicationItems observer, which fires whenever sortBy changes.
+     */
+    private void refreshSortChipLabel() {
+        Chip sortChip = findViewById(R.id.chip_sort);
+        if (sortChip == null || viewModel == null) return;
+        java.util.LinkedHashMap<Integer, Integer> sortMap = new MainListOptions().getSortIdLocaleMap();
+        if (sortMap == null) return;
+        Integer labelRes = sortMap.get(viewModel.getSortBy());
+        String label = labelRes != null ? getString(labelRes) : getString(R.string.sort);
+        sortChip.setText(viewModel.isReverseSort()
+                ? getString(R.string.main_sort_chip_label_reversed, label)
+                : getString(R.string.main_sort_chip_label, label));
     }
 
     private void bindQuickFilterChip(int chipId, @MainListOptions.Filter int flag) {

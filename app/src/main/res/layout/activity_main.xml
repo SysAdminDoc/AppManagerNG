@@ -45,6 +45,17 @@
                 app:chipSpacingHorizontal="@dimen/padding_very_small">
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sort"
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sort"
+                    android:checkable="false"
+                    app:chipIcon="@drawable/ic_sort"
+                    app:chipIconVisible="true"
+                    app:closeIconVisible="false" />
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chip_user"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
