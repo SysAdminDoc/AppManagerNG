@@ -48,6 +48,7 @@
     <string name="main_status_all_apps">Showing %1$d apps</string>
     <string name="main_status_with_tracker_suffix"><xliff:g id="status" example="Showing 600 apps">%1$s</xliff:g> · <xliff:g id="trackers" example="4521 trackers">%2$s</xliff:g></string>
     <string name="main_status_with_category_breakdown" translatable="false"><xliff:g id="base" example="Showing 600 apps · 4521 trackers">%1$s</xliff:g>\n<xliff:g id="categories" example="320 ad · 280 analytics">%2$s</xliff:g></string>
+    <string name="main_status_breakdown_calculating">Calculating breakdown…</string>
     <plurals name="main_status_tracker_suffix">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="4521">%1$d</xliff:g> trackers</item>
@@ -804,7 +805,7 @@
     <string name="magisk_hide_enabled">MagiskHide</string>
     <string name="set_app_op_mode">Set app op mode</string>
     <string name="filter_apps_with_splits">With splits</string>
-    <string name="filter_apps_with_trackers">With trackers</string>
+    <string name="filter_apps_with_trackers">Unblocked trackers</string>
     <string name="value">Value</string>
     <string name="matching_activities">Matching activities</string>
     <string name="send_edited_intent">Send edited Intent</string>

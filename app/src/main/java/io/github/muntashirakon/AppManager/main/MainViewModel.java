@@ -531,6 +531,17 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SAF) != 0 && !item.info.usesSaf) {
                         continue;
                     }
+                    // Refine 'with trackers' to mean 'with UNBLOCKED trackers' so users
+                    // who've already locked an app down don't see it cluttering the
+                    // tracker view. The FilterItem-level TrackersOption=ge,1 has already
+                    // dropped apps with zero trackers; this drops apps where every
+                    // tracker is blocked (trackerBlockedCount >= trackerCount).
+                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_TRACKERS) != 0
+                            && item.info.trackerCount != null && item.info.trackerCount > 0
+                            && item.info.trackerBlockedCount != null
+                            && item.info.trackerBlockedCount >= item.info.trackerCount) {
+                        continue;
+                    }
                     filteredApplicationItems.add(item.info);
                 }
                 if (!TextUtils.isEmpty(mSearchQuery)) {
