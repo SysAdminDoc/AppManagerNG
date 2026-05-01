@@ -92,6 +92,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     private int mNeededProperty;
     private int mSortOrder;
     private String mSearchQuery;
+    @Nullable
+    private com.google.android.material.button.MaterialButton mTrackerBlockInTabButton;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -113,11 +115,13 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         mSortOrder = viewModel.getSortOrder(mNeededProperty);
         mSearchQuery = viewModel.getSearchQuery();
         mPackageName = viewModel.getPackageName();
+        mTrackerBlockInTabButton = view.findViewById(R.id.tracker_block_in_tab);
         viewModel.get(mNeededProperty).observe(getViewLifecycleOwner(), appDetailsItems -> {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mPackageName = viewModel.getPackageName();
                 mIsExternalApk = viewModel.isExternalApk();
                 mAdapter.setDefaultList(appDetailsItems);
+                refreshTabTrackerBlockButton(appDetailsItems);
             } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
         });
         viewModel.getRuleApplicationStatus().observe(getViewLifecycleOwner(), status -> {
@@ -302,6 +306,80 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                             @NonNull @ComponentRule.ComponentStatus String componentStatus) {
         if (viewModel != null) {
             viewModel.updateRulesForComponent(componentItem, type, componentStatus);
+        }
+    }
+
+    /**
+     * Show a one-tap "Block N trackers in this group" button at the top of the tab
+     * when the current component list contains unblocked tracker items. Scoped to
+     * the current tab so users can curate (e.g. "block trackers in receivers but
+     * keep activities") rather than the all-or-nothing CTA on the App Info tab.
+     *
+     * Hidden when:
+     *   - the user can't modify component states (no privilege),
+     *   - the app is an external APK,
+     *   - no unblocked tracker items in this tab.
+     */
+    @MainThread
+    private void refreshTabTrackerBlockButton(@NonNull List<AppDetailsItem<?>> appDetailsItems) {
+        if (mTrackerBlockInTabButton == null || viewModel == null) return;
+        if (mIsExternalApk || !SelfPermissions.canModifyAppComponentStates(
+                viewModel.getUserId(), viewModel.getPackageName(), viewModel.isTestOnlyApp())) {
+            mTrackerBlockInTabButton.setVisibility(View.GONE);
+            mTrackerBlockInTabButton.setOnClickListener(null);
+            return;
+        }
+        List<AppDetailsComponentItem> unblockedTrackers = new ArrayList<>();
+        for (AppDetailsItem<?> di : appDetailsItems) {
+            if (!(di instanceof AppDetailsComponentItem)) continue;
+            AppDetailsComponentItem ci = (AppDetailsComponentItem) di;
+            if (ci.isTracker() && !ci.isBlocked()) {
+                unblockedTrackers.add(ci);
+            }
+        }
+        if (unblockedTrackers.isEmpty()) {
+            mTrackerBlockInTabButton.setVisibility(View.GONE);
+            mTrackerBlockInTabButton.setOnClickListener(null);
+            return;
+        }
+        int count = unblockedTrackers.size();
+        int labelRes;
+        switch (mNeededProperty) {
+            case SERVICES:  labelRes = R.plurals.tracker_block_in_tab_services;  break;
+            case RECEIVERS: labelRes = R.plurals.tracker_block_in_tab_receivers; break;
+            case PROVIDERS: labelRes = R.plurals.tracker_block_in_tab_providers; break;
+            case ACTIVITIES:
+            default:        labelRes = R.plurals.tracker_block_in_tab_activities; break;
+        }
+        mTrackerBlockInTabButton.setText(getResources().getQuantityString(labelRes, count, count));
+        mTrackerBlockInTabButton.setVisibility(View.VISIBLE);
+        mTrackerBlockInTabButton.setOnClickListener(v -> {
+            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            mTrackerBlockInTabButton.setEnabled(false);
+            ThreadUtils.postOnBackgroundThread(() -> {
+                RuleType ruleType = ruleTypeForCurrentTab();
+                String status = io.github.muntashirakon.AppManager.rules.struct.ComponentRule
+                        .COMPONENT_TO_BE_BLOCKED_IFW_DISABLE;
+                for (AppDetailsComponentItem item : unblockedTrackers) {
+                    viewModel.updateRulesForComponent(item, ruleType, status);
+                }
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isDetached()) return;
+                    UIUtils.displayShortToast(R.string.trackers_blocked_successfully);
+                    refreshDetails();
+                });
+            });
+        });
+    }
+
+    @NonNull
+    private RuleType ruleTypeForCurrentTab() {
+        switch (mNeededProperty) {
+            case SERVICES:  return RuleType.SERVICE;
+            case RECEIVERS: return RuleType.RECEIVER;
+            case PROVIDERS: return RuleType.PROVIDER;
+            case ACTIVITIES:
+            default:        return RuleType.ACTIVITY;
         }
     }
 

@@ -47,6 +47,7 @@
     <string name="main_status_showing_apps">Showing %1$d of %2$d apps</string>
     <string name="main_status_all_apps">Showing %1$d apps</string>
     <string name="main_status_with_tracker_suffix"><xliff:g id="status" example="Showing 600 apps">%1$s</xliff:g> · <xliff:g id="trackers" example="4521 trackers">%2$s</xliff:g></string>
+    <string name="main_status_with_category_breakdown" translatable="false"><xliff:g id="base" example="Showing 600 apps · 4521 trackers">%1$s</xliff:g>\n<xliff:g id="categories" example="320 ad · 280 analytics">%2$s</xliff:g></string>
     <plurals name="main_status_tracker_suffix">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="4521">%1$d</xliff:g> trackers</item>
@@ -170,6 +171,11 @@
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> trackers</item>
     </plurals>
+    <plurals name="main_list_tracker_count_all_blocked_a11y">
+        <item quantity="one">All <xliff:g id="count" example="1">%1$d</xliff:g> tracker blocked</item>
+        <item quantity="other">All <xliff:g id="count" example="27">%1$d</xliff:g> trackers blocked</item>
+    </plurals>
+    <string name="main_list_tracker_count_partial_a11y"><xliff:g id="blocked" example="3">%1$d</xliff:g> of <xliff:g id="total" example="27">%2$d</xliff:g> trackers blocked</string>
     <plurals name="tracker_and_classes">
         <item quantity="one">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> class</item>
         <item quantity="other">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> classes</item>
@@ -1253,6 +1259,22 @@
     <string name="tracker_cta_subtitle_unblocked">Tap to block ad, analytics and crash-reporting components in this app.</string>
     <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
+    <plurals name="tracker_block_in_tab_activities">
+        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker activity</item>
+        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker activities</item>
+    </plurals>
+    <plurals name="tracker_block_in_tab_services">
+        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker service</item>
+        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker services</item>
+    </plurals>
+    <plurals name="tracker_block_in_tab_receivers">
+        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker receiver</item>
+        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker receivers</item>
+    </plurals>
+    <plurals name="tracker_block_in_tab_providers">
+        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker provider</item>
+        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker providers</item>
+    </plurals>
     <string name="failed_to_launch_app">Could not launch this app.</string>
     <string name="quick_action_block_trackers">Block trackers</string>
     <string name="quick_action_system_settings">Android settings</string>
@@ -1275,6 +1297,16 @@
     <string name="onboarding_mode_adb_tcp_status_active">✓ USB debugging is enabled</string>
     <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
     <string name="onboarding_change_later_hint">Settings → Mode of operation lets you change this any time.</string>
+    <string name="mode_of_op_capabilities_title">Available on this device</string>
+    <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
+    <string name="mode_of_op_capability_adb_wifi">• Wireless debugging: <xliff:g id="status" example="active">%1$s</xliff:g></string>
+    <string name="mode_of_op_capability_adb_usb">• USB debugging: <xliff:g id="status" example="enabled">%1$s</xliff:g></string>
+    <string name="mode_of_op_capability_status_detected">detected</string>
+    <string name="mode_of_op_capability_status_missing">not detected</string>
+    <string name="mode_of_op_capability_status_active">active</string>
+    <string name="mode_of_op_capability_status_inactive">not active</string>
+    <string name="mode_of_op_capability_status_enabled">enabled</string>
+    <string name="mode_of_op_capability_status_disabled">disabled</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>
     <string name="tracker_category_crash">Crash</string>

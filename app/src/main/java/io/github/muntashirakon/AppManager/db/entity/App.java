@@ -108,6 +108,16 @@ public class App implements Serializable {
     @ColumnInfo(name = "tracker_count", defaultValue = "0")
     public int trackerCount;
 
+    /**
+     * Number of {@link #trackerCount} components currently blocked by user-applied
+     * rules. Populated alongside {@link #rulesCount} during the AppDb refresh pass
+     * (see {@link io.github.muntashirakon.AppManager.db.utils.AppDb#updateApplications}).
+     * Lets the main list render an "X/N" or "✓ N" badge so users can see at a glance
+     * which apps they've already locked down.
+     */
+    @ColumnInfo(name = "tracker_blocked_count", defaultValue = "0")
+    public int trackerBlockedCount;
+
     @ColumnInfo(name = "open_count", defaultValue = "0")
     public int openCount;
 

@@ -353,18 +353,43 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.packageName.setText(UIUtils.getHighlightedText(item.packageName, mSearchQuery, mQueryStringHighlight));
         } else holder.packageName.setText(item.packageName);
         // Set package name color + show a tracker count badge. Icon column is only 48dp
-        // wide, so the visible label is just the count; the screen-reader description
-        // expands to "N trackers". Pairs with the orange-tinted package name for an
-        // at-a-glance privacy signal without forcing users into the Scanner.
+        // wide, so the visible label is just the count (or '✓N' when all blocked, or
+        // 'B/N' when partially blocked). Screen-reader description expands to a full
+        // sentence. Pairs with the orange-tinted package name for an at-a-glance
+        // privacy signal without forcing users into the Scanner.
         if (item.trackerCount > 0) {
-            int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(context);
+            int blocked = item.trackerBlockedCount != null ? item.trackerBlockedCount : 0;
+            // clamp: blocked count comes from the rules db (which may have stale
+            // entries for components no longer in the manifest), so cap at total.
+            if (blocked > item.trackerCount) blocked = item.trackerCount;
+            boolean allBlocked = blocked > 0 && blocked >= item.trackerCount;
+            int trackerColor = allBlocked
+                    ? ColorCodes.getComponentTrackerBlockedIndicatorColor(context)
+                    : ColorCodes.getComponentTrackerIndicatorColor(context);
             holder.packageName.setTextColor(trackerColor);
             if (holder.trackerIndicator != null) {
                 holder.trackerIndicator.setVisibility(View.VISIBLE);
-                holder.trackerIndicator.setText(String.valueOf(item.trackerCount));
+                String label;
+                String contentDesc;
+                if (allBlocked) {
+                    // All trackers blocked: "✓N" reads as 'all-blocked, N total'.
+                    label = "✓" + item.trackerCount;
+                    contentDesc = context.getResources().getQuantityString(
+                            R.plurals.main_list_tracker_count_all_blocked_a11y,
+                            item.trackerCount, item.trackerCount);
+                } else if (blocked > 0) {
+                    // Partial: "B/N" -> blocked-of-total
+                    label = blocked + "/" + item.trackerCount;
+                    contentDesc = context.getString(
+                            R.string.main_list_tracker_count_partial_a11y, blocked, item.trackerCount);
+                } else {
+                    label = String.valueOf(item.trackerCount);
+                    contentDesc = context.getResources().getQuantityString(
+                            R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount);
+                }
+                holder.trackerIndicator.setText(label);
                 holder.trackerIndicator.setTextColor(trackerColor);
-                holder.trackerIndicator.setContentDescription(context.getResources().getQuantityString(
-                        R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount));
+                holder.trackerIndicator.setContentDescription(contentDesc);
                 if (item.isInstalled) {
                     holder.trackerIndicator.setClickable(true);
                     holder.trackerIndicator.setFocusable(true);
