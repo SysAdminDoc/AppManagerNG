@@ -61,6 +61,7 @@ import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
 import io.github.muntashirakon.AppManager.misc.LabsActivity;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity;
+import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.profiles.ProfilesActivity;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
@@ -265,9 +266,14 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                         if (((MaterialCheckBox) view.findViewById(R.id.agree_forever)).isChecked()) {
                             AppPref.set(AppPref.PrefKey.PREF_SHOW_DISCLAIMER_BOOL, false);
                         }
+                        maybeShowOnboarding();
                     })
                     .setNegativeButton(R.string.disclaimer_exit, (dialog, which) -> finishAndRemoveTask())
                     .show();
+        } else {
+            // Disclaimer already accepted on a prior launch — still surface onboarding
+            // once for users who upgraded from a pre-onboarding build.
+            maybeShowOnboarding();
         }
 
         // Set observer
@@ -565,6 +571,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS},
             {R.id.chip_trackers, MainListOptions.FILTER_APPS_WITH_TRACKERS},
     };
+
+    private void maybeShowOnboarding() {
+        if (!OnboardingFragment.shouldShow()) return;
+        if (getSupportFragmentManager().findFragmentByTag(OnboardingFragment.TAG) != null) return;
+        new OnboardingFragment().show(getSupportFragmentManager(), OnboardingFragment.TAG);
+    }
 
     private void bindQuickFilterChips() {
         for (int[] entry : QUICK_FILTER_CHIPS) {
