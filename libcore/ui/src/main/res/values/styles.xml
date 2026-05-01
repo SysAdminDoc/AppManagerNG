@@ -65,7 +65,7 @@
         <item name="listItemMarginHorizontal">@dimen/padding_small</item>
         <item name="listItemPaddingVertical">12dp</item>
         <item name="listItemPaddingHorizontal">?android:attr/listPreferredItemPaddingStart</item>
-        <item name="listItemCornerRadius">20dp</item>
+        <item name="listItemCornerRadius">16dp</item>
         <item name="listItemIndicatorWidth">9dp</item>
 
         <!-- Dialog -->
@@ -262,7 +262,7 @@
 
     <!-- MaterialCardView -->
     <style name="Widget.AppTheme.CardView.Elevated" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">24dp</item>
+        <item name="cardCornerRadius">18dp</item>
     </style>
 
     <style name="Widget.AppTheme.CardView.ListItem" parent="Widget.Material3.CardView.Elevated">

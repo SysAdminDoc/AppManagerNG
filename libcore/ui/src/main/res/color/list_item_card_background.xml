@@ -4,5 +4,5 @@
     <item android:state_checked="true" android:color="?attr/colorSecondaryContainer" />
     <item android:state_activated="true" android:color="?attr/colorSecondaryContainer" />
     <item android:state_pressed="true" android:color="?attr/colorSurfaceVariant" />
-    <item android:color="@macro/m3_comp_elevated_card_container_color" />
+    <item android:color="?attr/colorSurface" />
 </selector>
