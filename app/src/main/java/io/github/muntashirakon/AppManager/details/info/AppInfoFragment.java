@@ -66,6 +66,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -202,6 +204,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private TextView mPackageNameView;
     private TextView mVersionView;
     private ImageView mIconView;
+    private MaterialCardView mTrackerCtaCard;
+    private TextView mTrackerCtaTitle;
+    private TextView mTrackerCtaSubtitle;
+    private MaterialButton mTrackerCtaAction;
     private List<MagiskProcess> mMagiskHiddenProcesses;
     private List<MagiskProcess> mMagiskDeniedProcesses;
     private Future<?> mTagCloudFuture;
@@ -258,6 +264,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mPackageNameView = view.findViewById(R.id.packageName);
         mIconView = view.findViewById(R.id.icon);
         mVersionView = view.findViewById(R.id.version);
+        mTrackerCtaCard = view.findViewById(R.id.tracker_cta_card);
+        mTrackerCtaTitle = view.findViewById(R.id.tracker_cta_title);
+        mTrackerCtaSubtitle = view.findViewById(R.id.tracker_cta_subtitle);
+        mTrackerCtaAction = view.findViewById(R.id.tracker_cta_action);
         mAdapter = new AppInfoRecyclerAdapter(requireContext());
         recyclerView.setAdapter(mAdapter);
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
@@ -720,6 +730,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
 
     @MainThread
     private void setupTagCloud(@NonNull AppInfoViewModel.TagCloud tagCloud) {
+        setupTrackerCtaCard(tagCloud);
         if (mTagCloudFuture != null) mTagCloudFuture.cancel(true);
         mTagCloudFuture = ThreadUtils.postOnBackgroundThread(() -> {
             List<TagItem> tagItems = getTagCloudItems(tagCloud);
@@ -736,6 +747,66 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
             });
         });
+    }
+
+    /**
+     * Render the prominent "🛡 N trackers detected · BLOCK" / "All N trackers blocked · UNBLOCK"
+     * call-to-action card above the tag cloud. The existing tag-cloud chip stays for users who
+     * want fine-grained selection; this is the one-tap path for the common case of "block
+     * everything known to track me."
+     *
+     * Hidden when:
+     *   - the package has no known tracker components,
+     *   - the app is an external APK (we can't apply rules to it),
+     *   - the user lacks the privilege to modify component states.
+     */
+    @MainThread
+    private void setupTrackerCtaCard(@NonNull AppInfoViewModel.TagCloud tagCloud) {
+        if (mTrackerCtaCard == null) return;
+        if (mMainModel == null || tagCloud.trackerComponents == null || tagCloud.trackerComponents.isEmpty()
+                || mIsExternalApk
+                || !SelfPermissions.canModifyAppComponentStates(mUserId, mPackageName, mMainModel.isTestOnlyApp())) {
+            mTrackerCtaCard.setVisibility(View.GONE);
+            mTrackerCtaCard.setOnClickListener(null);
+            return;
+        }
+        mTrackerCtaCard.setVisibility(View.VISIBLE);
+        int count = tagCloud.trackerComponents.size();
+        int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(requireContext());
+        int blockedColor = ColorCodes.getComponentTrackerBlockedIndicatorColor(requireContext());
+        boolean allBlocked = tagCloud.areAllTrackersBlocked;
+        if (allBlocked) {
+            mTrackerCtaTitle.setText(getResources().getQuantityString(
+                    R.plurals.tracker_cta_title_all_blocked, count, count));
+            mTrackerCtaTitle.setTextColor(blockedColor);
+            mTrackerCtaSubtitle.setText(R.string.tracker_cta_subtitle_all_blocked);
+            mTrackerCtaAction.setText(R.string.unblock);
+        } else {
+            mTrackerCtaTitle.setText(getResources().getQuantityString(
+                    R.plurals.tracker_cta_title_unblocked, count, count));
+            mTrackerCtaTitle.setTextColor(trackerColor);
+            mTrackerCtaSubtitle.setText(R.string.tracker_cta_subtitle_unblocked);
+            mTrackerCtaAction.setText(R.string.block);
+        }
+        View.OnClickListener clickHandler = v -> {
+            if (mMainModel == null || isDetached()) return;
+            showProgressIndicator(true);
+            ThreadUtils.postOnBackgroundThread(() -> {
+                if (allBlocked) {
+                    mMainModel.removeRules(tagCloud.trackerComponents, true);
+                } else {
+                    mMainModel.addRules(tagCloud.trackerComponents, true);
+                }
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isDetached()) return;
+                    showProgressIndicator(false);
+                    displayShortToast(R.string.done);
+                    refreshDetails();
+                });
+            });
+        };
+        mTrackerCtaAction.setOnClickListener(clickHandler);
+        mTrackerCtaCard.setOnClickListener(clickHandler);
     }
 
     @WorkerThread

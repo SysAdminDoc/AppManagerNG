@@ -1242,6 +1242,16 @@
     <string name="external">External</string>
     <string name="internal">Internal</string>
     <string name="tracker">Tracker</string>
+    <plurals name="tracker_cta_title_unblocked">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker detected</item>
+        <item quantity="other"><xliff:g id="count" example="24">%1$d</xliff:g> trackers detected</item>
+    </plurals>
+    <plurals name="tracker_cta_title_all_blocked">
+        <item quantity="one">All <xliff:g id="count" example="1">%1$d</xliff:g> tracker blocked</item>
+        <item quantity="other">All <xliff:g id="count" example="24">%1$d</xliff:g> trackers blocked</item>
+    </plurals>
+    <string name="tracker_cta_subtitle_unblocked">Tap to block ad, analytics and crash-reporting components in this app.</string>
+    <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="tracker_chip_safe_to_block_hint_with_name"><xliff:g id="tracker_name" example="Google AdMob">%1$s</xliff:g> — known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="input_ssaid_instruction">SSAID is a %1$d byte hexadecimal number i.e. a string of length %2$d containing 0 to 9 and a to f.</string>
