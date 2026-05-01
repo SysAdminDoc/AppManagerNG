@@ -414,6 +414,44 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.trackerIndicator.setClickable(false);
             }
         }
+        // Dangerous-permission badge: shows "G/T" so users can see at a glance how
+        // much trust each app has been given. Tap deep-links into the Permissions
+        // tab (same target as the chip on the App info tab) where they can curate
+        // per-permission revocations. Hidden when the app declares zero dangerous
+        // perms — most utility apps land here.
+        if (holder.permIndicator != null) {
+            int permTotal = item.dangerousPermTotal != null ? item.dangerousPermTotal : 0;
+            int permGranted = item.dangerousPermGranted != null ? item.dangerousPermGranted : 0;
+            if (permTotal > 0) {
+                holder.permIndicator.setVisibility(View.VISIBLE);
+                holder.permIndicator.setText(permGranted + "/" + permTotal);
+                int permColor = permGranted > 0
+                        ? ColorCodes.getComponentTrackerIndicatorColor(context)
+                        : ColorCodes.getComponentTrackerBlockedIndicatorColor(context);
+                holder.permIndicator.setTextColor(permColor);
+                holder.permIndicator.setContentDescription(context.getString(
+                        R.string.main_list_perm_count_a11y, permGranted, permTotal));
+                if (item.isInstalled) {
+                    holder.permIndicator.setClickable(true);
+                    holder.permIndicator.setFocusable(true);
+                    holder.permIndicator.setOnClickListener(v -> {
+                        int userId = item.userIds != null && item.userIds.length > 0
+                                ? item.userIds[0]
+                                : UserHandleHidden.myUserId();
+                        Intent intent = AppDetailsActivity.getIntentForPermissions(
+                                mActivity, item.packageName, userId);
+                        mActivity.startActivity(intent);
+                    });
+                } else {
+                    holder.permIndicator.setClickable(false);
+                    holder.permIndicator.setOnClickListener(null);
+                }
+            } else {
+                holder.permIndicator.setVisibility(View.GONE);
+                holder.permIndicator.setOnClickListener(null);
+                holder.permIndicator.setClickable(false);
+            }
+        }
         // Set version (along with HW accelerated, debug and test only flags)
         holder.version.setText(item.versionTag);
         // Set version color to dark cyan if the app is inactive
@@ -747,6 +785,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         TextView backupInfo;
         TextView backupInfoExt;
         TextView trackerIndicator;
+        TextView permIndicator;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -766,6 +805,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             backupInfo = itemView.findViewById(R.id.backup_info);
             backupInfoExt = itemView.findViewById(R.id.backup_info_ext);
             trackerIndicator = itemView.findViewById(R.id.tracker_indicator);
+            permIndicator = itemView.findViewById(R.id.perm_indicator);
         }
     }
 }

@@ -208,6 +208,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private TextView mTrackerCtaTitle;
     private TextView mTrackerCtaSubtitle;
     private MaterialButton mTrackerCtaAction;
+    private MaterialCardView mPermsCtaCard;
+    private TextView mPermsCtaTitle;
+    private TextView mPermsCtaSubtitle;
+    private MaterialButton mPermsCtaAction;
     private List<MagiskProcess> mMagiskHiddenProcesses;
     private List<MagiskProcess> mMagiskDeniedProcesses;
     private Future<?> mTagCloudFuture;
@@ -268,6 +272,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mTrackerCtaTitle = view.findViewById(R.id.tracker_cta_title);
         mTrackerCtaSubtitle = view.findViewById(R.id.tracker_cta_subtitle);
         mTrackerCtaAction = view.findViewById(R.id.tracker_cta_action);
+        mPermsCtaCard = view.findViewById(R.id.perms_cta_card);
+        mPermsCtaTitle = view.findViewById(R.id.perms_cta_title);
+        mPermsCtaSubtitle = view.findViewById(R.id.perms_cta_subtitle);
+        mPermsCtaAction = view.findViewById(R.id.perms_cta_action);
         mAdapter = new AppInfoRecyclerAdapter(requireContext());
         recyclerView.setAdapter(mAdapter);
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
@@ -731,6 +739,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     @MainThread
     private void setupTagCloud(@NonNull AppInfoViewModel.TagCloud tagCloud) {
         setupTrackerCtaCard(tagCloud);
+        setupPermsCtaCard(tagCloud);
         if (mTagCloudFuture != null) mTagCloudFuture.cancel(true);
         mTagCloudFuture = ThreadUtils.postOnBackgroundThread(() -> {
             List<TagItem> tagItems = getTagCloudItems(tagCloud);
@@ -810,6 +819,76 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         };
         mTrackerCtaAction.setOnClickListener(clickHandler);
         mTrackerCtaCard.setOnClickListener(clickHandler);
+    }
+
+    /**
+     * Render the prominent "N of T dangerous perms granted · REVOKE" CTA card
+     * mirroring the tracker CTA pattern. Hidden when:
+     *   - the app declares no dangerous permissions,
+     *   - the app is an external APK (we can't act on it),
+     *   - none of the declared dangerous perms are currently granted (no action
+     *     to take; the chip alone surfaces total declared count).
+     *
+     * Privilege gating: revocation requires root or shell uid. When the user is
+     * on no-root, the action button is disabled and the subtitle prompts them
+     * to switch modes via Settings -> Mode of operation.
+     */
+    @MainThread
+    private void setupPermsCtaCard(@NonNull AppInfoViewModel.TagCloud tagCloud) {
+        if (mPermsCtaCard == null) return;
+        if (mIsExternalApk
+                || tagCloud.dangerousPermissionGranted == 0
+                || tagCloud.dangerousPermissionTotal == 0) {
+            mPermsCtaCard.setVisibility(View.GONE);
+            mPermsCtaCard.setOnClickListener(null);
+            return;
+        }
+        mPermsCtaCard.setVisibility(View.VISIBLE);
+        int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(requireContext());
+        mPermsCtaTitle.setText(getString(R.string.perms_cta_title,
+                tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal));
+        mPermsCtaTitle.setTextColor(trackerColor);
+        boolean canRevoke = mMainModel != null
+                && io.github.muntashirakon.AppManager.self.SelfPermissions
+                        .canModifyAppComponentStates(mUserId, mPackageName,
+                                mMainModel.isTestOnlyApp());
+        if (canRevoke) {
+            mPermsCtaSubtitle.setText(R.string.perms_cta_subtitle_can_revoke);
+            mPermsCtaAction.setText(R.string.revoke);
+            mPermsCtaAction.setEnabled(true);
+            View.OnClickListener handler = v -> {
+                if (mMainModel == null || isDetached()) return;
+                showProgressIndicator(true);
+                mPermsCtaAction.setEnabled(false);
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    boolean ok = mMainModel.revokeDangerousPermissions();
+                    ThreadUtils.postOnMainThread(() -> {
+                        if (isDetached()) return;
+                        showProgressIndicator(false);
+                        displayShortToast(ok
+                                ? R.string.done
+                                : R.string.failed);
+                        refreshDetails();
+                    });
+                });
+            };
+            mPermsCtaCard.setOnClickListener(handler);
+            mPermsCtaAction.setOnClickListener(handler);
+        } else {
+            // No-root user: keep the CTA visible (the count is informative) but
+            // disable the action and explain. Tap the card to jump to the
+            // permissions tab so they can still see what's granted.
+            mPermsCtaSubtitle.setText(R.string.perms_cta_subtitle_no_privilege);
+            mPermsCtaAction.setText(R.string.view);
+            mPermsCtaAction.setEnabled(true);
+            View.OnClickListener jump = v -> {
+                if (mPackageName == null) return;
+                startActivity(io.github.muntashirakon.AppManager.details.AppDetailsActivity
+                        .getIntentForPermissions(requireContext(), mPackageName, mUserId));
+            };
+            mPermsCtaCard.setOnClickListener(jump);
+            mPermsCtaAction.setOnClickListener(jump);
+        }
     }
 
     /**
@@ -921,7 +1000,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         // Dangerous-permission overview chip — shows "G/T dangerous perms" so users
         // can see how much trust the app has been granted at a glance, mirroring
         // the tracker chip pattern. Color: green when none granted, orange when
-        // any granted (the count itself signals scope).
+        // any granted (the count itself signals scope). Tap jumps to the
+        // Permissions tab where users can curate per-permission revocations.
         if (tagCloud.dangerousPermissionTotal > 0) {
             int grantedColor = tagCloud.dangerousPermissionGranted > 0
                     ? ColorCodes.getComponentTrackerIndicatorColor(context)
@@ -929,7 +1009,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             String label = getString(R.string.tag_dangerous_perms,
                     tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal);
             TagItem permTag = new TagItem();
-            permTag.setText(label).setColor(grantedColor);
+            permTag.setText(label).setColor(grantedColor)
+                    .setOnClickListener(v -> {
+                        if (mPackageName == null) return;
+                        startActivity(io.github.muntashirakon.AppManager.details.AppDetailsActivity
+                                .getIntentForPermissions(requireContext(), mPackageName, mUserId));
+                    });
             tagItems.add(permTag);
         }
         if (tagCloud.isSystemApp) {

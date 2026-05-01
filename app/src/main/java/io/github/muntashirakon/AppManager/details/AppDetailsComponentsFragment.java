@@ -40,6 +40,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -329,8 +330,14 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             mTrackerBlockInTabButton.setOnClickListener(null);
             return;
         }
+        List<AppDetailsItem<?>> snapshot;
+        try {
+            snapshot = new ArrayList<>(appDetailsItems);
+        } catch (ConcurrentModificationException e) {
+            return;
+        }
         List<AppDetailsComponentItem> unblockedTrackers = new ArrayList<>();
-        for (AppDetailsItem<?> di : appDetailsItems) {
+        for (AppDetailsItem<?> di : snapshot) {
             if (!(di instanceof AppDetailsComponentItem)) continue;
             AppDetailsComponentItem ci = (AppDetailsComponentItem) di;
             if (ci.isTracker() && !ci.isBlocked()) {

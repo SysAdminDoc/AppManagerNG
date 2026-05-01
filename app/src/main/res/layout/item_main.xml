@@ -16,9 +16,10 @@
         android:layout_height="wrap_content"
         android:baselineAligned="false"
         android:gravity="center_vertical"
+        android:minHeight="@dimen/main_list_min_height"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="8dp">
+        android:paddingVertical="10dp">
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="48dp"
@@ -35,43 +36,10 @@
                 tools:srcCompat="@mipmap/ic_launcher_round"
                 android:contentDescription="@string/str_logo" />
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/backup_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:background="@drawable/badge_background"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:minHeight="20dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="1dp"
-                android:textAppearance="?attr/textAppearanceLabelSmall"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:text="@string/backup"
-                tools:ignore="SmallSp" />
-
-            <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/tracker_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:background="@drawable/badge_background"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:minHeight="20dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="1dp"
-                android:textAppearance="?attr/textAppearanceLabelSmall"
-                android:visibility="gone"
-                tools:visibility="visible"
-                tools:text="3"
-                tools:ignore="SmallSp" />
-
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <FrameLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1">
 
@@ -107,8 +75,70 @@
                     tools:text="io.github.muntashirakon.AppManager" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/status_badge_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/backup_indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/padding_very_small"
+                        android:background="@drawable/badge_background"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:minHeight="22dp"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="1dp"
+                        android:text="@string/backup"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/tracker_indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/padding_very_small"
+                        android:background="@drawable/badge_background"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:minHeight="22dp"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="1dp"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        tools:text="3" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/perm_indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/badge_background"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:minHeight="22dp"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="1dp"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        tools:text="3/8" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
                     android:orientation="horizontal">
 
                     <androidx.appcompat.widget.AppCompatTextView
@@ -159,9 +189,9 @@
         </FrameLayout>
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
+            android:layout_weight="0.68"
             android:orientation="vertical"
             android:layout_marginStart="@dimen/padding_medium">
 

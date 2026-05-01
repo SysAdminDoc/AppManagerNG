@@ -23,7 +23,7 @@ import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
-@Database(entities = {App.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class}, version = 8)
+@Database(entities = {App.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class}, version = 9)
 public abstract class AppsDb extends RoomDatabase {
     private static AppsDb sAppsDb;
 
@@ -69,11 +69,27 @@ public abstract class AppsDb extends RoomDatabase {
             db.execSQL("ALTER TABLE `app` ADD COLUMN `tracker_blocked_count` INTEGER NOT NULL DEFAULT 0");
         }
     };
+    /**
+     * v9 adds {@code dangerous_perm_total} and {@code dangerous_perm_granted}
+     * so the main list can render a per-app dangerous-permissions badge and the
+     * aggregate status line can total granted perms across the visible set.
+     * Populated alongside {@code rules_count} during the existing AppDb refresh
+     * pass. Both columns are bigints because some system apps (e.g. Settings,
+     * Phone) declare 50+ dangerous permissions; an INT default of 0 still fits
+     * easily but matching column width to the underlying counts is cleaner.
+     */
+    public static final Migration M_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `dangerous_perm_total` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `dangerous_perm_granted` INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 
     public static AppsDb getInstance() {
         if (sAppsDb == null) {
             sAppsDb = Room.databaseBuilder(ContextUtils.getContext(), AppsDb.class, "apps.db")
-                    .addMigrations(M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8)
+                    .addMigrations(M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9)
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build();
             try {

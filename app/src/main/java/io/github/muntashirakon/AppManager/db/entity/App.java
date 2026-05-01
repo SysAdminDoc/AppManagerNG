@@ -118,6 +118,19 @@ public class App implements Serializable {
     @ColumnInfo(name = "tracker_blocked_count", defaultValue = "0")
     public int trackerBlockedCount;
 
+    /**
+     * Number of {@code PROTECTION_DANGEROUS} permissions the app declares.
+     * Populated during the AppDb refresh pass; mirrors the per-app tag-cloud
+     * computation at scan time so the main list can show a perms badge without
+     * re-walking PackageInfo per render. Pairs with {@link #dangerousPermGranted}.
+     */
+    @ColumnInfo(name = "dangerous_perm_total", defaultValue = "0")
+    public int dangerousPermTotal;
+
+    /** Subset of {@link #dangerousPermTotal} that are currently granted. */
+    @ColumnInfo(name = "dangerous_perm_granted", defaultValue = "0")
+    public int dangerousPermGranted;
+
     @ColumnInfo(name = "open_count", defaultValue = "0")
     public int openCount;
 

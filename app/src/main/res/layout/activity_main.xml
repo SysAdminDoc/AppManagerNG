@@ -34,6 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="@dimen/padding_small"
+            android:paddingTop="@dimen/padding_very_small"
             android:scrollbars="none"
             android:fillViewport="true">
 
@@ -120,6 +121,14 @@
                     android:checkable="true" />
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_granted_perms"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/filter_apps_with_granted_perms"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chip_clear_filters"
                     style="@style/Widget.Material3.Chip.Suggestion"
                     android:layout_width="wrap_content"
@@ -137,9 +146,13 @@
             android:id="@+id/list_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/padding_small"
+            android:layout_marginTop="@dimen/padding_very_small"
+            android:background="@drawable/main_status_background"
+            android:gravity="center_vertical"
+            android:minHeight="42dp"
             android:paddingHorizontal="@dimen/padding_medium"
-            android:paddingTop="@dimen/padding_very_small"
-            android:paddingBottom="@dimen/padding_small"
+            android:paddingVertical="@dimen/padding_small"
             android:text="@string/main_status_loading"
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant"

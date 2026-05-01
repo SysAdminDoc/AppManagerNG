@@ -130,7 +130,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
-                        tools:text="✓ Detected" />
+                        tools:text="Root detected" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -189,7 +189,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
-                        tools:text="✓ Wireless debugging is active" />
+                        tools:text="Wireless debugging active" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -248,7 +248,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
-                        tools:text="✓ USB debugging is enabled" />
+                        tools:text="USB debugging enabled" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 

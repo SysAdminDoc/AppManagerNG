@@ -80,6 +80,23 @@ public class AppDetailsActivity extends BaseActivity {
         return intent;
     }
 
+    /**
+     * Open the app details with the Permissions tab pre-selected. Used by the
+     * per-app dangerous-perms chip on the App info tab and (eventually) by a
+     * main-list badge. No sort applied — the user lands on the existing
+     * permission view which already groups dangerous perms at the top via
+     * {@code SORT_BY_DANGEROUS_PERMS}.
+     */
+    @NonNull
+    public static Intent getIntentForPermissions(@NonNull Context context, @NonNull String packageName,
+                                                  @UserIdInt int userId) {
+        Intent intent = new Intent(context, AppDetailsActivity.class);
+        intent.putExtra(EXTRA_PACKAGE_NAME, packageName);
+        intent.putExtra(EXTRA_USER_HANDLE, userId);
+        intent.putExtra(EXTRA_INITIAL_TAB, AppDetailsFragment.USES_PERMISSIONS);
+        return intent;
+    }
+
     @NonNull
     public static Intent getIntent(@NonNull Context context, @NonNull String packageName, @UserIdInt int userId,
                                    boolean backToMainPage) {

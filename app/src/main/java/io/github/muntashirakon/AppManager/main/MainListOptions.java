@@ -102,6 +102,7 @@ public class MainListOptions extends ListOptions {
             FILTER_APPS_WITH_SSAID,
             FILTER_STOPPED_APPS,
             FILTER_APPS_WITH_TRACKERS,
+            FILTER_APPS_WITH_GRANTED_PERMS,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Filter {
@@ -125,6 +126,7 @@ public class MainListOptions extends ListOptions {
     public static final int FILTER_STOPPED_APPS = 1 << 14;
     public static final int FILTER_UNFROZEN_APPS = 1 << 15;
     public static final int FILTER_APPS_WITH_TRACKERS = 1 << 16;
+    public static final int FILTER_APPS_WITH_GRANTED_PERMS = 1 << 17;
 
     // For now, just generate FilterItem
     @NonNull
@@ -347,6 +349,7 @@ public class MainListOptions extends ListOptions {
             put(FILTER_RUNNING_APPS, R.string.filter_running_apps);
             put(FILTER_APPS_WITH_SPLITS, R.string.filter_apps_with_splits);
             put(FILTER_APPS_WITH_TRACKERS, R.string.filter_apps_with_trackers);
+            put(FILTER_APPS_WITH_GRANTED_PERMS, R.string.filter_apps_with_granted_perms);
             if (Ops.isWorkingUidRoot()) {
                 put(FILTER_APPS_WITH_KEYSTORE, R.string.filter_apps_with_keystore);
                 put(FILTER_APPS_WITH_SAF, R.string.filter_apps_with_saf);

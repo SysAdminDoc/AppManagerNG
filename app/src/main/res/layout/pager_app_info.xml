@@ -29,15 +29,18 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/padding_medium"
+                android:background="@drawable/app_info_header_background"
                 android:orientation="vertical"
-                android:paddingHorizontal="@dimen/padding_medium">
+                android:paddingHorizontal="@dimen/padding_medium"
+                android:paddingVertical="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/icon"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/padding_large"
                     android:layout_marginBottom="@dimen/padding_small"
                     android:background="@drawable/item_transparent"
                     android:contentDescription="@string/app_details_app_icon"
@@ -98,22 +101,32 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/tracker_cta_card"
-                style="@style/Widget.Material3.CardView.Filled"
+                style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/padding_medium"
-                android:layout_marginTop="@dimen/padding_small"
+                android:layout_marginTop="@dimen/padding_medium"
                 android:visibility="gone"
-                tools:visibility="visible"
-                app:cardCornerRadius="16dp">
+                tools:visibility="visible">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
+                    android:minHeight="82dp"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
                     android:paddingVertical="@dimen/padding_small">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:background="@drawable/main_empty_icon_background"
+                        android:contentDescription="@null"
+                        android:padding="@dimen/padding_small"
+                        app:srcCompat="@drawable/ic_cctv_off"
+                        app:tint="?attr/colorOnSecondaryContainer" />
 
                     <androidx.appcompat.widget.LinearLayoutCompat
                         android:layout_width="0dp"
@@ -142,12 +155,77 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/tracker_cta_action"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minWidth="0dp"
-                        android:minHeight="0dp"
+                        android:minHeight="40dp"
                         tools:text="@string/block" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/perms_cta_card"
+                style="@style/Widget.AppTheme.CardView.TrustCta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/padding_small"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="82dp"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/padding_medium"
+                    android:paddingVertical="@dimen/padding_small">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:background="@drawable/main_empty_icon_background"
+                        android:contentDescription="@null"
+                        android:padding="@dimen/padding_small"
+                        app:srcCompat="@drawable/ic_shield_key"
+                        app:tint="?attr/colorOnSecondaryContainer" />
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="@dimen/padding_small">
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/perms_cta_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceTitleSmall"
+                            tools:text="3 of 8 dangerous perms granted" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/perms_cta_subtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            tools:text="Tap to revoke all granted dangerous permissions." />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/perms_cta_action"
+                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="40dp"
+                        tools:text="Revoke" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
