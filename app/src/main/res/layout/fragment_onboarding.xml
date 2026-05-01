@@ -183,6 +183,14 @@
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/status_adb_wifi"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        tools:text="✓ Wireless debugging is active" />
+
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
             </androidx.appcompat.widget.LinearLayoutCompat>
@@ -233,6 +241,14 @@
                         android:text="@string/onboarding_mode_adb_tcp_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/status_adb_tcp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        tools:text="✓ USB debugging is enabled" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
