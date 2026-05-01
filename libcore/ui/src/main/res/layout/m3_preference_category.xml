@@ -4,12 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingStart="?android:attr/listPreferredItemPaddingStart"
-    android:paddingRight="?android:attr/listPreferredItemPaddingRight"
-    android:background="?android:attr/selectableItemBackground"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
     android:baselineAligned="false"
     android:layout_marginTop="16dp"
+    android:layout_marginBottom="@dimen/padding_very_small"
     android:gravity="center_vertical"
-    android:layout_marginHorizontal="8dp">
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal">
 
     <include layout="@layout/m3_preference_image_frame" />
 
@@ -17,8 +17,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_very_small">
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@android:id/title"
@@ -33,15 +33,15 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@android:id/summary"
             android:ellipsize="end"
-            android:singleLine="true"
-            android:layout_width="wrap_content"
+            android:maxLines="2"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@android:id/title"
             android:layout_alignLeft="@android:id/title"
             android:layout_alignStart="@android:id/title"
             android:layout_gravity="start"
+            android:layout_marginTop="@dimen/padding_very_small"
             android:textAlignment="viewStart"
-            android:maxLines="10"
             android:textAppearance="?attr/textAppearanceListItemSecondary"
             tools:text="@tools:sample/lorem[10]" />
 

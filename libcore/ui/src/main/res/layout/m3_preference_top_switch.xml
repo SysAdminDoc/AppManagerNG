@@ -8,7 +8,8 @@
     android:minHeight="?android:attr/listPreferredItemHeightSmall"
     android:focusable="true"
     app:cardBackgroundColor="?attr/colorPrimaryContainer"
-    android:layout_marginHorizontal="@dimen/padding_large">
+    android:layout_marginVertical="?attr/listItemMarginVertical"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -25,32 +26,32 @@
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+            android:layout_weight="1">
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@android:id/title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceListItem"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                android:ellipsize="marquee"
+                android:ellipsize="end"
+                android:maxLines="2"
                 tools:text="@tools:sample/lorem[10]" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@android:id/summary"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@android:id/title"
                 android:layout_alignStart="@android:id/title"
                 android:layout_alignLeft="@android:id/title"
                 android:layout_gravity="start"
-                android:maxLines="10"
+                android:layout_marginTop="@dimen/padding_very_small"
                 android:textAlignment="viewStart"
                 android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                 android:textColor="?attr/colorOnPrimaryContainer"
+                android:ellipsize="end"
+                android:maxLines="5"
                 tools:text="@tools:sample/lorem[10]" />
 
         </RelativeLayout>
