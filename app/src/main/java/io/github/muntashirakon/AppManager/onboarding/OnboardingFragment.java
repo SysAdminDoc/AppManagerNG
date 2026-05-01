@@ -72,11 +72,39 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                     ? R.string.onboarding_mode_adb_tcp_status_active
                     : R.string.onboarding_mode_adb_tcp_status_inactive);
         }
-        view.findViewById(R.id.card_mode_auto).setOnClickListener(v -> pick(Ops.MODE_AUTO));
-        view.findViewById(R.id.card_mode_root).setOnClickListener(v -> pick(Ops.MODE_ROOT));
-        view.findViewById(R.id.card_mode_adb_wifi).setOnClickListener(v -> pick(Ops.MODE_ADB_WIFI));
-        view.findViewById(R.id.card_mode_adb_tcp).setOnClickListener(v -> pick(Ops.MODE_ADB_OVER_TCP));
-        view.findViewById(R.id.card_mode_no_root).setOnClickListener(v -> pick(Ops.MODE_NO_ROOT));
+        bindCardActions(view, R.id.card_mode_auto, Ops.MODE_AUTO,
+                R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_explainer);
+        bindCardActions(view, R.id.card_mode_root, Ops.MODE_ROOT,
+                R.string.onboarding_mode_root_title, R.string.onboarding_mode_root_explainer);
+        bindCardActions(view, R.id.card_mode_adb_wifi, Ops.MODE_ADB_WIFI,
+                R.string.onboarding_mode_adb_wifi_title, R.string.onboarding_mode_adb_wifi_explainer);
+        bindCardActions(view, R.id.card_mode_adb_tcp, Ops.MODE_ADB_OVER_TCP,
+                R.string.onboarding_mode_adb_tcp_title, R.string.onboarding_mode_adb_tcp_explainer);
+        bindCardActions(view, R.id.card_mode_no_root, Ops.MODE_NO_ROOT,
+                R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_explainer);
+    }
+
+    /**
+     * Wire tap-to-pick + long-press-to-explain on a mode card. Tap commits the choice
+     * via {@link #pick}; long-press surfaces an extended explainer dialog so users
+     * unfamiliar with root / ADB / Shizuku terminology can read more before picking
+     * without committing first. The footer hint advertises the long-press affordance.
+     */
+    private void bindCardActions(@NonNull View root, int cardId,
+                                 @NonNull @Ops.Mode String mode,
+                                 int titleRes, int explainerRes) {
+        View card = root.findViewById(cardId);
+        if (card == null) return;
+        card.setOnClickListener(v -> pick(mode));
+        card.setOnLongClickListener(v -> {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(titleRes)
+                    .setMessage(explainerRes)
+                    .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> pick(mode))
+                    .setNegativeButton(R.string.close, null)
+                    .show();
+            return true;
+        });
     }
 
     /** True when USB debugging (ADB over USB) is enabled in Developer options. */

@@ -49,6 +49,11 @@
     <string name="main_status_with_tracker_suffix"><xliff:g id="status" example="Showing 600 apps">%1$s</xliff:g> · <xliff:g id="trackers" example="4521 trackers">%2$s</xliff:g></string>
     <string name="main_status_with_category_breakdown" translatable="false"><xliff:g id="base" example="Showing 600 apps · 4521 trackers">%1$s</xliff:g>\n<xliff:g id="categories" example="320 ad · 280 analytics">%2$s</xliff:g></string>
     <string name="main_status_breakdown_calculating">Calculating breakdown…</string>
+    <string name="tag_dangerous_perms"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> dangerous perms</string>
+    <plurals name="installer_tracker_callout">
+        <item quantity="one">⚠ This APK contains <xliff:g id="count" example="1">%1$d</xliff:g> known tracking SDK. You can block trackers from the App info screen after installing.</item>
+        <item quantity="other">⚠ This APK contains <xliff:g id="count" example="24">%1$d</xliff:g> known tracking SDKs. You can block trackers from the App info screen after installing.</item>
+    </plurals>
     <plurals name="main_status_tracker_suffix">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="4521">%1$d</xliff:g> trackers</item>
@@ -1297,7 +1302,13 @@
     <string name="onboarding_mode_adb_wifi_status_inactive">Not active — enable in Developer options &gt; Wireless debugging</string>
     <string name="onboarding_mode_adb_tcp_status_active">✓ USB debugging is enabled</string>
     <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
-    <string name="onboarding_change_later_hint">Settings → Mode of operation lets you change this any time.</string>
+    <string name="onboarding_change_later_hint">Tap a card to pick · long-press for detail. Settings → Mode of operation lets you change this any time.</string>
+    <string name="onboarding_explainer_pick_this">Pick this</string>
+    <string name="onboarding_mode_auto_explainer">AppManagerNG checks your device on every cold start in this order:\n\n1. Root (Magisk / KernelSU / SuperSU) — picked if a working su binary is present.\n2. Wireless debugging (Android 11+) — used if you enabled and paired it.\n3. ADB over TCP — used if a PC opened the daemon over USB previously.\n4. No-root — final fallback. Limited features but always works.\n\nPick this if you are not sure. AppManagerNG re-checks on every launch, so if you set up Wireless ADB later it picks up automatically.</string>
+    <string name="onboarding_mode_root_explainer">Root unlocks the most powerful operations:\n\n• Component blocking via Intent Firewall (IFW) — survives reboots, can be applied to any app including system apps.\n• Full backup/restore including app data, encrypted with your AppManagerNG keystore.\n• Direct system-API calls without going through the limited PackageInstaller.\n• AppOps and runtime-permission control beyond what Settings exposes.\n\nRequires a Magisk, KernelSU, or SuperSU setup on the device. AppManagerNG will request su access the first time you trigger a privileged operation.</string>
+    <string name="onboarding_mode_adb_wifi_explainer">Wireless debugging (Android 11+) lets AppManagerNG run on the same uid as ADB without requiring a PC after the initial pairing:\n\n• Most features of root mode are available — component blocking via PackageManager, AppOps tweaks, force-stop, clear data.\n• IFW-based blocking is unavailable (root-only); the disable path is used instead.\n• Backup/restore can read app APKs but not protected app data.\n\nEnable Wireless debugging in Developer options &gt; Wireless debugging, pair it once with your phone\'s pairing dialog, and AppManagerNG can connect from then on.</string>
+    <string name="onboarding_mode_adb_tcp_explainer">ADB over TCP runs AppManagerNG with shell-uid privileges using the ADB daemon already running on the device. The first connection requires a PC over USB to start the daemon; after that the device alone is enough.\n\nFeature parity with Wireless debugging mode — most operations work, IFW blocking does not.\n\nUse this on devices older than Android 11, or if Wireless debugging refuses to pair.</string>
+    <string name="onboarding_mode_no_root_explainer">No-root mode uses only what Android exposes to a regular app:\n\n• Launching apps and viewing their metadata.\n• System uninstall flow (a confirmation dialog) for sideloaded apps.\n• Reading the bundled tracker dataset to show which apps contain known SDKs.\n\nBlocking trackers, force-stopping apps, clearing data, restoring backups, and most other privileged operations are not available.\n\nWorks on every device with no setup. Pick this if you do not have root and do not want to enable ADB.</string>
     <string name="mode_of_op_capabilities_title">Available on this device</string>
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_adb_wifi">• Wireless debugging: <xliff:g id="status" example="active">%1$s</xliff:g></string>

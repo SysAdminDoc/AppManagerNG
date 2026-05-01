@@ -178,6 +178,37 @@ public class AppInfoViewModel extends AndroidViewModel {
                     }
                 }
             }
+            // Dangerous-permission overview: walk requestedPermissions, classify each
+            // as PROTECTION_DANGEROUS via PermissionInfoCompat, and tally how many of
+            // those the user has granted (REQUESTED_PERMISSION_GRANTED bit on the
+            // parallel requestedPermissionsFlags array). Lookup failures are skipped
+            // so a single broken permission resolution doesn't drop the whole count.
+            if (packageInfo.requestedPermissions != null) {
+                String[] perms = packageInfo.requestedPermissions;
+                int[] permFlags = packageInfo.requestedPermissionsFlags;
+                int total = 0;
+                int granted = 0;
+                android.content.pm.PackageManager pm = getApplication().getPackageManager();
+                for (int i = 0; i < perms.length; i++) {
+                    if (ThreadUtils.isInterrupted()) return;
+                    try {
+                        android.content.pm.PermissionInfo info =
+                                pm.getPermissionInfo(perms[i], 0);
+                        int prot = androidx.core.content.pm.PermissionInfoCompat.getProtection(info);
+                        if (prot == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS) {
+                            total++;
+                            boolean isGranted = permFlags != null && i < permFlags.length
+                                    && (permFlags[i] & android.content.pm.PackageInfo
+                                            .REQUESTED_PERMISSION_GRANTED) != 0;
+                            if (isGranted) granted++;
+                        }
+                    } catch (Throwable ignore) {
+                        // unknown / removed permission; skip
+                    }
+                }
+                tagCloud.dangerousPermissionTotal = total;
+                tagCloud.dangerousPermissionGranted = granted;
+            }
             tagCloud.splitCount = mMainModel.getSplitCount();
             tagCloud.isDebuggable = (applicationInfo.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
             tagCloud.isTestOnly = ApplicationInfoCompat.isTestOnly(applicationInfo);
@@ -449,6 +480,10 @@ public class AppInfoViewModel extends AndroidViewModel {
     public static class TagCloud {
         public List<ComponentRule> trackerComponents;
         public boolean areAllTrackersBlocked = true;
+        /** Total number of {@code PROTECTION_DANGEROUS} permissions the app declares. */
+        public int dangerousPermissionTotal;
+        /** Subset of {@link #dangerousPermissionTotal} that are currently granted. */
+        public int dangerousPermissionGranted;
         public boolean isSystemApp;
         public boolean isSystemlessPath;
         public boolean isUpdatedSystemApp;

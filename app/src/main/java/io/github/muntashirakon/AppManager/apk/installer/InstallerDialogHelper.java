@@ -130,6 +130,19 @@ public final class InstallerDialogHelper {
     public void showInstallConfirmationDialog(@StringRes int installButtonRes,
                                               @NonNull OnClickButtonsListener onClickButtonsListener,
                                               @NonNull View.OnClickListener appInfoButtonListener) {
+        showInstallConfirmationDialog(installButtonRes, onClickButtonsListener, appInfoButtonListener, null);
+    }
+
+    /**
+     * Confirmation-prompt variant that also surfaces a tracker callout below the
+     * stock install message. Lets users see "this APK contains 24 known tracking
+     * SDKs" before tapping Install. {@code trackerCallout} is appended verbatim;
+     * pass {@code null} for the legacy single-line message.
+     */
+    public void showInstallConfirmationDialog(@StringRes int installButtonRes,
+                                              @NonNull OnClickButtonsListener onClickButtonsListener,
+                                              @NonNull View.OnClickListener appInfoButtonListener,
+                                              @androidx.annotation.Nullable CharSequence trackerCallout) {
         // Buttons
         mNeutralBtn.setVisibility(View.VISIBLE);
         mNeutralBtn.setText(R.string.app_info);
@@ -143,7 +156,12 @@ public final class InstallerDialogHelper {
         // Body
         mLayout.setVisibility(View.GONE);
         mMessage.setVisibility(View.VISIBLE);
-        mMessage.setText(R.string.install_app_message);
+        if (trackerCallout != null && trackerCallout.length() > 0) {
+            CharSequence base = mMessage.getResources().getString(R.string.install_app_message);
+            mMessage.setText(new StringBuilder(base).append("\n\n").append(trackerCallout));
+        } else {
+            mMessage.setText(R.string.install_app_message);
+        }
         mFragmentContainer.setVisibility(View.GONE);
     }
 

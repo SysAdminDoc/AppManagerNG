@@ -633,6 +633,18 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     case MainListOptions.SORT_BY_LAST_ACTION:
                         return -mode * o1.lastActionTime.compareTo(o2.lastActionTime);
                     case MainListOptions.SORT_BY_TRACKERS:
+                        // Sort by *unblocked* trackers so the apps that still need
+                        // attention float to the top, not the ones the user has
+                        // already dealt with. Falls back to total count when
+                        // unblocked counts tie so apps with more tracking SDKs
+                        // overall come first within an equal-blocked group.
+                        int unblocked1 = Math.max(0, o1.trackerCount
+                                - (o1.trackerBlockedCount != null ? o1.trackerBlockedCount : 0));
+                        int unblocked2 = Math.max(0, o2.trackerCount
+                                - (o2.trackerBlockedCount != null ? o2.trackerBlockedCount : 0));
+                        if (unblocked1 != unblocked2) {
+                            return -mode * Integer.compare(unblocked1, unblocked2);
+                        }
                         return -mode * o1.trackerCount.compareTo(o2.trackerCount);
                 }
                 return 0;
