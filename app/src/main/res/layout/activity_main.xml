@@ -34,6 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="@dimen/padding_small"
+            android:paddingBottom="@dimen/padding_very_small"
             android:paddingTop="@dimen/padding_very_small"
             android:scrollbars="none"
             android:fillViewport="true">
@@ -147,6 +148,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_small"
             android:layout_marginTop="@dimen/padding_very_small"
             android:background="@drawable/main_status_background"
             android:gravity="center_vertical"
@@ -180,6 +182,8 @@
                 android:clipToPadding="false"
                 android:fitsSystemWindows="true"
                 android:focusable="false"
+                android:paddingBottom="@dimen/padding_large"
+                android:paddingTop="@dimen/padding_very_small"
                 android:scrollbars="none"
                 app:fastScrollerEnabled="true"
                 tools:listitem="@layout/item_main" />
