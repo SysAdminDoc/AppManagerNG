@@ -785,7 +785,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mTrackerCtaTitle.setText(getResources().getQuantityString(
                     R.plurals.tracker_cta_title_unblocked, count, count));
             mTrackerCtaTitle.setTextColor(trackerColor);
-            mTrackerCtaSubtitle.setText(R.string.tracker_cta_subtitle_unblocked);
+            String breakdown = buildTrackerCategoryBreakdown(tagCloud);
+            mTrackerCtaSubtitle.setText(breakdown != null
+                    ? breakdown
+                    : getString(R.string.tracker_cta_subtitle_unblocked));
             mTrackerCtaAction.setText(R.string.block);
         }
         View.OnClickListener clickHandler = v -> {
@@ -807,6 +810,52 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         };
         mTrackerCtaAction.setOnClickListener(clickHandler);
         mTrackerCtaCard.setOnClickListener(clickHandler);
+    }
+
+    /**
+     * Build a "12 ad · 8 analytics · 5 crash" breakdown of the app's known tracker
+     * components, grouped by {@link io.github.muntashirakon.AppManager.rules
+     * .compontents.TrackerCategory}. Each component's vendor name is resolved from
+     * the bundled tracker dataset, then categorized by name keyword. Returns
+     * {@code null} when categorization yields nothing useful (every component
+     * landed in OTHER or the list is empty), so the caller can fall back to the
+     * generic subtitle copy.
+     */
+    @MainThread
+    @Nullable
+    private String buildTrackerCategoryBreakdown(@NonNull AppInfoViewModel.TagCloud tagCloud) {
+        if (tagCloud.trackerComponents == null || tagCloud.trackerComponents.isEmpty()) {
+            return null;
+        }
+        java.util.EnumMap<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> counts =
+                new java.util.EnumMap<>(io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.class);
+        for (io.github.muntashirakon.AppManager.rules.struct.ComponentRule rule : tagCloud.trackerComponents) {
+            String vendor = io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
+                    .getTrackerLabel(rule.name);
+            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
+                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.categorize(vendor);
+            counts.merge(cat, 1, Integer::sum);
+        }
+        // Drop OTHER from the breakdown if any other category is present — it's only
+        // interesting when *everything* lands there, in which case fall through to
+        // the generic copy.
+        boolean hasNonOther = false;
+        for (io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat : counts.keySet()) {
+            if (cat != io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) {
+                hasNonOther = true;
+                break;
+            }
+        }
+        if (!hasNonOther) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Map.Entry<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> e : counts.entrySet()) {
+            if (e.getKey() == io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) continue;
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(e.getValue()).append(' ').append(getString(e.getKey().getLabelRes()).toLowerCase(java.util.Locale.ROOT));
+        }
+        return sb.toString();
     }
 
     @WorkerThread
