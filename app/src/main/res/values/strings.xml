@@ -54,6 +54,9 @@
         <item quantity="one">⚠ This APK contains <xliff:g id="count" example="1">%1$d</xliff:g> known tracking SDK. You can block trackers from the App info screen after installing.</item>
         <item quantity="other">⚠ This APK contains <xliff:g id="count" example="24">%1$d</xliff:g> known tracking SDKs. You can block trackers from the App info screen after installing.</item>
     </plurals>
+    <string name="main_tour_title">Quick tour</string>
+    <string name="main_tour_message">A few things you might miss in the main list:\n\n• The status line under the chip row totals trackers across all visible apps. Tap it to filter to just the apps still tracking.\n\n• The orange number on each app icon is its tracker count. Tap it to jump straight into the app\'s component lists with trackers sorted to the top.\n\n• The sort chip at the top-left opens the full sort/filter sheet. The other chips are one-tap filters.\n\n• Long-press an icon for quick actions (Launch, Block trackers, Uninstall) without opening the app details.\n\n• Open any app to see a one-tap "Block all trackers" card with category breakdown.</string>
+    <string name="got_it">Got it</string>
     <plurals name="main_status_tracker_suffix">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="4521">%1$d</xliff:g> trackers</item>

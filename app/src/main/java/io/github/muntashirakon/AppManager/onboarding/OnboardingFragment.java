@@ -41,6 +41,33 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         return !AppPref.getBoolean(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL);
     }
 
+    /** Optional callback fired after the user picks a mode or cancels. */
+    @Nullable
+    private Runnable mOnDismissCallback;
+
+    /**
+     * Wires a continuation to run on the host activity once the user has finished
+     * with the sheet (picked a mode or cancelled). Used by MainActivity to chain
+     * the main-list tour onto the same first-launch flow without forcing the
+     * user to navigate away and back. The callback fires from the dialog's
+     * {@link androidx.fragment.app.DialogFragment#onDismiss} hook so it runs for
+     * both pick-a-card and cancel paths.
+     */
+    public void setOnDismissCallback(@Nullable Runnable callback) {
+        mOnDismissCallback = callback;
+    }
+
+    @Override
+    public void onDismiss(@NonNull android.content.DialogInterface dialog) {
+        super.onDismiss(dialog);
+        if (mOnDismissCallback != null) {
+            // Defer to the next main-thread tick so the BottomSheet's exit animation
+            // finishes before the follow-up dialog covers the same screen region.
+            android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+            h.post(mOnDismissCallback);
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,

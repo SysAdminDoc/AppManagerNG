@@ -78,6 +78,7 @@ public class AppPref {
         PREF_DISPLAY_CHANGELOG_LAST_VERSION_LONG,
 
         PREF_ONBOARDING_SHOWN_BOOL,
+        PREF_MAIN_TOUR_SHOWN_BOOL,
 
         PREF_DEBLOATER_FILTER_FLAGS_INT,
 
@@ -398,6 +399,7 @@ public class AppPref {
             case PREF_APP_THEME_PURE_BLACK_BOOL:
             case PREF_DISPLAY_CHANGELOG_BOOL:
             case PREF_ONBOARDING_SHOWN_BOOL:
+            case PREF_MAIN_TOUR_SHOWN_BOOL:
             case PREF_FM_DISPLAY_IN_LAUNCHER_BOOL:
             case PREF_FM_REMEMBER_LAST_PATH_BOOL:
             case PREF_FM_SORT_REVERSE_BOOL:
