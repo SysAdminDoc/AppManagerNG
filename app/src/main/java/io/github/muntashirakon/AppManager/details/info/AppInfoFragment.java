@@ -918,6 +918,20 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         }
                     });
         }
+        // Dangerous-permission overview chip — shows "G/T dangerous perms" so users
+        // can see how much trust the app has been granted at a glance, mirroring
+        // the tracker chip pattern. Color: green when none granted, orange when
+        // any granted (the count itself signals scope).
+        if (tagCloud.dangerousPermissionTotal > 0) {
+            int grantedColor = tagCloud.dangerousPermissionGranted > 0
+                    ? ColorCodes.getComponentTrackerIndicatorColor(context)
+                    : ColorCodes.getComponentTrackerBlockedIndicatorColor(context);
+            String label = getString(R.string.tag_dangerous_perms,
+                    tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal);
+            TagItem permTag = new TagItem();
+            permTag.setText(label).setColor(grantedColor);
+            tagItems.add(permTag);
+        }
         if (tagCloud.isSystemApp) {
             tagItems.add(new TagItem()
                     .setTextRes(tagCloud.isSystemlessPath ? R.string.systemless_app : R.string.system_app));
