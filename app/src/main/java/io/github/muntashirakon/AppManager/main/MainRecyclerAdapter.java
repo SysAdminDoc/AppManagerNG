@@ -239,12 +239,42 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             }
             return true;
         });
+        // Icon tap:
+        //   - in selection mode: toggle selection (preserves the learned multi-select gesture)
+        //   - out of selection mode: launch the app if it has a launcher activity, otherwise
+        //     fall back to selection (so the gesture still does *something* useful for
+        //     services-only/no-launcher packages instead of looking broken).
+        // Long-pressing the card body still enters selection mode regardless.
         holder.icon.setOnClickListener(v -> {
             int currentPosition = holder.getBindingAdapterPosition();
-            if (currentPosition != RecyclerView.NO_POSITION) {
+            if (currentPosition == RecyclerView.NO_POSITION) return;
+            if (isInSelectionMode()) {
                 toggleSelection(currentPosition);
                 AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
+                return;
             }
+            ApplicationItem currentItem = getItemAtPosition(currentPosition);
+            if (currentItem == null) return;
+            if (currentItem.isInstalled && !currentItem.isDisabled) {
+                int userId = currentItem.userIds != null && currentItem.userIds.length > 0
+                        ? currentItem.userIds[0]
+                        : UserHandleHidden.myUserId();
+                Intent launchIntent = io.github.muntashirakon.AppManager.compat.PackageManagerCompat
+                        .getLaunchIntentForPackage(currentItem.packageName, userId);
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        mActivity.startActivity(launchIntent);
+                        return;
+                    } catch (Throwable t) {
+                        UIUtils.displayLongToast(R.string.failed_to_launch_app);
+                        return;
+                    }
+                }
+            }
+            // No launcher activity (or app is disabled/uninstalled): fall back to selection
+            toggleSelection(currentPosition);
+            AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
         });
         // Box-stroke colors: selected > uninstalled > disabled > force-stopped > regular
         if (item.isSelected) {
