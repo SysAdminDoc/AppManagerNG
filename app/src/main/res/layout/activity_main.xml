@@ -48,7 +48,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_sort"
-                    style="@style/Widget.Material3.Chip.Suggestion"
+                    style="@style/Widget.AppTheme.Chip.MainSuggestion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/sort"
@@ -59,7 +59,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_user"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_user_apps"
@@ -67,7 +67,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_system"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_system_apps"
@@ -75,7 +75,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_frozen"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_frozen_apps"
@@ -83,7 +83,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_running"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_running_apps"
@@ -91,7 +91,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_backups"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_apps_with_backups"
@@ -99,7 +99,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_stopped"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_force_stopped_apps"
@@ -107,7 +107,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_trackers"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_apps_with_trackers"
@@ -115,7 +115,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_rules"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_apps_with_rules"
@@ -123,7 +123,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_granted_perms"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/filter_apps_with_granted_perms"
@@ -131,7 +131,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_clear_filters"
-                    style="@style/Widget.Material3.Chip.Suggestion"
+                    style="@style/Widget.AppTheme.Chip.MainSuggestion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/clear_filters"
