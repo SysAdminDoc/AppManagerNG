@@ -785,7 +785,7 @@
     <string name="source_stamp_verified_and_identified_to_be_from_source">SourceStamp verified and identified to be from <xliff:g id="source" example="Google Play">%1$s</xliff:g>.</string>
     <string name="splits">Splits</string>
     <string name="input_keystore_pass">Input KeyStore password</string>
-    <string name="input_keystore_pass_description">Enter the App Manager KeyStore password. If you\'re seeing this for the first time, please use a password generator to generate a password and save it in a secure place before inserting it here.</string>
+    <string name="input_keystore_pass_description">Enter the AppManagerNG KeyStore password. If you\'re seeing this for the first time, please use a password generator to generate a password and save it in a secure place before inserting it here.</string>
     <string name="input_keystore_pass_msg">Tap here to enter KeyStore password</string>
     <string name="input_keystore_alias_pass">Password for alias <b>%1$s</b></string>
     <string name="input_keystore_alias_pass_description">Insert password for the alias <b>%1$s</b>. You can leave this empty if the password is the same as the KeyStore password.</string>
@@ -940,7 +940,7 @@
     <string name="input_key">Input key (in hexadecimal)</string>
     <string name="generate_key">Generate</string>
     <string name="failed_to_save_key">Could not save key.</string>
-    <string name="failed_to_initialize_key_store">Could not initialize App Manager keystore.</string>
+    <string name="failed_to_initialize_key_store">Could not initialize AppManagerNG keystore.</string>
     <string name="invalid_aes_key_size">Invalid key size for AES encryption. Key size can be either 128 or 256 bits.</string>
     <string name="crypto_key_size">Key size</string>
     <string name="invalid_rsa_key_size">Invalid key size for RSA encryption. Key size can be 1024, 2048 or 4096 bits.</string>
@@ -1073,7 +1073,7 @@
     <string name="gz_bz2_compressed">%1$s compressed</string>
     <string name="latest_backup">Latest backup</string>
     <string name="pref_import_export_keystore">Import/export KeyStore</string>
-    <string name="pref_import_export_keystore_msg">Import/export Bouncy Castle KeyStore (BKS) internally used by App Manager.</string>
+    <string name="pref_import_export_keystore_msg">Import/export Bouncy Castle KeyStore (BKS) internally used by AppManagerNG.</string>
     <string name="import_keystore">Import KeyStore</string>
     <string name="confirm_import_keystore">Are you sure want to replace the existing KeyStore? This action cannot be undone.</string>
     <string name="failed">Failed</string>
@@ -1125,7 +1125,7 @@
     <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for App Manager is a subfolder named <tt>AppManager</tt>.</string>
     <string name="storage">Storage</string>
     <string name="files">Files</string>
-    <string name="keystore_password_info">The following is the App Manager KeyStore password. Please store it in a secure place if you\'re going to back up/restore App Manager KeyStore. <b>This message will not be displayed again.</b></string>
+    <string name="keystore_password_info">The following is the AppManagerNG KeyStore password. Please store it in a secure place if you\'re going to back up/restore AppManagerNG KeyStore. <b>This message will not be displayed again.</b></string>
     <string name="keystore_pass_cannot_be_empty">KeyStore password cannot be empty.</string>
     <string name="invalid_password">Invalid password, try again.</string>
     <string name="adb_pair">Pair</string>
