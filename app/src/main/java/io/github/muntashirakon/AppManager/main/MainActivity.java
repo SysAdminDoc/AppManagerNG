@@ -740,9 +740,38 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void maybeShowOnboarding() {
-        if (!OnboardingFragment.shouldShow()) return;
+        if (!OnboardingFragment.shouldShow()) {
+            // Onboarding already done — surface the main-list tour for users who
+            // haven't seen it yet (covers fresh installs after onboarding picks
+            // and upgraders from a pre-tour build).
+            maybeShowMainListTour();
+            return;
+        }
         if (getSupportFragmentManager().findFragmentByTag(OnboardingFragment.TAG) != null) return;
-        new OnboardingFragment().show(getSupportFragmentManager(), OnboardingFragment.TAG);
+        OnboardingFragment fragment = new OnboardingFragment();
+        // After onboarding dismisses, the dialog-listener fires once on the
+        // activity context — chain the tour off it so users see it on the same
+        // first launch.
+        fragment.setOnDismissCallback(this::maybeShowMainListTour);
+        fragment.show(getSupportFragmentManager(), OnboardingFragment.TAG);
+    }
+
+    /**
+     * One-shot 'quick tour' alert listing the main-list features users might miss
+     * (chip row, badge tap, sort indicator, CTA card). Tracked via PREF_MAIN_TOUR
+     * _SHOWN_BOOL so it never re-prompts. Called after onboarding completes or
+     * directly on first launch for users who already had onboarding when this
+     * shipped. Cancellable; cancel still marks shown so dismiss-without-reading
+     * doesn't trap the user.
+     */
+    private void maybeShowMainListTour() {
+        if (AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL)) return;
+        AppPref.set(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL, true);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.main_tour_title)
+                .setMessage(R.string.main_tour_message)
+                .setPositiveButton(R.string.got_it, null)
+                .show();
     }
 
     private void bindQuickFilterChips() {

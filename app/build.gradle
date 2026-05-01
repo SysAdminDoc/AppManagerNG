@@ -16,6 +16,10 @@ android {
         targetSdk target_sdk
         versionCode 3
         versionName "0.3.0"
+        // AndroidX JUnit4 instrumentation runner so AndroidJUnit4-annotated tests
+        // (e.g. AppsDbMigrationTest) are discovered. Default is the legacy
+        // android.test.InstrumentationTestRunner which would silently skip them.
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += [
@@ -205,6 +209,12 @@ dependencies {
     // Unit Testing
     testImplementation "junit:junit:${junit_version}"
     testImplementation "org.robolectric:robolectric:${robolectric_version}"
+
+    // Room v7 -> v8 migration test (see app/src/androidTest/.../AppsDbMigrationTest)
+    androidTestImplementation "androidx.room:room-testing:${room_version}"
+    androidTestImplementation "androidx.test:runner:1.6.2"
+    androidTestImplementation "androidx.test.ext:junit:1.2.1"
+    androidTestImplementation "junit:junit:${junit_version}"
 }
 
 preBuild.dependsOn ":server:build"
