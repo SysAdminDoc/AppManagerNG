@@ -276,6 +276,17 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             toggleSelection(currentPosition);
             AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
         });
+        // Long-pressing the icon shows a per-app quick-actions popup (App info / Open /
+        // App Manager details / Uninstall / Block trackers). Bypasses selection mode
+        // for users who want to act on a single app fast.
+        holder.icon.setOnLongClickListener(v -> {
+            int currentPosition = holder.getBindingAdapterPosition();
+            if (currentPosition == RecyclerView.NO_POSITION) return false;
+            ApplicationItem currentItem = getItemAtPosition(currentPosition);
+            if (currentItem == null) return false;
+            showQuickActionsPopup(holder.icon, currentItem);
+            return true;
+        });
         // Box-stroke colors: selected > uninstalled > disabled > force-stopped > regular
         if (item.isSelected) {
             cardView.setStrokeColor(mColorSelectedStroke);
@@ -494,6 +505,93 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             sectionsArr[i] = String.valueOf(sSections.charAt(i));
 
         return sectionsArr;
+    }
+
+    /**
+     * Per-app quick-actions popup anchored to the card icon, triggered by long-press
+     * on the icon. Items render conditionally based on app state so the menu is never
+     * misleading: launch / Android settings only show for installed apps; tracker
+     * block only when the app has known tracker components.
+     *
+     * <p>Note: deliberately uses Android-stdlib intents (ACTION_DELETE,
+     * ACTION_APPLICATION_DETAILS_SETTINGS, launcher intent) instead of routing
+     * through the privileged BatchOpsManager path. The latter requires Root /
+     * Shizuku / ADB and the popup is meant to work for everyone — privileged ops
+     * remain accessible via the existing long-press-card multi-select toolbar.
+     */
+    private void showQuickActionsPopup(@NonNull View anchor, @NonNull ApplicationItem item) {
+        androidx.appcompat.widget.PopupMenu popup = new androidx.appcompat.widget.PopupMenu(mActivity, anchor);
+        popup.getMenuInflater().inflate(R.menu.main_quick_actions, popup.getMenu());
+        boolean canLaunch = item.isInstalled && !item.isDisabled
+                && io.github.muntashirakon.AppManager.compat.PackageManagerCompat
+                        .getLaunchIntentForPackage(item.packageName,
+                                item.userIds != null && item.userIds.length > 0
+                                        ? item.userIds[0]
+                                        : UserHandleHidden.myUserId()) != null;
+        popup.getMenu().findItem(R.id.action_quick_open).setVisible(canLaunch);
+        popup.getMenu().findItem(R.id.action_quick_app_info_system).setVisible(item.isInstalled);
+        popup.getMenu().findItem(R.id.action_quick_uninstall).setVisible(item.isInstalled);
+        popup.getMenu().findItem(R.id.action_quick_block_trackers).setVisible(
+                item.isInstalled && item.trackerCount != null && item.trackerCount > 0);
+        popup.setOnMenuItemClickListener(menuItem -> {
+            int id = menuItem.getItemId();
+            int userId = item.userIds != null && item.userIds.length > 0
+                    ? item.userIds[0]
+                    : UserHandleHidden.myUserId();
+            if (id == R.id.action_quick_open) {
+                Intent launch = io.github.muntashirakon.AppManager.compat.PackageManagerCompat
+                        .getLaunchIntentForPackage(item.packageName, userId);
+                if (launch != null) {
+                    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        mActivity.startActivity(launch);
+                    } catch (Throwable t) {
+                        UIUtils.displayLongToast(R.string.failed_to_launch_app);
+                    }
+                }
+                return true;
+            } else if (id == R.id.action_quick_details) {
+                mActivity.startActivity(io.github.muntashirakon.AppManager.details.AppDetailsActivity
+                        .getIntent(mActivity, item.packageName, userId));
+                return true;
+            } else if (id == R.id.action_quick_app_info_system) {
+                Intent settings = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                settings.setData(android.net.Uri.parse("package:" + item.packageName));
+                settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    mActivity.startActivity(settings);
+                } catch (Throwable t) {
+                    UIUtils.displayLongToast(R.string.error);
+                }
+                return true;
+            } else if (id == R.id.action_quick_uninstall) {
+                Intent uninstall = new Intent(Intent.ACTION_DELETE);
+                uninstall.setData(android.net.Uri.parse("package:" + item.packageName));
+                uninstall.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    mActivity.startActivity(uninstall);
+                } catch (Throwable t) {
+                    UIUtils.displayLongToast(R.string.error);
+                }
+                return true;
+            } else if (id == R.id.action_quick_block_trackers) {
+                io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
+                    try {
+                        io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
+                                .blockTrackingComponents(new io.github.muntashirakon.AppManager.types
+                                        .UserPackagePair(item.packageName, userId));
+                        io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
+                                UIUtils.displayShortToast(R.string.trackers_blocked_successfully));
+                    } catch (Throwable t) {
+                        io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
+                                UIUtils.displayLongToast(R.string.failed_to_block_trackers));
+                    }
+                });
+                return true;
+            }
+            return false;
+        });
+        popup.show();
     }
 
     private void handleClick(@NonNull ApplicationItem item) {
