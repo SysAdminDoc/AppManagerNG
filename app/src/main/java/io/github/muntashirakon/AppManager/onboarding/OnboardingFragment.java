@@ -51,19 +51,59 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Root status surfacing — picked here rather than in onCreate so we re-evaluate
-        // if the user lands on this sheet from elsewhere.
+        // Live capability surfacing — re-evaluate every time the sheet binds rather
+        // than caching at fragment construction so a user who toggles ADB and
+        // returns to the sheet sees the new state.
         TextView rootStatus = view.findViewById(R.id.status_root);
         if (rootStatus != null) {
             rootStatus.setText(Ops.hasRoot()
                     ? R.string.onboarding_mode_root_status_detected
                     : R.string.onboarding_mode_root_status_missing);
         }
+        TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
+        if (adbWifiStatus != null) {
+            adbWifiStatus.setText(isWirelessDebuggingActive()
+                    ? R.string.onboarding_mode_adb_wifi_status_active
+                    : R.string.onboarding_mode_adb_wifi_status_inactive);
+        }
+        TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
+        if (adbTcpStatus != null) {
+            adbTcpStatus.setText(isUsbDebuggingEnabled()
+                    ? R.string.onboarding_mode_adb_tcp_status_active
+                    : R.string.onboarding_mode_adb_tcp_status_inactive);
+        }
         view.findViewById(R.id.card_mode_auto).setOnClickListener(v -> pick(Ops.MODE_AUTO));
         view.findViewById(R.id.card_mode_root).setOnClickListener(v -> pick(Ops.MODE_ROOT));
         view.findViewById(R.id.card_mode_adb_wifi).setOnClickListener(v -> pick(Ops.MODE_ADB_WIFI));
         view.findViewById(R.id.card_mode_adb_tcp).setOnClickListener(v -> pick(Ops.MODE_ADB_OVER_TCP));
         view.findViewById(R.id.card_mode_no_root).setOnClickListener(v -> pick(Ops.MODE_NO_ROOT));
+    }
+
+    /** True when USB debugging (ADB over USB) is enabled in Developer options. */
+    private boolean isUsbDebuggingEnabled() {
+        try {
+            return android.provider.Settings.Global.getInt(
+                    requireContext().getContentResolver(), "adb_enabled", 0) != 0;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * True when Android 11+ Wireless Debugging is currently active. Returns false on
+     * Android &lt; 11 (the setting key didn't exist) and on any read failure (we'd
+     * rather show "not active" conservatively than mislead the user).
+     */
+    private boolean isWirelessDebuggingActive() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            return false;
+        }
+        try {
+            return android.provider.Settings.Global.getInt(
+                    requireContext().getContentResolver(), "adb_wifi_enabled", 0) != 0;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     private void pick(@NonNull @Ops.Mode String mode) {

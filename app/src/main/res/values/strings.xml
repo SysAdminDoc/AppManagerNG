@@ -1270,6 +1270,10 @@
     <string name="onboarding_mode_adb_tcp_summary">Run AppManagerNG on the same uid as ADB. Requires a PC the first time to start the daemon over USB.</string>
     <string name="onboarding_mode_no_root_title">No root</string>
     <string name="onboarding_mode_no_root_summary">Limited features (the system uninstall flow, reading info, launching apps). Works on every device with no setup.</string>
+    <string name="onboarding_mode_adb_wifi_status_active">✓ Wireless debugging is active</string>
+    <string name="onboarding_mode_adb_wifi_status_inactive">Not active — enable in Developer options &gt; Wireless debugging</string>
+    <string name="onboarding_mode_adb_tcp_status_active">✓ USB debugging is enabled</string>
+    <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
     <string name="onboarding_change_later_hint">Settings → Mode of operation lets you change this any time.</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>

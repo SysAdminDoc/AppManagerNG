@@ -570,6 +570,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_backups, MainListOptions.FILTER_APPS_WITH_BACKUPS},
             {R.id.chip_stopped, MainListOptions.FILTER_STOPPED_APPS},
             {R.id.chip_trackers, MainListOptions.FILTER_APPS_WITH_TRACKERS},
+            {R.id.chip_rules, MainListOptions.FILTER_APPS_WITH_RULES},
     };
 
     private void maybeShowOnboarding() {
@@ -759,8 +760,26 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 String trackerSuffix = getResources().getQuantityString(
                         R.plurals.main_status_tracker_suffix, trackerSum, trackerSum);
                 mListStatusView.setText(getString(R.string.main_status_with_tracker_suffix, base, trackerSuffix));
+                // Make the status line a quick filter shortcut: tap when a tracker
+                // suffix is showing and the with-trackers filter is off -> enable it.
+                // No-op when the filter is already active so the tap doesn't visually
+                // do nothing on a second press; the user can tap the chip Clear to undo.
+                if (!viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS)) {
+                    mListStatusView.setClickable(true);
+                    mListStatusView.setFocusable(true);
+                    mListStatusView.setOnClickListener(v -> {
+                        if (viewModel == null) return;
+                        viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
+                        refreshQuickFilterChips();
+                    });
+                } else {
+                    mListStatusView.setOnClickListener(null);
+                    mListStatusView.setClickable(false);
+                }
             } else {
                 mListStatusView.setText(base);
+                mListStatusView.setOnClickListener(null);
+                mListStatusView.setClickable(false);
             }
         }
         if (displayedItemCount > 0) {
