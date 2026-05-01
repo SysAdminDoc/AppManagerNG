@@ -819,6 +819,19 @@
     <string name="input_keystore_alias_pass_msg">Tap here to provide password for %1$s</string>
     <string name="no_app_ops_permission">No permission to display app ops</string>
     <string name="this_action_cannot_be_undone">This action cannot be undone.</string>
+    <plurals name="batch_selected_app_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> selected app</item>
+        <item quantity="other"><xliff:g id="count" example="12">%1$d</xliff:g> selected apps</item>
+    </plurals>
+    <string name="batch_tracker_dialog_message">Apply tracker component changes to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.\n\nBlock disables known ad, analytics, and tracking components. Unblock restores those tracker components if an app stops working correctly.</string>
+    <string name="batch_clear_dialog_title">Clear selected app storage?</string>
+    <string name="batch_clear_dialog_message">Choose the reset level for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.\n\nClear cache removes temporary files. Clear data resets app state, accounts, databases, and settings and cannot be undone from AppManagerNG.</string>
+    <string name="batch_disable_background_dialog_title">Prevent background operation?</string>
+    <string name="batch_disable_background_dialog_message">Apply background limits to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> by setting RUN_IN_BACKGROUND and RUN_ANY_IN_BACKGROUND to Ignore. Apps may stop syncing or sending notifications until you change this back.</string>
+    <string name="batch_force_stop_dialog_title">Force stop selected apps?</string>
+    <string name="batch_force_stop_dialog_message">Stop running processes for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> now. Apps can restart later from system events, notifications, or when you open them again.</string>
+    <string name="batch_uninstall_dialog_title">Uninstall selected apps?</string>
+    <string name="batch_uninstall_dialog_message">This will uninstall or remove leftover data entries for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. App data may be removed by Android and cannot be restored from AppManagerNG unless you have a backup.</string>
     <string name="keep_data_and_app_signing_signatures">Keep data and signatures</string>
     <string name="pref_backup_android_keystore">Back up apps with Android KeyStore</string>
     <string name="pref_backup_android_keystore_msg">Not all apps will work after being restored. Restoring KeyStore doesn\'t work on most devices.</string>

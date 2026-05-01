@@ -424,35 +424,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 if (granted) handleBatchOp(BatchOpsManager.OP_BACKUP_APK);
             });
         } else if (id == R.id.action_block_unblock_trackers) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.block_unblock_trackers)
-                    .setMessage(R.string.choose_what_to_do)
-                    .setPositiveButton(R.string.block, (dialog, which) ->
-                            handleBatchOp(BatchOpsManager.OP_BLOCK_TRACKERS))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setNeutralButton(R.string.unblock, (dialog, which) ->
-                            handleBatchOp(BatchOpsManager.OP_UNBLOCK_TRACKERS))
-                    .show();
+            showTrackerBatchDialog();
         } else if (id == R.id.action_clear_data_cache) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.clear)
-                    .setMessage(R.string.choose_what_to_do)
-                    .setPositiveButton(R.string.clear_cache, (dialog, which) ->
-                            handleBatchOp(BatchOpsManager.OP_CLEAR_CACHE))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setNeutralButton(R.string.clear_data, (dialog, which) ->
-                            handleBatchOp(BatchOpsManager.OP_CLEAR_DATA))
-                    .show();
+            showClearDataCacheDialog();
         } else if (id == R.id.action_freeze_unfreeze) {
             showFreezeUnfreezeDialog(Prefs.Blocking.getDefaultFreezingMethod());
         } else if (id == R.id.action_disable_background) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.are_you_sure)
-                    .setMessage(R.string.disable_background_run_description)
-                    .setPositiveButton(R.string.yes, (dialog, which) ->
-                            handleBatchOp(BatchOpsManager.OP_DISABLE_BACKGROUND))
-                    .setNegativeButton(R.string.no, null)
-                    .show();
+            showDisableBackgroundDialog();
         } else if (id == R.id.action_net_policy) {
             ArrayMap<Integer, String> netPolicyMap = NetworkPolicyManagerCompat.getAllReadablePolicies(this);
             Integer[] polices = new Integer[netPolicyMap.size()];
@@ -514,9 +492,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     .setNegativeButton(R.string.close, null)
                     .show();
         } else if (id == R.id.action_force_stop) {
-            handleBatchOp(BatchOpsManager.OP_FORCE_STOP);
+            showForceStopDialog();
         } else if (id == R.id.action_uninstall) {
-            handleBatchOpWithWarning(BatchOpsManager.OP_UNINSTALL);
+            showUninstallDialog();
         } else if (id == R.id.action_add_to_profile) {
             AddToProfileDialogFragment dialog = AddToProfileDialogFragment.getInstance(viewModel.getSelectedPackages()
                     .keySet().toArray(new String[0]));
@@ -910,6 +888,72 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 .show();
     }
 
+    private void showTrackerBatchDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_cctv_off)
+                .setTitle(R.string.block_unblock_trackers)
+                .setMessage(getString(R.string.batch_tracker_dialog_message, getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.block, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_BLOCK_TRACKERS))
+                .setNegativeButton(R.string.cancel, null)
+                .setNeutralButton(R.string.unblock, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_UNBLOCK_TRACKERS))
+                .show();
+    }
+
+    private void showClearDataCacheDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_brush)
+                .setTitle(R.string.batch_clear_dialog_title)
+                .setMessage(getString(R.string.batch_clear_dialog_message, getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.clear_cache, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_CLEAR_CACHE))
+                .setNegativeButton(R.string.cancel, null)
+                .setNeutralButton(R.string.clear_data, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_CLEAR_DATA))
+                .show();
+    }
+
+    private void showDisableBackgroundDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_block)
+                .setTitle(R.string.batch_disable_background_dialog_title)
+                .setMessage(getString(R.string.batch_disable_background_dialog_message,
+                        getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.disable_background, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_DISABLE_BACKGROUND))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showForceStopDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_power_settings)
+                .setTitle(R.string.batch_force_stop_dialog_title)
+                .setMessage(getString(R.string.batch_force_stop_dialog_message, getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.force_stop, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_FORCE_STOP))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showUninstallDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_trash_can)
+                .setTitle(R.string.batch_uninstall_dialog_title)
+                .setMessage(getString(R.string.batch_uninstall_dialog_message, getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.uninstall, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_UNINSTALL))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private String getSelectedAppCountLabel() {
+        int count = viewModel == null ? 0 : viewModel.getSelectedPackages().size();
+        return getResources().getQuantityString(R.plurals.batch_selected_app_count, count, count);
+    }
+
     private void handleBatchOp(@BatchOpsManager.OpType int op) {
         handleBatchOp(op, null);
     }
@@ -921,15 +965,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(op, input.getFailedPackages(), input.getAssociatedUsers(), options);
         Intent intent = BatchOpsService.getServiceIntent(this, item);
         ContextCompat.startForegroundService(this, intent);
-    }
-
-    private void handleBatchOpWithWarning(@BatchOpsManager.OpType int op) {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.are_you_sure)
-                .setMessage(R.string.this_action_cannot_be_undone)
-                .setPositiveButton(R.string.yes, (dialog, which) -> handleBatchOp(op))
-                .setNegativeButton(R.string.no, null)
-                .show();
     }
 
     void showProgressIndicator(boolean show) {
