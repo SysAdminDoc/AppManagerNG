@@ -1254,6 +1254,8 @@
     <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="failed_to_launch_app">Could not launch this app.</string>
+    <string name="quick_action_block_trackers">Block trackers</string>
+    <string name="quick_action_system_settings">Android settings</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>
     <string name="tracker_category_crash">Crash</string>

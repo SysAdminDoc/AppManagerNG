@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_quick_open"
+        android:icon="@drawable/ic_open_in_new"
+        android:title="@string/launch" />
+
+    <item
+        android:id="@+id/action_quick_details"
+        android:icon="@drawable/ic_information_circle"
+        android:title="@string/app_info" />
+
+    <item
+        android:id="@+id/action_quick_block_trackers"
+        android:icon="@drawable/ic_cctv_off"
+        android:title="@string/quick_action_block_trackers" />
+
+    <item
+        android:id="@+id/action_quick_app_info_system"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/quick_action_system_settings" />
+
+    <item
+        android:id="@+id/action_quick_uninstall"
+        android:icon="@drawable/ic_trash_can"
+        android:title="@string/uninstall" />
+
+</menu>
