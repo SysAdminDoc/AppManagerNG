@@ -1272,10 +1272,11 @@
     <string name="save_and_exit">Save and exit</string>
     <string name="pref_saved_apk_name_format">Saved APK name format</string>
     <string name="pref_saved_apk_name_format_msg">The format to be used for naming the APK files when you save them.</string>
-    <string name="auth_manager_description">To launch an Intent from an external app, it is necessary to supply an extra field called <tt>auth</tt>, and it must contain the following key:</string>
+    <string name="auth_manager_description">Trusted third-party apps can launch App Manager intents only when they include this key in the <tt>auth</tt> extra.</string>
+    <string name="auth_manager_key_label">Authorization key</string>
     <string name="auth_manager_title">Authorization manager</string>
     <string name="regenerate_auth_key">Regenerate authorization key</string>
-    <string name="regenerate_auth_key_warning">Are you sure? All the third-party apps have to be reconfigured with the new authorization key.</string>
+    <string name="regenerate_auth_key_warning">Regenerating this key immediately invalidates existing third-party integrations. Reconfigure trusted apps with the new key to keep them working.</string>
     <string name="shortcut_icon">Shortcut icon</string>
     <string name="sort_by_installation_date">Installation date</string>
     <string name="backup_volume_unavailable_warning">The selected backup volume is not currently available. If it is located in an external storage, please insert it, or change the backup volume.</string>

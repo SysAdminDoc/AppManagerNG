@@ -12,43 +12,73 @@
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="vertical"
-        android:fitsSystemWindows="true"
         android:clipToPadding="false"
+        android:fillViewport="true"
+        android:fitsSystemWindows="true"
+        android:scrollbars="vertical"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center_vertical"
-            android:paddingTop="@dimen/padding_small"
-            android:paddingBottom="@dimen/padding_small"
-            android:paddingStart="@dimen/padding_medium"
-            android:paddingEnd="@dimen/padding_medium"
+            android:gravity="center_vertical"
             android:orientation="vertical">
 
-            <androidx.appcompat.widget.AppCompatTextView
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/auth_manager_description" />
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginVertical="@dimen/padding_large">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/auth_field"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:endIconMode="custom"
-                app:endIconDrawable="@drawable/ic_autorenew">
-
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@android:id/text1"
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="25sp"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/full_names" />
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_medium">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/auth_manager_title"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="@string/auth_manager_description"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/auth_field"
+                        style="@style/Widget.AppTheme.TextInputLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_large"
+                        android:hint="@string/auth_manager_key_label"
+                        app:endIconContentDescription="@string/regenerate_auth_key"
+                        app:endIconDrawable="@drawable/ic_autorenew"
+                        app:endIconMode="custom">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@android:id/text1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            android:textSize="18sp"
+                            tools:text="@tools:sample/full_names" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
