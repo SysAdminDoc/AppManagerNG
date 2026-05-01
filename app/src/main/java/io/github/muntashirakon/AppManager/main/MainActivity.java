@@ -110,6 +110,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Nullable
     private java.util.concurrent.Future<?> mCategoryBreakdownFuture;
 
+    /**
+     * Per-package tracker-category counts cached across observer fires so that filter/
+     * sort changes only resum cached vectors instead of refetching every app's tracker
+     * components. Keyed by packageName (a package's tracker SDK list doesn't change
+     * unless the app is reinstalled). Values are small int[] sized to TrackerCategory
+     * .values().length to keep memory in check (~2KB at 600 apps × 8 categories × 4
+     * bytes). The cache lives for the activity's lifetime — package install/uninstall
+     * is rare and a stale entry just means a missed update we'll catch next session.
+     */
+    private final java.util.concurrent.ConcurrentHashMap<String, int[]> mTrackerCategoryCache =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     private MenuItem mAppUsageMenu;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
@@ -601,62 +613,130 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         // Snapshot the list for the worker thread.
         java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> snapshot =
                 new java.util.ArrayList<>(items);
+        // Show a placeholder progress indicator on the status line so users know
+        // the breakdown is in flight rather than missing. Replaced by the real
+        // breakdown the moment the worker finishes.
+        showBreakdownProgress();
+        final int categoryCount = io.github.muntashirakon.AppManager.rules.compontents
+                .TrackerCategory.values().length;
         mCategoryBreakdownFuture = io.github.muntashirakon.AppManager.utils.ThreadUtils
                 .postOnBackgroundThread(() -> {
-            java.util.EnumMap<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> counts =
-                    new java.util.EnumMap<>(io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.class);
+            int[] totals = new int[categoryCount];
             for (io.github.muntashirakon.AppManager.main.ApplicationItem appItem : snapshot) {
                 if (Thread.currentThread().isInterrupted()) return;
                 if (appItem.trackerCount == null || appItem.trackerCount == 0
                         || !appItem.isInstalled) continue;
-                int userId = appItem.userIds != null && appItem.userIds.length > 0
-                        ? appItem.userIds[0]
-                        : android.os.UserHandleHidden.myUserId();
-                android.content.pm.PackageInfo pi;
-                try {
-                    pi = io.github.muntashirakon.AppManager.compat.PackageManagerCompat.getPackageInfo(
-                            appItem.packageName,
-                            android.content.pm.PackageManager.GET_ACTIVITIES
-                                    | android.content.pm.PackageManager.GET_SERVICES
-                                    | android.content.pm.PackageManager.GET_RECEIVERS
-                                    | android.content.pm.PackageManager.GET_PROVIDERS,
-                            userId);
-                } catch (Throwable t) {
-                    continue;
+                int[] perApp = mTrackerCategoryCache.get(appItem.packageName);
+                if (perApp == null) {
+                    perApp = computeTrackerCategoriesForPackage(appItem, categoryCount);
+                    if (perApp != null) {
+                        mTrackerCategoryCache.put(appItem.packageName, perApp);
+                    }
                 }
-                if (pi == null) continue;
-                java.util.Map<String, io.github.muntashirakon.AppManager.rules.RuleType> trackers =
-                        io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
-                                .getTrackerComponentsForPackage(pi);
-                for (String componentName : trackers.keySet()) {
-                    String vendor = io.github.muntashirakon.AppManager.rules.compontents
-                            .ComponentUtils.getTrackerLabel(componentName);
-                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
-                            io.github.muntashirakon.AppManager.rules.compontents
-                                    .TrackerCategory.categorize(vendor);
-                    counts.merge(cat, 1, Integer::sum);
+                if (perApp == null) continue;
+                for (int i = 0; i < categoryCount; i++) {
+                    totals[i] += perApp[i];
                 }
             }
             if (Thread.currentThread().isInterrupted()) return;
             StringBuilder sb = new StringBuilder();
-            for (java.util.Map.Entry<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> e
-                    : counts.entrySet()) {
-                if (e.getKey() == io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) continue;
+            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory[] cats =
+                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.values();
+            for (int i = 0; i < categoryCount; i++) {
+                if (cats[i] == io.github.muntashirakon.AppManager.rules.compontents
+                        .TrackerCategory.OTHER) continue;
+                if (totals[i] == 0) continue;
                 if (sb.length() > 0) sb.append(" · ");
-                sb.append(e.getValue()).append(' ').append(getString(e.getKey().getLabelRes())
+                sb.append(totals[i]).append(' ').append(getString(cats[i].getLabelRes())
                         .toLowerCase(java.util.Locale.ROOT));
             }
-            if (sb.length() == 0) return; // only OTHER -> skip update
-            String breakdown = sb.toString();
+            String breakdown = sb.length() == 0 ? null : sb.toString();
             io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() -> {
                 if (mListStatusView == null) return;
+                if (breakdown == null) {
+                    // Only OTHER: clear the placeholder and leave the base line.
+                    clearBreakdownProgress();
+                    return;
+                }
                 CharSequence current = mListStatusView.getText();
-                // Don't append to a status line that's been replaced (e.g. "loading").
                 if (current == null || current.length() == 0) return;
+                // Strip our placeholder line if present before appending.
+                String currentStr = current.toString();
+                int newline = currentStr.indexOf('\n');
+                String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
                 mListStatusView.setText(getString(R.string.main_status_with_category_breakdown,
-                        current.toString(), breakdown));
+                        base, breakdown));
             });
         });
+    }
+
+    /**
+     * Compute per-package category vector. Indexed by {@link io.github.muntashirakon
+     * .AppManager.rules.compontents.TrackerCategory#ordinal()} so the caller can sum
+     * cheaply across many apps. Returns {@code null} on PackageInfo lookup failure.
+     */
+    @Nullable
+    private int[] computeTrackerCategoriesForPackage(
+            @NonNull io.github.muntashirakon.AppManager.main.ApplicationItem appItem,
+            int categoryCount) {
+        int userId = appItem.userIds != null && appItem.userIds.length > 0
+                ? appItem.userIds[0]
+                : android.os.UserHandleHidden.myUserId();
+        android.content.pm.PackageInfo pi;
+        try {
+            pi = io.github.muntashirakon.AppManager.compat.PackageManagerCompat.getPackageInfo(
+                    appItem.packageName,
+                    android.content.pm.PackageManager.GET_ACTIVITIES
+                            | android.content.pm.PackageManager.GET_SERVICES
+                            | android.content.pm.PackageManager.GET_RECEIVERS
+                            | android.content.pm.PackageManager.GET_PROVIDERS,
+                    userId);
+        } catch (Throwable t) {
+            return null;
+        }
+        if (pi == null) return null;
+        int[] vec = new int[categoryCount];
+        java.util.Map<String, io.github.muntashirakon.AppManager.rules.RuleType> trackers =
+                io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
+                        .getTrackerComponentsForPackage(pi);
+        for (String componentName : trackers.keySet()) {
+            String vendor = io.github.muntashirakon.AppManager.rules.compontents
+                    .ComponentUtils.getTrackerLabel(componentName);
+            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
+                    io.github.muntashirakon.AppManager.rules.compontents
+                            .TrackerCategory.categorize(vendor);
+            vec[cat.ordinal()]++;
+        }
+        return vec;
+    }
+
+    /**
+     * Append a "Calculating breakdown…" placeholder to the status line so the user
+     * knows the second-line breakdown is in flight, not missing. Replaced by the
+     * real categories the moment the worker finishes; cleared when categorization
+     * yields nothing useful.
+     */
+    private void showBreakdownProgress() {
+        if (mListStatusView == null) return;
+        CharSequence current = mListStatusView.getText();
+        if (current == null || current.length() == 0) return;
+        String currentStr = current.toString();
+        // Avoid stacking multiple placeholders if observer fires re-entrantly.
+        int newline = currentStr.indexOf('\n');
+        String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
+        mListStatusView.setText(getString(R.string.main_status_with_category_breakdown,
+                base, getString(R.string.main_status_breakdown_calculating)));
+    }
+
+    private void clearBreakdownProgress() {
+        if (mListStatusView == null) return;
+        CharSequence current = mListStatusView.getText();
+        if (current == null) return;
+        String currentStr = current.toString();
+        int newline = currentStr.indexOf('\n');
+        if (newline >= 0) {
+            mListStatusView.setText(currentStr.substring(0, newline));
+        }
     }
 
     private void maybeShowOnboarding() {
