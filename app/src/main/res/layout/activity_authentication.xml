@@ -1,57 +1,78 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    android:weightSum="2"
+    android:paddingHorizontal="@dimen/padding_very_large"
+    android:paddingVertical="@dimen/padding_large"
     tools:context=".main.SplashActivity">
 
-    <RelativeLayout
-        android:id="@+id/layout_top"
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/auth_content"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical">
 
-        <androidx.appcompat.widget.AppCompatImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/icon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_centerInParent="true"
-            android:minWidth="176dp"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:background="@drawable/main_empty_icon_background"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:padding="18dp"
             app:srcCompat="@mipmap/ic_launcher_round" />
 
-        <androidx.appcompat.widget.AppCompatTextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/title"
-            style="@style/TextAppearance.AppTheme.TitleLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/icon"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="@dimen/padding_small"
-            android:layout_marginBottom="@dimen/padding_very_small"
+            android:layout_marginTop="@dimen/padding_large"
+            android:gravity="center"
+            android:maxLines="2"
             android:text="@string/app_name"
-            android:textAlignment="center" />
+            android:textAlignment="center"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textColor="?attr/colorOnSurface" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/state_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:gravity="center"
+            android:maxWidth="320dp"
+            android:text="@string/authenticating"
+            android:textAlignment="center"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            style="@style/Widget.AppTheme.CircularProgressIndicator.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/title"
-            android:layout_centerHorizontal="true"
-            android:textAlignment="center"
-            android:text="@string/authenticating" />
-    </RelativeLayout>
+            android:layout_marginTop="@dimen/padding_large"
+            android:indeterminate="true"
+            android:importantForAccessibility="no"
+            app:indicatorSize="32dp"
+            app:trackThickness="3dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/version"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_horizontal|bottom"
-        android:padding="@dimen/padding_large"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
+        android:maxLines="2"
         android:textAlignment="center"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
         tools:text="Version 2.7.0" />
-</androidx.appcompat.widget.LinearLayoutCompat>
+
+</FrameLayout>
