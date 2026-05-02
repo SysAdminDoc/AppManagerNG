@@ -1674,6 +1674,7 @@
     <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="success_count" example="2 succeeded">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
+    <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
     <string name="op_preflight_rerun_intro">Review the current capability state before running this saved operation again.</string>
     <string name="op_preflight_current_mode">Current mode</string>

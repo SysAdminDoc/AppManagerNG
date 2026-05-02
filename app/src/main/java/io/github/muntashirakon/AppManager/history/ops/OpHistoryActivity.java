@@ -121,6 +121,8 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mViewModel.getClearHistoryLiveData().observe(this, cleared ->
                 UIUtils.displayShortToast(cleared ? R.string.done : R.string.failed));
+        mViewModel.getDeleteHistoryLiveData().observe(this, deleted ->
+                UIUtils.displayShortToast(deleted ? R.string.done : R.string.failed));
         mViewModel.getServiceLauncherIntentLiveData().observe(this, intent -> {
             if (intent != null) {
                 ContextCompat.startForegroundService(this, intent);
@@ -377,7 +379,20 @@ public class OpHistoryActivity extends BaseActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(history.getLabel(this))
                 .setMessage(history.getDetailMessage(this))
+                .setNeutralButton(R.string.delete, (dialog, which) -> showDeleteHistoryConfirmation(history))
                 .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
+    private void showDeleteHistoryConfirmation(@NonNull OpHistoryItem history) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.delete)
+                .setMessage(R.string.op_history_delete_confirmation)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    mProgressIndicator.show();
+                    mViewModel.deleteHistory(history);
+                })
                 .show();
     }
 
@@ -466,12 +481,7 @@ public class OpHistoryActivity extends BaseActivity {
                     history.getMetadataSummary(mActivity)));
             holder.itemView.setOnClickListener(v -> mActivity.showHistoryDetails(history));
             holder.itemView.setOnLongClickListener(v -> {
-                // TODO: 1/26/25 Possible long click options
-                //  1. Apply
-                //  2. Delete
-                //  3. Add as a profile (for profile and batch op)
-                //  4. Export (for profile)
-                //  5. Create shortcut
+                mActivity.showDeleteHistoryConfirmation(history);
                 return true;
             });
             holder.execBtn.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
@@ -489,6 +499,7 @@ public class OpHistoryActivity extends BaseActivity {
     public static class OpHistoryViewModel extends AndroidViewModel {
         private final MutableLiveData<List<OpHistoryItem>> mOpHistoriesLiveData = new MutableLiveData<>();
         private final MutableLiveData<Boolean> mClearHistoryLiveData = new MutableLiveData<>();
+        private final MutableLiveData<Boolean> mDeleteHistoryLiveData = new MutableLiveData<>();
         private final MutableLiveData<Intent> mServiceLauncherIntentLiveData = new MutableLiveData<>();
         private Future<?> mOpHistoriesResult;
 
@@ -508,23 +519,17 @@ public class OpHistoryActivity extends BaseActivity {
             return mServiceLauncherIntentLiveData;
         }
 
+        public LiveData<Boolean> getDeleteHistoryLiveData() {
+            return mDeleteHistoryLiveData;
+        }
+
         public void loadOpHistories() {
             if (mOpHistoriesResult != null) {
                 mOpHistoriesResult.cancel(true);
             }
             mOpHistoriesResult = ThreadUtils.postOnBackgroundThread(() -> {
                 synchronized (mOpHistoriesLiveData) {
-                    List<OpHistory> opHistories = OpHistoryManager.getAllHistoryItems();
-                    Collections.sort(opHistories, (o1, o2) -> -Long.compare(o1.execTime, o2.execTime));
-                    List<OpHistoryItem> opHistoryItems = new ArrayList<>(opHistories.size());
-                    for (OpHistory history : opHistories) {
-                        try {
-                            opHistoryItems.add(new OpHistoryItem(history));
-                        } catch (JSONException e) {
-                            Log.w(TAG, e.getMessage(), e);
-                        }
-                    }
-                    mOpHistoriesLiveData.postValue(opHistoryItems);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
                 }
             });
         }
@@ -537,6 +542,31 @@ public class OpHistoryActivity extends BaseActivity {
                     mOpHistoriesLiveData.postValue(Collections.emptyList());
                 }
             });
+        }
+
+        public void deleteHistory(@NonNull OpHistoryItem opHistoryItem) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                synchronized (mOpHistoriesLiveData) {
+                    OpHistoryManager.deleteHistoryItem(opHistoryItem.getId());
+                    mDeleteHistoryLiveData.postValue(true);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
+                }
+            });
+        }
+
+        @NonNull
+        private List<OpHistoryItem> loadOpHistoryItems() {
+            List<OpHistory> opHistories = OpHistoryManager.getAllHistoryItems();
+            Collections.sort(opHistories, (o1, o2) -> -Long.compare(o1.execTime, o2.execTime));
+            List<OpHistoryItem> opHistoryItems = new ArrayList<>(opHistories.size());
+            for (OpHistory history : opHistories) {
+                try {
+                    opHistoryItems.add(new OpHistoryItem(history));
+                } catch (JSONException e) {
+                    Log.w(TAG, e.getMessage(), e);
+                }
+            }
+            return opHistoryItems;
         }
 
         public void getServiceLauncherIntent(@NonNull OpHistoryItem opHistoryItem) {

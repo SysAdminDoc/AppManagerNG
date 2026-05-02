@@ -38,6 +38,10 @@ public class OpHistoryItem {
         return opHistory.type;
     }
 
+    public long getId() {
+        return opHistory.id;
+    }
+
     @NonNull
     public String getLocalizedType(@NonNull Context context) {
         switch (opHistory.type) {
