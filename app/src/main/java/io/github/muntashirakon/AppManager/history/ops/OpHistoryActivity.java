@@ -5,6 +5,9 @@ package io.github.muntashirakon.AppManager.history.ops;
 import android.app.Application;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,9 +26,11 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
 
@@ -47,9 +52,31 @@ import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.RecyclerView;
 
 public class OpHistoryActivity extends BaseActivity {
+    private static final long ONE_DAY_MILLIS = 24L * 60 * 60 * 1000;
+
     private OpHistoryViewModel mViewModel;
     private OpHistoryAdapter mAdapter;
     private LinearProgressIndicator mProgressIndicator;
+    private TextInputEditText mFilterText;
+    private TextView mEmptyStateTitle;
+    private TextView mEmptyStateSummary;
+    private final List<Chip> mFilterChips = new ArrayList<>();
+    private List<OpHistoryItem> mCurrentOpHistories = Collections.emptyList();
+    private Chip mChipSucceeded;
+    private Chip mChipFailed;
+    private Chip mChipHighRisk;
+    private Chip mChipMediumRisk;
+    private Chip mChipLowRisk;
+    private Chip mChipBatch;
+    private Chip mChipInstaller;
+    private Chip mChipProfiles;
+    private Chip mChipRoot;
+    private Chip mChipAdb;
+    private Chip mChipNoRoot;
+    private Chip mChipReversible;
+    private Chip mChipLastDay;
+    private Chip mChipLastWeek;
+    private Chip mChipClearFilters;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -63,6 +90,7 @@ public class OpHistoryActivity extends BaseActivity {
         View emptyView = findViewById(android.R.id.empty);
         setupEmptyState(emptyView);
         listView.setEmptyView(emptyView);
+        setupHistoryFilters();
         UiUtils.applyWindowInsetsAsPaddingNoTop(listView);
         mAdapter = new OpHistoryAdapter(this);
         listView.setAdapter(mAdapter);
@@ -80,12 +108,13 @@ public class OpHistoryActivity extends BaseActivity {
                 .show());
         mViewModel.getOpHistoriesLiveData().observe(this, opHistories -> {
             mProgressIndicator.hide();
+            mCurrentOpHistories = opHistories;
             if (opHistories.isEmpty()) {
                 fab.hide();
             } else {
                 fab.show();
             }
-            mAdapter.setDefaultList(opHistories);
+            applyFilters();
         });
         mViewModel.getClearHistoryLiveData().observe(this, cleared ->
                 UIUtils.displayShortToast(cleared ? R.string.done : R.string.failed));
@@ -107,10 +136,194 @@ public class OpHistoryActivity extends BaseActivity {
 
     private void setupEmptyState(@NonNull View emptyView) {
         ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_history);
-        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.op_history_empty_title);
-        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.op_history_empty_message);
+        mEmptyStateTitle = emptyView.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = emptyView.findViewById(R.id.empty_state_summary);
+        mEmptyStateTitle.setText(R.string.op_history_empty_title);
+        mEmptyStateSummary.setText(R.string.op_history_empty_message);
         MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
         action.setVisibility(View.GONE);
+    }
+
+    private void setupHistoryFilters() {
+        mFilterText = findViewById(R.id.history_filter_text);
+        mFilterText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                applyFilters();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+        mChipSucceeded = bindFilterChip(R.id.chip_history_succeeded);
+        mChipFailed = bindFilterChip(R.id.chip_history_failed);
+        mChipHighRisk = bindFilterChip(R.id.chip_history_high_risk);
+        mChipMediumRisk = bindFilterChip(R.id.chip_history_medium_risk);
+        mChipLowRisk = bindFilterChip(R.id.chip_history_low_risk);
+        mChipBatch = bindFilterChip(R.id.chip_history_batch);
+        mChipInstaller = bindFilterChip(R.id.chip_history_installer);
+        mChipProfiles = bindFilterChip(R.id.chip_history_profiles);
+        mChipRoot = bindFilterChip(R.id.chip_history_root);
+        mChipAdb = bindFilterChip(R.id.chip_history_adb);
+        mChipNoRoot = bindFilterChip(R.id.chip_history_no_root);
+        mChipReversible = bindFilterChip(R.id.chip_history_reversible);
+        mChipLastDay = findViewById(R.id.chip_history_last_day);
+        mChipLastWeek = findViewById(R.id.chip_history_last_week);
+        mFilterChips.add(mChipLastDay);
+        mFilterChips.add(mChipLastWeek);
+        mChipLastDay.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && mChipLastWeek.isChecked()) {
+                mChipLastWeek.setChecked(false);
+            }
+            applyFilters();
+        });
+        mChipLastWeek.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && mChipLastDay.isChecked()) {
+                mChipLastDay.setChecked(false);
+            }
+            applyFilters();
+        });
+        mChipClearFilters = findViewById(R.id.chip_history_clear_filters);
+        mChipClearFilters.setOnClickListener(v -> clearFilters());
+    }
+
+    @NonNull
+    private Chip bindFilterChip(int id) {
+        Chip chip = findViewById(id);
+        mFilterChips.add(chip);
+        chip.setOnCheckedChangeListener((buttonView, isChecked) -> applyFilters());
+        return chip;
+    }
+
+    private void clearFilters() {
+        mFilterText.setText(null);
+        for (Chip chip : mFilterChips) {
+            chip.setChecked(false);
+        }
+        applyFilters();
+    }
+
+    private void applyFilters() {
+        if (mAdapter == null) {
+            return;
+        }
+        List<OpHistoryItem> filteredList = new ArrayList<>();
+        for (OpHistoryItem history : mCurrentOpHistories) {
+            if (matchesFilters(history)) {
+                filteredList.add(history);
+            }
+        }
+        mAdapter.setDefaultList(filteredList);
+        boolean hasActiveFilters = hasActiveFilters();
+        mChipClearFilters.setVisibility(hasActiveFilters ? View.VISIBLE : View.GONE);
+        if (mCurrentOpHistories.isEmpty() || !hasActiveFilters) {
+            mEmptyStateTitle.setText(R.string.op_history_empty_title);
+            mEmptyStateSummary.setText(R.string.op_history_empty_message);
+        } else {
+            mEmptyStateTitle.setText(R.string.op_history_empty_filtered_title);
+            mEmptyStateSummary.setText(R.string.op_history_empty_filtered_message);
+        }
+    }
+
+    private boolean hasActiveFilters() {
+        if (!TextUtils.isEmpty(getFilterQuery())) {
+            return true;
+        }
+        for (Chip chip : mFilterChips) {
+            if (chip.isChecked()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NonNull
+    private String getFilterQuery() {
+        Editable text = mFilterText.getText();
+        return text != null ? text.toString().trim() : "";
+    }
+
+    private boolean matchesFilters(@NonNull OpHistoryItem history) {
+        return matchesQuery(history)
+                && matchesStatus(history)
+                && matchesRisk(history)
+                && matchesType(history)
+                && matchesMode(history)
+                && matchesReversible(history)
+                && matchesDate(history);
+    }
+
+    private boolean matchesQuery(@NonNull OpHistoryItem history) {
+        String query = getFilterQuery();
+        return TextUtils.isEmpty(query) || history.matchesQuery(this, query);
+    }
+
+    private boolean matchesStatus(@NonNull OpHistoryItem history) {
+        boolean successChecked = mChipSucceeded.isChecked();
+        boolean failureChecked = mChipFailed.isChecked();
+        if (successChecked == failureChecked) {
+            return true;
+        }
+        return successChecked == history.getStatus();
+    }
+
+    private boolean matchesRisk(@NonNull OpHistoryItem history) {
+        boolean lowChecked = mChipLowRisk.isChecked();
+        boolean mediumChecked = mChipMediumRisk.isChecked();
+        boolean highChecked = mChipHighRisk.isChecked();
+        if (!lowChecked && !mediumChecked && !highChecked) {
+            return true;
+        }
+        int risk = history.getRisk();
+        return (lowChecked && risk == OperationJournalMetadata.RISK_LOW)
+                || (mediumChecked && risk == OperationJournalMetadata.RISK_MEDIUM)
+                || (highChecked && risk == OperationJournalMetadata.RISK_HIGH);
+    }
+
+    private boolean matchesType(@NonNull OpHistoryItem history) {
+        boolean batchChecked = mChipBatch.isChecked();
+        boolean installerChecked = mChipInstaller.isChecked();
+        boolean profilesChecked = mChipProfiles.isChecked();
+        if (!batchChecked && !installerChecked && !profilesChecked) {
+            return true;
+        }
+        String type = history.getType();
+        return (batchChecked && OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(type))
+                || (installerChecked && OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(type))
+                || (profilesChecked && OpHistoryManager.HISTORY_TYPE_PROFILE.equals(type));
+    }
+
+    private boolean matchesMode(@NonNull OpHistoryItem history) {
+        boolean rootChecked = mChipRoot.isChecked();
+        boolean adbChecked = mChipAdb.isChecked();
+        boolean noRootChecked = mChipNoRoot.isChecked();
+        if (!rootChecked && !adbChecked && !noRootChecked) {
+            return true;
+        }
+        String mode = history.getModeLabel();
+        return (rootChecked && getString(R.string.root).equalsIgnoreCase(mode))
+                || (adbChecked && getString(R.string.adb).equalsIgnoreCase(mode))
+                || (noRootChecked && getString(R.string.no_root).equalsIgnoreCase(mode));
+    }
+
+    private boolean matchesReversible(@NonNull OpHistoryItem history) {
+        return !mChipReversible.isChecked() || history.isReversible();
+    }
+
+    private boolean matchesDate(@NonNull OpHistoryItem history) {
+        if (!mChipLastDay.isChecked() && !mChipLastWeek.isChecked()) {
+            return true;
+        }
+        long age = System.currentTimeMillis() - history.getTimestamp();
+        if (mChipLastDay.isChecked()) {
+            return age <= ONE_DAY_MILLIS;
+        }
+        return age <= 7 * ONE_DAY_MILLIS;
     }
 
     private void showHistoryDetails(@NonNull OpHistoryItem history) {

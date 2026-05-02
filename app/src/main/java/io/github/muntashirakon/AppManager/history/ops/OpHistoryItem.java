@@ -13,6 +13,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
@@ -92,6 +93,29 @@ public class OpHistoryItem {
 
     public boolean isReplayable() {
         return metadata == null || metadata.isReplayable();
+    }
+
+    public boolean isReversible() {
+        return metadata != null && metadata.isReversible();
+    }
+
+    @OperationJournalMetadata.Risk
+    public int getRisk() {
+        return metadata != null ? metadata.getRisk() : OperationJournalMetadata.RISK_MEDIUM;
+    }
+
+    @NonNull
+    public String getModeLabel() {
+        return metadata != null ? metadata.getModeLabel() : "";
+    }
+
+    public boolean matchesQuery(@NonNull Context context, @NonNull String query) {
+        String normalizedQuery = query.toLowerCase(Locale.ROOT);
+        return containsQuery(getLocalizedType(context), normalizedQuery)
+                || containsQuery(getLabel(context), normalizedQuery)
+                || containsQuery(getMetadataSummary(context), normalizedQuery)
+                || containsQuery(jsonData.toString(), normalizedQuery)
+                || metadata != null && containsQuery(metadata.getSearchableText(), normalizedQuery);
     }
 
     @NonNull
@@ -177,5 +201,9 @@ public class OpHistoryItem {
             return context.getString(R.string.state_unknown);
         }
         return value;
+    }
+
+    private static boolean containsQuery(@Nullable CharSequence value, @NonNull String normalizedQuery) {
+        return value != null && value.toString().toLowerCase(Locale.ROOT).contains(normalizedQuery);
     }
 }

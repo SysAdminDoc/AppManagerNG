@@ -226,6 +226,11 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    public String getSearchableText() {
+        return mJsonObject.toString();
+    }
+
+    @NonNull
     public String getOperationLabel() {
         return mJsonObject.optString(KEY_OPERATION_LABEL, "");
     }

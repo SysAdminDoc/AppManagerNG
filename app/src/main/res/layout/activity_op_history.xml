@@ -27,6 +27,171 @@
             android:layout_height="wrap_content"
             android:indeterminate="true" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/history_filter_container"
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_very_small"
+            android:hint="@string/op_history_filter_hint"
+            app:endIconMode="clear_text"
+            app:startIconDrawable="@drawable/ic_filter_list">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/history_filter_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionSearch"
+                android:inputType="textNoSuggestions"
+                android:maxLines="1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/history_filter_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:paddingHorizontal="@dimen/padding_small"
+            android:paddingTop="@dimen/padding_very_small"
+            android:paddingBottom="@dimen/padding_small"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/history_filter_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipSpacingHorizontal="@dimen/padding_very_small"
+                app:singleLine="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_clear_filters"
+                    style="@style/Widget.AppTheme.Chip.MainSuggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/clear_filters"
+                    android:visibility="gone"
+                    app:closeIconVisible="true"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_succeeded"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_status_success" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_failed"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_status_failure" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_high_risk"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_risk_high" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_medium_risk"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_risk_medium" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_low_risk"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_risk_low" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_batch"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/batch_ops" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_installer"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/installer" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_profiles"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/profiles" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_root"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/root" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_adb"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/adb" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_no_root"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/no_root" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_reversible"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_detail_reversible" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_last_day"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_filter_last_24h" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_last_week"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_filter_last_7d" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
     </io.github.muntashirakon.widget.AppBarLayout>
 
     <FrameLayout
