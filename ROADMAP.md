@@ -106,7 +106,7 @@ These are `FIXME` / security issues identified in source that should not wait fo
 | ~~**Opt-In Crash Reporting**~~ ✅ v0.3.0 | On uncaught exception: write crash log to app-private storage + show "Share crash report" dialog that deep-links to GitHub Issues. Zero network egress without explicit user action. | Low |
 | ~~**In-App Diagnostic Dump**~~ ✅ v0.3.0 | Export logcat (filtered to AM process) + app state snapshot as shareable ZIP for bug reports | Low |
 | ~~**CodeQL Alert Triage**~~ ✅ v0.3.0 | Audit all open CodeQL alerts (`.github/workflows/codeql.yml` already present); ensure zero blanket suppressions | Low |
-| **ProfilingManager OOM/Anomaly Triggers** | Android 17 adds `TRIGGER_TYPE_OOM`, `TRIGGER_TYPE_COLD_START`, and `TRIGGER_TYPE_ANOMALY` to `ProfilingManager` ([S53]). On API 37+, register these triggers to auto-capture heap profiles when NG is killed during JADX decompile or APK parsing; attach the profile to the existing shareable diagnostic ZIP. `Build.VERSION.SDK_INT >= 37` guard; graceful no-op below. | Low |
+| ~~**ProfilingManager OOM/Anomaly Triggers**~~ ✅ 2026-05-02 (registration) | New `ProfilingTriggerHelper.registerTriggersIfSupported(Context)` (`misc/`) registers `TRIGGER_TYPE_OOM` + `TRIGGER_TYPE_ANOMALY` via reflection on API 37+; silent no-op below or on any reflective-lookup failure (compileSdk is still 36). Wired from `AppManager.onCreate()`. Listener-side wiring to harvest the resulting profile artifacts and attach them to the diagnostic ZIP is deferred until API 37 is on a real device for end-to-end test. | Low |
 
 ---
 
