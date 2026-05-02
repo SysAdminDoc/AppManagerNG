@@ -1,0 +1,270 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AppTheme.V2.Card.ListRow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
+    android:layout_marginVertical="@dimen/premium_main_list_margin_vertical"
+    android:checkable="true"
+    android:clickable="true"
+    android:focusable="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:minHeight="@dimen/main_list_min_height"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/premium_main_list_padding_horizontal"
+        android:paddingVertical="@dimen/premium_main_list_padding_vertical">
+
+        <FrameLayout
+            android:layout_width="@dimen/premium_main_icon_frame"
+            android:layout_height="@dimen/premium_main_icon_frame"
+            android:layout_marginEnd="@dimen/premium_space_12">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon"
+                android:layout_width="@dimen/main_list_icon_size"
+                android:layout_height="@dimen/main_list_icon_size"
+                android:layout_gravity="center"
+                android:contentDescription="@string/str_logo"
+                tools:srcCompat="@mipmap/ic_launcher_round" />
+
+        </FrameLayout>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="@dimen/premium_zero"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:paddingEnd="@dimen/premium_space_32"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.TitleMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:ignore="RtlSymmetry"
+                    tools:text="@string/app_name" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/favorite_icon"
+                    android:layout_width="@dimen/premium_favorite_hit_size"
+                    android:layout_height="@dimen/premium_favorite_hit_size"
+                    android:layout_gravity="end|top"
+                    android:contentDescription="@string/main_list_debuggable_indicator"
+                    android:padding="@dimen/premium_space_4"
+                    android:src="@drawable/item_favorite" />
+
+            </FrameLayout>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/packageName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="io.github.muntashirakon.AppManager" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/status_badge_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/backup_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/premium_space_4"
+                    android:background="@drawable/badge_background"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minWidth="@dimen/premium_badge_min_width"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:text="@string/backup"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tracker_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/premium_space_4"
+                    android:background="@drawable/badge_background"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minWidth="@dimen/premium_badge_min_width"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
+                    android:visibility="gone"
+                    tools:text="3"
+                    tools:visibility="visible" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/perm_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/badge_background"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minWidth="@dimen/premium_badge_min_width"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
+                    android:visibility="gone"
+                    tools:text="3/8"
+                    tools:visibility="visible" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/date"
+                    android:layout_width="@dimen/premium_zero"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="@tools:sample/date/mmddyy" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/shareid"
+                    android:layout_width="@dimen/premium_zero"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/premium_space_8"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:gravity="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="@tools:sample/us_zipcodes" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/version"
+                    android:layout_width="@dimen/premium_zero"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="v3.0.0" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/isSystem"
+                    android:layout_width="@dimen/premium_zero"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/premium_space_8"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="User" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/size"
+                    android:layout_width="@dimen/premium_zero"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/premium_space_8"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="SDK 30" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/sha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="SHA256withRSA" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/issuer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:ignore="SmallSp"
+                tools:text="CN=Android,OU=Android" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/backup_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:ignore="SmallSp"
+                tools:text="@tools:sample/lorem[6]" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/backup_info_ext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:ignore="SmallSp"
+                tools:text="APK+Data" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>
