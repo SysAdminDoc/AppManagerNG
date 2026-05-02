@@ -149,7 +149,13 @@ public class VirusTotal {
                 CpuUtils.releaseWakeLock(wakeLock);
             }
         }
-        int waitDuration = 60_000;
+        // Initial wait scales with file size — VT engines need proportionally
+        // longer to process larger APKs, so polling earlier just burns rate-limit
+        // quota. Floor: 60 s for files ≤10 MB. Ceiling: 240 s. Roughly +1 s per
+        // MB beyond the 10 MB threshold (so 100 MB ≈ 150 s, 200 MB clamps to
+        // 240 s, 600 MB also 240 s).
+        long firstWaitMs = computeInitialPollWait(file.length());
+        long waitDuration = firstWaitMs;
         while (queued || responseReport.shouldRetry()) {
             if (waitFirst) {
                 // Effectively makes it a do-while loop
@@ -158,17 +164,34 @@ public class VirusTotal {
                 responseReport = fetchFileReport(checksum);
                 queued = responseReport.response != null && !responseReport.response.hasReport();
             }
-            // Wait for result: First wait for 1 minute, then for 30 seconds
-            // We won't do it less than 30 seconds since the API has a limit of 4 request/minute
             SystemClock.sleep(waitDuration);
-            // TODO: 23/5/22 Wait duration should be according to the fileSize
-            waitDuration = 30_000;
+            // 30 s is the lowest poll interval the free API tolerates
+            // (4 requests / minute rate limit).
+            waitDuration = 30_000L;
         }
         if (responseReport.response != null) {
             response.onReportReceived(responseReport.response);
         } else {
             throw new IOException("Scan error: " + responseReport.error);
         }
+    }
+
+    /**
+     * First-poll wait scaled to the upload size. Ramps roughly +1 s per MB
+     * above a 10 MB threshold, clamped to [60 s, 240 s]. Subsequent polls
+     * stay at the API rate-limit floor of 30 s; only the *initial* wait
+     * benefits from the file-size hint.
+     */
+    static long computeInitialPollWait(long fileSize) {
+        final long baseMs = 60_000L;
+        final long maxMs = 240_000L;
+        final long thresholdBytes = 10L * 1024L * 1024L;
+        if (fileSize <= thresholdBytes) {
+            return baseMs;
+        }
+        // (fileSize − 10 MB) / 1 KB ≈ 1 ms per KB ≈ 1 s per MB.
+        long extraMs = (fileSize - thresholdBytes) / 1024L;
+        return Math.min(maxMs, baseMs + extraMs);
     }
 
     @WorkerThread
