@@ -13,12 +13,13 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/empty_state_icon"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="@dimen/main_empty_icon_container_size"
+        android:layout_height="@dimen/main_empty_icon_container_size"
         android:alpha="0.86"
         android:background="@drawable/main_empty_icon_background"
         android:contentDescription="@null"
-        android:padding="@dimen/padding_large"
+        android:importantForAccessibility="no"
+        android:padding="@dimen/main_empty_icon_padding"
         android:src="@drawable/ic_information_circle"
         app:tint="?attr/colorOnSecondaryContainer" />
 
@@ -38,7 +39,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/padding_small"
         android:gravity="center"
-        android:maxWidth="360dp"
+        android:maxWidth="@dimen/main_empty_summary_max_width"
         android:text="@string/app_details_empty_message_no_items"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant" />

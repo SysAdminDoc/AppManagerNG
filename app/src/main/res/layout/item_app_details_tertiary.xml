@@ -31,7 +31,7 @@
             android:id="@+id/reqfea"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
             tools:text="@tools:sample/lorem" />
@@ -40,7 +40,7 @@
             android:id="@+id/reqkey"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
             tools:text="@tools:sample/lorem" />
@@ -49,7 +49,7 @@
             android:id="@+id/reqnav"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
             tools:text="@tools:sample/lorem" />
@@ -58,7 +58,7 @@
             android:id="@+id/reqtouch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
             tools:text="@tools:sample/lorem" />

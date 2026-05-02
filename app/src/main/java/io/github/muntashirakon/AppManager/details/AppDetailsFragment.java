@@ -170,6 +170,10 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
         setEmptyStateText(getText(titleRes));
     }
 
+    protected void setEmptyState(@StringRes int titleRes, @StringRes int summaryRes, boolean refreshEnabled) {
+        setEmptyState(getText(titleRes), getText(summaryRes), refreshEnabled);
+    }
+
     protected void setEmptyStateText(@NonNull CharSequence title) {
         setEmptyState(title, null, true);
     }

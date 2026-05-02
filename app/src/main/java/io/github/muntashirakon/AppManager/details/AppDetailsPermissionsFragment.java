@@ -93,7 +93,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        setEmptyStateText(getNotFoundString(mNeededProperty));
+        configureEmptyState();
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
         alertView.setEndIconOnClickListener(v -> {
@@ -124,6 +124,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mPackageName = viewModel.getPackageName();
                 mIsExternalApk = viewModel.isExternalApk();
+                configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
             } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
         });
@@ -335,9 +336,36 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     return R.string.no_app_ops;
                 } else return R.string.no_app_ops_permission;
             case USES_PERMISSIONS:
+                return R.string.app_details_no_requested_permissions;
             case PERMISSIONS:
             default:
-                return R.string.require_no_permission;
+                return R.string.app_details_no_defined_permissions;
+        }
+    }
+
+    private void configureEmptyState() {
+        boolean refreshEnabled = !mIsExternalApk;
+        if (mNeededProperty == APP_OPS) {
+            refreshEnabled = !mIsExternalApk
+                    && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.GET_APP_OPS_STATS);
+        }
+        setEmptyState(getNotFoundString(mNeededProperty), getEmptySummaryString(mNeededProperty), refreshEnabled);
+    }
+
+    private int getEmptySummaryString(@PermissionProperty int index) {
+        switch (index) {
+            case APP_OPS:
+                if (mIsExternalApk) {
+                    return R.string.app_details_empty_message_external_apk_app_ops;
+                } else if (!SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.GET_APP_OPS_STATS)) {
+                    return R.string.app_details_empty_message_app_ops_permission;
+                }
+                return R.string.app_details_empty_message_no_app_ops;
+            case USES_PERMISSIONS:
+                return R.string.app_details_empty_message_no_requested_permissions;
+            case PERMISSIONS:
+            default:
+                return R.string.app_details_empty_message_no_defined_permissions;
         }
     }
 

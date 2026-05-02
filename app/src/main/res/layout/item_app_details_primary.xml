@@ -15,9 +15,12 @@
         android:id="@+id/type"
         style="@style/Widget.AppTheme.CardView.Outlined.DiagonallyRounded"
         android:layout_width="wrap_content"
-        android:layout_height="12dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="end"
-        android:textSize="@dimen/font_size_smaller"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:minHeight="@dimen/premium_badge_min_height"
+        android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
         android:textAllCaps="true"
         tools:text="Type" />
 
@@ -52,8 +55,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
+                    android:ellipsize="end"
                     android:gravity="center"
-                    android:singleLine="true"
+                    android:maxLines="1"
                     android:textIsSelectable="true"
                     android:textAppearance="?android:attr/textAppearanceListItem"
                     tools:text="@tools:sample/lorem" />
@@ -64,9 +68,7 @@
                     android:layout_height="wrap_content"
                     android:textIsSelectable="true"
                     android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textSize="10sp"
-                    tools:text="@tools:sample/lorem"
-                    tools:ignore="SmallSp" />
+                    tools:text="@tools:sample/lorem" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -94,22 +96,18 @@
                 android:layout_weight="1"
                 android:textIsSelectable="true"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textSize="9sp"
-                tools:text="@tools:sample/lorem"
-                tools:ignore="SmallSp" />
+                tools:text="@tools:sample/lorem" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/method"
                 android:layout_width="52dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textSize="9sp"
-                android:singleLine="true"
+                android:maxLines="1"
                 android:textAlignment="center"
                 android:visibility="gone"
                 tools:visibility="visible"
-                tools:text="IFW+D"
-                tools:ignore="SmallSp" />
+                tools:text="IFW+D" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -119,9 +117,7 @@
             android:layout_height="wrap_content"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textSize="11sp"
-            tools:text="@tools:sample/lorem"
-            tools:ignore="SmallSp" />
+            tools:text="@tools:sample/lorem" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/process_name"
@@ -129,10 +125,8 @@
             android:layout_height="wrap_content"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textSize="9sp"
             android:visibility="gone"
-            tools:text="@tools:sample/lorem"
-            tools:ignore="SmallSp" />
+            tools:text="@tools:sample/lorem" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/taskAffinity"
@@ -165,10 +159,11 @@
                 android:layout_marginHorizontal="@dimen/padding_small"
                 android:layout_marginVertical="@dimen/padding_very_small"
                 android:layout_weight="1"
-                android:singleLine="true"
-                android:textSize="11sp"
                 android:text="@string/launch"
-                tools:ignore="SmallSp" />
+                android:maxLines="1"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart"
+                app:iconPadding="@dimen/padding_very_small" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/edit_shortcut_btn"
@@ -178,10 +173,11 @@
                 android:layout_marginHorizontal="@dimen/padding_small"
                 android:layout_marginVertical="@dimen/padding_very_small"
                 android:layout_weight="1"
-                android:singleLine="true"
-                android:textSize="11sp"
                 android:text="@string/create_shortcut"
-                tools:ignore="SmallSp" />
+                android:maxLines="1"
+                app:icon="@drawable/ic_shortcut_record"
+                app:iconGravity="textStart"
+                app:iconPadding="@dimen/padding_very_small" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
     </androidx.appcompat.widget.LinearLayoutCompat>

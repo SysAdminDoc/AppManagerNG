@@ -105,7 +105,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        setEmptyStateText(getNotFoundString(mNeededProperty));
+        configureEmptyState();
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
         alertView.setEndIconOnClickListener(v -> alertView.hide());
@@ -121,6 +121,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mPackageName = viewModel.getPackageName();
                 mIsExternalApk = viewModel.isExternalApk();
+                configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
                 refreshTabTrackerBlockButton(appDetailsItems);
             } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
@@ -176,7 +177,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         } else if (id == R.id.action_block_unblock_trackers) {  // Components
             new MaterialAlertDialogBuilder(activity)
                     .setTitle(R.string.block_unblock_trackers)
-                    .setMessage(R.string.choose_what_to_do)
+                    .setMessage(R.string.app_details_tracker_dialog_message)
                     .setPositiveButton(R.string.block, (dialog, which) -> blockUnblockTrackers(true))
                     .setNegativeButton(R.string.cancel, null)
                     .setNeutralButton(R.string.unblock, (dialog, which) -> blockUnblockTrackers(false))
@@ -276,6 +277,10 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         });
     }
 
+    private void configureEmptyState() {
+        setEmptyState(getNotFoundString(mNeededProperty), getEmptySummaryString(mNeededProperty), !mIsExternalApk);
+    }
+
     private int getNotFoundString(@ComponentProperty int index) {
         switch (index) {
             case SERVICES:
@@ -287,6 +292,20 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             case ACTIVITIES:
             default:
                 return R.string.no_activities;
+        }
+    }
+
+    private int getEmptySummaryString(@ComponentProperty int index) {
+        switch (index) {
+            case SERVICES:
+                return R.string.app_details_empty_message_no_services;
+            case RECEIVERS:
+                return R.string.app_details_empty_message_no_receivers;
+            case PROVIDERS:
+                return R.string.app_details_empty_message_no_providers;
+            case ACTIVITIES:
+            default:
+                return R.string.app_details_empty_message_no_activities;
         }
     }
 
@@ -359,6 +378,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             default:        labelRes = R.plurals.tracker_block_in_tab_activities; break;
         }
         mTrackerBlockInTabButton.setText(getResources().getQuantityString(labelRes, count, count));
+        mTrackerBlockInTabButton.setContentDescription(mTrackerBlockInTabButton.getText());
+        mTrackerBlockInTabButton.setEnabled(true);
         mTrackerBlockInTabButton.setVisibility(View.VISIBLE);
         mTrackerBlockInTabButton.setOnClickListener(v -> {
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);

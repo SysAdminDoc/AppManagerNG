@@ -29,12 +29,17 @@
                  there's no layout impact. -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/tracker_block_in_tab"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.AppTheme.Button.FilledTonalButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/padding_medium"
                 android:layout_marginTop="@dimen/padding_small"
+                android:minHeight="@dimen/premium_button_min_height"
+                android:textAlignment="center"
                 android:visibility="gone"
+                app:icon="@drawable/ic_cctv_off"
+                app:iconGravity="textStart"
+                app:iconPadding="@dimen/padding_small"
                 tools:visibility="visible"
                 tools:text="Block 12 trackers in Activities" />
 
