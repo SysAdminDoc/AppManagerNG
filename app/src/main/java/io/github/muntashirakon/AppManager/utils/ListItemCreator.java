@@ -54,7 +54,7 @@ public class ListItemCreator {
                                               @Nullable CharSequence subtitle,
                                               @DrawableRes int resIdIcon) {
         listItem = mLayoutInflater.inflate(io.github.muntashirakon.ui.R.layout.m3_preference, mListContainer, false);
-        listItem.findViewById(R.id.icon_frame).setVisibility(View.GONE);
+        View iconFrame = listItem.findViewById(R.id.icon_frame);
         // Item title
         itemTitle = listItem.findViewById(android.R.id.title);
         itemTitle.setText(title);
@@ -64,8 +64,15 @@ public class ListItemCreator {
         else itemSubtitle.setVisibility(View.GONE);
         // Item icon
         itemIcon = listItem.findViewById(android.R.id.icon);
-        if (resIdIcon != EMPTY) itemIcon.setImageResource(resIdIcon);
-        else itemIcon.setVisibility(View.GONE);
+        if (resIdIcon != EMPTY) {
+            iconFrame.setVisibility(View.VISIBLE);
+            itemIcon.setImageResource(resIdIcon);
+            itemIcon.setContentDescription(null);
+            itemIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        } else {
+            iconFrame.setVisibility(View.GONE);
+            itemIcon.setVisibility(View.GONE);
+        }
         // Add new menu to the container
         mListContainer.addView(listItem);
         return listItem;
