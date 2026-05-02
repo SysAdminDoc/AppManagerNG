@@ -486,6 +486,7 @@
     <string name="select_all">Select all</string>
     <string name="installed_version">Installed version</string>
     <string name="trackers">Trackers</string>
+    <string name="sort_by_dangerous_perms">Dangerous permissions</string>
     <string name="components">Components</string>
     <string name="features">Features</string>
     <string name="whats_new">What\'s new</string>

@@ -59,6 +59,7 @@ public class MainListOptions extends ListOptions {
             SORT_BY_OPEN_COUNT,
             SORT_BY_SCREEN_TIME,
             SORT_BY_LAST_USAGE_TIME,
+            SORT_BY_DANGEROUS_PERMS,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface SortOrder {
@@ -82,6 +83,7 @@ public class MainListOptions extends ListOptions {
     public static final int SORT_BY_OPEN_COUNT = 15;
     public static final int SORT_BY_SCREEN_TIME = 16;
     public static final int SORT_BY_LAST_USAGE_TIME = 17;
+    public static final int SORT_BY_DANGEROUS_PERMS = 18;
 
     @IntDef(flag = true, value = {
             FILTER_NO_FILTER,
@@ -319,6 +321,7 @@ public class MainListOptions extends ListOptions {
             put(SORT_BY_BLOCKED_COMPONENTS, R.string.sort_by_blocked_components);
             put(SORT_BY_BACKUP, R.string.sort_by_backup);
             put(SORT_BY_TRACKERS, R.string.trackers);
+            put(SORT_BY_DANGEROUS_PERMS, R.string.sort_by_dangerous_perms);
             put(SORT_BY_LAST_ACTION, R.string.last_actions);
             put(SORT_BY_INSTALLATION_DATE, R.string.sort_by_installation_date);
             if (FeatureController.isUsageAccessEnabled()) {
