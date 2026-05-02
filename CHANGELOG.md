@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Appearance: Preview new design (BETA) toggle (premium polish v0.4.x foundation)
+- New Settings → Appearance → "Preview new design (BETA)" switch
+  (default OFF, key `PREF_PREMIUM_PREVIEW_BOOL`). When enabled the
+  app inflates the v2 design system: a refined teal-leaning palette
+  with crisper contrast tiers, tightened typography (no letter-
+  spacing hangs on titles), pill-shaped FABs and search surfaces,
+  and outlined card variants that respect the layered surface
+  hierarchy. Pure-black mode routes to `AppTheme.V2.Amoled` so the
+  premium look composes with the existing AMOLED preference.
+  Layouts and widget IDs are intentionally untouched in this
+  release; only the theme/token plane changes. Restart applies.
+  Resources copied verbatim from `design/impl/values/{themes,colors,
+  dimens}-v2.xml`; rollout plan: `design/plan/3-rollout.md`.
+
 ### Added — Backup: Android 14+ "Keep device awake" warning toast (ROADMAP iter-18 item closed)
 - When a backup operation begins on Android 14+ (`SDK_INT >=
   UPSIDE_DOWN_CAKE`), NG now displays a long Toast asking the user

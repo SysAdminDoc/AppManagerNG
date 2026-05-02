@@ -154,6 +154,7 @@ public class AppPref {
 
         PREF_USE_SYSTEM_FONT_BOOL,
         PREF_ZIP_ALIGN_BOOL,
+        PREF_PREMIUM_PREVIEW_BOOL,
         ;
 
         private static final String[] sKeys = new String[values().length];
@@ -407,6 +408,7 @@ public class AppPref {
             case PREF_FM_SORT_REVERSE_BOOL:
             case PREF_ENABLE_PERSISTENT_SESSION_BOOL:
             case PREF_USE_SYSTEM_FONT_BOOL:
+            case PREF_PREMIUM_PREVIEW_BOOL:
                 return false;
             case PREF_APP_OP_SHOW_DEFAULT_BOOL:
             case PREF_SHOW_DISCLAIMER_BOOL:

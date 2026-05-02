@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <style name="AppTheme.V2" parent="AppTheme">
+        <item name="android:colorBackground">@color/premium_surface_0_light</item>
+        <item name="colorPrimary">@color/premium_brand_600</item>
+        <item name="colorOnPrimary">@color/premium_surface_1_light</item>
+        <item name="colorPrimaryContainer">@color/premium_brand_100</item>
+        <item name="colorOnPrimaryContainer">@color/premium_brand_950</item>
+        <item name="colorSecondary">@color/premium_brand_700</item>
+        <item name="colorOnSecondary">@color/premium_surface_1_light</item>
+        <item name="colorSecondaryContainer">@color/premium_surface_2_light</item>
+        <item name="colorOnSecondaryContainer">@color/premium_text_high_light</item>
+        <item name="colorTertiary">@color/premium_info_content_light</item>
+        <item name="colorOnTertiary">@color/premium_surface_1_light</item>
+        <item name="colorTertiaryContainer">@color/premium_info_bg_light</item>
+        <item name="colorOnTertiaryContainer">@color/premium_info_content_light</item>
+        <item name="colorError">@color/premium_danger_content_light</item>
+        <item name="colorOnError">@color/premium_surface_1_light</item>
+        <item name="colorErrorContainer">@color/premium_danger_bg_light</item>
+        <item name="colorOnErrorContainer">@color/premium_danger_content_light</item>
+        <item name="colorSurface">@color/premium_surface_0_light</item>
+        <item name="colorOnSurface">@color/premium_text_high_light</item>
+        <item name="colorSurfaceVariant">@color/premium_surface_2_light</item>
+        <item name="colorOnSurfaceVariant">@color/premium_text_medium_light</item>
+        <item name="colorSurfaceContainer">@color/premium_surface_1_light</item>
+        <item name="colorSurfaceContainerHigh">@color/premium_surface_2_light</item>
+        <item name="colorSurfaceContainerHighest">@color/premium_surface_3_light</item>
+        <item name="colorOutline">@color/premium_outline_muted_light</item>
+        <item name="colorOutlineVariant">@color/premium_outline_hairline_light</item>
+
+        <item name="toolbarStyle">@style/Widget.AppTheme.V2.Toolbar</item>
+        <item name="materialCardViewStyle">@style/Widget.AppTheme.V2.Card</item>
+        <item name="chipStyle">@style/Widget.AppTheme.V2.Chip.Assist</item>
+        <item name="chipGroupStyle">@style/Widget.AppTheme.V2.ChipGroup</item>
+        <item name="floatingActionButtonStyle">@style/Widget.AppTheme.V2.Button.FAB</item>
+        <item name="searchViewStyle">@style/Widget.AppTheme.V2.SearchView</item>
+
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
+        <item name="android:textAppearanceListItem">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
+        <item name="android:textAppearanceListItemSecondary">@style/TextAppearance.AppTheme.V2.BodyMedium.Secondary</item>
+        <item name="listItemMarginVertical">@dimen/premium_main_list_margin_vertical</item>
+        <item name="listItemMarginHorizontal">@dimen/padding_small</item>
+        <item name="listItemPaddingVertical">@dimen/premium_main_list_padding_vertical</item>
+        <item name="listItemPaddingHorizontal">@dimen/premium_main_list_padding_horizontal</item>
+        <item name="listItemCornerRadius">@dimen/premium_radius_card</item>
+        <item name="listItemIndicatorWidth">@dimen/premium_space_8</item>
+    </style>
+
+    <style name="AppTheme.V2.Dark" parent="AppTheme.V2">
+        <item name="android:colorBackground">@color/premium_surface_0_dark</item>
+        <item name="colorPrimary">@color/premium_brand_300</item>
+        <item name="colorOnPrimary">@color/premium_brand_950</item>
+        <item name="colorPrimaryContainer">@color/premium_brand_900</item>
+        <item name="colorOnPrimaryContainer">@color/premium_brand_100</item>
+        <item name="colorSecondary">@color/premium_brand_200</item>
+        <item name="colorOnSecondary">@color/premium_brand_950</item>
+        <item name="colorSecondaryContainer">@color/premium_surface_2_dark</item>
+        <item name="colorOnSecondaryContainer">@color/premium_text_high_dark</item>
+        <item name="colorTertiary">@color/premium_info_content_dark</item>
+        <item name="colorOnTertiary">@color/premium_surface_0_dark</item>
+        <item name="colorTertiaryContainer">@color/premium_info_bg_dark</item>
+        <item name="colorOnTertiaryContainer">@color/premium_info_content_dark</item>
+        <item name="colorError">@color/premium_danger_content_dark</item>
+        <item name="colorOnError">@color/premium_surface_0_dark</item>
+        <item name="colorErrorContainer">@color/premium_danger_bg_dark</item>
+        <item name="colorOnErrorContainer">@color/premium_danger_content_dark</item>
+        <item name="colorSurface">@color/premium_surface_0_dark</item>
+        <item name="colorOnSurface">@color/premium_text_high_dark</item>
+        <item name="colorSurfaceVariant">@color/premium_surface_2_dark</item>
+        <item name="colorOnSurfaceVariant">@color/premium_text_medium_dark</item>
+        <item name="colorSurfaceContainer">@color/premium_surface_1_dark</item>
+        <item name="colorSurfaceContainerHigh">@color/premium_surface_2_dark</item>
+        <item name="colorSurfaceContainerHighest">@color/premium_surface_3_dark</item>
+        <item name="colorOutline">@color/premium_outline_muted_dark</item>
+        <item name="colorOutlineVariant">@color/premium_outline_hairline_dark</item>
+    </style>
+
+    <style name="AppTheme.V2.Amoled" parent="AppTheme.V2.Dark">
+        <item name="android:colorBackground">@color/premium_surface_0_amoled</item>
+        <item name="colorSurface">@color/premium_surface_0_amoled</item>
+        <item name="colorSurfaceVariant">@color/premium_surface_2_amoled</item>
+        <item name="colorSurfaceContainer">@color/premium_surface_1_amoled</item>
+        <item name="colorSurfaceContainerHigh">@color/premium_surface_2_amoled</item>
+        <item name="colorSurfaceContainerHighest">@color/premium_surface_3_amoled</item>
+        <item name="colorOutline">@color/premium_outline_muted_amoled</item>
+        <item name="colorOutlineVariant">@color/premium_outline_hairline_amoled</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">?attr/colorSurface</item>
+        <item name="titleTextAppearance">@style/TextAppearance.AppTheme.V2.TitleLarge</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.AppTheme.V2.BodyMedium</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">@dimen/premium_radius_card</item>
+        <item name="cardElevation">@dimen/premium_elevation_1</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Card.ListRow" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardCornerRadius">@dimen/premium_radius_card</item>
+        <item name="cardElevation">@dimen/premium_elevation_1</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+        <item name="strokeColor">?attr/colorOutlineVariant</item>
+        <item name="strokeWidth">@dimen/premium_stroke_hairline</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Card.Header" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">@dimen/premium_radius_modal</item>
+        <item name="cardElevation">@dimen/premium_elevation_2</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.SearchBarCard" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">@dimen/premium_radius_pill</item>
+        <item name="cardElevation">@dimen/premium_elevation_1</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.ChipGroup" parent="Widget.Material3.ChipGroup" />
+
+    <style name="Widget.AppTheme.V2.ChipGroup.Filter" parent="Widget.Material3.ChipGroup">
+        <item name="chipStyle">@style/Widget.AppTheme.V2.Chip.Filter</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Chip.Assist" parent="Widget.Material3.Chip.Assist">
+        <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
+        <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Chip.Filter" parent="Widget.Material3.Chip.Filter">
+        <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
+        <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Chip.Suggestion" parent="Widget.Material3.Chip.Suggestion.Elevated">
+        <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
+        <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.SearchView" parent="Widget.AppTheme.SearchView">
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.BodyLarge</item>
+        <item name="frameMarginHorizontal">@dimen/premium_space_12</item>
+        <item name="android:backgroundTint">?attr/colorSurfaceContainerHigh</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Button.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="elevation">@dimen/premium_elevation_3</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Button.EFAB" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
+        <item name="elevation">@dimen/premium_elevation_3</item>
+        <item name="android:minHeight">@dimen/premium_button_min_height</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.BottomSheet.Content" parent="android:Widget">
+        <item name="android:background">?attr/colorSurfaceContainerHighest</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Dialog.Content" parent="android:Widget">
+        <item name="android:background">?attr/colorSurfaceContainerHighest</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.EmptyState" parent="android:Widget">
+        <item name="android:background">?attr/colorSurface</item>
+    </style>
+
+    <style name="Widget.AppTheme.V2.Skeleton" parent="android:Widget">
+        <item name="android:background">?attr/colorSurfaceContainer</item>
+    </style>
+
+    <style name="ShapeAppearance.AppTheme.V2.Pill" parent="">
+        <item name="cornerSize">@dimen/premium_radius_pill</item>
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="ShapeAppearance.AppTheme.V2.Card" parent="">
+        <item name="cornerSize">@dimen/premium_radius_card</item>
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">@dimen/premium_type_title_large</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">@dimen/premium_type_title_medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">@dimen/premium_type_body_large</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">@dimen/premium_type_body_medium</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.BodyMedium.Secondary" parent="TextAppearance.AppTheme.V2.BodyMedium">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textSize">@dimen/premium_type_body_small</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">@dimen/premium_type_label_medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">@dimen/premium_type_label_small</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+</resources>

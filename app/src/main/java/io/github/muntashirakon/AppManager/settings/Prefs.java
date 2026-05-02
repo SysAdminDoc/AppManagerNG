@@ -126,22 +126,39 @@ public final class Prefs {
 
         @StyleRes
         public static int getAppTheme() {
+            boolean preview = AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL);
             switch (AppPref.getInt(AppPref.PrefKey.PREF_APP_THEME_CUSTOM_INT)) {
                 case 1: // Full black theme
+                    if (preview) {
+                        return io.github.muntashirakon.AppManager.R.style.AppTheme_V2_Amoled;
+                    }
                     return io.github.muntashirakon.ui.R.style.AppTheme_Black;
                 default: // Normal theme
+                    if (preview) {
+                        return io.github.muntashirakon.AppManager.R.style.AppTheme_V2;
+                    }
                     return io.github.muntashirakon.ui.R.style.AppTheme;
             }
         }
 
         @StyleRes
         public static int getTransparentAppTheme() {
+            // V2 preview keeps the classic transparent variants; transparent surfaces are
+            // intentionally out of v0.4.x foundation scope (see design/plan/3-rollout.md).
             switch (AppPref.getInt(AppPref.PrefKey.PREF_APP_THEME_CUSTOM_INT)) {
                 case 1: // Full black theme
                     return io.github.muntashirakon.ui.R.style.AppTheme_TransparentBackground_Black;
                 default: // Normal theme
                     return io.github.muntashirakon.ui.R.style.AppTheme_TransparentBackground;
             }
+        }
+
+        public static boolean isPremiumPreviewEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL);
+        }
+
+        public static void setPremiumPreviewEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL, enabled);
         }
 
         public static boolean isPureBlackTheme() {

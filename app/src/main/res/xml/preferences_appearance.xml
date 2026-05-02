@@ -14,6 +14,12 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
+        app:key="premium_preview"
+        app:title="@string/pref_preview_new_design"
+        app:summary="@string/pref_preview_new_design_msg"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
         app:key="use_system_font"
         app:title="@string/pref_use_system_font"
         app:summary="@string/pref_use_system_font_msg"

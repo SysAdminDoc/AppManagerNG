@@ -1700,6 +1700,8 @@
     <string name="tag_sensors_disabled">Sensors disabled</string>
     <string name="pref_use_system_font">Use system font</string>
     <string name="pref_use_system_font_msg">Use the system-default font instead of the material font. <font fgcolor="#ff0000">This is an experimental feature.</font></string>
+    <string name="pref_preview_new_design">Preview new design (BETA)</string>
+    <string name="pref_preview_new_design_msg">Apply the refreshed visual language: refined typography, calmer surfaces, tighter spacing and pill-shaped controls. Restart the app after toggling. Layouts are unchanged in this release.</string>
     <string name="actual_installer">Actual installer</string>
     <string name="apk_source">APK source</string>
     <string name="backup_cache">Cache</string>
