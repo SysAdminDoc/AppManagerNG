@@ -46,6 +46,11 @@
         android:title="@string/profiles" />
 
     <item
+        android:id="@+id/action_op_history"
+        android:icon="@drawable/ic_history"
+        android:title="@string/op_history" />
+
+    <item
         android:id="@+id/action_apk_updater"
         android:icon="@drawable/ic_sync"
         android:title="@string/apk_updater" />

@@ -90,6 +90,10 @@ public class OpHistoryItem {
         return opHistory.status.equals(OpHistoryManager.STATUS_SUCCESS);
     }
 
+    public boolean isReplayable() {
+        return metadata == null || metadata.isReplayable();
+    }
+
     @NonNull
     public String getMetadataSummary(@NonNull Context context) {
         if (metadata == null) {
@@ -147,6 +151,13 @@ public class OpHistoryItem {
             appendLine(context, detail, R.string.op_history_detail_failure_message, failureMessage);
         }
         return detail.toString();
+    }
+
+    @NonNull
+    public String getExecutionConfirmationMessage(@NonNull Context context) {
+        return context.getString(R.string.op_history_execute_confirmation)
+                + "\n\n"
+                + getDetailMessage(context);
     }
 
     private static void appendLine(@NonNull Context context,
