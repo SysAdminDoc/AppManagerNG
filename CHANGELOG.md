@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Backup: Android 14+ "Keep device awake" warning toast (ROADMAP iter-18 item closed)
+- When a backup operation begins on Android 14+ (`SDK_INT >=
+  UPSIDE_DOWN_CAKE`), NG now displays a long Toast asking the user
+  to keep the device awake and AppManager open until the backup
+  finishes. Mitigates Android 14's tightened JobScheduler quotas
+  and aggressive Doze kills of long-running foreground services.
+  Mirrors Neo Backup 8.3.17 behavior. Source: ROADMAP S135.
+
+### Audit — App list / Finder search history (ROADMAP iter-18 item closed)
+- Audited persistent search-term storage per Inure build107.0.1
+  privacy posture. NG's `SearchView` usage is already session-only
+  in memory — `recent_search`, `searchHistory`,
+  `SearchRecentSuggestionsProvider` grep all return zero hits.
+  No persistent storage exists; no remediation needed. Source:
+  ROADMAP S131.
+
 ### Added — App Info: Device page size row (ROADMAP iter-18 item closed)
 - New "Device page size" row in App Info under Primary ABI for any
   app with native code. Populated via `Os.sysconf(_SC_PAGESIZE)` and

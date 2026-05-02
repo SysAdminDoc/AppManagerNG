@@ -1272,6 +1272,7 @@
     <string name="failed_to_disable_magisk_deny_list">Could not disable Magisk DenyList</string>
     <string name="mode_of_op_with_inferred_mode_of_op">%1$s (Inferred mode: %2$s)</string>
     <string name="primary_abi">Primary ABI</string>
+    <string name="backup_keep_device_awake_warning">Backup started. Keep the device awake and AppManager open until it finishes — Android 14+ may kill long-running backups in Doze.</string>
     <string name="device_page_size">Device page size</string>
     <string name="device_page_size_4k">4 KB</string>
     <string name="device_page_size_16k">16 KB (page-size compatibility required)</string>

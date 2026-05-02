@@ -47,6 +47,7 @@ import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.BottomSheetBehavior;
 import io.github.muntashirakon.dialog.CapsuleBottomSheetDialogFragment;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -404,6 +405,13 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 operationInfo.packageList, operationInfo.userIdListMappedToPackageList, options);
         Intent intent = BatchOpsService.getServiceIntent(mActivity, queueItem);
         ContextCompat.startForegroundService(mActivity, intent);
+        if (operationInfo.mode == MODE_BACKUP
+                && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Android 14+ tightened JobScheduler quotas and Doze can kill long-running
+            // foreground services if the device is left idle. Warn user to keep the device
+            // awake / app open during the backup. Mirrors Neo Backup 8.3.17 behavior.
+            UIUtils.displayLongToast(R.string.backup_keep_device_awake_warning);
+        }
         dismiss();
     }
 
