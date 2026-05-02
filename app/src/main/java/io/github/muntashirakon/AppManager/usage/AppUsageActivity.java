@@ -11,8 +11,8 @@ import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -24,6 +24,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+
+import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -52,6 +54,13 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     LinearProgressIndicator progressIndicator;
     private SwipeRefreshLayout mSwipeRefresh;
     private AppUsageAdapter mAppUsageAdapter;
+    private View mEmptyView;
+    private ImageView mEmptyStateIcon;
+    private TextView mEmptyStateTitle;
+    private TextView mEmptyStateSummary;
+    private MaterialButton mEmptyStateAction;
+    private boolean mHasPromptedUsageAccess;
+    private boolean mWaitingForUsageAccess;
     private final BetterActivityResult<String, Boolean> mRequestPerm = BetterActivityResult
             .registerForActivityResult(this, new ActivityResultContracts.RequestPermission());
 
@@ -89,9 +98,9 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         // Get usage stats
         mAppUsageAdapter = new AppUsageAdapter(this);
         recyclerView = findViewById(R.id.scrollView);
-        View emptyView = findViewById(android.R.id.empty);
-        setupEmptyState(emptyView);
-        recyclerView.setEmptyView(emptyView);
+        mEmptyView = findViewById(android.R.id.empty);
+        setupEmptyState(mEmptyView);
+        recyclerView.setEmptyView(mEmptyView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         recyclerView.setAdapter(mAppUsageAdapter);
         UiUtils.applyWindowInsetsAsPaddingNoTop(recyclerView);
@@ -122,14 +131,11 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     }
 
     private void setupEmptyState(@NonNull View emptyView) {
-        ((ImageView) emptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_data_usage);
-        ((TextView) emptyView.findViewById(R.id.empty_state_title)).setText(R.string.app_usage_empty_title);
-        ((TextView) emptyView.findViewById(R.id.empty_state_summary)).setText(R.string.app_usage_empty_message);
-        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
-        action.setText(R.string.refresh);
-        action.setIconResource(R.drawable.ic_refresh);
-        action.setVisibility(View.VISIBLE);
-        action.setOnClickListener(v -> onRefresh());
+        mEmptyStateIcon = emptyView.findViewById(R.id.empty_state_icon);
+        mEmptyStateTitle = emptyView.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = emptyView.findViewById(R.id.empty_state_summary);
+        mEmptyStateAction = emptyView.findViewById(R.id.empty_state_action);
+        showUsageDataEmptyState();
     }
 
     @Override
@@ -141,8 +147,18 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     private void checkPermissions() {
         // Check permission
         if (!SelfPermissions.checkUsageStatsPermission()) {
-            promptForUsageStatsPermission();
+            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            mWaitingForUsageAccess = false;
+            if (mAppUsageAdapter != null) {
+                mAppUsageAdapter.setDefaultList(Collections.emptyList());
+            }
+            showUsagePermissionEmptyState();
+            if (!mHasPromptedUsageAccess) {
+                promptForUsageStatsPermission();
+            }
         } else {
+            mWaitingForUsageAccess = false;
+            showUsageDataEmptyState();
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
             viewModel.loadPackageUsageInfoList();
         }
@@ -153,6 +169,14 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
                     ActivityCompat.recreate(this);
                 }
             });
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mWaitingForUsageAccess) {
+            checkPermissions();
         }
     }
 
@@ -202,33 +226,70 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
 
     private void setSortBy(@SortOrder int sort) {
         if (viewModel != null) {
+            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
             viewModel.setSortOrder(sort);
         }
     }
 
+    private void showUsageDataEmptyState() {
+        if (mEmptyStateIcon == null || mEmptyStateTitle == null || mEmptyStateSummary == null
+                || mEmptyStateAction == null) {
+            return;
+        }
+        mEmptyStateIcon.setImageResource(R.drawable.ic_data_usage);
+        mEmptyStateTitle.setText(R.string.app_usage_empty_title);
+        mEmptyStateSummary.setText(R.string.app_usage_empty_message);
+        mEmptyStateAction.setText(R.string.refresh);
+        mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+        mEmptyStateAction.setVisibility(View.VISIBLE);
+        mEmptyStateAction.setOnClickListener(v -> onRefresh());
+    }
+
+    private void showUsagePermissionEmptyState() {
+        if (mEmptyStateIcon == null || mEmptyStateTitle == null || mEmptyStateSummary == null
+                || mEmptyStateAction == null) {
+            return;
+        }
+        mEmptyStateIcon.setImageResource(R.drawable.ic_information_circle);
+        mEmptyStateTitle.setText(R.string.grant_usage_access);
+        mEmptyStateSummary.setText(R.string.app_usage_permission_empty_message);
+        mEmptyStateAction.setText(R.string.app_usage_open_usage_settings);
+        mEmptyStateAction.setIconResource(R.drawable.ic_open_in_new);
+        mEmptyStateAction.setVisibility(View.VISIBLE);
+        mEmptyStateAction.setOnClickListener(v -> openUsageAccessSettings());
+    }
+
+    private void openUsageAccessSettings() {
+        try {
+            mWaitingForUsageAccess = true;
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+        } catch (ActivityNotFoundException e) {
+            mWaitingForUsageAccess = false;
+            showUsageAccessUnsupportedDialog();
+        }
+    }
+
     private void promptForUsageStatsPermission() {
+        mHasPromptedUsageAccess = true;
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.grant_usage_access)
                 .setMessage(R.string.grant_usage_acess_message)
-                .setPositiveButton(R.string.go, (dialog, which) -> {
-                    try {
-                        startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-                    } catch (ActivityNotFoundException e) {
-                        // Usage access isn't available
-                        new MaterialAlertDialogBuilder(this)
-                                .setCancelable(false)
-                                .setTitle(R.string.grant_usage_access)
-                                .setMessage(R.string.usage_access_not_supported)
-                                .setPositiveButton(R.string.go_back, (dialog1, which1) -> {
-                                    FeatureController.getInstance().modifyState(FeatureController
-                                            .FEAT_USAGE_ACCESS, false);
-                                    finish();
-                                })
-                                .show();
-                    }
-                })
+                .setPositiveButton(R.string.go, (dialog, which) -> openUsageAccessSettings())
                 .setNegativeButton(getString(R.string.go_back), (dialog, which) -> finish())
                 .setCancelable(false)
+                .show();
+    }
+
+    private void showUsageAccessUnsupportedDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setCancelable(false)
+                .setTitle(R.string.grant_usage_access)
+                .setMessage(R.string.usage_access_not_supported)
+                .setPositiveButton(R.string.go_back, (dialog1, which1) -> {
+                    FeatureController.getInstance().modifyState(FeatureController
+                            .FEAT_USAGE_ACCESS, false);
+                    finish();
+                })
                 .show();
     }
 }

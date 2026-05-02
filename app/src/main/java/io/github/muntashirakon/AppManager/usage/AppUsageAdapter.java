@@ -18,6 +18,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -71,6 +72,8 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             super(itemView);
             appIcon = itemView.findViewById(R.id.icon);
             appIcon.setClipToOutline(true);
+            appIcon.setContentDescription(null);
+            appIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             badge = itemView.findViewById(R.id.badge);
             appLabel = itemView.findViewById(R.id.label);
             packageName = itemView.findViewById(R.id.package_name);
@@ -89,7 +92,13 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     void setDefaultList(List<PackageUsageInfo> list) {
         synchronized (mAdapterList) {
-            notifyItemChanged(0, AdapterUtils.STUB);
+            if (list == null || list.isEmpty()) {
+                AdapterUtils.notifyDataSetChanged(this, mAdapterList, Collections.emptyList());
+                return;
+            }
+            if (!mAdapterList.isEmpty()) {
+                notifyItemChanged(0, AdapterUtils.STUB);
+            }
             AdapterUtils.notifyDataSetChanged(this, 1, mAdapterList, list);
         }
     }
@@ -177,23 +186,28 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (mActivity.viewModel.hasMultipleUsers()) {
             holder.badge.setVisibility(View.VISIBLE);
             holder.badge.setText(String.format(Locale.getDefault(), "%d", usageInfo.userId));
+            holder.badge.setContentDescription(mActivity.getString(R.string.app_usage_user_badge_a11y,
+                    usageInfo.userId));
         } else {
             holder.badge.setVisibility(View.GONE);
+            holder.badge.setContentDescription(null);
         }
         // Set package name
         holder.packageName.setText(usageInfo.packageName);
         // Set usage
         long lastTimeUsed = usageInfo.lastUsageTime > 1 ? (System.currentTimeMillis() - usageInfo.lastUsageTime) : 0;
         long currentDate = mActivity.viewModel.getCurrentDate();
+        String lastUsedText;
         if (usageInfo.packageName.equals(BuildConfig.APPLICATION_ID) && UsageUtils.isToday(currentDate)) {
             // Special case for App Manager since the user is using the app right now
-            holder.lastUsageDate.setText(R.string.running);
+            lastUsedText = mActivity.getString(R.string.running);
         } else if (lastTimeUsed > 1) {
-            holder.lastUsageDate.setText(String.format(Locale.getDefault(), "%s %s",
-                    DateUtils.getFormattedDuration(mActivity, lastTimeUsed), mActivity.getString(R.string.ago)));
+            lastUsedText = String.format(Locale.getDefault(), "%s %s",
+                    DateUtils.getFormattedDuration(mActivity, lastTimeUsed), mActivity.getString(R.string.ago));
         } else {
-            holder.lastUsageDate.setText(R.string._undefined);
+            lastUsedText = mActivity.getString(R.string._undefined);
         }
+        holder.lastUsageDate.setText(lastUsedText);
         String screenTimesWithTimesOpened;
         // Set times opened
         screenTimesWithTimesOpened = mActivity.getResources().getQuantityString(R.plurals.no_of_times_opened, usageInfo.timesOpened, usageInfo.timesOpened);
@@ -202,30 +216,46 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.screenTime.setText(screenTimesWithTimesOpened);
         // Set data usage
         AppUsageStatsManager.DataUsage mobileData = usageInfo.mobileData;
+        String mobileDataDescription;
         if (mobileData != null && (mobileData.first != 0 || mobileData.second != 0)) {
             Drawable phoneIcon = ContextCompat.getDrawable(mActivity, R.drawable.ic_phone_android);
-            String dataUsage = String.format("  ↑ %1$s ↓ %2$s",
-                    Formatter.formatFileSize(mActivity, mobileData.first),
-                    Formatter.formatFileSize(mActivity, mobileData.second));
+            String sent = Formatter.formatFileSize(mActivity, mobileData.first);
+            String received = Formatter.formatFileSize(mActivity, mobileData.second);
+            String dataUsage = String.format("  ↑ %1$s ↓ %2$s", sent, received);
             holder.mobileDataUsage.setText(UIUtils.setImageSpan(dataUsage, phoneIcon, holder.mobileDataUsage));
-        } else holder.mobileDataUsage.setText("");
+            mobileDataDescription = mActivity.getString(R.string.app_usage_data_plain, sent, received);
+        } else {
+            holder.mobileDataUsage.setText("");
+            mobileDataDescription = mActivity.getString(R.string.app_usage_no_mobile_data);
+        }
         AppUsageStatsManager.DataUsage wifiData = usageInfo.wifiData;
+        String wifiDataDescription;
         if (wifiData != null && (wifiData.first != 0 || wifiData.second != 0)) {
             Drawable wifiIcon = ContextCompat.getDrawable(mActivity, R.drawable.ic_wifi);
-            String dataUsage = String.format("  ↑ %1$s ↓ %2$s",
-                    Formatter.formatFileSize(mActivity, wifiData.first),
-                    Formatter.formatFileSize(mActivity, wifiData.second));
+            String sent = Formatter.formatFileSize(mActivity, wifiData.first);
+            String received = Formatter.formatFileSize(mActivity, wifiData.second);
+            String dataUsage = String.format("  ↑ %1$s ↓ %2$s", sent, received);
             holder.wifiDataUsage.setText(UIUtils.setImageSpan(dataUsage, wifiIcon, holder.wifiDataUsage));
-        } else holder.wifiDataUsage.setText("");
+            wifiDataDescription = mActivity.getString(R.string.app_usage_data_plain, sent, received);
+        } else {
+            holder.wifiDataUsage.setText("");
+            wifiDataDescription = mActivity.getString(R.string.app_usage_no_wifi_data);
+        }
         // Set usage percentage
         holder.percentUsage.setText(String.format(Locale.getDefault(), "%d%%", percentUsage));
         holder.usageIndicator.show();
         holder.usageIndicator.setProgress(percentUsage);
+        holder.itemView.setContentDescription(mActivity.getString(R.string.app_usage_item_content_description,
+                usageInfo.appLabel, usageInfo.packageName, lastUsedText, screenTimesWithTimesOpened,
+                mobileDataDescription, wifiDataDescription, percentUsage));
         // On Click Listener
         holder.itemView.setOnClickListener(v -> mActivity.viewModel.loadPackageUsageInfo(usageInfo));
     }
 
     int getUsagePercent(long screenTime) {
+        if (mActivity.viewModel.getTotalScreenTime() <= 0) {
+            return 0;
+        }
         return (int) (screenTime * 100. / mActivity.viewModel.getTotalScreenTime());
     }
 }
