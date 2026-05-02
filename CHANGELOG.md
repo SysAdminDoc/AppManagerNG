@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Signing-cert SHA-256 chip in App Info (ROADMAP T18 closed)
+- New "Sign · SHA-256 21:5F…38:6C" chip in the App Info tag cloud
+  surfaces the colon-separated, upper-case SHA-256 fingerprint of the
+  current signing certificate. Tap opens a Material dialog showing the
+  full digest with a one-tap **Copy** button so users can paste the
+  fingerprint directly into AppVerifier or compare against
+  `apksigner verify --print-certs` output without leaving NG. Single-
+  signer APKs only — multi-signer cases stay routed through the existing
+  icon-tap verify-from-clipboard flow.
+- Backed by `AppInfoViewModel.computeSigningCertSha256()` (worker-side
+  via `PackageUtils.getSignerInfo` + `DigestUtils.SHA_256`); result is
+  cached on `TagCloud.signingCertSha256`.
+
 ### Changed — VirusTotal poll-wait scales with upload size (engineering-debt TODO closed)
 - `VirusTotal.fetchFileReportOrScan` now scales the *first* poll wait
   by file size via the new `computeInitialPollWait(fileSize)` helper —

@@ -1885,6 +1885,9 @@
     <string name="selected_items_accessibility_description">Selected %d out of %d items</string>
     <string name="adb_local_server_port">ADB local server port</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
+    <!-- App Info: signing certificate SHA-256 tag chip + dialog -->
+    <string name="cert_fingerprint_chip_label">Sign · SHA-256 %1$s</string>
+    <string name="cert_fingerprint_dialog_title">Signing certificate SHA-256</string>
     <!-- App Details: window soft-input flags (Utils.getSoftInputString) -->
     <string name="soft_input_flag_adjust_nothing">Adjust nothing</string>
     <string name="soft_input_flag_adjust_pan">Adjust pan</string>
