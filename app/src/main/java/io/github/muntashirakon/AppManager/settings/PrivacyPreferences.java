@@ -64,12 +64,14 @@ public class PrivacyPreferences extends PreferenceFragment {
         Preference opHistoryRetention = requirePreference("op_history_retention_days");
         updateOpHistoryRetentionSummary(opHistoryRetention);
         opHistoryRetention.setOnPreferenceClickListener(preference -> {
-            int[] values = {0, 7, 30, 90};
+            int[] values = {0, 7, 30, 90, 180, 365};
             CharSequence[] labels = {
                     getString(R.string.op_history_retention_never),
                     getString(R.string.op_history_retention_7d),
                     getString(R.string.op_history_retention_30d),
-                    getString(R.string.op_history_retention_90d)
+                    getString(R.string.op_history_retention_90d),
+                    getString(R.string.op_history_retention_180d),
+                    getString(R.string.op_history_retention_365d)
             };
             int currentValue = Prefs.Privacy.getOpHistoryRetentionDays();
             int checkedItem = 0;
@@ -135,6 +137,10 @@ public class PrivacyPreferences extends PreferenceFragment {
                 return getString(R.string.op_history_retention_30d);
             case 90:
                 return getString(R.string.op_history_retention_90d);
+            case 180:
+                return getString(R.string.op_history_retention_180d);
+            case 365:
+                return getString(R.string.op_history_retention_365d);
             default:
                 return getString(R.string.op_history_retention_never);
         }
