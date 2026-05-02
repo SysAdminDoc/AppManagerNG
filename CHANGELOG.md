@@ -14,6 +14,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Replay quick tour** action in Settings → Troubleshooting; clears
   `PREF_MAIN_TOUR_SHOWN_BOOL` so the main-list tour re-arms on the next
   launch. Toast confirms the reset.
+- **Active-mode highlight in onboarding** — when the wizard opens (first
+  run or replay), the card matching the currently saved mode is ringed
+  with a 2dp `colorPrimary` stroke, so users replaying see at a glance
+  which mode is in effect. A11y description is prefixed with "Currently
+  active." for screen-reader parity.
+- **Pick-Root-without-detection guardrail** — when a user taps the Root
+  card and `Ops.hasRoot()` returns false, a confirmation dialog explains
+  the situation (root managers can hide su until first request, but most
+  ops will fail until granted) and lets them cancel without burning the
+  onboarding-shown flag.
 
 ### Added — Premium facelift design system (foundation)
 - **`design/` deliverable folder** (audit, spec, impl, plan, README) — full

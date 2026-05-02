@@ -112,6 +112,47 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCardActions(view, R.id.card_mode_no_root, R.id.info_mode_no_root, View.NO_ID, Ops.MODE_NO_ROOT,
                 R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_summary,
                 R.string.onboarding_mode_no_root_explainer);
+        // Highlight the currently active mode card so a user replaying the wizard
+        // from Settings can see at a glance which mode is in effect. Nothing to
+        // highlight on a true first-run — the saved mode will already be the
+        // default (MODE_AUTO) and that's still meaningful information.
+        highlightActiveMode(view, Ops.getMode());
+    }
+
+    /**
+     * Ring the currently-active mode card with the M3 primary stroke so the
+     * picker doubles as a "current state" view when replayed. Other cards keep
+     * the default outlined style from {@code Widget.AppTheme.CardView.OnboardingMode}.
+     */
+    private void highlightActiveMode(@NonNull View root, @NonNull String activeMode) {
+        int activeCardId = cardIdFor(activeMode);
+        int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_adb_wifi,
+                R.id.card_mode_adb_tcp, R.id.card_mode_no_root};
+        int active = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary);
+        int strokeWidthActive = (int) (2 * getResources().getDisplayMetrics().density);
+        for (int id : allCards) {
+            View v = root.findViewById(id);
+            if (!(v instanceof com.google.android.material.card.MaterialCardView)) continue;
+            com.google.android.material.card.MaterialCardView card =
+                    (com.google.android.material.card.MaterialCardView) v;
+            if (id == activeCardId) {
+                card.setStrokeColor(active);
+                card.setStrokeWidth(strokeWidthActive);
+                card.setContentDescription(getString(R.string.onboarding_mode_card_active_a11y,
+                        card.getContentDescription() != null ? card.getContentDescription() : ""));
+            }
+        }
+    }
+
+    private int cardIdFor(@NonNull String mode) {
+        switch (mode) {
+            case Ops.MODE_ROOT:        return R.id.card_mode_root;
+            case Ops.MODE_ADB_WIFI:    return R.id.card_mode_adb_wifi;
+            case Ops.MODE_ADB_OVER_TCP:return R.id.card_mode_adb_tcp;
+            case Ops.MODE_NO_ROOT:     return R.id.card_mode_no_root;
+            case Ops.MODE_AUTO:
+            default:                   return R.id.card_mode_auto;
+        }
     }
 
     private void bindCapabilityStatus(@Nullable TextView statusView, boolean available,
@@ -200,6 +241,23 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void pick(@NonNull @Ops.Mode String mode) {
+        // Warn the user before committing to Root mode if su isn't detected on this
+        // device — picking it anyway is fine (some setups hide su until first
+        // request) but the explainer dialog gives them a chance to bail without
+        // burning the onboarding-shown flag.
+        if (Ops.MODE_ROOT.equals(mode) && !Ops.hasRoot()) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.onboarding_mode_root_title)
+                    .setMessage(R.string.onboarding_mode_root_pick_without_detection)
+                    .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> commit(mode))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return;
+        }
+        commit(mode);
+    }
+
+    private void commit(@NonNull @Ops.Mode String mode) {
         Ops.setMode(mode);
         AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
         dismissAllowingStateLoss();
