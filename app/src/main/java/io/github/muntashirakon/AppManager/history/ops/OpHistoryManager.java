@@ -95,6 +95,11 @@ public final class OpHistoryManager {
         AppsDb.getInstance().opHistoryDao().deleteAll();
     }
 
+    @WorkerThread
+    public static void deleteHistoryItem(long id) {
+        AppsDb.getInstance().opHistoryDao().delete(id);
+    }
+
     @NonNull
     public static Intent getExecutableIntent(@NonNull Context context, @NonNull OpHistoryItem item)
             throws JSONException {
