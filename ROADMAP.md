@@ -297,9 +297,9 @@ Upstream's "more advanced terminal emulator" is an upcoming feature. NG will pul
 | Item | Description | Effort | Dependency |
 |------|-------------|--------|------------|
 | **Advanced Terminal (upstream pull)** | Pull upstream's terminal improvements when they ship | Low (pull) | Upstream |
-| **Code Editor i18n** | Add localization to code editor strings (CodeEditorFragment.java TODO) | Medium | — |
-| **Code Editor Tab Size Setting** | Configurable indent width (CodeEditorFragment.java TODO) | Low | — |
-| **Code Editor Language Display** | Show detected language name in editor status bar (CodeEditorFragment.java TODO) | Low | — |
+| ~~**Code Editor i18n**~~ ✅ 2026-05-02 | Hardcoded "tabs"/"spaces" suffix on the toolbar now reads from `R.plurals.editor_tab_size_option_{tabs,spaces}` so locales pluralise correctly. Picker titles + go-to-line labels are also `R.string` resources. | Medium | — |
+| ~~**Code Editor Tab Size Setting**~~ ✅ 2026-05-02 | Tap the indent-size toolbar button → popup with **2 / 4 / 8** options (configurable per indent-mode). Wires to `mEditor.setTabWidth(n)` and refreshes the label live. | Low | — |
+| ~~**Code Editor Language Display**~~ ✅ 2026-05-02 | Tap the language toolbar button → popup listing all seven tmLanguage-backed languages bundled in `assets/languages/` (java / json / kotlin / properties / sh / smali / xml). Picking switches the highlighter and persists via new `CodeEditorViewModel.setLanguage()`; the indent label re-renders against the new language's `useTab/useSpace` default. | Low | — |
 
 ### T15 — Systemless Operations
 
@@ -442,7 +442,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | `PermissionsOption.java` | TODO | Permission flags not exposed in filter | Low | T7 |
 | `DataUsageOption.java` | TODO | Mobile/Wi-Fi split not shown | Low | T7 |
 | `TrackersOption.java` | TODO | Regex + tracker-name search not implemented | Low | T7 |
-| `CodeEditorFragment.java` | TODO | i18n, custom tab size, language display missing | Low | T14 |
+| ~~`CodeEditorFragment.java`~~ ✅ 2026-05-02 | TODO (resolved) | Three pickers landed: **language** popup (java/json/kotlin/properties/sh/smali/xml from `assets/languages/` via `Languages.getLanguage()`), **tab-size** popup (2/4/8 with `mEditor.setTabWidth`), **go-to-line** dialog (`TextInputDialogBuilder` → `mEditor.setSelection(line - 1, 0)`). The previously hardcoded "tabs"/"spaces" suffix on the indent toolbar now reads from `R.plurals.editor_tab_size_option_{tabs,spaces}` so locales pluralise the unit. New `CodeEditorViewModel.setLanguage()` setter persists the choice across language switches. | Low | T14 |
 | BouncyCastle `1.83` | Dependency | Latest is `1.84`; no CVE exposure at 1.83 (GHSA-8xfc-gm6g-vgpv fixed in 1.78 [S49]); upgrade is low-urgency maintenance ([S50]) | Low | Security |
 | libsu `6.0.0` | API | `Shell.sh/su` removed in 6.0.0; replaced by `Shell.cmd` — verify no legacy `Shell.sh/su` calls survive in NG source. `FLAG_REDIRECT_STDERR` also deprecated ([S47]). | Medium | All root ops |
 | ~~All layouts~~ ✅ 2026-05-01 | Compliance | Audit for `elegantTextHeight` attribute usage — ignored for targetSdk=36; text rendering affected for Arabic/Thai/Indic scripts ([S44]). **Audit clean — zero source matches.** See [docs/audits/2026-05-01-elegant-text-height.md](docs/audits/2026-05-01-elegant-text-height.md). | Low | T2 |

@@ -1893,6 +1893,19 @@
     <string name="swap_usage_accessibility_description">The system has allocated %s for swap and currently using %s.</string>
     <string name="adb_local_server_port">ADB local server port</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
+    <!-- Code editor: language / tab-size / go-to-line pickers -->
+    <string name="editor_language_picker_title">Language</string>
+    <string name="editor_tab_size_picker_title">Indent width</string>
+    <plurals name="editor_tab_size_option_spaces">
+        <item quantity="one">%d space</item>
+        <item quantity="other">%d spaces</item>
+    </plurals>
+    <plurals name="editor_tab_size_option_tabs">
+        <item quantity="one">%d tab</item>
+        <item quantity="other">%d tabs</item>
+    </plurals>
+    <string name="editor_go_to_line_title">Go to line</string>
+    <string name="editor_go_to_line_input_label">Line number</string>
     <!-- Profiles: share-profile-as-JSON popup action -->
     <string name="share_profile_json">Share as JSON</string>
     <string name="share_profile_subject">AppManager profile · %1$s</string>
