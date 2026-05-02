@@ -121,6 +121,30 @@ public final class ColorCodes {
         return getSuccessColor(context);
     }
 
+    public static int getTrackerRiskIndicatorColor(@NonNull Context context, int trackerCount) {
+        if (trackerCount >= 20) {
+            return getFailureColor(context);
+        }
+        if (trackerCount >= 5) {
+            return getRemovalCautionIndicatorColor(context);
+        }
+        return getSuccessColor(context);
+    }
+
+    public static int getPermissionRiskIndicatorColor(@NonNull Context context, int granted, int total) {
+        if (granted <= 0 || total <= 0) {
+            return getSuccessColor(context);
+        }
+        float grantRatio = granted / (float) total;
+        if (grantRatio >= 0.5f || granted >= 5) {
+            return getFailureColor(context);
+        }
+        if (grantRatio >= 0.25f || granted >= 2) {
+            return getRemovalCautionIndicatorColor(context);
+        }
+        return getSuccessColor(context);
+    }
+
     public static int getComponentBlockedIndicatorColor(@NonNull Context context) {
         return ContextCompat.getColor(context, R.color.red);
     }

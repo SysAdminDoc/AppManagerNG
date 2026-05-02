@@ -3,9 +3,26 @@
 <resources>
     <dimen name="icon_size">40dp</dimen>
     <dimen name="main_list_icon_size">44dp</dimen>
+    <dimen name="main_list_icon_column_width">48dp</dimen>
+    <dimen name="main_list_icon_margin_end">12dp</dimen>
     <dimen name="main_list_min_height">88dp</dimen>
+    <dimen name="main_list_card_margin_vertical">3dp</dimen>
+    <dimen name="main_list_padding_vertical">12dp</dimen>
+    <dimen name="main_list_title_badge_padding_end">32dp</dimen>
+    <dimen name="main_list_badge_min_height">28dp</dimen>
+    <dimen name="main_list_badge_min_width">36dp</dimen>
+    <dimen name="main_list_badge_padding_horizontal">8dp</dimen>
+    <dimen name="main_list_badge_padding_vertical">3dp</dimen>
     <dimen name="main_list_badge_corner_radius">11dp</dimen>
     <dimen name="main_list_badge_stroke_width">1dp</dimen>
+    <dimen name="main_status_min_height">44dp</dimen>
+    <dimen name="main_status_corner_radius">14dp</dimen>
+    <dimen name="main_empty_icon_container_size">88dp</dimen>
+    <dimen name="main_empty_icon_padding">26dp</dimen>
+    <dimen name="main_empty_summary_max_width">360dp</dimen>
+    <dimen name="app_usage_icon_frame_size">48dp</dimen>
+    <dimen name="app_usage_badge_min_size">22dp</dimen>
+    <dimen name="app_usage_badge_padding_horizontal">4dp</dimen>
     <dimen name="title_font">16sp</dimen>
     <dimen name="subtitle_font">14sp</dimen>
     <dimen name="app_widget_background_padding">16dp</dimen>
