@@ -338,7 +338,7 @@ Low-effort, high-usability items gated on platform API availability or upstream 
 | **Per-App Overlay Management** | Pull upstream v4.0.1's "Overlays" tab in App Details: enable/disable per-app system overlays (root/ADB, Android 8+). Upstream landed it — pull rather than reimplement ([S39]). | Low (pull) | Upstream v4.0.1+ |
 | **app-manager:// Deep Link** | Support `app-manager://details?id=<pkg>&user=<uid>` deep links; enables Quick Settings tiles, widgets, and Tasker actions to open specific app's detail page. Upstream ships this in v4.0.x. | Low (pull) | Upstream |
 | **Unfreeze on Shortcut Launch** | If user taps a home-screen shortcut for a frozen app, offer to unfreeze temporarily; auto-re-freeze when screen is locked. Pull upstream v4.0.1 model ([S39]). Pairs with T8 "Saved Filter Presets" for freeze-group workflows. | Low (pull) | Upstream v4.0.1+ |
-| **Certificate Hash in App Detail** | Surface signing certificate SHA-256 prominently in App Details for easy cross-verification with AppVerifier/AppChecker. Obtainium v1.3.0 model ([S51]). AM already collects cert data; this is UI surfacing only. | Low | — |
+| ~~**Certificate Hash in App Detail**~~ ✅ 2026-05-02 | New "Sign · SHA-256 21:5F…38:6C" chip in the App Info tag cloud surfaces the colon-separated upper-case fingerprint with first/last-4 truncation. Tap opens a `MaterialAlertDialog` showing the full digest plus a one-tap **Copy** button so users can paste it straight into AppVerifier or compare against `apksigner verify --print-certs` output. Computed worker-side in `AppInfoViewModel.computeSigningCertSha256()` and exposed as `TagCloud.signingCertSha256`. Obtainium v1.3.0 / [S51] precedent. | Low | — |
 
 ### T19 — Package-Aware Storage Analysis
 

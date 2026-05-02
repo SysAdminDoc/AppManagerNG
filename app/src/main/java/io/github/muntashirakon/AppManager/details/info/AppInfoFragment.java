@@ -21,6 +21,7 @@ import static io.github.muntashirakon.AppManager.utils.Utils.openAsFolderInFM;
 import android.Manifest;
 import android.app.ActivityManager;
 import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -1211,6 +1212,17 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         dialog.show(getChildFragmentManager(), BloatwareDetailsDialog.TAG);
                     });
         }
+        // Cross-verifiable signing-cert fingerprint. The clipboard-paste
+        // verify flow on the icon already exists; this surfaces the same
+        // digest *prominently* so users running AppVerifier or apksigner
+        // verify can copy and compare in one tap.
+        if (tagCloud.signingCertSha256 != null) {
+            String fp = tagCloud.signingCertSha256;
+            TagItem certTag = new TagItem();
+            tagItems.add(certTag);
+            certTag.setText(getString(R.string.cert_fingerprint_chip_label, shortFingerprint(fp)))
+                    .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp));
+        }
         if (tagCloud.hasKeyStoreItems) {
             TagItem keyStoreTag = new TagItem();
             tagItems.add(keyStoreTag);
@@ -1409,6 +1421,40 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 return "Bloatware";
         }
         return "Bloatware · " + context.getString(suffixRes);
+    }
+
+    /**
+     * Compact form of a colon-separated SHA-256 fingerprint for the tag chip:
+     * keep the first and last 4 hex digits ("21:5F:B4:70…D0:C2:38:6C") so the
+     * chip stays one line wide while still showing enough to spot a mismatch
+     * at a glance. Full digest is one tap away in the dialog.
+     */
+    @NonNull
+    private static String shortFingerprint(@NonNull String fingerprint) {
+        if (fingerprint.length() <= 11) return fingerprint;
+        return fingerprint.substring(0, 5) + "…" + fingerprint.substring(fingerprint.length() - 5);
+    }
+
+    /**
+     * Surface the full SHA-256 fingerprint with a Copy button so users
+     * cross-verifying against AppVerifier or {@code apksigner verify
+     * --print-certs} output can paste it in a single step. The clipboard
+     * action also matches the icon-tap verify-from-clipboard flow already
+     * present in this fragment.
+     */
+    private void showCertFingerprintDialog(@NonNull Context context, @NonNull String fingerprint) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.cert_fingerprint_dialog_title)
+                .setMessage(fingerprint)
+                .setPositiveButton(R.string.copy, (d, w) -> {
+                    ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cm != null) {
+                        cm.setPrimaryClip(ClipData.newPlainText("SHA-256", fingerprint));
+                        displayShortToast(R.string.copied_to_clipboard);
+                    }
+                })
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 
     private void displayRunningServices(

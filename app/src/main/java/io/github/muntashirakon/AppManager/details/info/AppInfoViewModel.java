@@ -26,6 +26,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -72,7 +73,9 @@ import io.github.muntashirakon.AppManager.uri.UriManager;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
 import io.github.muntashirakon.AppManager.usage.TimeInterval;
 import io.github.muntashirakon.AppManager.usage.UsageUtils;
+import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -140,6 +143,48 @@ public class AppInfoViewModel extends AndroidViewModel {
             mTagCloudFuture.cancel(true);
         }
         mTagCloudFuture = ThreadUtils.postOnBackgroundThread(() -> loadTagCloudInternal(packageInfo, isExternalApk));
+    }
+
+    /**
+     * Compute the colon-separated upper-case hex SHA-256 of the package's
+     * current X.509 signing certificate, suitable for one-line display and
+     * cross-verification with AppVerifier or {@code apksigner verify --print-certs}.
+     * Returns {@code null} when the package has no signers, more than one
+     * current signer, or the digest can't be computed.
+     */
+    @WorkerThread
+    @Nullable
+    private static String computeSigningCertSha256(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
+        try {
+            SignerInfo signerInfo = PackageUtils.getSignerInfo(packageInfo, isExternalApk);
+            if (signerInfo == null) return null;
+            X509Certificate[] certs = signerInfo.getCurrentSignerCerts();
+            // Multi-signer APKs are rare; surfacing only the single-signer case
+            // keeps the tag chip unambiguous. Multi-signer details are reachable
+            // through the icon-tap verify flow.
+            if (certs == null || certs.length != 1) return null;
+            String hex = DigestUtils.getHexDigest(DigestUtils.SHA_256, certs[0].getEncoded());
+            return colonifyHex(hex);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * Format a flat hex digest as "AB:CD:..." in upper case, matching the
+     * canonical fingerprint shape that AppVerifier and {@code apksigner}
+     * print. Returns {@code null} on a malformed input.
+     */
+    @Nullable
+    static String colonifyHex(@Nullable String hex) {
+        if (hex == null || hex.isEmpty() || (hex.length() & 1) != 0) return null;
+        StringBuilder sb = new StringBuilder(hex.length() + hex.length() / 2);
+        for (int i = 0; i < hex.length(); i += 2) {
+            if (i > 0) sb.append(':');
+            sb.append(Character.toUpperCase(hex.charAt(i)));
+            sb.append(Character.toUpperCase(hex.charAt(i + 1)));
+        }
+        return sb.toString();
     }
 
     @WorkerThread
@@ -285,6 +330,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.hasKeyStoreItems = KeyStoreUtils.hasKeyStore(applicationInfo.uid);
             tagCloud.hasMasterKeyInKeyStore = KeyStoreUtils.hasMasterKey(applicationInfo.uid);
             tagCloud.usesPlayAppSigning = PackageUtils.usesPlayAppSigning(applicationInfo);
+            tagCloud.signingCertSha256 = computeSigningCertSha256(packageInfo, isExternalApk);
             if (ThreadUtils.isInterrupted()) {
                 return;
             }
@@ -527,6 +573,15 @@ public class AppInfoViewModel extends AndroidViewModel {
         public List<UriManager.UriGrant> uriGrants;
         @Nullable
         public String[] staticSharedLibraryNames;
+        /**
+         * Colon-separated, upper-case hex SHA-256 of the current signing
+         * certificate (X.509 DER). {@code null} when the package isn't signed,
+         * has multiple current signers, or signer info couldn't be parsed.
+         * Used by the App Info "Sign · SHA-256" tag for one-tap clipboard
+         * copy and cross-verification with AppVerifier / apksigner output.
+         */
+        @Nullable
+        public String signingCertSha256;
     }
 
     public static class AppInfo {
