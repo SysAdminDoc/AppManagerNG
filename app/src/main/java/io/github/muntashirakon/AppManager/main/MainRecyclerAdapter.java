@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
@@ -24,12 +25,14 @@ import android.view.ViewGroup;
 import android.widget.SectionIndexer;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
@@ -70,6 +73,9 @@ import io.github.muntashirakon.widget.MultiSelectionView;
 public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecyclerAdapter.ViewHolder>
         implements SectionIndexer {
     private static final String sSections = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final int STATE_STROKE_ALPHA = 0x80;
+    private static final int BADGE_BACKGROUND_ALPHA = 0x2B;
+    private static final int BADGE_STROKE_ALPHA = 0x7A;
 
     private final MainActivity mActivity;
     private String mSearchQuery;
@@ -291,11 +297,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         if (item.isSelected) {
             cardView.setStrokeColor(mColorSelectedStroke);
         } else if (!item.isInstalled) {
-            cardView.setStrokeColor(ColorCodes.getAppUninstalledIndicatorColor(context));
+            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppUninstalledIndicatorColor(context)));
         } else if (item.isDisabled) {
-            cardView.setStrokeColor(ColorCodes.getAppDisabledIndicatorColor(context));
+            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppDisabledIndicatorColor(context)));
         } else if (item.isStopped) {
-            cardView.setStrokeColor(ColorCodes.getAppForceStoppedIndicatorColor(context));
+            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppForceStoppedIndicatorColor(context)));
         } else {
             cardView.setStrokeColor(mColorRegularStroke);
         }
@@ -388,7 +394,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                             R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount);
                 }
                 holder.trackerIndicator.setText(label);
-                holder.trackerIndicator.setTextColor(trackerColor);
+                applyBadgeStyle(holder.trackerIndicator, trackerColor);
                 holder.trackerIndicator.setContentDescription(contentDesc);
                 if (item.isInstalled) {
                     holder.trackerIndicator.setClickable(true);
@@ -428,7 +434,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 int permColor = permGranted > 0
                         ? ColorCodes.getComponentTrackerIndicatorColor(context)
                         : ColorCodes.getComponentTrackerBlockedIndicatorColor(context);
-                holder.permIndicator.setTextColor(permColor);
+                applyBadgeStyle(holder.permIndicator, permColor);
                 holder.permIndicator.setContentDescription(context.getString(
                         R.string.main_list_perm_count_a11y, permGranted, permTotal));
                 if (item.isInstalled) {
@@ -491,7 +497,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 // App not installed
                 indicatorColor = ColorCodes.getBackupUninstalledIndicatorColor(context);
             }
-            holder.backupIndicator.setTextColor(indicatorColor);
+            applyBadgeStyle(holder.backupIndicator, indicatorColor);
             Backup backup = item.backup;
             long days = item.lastBackupDays;
             holder.backupInfo.setText(String.format("%s: %s, %s %s",
@@ -568,6 +574,25 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             sectionsArr[i] = String.valueOf(sSections.charAt(i));
 
         return sectionsArr;
+    }
+
+    @ColorInt
+    private static int getStateStrokeColor(@ColorInt int color) {
+        return ColorUtils.setAlphaComponent(color, STATE_STROKE_ALPHA);
+    }
+
+    private static void applyBadgeStyle(@NonNull TextView badge, @ColorInt int contentColor) {
+        int opaqueContentColor = ColorUtils.setAlphaComponent(contentColor, 0xFF);
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.RECTANGLE);
+        background.setColor(ColorUtils.setAlphaComponent(opaqueContentColor, BADGE_BACKGROUND_ALPHA));
+        background.setStroke(
+                badge.getResources().getDimensionPixelSize(R.dimen.main_list_badge_stroke_width),
+                ColorUtils.setAlphaComponent(opaqueContentColor, BADGE_STROKE_ALPHA));
+        background.setCornerRadius(
+                badge.getResources().getDimensionPixelSize(R.dimen.main_list_badge_corner_radius));
+        badge.setBackground(background);
+        badge.setTextColor(opaqueContentColor);
     }
 
     /**
