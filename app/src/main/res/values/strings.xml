@@ -380,6 +380,21 @@
     <string name="apk_updater">APK Updater</string>
     <string name="open_in_aurora_store" translatable="false">Store</string>
     <string name="running_apps">Running apps</string>
+    <string name="running_apps_status_loading">Refreshing running processes...</string>
+    <plurals name="running_apps_status_summary">
+        <item quantity="one">Showing <xliff:g id="shown_count" example="1">%1$d</xliff:g> of <xliff:g id="total_count" example="42">%2$d</xliff:g> process</item>
+        <item quantity="other">Showing <xliff:g id="shown_count" example="12">%1$d</xliff:g> of <xliff:g id="total_count" example="42">%2$d</xliff:g> processes</item>
+    </plurals>
+    <string name="running_apps_status_empty_no_processes">No running processes are available yet. AppManagerNG will keep refreshing.</string>
+    <string name="running_apps_status_empty_filtered">No processes match the current search or filters. Clear filters or search text to recover the full list.</string>
+    <string name="running_apps_system_process">System process</string>
+    <string name="running_apps_process_content_description"><xliff:g id="process_name" example="App Manager">%1$s</xliff:g>, <xliff:g id="package_name" example="io.github.muntashirakon.AppManager">%2$s</xliff:g>. <xliff:g id="process_ids" example="Process ID: 10000, Parent process ID: 1000">%3$s</xliff:g>. <xliff:g id="memory_usage" example="Memory: 162 MB, Virtual memory: 14.72 GB">%4$s</xliff:g>. <xliff:g id="user_state" example="User: u0_a167 (10167), State: Sleeping">%5$s</xliff:g>.</string>
+    <string name="running_apps_select_process">Select <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
+    <string name="running_apps_more_actions_for_process">More actions for <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
+    <string name="running_apps_enable_system_kill">Allow killing system processes</string>
+    <string name="running_apps_disable_system_kill">Do not kill system processes</string>
+    <string name="running_apps_system_kill_enabled">System process killing enabled. Use with care.</string>
+    <string name="running_apps_system_kill_disabled">System process killing disabled.</string>
     <string name="kill_process">Kill</string>
     <string name="disable_background_run">Prevent background operation</string>
     <string name="pid_and_ppid">Process ID: %1$d, Parent process ID: %2$d</string>

@@ -3,12 +3,14 @@
 package io.github.muntashirakon.AppManager.runningapps;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IntDef;
@@ -99,9 +101,12 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @Nullable
     private LinearProgressIndicator mProgressIndicator;
     @Nullable
+    private TextView mStatusView;
+    @Nullable
     private MultiSelectionView mMultiSelectionView;
     @Nullable
     private Menu mSelectionMenu;
+    @Nullable
     private Timer mTimer;
     private final OnBackPressedCallback mOnBackPressedCallback = new OnBackPressedCallback(false) {
         @Override
@@ -128,6 +133,7 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         model = new ViewModelProvider(this).get(RunningAppsViewModel.class);
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
+        mStatusView = findViewById(R.id.running_apps_status);
         RecyclerView recyclerView = findViewById(R.id.scrollView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         mAdapter = new RunningAppsAdapter(this);
@@ -221,6 +227,7 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
             if (mAdapter != null) {
                 mAdapter.setDefaultList(processList);
             }
+            updateRunningAppsStatus(processList);
         });
         model.getDeviceMemoryInfo().observe(this, deviceMemoryInfo -> {
             if (mAdapter != null) {
@@ -240,6 +247,9 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         if (model == null) return super.onPrepareOptionsMenu(menu);
 
         menu.findItem(SORT_ORDER_IDS[model.getSortOrder()]).setChecked(true);
+        menu.findItem(R.id.action_toggle_kill).setTitle(mEnableKillForSystem
+                ? R.string.running_apps_disable_system_kill
+                : R.string.running_apps_enable_system_kill);
         int filter = model.getFilter();
         if ((filter & FILTER_APPS) != 0) {
             menu.findItem(R.id.action_filter_apps).setChecked(true);
@@ -261,6 +271,10 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         if (id == R.id.action_toggle_kill) {
             mEnableKillForSystem = !mEnableKillForSystem;
             Prefs.RunningApps.setEnableKillForSystemApps(mEnableKillForSystem);
+            UIUtils.displayShortToast(mEnableKillForSystem
+                    ? R.string.running_apps_system_kill_enabled
+                    : R.string.running_apps_system_kill_disabled);
+            invalidateOptionsMenu();
             refresh();
         } else if (id == R.id.action_sort_by_pid) {
             model.setSortOrder(SORT_BY_PID);
@@ -309,8 +323,11 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
 
     @Override
     protected void onPause() {
-        mTimer.cancel();
-        mTimer.purge();
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer.purge();
+            mTimer = null;
+        }
         super.onPause();
     }
 
@@ -381,7 +398,9 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         }
         forceStop.setEnabled(appsCount != 0 && appsCount == selectedItems.size());
         forceStop.setVisible(SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES));
-        preventBackground.setEnabled(appsCount != 0 && appsCount == selectedItems.size());
+        boolean canPreventBackground = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && SelfPermissions.canModifyAppOpMode();
+        preventBackground.setVisible(canPreventBackground);
+        preventBackground.setEnabled(canPreventBackground && appsCount != 0 && appsCount == selectedItems.size());
         boolean killEnabled = Ops.isWorkingUidRoot();
         if (killEnabled && !mEnableKillForSystem) {
             for (ProcessItem item : selectedItems) {
@@ -407,11 +426,35 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     }
 
     private void handleBatchOpWithWarning(@BatchOpsManager.OpType int op) {
+        if (model == null) return;
+        int selectedAppCount = model.getSelectedPackagesWithUsers().size();
+        if (selectedAppCount == 0) {
+            UIUtils.displayShortToast(R.string.no_packages_selected);
+            return;
+        }
+        String selectedAppCountText = getResources().getQuantityString(R.plurals.batch_selected_app_count,
+                selectedAppCount, selectedAppCount);
+        int title;
+        int message;
+        int positiveButton;
+        if (op == BatchOpsManager.OP_FORCE_STOP) {
+            title = R.string.batch_force_stop_dialog_title;
+            message = R.string.batch_force_stop_dialog_message;
+            positiveButton = R.string.force_stop;
+        } else if (op == BatchOpsManager.OP_DISABLE_BACKGROUND) {
+            title = R.string.batch_disable_background_dialog_title;
+            message = R.string.batch_disable_background_dialog_message;
+            positiveButton = R.string.disable_background_run;
+        } else {
+            title = R.string.are_you_sure;
+            message = R.string.this_action_cannot_be_undone;
+            positiveButton = R.string.yes;
+        }
         new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.are_you_sure)
-                .setMessage(R.string.this_action_cannot_be_undone)
-                .setPositiveButton(R.string.yes, (dialog, which) -> handleBatchOp(op))
-                .setNegativeButton(R.string.no, null)
+                .setTitle(title)
+                .setMessage(getString(message, selectedAppCountText))
+                .setPositiveButton(positiveButton, (dialog, which) -> handleBatchOp(op))
+                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
@@ -420,5 +463,20 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mProgressIndicator.show();
         model.loadProcesses();
         model.loadMemoryInfo();
+    }
+
+    private void updateRunningAppsStatus(@NonNull List<ProcessItem> processList) {
+        if (mStatusView == null || model == null) return;
+        int shownCount = processList.size();
+        int totalCount = Math.max(model.getTotalCount(), shownCount);
+        if (shownCount > 0) {
+            mStatusView.setText(getResources().getQuantityString(R.plurals.running_apps_status_summary,
+                    totalCount, shownCount, totalCount));
+        } else if (totalCount > 0 || model.getFilter() != FILTER_NONE || !TextUtils.isEmpty(model.getQuery())) {
+            mStatusView.setText(R.string.running_apps_status_empty_filtered);
+        } else {
+            mStatusView.setText(R.string.running_apps_status_empty_no_processes);
+        }
+        mStatusView.setContentDescription(mStatusView.getText());
     }
 }

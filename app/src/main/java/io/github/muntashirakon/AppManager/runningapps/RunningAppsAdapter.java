@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Process;
 import android.text.Spannable;
 import android.text.TextUtils;
@@ -193,19 +194,24 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         // Load icon
         holder.icon.setTag(processName);
         ImageLoader.getInstance().displayImage(processName, applicationInfo, holder.icon);
+        holder.icon.setContentDescription(mActivity.getString(R.string.running_apps_select_process, processName));
         // Set process name
         holder.processName.setText(UIUtils.getHighlightedText(processName, mModel.getQuery(), mQueryStringHighlightColor));
         // Set package name
         AdapterUtils.setVisible(holder.packageName, applicationInfo != null);
+        String packageName = mActivity.getString(R.string.running_apps_system_process);
         if (applicationInfo != null) {
-            holder.packageName.setText(UIUtils.getHighlightedText(applicationInfo.packageName, mModel.getQuery(), mQueryStringHighlightColor));
+            packageName = applicationInfo.packageName;
+            holder.packageName.setText(UIUtils.getHighlightedText(packageName, mModel.getQuery(), mQueryStringHighlightColor));
         }
         // Set process IDs
-        holder.processIds.setText(mActivity.getString(R.string.pid_and_ppid, processItem.pid, processItem.ppid));
+        String processIds = mActivity.getString(R.string.pid_and_ppid, processItem.pid, processItem.ppid);
+        holder.processIds.setText(processIds);
         // Set memory usage
-        holder.memoryUsage.setText(mActivity.getString(R.string.memory_virtual_memory,
+        String memoryUsage = mActivity.getString(R.string.memory_virtual_memory,
                 Formatter.formatFileSize(mActivity, processItem.getMemory()),
-                Formatter.formatFileSize(mActivity, processItem.getVirtualMemory())));
+                Formatter.formatFileSize(mActivity, processItem.getVirtualMemory()));
+        holder.memoryUsage.setText(memoryUsage);
         // Set user info
         String userInfo = mActivity.getString(R.string.user_and_uid, processItem.user, processItem.uid);
         String stateInfo;
@@ -217,6 +223,9 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         holder.userAndStateInfo.setText(String.format("%s, %s", userInfo, stateInfo));
         holder.selinuxContext.setText(String.format("SELinux%s %s", LangUtils.getSeparatorString(),
                 processItem.context));
+        holder.more.setContentDescription(mActivity.getString(R.string.running_apps_more_actions_for_process, processName));
+        holder.itemView.setContentDescription(mActivity.getString(R.string.running_apps_process_content_description,
+                processName, packageName, processIds, memoryUsage, String.format("%s, %s", userInfo, stateInfo)));
         // Set more
         holder.more.setOnClickListener(v -> {
             PopupMenu popupMenu = new PopupMenu(mActivity, holder.more);
@@ -254,29 +263,26 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             } else scanVtIem.setVisible(false);
             // Set force-stop
             MenuItem forceStopItem = menu.findItem(R.id.action_force_stop);
-            if (applicationInfo != null) {
+            boolean canForceStop = applicationInfo != null
+                    && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES);
+            forceStopItem.setVisible(canForceStop);
+            if (canForceStop) {
                 forceStopItem.setOnMenuItemClickListener(item -> {
                             mModel.forceStop(applicationInfo);
                             return true;
-                        })
-                        .setEnabled(SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES));
-            } else forceStopItem.setEnabled(false);
+                        });
+            }
             MenuItem bgItem = menu.findItem(R.id.action_disable_background);
-            if (applicationInfo != null) {
-                forceStopItem.setOnMenuItemClickListener(item -> {
-                            mModel.forceStop(applicationInfo);
-                            return true;
-                        })
-                        .setVisible(SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES));
-                if (mModel.canRunInBackground(applicationInfo)) {
-                    bgItem.setVisible(true).setOnMenuItemClickListener(item -> {
-                        mModel.preventBackgroundRun(applicationInfo);
-                        return true;
-                    });
-                } else bgItem.setVisible(false);
-            } else {
-                forceStopItem.setVisible(false);
-                bgItem.setVisible(false);
+            boolean canPreventBackground = applicationInfo != null
+                    && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                    && SelfPermissions.canModifyAppOpMode()
+                    && mModel.canRunInBackground(applicationInfo);
+            bgItem.setVisible(canPreventBackground);
+            if (canPreventBackground) {
+                bgItem.setOnMenuItemClickListener(item -> {
+                    mModel.preventBackgroundRun(applicationInfo);
+                    return true;
+                });
             }
             // Display popup menu
             popupMenu.show();

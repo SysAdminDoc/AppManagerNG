@@ -8,17 +8,41 @@
 
     <include layout="@layout/appbar" />
 
-    <io.github.muntashirakon.widget.RecyclerView
-        android:id="@+id/scrollView"
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:focusable="false"
-        android:scrollbars="none"
-        android:fitsSystemWindows="true"
-        android:clipToPadding="false"
-        app:fastScrollerEnabled="true"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
-        tools:listitem="@layout/item_running_app" />
+        android:orientation="vertical"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/running_apps_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:background="@drawable/main_status_background"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/main_status_min_height"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_small"
+            android:text="@string/running_apps_status_loading"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <io.github.muntashirakon.widget.RecyclerView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:fitsSystemWindows="true"
+            android:focusable="false"
+            android:scrollbars="none"
+            app:fastScrollerEnabled="true"
+            tools:listitem="@layout/item_running_app" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <io.github.muntashirakon.widget.MultiSelectionView
         android:id="@+id/selection_view"
