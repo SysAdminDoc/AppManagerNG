@@ -1672,6 +1672,7 @@
     <string name="op_history_filter_hint">Filter package, operation, mode, or target</string>
     <string name="op_history_filter_last_24h">24 hours</string>
     <string name="op_history_filter_last_7d">7 days</string>
+    <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="success_count" example="2 succeeded">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
     <string name="op_preflight_rerun_intro">Review the current capability state before running this saved operation again.</string>
@@ -1717,6 +1718,18 @@
     <plurals name="op_history_failed_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> failure</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> failures</item>
+    </plurals>
+    <plurals name="op_history_operation_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> operation</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> operations</item>
+    </plurals>
+    <plurals name="op_history_succeeded_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> succeeded</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> succeeded</item>
+    </plurals>
+    <plurals name="op_history_high_risk_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> high risk</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> high risk</item>
     </plurals>
     <string name="shared_prefs_empty_title">No preferences yet</string>
     <string name="shared_prefs_empty_message">Add the first key-value entry to make this shared preferences file easier to inspect.</string>

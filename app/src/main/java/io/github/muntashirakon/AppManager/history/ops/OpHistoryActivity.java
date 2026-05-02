@@ -58,6 +58,7 @@ public class OpHistoryActivity extends BaseActivity {
     private OpHistoryAdapter mAdapter;
     private LinearProgressIndicator mProgressIndicator;
     private TextInputEditText mFilterText;
+    private TextView mHistorySummary;
     private TextView mEmptyStateTitle;
     private TextView mEmptyStateSummary;
     private MaterialButton mEmptyStateAction;
@@ -86,6 +87,7 @@ public class OpHistoryActivity extends BaseActivity {
         mViewModel = new ViewModelProvider(this).get(OpHistoryViewModel.class);
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
+        mHistorySummary = findViewById(R.id.history_summary);
         RecyclerView listView = findViewById(android.R.id.list);
         listView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         View emptyView = findViewById(android.R.id.empty);
@@ -226,6 +228,7 @@ public class OpHistoryActivity extends BaseActivity {
         boolean hasFilteredOutAllHistory = !mCurrentOpHistories.isEmpty()
                 && hasActiveFilters
                 && filteredList.isEmpty();
+        updateHistorySummary(filteredList);
         mChipClearFilters.setVisibility(hasActiveFilters ? View.VISIBLE : View.GONE);
         if (hasFilteredOutAllHistory) {
             mEmptyStateTitle.setText(R.string.op_history_empty_filtered_title);
@@ -236,6 +239,42 @@ public class OpHistoryActivity extends BaseActivity {
             mEmptyStateSummary.setText(R.string.op_history_empty_message);
             mEmptyStateAction.setVisibility(View.GONE);
         }
+    }
+
+    private void updateHistorySummary(@NonNull List<OpHistoryItem> filteredList) {
+        int totalCount = mCurrentOpHistories.size();
+        if (totalCount == 0) {
+            mHistorySummary.setVisibility(View.GONE);
+            return;
+        }
+        int successCount = 0;
+        int highRiskCount = 0;
+        for (OpHistoryItem history : filteredList) {
+            if (history.getStatus()) {
+                ++successCount;
+            }
+            if (history.getRisk() == OperationJournalMetadata.RISK_HIGH) {
+                ++highRiskCount;
+            }
+        }
+        String shown = getResources().getQuantityString(
+                R.plurals.op_history_operation_count,
+                filteredList.size(),
+                filteredList.size());
+        String total = getResources().getQuantityString(
+                R.plurals.op_history_operation_count,
+                totalCount,
+                totalCount);
+        String succeeded = getResources().getQuantityString(
+                R.plurals.op_history_succeeded_count,
+                successCount,
+                successCount);
+        String highRisk = getResources().getQuantityString(
+                R.plurals.op_history_high_risk_count,
+                highRiskCount,
+                highRiskCount);
+        mHistorySummary.setText(getString(R.string.op_history_summary, shown, total, succeeded, highRisk));
+        mHistorySummary.setVisibility(View.VISIBLE);
     }
 
     private boolean hasActiveFilters() {
