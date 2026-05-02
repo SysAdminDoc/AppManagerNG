@@ -4,6 +4,8 @@
     <dimen name="icon_size">40dp</dimen>
     <dimen name="main_list_icon_size">44dp</dimen>
     <dimen name="main_list_min_height">88dp</dimen>
+    <dimen name="main_list_badge_corner_radius">11dp</dimen>
+    <dimen name="main_list_badge_stroke_width">1dp</dimen>
     <dimen name="title_font">16sp</dimen>
     <dimen name="subtitle_font">14sp</dimen>
     <dimen name="app_widget_background_padding">16dp</dimen>
