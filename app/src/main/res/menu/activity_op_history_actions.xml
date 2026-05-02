@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_export_json"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/op_history_export_json"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_export_csv"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/op_history_export_csv"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_share_history"
+        android:icon="@drawable/ic_share"
+        android:title="@string/op_history_share_summary"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_cleanup_history"
+        android:icon="@drawable/ic_brush"
+        android:title="@string/op_history_cleanup"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_seed_history"
+        android:icon="@drawable/ic_add"
+        android:title="@string/op_history_add_sample_data"
+        app:showAsAction="never" />
+</menu>

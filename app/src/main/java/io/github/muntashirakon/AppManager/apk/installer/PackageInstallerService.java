@@ -286,7 +286,7 @@ public class PackageInstallerService extends ForegroundService {
         String subject = getStringFromStatus(this, status, appLabel, blockingPackage);
         NotificationCompat.Style content = statusMessage != null ? new NotificationCompat.BigTextStyle()
                 .bigText(subject + "\n\n" + statusMessage) : null;
-        Object notificationInfo = new NotificationInfo()
+        NotificationInfo notificationInfo = new NotificationInfo()
                 .setAutoCancel(true)
                 .setTime(System.currentTimeMillis())
                 .setOperationName(getText(R.string.package_installer))
@@ -294,6 +294,9 @@ public class PackageInstallerService extends ForegroundService {
                 .setBody(subject)
                 .setStyle(content)
                 .setDefaultAction(defaultAction);
+        PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
+                OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
+        notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         NotificationInfo progressNotificationInfo = (NotificationInfo) mProgressHandler.getLastMessage();
         if (progressNotificationInfo != null) {
             progressNotificationInfo.setBody(getString(R.string.done));

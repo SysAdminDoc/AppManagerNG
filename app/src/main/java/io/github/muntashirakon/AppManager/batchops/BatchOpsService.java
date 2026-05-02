@@ -248,6 +248,9 @@ public class BatchOpsService extends ForegroundService {
                     PendingIntent.FLAG_ONE_SHOT, false);
             notificationInfo.addAction(0, getString(R.string.restart_device), pendingIntent);
         }
+        PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
+                OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
+        notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         mProgressHandler.onResult(notificationInfo);
     }
 

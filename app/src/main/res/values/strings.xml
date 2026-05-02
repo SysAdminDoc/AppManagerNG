@@ -1678,6 +1678,28 @@
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
     <string name="op_history_action_rerun">Rerun operation</string>
     <string name="op_history_action_not_replayable">Operation cannot be rerun</string>
+    <string name="op_history_export_json">Export visible JSON</string>
+    <string name="op_history_export_csv">Export visible CSV</string>
+    <string name="op_history_share_summary">Share visible summary</string>
+    <string name="op_history_export_filename_json" translatable="false">app-manager-operation-history.json</string>
+    <string name="op_history_export_filename_csv" translatable="false">app-manager-operation-history.csv</string>
+    <string name="op_history_export_success">Operation history exported.</string>
+    <string name="op_history_share_title">Share operation history</string>
+    <string name="op_history_cleanup">Clean up history</string>
+    <string name="op_history_cleanup_delete_successful">Delete successful entries</string>
+    <string name="op_history_cleanup_delete_failed">Delete failed entries</string>
+    <string name="op_history_cleanup_delete_older_7d">Delete entries older than 7 days</string>
+    <string name="op_history_cleanup_delete_older_30d">Delete entries older than 30 days</string>
+    <string name="op_history_cleanup_delete_older_90d">Delete entries older than 90 days</string>
+    <string name="op_history_add_sample_data">Add sample history</string>
+    <string name="op_history_open_target">Open target</string>
+    <string name="op_history_actions">History actions</string>
+    <string name="op_history_retention_title">Operation history retention</string>
+    <string name="op_history_retention_summary">Automatically delete operation history older than <xliff:g id="retention" example="30 days">%1$s</xliff:g>.</string>
+    <string name="op_history_retention_never">Never delete automatically</string>
+    <string name="op_history_retention_7d">7 days</string>
+    <string name="op_history_retention_30d">30 days</string>
+    <string name="op_history_retention_90d">90 days</string>
     <string name="op_preflight_rerun_intro">Review the current capability state before running this saved operation again.</string>
     <string name="op_preflight_current_mode">Current mode</string>
     <string name="op_preflight_saved_mode">Saved mode</string>
@@ -1691,6 +1713,11 @@
     <string name="op_history_detail_status">Status</string>
     <string name="op_history_detail_time">Time</string>
     <string name="op_history_detail_metadata">Metadata</string>
+    <string name="op_history_detail_section_summary">Summary</string>
+    <string name="op_history_detail_section_execution">Execution</string>
+    <string name="op_history_detail_section_safety">Safety</string>
+    <string name="op_history_detail_section_recovery">Recovery</string>
+    <string name="op_history_detail_section_targets">Targets</string>
     <string name="op_history_detail_operation">Operation</string>
     <string name="op_history_detail_mode">Mode</string>
     <string name="op_history_detail_targets">Targets</string>
@@ -1733,6 +1760,14 @@
     <plurals name="op_history_high_risk_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> high risk</item>
         <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> high risk</item>
+    </plurals>
+    <plurals name="op_history_deleted_count">
+        <item quantity="one">Deleted <xliff:g id="count" example="1">%1$d</xliff:g> history entry.</item>
+        <item quantity="other">Deleted <xliff:g id="count" example="4">%1$d</xliff:g> history entries.</item>
+    </plurals>
+    <plurals name="op_history_sample_count">
+        <item quantity="one">Added <xliff:g id="count" example="1">%1$d</xliff:g> sample history entry.</item>
+        <item quantity="other">Added <xliff:g id="count" example="4">%1$d</xliff:g> sample history entries.</item>
     </plurals>
     <string name="shared_prefs_empty_title">No preferences yet</string>
     <string name="shared_prefs_empty_message">Add the first key-value entry to make this shared preferences file easier to inspect.</string>

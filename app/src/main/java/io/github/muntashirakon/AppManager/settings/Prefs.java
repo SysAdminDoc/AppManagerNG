@@ -622,6 +622,14 @@ public final class Prefs {
         public static boolean isPersistentSessionAllowed() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERSISTENT_SESSION_BOOL);
         }
+
+        public static int getOpHistoryRetentionDays() {
+            return AppPref.getInt(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT);
+        }
+
+        public static void setOpHistoryRetentionDays(int retentionDays) {
+            AppPref.set(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT, retentionDays);
+        }
     }
 
     public static final class Signing {
