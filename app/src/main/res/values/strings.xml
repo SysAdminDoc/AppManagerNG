@@ -1272,6 +1272,11 @@
     <string name="failed_to_disable_magisk_deny_list">Could not disable Magisk DenyList</string>
     <string name="mode_of_op_with_inferred_mode_of_op">%1$s (Inferred mode: %2$s)</string>
     <string name="primary_abi">Primary ABI</string>
+    <string name="device_page_size">Device page size</string>
+    <string name="device_page_size_4k">4 KB</string>
+    <string name="device_page_size_16k">16 KB (page-size compatibility required)</string>
+    <string name="device_page_size_other">%1$d bytes</string>
+    <string name="device_page_size_unknown">Unknown</string>
     <string name="zygote_preload_name">Zygote preload name</string>
     <string name="hidden_api_enforcement_policy">Hidden API enforcement policy</string>
     <string name="hidden_api_enf_default_policy">Default (based on application type)</string>
