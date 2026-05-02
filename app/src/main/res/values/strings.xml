@@ -1344,6 +1344,8 @@
     <string name="onboarding_mode_adb_tcp_status_active">USB debugging is enabled</string>
     <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
     <string name="onboarding_change_later_hint">Tap a card to pick. Use the info buttons for details. Settings → Mode of operation lets you change this any time.</string>
+    <string name="onboarding_recheck">Re-check capabilities</string>
+    <string name="onboarding_recheck_done">Capabilities refreshed</string>
     <string name="onboarding_mode_info">Mode details</string>
     <string name="onboarding_mode_card_a11y"><xliff:g id="mode" example="Auto">%1$s</xliff:g>. <xliff:g id="summary" example="Detect the best available mode at startup">%2$s</xliff:g> Double tap to pick this mode.</string>
     <string name="onboarding_mode_card_status_a11y"><xliff:g id="mode" example="Root">%1$s</xliff:g>. <xliff:g id="summary" example="Most powerful">%2$s</xliff:g> <xliff:g id="status" example="Root detected on this device">%3$s</xliff:g>. Double tap to pick this mode.</string>

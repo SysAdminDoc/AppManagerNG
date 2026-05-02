@@ -24,6 +24,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the situation (root managers can hide su until first request, but most
   ops will fail until granted) and lets them cancel without burning the
   onboarding-shown flag.
+- **Re-check capabilities button** in the onboarding sheet — refreshes
+  the Root / Wireless-ADB / USB-ADB badges and the active-mode highlight
+  in place without dismissing the sheet, so users who toggle Wireless
+  debugging from quick-settings or grant root from another app can see
+  the new state immediately. Snackbar confirms the refresh.
 
 ### Added — Premium facelift design system (foundation)
 - **`design/` deliverable folder** (audit, spec, impl, plan, README) — full

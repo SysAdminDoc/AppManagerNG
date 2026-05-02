@@ -82,21 +82,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Live capability surfacing — re-evaluate every time the sheet binds rather
-        // than caching at fragment construction so a user who toggles ADB and
-        // returns to the sheet sees the new state.
-        TextView rootStatus = view.findViewById(R.id.status_root);
-        bindCapabilityStatus(rootStatus, Ops.hasRoot(),
-                R.string.onboarding_mode_root_status_detected,
-                R.string.onboarding_mode_root_status_missing);
-        TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
-        bindCapabilityStatus(adbWifiStatus, isWirelessDebuggingActive(),
-                R.string.onboarding_mode_adb_wifi_status_active,
-                R.string.onboarding_mode_adb_wifi_status_inactive);
-        TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
-        bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
-                R.string.onboarding_mode_adb_tcp_status_active,
-                R.string.onboarding_mode_adb_tcp_status_inactive);
+        refreshCapabilityStatuses(view);
         bindCardActions(view, R.id.card_mode_auto, R.id.info_mode_auto, View.NO_ID, Ops.MODE_AUTO,
                 R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_summary,
                 R.string.onboarding_mode_auto_explainer);
@@ -117,6 +103,42 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         // highlight on a true first-run — the saved mode will already be the
         // default (MODE_AUTO) and that's still meaningful information.
         highlightActiveMode(view, Ops.getMode());
+        // "Re-check capabilities" — for users who toggle Wireless debugging or
+        // grant root from another app while the sheet is open. Re-bind the
+        // capability badges and the active-mode highlight without dismissing
+        // the sheet, then confirm with a Snackbar so the action is visible
+        // even when the badges already showed the new state.
+        View recheck = view.findViewById(R.id.btn_recheck);
+        if (recheck != null) {
+            recheck.setOnClickListener(v -> {
+                refreshCapabilityStatuses(view);
+                highlightActiveMode(view, Ops.getMode());
+                com.google.android.material.snackbar.Snackbar.make(view,
+                        R.string.onboarding_recheck_done,
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show();
+            });
+        }
+    }
+
+    /**
+     * Re-evaluate every capability badge against the current device state. Called
+     * on bind and from the "Re-check" button so a user who toggles Wireless
+     * debugging from quick-settings or grants root from another app can see the
+     * new state without dismissing the sheet.
+     */
+    private void refreshCapabilityStatuses(@NonNull View view) {
+        TextView rootStatus = view.findViewById(R.id.status_root);
+        bindCapabilityStatus(rootStatus, Ops.hasRoot(),
+                R.string.onboarding_mode_root_status_detected,
+                R.string.onboarding_mode_root_status_missing);
+        TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
+        bindCapabilityStatus(adbWifiStatus, isWirelessDebuggingActive(),
+                R.string.onboarding_mode_adb_wifi_status_active,
+                R.string.onboarding_mode_adb_wifi_status_inactive);
+        TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
+        bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
+                R.string.onboarding_mode_adb_tcp_status_active,
+                R.string.onboarding_mode_adb_tcp_status_inactive);
     }
 
     /**
