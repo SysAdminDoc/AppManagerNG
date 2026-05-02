@@ -407,7 +407,7 @@
     <string name="night">Night</string>
     <string name="select_theme">Theme</string>
     <string name="apply">Apply</string>
-    <string name="pref_about_msg">App Manager version, license, credits, etc.</string>
+    <string name="pref_about_msg">Version, changelog, licenses, contributors, and release trust details.</string>
     <string name="version">Version</string>
     <string name="sort_by_wifi_data">Wi-Fi data</string>
     <string name="block_trackers">Block trackers</string>
@@ -811,7 +811,7 @@
     <string name="pref_sign_apk_msg">Sign APK files before installing them.</string>
     <string name="app_signing_signature_schemes">Signature schemes</string>
     <string name="apk_signing">APK signing</string>
-    <string name="pref_apk_signing_msg">Set signature schemes, custom signing key, etc.</string>
+    <string name="pref_apk_signing_msg">Signature schemes, signing key, zip alignment, and APK verification controls.</string>
     <string name="v1_scheme">v1 scheme (since Android 1.0)</string>
     <string name="v2_scheme">v2 scheme (since Android 7.0)</string>
     <string name="v3_scheme">v3 scheme (since Android 9)</string>
@@ -870,7 +870,7 @@
     <string name="interceptor">Interceptor</string>
     <string name="set_custom_app_op">Set custom app op</string>
     <string name="about_device">About the device</string>
-    <string name="pref_about_device_msg">Basic device info including Android system, CPU, GPU, RAM, battery, etc.</string>
+    <string name="pref_about_device_msg">Android, CPU, GPU, RAM, battery, and security-provider details.</string>
     <string name="brand_name">Brand</string>
     <string name="model">Model</string>
     <string name="board_name">Board</string>
@@ -914,7 +914,7 @@
     <string name="failed_to_disable_magisk_hide">Could not disable MagiskHide</string>
     <string name="failed_to_enable_magisk_hide">Could not enable MagiskHide</string>
     <string name="disable_background_run_description">Sets <i>Ignore</i> mode for the following app ops: <tt>RUN_IN_BACKGROUND</tt> (from Android 7.0) and <tt>RUN_ANY_IN_BACKGROUND</tt> (from Android 9).</string>
-    <string name="pref_backup_restore_msg">Customise backup/restore.</string>
+    <string name="pref_backup_restore_msg">Backup location, encryption, import, restore options, and retention.</string>
     <string name="backup_volume">Backup volume</string>
     <string name="pref_backup_volume_msg">Select the volume or disk where the backups will be stored.</string>
     <string name="no_volumes_found">Could not find any volumes with write permission.</string>
@@ -1022,13 +1022,13 @@
     <string name="failed_to_read_keystore">Could not read the KeyStore.</string>
     <string name="signing_key">Signing key</string>
     <string name="expiry_date_cannot_be_empty">Expiry date cannot be empty.</string>
-    <string name="pref_installer_msg">Configure the behaviours of the app installer.</string>
+    <string name="pref_installer_msg">Install behavior, package origin, verification, and post-install optimization.</string>
     <string name="pref_import_backups">Import backups</string>
     <string name="pref_import_backups_msg">Import backups from OAndBackup, Swift Backup (3.0–3.2) or Titanium Backup.</string>
     <string name="import_from_oab">Import from OAndBackup</string>
     <string name="import_from_tb">Import from Titanium Backup</string>
     <string name="log_viewer">Log viewer</string>
-    <string name="pref_log_viewer_msg">Configure how logs are displayed.</string>
+    <string name="pref_log_viewer_msg">Display density, buffers, filters, and saved log behavior.</string>
     <string name="restart_log_viewer_to_see_changes">Restart log viewer window to see changes.</string>
     <string name="filename">Filename</string>
     <string name="log_level_debug">Debug</string>
@@ -1129,7 +1129,7 @@
     <string name="import_keystore">Import KeyStore</string>
     <string name="confirm_import_keystore">Are you sure want to replace the existing KeyStore? This action cannot be undone.</string>
     <string name="failed">Failed</string>
-    <string name="pref_rules_msg">Instant blocking, import/export/remove rules, etc.</string>
+    <string name="pref_rules_msg">Component blocking, import/export, and rule reset controls.</string>
     <string name="saf">SAF</string>
     <string name="pref_layout_direction">Layout direction</string>
     <string name="orientation_follow_locale">Follow locale</string>
@@ -1241,7 +1241,7 @@
     <string name="vt_disclaimer">VirusTotal and its logos are a trademark of Chronicle LLC. Neither App Manager—the API client—nor its authors are responsible for any data you may send to VirusTotal.</string>
     <string name="pref_vt_apikey">VirusTotal API Key</string>
     <string name="pref_vt_apikey_description">An API key enables App Manager to upload APK files to VirusTotal as well as fetch reports. Sign up at https://virustotal.com to get an API key for free.</string>
-    <string name="pref_vt_apikey_summary">Enable scanning APK files via VirusTotal.</string>
+    <string name="pref_vt_apikey_summary">Scan APK files with VirusTotal after you add an API key.</string>
     <string name="uses_play_app_signing">Play app signing</string>
     <string name="uses_play_app_signing_description">This app contains certain markers that indicate that it <i>might</i> be using <a href="https://support.google.com/googleplay/android-developer/answer/9842756">Play App Signing</a>. With this scheme, the signing keys are stored in Google\'s servers, and Google is responsible for signing the app. Note that matching signing information is the only way to verify that the app has not been modified by any person other than the developer (and in this case, Google too).</string>
     <string name="scan_in_vt">Scan in VirusTotal</string>
@@ -1343,7 +1343,11 @@
     <string name="onboarding_mode_adb_wifi_status_inactive">Not active — enable in Developer options &gt; Wireless debugging</string>
     <string name="onboarding_mode_adb_tcp_status_active">USB debugging is enabled</string>
     <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
-    <string name="onboarding_change_later_hint">Tap a card to pick · long-press for detail. Settings → Mode of operation lets you change this any time.</string>
+    <string name="onboarding_change_later_hint">Tap a card to pick. Use the info buttons for details. Settings → Mode of operation lets you change this any time.</string>
+    <string name="onboarding_mode_info">Mode details</string>
+    <string name="onboarding_mode_card_a11y"><xliff:g id="mode" example="Auto">%1$s</xliff:g>. <xliff:g id="summary" example="Detect the best available mode at startup">%2$s</xliff:g> Double tap to pick this mode.</string>
+    <string name="onboarding_mode_card_status_a11y"><xliff:g id="mode" example="Root">%1$s</xliff:g>. <xliff:g id="summary" example="Most powerful">%2$s</xliff:g> <xliff:g id="status" example="Root detected on this device">%3$s</xliff:g>. Double tap to pick this mode.</string>
+    <string name="onboarding_mode_info_a11y">Learn more about <xliff:g id="mode" example="Auto">%1$s</xliff:g> mode</string>
     <string name="onboarding_explainer_pick_this">Pick this</string>
     <string name="onboarding_mode_auto_explainer">AppManagerNG checks your device on every cold start in this order:\n\n1. Root (Magisk / KernelSU / SuperSU) — picked if a working su binary is present.\n2. Wireless debugging (Android 11+) — used if you enabled and paired it.\n3. ADB over TCP — used if a PC opened the daemon over USB previously.\n4. No-root — final fallback. Limited features but always works.\n\nPick this if you are not sure. AppManagerNG re-checks on every launch, so if you set up Wireless ADB later it picks up automatically.</string>
     <string name="onboarding_mode_root_explainer">Root unlocks the most powerful operations:\n\n• Component blocking via Intent Firewall (IFW) — survives reboots, can be applied to any app including system apps.\n• Full backup/restore including app data, encrypted with your AppManagerNG keystore.\n• Direct system-API calls without going through the limited PackageInstaller.\n• AppOps and runtime-permission control beyond what Settings exposes.\n\nRequires a Magisk, KernelSU, or SuperSU setup on the device. AppManagerNG will request su access the first time you trigger a privileged operation.</string>
@@ -1431,12 +1435,20 @@
     <string name="hide_app_description">This method is only recommended for day to day use. A hidden app appears as if it is uninstalled. But the app could reappear if it is reinstalled or updated.</string>
     <string name="sort_by_frozen_app">Frozen first</string>
     <string name="filter_frozen_apps">Frozen apps</string>
-    <string name="pref_appearance_description">Theme, orientation, features, etc.</string>
+    <string name="pref_appearance_description">Theme, typography, layout direction, and feature visibility.</string>
     <string name="pref_privacy">Privacy</string>
-    <string name="pref_privacy_description">Screen lock, authorization, etc.</string>
+    <string name="pref_privacy_description">Screen lock, authorization, Internet access, and session behavior.</string>
     <string name="user_manual">User manual</string>
     <string name="get_help">Get help</string>
-    <string name="pref_advanced_pref">Users, APK name format, parallel execution, etc.</string>
+    <string name="pref_advanced_pref">Users, APK naming, concurrency, freezing, and expert defaults.</string>
+    <string name="pref_cat_settings_foundation">Foundation</string>
+    <string name="pref_cat_settings_foundation_summary">Language, theme, access mode, and app safety defaults.</string>
+    <string name="pref_cat_settings_package_workflows">Package workflows</string>
+    <string name="pref_cat_settings_package_workflows_summary">Install, back up, sign, scan, and control apps.</string>
+    <string name="pref_cat_settings_tools">Tools and data</string>
+    <string name="pref_cat_settings_tools_summary">Logs, files, rules, and advanced system behavior.</string>
+    <string name="pref_cat_settings_support">Support and diagnostics</string>
+    <string name="pref_cat_settings_support_summary">Device details, app info, and recovery tools.</string>
     <string name="pref_version_changelog">Version/changelog</string>
     <string name="file_creation_date">Created</string>
     <string name="file_modification_date">Modified</string>
@@ -1599,7 +1611,7 @@
     <string name="debloat_removal_replace_short_description">Replace with alternative</string>
     <string name="title_alternatives_to_bloatware">Alternatives</string>
     <string name="browse_files">Browse</string>
-    <string name="pref_files_msg">Configure file manager.</string>
+    <string name="pref_files_msg">Launcher visibility, home folder, and file manager session behavior.</string>
     <string name="pref_files_display_in_launcher">Display “Files” in app drawer</string>
     <string name="pref_files_remember_last_path">Remember last opened path and its position</string>
     <string name="pref_files_remember_last_path_msg">When this option is enabled, opening a new window opens the last opened folder instead of the home folder.</string>

@@ -97,16 +97,21 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
                 R.string.onboarding_mode_adb_tcp_status_active,
                 R.string.onboarding_mode_adb_tcp_status_inactive);
-        bindCardActions(view, R.id.card_mode_auto, Ops.MODE_AUTO,
-                R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_explainer);
-        bindCardActions(view, R.id.card_mode_root, Ops.MODE_ROOT,
-                R.string.onboarding_mode_root_title, R.string.onboarding_mode_root_explainer);
-        bindCardActions(view, R.id.card_mode_adb_wifi, Ops.MODE_ADB_WIFI,
-                R.string.onboarding_mode_adb_wifi_title, R.string.onboarding_mode_adb_wifi_explainer);
-        bindCardActions(view, R.id.card_mode_adb_tcp, Ops.MODE_ADB_OVER_TCP,
-                R.string.onboarding_mode_adb_tcp_title, R.string.onboarding_mode_adb_tcp_explainer);
-        bindCardActions(view, R.id.card_mode_no_root, Ops.MODE_NO_ROOT,
-                R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_explainer);
+        bindCardActions(view, R.id.card_mode_auto, R.id.info_mode_auto, View.NO_ID, Ops.MODE_AUTO,
+                R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_summary,
+                R.string.onboarding_mode_auto_explainer);
+        bindCardActions(view, R.id.card_mode_root, R.id.info_mode_root, R.id.status_root, Ops.MODE_ROOT,
+                R.string.onboarding_mode_root_title, R.string.onboarding_mode_root_summary,
+                R.string.onboarding_mode_root_explainer);
+        bindCardActions(view, R.id.card_mode_adb_wifi, R.id.info_mode_adb_wifi, R.id.status_adb_wifi,
+                Ops.MODE_ADB_WIFI, R.string.onboarding_mode_adb_wifi_title,
+                R.string.onboarding_mode_adb_wifi_summary, R.string.onboarding_mode_adb_wifi_explainer);
+        bindCardActions(view, R.id.card_mode_adb_tcp, R.id.info_mode_adb_tcp, R.id.status_adb_tcp,
+                Ops.MODE_ADB_OVER_TCP, R.string.onboarding_mode_adb_tcp_title,
+                R.string.onboarding_mode_adb_tcp_summary, R.string.onboarding_mode_adb_tcp_explainer);
+        bindCardActions(view, R.id.card_mode_no_root, R.id.info_mode_no_root, View.NO_ID, Ops.MODE_NO_ROOT,
+                R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_summary,
+                R.string.onboarding_mode_no_root_explainer);
     }
 
     private void bindCapabilityStatus(@Nullable TextView statusView, boolean available,
@@ -130,26 +135,41 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     /**
-     * Wire tap-to-pick + long-press-to-explain on a mode card. Tap commits the choice
-     * via {@link #pick}; long-press surfaces an extended explainer dialog so users
-     * unfamiliar with root / ADB / Shizuku terminology can read more before picking
-     * without committing first. The footer hint advertises the long-press affordance.
+     * Wire tap-to-pick plus a visible details affordance on a mode card. Tap commits
+     * the choice via {@link #pick}; details/long-press surfaces an extended explainer
+     * dialog so users can read more before picking without committing first.
      */
-    private void bindCardActions(@NonNull View root, int cardId,
+    private void bindCardActions(@NonNull View root, int cardId, int infoId, int statusId,
                                  @NonNull @Ops.Mode String mode,
-                                 int titleRes, int explainerRes) {
+                                 int titleRes, int summaryRes, int explainerRes) {
         View card = root.findViewById(cardId);
         if (card == null) return;
+        String title = getString(titleRes);
+        String summary = getString(summaryRes);
+        TextView status = statusId != View.NO_ID ? root.findViewById(statusId) : null;
+        CharSequence statusText = status != null ? status.getText() : null;
+        card.setContentDescription(statusText != null && statusText.length() > 0
+                ? getString(R.string.onboarding_mode_card_status_a11y, title, summary, statusText)
+                : getString(R.string.onboarding_mode_card_a11y, title, summary));
         card.setOnClickListener(v -> pick(mode));
         card.setOnLongClickListener(v -> {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(titleRes)
-                    .setMessage(explainerRes)
-                    .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> pick(mode))
-                    .setNegativeButton(R.string.close, null)
-                    .show();
+            showModeExplainer(mode, titleRes, explainerRes);
             return true;
         });
+        View info = root.findViewById(infoId);
+        if (info != null) {
+            info.setContentDescription(getString(R.string.onboarding_mode_info_a11y, title));
+            info.setOnClickListener(v -> showModeExplainer(mode, titleRes, explainerRes));
+        }
+    }
+
+    private void showModeExplainer(@NonNull @Ops.Mode String mode, int titleRes, int explainerRes) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(titleRes)
+                .setMessage(explainerRes)
+                .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> pick(mode))
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 
     /** True when USB debugging (ADB over USB) is enabled in Developer options. */
