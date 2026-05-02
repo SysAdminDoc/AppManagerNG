@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Onboarding replay (v0.4.0)
+- **Replay welcome wizard** action in Settings → Troubleshooting; clears
+  `PREF_ONBOARDING_SHOWN_BOOL` and immediately surfaces the privilege-mode
+  picker (Auto / Root / Wireless ADB / ADB-TCP / No-root) so power users
+  and testers can revisit the explainers without a fresh install. The
+  picker writes the flag back on pick/cancel, so the flow self-heals.
+- **Replay quick tour** action in Settings → Troubleshooting; clears
+  `PREF_MAIN_TOUR_SHOWN_BOOL` so the main-list tour re-arms on the next
+  launch. Toast confirms the reset.
+
 ### Added — Premium facelift design system (foundation)
 - **`design/` deliverable folder** (audit, spec, impl, plan, README) — full
   v2 design system reference: palette, typography, 4dp spacing ladder,

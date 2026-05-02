@@ -5,4 +5,14 @@
         app:title="@string/pref_reload_apps"
         app:summary="@string/pref_reload_apps_msg"
         app:iconSpaceReserved="false" />
+    <Preference
+        app:key="replay_onboarding"
+        app:title="@string/pref_replay_onboarding"
+        app:summary="@string/pref_replay_onboarding_msg"
+        app:iconSpaceReserved="false" />
+    <Preference
+        app:key="replay_tour"
+        app:title="@string/pref_replay_tour"
+        app:summary="@string/pref_replay_tour_msg"
+        app:iconSpaceReserved="false" />
 </PreferenceScreen>
