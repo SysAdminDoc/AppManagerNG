@@ -60,7 +60,7 @@ Required before any APK reaches real users. Every item here is blocking F-Droid 
 | **Reproducible Builds** | Match upstream's reproducible build config (added in upstream v4.0.5); CI diff step compares release APK binary hash | Medium |
 | **IzzyOnDroid Listing** | Submit after rename; IzzyOnDroid is faster than F-Droid proper and the primary privacy-community distribution channel | Low |
 | **F-Droid Listing** | Submit to F-Droid proper after IzzyOnDroid pass; requires REUSE compliance (already in place) | Low–Med |
-| **Obtainium Config** | Publish pre-built app config at `apps.obtainium.imranr.dev` so users can track NG updates directly | Trivial |
+| ~~**Obtainium Config**~~ ✅ 2026-05-01 | Publish pre-built app config at `apps.obtainium.imranr.dev` so users can track NG updates directly. **Shipped at [docs/distribution/obtainium-config.json](docs/distribution/obtainium-config.json) with README "Install via Obtainium" section. Submission to apps.obtainium.imranr.dev is a separate manual PR step (out-of-band).** | Trivial |
 | **Accrescent Listing** | Submit to Accrescent store after reproducible builds land; provides key-pinned first-install verification and no-account downloads for privacy-conscious users ([S62]). Requires developer console account + meeting reproducible build requirement (N2 dependency). | Low–Med |
 | ~~**NG-Specific CONTRIBUTING.md**~~ ✅ v0.2.0 | Replace upstream's CONTRIBUTING.rst; define AI code policy, commit format, PR expectations, upstream sync protocol | Low |
 | ~~**AppVerifier Fingerprint**~~ ✅ v0.2.0 | Add signing certificate SHA-256 to README (model: SAI, Obtainium, Canta all do this) | Trivial |
