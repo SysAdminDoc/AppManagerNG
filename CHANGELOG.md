@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Main List & Item Layout: v2 Design System Integration (v0.5.x surface migration phase 1)
+- New `activity_main_v2.xml` and `item_main_v2.xml` wired behind the `PREF_PREMIUM_PREVIEW_BOOL` 
+  toggle. When enabled, MainActivity and MainRecyclerAdapter load v2 layouts with refined v2 token 
+  palette (calmer surfaces, tighter typography, pill-shaped search, outlined card variants). 
+  Layout switching is conditional per-view, allowing zero-impact on classic theme users. 
+  Completes v0.5.x phase 1 (top-5 surface migration). Next phases: AppDetails, AppUsage, Settings.
+
 ### Added — Troubleshooting: auto-fix battery optimization via root/ADB (SD-Maid parity, ROADMAP iter-18 T20)
 - Settings → Troubleshooting → "Battery optimization" now auto-applies the
   exemption when NG has root or ADB privileges (checks `DEVICE_POWER`). If
