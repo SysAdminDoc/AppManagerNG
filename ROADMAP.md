@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-02 (iter-18: UAD selectable descriptions, UAD copy-error helper, SD-Maid auto-fix battery optimization, Inure native-lib size + AppOps IGNORE verified shipped).
+**Last updated:** 2026-05-02 (iter-18: UAD selectable descriptions, UAD copy-error helper, SD-Maid auto-fix battery optimization, Inure native-lib size + AppOps IGNORE verified; v0.5.x Phase 1 layout migration shipped).
 **Next revision due:** v0.6.0 release.
 
 **Related research:** [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md).
