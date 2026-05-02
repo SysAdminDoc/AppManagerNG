@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Docs — ROADMAP iter-18 research (no code change)
+- Research-only iteration. 29 new candidate items added under a new
+  "Iter-18 Research Additions" section in `ROADMAP.md`, drawn from
+  Shizuku v13.6.0, Magisk v30.7, KernelSU v3.2, Termux v0.118.3,
+  Apktool v3.0.2, JADX v1.5.5, APKEditor v1.4.7-8, Hail v1.10.0,
+  Inure build107, Material Files v1.7.4, SD Maid SE v1.7.2-rc0,
+  UAD-NG v1.2.0, Neo Backup 8.3.17, androidx.glance, and Android
+  16/17 platform docs. Highlights: Shizuku trusted-WLAN auto-start
+  banner, Magisk `--drop-cap` opt-in semantics surface, KernelSU
+  sulog/seccomp parity, Android 16 `SDK_INT_FULL` plumbing audit,
+  JobScheduler quota stop-reason surfacing, APKEditor smali
+  comment-level "basic", Hail-style auto-freeze QS tile,
+  Inure-style AppOps IGNORE flag, UAD-style cross-user package
+  state detection, Neo-Backup-style backup sharing button.
+  Sources S121–S136 appended to the appendix; baseline line bumped
+  with iter-18 summary.
+
 ### Added — Settings: Battery optimization entry (ROADMAP Trivial closed)
 - New "Battery optimization" preference under Settings → Troubleshooting.
   Summary reflects the current `PowerManager.isIgnoringBatteryOptimizations()`
