@@ -40,7 +40,7 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
         // https://github.com/androidx/androidx/blob/androidx-main/preference/preference/res/layout/preference_recyclerview.xml
         RecyclerView recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setFitsSystemWindows(true);
-        recyclerView.setClipToPadding(false);
+        recyclerView.setClipToPadding(true);
         if (secondary) {
             if (this instanceof MainPreferences) {
                 UiUtils.applyWindowInsetsAsPadding(recyclerView, false, true, true, false);

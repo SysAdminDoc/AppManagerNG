@@ -4,12 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:orientation="horizontal"
     tools:context=".settings.SettingsActivity">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:layout_width="450dp"
-        android:layout_height="match_parent">
+        android:layout_width="@dimen/settings_primary_pane_width"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurfaceContainerLow">
 
         <io.github.muntashirakon.widget.AppBarLayout
             android:id="@+id/appbar"
@@ -36,14 +38,20 @@
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/main_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="@dimen/settings_pane_divider_width"
+        android:layout_height="match_parent"
+        app:dividerColor="?attr/colorOutlineVariant" />
+
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appbar2"
@@ -70,7 +78,7 @@
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/secondary_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
