@@ -18,6 +18,7 @@ import java.security.Security;
 
 import dalvik.system.ZipPathValidator;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
+import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
@@ -42,6 +43,7 @@ public class AppManager extends Application {
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new JavaKeyStoreProvider());
         Security.addProvider(new BouncyCastleProvider());
+        ProfilingTriggerHelper.registerTriggersIfSupported(this);
     }
 
     @Keep

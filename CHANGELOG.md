@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Android 17 ProfilingManager OOM/anomaly triggers (ROADMAP T4 closed)
+- New `misc/ProfilingTriggerHelper.registerTriggersIfSupported(Context)`
+  registers `TRIGGER_TYPE_OOM` and `TRIGGER_TYPE_ANOMALY` via reflection on
+  API 37+ devices, so the system auto-captures heap profiles when
+  AppManagerNG hits low-memory or anomaly conditions during JADX decompile
+  or APK parsing. Silent no-op on anything below API 37 and on any
+  reflective lookup failure (compileSdk is still 36 so the profiling
+  classes are not present at build time).
+- Wired from `AppManager.onCreate()` once per process. The harvest +
+  diagnostic-ZIP-attach side of the workflow is deferred until API 37 is
+  available on a real device for end-to-end test.
+
 ### Compliance — Android 17 per-app Keystore key-cap audit (clean; ROADMAP T2 closed)
 - Audit confirms NG can never exceed Android 17's 50,000-key per-app
   `AndroidKeyStore` cap: it generates at most **two** static, idempotently
