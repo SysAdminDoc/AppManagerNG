@@ -36,3 +36,4 @@ CODEX_CHANGELOG.md
 keystore.properties
 release.keystore
 release.jks
+.factory/
