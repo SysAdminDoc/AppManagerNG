@@ -386,7 +386,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                     case RunningAppsActivity.SORT_BY_PROCESS_NAME:
                         return p1.name.compareToIgnoreCase(p2.name);
                     case RunningAppsActivity.SORT_BY_CPU_TIME:
-                        return -Long.compare(p1.getCpuTimeInMillis(), p1.getCpuTimeInMillis());
+                        return -Long.compare(p1.getCpuTimeInMillis(), p2.getCpuTimeInMillis());
                     case RunningAppsActivity.SORT_BY_PID:
                     default:
                         return Integer.compare(p1.pid, p2.pid);
