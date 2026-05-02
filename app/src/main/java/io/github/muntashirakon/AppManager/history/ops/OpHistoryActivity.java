@@ -4,11 +4,13 @@ package io.github.muntashirakon.AppManager.history.ops;
 
 import android.app.Application;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +18,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -34,15 +38,20 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
+import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -54,6 +63,11 @@ import io.github.muntashirakon.widget.RecyclerView;
 
 public class OpHistoryActivity extends BaseActivity {
     private static final long ONE_DAY_MILLIS = 24L * 60 * 60 * 1000;
+    private static final int CLEANUP_SUCCESSFUL = 0;
+    private static final int CLEANUP_FAILED = 1;
+    private static final int CLEANUP_OLDER_THAN_7_DAYS = 2;
+    private static final int CLEANUP_OLDER_THAN_30_DAYS = 3;
+    private static final int CLEANUP_OLDER_THAN_90_DAYS = 4;
 
     private OpHistoryViewModel mViewModel;
     private OpHistoryAdapter mAdapter;
@@ -80,6 +94,12 @@ public class OpHistoryActivity extends BaseActivity {
     private Chip mChipLastDay;
     private Chip mChipLastWeek;
     private Chip mChipClearFilters;
+    @Nullable
+    private String mPendingExport;
+
+    private final ActivityResultLauncher<String> mExportHistory = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("*/*"),
+            this::writePendingExport);
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -124,6 +144,12 @@ public class OpHistoryActivity extends BaseActivity {
                 UIUtils.displayShortToast(cleared ? R.string.done : R.string.failed));
         mViewModel.getDeleteHistoryLiveData().observe(this, deleted ->
                 UIUtils.displayShortToast(deleted ? R.string.done : R.string.failed));
+        mViewModel.getCleanupHistoryLiveData().observe(this, deletedCount ->
+                UIUtils.displayShortToast(getResources().getQuantityString(
+                        R.plurals.op_history_deleted_count, deletedCount, deletedCount)));
+        mViewModel.getDebugSeedLiveData().observe(this, addedCount ->
+                UIUtils.displayShortToast(getResources().getQuantityString(
+                        R.plurals.op_history_sample_count, addedCount, addedCount)));
         mViewModel.getServiceLauncherIntentLiveData().observe(this, intent -> {
             if (intent != null) {
                 ContextCompat.startForegroundService(this, intent);
@@ -233,6 +259,7 @@ public class OpHistoryActivity extends BaseActivity {
                 && filteredList.isEmpty();
         updateHistorySummary(filteredList);
         mChipClearFilters.setVisibility(hasActiveFilters ? View.VISIBLE : View.GONE);
+        invalidateOptionsMenu();
         if (hasFilteredOutAllHistory) {
             mEmptyStateTitle.setText(R.string.op_history_empty_filtered_title);
             mEmptyStateSummary.setText(R.string.op_history_empty_filtered_message);
@@ -387,10 +414,55 @@ public class OpHistoryActivity extends BaseActivity {
                 .show();
     }
 
+    private void showHistoryActions(@NonNull OpHistoryItem history) {
+        List<CharSequence> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        labels.add(getString(R.string.copy));
+        actions.add(() -> copyHistoryDetails(history, history.getDetailMessage(this)));
+        Intent targetIntent = history.getPrimaryTargetIntent(this);
+        if (targetIntent != null) {
+            labels.add(getString(R.string.op_history_open_target));
+            actions.add(() -> openHistoryTarget(targetIntent));
+        }
+        if (history.isReplayable()) {
+            labels.add(getString(R.string.op_history_action_rerun));
+            actions.add(() -> showRerunConfirmation(history));
+        }
+        labels.add(getString(R.string.delete));
+        actions.add(() -> showDeleteHistoryConfirmation(history));
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.op_history_actions)
+                .setItems(labels.toArray(new CharSequence[0]), (dialog, which) -> actions.get(which).run())
+                .show();
+    }
+
     private void copyHistoryDetails(@NonNull OpHistoryItem history, @NonNull String detailMessage) {
         String title = history.getLabel(this);
         ClipboardUtils.copyToClipboard(this, title, title + "\n\n" + detailMessage);
         UIUtils.displayShortToast(R.string.copied_to_clipboard);
+    }
+
+    private void openHistoryTarget(@NonNull Intent intent) {
+        try {
+            startActivity(intent);
+        } catch (Throwable e) {
+            UIUtils.displayLongToast(R.string.error);
+        }
+    }
+
+    private void showRerunConfirmation(@NonNull OpHistoryItem history) {
+        if (!history.isReplayable()) {
+            UIUtils.displayShortToast(R.string.op_history_action_not_replayable);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.title_confirm_execution)
+                .setMessage(OperationPreflight.fromHistory(this, history)
+                        .getConfirmationMessage(this, history))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.action_run, (dialog, which) ->
+                        mViewModel.getServiceLauncherIntent(history))
+                .show();
     }
 
     private void showDeleteHistoryConfirmation(@NonNull OpHistoryItem history) {
@@ -406,12 +478,135 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_op_history_actions, menu);
+        menu.findItem(R.id.action_seed_history).setVisible(BuildConfig.DEBUG);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
+        boolean hasVisibleHistory = !getVisibleHistory().isEmpty();
+        menu.findItem(R.id.action_export_json).setEnabled(hasVisibleHistory);
+        menu.findItem(R.id.action_export_csv).setEnabled(hasVisibleHistory);
+        menu.findItem(R.id.action_share_history).setEnabled(hasVisibleHistory);
+        menu.findItem(R.id.action_cleanup_history).setEnabled(!mCurrentOpHistories.isEmpty());
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
             finish();
+        } else if (id == R.id.action_export_json) {
+            exportVisibleHistory(true);
+        } else if (id == R.id.action_export_csv) {
+            exportVisibleHistory(false);
+        } else if (id == R.id.action_share_history) {
+            shareVisibleHistory();
+        } else if (id == R.id.action_cleanup_history) {
+            showHistoryCleanupDialog();
+        } else if (id == R.id.action_seed_history) {
+            mProgressIndicator.show();
+            mViewModel.addDebugHistoryFixtures();
         } else return super.onOptionsItemSelected(item);
         return true;
+    }
+
+    private void exportVisibleHistory(boolean asJson) {
+        List<OpHistoryItem> histories = getVisibleHistory();
+        if (histories.isEmpty()) {
+            UIUtils.displayShortToast(R.string.no_history);
+            return;
+        }
+        try {
+            mPendingExport = asJson
+                    ? OperationHistoryExporter.toJson(this, histories)
+                    : OperationHistoryExporter.toCsv(this, histories);
+            mExportHistory.launch(getString(asJson
+                    ? R.string.op_history_export_filename_json
+                    : R.string.op_history_export_filename_csv));
+        } catch (JSONException e) {
+            Log.e(TAG, "Could not export operation history.", e);
+            UIUtils.displayShortToast(R.string.export_failed);
+        }
+    }
+
+    private void writePendingExport(@Nullable Uri uri) {
+        if (uri == null || mPendingExport == null) {
+            return;
+        }
+        try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+            if (os == null) {
+                UIUtils.displayShortToast(R.string.export_failed);
+                return;
+            }
+            os.write(mPendingExport.getBytes(StandardCharsets.UTF_8));
+            UIUtils.displayShortToast(R.string.op_history_export_success);
+        } catch (IOException e) {
+            Log.e(TAG, "Could not write operation history export.", e);
+            UIUtils.displayShortToast(R.string.export_failed);
+        } finally {
+            mPendingExport = null;
+        }
+    }
+
+    private void shareVisibleHistory() {
+        List<OpHistoryItem> histories = getVisibleHistory();
+        if (histories.isEmpty()) {
+            UIUtils.displayShortToast(R.string.no_history);
+            return;
+        }
+        Intent shareIntent = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.op_history))
+                .putExtra(Intent.EXTRA_TEXT, OperationHistoryExporter.toText(this, histories));
+        try {
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.op_history_share_title)));
+        } catch (Throwable e) {
+            UIUtils.displayLongToast(R.string.error);
+        }
+    }
+
+    private void showHistoryCleanupDialog() {
+        CharSequence[] labels = {
+                getString(R.string.op_history_cleanup_delete_successful),
+                getString(R.string.op_history_cleanup_delete_failed),
+                getString(R.string.op_history_cleanup_delete_older_7d),
+                getString(R.string.op_history_cleanup_delete_older_30d),
+                getString(R.string.op_history_cleanup_delete_older_90d)
+        };
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.op_history_cleanup)
+                .setItems(labels, (dialog, which) -> runHistoryCleanup(which))
+                .show();
+    }
+
+    private void runHistoryCleanup(int cleanupType) {
+        mProgressIndicator.show();
+        switch (cleanupType) {
+            case CLEANUP_SUCCESSFUL:
+                mViewModel.deleteHistoryByStatus(OpHistoryManager.STATUS_SUCCESS);
+                break;
+            case CLEANUP_FAILED:
+                mViewModel.deleteHistoryByStatus(OpHistoryManager.STATUS_FAILURE);
+                break;
+            case CLEANUP_OLDER_THAN_7_DAYS:
+                mViewModel.deleteHistoryOlderThan(7);
+                break;
+            case CLEANUP_OLDER_THAN_30_DAYS:
+                mViewModel.deleteHistoryOlderThan(30);
+                break;
+            case CLEANUP_OLDER_THAN_90_DAYS:
+                mViewModel.deleteHistoryOlderThan(90);
+                break;
+        }
+    }
+
+    @NonNull
+    private List<OpHistoryItem> getVisibleHistory() {
+        return mAdapter != null ? mAdapter.getCurrentList() : Collections.emptyList();
     }
 
     static class OpHistoryAdapter extends RecyclerView.Adapter<OpHistoryAdapter.ViewHolder> {
@@ -449,6 +644,13 @@ public class OpHistoryActivity extends BaseActivity {
         void setDefaultList(@NonNull List<OpHistoryItem> list) {
             synchronized (mAdapterList) {
                 AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
+            }
+        }
+
+        @NonNull
+        List<OpHistoryItem> getCurrentList() {
+            synchronized (mAdapterList) {
+                return new ArrayList<>(mAdapterList);
             }
         }
 
@@ -491,19 +693,15 @@ public class OpHistoryActivity extends BaseActivity {
                     history.getMetadataSummary(mActivity)));
             holder.itemView.setOnClickListener(v -> mActivity.showHistoryDetails(history));
             holder.itemView.setOnLongClickListener(v -> {
-                mActivity.showDeleteHistoryConfirmation(history);
+                mActivity.showHistoryActions(history);
                 return true;
             });
-            holder.execBtn.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
-                    .setTitle(R.string.title_confirm_execution)
-                    .setMessage(OperationPreflight.fromHistory(mActivity, history)
-                            .getConfirmationMessage(mActivity, history))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton(R.string.action_run, (dialog, which) ->
-                            mActivity.mViewModel.getServiceLauncherIntent(history))
-                    .show());
             boolean replayable = history.isReplayable();
+            holder.execBtn.setVisibility(replayable ? View.VISIBLE : View.INVISIBLE);
             holder.execBtn.setEnabled(replayable);
+            holder.execBtn.setClickable(replayable);
+            holder.execBtn.setFocusable(replayable);
+            holder.execBtn.setOnClickListener(replayable ? v -> mActivity.showRerunConfirmation(history) : null);
             holder.execBtn.setContentDescription(mActivity.getString(replayable
                     ? R.string.op_history_action_rerun
                     : R.string.op_history_action_not_replayable));
@@ -514,6 +712,8 @@ public class OpHistoryActivity extends BaseActivity {
         private final MutableLiveData<List<OpHistoryItem>> mOpHistoriesLiveData = new MutableLiveData<>();
         private final MutableLiveData<Boolean> mClearHistoryLiveData = new MutableLiveData<>();
         private final MutableLiveData<Boolean> mDeleteHistoryLiveData = new MutableLiveData<>();
+        private final MutableLiveData<Integer> mCleanupHistoryLiveData = new MutableLiveData<>();
+        private final MutableLiveData<Integer> mDebugSeedLiveData = new MutableLiveData<>();
         private final MutableLiveData<Intent> mServiceLauncherIntentLiveData = new MutableLiveData<>();
         private Future<?> mOpHistoriesResult;
 
@@ -535,6 +735,14 @@ public class OpHistoryActivity extends BaseActivity {
 
         public LiveData<Boolean> getDeleteHistoryLiveData() {
             return mDeleteHistoryLiveData;
+        }
+
+        public LiveData<Integer> getCleanupHistoryLiveData() {
+            return mCleanupHistoryLiveData;
+        }
+
+        public LiveData<Integer> getDebugSeedLiveData() {
+            return mDebugSeedLiveData;
         }
 
         public void loadOpHistories() {
@@ -568,8 +776,39 @@ public class OpHistoryActivity extends BaseActivity {
             });
         }
 
+        public void deleteHistoryByStatus(@OpHistoryManager.Status String status) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                synchronized (mOpHistoriesLiveData) {
+                    int deletedCount = OpHistoryManager.deleteHistoryItemsByStatus(status);
+                    mCleanupHistoryLiveData.postValue(deletedCount);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
+                }
+            });
+        }
+
+        public void deleteHistoryOlderThan(int days) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                synchronized (mOpHistoriesLiveData) {
+                    int deletedCount = OpHistoryManager.pruneHistoryOlderThan(days);
+                    mCleanupHistoryLiveData.postValue(deletedCount);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
+                }
+            });
+        }
+
+        public void addDebugHistoryFixtures() {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                synchronized (mOpHistoriesLiveData) {
+                    int addedCount = OpHistoryManager.addDebugHistoryFixtures(getApplication());
+                    mDebugSeedLiveData.postValue(addedCount);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
+                }
+            });
+        }
+
         @NonNull
         private List<OpHistoryItem> loadOpHistoryItems() {
+            OpHistoryManager.pruneHistoryOlderThan(Prefs.Privacy.getOpHistoryRetentionDays());
             List<OpHistory> opHistories = OpHistoryManager.getAllHistoryItems();
             Collections.sort(opHistories, (o1, o2) -> -Long.compare(o1.execTime, o2.execTime));
             List<OpHistoryItem> opHistoryItems = new ArrayList<>(opHistories.size());

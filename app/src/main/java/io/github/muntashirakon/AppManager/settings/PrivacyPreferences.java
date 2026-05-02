@@ -6,10 +6,13 @@ import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 import io.github.muntashirakon.AppManager.R;
@@ -57,6 +60,36 @@ public class PrivacyPreferences extends PreferenceFragment {
             restartServiceIfNeeded(null, null, enabled);
             return true;
         });
+        // Operation history retention
+        Preference opHistoryRetention = requirePreference("op_history_retention_days");
+        updateOpHistoryRetentionSummary(opHistoryRetention);
+        opHistoryRetention.setOnPreferenceClickListener(preference -> {
+            int[] values = {0, 7, 30, 90};
+            CharSequence[] labels = {
+                    getString(R.string.op_history_retention_never),
+                    getString(R.string.op_history_retention_7d),
+                    getString(R.string.op_history_retention_30d),
+                    getString(R.string.op_history_retention_90d)
+            };
+            int currentValue = Prefs.Privacy.getOpHistoryRetentionDays();
+            int checkedItem = 0;
+            for (int i = 0; i < values.length; ++i) {
+                if (values[i] == currentValue) {
+                    checkedItem = i;
+                    break;
+                }
+            }
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.op_history_retention_title)
+                    .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                        Prefs.Privacy.setOpHistoryRetentionDays(values[which]);
+                        updateOpHistoryRetentionSummary(opHistoryRetention);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
         // Toggle Internet
         SwitchPreferenceCompat toggleInternet = requirePreference("toggle_internet");
         toggleInternet.setEnabled(SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET));
@@ -83,6 +116,28 @@ public class PrivacyPreferences extends PreferenceFragment {
     @Override
     public int getTitle() {
         return R.string.pref_privacy;
+    }
+
+    private void updateOpHistoryRetentionSummary(@NonNull Preference preference) {
+        int retentionDays = Prefs.Privacy.getOpHistoryRetentionDays();
+        CharSequence summary = retentionDays > 0
+                ? getString(R.string.op_history_retention_summary, getRetentionLabel(retentionDays))
+                : getString(R.string.op_history_retention_never);
+        preference.setSummary(summary);
+    }
+
+    @NonNull
+    private String getRetentionLabel(int retentionDays) {
+        switch (retentionDays) {
+            case 7:
+                return getString(R.string.op_history_retention_7d);
+            case 30:
+                return getString(R.string.op_history_retention_30d);
+            case 90:
+                return getString(R.string.op_history_retention_90d);
+            default:
+                return getString(R.string.op_history_retention_never);
+        }
     }
 
     public void restartServiceIfNeeded(@Nullable Boolean screenLockEnabled, @Nullable Boolean autoLockEnabled,

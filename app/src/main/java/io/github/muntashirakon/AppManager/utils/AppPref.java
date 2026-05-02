@@ -131,6 +131,7 @@ public class AppPref {
         PREF_MAIN_WINDOW_SORT_REVERSE_BOOL,
 
         PREF_MODE_OF_OPS_STR,
+        PREF_OP_HISTORY_RETENTION_DAYS_INT,
         PREF_OPEN_PGP_PACKAGE_STR,
         PREF_OPEN_PGP_USER_ID_STR,
         PREF_PERMISSIONS_SORT_ORDER_INT,
@@ -420,6 +421,7 @@ public class AppPref {
                 return true;
             case PREF_CONCURRENCY_THREAD_COUNT_INT:
             case PREF_APP_THEME_CUSTOM_INT:
+            case PREF_OP_HISTORY_RETENTION_DAYS_INT:
             case PREF_TIPS_PREFS_INT:
                 return 0;
             case PREF_LAST_VERSION_CODE_LONG:

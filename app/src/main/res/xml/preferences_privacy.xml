@@ -18,6 +18,11 @@
         app:summary="@string/pref_enable_auto_lock_msg"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="op_history_retention_days"
+        app:title="@string/op_history_retention_title"
+        app:iconSpaceReserved="false" />
+
     <SwitchPreferenceCompat
         app:key="toggle_internet"
         app:title="@string/toggle_internet"

@@ -6,6 +6,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.annotation.NonNull;
 
 import java.util.List;
 
@@ -21,6 +22,12 @@ public interface OpHistoryDao {
 
     @Query("DELETE FROM op_history WHERE id = :id")
     void delete(long id);
+
+    @Query("DELETE FROM op_history WHERE status = :status")
+    int deleteByStatus(@NonNull String status);
+
+    @Query("DELETE FROM op_history WHERE time < :cutoffTime")
+    int deleteOlderThan(long cutoffTime);
 
     @Query("DELETE FROM op_history WHERE 1")
     void deleteAll();
