@@ -23,6 +23,8 @@
     <dimen name="app_usage_icon_frame_size">48dp</dimen>
     <dimen name="app_usage_badge_min_size">22dp</dimen>
     <dimen name="app_usage_badge_padding_horizontal">4dp</dimen>
+    <dimen name="settings_primary_pane_width">450dp</dimen>
+    <dimen name="settings_pane_divider_width">1dp</dimen>
     <dimen name="title_font">16sp</dimen>
     <dimen name="subtitle_font">14sp</dimen>
     <dimen name="app_widget_background_padding">16dp</dimen>

@@ -69,7 +69,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
-        int mainPrefSize = UiUtils.dpToPx(this, 450);
+        int mainPrefSize = getResources().getDimensionPixelSize(R.dimen.settings_primary_pane_width);
         int windowWidth = getResources().getDisplayMetrics().widthPixels;
         mDualPaneMode = windowWidth >= 2 * mainPrefSize;
         setContentView(mDualPaneMode ? R.layout.activity_settings_dual_pane : R.layout.activity_settings);
