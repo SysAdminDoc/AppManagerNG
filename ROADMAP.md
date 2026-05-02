@@ -5,6 +5,8 @@
 **Last updated:** 2026-05-02 (factory iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
 **Next revision due:** v0.6.0 release.
 
+**Related research:** [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md).
+
 ---
 
 ## Guiding Principles
