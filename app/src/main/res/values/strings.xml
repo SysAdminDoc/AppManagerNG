@@ -1667,6 +1667,11 @@
     <string name="no_history">No history</string>
     <string name="op_history_empty_title">No operation history</string>
     <string name="op_history_empty_message">Operations you run from profiles and batch actions will appear here for review or rerun.</string>
+    <string name="op_history_empty_filtered_title">No matching operations</string>
+    <string name="op_history_empty_filtered_message">Clear filters or search text to show saved operations.</string>
+    <string name="op_history_filter_hint">Filter package, operation, mode, or target</string>
+    <string name="op_history_filter_last_24h">24 hours</string>
+    <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
     <string name="op_history_legacy_metadata_summary">Legacy entry · saved before safety metadata</string>
@@ -1699,6 +1704,7 @@
     <string name="op_history_rollback_reinstall">Uninstall the app or reinstall the previous APK if you saved one.</string>
     <string name="op_history_rollback_manual_reapply">Review the changed settings and manually reapply the prior state if needed.</string>
     <string name="op_history_rollback_delete_artifact">Delete the generated backup or export artifact if it is no longer wanted.</string>
+    <string name="adb" translatable="false">ADB</string>
     <plurals name="op_history_target_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> target</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> targets</item>
