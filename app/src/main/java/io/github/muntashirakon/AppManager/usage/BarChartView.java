@@ -931,7 +931,9 @@ public class BarChartView extends View {
         if (mBarDataList.isEmpty()) {
             description = mEmptyText != null ? mEmptyText : "Empty bar chart";
         } else {
-            description = getContext().getString(R.string.bar_chart_content_description, mBarDataList.size());
+            int n = mBarDataList.size();
+            description = getResources().getQuantityString(
+                    R.plurals.bar_chart_content_description, n, n);
         }
         setContentDescription(description);
     }
