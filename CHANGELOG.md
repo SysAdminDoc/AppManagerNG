@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — VirusTotal poll-wait scales with upload size (engineering-debt TODO closed)
+- `VirusTotal.fetchFileReportOrScan` now scales the *first* poll wait
+  by file size via the new `computeInitialPollWait(fileSize)` helper —
+  roughly +1 s per MB above a 10 MB threshold, clamped to [60 s, 240 s].
+  Avoids burning the 4 req/min free-API rate-limit quota on a large
+  upload that hasn't finished engine processing yet. Subsequent polls
+  remain at the 30 s rate-limit floor. Closes the inline TODO at
+  `VirusTotal.java` (originally filed 2022-05-23) and the matching
+  Engineering Debt Register row.
+
 ### Added — Root manager detection: Magisk / KernelSU / APatch / ZygiskNext (ROADMAP T5 ×3 closed)
 - New `runner/RootManagerInfo` helper probes `/data/adb/{magisk,ksu,ap}` via
   the privileged shell when root is granted, and falls back to a

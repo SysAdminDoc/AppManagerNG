@@ -183,7 +183,7 @@ Code exists (`FinderActivity`, `FinderViewModel`) but is incomplete per `TODO` m
 | **Frozen/Disabled Filter in App List** | Surface "frozen" and "disabled" as distinct, first-class filter options in the main app list alongside existing User/System filters. Canta v3.2.x model ([S43]). | Low |
 | **Finder: Relevance-Based Search Scoring** | Apply Levenshtein distance scoring to Finder results; surface closest package-name and component-name matches first rather than flat substring order. Inure build106.3.3 model ([S66]). | Low |
 | **Finder: Description-Field Search** | Include debloat-list human-readable descriptions in the Finder search index so users can find system apps by plain-language purpose (e.g. "fax" → `TelephonyUI.apk`). UAD-NG v1.2.0 model ([S67]); requires android-debloat-list metadata bundle ([S23]). | Low |
-| **Bloatware Safety Rating in App Detail** | Surface the android-debloat-list removal-safety rating ("safe", "unsafe", "expert", "untested") and dependency list in the App Details page for system apps. Rating bundled with the existing debloat-list JSON ([S23]); no network call. Promoted from Under Consideration: AM v4.0.5 added "display unsafe bloatware info" in its debloater ([S01]), establishing clear precedent in upstream. | Low |
+| ~~**Bloatware Safety Rating in App Detail**~~ ✅ pre-existing | App Info tag cloud surfaces "Bloatware · Safe / Replace / Caution / Unsafe" via `getBloatwareSafetyLabel(context, removalType)` (`AppInfoFragment.java:1206`) coloured by `ColorCodes.getBloatwareIndicatorColor`; tap opens `BloatwareDetailsDialog` which lists declared `dependencies` from the debloat-list JSON. Rating + dependencies surfacing both shipped; the audit row was stale. | Low |
 
 ### T8 — Profiles & Automation
 
@@ -437,7 +437,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | `FinderViewModel.java` | TODO | Multi-user support + uninstalled app backups missing | Medium | T7 |
 | `ActivityInterceptor.java` | TODO | Results not sent back to original calling app | Medium | T8 |
 | ~~`Utils.java` (×5)~~ ✅ 2026-05-02 | FIXME (resolved) | Soft-input/service-flag/activity-flag/input-feature labels moved to `strings.xml`; protection-level tokens kept canonical (Android API identifiers) | Low–Med | T10 |
-| `VirusTotal.java` | TODO | `fetchFileReportOrScan` poll intervals are hardcoded (60 s then 30 s); should scale with `file.length()` per inline comment (L164, 2022-05-23). Low-urgency polish. | Low | Scanner |
+| ~~`VirusTotal.java`~~ ✅ 2026-05-02 | TODO (resolved) | New `computeInitialPollWait(fileSize)` ramps the *first* poll wait roughly +1 s per MB above a 10 MB threshold, clamped to [60 s, 240 s] — no more polling a 200 MB upload at 60 s and burning the 4 req/min rate-limit quota. Subsequent polls stay at the 30 s floor. | Low | Scanner |
 | `AppTypeOption.java` | TODO | Play App Signing / PWA / overlay detection missing | Low | App Details |
 | `PermissionsOption.java` | TODO | Permission flags not exposed in filter | Low | T7 |
 | `DataUsageOption.java` | TODO | Mobile/Wi-Fi split not shown | Low | T7 |
