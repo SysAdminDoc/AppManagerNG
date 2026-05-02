@@ -1,0 +1,214 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinator_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    tools:context="io.github.muntashirakon.AppManager.main.MainActivity">
+
+    <io.github.muntashirakon.widget.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="true"
+        app:liftOnScrollTargetViewId="@+id/item_list">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            style="@style/Widget.AppTheme.V2.Toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/premium_app_bar_height"
+            android:minHeight="@dimen/premium_app_bar_height"
+            app:navigationIcon="@null"
+            tools:menu="@menu/activity_main_actions" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_linear"
+            style="@style/Widget.AppTheme.LinearProgressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/list_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginTop="@dimen/premium_space_8"
+            android:layout_marginBottom="@dimen/premium_space_4"
+            android:background="@drawable/main_status_background"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/premium_main_status_min_height"
+            android:paddingHorizontal="@dimen/premium_space_16"
+            android:paddingVertical="@dimen/premium_space_8"
+            android:text="@string/main_status_loading"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <HorizontalScrollView
+            android:id="@+id/quick_filter_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:paddingHorizontal="@dimen/premium_space_16"
+            android:paddingTop="@dimen/premium_space_4"
+            android:paddingBottom="@dimen/premium_space_8"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/quick_filter_group"
+                style="@style/Widget.AppTheme.V2.ChipGroup.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipSpacingHorizontal="@dimen/premium_space_8"
+                app:singleLine="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sort"
+                    style="@style/Widget.AppTheme.V2.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/sort"
+                    app:chipIcon="@drawable/ic_sort"
+                    app:chipIconVisible="true"
+                    app:closeIconVisible="false" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_user"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_user_apps" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_system"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_system_apps" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_frozen"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_frozen_apps" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_running"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_running_apps" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_backups"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_apps_with_backups" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_stopped"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_force_stopped_apps" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_trackers"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_apps_with_trackers" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_rules"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_apps_with_rules" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_granted_perms"
+                    style="@style/Widget.AppTheme.V2.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/filter_apps_with_granted_perms" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_clear_filters"
+                    style="@style/Widget.AppTheme.V2.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/clear_filters"
+                    android:visibility="gone"
+                    app:closeIconVisible="true" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
+    </io.github.muntashirakon.widget.AppBarLayout>
+
+    <io.github.muntashirakon.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="false"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <FrameLayout
+            android:id="@+id/main_list_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <io.github.muntashirakon.widget.RecyclerView
+                android:id="@+id/item_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:fitsSystemWindows="true"
+                android:focusable="false"
+                android:paddingTop="@dimen/premium_main_list_top_padding"
+                android:paddingBottom="@dimen/premium_main_list_bottom_padding"
+                android:scrollbars="none"
+                app:fastScrollerEnabled="true"
+                tools:listitem="@layout/item_main" />
+
+            <include
+                android:id="@android:id/empty"
+                layout="@layout/view_main_empty_state"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+    </io.github.muntashirakon.widget.SwipeRefreshLayout>
+
+    <io.github.muntashirakon.widget.MultiSelectionView
+        android:id="@+id/selection_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        android:focusable="false"
+        app:menu="@menu/activity_main_selection_actions" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -457,7 +457,7 @@ Parallel work-stream off the Onboarding theme (v0.4.0). The four-step rollout dr
 | Phase | Status | Scope |
 |-------|--------|-------|
 | ~~**v0.4.x Foundation**~~ ✅ shipped 2026-05-03 | Done | `app/src/main/res/values/{colors,dimens,themes}-v2.xml` copied verbatim from `design/impl/`. New pref `PREF_PREMIUM_PREVIEW_BOOL` (default OFF). `Prefs.Appearance.getAppTheme()` routes to `AppTheme.V2` / `AppTheme.V2.Amoled` when enabled, classic `AppTheme` / `AppTheme.Black` otherwise. Toggle exposed at Settings → Appearance → "Preview new design (BETA)". `getTransparentAppTheme()` deferred — transparent surfaces stay classic until v0.5.x. No layout files modified. |
-| **v0.5.x Top-5 Surface Migration** | Pending | Migrate `activity_main_v2.xml`, `item_main_v2.xml`, plus AppDetails / AppUsage / Settings to v2 layouts behind the same toggle. Reference layouts already exist in `design/impl/layout/`. |
+| **v0.5.x Top-5 Surface Migration** — Phase 1 ✅ shipped 2026-05-02 | In Progress | Wired `activity_main_v2.xml` and `item_main_v2.xml` behind the toggle. MainActivity and MainRecyclerAdapter conditionally inflate v2 layouts. Phase 2: AppDetails / AppUsage / Settings surfaces. |
 | **v0.6.x Default Flip** | Pending | Default `PREF_PREMIUM_PREVIEW_BOOL` to `true`; expose a "Use legacy design" escape hatch in Appearance for one release. |
 | **v0.7.x Toggle Removal** | Pending | Delete the toggle, drop classic `AppTheme*` definitions, retire `colors-v2.xml`/`themes-v2.xml` filenames in favor of canonical `colors.xml`/`themes.xml`. |
 
