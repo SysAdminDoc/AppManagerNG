@@ -5,6 +5,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance
+- **Android 17 `MessageQueue` audit (clean)**: lock-free `MessageQueue`
+  shipping in Android 17 / targetSdk=37 crashes apps that reach into
+  private fields via reflection. Recursive sweep across all source roots
+  returned zero matches; root-shell IPC routes through libsu shell
+  processes, not `MessageQueue` reflection. Audit at
+  [docs/audits/2026-05-02-android17-messagequeue.md](docs/audits/2026-05-02-android17-messagequeue.md).
+- **Adaptive Layout for Large Screens audit (clean)**: Android 16 /
+  targetSdk=36 ignores `screenOrientation`, `resizeableActivity=false`,
+  and aspect-ratio limits on ≥ 600dp displays. Manifest sweep across 43
+  activities returned zero fixed-orientation declarations, zero resize
+  blockers, zero aspect-ratio limits. Audit at
+  [docs/audits/2026-05-02-adaptive-layout.md](docs/audits/2026-05-02-adaptive-layout.md).
+
+### Added
+- **Tablet density overrides** (`app/src/main/res/values-w600dp/dimens.xml`,
+  `libcore/ui/src/main/res/values-w600dp/dimens.xml`): bumps icon sizes,
+  list-row min-height, font sizes, and medium/large/very-large padding
+  tiers when the available width is ≥ 600dp (tablets, foldables in
+  landscape, Chromebooks, free-form windowed mode). Phone-sized devices
+  read the existing `values/dimens.xml` unchanged. No per-layout edits
+  required — the new values propagate to every layout already consuming
+  these tokens.
+
 ### Added
 - **Sort by Dangerous Permissions**: new `SORT_BY_DANGEROUS_PERMS` option in
   the main app list (Sort menu). Mirrors the `SORT_BY_TRACKERS` shape —

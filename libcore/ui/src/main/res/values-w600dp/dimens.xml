@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Tablet / wide-screen overrides for libcore/ui spacing tokens.
+  Bumps the medium / large / very_large padding tiers so layouts
+  inheriting these tokens get more breathing room on ≥ 600dp displays.
+  padding_small and padding_very_small are intentionally NOT overridden
+  because fine-grained alignment tokens often pixel-snap and bumping
+  them shifts iconography off the underlying grid.
+-->
+<resources>
+    <dimen name="padding_very_large">40dp</dimen>
+    <dimen name="padding_large">32dp</dimen>
+    <dimen name="padding_medium">20dp</dimen>
+</resources>

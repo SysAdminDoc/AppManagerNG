@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Tablet / wide-screen overrides (≥ 600dp available width).
+  Mirrors the values/dimens.xml defaults but bumps spacing, icon size,
+  and font size to give tablet-sized cards more breathing room.
+  All values referenced from at least one layout in res/layout — see
+  the layouts that ref @dimen/main_list_icon_size, etc.
+-->
+<resources>
+    <dimen name="icon_size">56dp</dimen>
+    <dimen name="main_list_icon_size">60dp</dimen>
+    <dimen name="main_list_min_height">96dp</dimen>
+    <dimen name="title_font">18sp</dimen>
+    <dimen name="subtitle_font">16sp</dimen>
+    <dimen name="app_widget_background_padding">24dp</dimen>
+</resources>
