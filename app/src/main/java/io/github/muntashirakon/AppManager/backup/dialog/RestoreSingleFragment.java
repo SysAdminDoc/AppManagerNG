@@ -66,6 +66,7 @@ public class RestoreSingleFragment extends Fragment {
                 (metadata, selectionCount, added) -> {
                     restoreButton.setEnabled(selectionCount == 1);
                     deleteButton.setEnabled(selectionCount > 0);
+                    moreButton.setEnabled(selectionCount > 0);
                 });
         recyclerView.setAdapter(adapter);
 
@@ -148,9 +149,10 @@ public class RestoreSingleFragment extends Fragment {
     private void handleDelete(List<BackupMetadataV5> selectedBackups) {
         new MaterialAlertDialogBuilder(mContext)
                 .setTitle(R.string.delete_backup)
-                .setMessage(R.string.are_you_sure)
-                .setNegativeButton(R.string.no, null)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
+                .setMessage(getResources().getQuantityString(R.plurals.delete_selected_backups_confirmation,
+                        selectedBackups.size(), selectedBackups.size()))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
                     List<String> relativeDirs = new ArrayList<>(selectedBackups.size());
                     for (BackupMetadataV5 backup : selectedBackups) {
                         relativeDirs.add(backup.info.getRelativeDir());

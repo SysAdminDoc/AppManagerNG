@@ -1,8 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingHorizontal="@dimen/padding_medium"
+    android:paddingTop="@dimen/padding_small"
+    android:paddingBottom="@dimen/padding_small">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -13,85 +18,166 @@
             android:id="@+id/restore_all"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/padding_medium"
-            android:paddingTop="@dimen/padding_small"
-            android:paddingEnd="@dimen/padding_medium"
-            android:paddingBottom="@dimen/padding_small"
-            android:background="?selectableItemBackground"
-            android:orientation="vertical">
+            android:layout_marginBottom="@dimen/padding_small"
+            android:background="@drawable/backup_task_row_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="88dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_medium">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceListItem"
-                android:text="@string/restore_all" />
+            <FrameLayout
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:background="@drawable/main_empty_icon_background"
+                android:importantForAccessibility="no">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_restore"
+                    app:tint="?attr/colorPrimary" />
+
+            </FrameLayout>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                android:text="@string/restore_all_msg" />
+                android:layout_marginStart="@dimen/padding_medium"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/restore_all"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:lineSpacingExtra="1dp"
+                    android:text="@string/restore_all_msg"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <com.google.android.material.divider.MaterialDivider
-            android:layout_width="match_parent"
-            android:layout_height="1dp" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/restore_not_installed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/padding_medium"
-            android:paddingTop="@dimen/padding_small"
-            android:paddingEnd="@dimen/padding_medium"
-            android:paddingBottom="@dimen/padding_small"
-            android:background="?selectableItemBackground"
-            android:orientation="vertical">
+            android:layout_marginBottom="@dimen/padding_small"
+            android:background="@drawable/backup_task_row_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="88dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_medium">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceListItem"
-                android:text="@string/restore_not_installed" />
+            <FrameLayout
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:background="@drawable/main_empty_icon_background"
+                android:importantForAccessibility="no">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_archive"
+                    app:tint="?attr/colorPrimary" />
+
+            </FrameLayout>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                android:text="@string/restore_not_installed_msg" />
+                android:layout_marginStart="@dimen/padding_medium"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/restore_not_installed"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:lineSpacingExtra="1dp"
+                    android:text="@string/restore_not_installed_msg"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <com.google.android.material.divider.MaterialDivider
-            android:layout_width="match_parent"
-            android:layout_height="1dp" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/restore_latest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/padding_medium"
-            android:paddingTop="@dimen/padding_small"
-            android:paddingEnd="@dimen/padding_medium"
-            android:paddingBottom="@dimen/padding_small"
-            android:background="?selectableItemBackground"
-            android:orientation="vertical">
+            android:background="@drawable/backup_task_row_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="88dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_medium">
 
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceListItem"
-                android:text="@string/restore_latest" />
+            <FrameLayout
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:background="@drawable/main_empty_icon_background"
+                android:importantForAccessibility="no">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_history"
+                    app:tint="?attr/colorPrimary" />
+
+            </FrameLayout>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-                android:text="@string/restore_latest_msg" />
+                android:layout_marginStart="@dimen/padding_medium"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/restore_latest"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:lineSpacingExtra="1dp"
+                    android:text="@string/restore_latest_msg"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

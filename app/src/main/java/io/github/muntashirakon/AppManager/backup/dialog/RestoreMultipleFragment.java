@@ -79,15 +79,15 @@ public class RestoreMultipleFragment extends Fragment {
     private void handleRestore(int flags) {
         new MaterialAlertDialogBuilder(mContext)
                 .setTitle(R.string.restore)
-                .setMessage(R.string.are_you_sure)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
+                .setMessage(R.string.restore_multiple_backups_confirmation)
+                .setPositiveButton(R.string.restore, (dialog, which) -> {
                     BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
                     operationInfo.mode = BackupRestoreDialogFragment.MODE_RESTORE;
                     operationInfo.op = BatchOpsManager.OP_RESTORE_BACKUP;
                     operationInfo.flags = flags;
                     mViewModel.prepareForOperation(operationInfo);
                 })
-                .setNegativeButton(R.string.no, null)
+                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 }

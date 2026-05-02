@@ -52,7 +52,9 @@
             android:layout_alignParentEnd="true"
             android:layout_centerInParent="true"
             android:layout_marginStart="@dimen/padding_small"
-            android:text="@string/restore" />
+            android:text="@string/restore"
+            app:icon="@drawable/ic_restore"
+            app:iconPadding="@dimen/padding_small" />
 
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.AppTheme.Button.FilledTonalButton"
@@ -62,7 +64,9 @@
             android:layout_toStartOf="@id/action_restore"
             android:layout_centerInParent="true"
             android:layout_marginStart="@dimen/padding_small"
-            android:text="@string/delete" />
+            android:text="@string/delete"
+            app:icon="@drawable/ic_trash_can"
+            app:iconPadding="@dimen/padding_small" />
 
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.AppTheme.Button.IconButton"
@@ -71,6 +75,7 @@
             android:layout_height="wrap_content"
             android:layout_toStartOf="@id/action_delete"
             android:layout_centerInParent="true"
+            android:contentDescription="@string/options"
             android:minWidth="48dp"
             android:maxWidth="0dp"
             android:maxHeight="0dp"

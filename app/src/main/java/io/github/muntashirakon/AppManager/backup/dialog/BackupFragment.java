@@ -112,9 +112,10 @@ public class BackupFragment extends Fragment {
                 // One or more app has backups, warn users
                 new MaterialAlertDialogBuilder(mContext)
                         .setTitle(R.string.backup)
-                        .setMessage(getResources().getQuantityString(R.plurals.backup_exists_are_you_sure, baseBackupCount))
-                        .setPositiveButton(R.string.yes, (dialog, which) -> mViewModel.prepareForOperation(operationInfo))
-                        .setNegativeButton(R.string.no, null)
+                        .setMessage(getResources().getQuantityString(R.plurals.backup_exists_are_you_sure,
+                                baseBackupCount, baseBackupCount))
+                        .setPositiveButton(R.string.back_up, (dialog, which) -> mViewModel.prepareForOperation(operationInfo))
+                        .setNegativeButton(R.string.cancel, null)
                         .show();
             } else {
                 // No need to warn users, proceed to back up

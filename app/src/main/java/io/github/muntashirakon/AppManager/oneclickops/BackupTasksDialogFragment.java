@@ -10,6 +10,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.fragment.app.DialogFragment;
 
@@ -75,7 +76,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.backup_empty_all_apps_title, R.string.backup_empty_all_apps_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -104,7 +106,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.backup_empty_existing_backups_title, R.string.backup_empty_existing_backups_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -133,7 +136,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.backup_empty_without_backups_title, R.string.backup_empty_without_backups_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -174,7 +178,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.backup_empty_failed_verification_title, R.string.backup_empty_failed_verification_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -228,7 +233,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.backup_empty_changed_apps_title, R.string.backup_empty_changed_apps_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -242,12 +248,22 @@ public class BackupTasksDialogFragment extends DialogFragment {
     }
 
     @UiThread
-    private void runMultiChoiceDialog(List<ApplicationItem> applicationItems, List<CharSequence> applicationLabels) {
+    private void runMultiChoiceDialog(List<ApplicationItem> applicationItems, List<CharSequence> applicationLabels,
+                                      @StringRes int emptyTitleRes, @StringRes int emptyMessageRes) {
         if (isDetached()) return;
         mActivity.progressIndicator.hide();
+        if (applicationItems.isEmpty()) {
+            new MaterialAlertDialogBuilder(mActivity)
+                    .setIcon(R.drawable.ic_information_circle)
+                    .setTitle(emptyTitleRes)
+                    .setMessage(emptyMessageRes)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+            return;
+        }
         new SearchableMultiChoiceDialogBuilder<>(mActivity, applicationItems, applicationLabels)
                 .addSelections(applicationItems)
-                .setTitle(R.string.filtered_packages)
+                .setTitle(R.string.backup_review_apps_title)
                 .setPositiveButton(R.string.back_up, (dialog, which, selectedItems) -> {
                     if (isDetached()) return;
                     BackupRestoreDialogFragment fragment = BackupRestoreDialogFragment.getInstance(
