@@ -23,12 +23,15 @@ Source roots searched:
 - `libopenpgp/`
 - `hiddenapi/`
 - `server/`
+- `docs/` (Sphinx sources + distribution configs + audits — the `:docs` Gradle module, [settings.gradle](../../settings.gradle))
+
+The Material Components and AppCompat themes inherited via the dependency tree are not re-vendored in source — those are external AAR consumers and out of scope for an in-repo audit. If a downstream Material theme starts emitting `android:elegantTextHeight` on `targetSdk=36`, that becomes an upstream Material issue, not an AppManagerNG remediation.
 
 ## Method
 
 ```
 grep -rln "elegantTextHeight\|setElegantTextHeight" \
-  app/src/ libcore/ libserver/ libopenpgp/ hiddenapi/ server/ \
+  app/src/ libcore/ libserver/ libopenpgp/ hiddenapi/ server/ docs/ \
   | grep -v "/build/" | grep -v "intermediates"
 ```
 
@@ -47,10 +50,12 @@ grep -rln "elegantTextHeight" app/src/main/res/
 
 The only repository matches for the term `elegantTextHeight` are:
 
-1. `ROADMAP.md` lines 80, 345 — these self-references documenting the audit task.
-2. `server/build/intermediates/lint-cache/lintAnalyzeDebug/private-apis-18-7541949.bin` — a binary Lint analysis cache containing strings from the deprecation database, NOT source code.
+1. `ROADMAP.md` lines 80, 345 — self-references documenting this audit task.
+2. `docs/research/iter-6-delta.md` — the L1 research note that scheduled the task.
+3. `docs/audits/2026-05-01-elegant-text-height.md` — this document.
+4. `server/build/intermediates/lint-cache/lintAnalyzeDebug/private-apis-18-7541949.bin` — a binary Lint analysis cache containing strings from the deprecation database, NOT source code.
 
-Neither is a remediation target.
+None is a remediation target.
 
 ## Conclusion
 
