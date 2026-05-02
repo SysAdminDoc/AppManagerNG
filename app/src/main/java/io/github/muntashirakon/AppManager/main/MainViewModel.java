@@ -655,6 +655,20 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                             return -mode * Integer.compare(unblocked1, unblocked2);
                         }
                         return -mode * o1.trackerCount.compareTo(o2.trackerCount);
+                    case MainListOptions.SORT_BY_DANGEROUS_PERMS:
+                        // Sort by *granted* dangerous permissions so the most
+                        // privileged-by-actual-grant apps surface first; falls
+                        // back to total declared dangerous perms so equally
+                        // granted apps with broader declared surface still rank
+                        // above leaner ones. Mirrors the SORT_BY_TRACKERS shape.
+                        int granted1 = o1.dangerousPermGranted != null ? o1.dangerousPermGranted : 0;
+                        int granted2 = o2.dangerousPermGranted != null ? o2.dangerousPermGranted : 0;
+                        if (granted1 != granted2) {
+                            return -mode * Integer.compare(granted1, granted2);
+                        }
+                        int total1 = o1.dangerousPermTotal != null ? o1.dangerousPermTotal : 0;
+                        int total2 = o2.dangerousPermTotal != null ? o2.dangerousPermTotal : 0;
+                        return -mode * Integer.compare(total1, total2);
                 }
                 return 0;
             });
