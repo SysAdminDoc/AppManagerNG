@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-02 (factory iter-8: multi-tag per app, relevance/description search, permission policy flags, native lib sizes, batch APK installer, Android 17 Keystore key cap + Android 18 URI grant preemptive fixes, T19 Package-Aware Storage Analysis, S65–S68; iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
+**Last updated:** 2026-05-02 (factory iter-10: Dhizuku DeviceOwner privilege path, Force Stop via Shizuku, AppOps quick-toggle in list, Notification.ProgressStyle for backup, Force DEX compile optimization, S71; iter-9: ProfilingManager OOM triggers, graduated tracker blocking modes, per-app tracker stats, permission change monitor, PQC signing pipeline note, DDG Tracker Radar license flag, AlarmManager OnAlarmListener note, VirusTotal poll TODO, S69–S70; iter-8: multi-tag per app, relevance/description search, permission policy flags, native lib sizes, batch APK installer, Android 17 Keystore key cap + Android 18 URI grant preemptive fixes, T19 Package-Aware Storage Analysis, S65–S68; iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
 **Next revision due:** v0.6.0 release.
 
 **Related research:** [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md).
@@ -104,6 +104,7 @@ These are `FIXME` / security issues identified in source that should not wait fo
 | ~~**Opt-In Crash Reporting**~~ ✅ v0.3.0 | On uncaught exception: write crash log to app-private storage + show "Share crash report" dialog that deep-links to GitHub Issues. Zero network egress without explicit user action. | Low |
 | ~~**In-App Diagnostic Dump**~~ ✅ v0.3.0 | Export logcat (filtered to AM process) + app state snapshot as shareable ZIP for bug reports | Low |
 | ~~**CodeQL Alert Triage**~~ ✅ v0.3.0 | Audit all open CodeQL alerts (`.github/workflows/codeql.yml` already present); ensure zero blanket suppressions | Low |
+| **ProfilingManager OOM/Anomaly Triggers** | Android 17 adds `TRIGGER_TYPE_OOM`, `TRIGGER_TYPE_COLD_START`, and `TRIGGER_TYPE_ANOMALY` to `ProfilingManager` ([S53]). On API 37+, register these triggers to auto-capture heap profiles when NG is killed during JADX decompile or APK parsing; attach the profile to the existing shareable diagnostic ZIP. `Build.VERSION.SDK_INT >= 37` guard; graceful no-op below. | Low |
 
 ---
 
@@ -125,6 +126,8 @@ Shizuku support is the single most-requested upstream feature with 31 reactions 
 | **Onboarding Capability Wizard** | Detect root/Shizuku/wireless-ADB at first launch; show plain-language capability matrix ("What you can do with each privilege level"). Include Shizuku ≥v13.6.0 minimum version check (required for Android 16 QPR1 [S22]) and auto-start on trusted WLAN tip for Android 13+ ([S22]). | Medium |
 | **USB Debugging Prompt in Shizuku Setup** | During Shizuku setup wizard, explicitly prompt user to also enable USB Debugging alongside Developer Options — without it, `adb pair` and `adb connect` fail silently. Canta v3.2.0 model (fix for issue #284 [S43]). | Low |
 | **KernelSU Detection in Capability Wizard** | Explicitly detect KernelSU v3.2.3+ `adb root` pathway in the privilege wizard alongside Magisk and libadb paths; KernelSU reports ~10 M active users and its `su` binary is broadly compatible with `libsu` shell invocations ([S56]). | Low |
+| **Force Stop via Shizuku (Rootless)** | Expose `ActivityManager.forceStopPackage()` via the Shizuku binder as a rootless "Force Stop" action in App Details. Kills all running processes and services for the target app without freezing or hiding it; useful for clearing hung states. Hail v1.9.0 model ([S65]). Requires `FORCE_STOP_PACKAGES` permission, grantable via Shizuku; not available via ADB user-level. | Low |
+| **Dhizuku (DeviceOwner) Privilege Path** | Add Dhizuku (GPL-3.0, [S71]) as a fourth rootless privilege tier alongside Root/Shizuku/ADB. Dhizuku shares `DevicePolicyManager` (DPM) ownership with third-party apps via a Binder proxy; activation requires a one-time `adb shell dpm set-device-owner com.rosan.dhizuku/.server.Server`. Unlocks DPM-based hide/suspend/freeze that Shizuku alone cannot perform. Supported Android 8–16. Capability wizard should detect Dhizuku like it detects Shizuku. | Medium |
 
 ### T6 — Backup Polish
 
@@ -132,7 +135,7 @@ Neo Backup ([S20]) and Titanium Backup are the benchmark. AM's backup engine is 
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Scheduled Auto-Backup** | WorkManager-based scheduler; triggers: time-of-day, charging state, network availability (per Issue #555 [S09]) | Medium |
+| **Scheduled Auto-Backup** | WorkManager-based scheduler; triggers: time-of-day, charging state, network availability ([S09]). On API 37+, use `AlarmManager.setExactAndAllowWhileIdle` with the new `OnAlarmListener` callback instead of `PendingIntent` to eliminate wake lock dependency for scheduled triggers ([S53]). | Medium |
 | **Backup Retention Policy** | Set max backup count per app and age-based pruning (e.g. "keep last 3"); automatic cleanup on schedule ([S41] model) | Low |
 | **1-Click Delete Old Backups** | Batch-clean oldest revisions across all apps from Backup list (Issue #387) | Low |
 | **Backup Integrity Verification** | SHA-256-verify backup archives at creation and again at restore; alert on mismatch | Medium |
@@ -141,7 +144,7 @@ Neo Backup ([S20]) and Titanium Backup are the benchmark. AM's backup engine is 
 | **Backup Sharing Button** | Share individual backup archive directly from the backup list as a single user action. Neo Backup v8.3.17 model ([S41]). | Low |
 | **Launcher Shortcuts for Backup Schedules** | Pin a specific backup schedule as a home screen launcher shortcut for one-tap execution. Neo Backup v8.3.17 model ([S41]). | Low |
 | **Rich Backup Result Notifications** | Show per-app name, backup count, and total size in the completion notification rather than a generic "done" message. SD Maid SE scheduler model ([S42]). Distinct from the in-progress backup progress notification item. | Low |
-| **Backup Progress Notifications** | Rich ongoing notification with per-app name, progress bar, and ETA | Low |
+| **Backup Progress Notifications** | Rich ongoing notification with per-app name, progress bar, and ETA. On API 36+, use `Notification.ProgressStyle` with milestone `Point` and `Segment` markers to show per-stage progress ("preparing → 3/12 apps → verifying → done") in the notification shade and lock screen; `Build.VERSION.SDK_INT >= 36` guard with graceful `setProgress()` fallback below ([S46]). | Low |
 | **Pre-Backup Storage Check** | Verify available storage is sufficient before starting a backup operation; alert user with dismiss-able dialog if likely to fail mid-way. Neo Backup v8.3.15 model ([S41]). | Low |
 | **Separated Active/Paused Schedule Lists** | Display enabled and disabled backup schedules in distinct sections rather than a flat unsorted list; mirrors how the system separates active vs. silent alarms. Neo Backup v8.3.15 model ([S41]). | Low |
 | **Backup Tag Autocomplete** | When labeling a backup, suggest existing tags as autocomplete chip options to encourage consistent tagging across devices and schedules. Neo Backup v8.3.17 model ([S41]). | Low |
@@ -189,12 +192,15 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 |------|-------------|--------|
 | **Biometric App Lock** | BiometricPrompt-based lock for AM itself on app open (BiometricPrompt dep already present at 1.4.0-alpha04) | Low |
 | **App-Ops Per-UID Control** | Allow setting app ops by UID (`--uid`) in addition to per-package; essential for shared-UID system packages where per-package mode is ambiguous (Issue #1863 [S37]). | Medium |
-| **Tracker Blocking (AppOps)** | One-click disable specific tracker components via `AppOps.setUidMode`; show which trackers are currently active | Medium |
+| **AppOps Quick-Toggle in List** | Add an inline allow/deny/default toggle chip directly on each AppOps row in the App Details AppOps tab; avoids opening a full dialog for simple permission mode changes. Reduces interaction depth for bulk AppOps editing sessions. Inure build106.5.1 model ([S66]). | Low |
+| **Tracker Blocking (AppOps)** | One-click disable specific tracker components via `AppOps.setUidMode`; show which trackers are currently active. Three graduated blocking intensities: minimal (detect + report only), standard (disable known problematic SDKs), strict (disable all detected trackers); balances privacy vs. app compatibility. TrackerControl 2026040301 model ([S69]). | Medium |
+| **Per-App Tracker Statistics Panel** | In App Details, show the count of detected trackers and their associated tracking companies (aggregated by organization, not just SDK name); source data from the εxodus database already embedded in-app. Informational regardless of blocking status; pairs with Tracker Blocking (AppOps). TrackerControl 2026040301 model ([S69]). | Low |
 | **Sort by Dangerous Permissions** | New main-list sort option using `dangerous_perm_total` / `dangerous_perm_granted` columns added in Room schema v9 (shipped v0.4.0 dev); surfaces most-permissive apps at the top. Sort infrastructure already exists for `tracker_count` — minimal extension required. | Low |
 | **Privacy Dashboard Integration** | Surface Android 12+ permission usage history (timeline view) inside AM app details | Medium |
 | **App Signing Key Change Alert** | Alert when the signing certificate of an installed update differs from the previously stored one | Medium |
 | **Permission Policy Flags Display** | Surface `requestedPermissionsFlags` bits (system-fixed, user-set, review-required, preinstalled, installer-exempt) alongside each permission entry in the App Details permissions list. `PackageInfo.requestedPermissionsFlags` already available; pure UI addition. Inure build106.5.0 model ([S66]). | Low |
 | **MiUI-Specific AppOps Mapping** | Surface MIUI extended op-codes with human-readable descriptions and full edit support for MIUI/Xiaomi devices. Conditional on `Build.MANUFACTURER.equals("Xiaomi")`; requires embedding a MIUI op-code lookup table. Inure build106.5.0 model ([S66]). | Low–Med |
+| **Permission Change Monitor** | Notify when an installed app update gains new dangerous or sensitive permissions vs. the previously installed version; tap to deep-link to App Details permission list for review. Root/Shizuku not required — `PackageManager` broadcast + stored per-app permission snapshot suffices. Permission Manager X Perm Watcher model ([S70]). | Medium |
 
 ### T10 — i18n & Accessibility
 
@@ -237,6 +243,7 @@ Upstream has committed to "basic APK editing" in its Upcoming Features list. NG 
 | **APK Merge (splits → universal)** | Merge split APK set into a single universal APK (model: APKEditor V1.4.8 [S48]) | Medium | — |
 | **Native Library Sizes in App Details** | In the App Details library tab, display the file size of each loaded `.so` alongside the library name; enumerate `ApplicationInfo.nativeLibraryDir` entries. Inure build107.0.1 model ([S66]). | Low | — |
 | **Batch APK Installer from File Manager** | Allow selecting multiple APK/APKS files in the built-in File Manager and installing them in a single batch `PackageInstaller` session. Inure build107.0.0 model ([S66]). | Medium | — |
+| **Force DEX Compile Optimization** | Add "Force Optimize" action in App Details triggering `cmd package compile -m speed <pkg>` (or `-m speed-profile` for profile-guided AOT); surfaces three profiles: `speed` (full AOT), `speed-profile`, and `quicken`; requires Root or Shizuku. Useful for apps that ended up in interpreter mode after sideloading or OTA. AppBooster (awesome-shizuku Miscellaneous section [S68]) model. | Low |
 
 ### T13 — Database & File System
 
@@ -328,6 +335,7 @@ Items that need architectural decisions or external dependencies resolved before
 | **KernelSU as Third Root Provider** | ~~Promoted to T5 (Next).~~ KernelSU v3.2.3+ `adb root` pathway has sufficient signal (~10 M users, `libsu`-compatible `su` binary) to warrant explicit detection in the capability wizard. See T5 "KernelSU Detection in Capability Wizard" ([S56]). |
 | **Android 17 Advanced Protection Mode (AAPM) Integration** | `AdvancedProtectionManager` API (Android 17, API 37 [S53]) lets apps detect if the user has opted into AAPM. NG could surface "Device in Advanced Protection Mode" in the Privacy & Security section and automatically restrict high-risk operations (e.g. USB-debugging auto-pair, unknown-source installs) when active. Gated on minSdk raise to 37. |
 | **JADX Plugin API for Analysis Extensions** | JADX 1.5.0+ ships an external plugin ecosystem ([S60]); scripts are now loadable as ZIP artifacts. Could expose custom class detectors (e.g. tracker pattern matching, hardcoded-secret detection) as user-installable NG analysis plugins. Architecture decisions: plugin trust model, sandboxing, GPL-compatible licensing chain. |
+| **DDG Tracker Radar as Secondary Tracker Source** | TrackerControl 2026040301 ([S69]) integrates DuckDuckGo Tracker Radar (mobile-specific tracker database) alongside Exodus definitions for broader coverage. DDG Tracker Radar data is CC-BY-NC-SA — the Non-Commercial clause is incompatible with GPL-3.0 redistribution without explicit licensing. **Do not bundle DDG Tracker Radar data until legal clearance is obtained.** Alternative: contribute new SDK signatures upstream to the Exodus database (MIT-licensed), which NG already ships. |
 
 ---
 
@@ -358,6 +366,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | `FinderViewModel.java` | TODO | Multi-user support + uninstalled app backups missing | Medium | T7 |
 | `ActivityInterceptor.java` | TODO | Results not sent back to original calling app | Medium | T8 |
 | `Utils.java` (×5) | FIXME | Hardcoded strings bypass i18n | Low–Med | T10 |
+| `VirusTotal.java` | TODO | `fetchFileReportOrScan` poll intervals are hardcoded (60 s then 30 s); should scale with `file.length()` per inline comment (L164, 2022-05-23). Low-urgency polish. | Low | Scanner |
 | `AppTypeOption.java` | TODO | Play App Signing / PWA / overlay detection missing | Low | App Details |
 | `PermissionsOption.java` | TODO | Permission flags not exposed in filter | Low | T7 |
 | `DataUsageOption.java` | TODO | Mobile/Wi-Fi split not shown | Low | T7 |
@@ -378,6 +387,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | Android 17 ECH default-on | Compliance | Apps targeting API 37 get ECH (Encrypted Client Hello) applied to all TLS connections by default ([S54]). NG must add a `<domainEncryption>` element to `network_security_config.xml` if any network endpoint (e.g. wireless ADB LAN pair) must opt out of ECH to avoid negotiation failures on older firmware. | Low | T5, T9 |
 | Android 17 per-app Keystore key cap | Compliance | Non-system apps targeting API 37 are limited to 50,000 Keystore keys ([S55]). Backup encryption and per-app signing paths may accumulate keys over time; audit `KeyStoreManager` before the targetSdk=37 bump and prune any excess. | Low | T2, T9 |
 | Android 18 implicit URI grant removal (planned) | Compliance | Android 17 preview signals that `Send`/`SendMultiple`/`ImageCapture` intents will stop auto-granting URI permissions to targets in Android 18 ([S55]). Pre-emptively audit APK-sharing intent paths; add explicit `grantUriPermission()` calls to prevent silent share breakage. | Low | T3, T5 |
+| GitHub Actions `release.yml` | Future | Android 17 introduces ML-DSA hybrid APK signing for post-quantum forward security ([S53]). Evaluate adding a PQC co-signer to the release pipeline when bumping targetSdk=37; fully backward-compatible with older Android versions and does not affect F-Droid or IzzyOnDroid builds. | Low | T1 |
 
 ---
 
@@ -486,7 +496,10 @@ All external sources cited above.
 | S62 | https://accrescent.app/features | Accrescent: key-pinning on first install, signed metadata, no TOFU, no accounts required, unattended updates, split APK support, min-version pinning |
 | S63 | https://github.com/soupslurpr/AppVerifier/releases | AppVerifier v0.5.0–v0.8.2: APK file verification via VIEW/SEND intent, cert hash display, multi-signer support; v0.8.0 removed Material dep (-1 MB) |
 | S64 | https://f-droid.org/docs/Inclusion_How-To/ | F-Droid inclusion requirements: FOSS-only deps, Fastlane metadata directory, CLI buildable, reproducible builds preferred |
-| S65 | https://github.com/aistra0528/Hail/releases/tag/v1.10.0 | Hail v1.10.0: multi-tag per app, URI schema for automation API, KernelSU App Profile support, Xposed auto-unfreeze hooks, Auto-Freeze QS tile |
+| S65 | https://github.com/aistra0528/Hail/releases | Hail v1.9.0: Force Stop (Root + Shizuku), Reinstall uninstalled system apps via `pm install-existing` (Root + Shizuku), System App Disable mode; v1.10.0: multi-tag per app, URI schema for automation API, KernelSU App Profile support, Xposed auto-unfreeze hooks, Auto-Freeze QS tile |
 | S66 | https://github.com/Hamza417/Inure/releases | Inure build106.3.3–build107.0.1: Levenshtein relevance search, native library sizes, MiUI AppOps support, permission policy flags display, batch APK installer, terminal security fix |
 | S67 | https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases/tag/v1.2.0 | UAD-NG v1.2.0: dynamically fetched package list (no app update needed for list changes), search in descriptions, package state + cross-user verification, selectable/copyable descriptions |
 | S68 | https://github.com/timschneeb/awesome-shizuku | awesome-shizuku: curated list of 50+ apps using Shizuku for elevated operations — reference for rootless capability expansion, vendor-specific Shizuku tooling landscape |
+| S69 | https://github.com/TrackerControl/tracker-control-android/releases | TrackerControl 2026040301: graduated blocking modes (minimal/standard/strict), DuckDuckGo Tracker Radar integration, multi-blocklist auto-updates, per-app tracker statistics, Show Unprotected Apps, Material 3 migration started |
+| S70 | https://github.com/mirfatif/PermissionManagerX/releases | Permission Manager X v1.25–v1.31: Perm Watcher real-time permission change monitoring, 25+ language localizations, Android 16 target compliance |
+| S71 | https://github.com/iamr0s/Dhizuku | Dhizuku: DeviceOwner permission sharing daemon (GPL-3.0); Android 8–16; activation via `adb shell dpm set-device-owner com.rosan.dhizuku/.server.Server`; Dhizuku-API library for third-party app integration; enables DPM-based freeze/hide/suspend without root |
