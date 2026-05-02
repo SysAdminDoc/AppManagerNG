@@ -43,6 +43,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -376,12 +377,20 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void showHistoryDetails(@NonNull OpHistoryItem history) {
+        String detailMessage = history.getDetailMessage(this);
         new MaterialAlertDialogBuilder(this)
                 .setTitle(history.getLabel(this))
-                .setMessage(history.getDetailMessage(this))
+                .setMessage(detailMessage)
+                .setNegativeButton(R.string.copy, (dialog, which) -> copyHistoryDetails(history, detailMessage))
                 .setNeutralButton(R.string.delete, (dialog, which) -> showDeleteHistoryConfirmation(history))
                 .setPositiveButton(R.string.close, null)
                 .show();
+    }
+
+    private void copyHistoryDetails(@NonNull OpHistoryItem history, @NonNull String detailMessage) {
+        String title = history.getLabel(this);
+        ClipboardUtils.copyToClipboard(this, title, title + "\n\n" + detailMessage);
+        UIUtils.displayShortToast(R.string.copied_to_clipboard);
     }
 
     private void showDeleteHistoryConfirmation(@NonNull OpHistoryItem history) {
@@ -434,6 +443,7 @@ public class OpHistoryActivity extends BaseActivity {
             mActivity = activity;
             mColorSuccess = ColorCodes.getSuccessColor(activity);
             mColorFailure = ColorCodes.getFailureColor(activity);
+            setHasStableIds(true);
         }
 
         void setDefaultList(@NonNull List<OpHistoryItem> list) {
@@ -452,7 +462,7 @@ public class OpHistoryActivity extends BaseActivity {
         @Override
         public long getItemId(int position) {
             synchronized (mAdapterList) {
-                return mAdapterList.get(position).hashCode();
+                return mAdapterList.get(position).getId();
             }
         }
 
