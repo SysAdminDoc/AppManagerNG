@@ -2,7 +2,7 @@
 # Android 17 `MessageQueue` Compatibility Audit
 
 **Date:** 2026-05-02
-**Roadmap reference:** [ROADMAP.md](../../ROADMAP.md) — T2 row "Android 17 MessageQueue Compatibility" and L11 row "WorkManager/JobScheduler".
+**Roadmap reference:** [ROADMAP.md](../../ROADMAP.md) — Now / T2 row "Android 17 MessageQueue Compatibility".
 **Outcome:** ✅ **CLEAN — no remediation required.**
 
 ## Background

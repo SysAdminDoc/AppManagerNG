@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** post-v0.3.0 (fifth full research cycle, 2026-05-01).  
+**Last updated:** 2026-05-02 (factory iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
 **Next revision due:** v0.6.0 release.
 
 ---
