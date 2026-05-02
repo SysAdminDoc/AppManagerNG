@@ -1669,6 +1669,44 @@
     <string name="op_history_empty_message">Operations you run from profiles and batch actions will appear here for review or rerun.</string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
+    <string name="op_history_legacy_metadata_summary">Legacy entry · saved before safety metadata</string>
+    <string name="op_history_legacy_metadata_detail">This entry was created before the operation journal recorded safety metadata.</string>
+    <string name="op_history_item_metadata"><xliff:g id="risk" example="High risk">%1$s</xliff:g> · <xliff:g id="target_count" example="3 targets">%2$s</xliff:g> · <xliff:g id="mode" example="ADB">%3$s</xliff:g></string>
+    <string name="op_history_item_content_description"><xliff:g id="title" example="Freeze">%1$s</xliff:g>, <xliff:g id="type" example="Batch ops">%2$s</xliff:g>, <xliff:g id="metadata" example="Medium risk · 3 targets · ADB">%3$s</xliff:g></string>
+    <string name="op_history_detail_line"><xliff:g id="label" example="Status">%1$s</xliff:g>: <xliff:g id="value" example="Succeeded">%2$s</xliff:g></string>
+    <string name="op_history_detail_status">Status</string>
+    <string name="op_history_detail_time">Time</string>
+    <string name="op_history_detail_metadata">Metadata</string>
+    <string name="op_history_detail_operation">Operation</string>
+    <string name="op_history_detail_mode">Mode</string>
+    <string name="op_history_detail_targets">Targets</string>
+    <string name="op_history_detail_failed">Failed</string>
+    <string name="op_history_detail_risk">Risk</string>
+    <string name="op_history_detail_replayable">Replayable</string>
+    <string name="op_history_detail_reversible">Reversible</string>
+    <string name="op_history_detail_restart">Restart required</string>
+    <string name="op_history_detail_rollback">Rollback guidance</string>
+    <string name="op_history_detail_target_preview">Target preview</string>
+    <string name="op_history_detail_failure_message">Failure message</string>
+    <string name="op_history_status_success">Succeeded</string>
+    <string name="op_history_status_failure">Failed</string>
+    <string name="op_history_risk_low">Low risk</string>
+    <string name="op_history_risk_medium">Medium risk</string>
+    <string name="op_history_risk_high">High risk</string>
+    <string name="op_history_rollback_none">No automatic rollback is available. Restore from backup or reinstall manually if needed.</string>
+    <string name="op_history_rollback_restore_backup">Restore the previous backup snapshot if one exists.</string>
+    <string name="op_history_rollback_run_inverse">Run the matching inverse operation from the same target set.</string>
+    <string name="op_history_rollback_reinstall">Uninstall the app or reinstall the previous APK if you saved one.</string>
+    <string name="op_history_rollback_manual_reapply">Review the changed settings and manually reapply the prior state if needed.</string>
+    <string name="op_history_rollback_delete_artifact">Delete the generated backup or export artifact if it is no longer wanted.</string>
+    <plurals name="op_history_target_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> target</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> targets</item>
+    </plurals>
+    <plurals name="op_history_failed_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> failure</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> failures</item>
+    </plurals>
     <string name="shared_prefs_empty_title">No preferences yet</string>
     <string name="shared_prefs_empty_message">Add the first key-value entry to make this shared preferences file easier to inspect.</string>
     <string name="shared_prefs_delete_confirmation">This shared preferences file will be permanently deleted. This action cannot be undone.</string>

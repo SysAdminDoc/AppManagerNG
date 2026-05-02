@@ -22,6 +22,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsResultsActivity;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
@@ -93,9 +94,13 @@ public class ProfileApplierService extends ForegroundService {
             ProfileManager profileManager = new ProfileManager(item.getProfileId(), tempProfilePath);
             profileManager.applyProfile(item.getState(), mProgressHandler);
             profileManager.conclude();
-            OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, true);
-            sendNotification(item.getProfileName(), Activity.RESULT_OK, notify, profileManager.requiresRestart());
+            boolean requiresRestart = profileManager.requiresRestart();
+            OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, true,
+                    OperationJournalMetadata.forProfile(this, item, true, requiresRestart, null));
+            sendNotification(item.getProfileName(), Activity.RESULT_OK, notify, requiresRestart);
         } catch (IOException e) {
+            OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, false,
+                    OperationJournalMetadata.forProfile(this, item, false, false, e));
             sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false);
         } finally {
             if (tempProfilePath != null) {

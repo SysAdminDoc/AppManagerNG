@@ -113,6 +113,14 @@ public class OpHistoryActivity extends BaseActivity {
         action.setVisibility(View.GONE);
     }
 
+    private void showHistoryDetails(@NonNull OpHistoryItem history) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(history.getLabel(this))
+                .setMessage(history.getDetailMessage(this))
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -133,6 +141,7 @@ public class OpHistoryActivity extends BaseActivity {
             TextView type;
             TextView title;
             TextView execTime;
+            TextView metadata;
             Button execBtn;
 
             public ViewHolder(@NonNull View itemView) {
@@ -141,6 +150,7 @@ public class OpHistoryActivity extends BaseActivity {
                 type = itemView.findViewById(R.id.type);
                 title = itemView.findViewById(android.R.id.title);
                 execTime = itemView.findViewById(android.R.id.summary);
+                metadata = itemView.findViewById(R.id.item_metadata);
                 execBtn = itemView.findViewById(R.id.item_action);
             }
         }
@@ -189,9 +199,12 @@ public class OpHistoryActivity extends BaseActivity {
             holder.type.setText(history.getLocalizedType(mActivity));
             holder.title.setText(history.getLabel(mActivity));
             holder.execTime.setText(DateUtils.formatLongDateTime(mActivity, history.getTimestamp()));
-            holder.itemView.setOnClickListener(v -> {
-                // TODO: 1/26/25 Display history info
-            });
+            holder.metadata.setText(history.getMetadataSummary(mActivity));
+            holder.itemView.setContentDescription(mActivity.getString(R.string.op_history_item_content_description,
+                    history.getLabel(mActivity),
+                    history.getLocalizedType(mActivity),
+                    history.getMetadataSummary(mActivity)));
+            holder.itemView.setOnClickListener(v -> mActivity.showHistoryDetails(history));
             holder.itemView.setOnLongClickListener(v -> {
                 // TODO: 1/26/25 Possible long click options
                 //  1. Apply

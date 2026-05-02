@@ -23,6 +23,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.BatchOpsInfo;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.main.MainActivity;
@@ -140,7 +141,8 @@ public class BatchOpsService extends ForegroundService {
         BatchOpsManager batchOpsManager = new BatchOpsManager();
         BatchOpsManager.Result result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler);
         batchOpsManager.conclude();
-        OpHistoryManager.addHistoryItem(HISTORY_TYPE_BATCH_OPS, item, result.isSuccessful());
+        OpHistoryManager.addHistoryItem(HISTORY_TYPE_BATCH_OPS, item, result.isSuccessful(),
+                OperationJournalMetadata.forBatchOperation(this, item, result));
         if (result.isSuccessful()) {
             sendResults(Activity.RESULT_OK, item, result);
         } else {

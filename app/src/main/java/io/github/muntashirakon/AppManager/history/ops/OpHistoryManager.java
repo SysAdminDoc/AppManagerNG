@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.LiveData;
@@ -59,13 +60,21 @@ public final class OpHistoryManager {
     public static long addHistoryItem(@HistoryType String historyType,
                                       @NonNull IJsonSerializer item,
                                       boolean success) {
+        return addHistoryItem(historyType, item, success, null);
+    }
+
+    @WorkerThread
+    public static long addHistoryItem(@HistoryType String historyType,
+                                      @NonNull IJsonSerializer item,
+                                      boolean success,
+                                      @Nullable OperationJournalMetadata metadata) {
         try {
             OpHistory opHistory = new OpHistory();
             opHistory.type = historyType;
             opHistory.execTime = System.currentTimeMillis();
             opHistory.serializedData = item.serializeToJson().toString();
             opHistory.status = success ? STATUS_SUCCESS : STATUS_FAILURE;
-            opHistory.serializedExtra = null;
+            opHistory.serializedExtra = metadata != null ? metadata.serializeToJson().toString() : null;
             long id = AppsDb.getInstance().opHistoryDao().insert(opHistory);
             opHistory.id = id;
             sHistoryAddedLiveData.postValue(opHistory);

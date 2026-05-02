@@ -4,24 +4,32 @@ package io.github.muntashirakon.AppManager.history.ops;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
 public class OpHistoryItem {
     private final OpHistory opHistory;
     public final JSONObject jsonData;
+    @Nullable
+    private final OperationJournalMetadata metadata;
 
     public OpHistoryItem(@NonNull OpHistory opHistory) throws JSONException {
         this.opHistory = opHistory;
         jsonData = new JSONObject(opHistory.serializedData);
+        metadata = OperationJournalMetadata.fromJson(opHistory.serializedExtra);
     }
 
     @OpHistoryManager.HistoryType
@@ -80,5 +88,83 @@ public class OpHistoryItem {
 
     public boolean getStatus() {
         return opHistory.status.equals(OpHistoryManager.STATUS_SUCCESS);
+    }
+
+    @NonNull
+    public String getMetadataSummary(@NonNull Context context) {
+        if (metadata == null) {
+            return context.getString(R.string.op_history_legacy_metadata_summary);
+        }
+        return metadata.getSummary(context);
+    }
+
+    @NonNull
+    public String getDetailMessage(@NonNull Context context) {
+        StringBuilder detail = new StringBuilder();
+        appendLine(context, detail, R.string.type, getLocalizedType(context));
+        appendLine(context, detail, R.string.op_history_detail_status,
+                context.getString(getStatus()
+                        ? R.string.op_history_status_success
+                        : R.string.op_history_status_failure));
+        appendLine(context, detail, R.string.op_history_detail_time,
+                DateUtils.formatLongDateTime(context, getTimestamp()));
+        if (metadata == null) {
+            appendLine(context, detail, R.string.op_history_detail_metadata,
+                    context.getString(R.string.op_history_legacy_metadata_detail));
+            return detail.toString();
+        }
+        appendLine(context, detail, R.string.op_history_detail_operation,
+                nonEmptyOrUnknown(context, metadata.getOperationLabel()));
+        appendLine(context, detail, R.string.op_history_detail_mode,
+                nonEmptyOrUnknown(context, metadata.getModeLabel()));
+        appendLine(context, detail, R.string.op_history_detail_targets,
+                context.getResources().getQuantityString(
+                        R.plurals.op_history_target_count,
+                        metadata.getTargetCount(),
+                        metadata.getTargetCount()));
+        appendLine(context, detail, R.string.op_history_detail_failed,
+                context.getResources().getQuantityString(
+                        R.plurals.op_history_failed_count,
+                        metadata.getFailedCount(),
+                        metadata.getFailedCount()));
+        appendLine(context, detail, R.string.op_history_detail_risk,
+                metadata.getLocalizedRisk(context));
+        appendLine(context, detail, R.string.op_history_detail_replayable,
+                context.getString(metadata.isReplayable() ? R.string.yes : R.string.no));
+        appendLine(context, detail, R.string.op_history_detail_reversible,
+                context.getString(metadata.isReversible() ? R.string.yes : R.string.no));
+        appendLine(context, detail, R.string.op_history_detail_restart,
+                context.getString(metadata.requiresRestart() ? R.string.yes : R.string.no));
+        appendLine(context, detail, R.string.op_history_detail_rollback,
+                metadata.getLocalizedRollbackHint(context));
+        List<String> targetPreview = metadata.getTargetPreview();
+        if (!targetPreview.isEmpty()) {
+            appendLine(context, detail, R.string.op_history_detail_target_preview,
+                    TextUtils.join(", ", targetPreview));
+        }
+        String failureMessage = metadata.getFailureMessage();
+        if (failureMessage != null) {
+            appendLine(context, detail, R.string.op_history_detail_failure_message, failureMessage);
+        }
+        return detail.toString();
+    }
+
+    private static void appendLine(@NonNull Context context,
+                                   @NonNull StringBuilder builder,
+                                   int labelRes,
+                                   @NonNull CharSequence value) {
+        if (builder.length() > 0) {
+            builder.append('\n');
+        }
+        builder.append(context.getString(R.string.op_history_detail_line,
+                context.getString(labelRes), value));
+    }
+
+    @NonNull
+    private static String nonEmptyOrUnknown(@NonNull Context context, @Nullable String value) {
+        if (TextUtils.isEmpty(value)) {
+            return context.getString(R.string.state_unknown);
+        }
+        return value;
     }
 }

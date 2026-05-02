@@ -44,6 +44,13 @@
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="@tools:sample/lorem" />
 
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/item_metadata"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                tools:text="@tools:sample/lorem" />
+
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <com.google.android.material.button.MaterialButton
