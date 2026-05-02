@@ -51,13 +51,50 @@
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
-    <com.google.android.material.textview.MaterialTextView
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/message"
         android:layout_width="match_parent"
         android:layout_height="320dp"
-        android:visibility="gone"
         android:gravity="center"
-        android:text="@string/backup_no_backups_present"
-        tools:visibility="visible" />
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/padding_large"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <FrameLayout
+            android:layout_width="@dimen/main_empty_icon_container_size"
+            android:layout_height="@dimen/main_empty_icon_container_size"
+            android:background="@drawable/main_empty_icon_background"
+            android:importantForAccessibility="no">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_backup_restore"
+                app:tint="?attr/colorPrimary" />
+
+        </FrameLayout>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:gravity="center"
+            android:text="@string/backup_no_backups_present"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:gravity="center"
+            android:maxWidth="@dimen/main_empty_summary_max_width"
+            android:text="@string/backup_no_actions_available_summary"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
 </FrameLayout>

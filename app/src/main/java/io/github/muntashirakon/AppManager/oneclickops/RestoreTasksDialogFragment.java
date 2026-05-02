@@ -9,6 +9,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.fragment.app.DialogFragment;
 
@@ -61,7 +62,8 @@ public class RestoreTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.restore_empty_all_apps_title, R.string.restore_empty_all_apps_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -90,7 +92,8 @@ public class RestoreTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.restore_empty_not_installed_title, R.string.restore_empty_not_installed_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -120,7 +123,8 @@ public class RestoreTasksDialogFragment extends DialogFragment {
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
-                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels));
+                    ThreadUtils.postOnMainThread(() -> runMultiChoiceDialog(applicationItems, applicationLabels,
+                            R.string.restore_empty_latest_title, R.string.restore_empty_latest_summary));
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
@@ -142,12 +146,22 @@ public class RestoreTasksDialogFragment extends DialogFragment {
     }
 
     @UiThread
-    private void runMultiChoiceDialog(List<ApplicationItem> applicationItems, List<CharSequence> applicationLabels) {
+    private void runMultiChoiceDialog(List<ApplicationItem> applicationItems, List<CharSequence> applicationLabels,
+                                      @StringRes int emptyTitleRes, @StringRes int emptyMessageRes) {
         if (isDetached()) return;
         mActivity.progressIndicator.hide();
+        if (applicationItems.isEmpty()) {
+            new MaterialAlertDialogBuilder(mActivity)
+                    .setIcon(R.drawable.ic_information_circle)
+                    .setTitle(emptyTitleRes)
+                    .setMessage(emptyMessageRes)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+            return;
+        }
         new SearchableMultiChoiceDialogBuilder<>(mActivity, applicationItems, applicationLabels)
                 .addSelections(applicationItems)
-                .setTitle(R.string.filtered_packages)
+                .setTitle(R.string.restore_review_apps_title)
                 .setPositiveButton(R.string.restore, (dialog, which, selectedItems) -> {
                     if (isDetached()) return;
                     BackupRestoreDialogFragment fragment = BackupRestoreDialogFragment.getInstance(

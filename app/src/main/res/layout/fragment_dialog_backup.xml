@@ -51,7 +51,9 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:text="@string/back_up" />
+            android:text="@string/back_up"
+            app:icon="@drawable/ic_backup_restore"
+            app:iconPadding="@dimen/padding_small" />
 
     </RelativeLayout>
 

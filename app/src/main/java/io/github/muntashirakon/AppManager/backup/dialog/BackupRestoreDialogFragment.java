@@ -376,18 +376,17 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     }
 
     private void handleDeleteBaseBackup() {
-        // TODO: 5/7/22 Clarify the message by including base backup in the message.
         // TODO: 5/7/22 Display a check box that will include all the backups instead of only base backups.
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.delete_backup)
-                .setMessage(R.string.are_you_sure)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
+                .setMessage(R.string.delete_base_backups_confirmation)
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
                     BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
                     operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
                     operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
                     mViewModel.prepareForOperation(operationInfo);
                 })
-                .setNegativeButton(R.string.no, null)
+                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
