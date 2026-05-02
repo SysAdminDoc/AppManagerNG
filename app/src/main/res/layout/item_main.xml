@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
-    android:layout_marginVertical="3dp"
+    android:layout_marginVertical="@dimen/main_list_card_margin_vertical"
     android:checkable="true"
     android:clickable="true"
     android:focusable="true">
@@ -18,12 +18,12 @@
         android:minHeight="@dimen/main_list_min_height"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="12dp">
+        android:paddingVertical="@dimen/main_list_padding_vertical">
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="48dp"
+            android:layout_width="@dimen/main_list_icon_column_width"
             android:layout_height="match_parent"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="@dimen/main_list_icon_margin_end"
             android:gravity="top|center_horizontal"
             android:orientation="vertical">
 
@@ -53,7 +53,7 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="2"
-                    android:paddingEnd="32dp"
+                    android:paddingEnd="@dimen/main_list_title_badge_padding_end"
                     android:textAppearance="?android:attr/textAppearanceListItem"
                     tools:ignore="RtlSymmetry"
                     tools:text="@string/app_name" />
@@ -94,9 +94,10 @@
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:minHeight="22dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="1dp"
+                    android:minHeight="@dimen/main_list_badge_min_height"
+                    android:minWidth="@dimen/main_list_badge_min_width"
+                    android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                     android:text="@string/backup"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
@@ -112,12 +113,13 @@
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:minHeight="22dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="1dp"
+                    android:minHeight="@dimen/main_list_badge_min_height"
+                    android:minWidth="@dimen/main_list_badge_min_width"
+                    android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     android:visibility="gone"
-                    tools:text="3"
+                    tools:text="3 trackers"
                     tools:visibility="visible" />
 
                 <androidx.appcompat.widget.AppCompatTextView
@@ -128,12 +130,13 @@
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:minHeight="22dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="1dp"
+                    android:minHeight="@dimen/main_list_badge_min_height"
+                    android:minWidth="@dimen/main_list_badge_min_width"
+                    android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     android:visibility="gone"
-                    tools:text="3/8"
+                    tools:text="3/8 perms"
                     tools:visibility="visible" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>

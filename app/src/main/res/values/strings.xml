@@ -191,12 +191,22 @@
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> trackers</item>
     </plurals>
+    <plurals name="main_list_tracker_badge_label">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> trackers</item>
+    </plurals>
+    <plurals name="main_list_tracker_badge_all_blocked">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> blocked</item>
+        <item quantity="other"><xliff:g id="count" example="27">%1$d</xliff:g> blocked</item>
+    </plurals>
+    <string name="main_list_tracker_badge_partial"><xliff:g id="blocked" example="3">%1$d</xliff:g>/<xliff:g id="total" example="27">%2$d</xliff:g> blocked</string>
     <plurals name="main_list_tracker_count_all_blocked_a11y">
         <item quantity="one">All <xliff:g id="count" example="1">%1$d</xliff:g> tracker blocked</item>
         <item quantity="other">All <xliff:g id="count" example="27">%1$d</xliff:g> trackers blocked</item>
     </plurals>
     <string name="main_list_tracker_count_partial_a11y"><xliff:g id="blocked" example="3">%1$d</xliff:g> of <xliff:g id="total" example="27">%2$d</xliff:g> trackers blocked</string>
     <string name="main_list_perm_count_a11y"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
+    <string name="main_list_perm_badge_label"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> perms</string>
     <plurals name="tracker_and_classes">
         <item quantity="one">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> class</item>
         <item quantity="other">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> classes</item>

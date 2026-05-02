@@ -105,6 +105,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private TextView mEmptyStateSummary;
     private MaterialButton mEmptyStateAction;
     private TextView mListStatusView;
+    @Nullable
+    private String mListStatusActionHint;
     MainBatchOpsHandler mBatchOpsHandler;
 
     /** Async breakdown computation; cancelled when superseded by a new list. */
@@ -652,7 +654,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 String statusWithBreakdown = getString(R.string.main_status_with_category_breakdown,
                         base, breakdown);
                 mListStatusView.setText(statusWithBreakdown);
-                mListStatusView.setContentDescription(statusWithBreakdown);
+                setListStatusContentDescription(statusWithBreakdown);
             });
         });
     }
@@ -714,7 +716,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         String status = getString(R.string.main_status_with_category_breakdown,
                 base, getString(R.string.main_status_breakdown_calculating));
         mListStatusView.setText(status);
-        mListStatusView.setContentDescription(status);
+        setListStatusContentDescription(status);
     }
 
     private void clearBreakdownProgress() {
@@ -726,7 +728,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         if (newline >= 0) {
             String base = currentStr.substring(0, newline);
             mListStatusView.setText(base);
-            mListStatusView.setContentDescription(base);
+            setListStatusContentDescription(base);
         }
     }
 
@@ -980,7 +982,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             if (mListStatusView != null) {
                 mListStatusView.setVisibility(View.VISIBLE);
                 mListStatusView.setText(R.string.main_status_loading);
-                mListStatusView.setContentDescription(getString(R.string.main_status_loading));
+                mListStatusActionHint = null;
+                setListStatusContentDescription(getString(R.string.main_status_loading));
+                setListStatusActionable(false);
                 mListStatusView.setOnClickListener(null);
                 mListStatusView.setClickable(false);
             }
@@ -1021,8 +1025,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS)) {
                 mListStatusView.setClickable(true);
                 mListStatusView.setFocusable(true);
-                mListStatusView.setContentDescription(statusLine + ". "
-                        + getString(R.string.main_status_filter_trackers_a11y));
+                setListStatusActionable(true);
+                mListStatusActionHint = getString(R.string.main_status_filter_trackers_a11y);
+                setListStatusContentDescription(statusLine);
                 mListStatusView.setOnClickListener(v -> {
                     if (viewModel == null) return;
                     viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
@@ -1032,8 +1037,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS)) {
                 mListStatusView.setClickable(true);
                 mListStatusView.setFocusable(true);
-                mListStatusView.setContentDescription(statusLine + ". "
-                        + getString(R.string.main_status_filter_permissions_a11y));
+                setListStatusActionable(true);
+                mListStatusActionHint = getString(R.string.main_status_filter_permissions_a11y);
+                setListStatusContentDescription(statusLine);
                 mListStatusView.setOnClickListener(v -> {
                     if (viewModel == null) return;
                     viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
@@ -1042,7 +1048,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             } else {
                 mListStatusView.setOnClickListener(null);
                 mListStatusView.setClickable(false);
-                mListStatusView.setContentDescription(statusLine);
+                setListStatusActionable(false);
+                mListStatusActionHint = null;
+                setListStatusContentDescription(statusLine);
             }
         }
         if (displayedItemCount > 0) {
@@ -1088,6 +1096,25 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else {
             showProgressIndicator(true);
             viewModel.loadApplicationItems();
+        }
+    }
+
+    private void setListStatusActionable(boolean actionable) {
+        if (mListStatusView == null) {
+            return;
+        }
+        mListStatusView.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                actionable ? R.drawable.ic_filter_list : 0, 0, 0, 0);
+    }
+
+    private void setListStatusContentDescription(@NonNull String statusText) {
+        if (mListStatusView == null) {
+            return;
+        }
+        if (mListStatusActionHint != null) {
+            mListStatusView.setContentDescription(statusText + ". " + mListStatusActionHint);
+        } else {
+            mListStatusView.setContentDescription(statusText);
         }
     }
 

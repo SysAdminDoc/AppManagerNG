@@ -9,7 +9,7 @@
     android:focusable="true"
     android:checkable="true"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
-    android:layout_marginVertical="2dp">
+    android:layout_marginVertical="@dimen/main_list_card_margin_vertical">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -19,13 +19,13 @@
         android:minHeight="@dimen/main_list_min_height"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="10dp">
+        android:paddingVertical="@dimen/main_list_padding_vertical">
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="48dp"
+            android:layout_width="@dimen/main_list_icon_column_width"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:layout_marginEnd="@dimen/padding_small"
+            android:layout_marginEnd="@dimen/main_list_icon_margin_end"
             android:orientation="vertical">
 
             <androidx.appcompat.widget.AppCompatImageView
@@ -91,9 +91,10 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
-                        android:minHeight="22dp"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="1dp"
+                        android:minHeight="@dimen/main_list_badge_min_height"
+                        android:minWidth="@dimen/main_list_badge_min_width"
+                        android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                        android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                         android:text="@string/backup"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
@@ -109,13 +110,14 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
-                        android:minHeight="22dp"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="1dp"
+                        android:minHeight="@dimen/main_list_badge_min_height"
+                        android:minWidth="@dimen/main_list_badge_min_width"
+                        android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                        android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         android:visibility="gone"
                         tools:visibility="visible"
-                        tools:text="3" />
+                        tools:text="3 trackers" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/perm_indicator"
@@ -125,13 +127,14 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
-                        android:minHeight="22dp"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="1dp"
+                        android:minHeight="@dimen/main_list_badge_min_height"
+                        android:minWidth="@dimen/main_list_badge_min_width"
+                        android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                        android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         android:visibility="gone"
                         tools:visibility="visible"
-                        tools:text="3/8" />
+                        tools:text="3/8 perms" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 

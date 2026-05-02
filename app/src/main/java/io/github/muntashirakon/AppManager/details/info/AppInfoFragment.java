@@ -781,7 +781,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         mTrackerCtaCard.setVisibility(View.VISIBLE);
         int count = tagCloud.trackerComponents.size();
-        int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(requireContext());
+        int trackerColor = ColorCodes.getTrackerRiskIndicatorColor(requireContext(), count);
         int blockedColor = ColorCodes.getComponentTrackerBlockedIndicatorColor(requireContext());
         boolean allBlocked = tagCloud.areAllTrackersBlocked;
         if (allBlocked) {
@@ -844,10 +844,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         mPermsCtaCard.setVisibility(View.VISIBLE);
-        int trackerColor = ColorCodes.getComponentTrackerIndicatorColor(requireContext());
+        int permissionColor = ColorCodes.getPermissionRiskIndicatorColor(requireContext(),
+                tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal);
         mPermsCtaTitle.setText(getString(R.string.perms_cta_title,
                 tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal));
-        mPermsCtaTitle.setTextColor(trackerColor);
+        mPermsCtaTitle.setTextColor(permissionColor);
         boolean canRevoke = mMainModel != null
                 && io.github.muntashirakon.AppManager.self.SelfPermissions
                         .canModifyAppComponentStates(mUserId, mPackageName,
@@ -957,7 +958,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             tagCloud.trackerComponents.size(), tagCloud.trackerComponents.size()))
                     .setColor(tagCloud.areAllTrackersBlocked
                             ? ColorCodes.getComponentTrackerBlockedIndicatorColor(context)
-                            : ColorCodes.getComponentTrackerIndicatorColor(context))
+                            : ColorCodes.getTrackerRiskIndicatorColor(context, tagCloud.trackerComponents.size()))
                     .setOnClickListener(v -> {
                         if (!mIsExternalApk && SelfPermissions.canModifyAppComponentStates(mUserId, mPackageName, mMainModel.isTestOnlyApp())) {
                             new SearchableMultiChoiceDialogBuilder<>(v.getContext(), tagCloud.trackerComponents, trackerComponentNames)
@@ -997,15 +998,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         }
                     });
         }
-        // Dangerous-permission overview chip — shows "G/T dangerous perms" so users
-        // can see how much trust the app has been granted at a glance, mirroring
-        // the tracker chip pattern. Color: green when none granted, orange when
-        // any granted (the count itself signals scope). Tap jumps to the
-        // Permissions tab where users can curate per-permission revocations.
+        // Dangerous-permission overview chip mirrors the main-list badge: the text
+        // exposes granted/total, while the color encodes grant ratio severity.
         if (tagCloud.dangerousPermissionTotal > 0) {
-            int grantedColor = tagCloud.dangerousPermissionGranted > 0
-                    ? ColorCodes.getComponentTrackerIndicatorColor(context)
-                    : ColorCodes.getComponentTrackerBlockedIndicatorColor(context);
+            int grantedColor = ColorCodes.getPermissionRiskIndicatorColor(context,
+                    tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal);
             String label = getString(R.string.tag_dangerous_perms,
                     tagCloud.dangerousPermissionGranted, tagCloud.dangerousPermissionTotal);
             TagItem permTag = new TagItem();

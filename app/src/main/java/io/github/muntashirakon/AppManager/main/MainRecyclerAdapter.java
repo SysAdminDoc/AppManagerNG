@@ -358,11 +358,9 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             // Highlight searched query
             holder.packageName.setText(UIUtils.getHighlightedText(item.packageName, mSearchQuery, mQueryStringHighlight));
         } else holder.packageName.setText(item.packageName);
-        // Set package name color + show a tracker count badge. Icon column is only 48dp
-        // wide, so the visible label is just the count (or '✓N' when all blocked, or
-        // 'B/N' when partially blocked). Screen-reader description expands to a full
-        // sentence. Pairs with the orange-tinted package name for an at-a-glance
-        // privacy signal without forcing users into the Scanner.
+        // Set package name color + show a tracker badge. The visible label carries
+        // enough context to scan without opening details; the tint encodes severity:
+        // green <= 4, amber 5-19, red >= 20, and green when every tracker is blocked.
         if (item.trackerCount > 0) {
             int blocked = item.trackerBlockedCount != null ? item.trackerBlockedCount : 0;
             // clamp: blocked count comes from the rules db (which may have stale
@@ -371,25 +369,28 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             boolean allBlocked = blocked > 0 && blocked >= item.trackerCount;
             int trackerColor = allBlocked
                     ? ColorCodes.getComponentTrackerBlockedIndicatorColor(context)
-                    : ColorCodes.getComponentTrackerIndicatorColor(context);
+                    : ColorCodes.getTrackerRiskIndicatorColor(context, item.trackerCount);
             holder.packageName.setTextColor(trackerColor);
             if (holder.trackerIndicator != null) {
                 holder.trackerIndicator.setVisibility(View.VISIBLE);
                 String label;
                 String contentDesc;
                 if (allBlocked) {
-                    // All trackers blocked: "✓N" reads as 'all-blocked, N total'.
-                    label = "✓" + item.trackerCount;
+                    label = context.getResources().getQuantityString(
+                            R.plurals.main_list_tracker_badge_all_blocked,
+                            item.trackerCount, item.trackerCount);
                     contentDesc = context.getResources().getQuantityString(
                             R.plurals.main_list_tracker_count_all_blocked_a11y,
                             item.trackerCount, item.trackerCount);
                 } else if (blocked > 0) {
-                    // Partial: "B/N" -> blocked-of-total
-                    label = blocked + "/" + item.trackerCount;
+                    label = context.getString(R.string.main_list_tracker_badge_partial,
+                            blocked, item.trackerCount);
                     contentDesc = context.getString(
                             R.string.main_list_tracker_count_partial_a11y, blocked, item.trackerCount);
                 } else {
-                    label = String.valueOf(item.trackerCount);
+                    label = context.getResources().getQuantityString(
+                            R.plurals.main_list_tracker_badge_label,
+                            item.trackerCount, item.trackerCount);
                     contentDesc = context.getResources().getQuantityString(
                             R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount);
                 }
@@ -420,20 +421,16 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.trackerIndicator.setClickable(false);
             }
         }
-        // Dangerous-permission badge: shows "G/T" so users can see at a glance how
-        // much trust each app has been given. Tap deep-links into the Permissions
-        // tab (same target as the chip on the App info tab) where they can curate
-        // per-permission revocations. Hidden when the app declares zero dangerous
-        // perms — most utility apps land here.
+        // Dangerous-permission badge: shows "G/T perms" and tints by grant ratio so
+        // the row communicates trust posture without relying on numbers alone.
         if (holder.permIndicator != null) {
             int permTotal = item.dangerousPermTotal != null ? item.dangerousPermTotal : 0;
             int permGranted = item.dangerousPermGranted != null ? item.dangerousPermGranted : 0;
             if (permTotal > 0) {
                 holder.permIndicator.setVisibility(View.VISIBLE);
-                holder.permIndicator.setText(permGranted + "/" + permTotal);
-                int permColor = permGranted > 0
-                        ? ColorCodes.getComponentTrackerIndicatorColor(context)
-                        : ColorCodes.getComponentTrackerBlockedIndicatorColor(context);
+                holder.permIndicator.setText(context.getString(
+                        R.string.main_list_perm_badge_label, permGranted, permTotal));
+                int permColor = ColorCodes.getPermissionRiskIndicatorColor(context, permGranted, permTotal);
                 applyBadgeStyle(holder.permIndicator, permColor);
                 holder.permIndicator.setContentDescription(context.getString(
                         R.string.main_list_perm_count_a11y, permGranted, permTotal));
