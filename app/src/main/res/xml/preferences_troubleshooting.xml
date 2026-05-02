@@ -15,4 +15,9 @@
         app:title="@string/pref_replay_tour"
         app:summary="@string/pref_replay_tour_msg"
         app:iconSpaceReserved="false" />
+    <Preference
+        app:key="battery_optimization"
+        app:title="@string/pref_battery_optimization"
+        app:summary="@string/pref_battery_optimization_msg"
+        app:iconSpaceReserved="false" />
 </PreferenceScreen>

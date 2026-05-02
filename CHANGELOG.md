@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Settings: Battery optimization entry (ROADMAP Trivial closed)
+- New "Battery optimization" preference under Settings → Troubleshooting.
+  Summary reflects the current `PowerManager.isIgnoringBatteryOptimizations()`
+  state and refreshes on resume. Tap routes to the per-app request prompt
+  (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) when optimized, or to the
+  system-wide list (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`) when
+  already exempt so the user can revoke. Pre-M devices see a disabled
+  entry with explanatory copy. Manifest now declares
+  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
+
 ### Added — AppType filter: Play App Signing + Overlay flags (eng-debt TODO partially closed)
 - The AppType filter (used by Saved Filters and Finder) gains two
   previously-stubbed flags: **Uses Play App Signing** (APK signed by
