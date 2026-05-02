@@ -32,6 +32,8 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
+import android.system.Os;
+import android.system.OsConstants;
 import android.os.Bundle;
 import android.os.UserHandleHidden;
 import android.provider.Settings;
@@ -2129,6 +2131,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             if (appInfo.primaryCpuAbi != null) {
                 mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.primary_abi),
                         appInfo.primaryCpuAbi));
+                mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.device_page_size),
+                        getDevicePageSizeLabel()));
             }
             if (appInfo.zygotePreloadName != null) {
                 mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.zygote_preload_name),
@@ -2153,6 +2157,23 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
             }
         }
+    }
+
+    @NonNull
+    private String getDevicePageSizeLabel() {
+        long pageSize;
+        try {
+            pageSize = Os.sysconf(OsConstants._SC_PAGESIZE);
+        } catch (Throwable t) {
+            return getString(R.string.device_page_size_unknown);
+        }
+        if (pageSize == 16384L) {
+            return getString(R.string.device_page_size_16k);
+        }
+        if (pageSize == 4096L) {
+            return getString(R.string.device_page_size_4k);
+        }
+        return getString(R.string.device_page_size_other, pageSize);
     }
 
     @NonNull

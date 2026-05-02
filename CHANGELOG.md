@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Info: Device page size row (ROADMAP iter-18 item closed)
+- New "Device page size" row in App Info under Primary ABI for any
+  app with native code. Populated via `Os.sysconf(_SC_PAGESIZE)` and
+  rendered as "4 KB", "16 KB (page-size compatibility required)",
+  raw bytes for any other value, or "Unknown" if the syscall throws.
+  Pairs with the per-lib 16KB-alignment indicator (iter-11) so
+  16k-incompatible libs visibly explain the warning instead of
+  looking spurious on 4k devices. Source: Termux v0.118.3
+  page-size detection (ROADMAP S126).
+
 ### Docs — ROADMAP iter-18 research (no code change)
 - Research-only iteration. 29 new candidate items added under a new
   "Iter-18 Research Additions" section in `ROADMAP.md`, drawn from
