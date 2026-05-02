@@ -197,6 +197,12 @@ public class ModeOfOpsPreference extends Fragment {
     public void onStart() {
         super.onStart();
         requireActivity().setTitle(R.string.pref_mode_of_operations);
+        // Re-evaluate capability hints every time we resume — a user who left to
+        // toggle Wireless debugging or grant root from another app should see the
+        // new state on return without having to leave Settings entirely.
+        if (getView() != null) {
+            bindCapabilities(getView());
+        }
     }
 
     private void updateViews() {
