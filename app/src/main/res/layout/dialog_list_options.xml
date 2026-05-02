@@ -69,6 +69,25 @@
                 android:text="@string/filter" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/clear_filter_options"
+                style="@style/Widget.AppTheme.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_very_small"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:maxWidth="180dp"
+                android:minHeight="40dp"
+                android:paddingStart="8dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="4dp"
+                android:text="@string/clear_filters"
+                android:visibility="gone"
+                app:icon="@drawable/ic_filter_list"
+                tools:visibility="visible" />
+
+            <com.google.android.material.button.MaterialButton
                 style="@style/Widget.AppTheme.Button.TextButton"
                 android:id="@+id/user"
                 android:layout_width="wrap_content"

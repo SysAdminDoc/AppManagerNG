@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -30,13 +31,12 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_auto"
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_small"
             android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="16dp">
+            android:focusable="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -46,16 +46,19 @@
                 android:padding="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_run_fast"
-                    app:tint="?attr/colorPrimary" />
+                    app:tint="?attr/colorOnSecondaryContainer" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -75,19 +78,28 @@
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_auto"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
             </androidx.appcompat.widget.LinearLayoutCompat>
 
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_root"
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_small"
             android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="16dp">
+            android:focusable="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -97,16 +109,19 @@
                 android:padding="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_security"
-                    app:tint="?attr/colorPrimary" />
+                    app:tint="?attr/colorOnSecondaryContainer" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -126,13 +141,27 @@
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/status_root"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:background="@drawable/onboarding_status_background"
+                        android:minHeight="26dp"
+                        android:paddingHorizontal="@dimen/padding_small"
+                        android:paddingVertical="3dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Root detected" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_root"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -140,13 +169,12 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_adb_wifi"
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_small"
             android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="16dp">
+            android:focusable="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -156,16 +184,19 @@
                 android:padding="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_wifi"
-                    app:tint="?attr/colorPrimary" />
+                    app:tint="?attr/colorOnSecondaryContainer" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -185,13 +216,27 @@
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/status_adb_wifi"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:background="@drawable/onboarding_status_background"
+                        android:minHeight="26dp"
+                        android:paddingHorizontal="@dimen/padding_small"
+                        android:paddingVertical="3dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Wireless debugging active" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_adb_wifi"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -199,13 +244,12 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_adb_tcp"
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_small"
             android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="16dp">
+            android:focusable="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -215,16 +259,19 @@
                 android:padding="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_settings"
-                    app:tint="?attr/colorPrimary" />
+                    app:tint="?attr/colorOnSecondaryContainer" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -244,13 +291,27 @@
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/status_adb_tcp"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:background="@drawable/onboarding_status_background"
+                        android:minHeight="26dp"
+                        android:paddingHorizontal="@dimen/padding_small"
+                        android:paddingVertical="3dp"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="USB debugging enabled" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_adb_tcp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -258,13 +319,12 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_no_root"
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_medium"
             android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="16dp">
+            android:focusable="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -274,16 +334,19 @@
                 android:padding="@dimen/padding_medium">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_phone_android"
-                    app:tint="?attr/colorPrimary" />
+                    app:tint="?attr/colorOnSecondaryContainer" />
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -302,6 +365,16 @@
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_no_root"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 

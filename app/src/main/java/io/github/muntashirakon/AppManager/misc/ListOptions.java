@@ -71,6 +71,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
     private MaterialCheckBox mReverseSort;
     private TextView mFilterText;
     private ChipGroup mFilterOptions;
+    private MaterialButton mClearFilters;
     private TextView mOptionsText;
     private LinearLayoutCompat mOptionsView;
     @Nullable
@@ -104,6 +105,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
         mReverseSort = view.findViewById(R.id.reverse_sort);
         mFilterText = view.findViewById(R.id.filter_text);
         mFilterOptions = view.findViewById(R.id.filter_options);
+        mClearFilters = view.findViewById(R.id.clear_filter_options);
         mOptionsText = view.findViewById(R.id.options_text);
         mOptionsView = view.findViewById(R.id.options);
         profileNameSpinner = view.findViewById(R.id.spinner);
@@ -181,6 +183,7 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
         boolean filteringEnabled = filterFlagLocaleMap != null;
         mFilterText.setVisibility(filteringEnabled ? View.VISIBLE : View.GONE);
         mFilterOptions.setVisibility(filteringEnabled ? View.VISIBLE : View.GONE);
+        mClearFilters.setVisibility(View.GONE);
         mFilterOptions.removeAllViews();
         if (filteringEnabled) {
             int i = 0;
@@ -189,6 +192,8 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
                 mFilterOptions.addView(getFilterChip(flag, flagStringRes), i);
                 ++i;
             }
+            mClearFilters.setOnClickListener(v -> clearActiveFilters());
+            updateClearFiltersVisibility();
         }
 
         // Enable options
@@ -254,8 +259,34 @@ public abstract class ListOptions extends CapsuleBottomSheetDialogFragment {
             } else {
                 requireListOptionActions().removeFilterFlag(flag);
             }
+            updateClearFiltersVisibility();
         });
         return chip;
+    }
+
+    private void clearActiveFilters() {
+        for (int i = 0; i < mFilterOptions.getChildCount(); ++i) {
+            View child = mFilterOptions.getChildAt(i);
+            if (child instanceof Chip) {
+                ((Chip) child).setChecked(false);
+            }
+        }
+        updateClearFiltersVisibility();
+    }
+
+    private void updateClearFiltersVisibility() {
+        if (mClearFilters == null) {
+            return;
+        }
+        boolean hasActiveFilter = false;
+        for (int i = 0; i < mFilterOptions.getChildCount(); ++i) {
+            View child = mFilterOptions.getChildAt(i);
+            if (child instanceof Chip && ((Chip) child).isChecked()) {
+                hasActiveFilter = true;
+                break;
+            }
+        }
+        mClearFilters.setVisibility(hasActiveFilter ? View.VISIBLE : View.GONE);
     }
 
     @NonNull

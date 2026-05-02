@@ -9,6 +9,11 @@
         app:selectable="false"
         app:summary="@string/app_manager_build_expiring_soon_warning" />
 
+    <PreferenceCategory
+        app:key="settings_foundation"
+        app:summary="@string/pref_cat_settings_foundation_summary"
+        app:title="@string/pref_cat_settings_foundation" />
+
     <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.ChangeLanguageFragment"
         app:icon="@drawable/ic_translate"
@@ -37,6 +42,11 @@
         app:title="@string/pref_mode_of_operations"
         tools:summary="Auto" />
 
+    <PreferenceCategory
+        app:key="settings_package_workflows"
+        app:summary="@string/pref_cat_settings_package_workflows_summary"
+        app:title="@string/pref_cat_settings_package_workflows" />
+
     <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.ApkSigningPreferences"
         app:icon="@drawable/ic_shield_key"
@@ -57,6 +67,18 @@
         app:key="backup_restore_prefs"
         app:summary="@string/pref_backup_restore_msg"
         app:title="@string/backup_restore" />
+
+    <Preference
+        android:fragment="io.github.muntashirakon.AppManager.settings.VirusTotalPreferences"
+        app:icon="@drawable/ic_vt"
+        app:key="vt"
+        app:summary="@string/pref_vt_apikey_summary"
+        app:title="@string/virus_total" />
+
+    <PreferenceCategory
+        app:key="settings_tools"
+        app:summary="@string/pref_cat_settings_tools_summary"
+        app:title="@string/pref_cat_settings_tools" />
 
     <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.LogViewerPreferences"
@@ -80,18 +102,16 @@
         app:title="@string/rules" />
 
     <Preference
-        android:fragment="io.github.muntashirakon.AppManager.settings.VirusTotalPreferences"
-        app:icon="@drawable/ic_vt"
-        app:key="vt"
-        app:summary="@string/pref_vt_apikey_summary"
-        app:title="@string/virus_total" />
-
-    <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.AdvancedPreferences"
         app:icon="@drawable/ic_tune"
         app:key="advanced_prefs"
         app:summary="@string/pref_advanced_pref"
         app:title="@string/pref_cat_advanced" />
+
+    <PreferenceCategory
+        app:key="settings_support"
+        app:summary="@string/pref_cat_settings_support_summary"
+        app:title="@string/pref_cat_settings_support" />
 
     <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.AboutDeviceFragment"
