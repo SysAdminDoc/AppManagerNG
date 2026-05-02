@@ -18,8 +18,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 /**
  * First-run picker for the privilege level AppManagerNG should use (Auto / Root /
@@ -139,6 +141,46 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
                 R.string.onboarding_mode_adb_tcp_status_active,
                 R.string.onboarding_mode_adb_tcp_status_inactive);
+        // Run the root-manager probe off the UI thread — marker checks shell out
+        // when root is granted (~50–150ms). Without root, falls back to a fast
+        // PackageManager lookup. Either way, we don't want to block bind().
+        refreshRootManagerStatus(rootStatus);
+    }
+
+    /**
+     * Async probe for which root manager (Magisk / KernelSU / APatch) owns
+     * {@code /data/adb}, plus whether ZygiskNext is layered on top. When
+     * resolved, appends e.g. " · Magisk" or " · KernelSU + ZygiskNext" to the
+     * already-bound root status line so users replaying the wizard see exactly
+     * which root provider is live.
+     */
+    private void refreshRootManagerStatus(@Nullable TextView rootStatus) {
+        if (rootStatus == null) return;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            RootManagerInfo info = RootManagerInfo.detect(requireContext().getApplicationContext());
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded() || rootStatus.getContext() == null) return;
+                CharSequence base = rootStatus.getText();
+                if (base == null) return;
+                String suffix = buildRootManagerSuffix(info);
+                if (suffix.isEmpty()) return;
+                // Idempotent: avoid stacking suffixes if refresh fires repeatedly.
+                String baseStr = base.toString();
+                int sepIdx = baseStr.indexOf(" · ");
+                if (sepIdx >= 0) baseStr = baseStr.substring(0, sepIdx);
+                rootStatus.setText(baseStr + " · " + suffix);
+            });
+        });
+    }
+
+    @NonNull
+    private static String buildRootManagerSuffix(@NonNull RootManagerInfo info) {
+        String name = info.displayName();
+        if (name == null) return "";
+        if (info.zygiskNextPresent) {
+            return name + " + ZygiskNext";
+        }
+        return name;
     }
 
     /**

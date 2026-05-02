@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Root manager detection: Magisk / KernelSU / APatch / ZygiskNext (ROADMAP T5 ×3 closed)
+- New `runner/RootManagerInfo` helper probes `/data/adb/{magisk,ksu,ap}` via
+  the privileged shell when root is granted, and falls back to a
+  `PackageManager` lookup of the manager apps
+  (`com.topjohnwu.magisk`, `me.weishu.kernelsu`, `com.rifsxd.ksunext`,
+  `me.bmax.apatch`) when it isn't. Whenever a non-NONE manager is detected
+  through the shell, a follow-up `[ -d /data/adb/modules/zygisksu ]`
+  identifies the ZygiskNext layer.
+- Onboarding sheet (`OnboardingFragment.refreshCapabilityStatuses`) now
+  appends the resolved manager name (and " + ZygiskNext" if applicable)
+  to the Root status line — e.g. "Detected · KernelSU + ZygiskNext". The
+  probe runs on a background thread (one shell round-trip), result is
+  posted back to the main thread, and the suffix update is idempotent so
+  the Re-check button can be tapped repeatedly without stacking suffixes.
+- Closes ROADMAP T5 rows: KernelSU Detection, APatch Detection,
+  ZygiskNext Detection. SuperKey / per-module-count surfacing for APatch
+  and ZygiskNext error-count surfacing remain on the Privilege
+  Health-Check Screen row.
+
 ### Added — Stable signing-cert fingerprint URL (ROADMAP T1 closed)
 - New [`docs/fingerprints.txt`](docs/fingerprints.txt) publishes the SHA-256
   signing-cert fingerprint in a comment-tolerant `package:` / `sha256:`
