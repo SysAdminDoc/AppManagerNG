@@ -68,6 +68,11 @@ public class OpHistoryActivity extends BaseActivity {
     private static final int CLEANUP_OLDER_THAN_7_DAYS = 2;
     private static final int CLEANUP_OLDER_THAN_30_DAYS = 3;
     private static final int CLEANUP_OLDER_THAN_90_DAYS = 4;
+    private static final int SORT_NEWEST_FIRST = 0;
+    private static final int SORT_HIGHEST_RISK_FIRST = 1;
+    private static final int SORT_MOST_FAILURES_FIRST = 2;
+    private static final int SORT_TYPE = 3;
+    private static final int SORT_LABEL = 4;
 
     private OpHistoryViewModel mViewModel;
     private OpHistoryAdapter mAdapter;
@@ -94,6 +99,7 @@ public class OpHistoryActivity extends BaseActivity {
     private Chip mChipLastDay;
     private Chip mChipLastWeek;
     private Chip mChipClearFilters;
+    private int mSortMode = SORT_NEWEST_FIRST;
     @Nullable
     private String mPendingExport;
 
@@ -252,6 +258,7 @@ public class OpHistoryActivity extends BaseActivity {
                 filteredList.add(history);
             }
         }
+        sortHistory(filteredList);
         mAdapter.setDefaultList(filteredList);
         boolean hasActiveFilters = hasActiveFilters();
         boolean hasFilteredOutAllHistory = !mCurrentOpHistories.isEmpty()
@@ -403,6 +410,50 @@ public class OpHistoryActivity extends BaseActivity {
         return age <= 7 * ONE_DAY_MILLIS;
     }
 
+    private void sortHistory(@NonNull List<OpHistoryItem> histories) {
+        Collections.sort(histories, (first, second) -> {
+            switch (mSortMode) {
+                case SORT_HIGHEST_RISK_FIRST:
+                    return firstNonZero(
+                            -Integer.compare(first.getRisk(), second.getRisk()),
+                            compareNewestFirst(first, second));
+                case SORT_MOST_FAILURES_FIRST:
+                    return firstNonZero(
+                            -Integer.compare(first.getFailedCount(), second.getFailedCount()),
+                            compareNewestFirst(first, second));
+                case SORT_TYPE:
+                    return firstNonZero(
+                            compareText(first.getLocalizedType(this), second.getLocalizedType(this)),
+                            compareText(first.getLabel(this), second.getLabel(this)),
+                            compareNewestFirst(first, second));
+                case SORT_LABEL:
+                    return firstNonZero(
+                            compareText(first.getLabel(this), second.getLabel(this)),
+                            compareNewestFirst(first, second));
+                case SORT_NEWEST_FIRST:
+                default:
+                    return compareNewestFirst(first, second);
+            }
+        });
+    }
+
+    private static int firstNonZero(int... comparisons) {
+        for (int comparison : comparisons) {
+            if (comparison != 0) {
+                return comparison;
+            }
+        }
+        return 0;
+    }
+
+    private static int compareNewestFirst(@NonNull OpHistoryItem first, @NonNull OpHistoryItem second) {
+        return -Long.compare(first.getTimestamp(), second.getTimestamp());
+    }
+
+    private static int compareText(@NonNull String first, @NonNull String second) {
+        return String.CASE_INSENSITIVE_ORDER.compare(first, second);
+    }
+
     private void showHistoryDetails(@NonNull OpHistoryItem history) {
         String detailMessage = history.getDetailMessage(this);
         new MaterialAlertDialogBuilder(this)
@@ -419,6 +470,8 @@ public class OpHistoryActivity extends BaseActivity {
         List<Runnable> actions = new ArrayList<>();
         labels.add(getString(R.string.copy));
         actions.add(() -> copyHistoryDetails(history, history.getDetailMessage(this)));
+        labels.add(getString(R.string.share));
+        actions.add(() -> shareHistory(history));
         Intent targetIntent = history.getPrimaryTargetIntent(this);
         if (targetIntent != null) {
             labels.add(getString(R.string.op_history_open_target));
@@ -448,6 +501,10 @@ public class OpHistoryActivity extends BaseActivity {
         } catch (Throwable e) {
             UIUtils.displayLongToast(R.string.error);
         }
+    }
+
+    private void shareHistory(@NonNull OpHistoryItem history) {
+        shareHistory(Collections.singletonList(history), history.getLabel(this));
     }
 
     private void showRerunConfirmation(@NonNull OpHistoryItem history) {
@@ -490,6 +547,11 @@ public class OpHistoryActivity extends BaseActivity {
         menu.findItem(R.id.action_export_json).setEnabled(hasVisibleHistory);
         menu.findItem(R.id.action_export_csv).setEnabled(hasVisibleHistory);
         menu.findItem(R.id.action_share_history).setEnabled(hasVisibleHistory);
+        MenuItem sortItem = menu.findItem(R.id.action_sort_history);
+        sortItem.setEnabled(!mCurrentOpHistories.isEmpty());
+        if (sortItem.getSubMenu() != null) {
+            sortItem.getSubMenu().findItem(getSortMenuItemId()).setChecked(true);
+        }
         menu.findItem(R.id.action_cleanup_history).setEnabled(!mCurrentOpHistories.isEmpty());
         return super.onPrepareOptionsMenu(menu);
     }
@@ -507,11 +569,45 @@ public class OpHistoryActivity extends BaseActivity {
             shareVisibleHistory();
         } else if (id == R.id.action_cleanup_history) {
             showHistoryCleanupDialog();
+        } else if (id == R.id.action_sort_history_newest) {
+            setSortMode(SORT_NEWEST_FIRST);
+        } else if (id == R.id.action_sort_history_risk) {
+            setSortMode(SORT_HIGHEST_RISK_FIRST);
+        } else if (id == R.id.action_sort_history_failures) {
+            setSortMode(SORT_MOST_FAILURES_FIRST);
+        } else if (id == R.id.action_sort_history_type) {
+            setSortMode(SORT_TYPE);
+        } else if (id == R.id.action_sort_history_label) {
+            setSortMode(SORT_LABEL);
         } else if (id == R.id.action_seed_history) {
             mProgressIndicator.show();
             mViewModel.addDebugHistoryFixtures();
         } else return super.onOptionsItemSelected(item);
         return true;
+    }
+
+    private void setSortMode(int sortMode) {
+        if (mSortMode != sortMode) {
+            mSortMode = sortMode;
+            applyFilters();
+        }
+        invalidateOptionsMenu();
+    }
+
+    private int getSortMenuItemId() {
+        switch (mSortMode) {
+            case SORT_HIGHEST_RISK_FIRST:
+                return R.id.action_sort_history_risk;
+            case SORT_MOST_FAILURES_FIRST:
+                return R.id.action_sort_history_failures;
+            case SORT_TYPE:
+                return R.id.action_sort_history_type;
+            case SORT_LABEL:
+                return R.id.action_sort_history_label;
+            case SORT_NEWEST_FIRST:
+            default:
+                return R.id.action_sort_history_newest;
+        }
     }
 
     private void exportVisibleHistory(boolean asJson) {
@@ -558,9 +654,13 @@ public class OpHistoryActivity extends BaseActivity {
             UIUtils.displayShortToast(R.string.no_history);
             return;
         }
+        shareHistory(histories, getString(R.string.op_history));
+    }
+
+    private void shareHistory(@NonNull List<OpHistoryItem> histories, @NonNull String subject) {
         Intent shareIntent = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.op_history))
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
                 .putExtra(Intent.EXTRA_TEXT, OperationHistoryExporter.toText(this, histories));
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.op_history_share_title)));
@@ -579,7 +679,16 @@ public class OpHistoryActivity extends BaseActivity {
         };
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.op_history_cleanup)
-                .setItems(labels, (dialog, which) -> runHistoryCleanup(which))
+                .setItems(labels, (dialog, which) -> confirmHistoryCleanup(which, labels[which]))
+                .show();
+    }
+
+    private void confirmHistoryCleanup(int cleanupType, @NonNull CharSequence label) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(label)
+                .setMessage(R.string.op_history_cleanup_confirmation)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) -> runHistoryCleanup(cleanupType))
                 .show();
     }
 
