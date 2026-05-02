@@ -3,6 +3,27 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Added
+- **Sort by Dangerous Permissions**: new `SORT_BY_DANGEROUS_PERMS` option in
+  the main app list (Sort menu). Mirrors the `SORT_BY_TRACKERS` shape —
+  primary key is granted dangerous perms (most-privileged-by-actual-grant
+  apps surface first); secondary key is total declared dangerous perms.
+  Wires `dangerous_perm_total` / `dangerous_perm_granted` (Room schema v9)
+  into the user-facing UI.
+- **Obtainium config** (`docs/distribution/obtainium-config.json`):
+  ready-to-import Obtainium AppConfig pointing at GitHub Releases with
+  artifact regex for the signed `app-release.apk`. README "Install via
+  Obtainium" section documents the flow.
+
+### Compliance
+- **`elegantTextHeight` audit (clean)**: Android 16 / targetSdk=36 silently
+  ignores `android:elegantTextHeight`; affects Arabic/Thai/Indic text
+  rendering. Recursive sweep across all source roots returned zero
+  matches — no remediation required. Audit recorded at
+  [docs/audits/2026-05-01-elegant-text-height.md](docs/audits/2026-05-01-elegant-text-height.md).
+
 ## v0.3.0 — 2026-06-05
 
 Platform compliance, bug fixes, and observability hardening.
