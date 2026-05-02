@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Stable signing-cert fingerprint URL (ROADMAP T1 closed)
+- New [`docs/fingerprints.txt`](docs/fingerprints.txt) publishes the SHA-256
+  signing-cert fingerprint in a comment-tolerant `package:` / `sha256:`
+  record format (SD Maid SE precedent), served via the stable
+  `raw.githubusercontent.com/.../docs/fingerprints.txt` URL — AppVerifier
+  and similar tooling can fetch it programmatically without scraping the
+  README. README "Verifying releases" section now points users at the URL.
+
 ### Added — Android 17 ProfilingManager OOM/anomaly triggers (ROADMAP T4 closed)
 - New `misc/ProfilingTriggerHelper.registerTriggersIfSupported(Context)`
   registers `TRIGGER_TYPE_OOM` and `TRIGGER_TYPE_ANOMALY` via reflection on

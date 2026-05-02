@@ -1,0 +1,21 @@
+# AppManagerNG — APK signing certificate fingerprints
+# Project:    https://github.com/SysAdminDoc/AppManagerNG
+# Maintainer: SysAdminDoc
+# License:    GPL-3.0-or-later
+#
+# Stable URL for programmatic verification (e.g. AppVerifier):
+#   https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt
+#
+# Format: one record per release-key, blank-line separated.
+#   package: <Android applicationId>
+#   sha256:  <colon-separated 64-hex digest of the X.509 certificate (DER) used to sign the APK>
+#
+# To verify a release APK locally:
+#   apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
+# Or via AppVerifier (https://github.com/soupslurpr/AppVerifier).
+
+package: io.github.sysadmindoc.AppManagerNG
+sha256:  21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C
+
+# Debug builds use upstream's checked-in shared debug keystore (app/dev_keystore.jks)
+# and are NOT covered by this fingerprint list. Only release builds are.
