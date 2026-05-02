@@ -243,8 +243,9 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
 
             if (overlayItem.isFabricated()) {
                 holder.itemView.setStrokeColor(ColorCodes.getPermissionDangerousIndicatorColor(requireContext()));
+            } else {
+                holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
-            holder.itemView.setStrokeColor(Color.TRANSPARENT);
 
         }
 

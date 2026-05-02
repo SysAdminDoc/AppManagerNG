@@ -43,8 +43,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textSize="10sp"
-                tools:ignore="SmallSp"
                 tools:text="Category: rro" />
 
             <androidx.appcompat.widget.AppCompatTextView

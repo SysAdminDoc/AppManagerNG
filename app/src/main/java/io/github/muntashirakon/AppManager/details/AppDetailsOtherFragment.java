@@ -83,7 +83,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        setEmptyStateText(getNotFoundString(mNeededProperty));
+        configureEmptyState();
         mAdapter = new AppDetailsRecyclerAdapter();
         recyclerView.setAdapter(mAdapter);
         alertView.setVisibility(View.GONE);
@@ -91,6 +91,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
         viewModel.get(mNeededProperty).observe(getViewLifecycleOwner(), appDetailsItems -> {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mIsExternalApk = viewModel.isExternalApk();
+                configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
             } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
         });
@@ -160,6 +161,25 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
                 return R.string.no_shared_libs;
             default:
                 return 0;
+        }
+    }
+
+    private void configureEmptyState() {
+        setEmptyState(getNotFoundString(mNeededProperty), getEmptySummaryString(mNeededProperty), !mIsExternalApk);
+    }
+
+    private int getEmptySummaryString(@OtherProperty int index) {
+        switch (index) {
+            case FEATURES:
+                return R.string.app_details_empty_message_no_features;
+            case CONFIGURATIONS:
+                return R.string.app_details_empty_message_no_configurations;
+            case SIGNATURES:
+                return R.string.app_details_empty_message_no_signatures;
+            case SHARED_LIBRARIES:
+                return R.string.app_details_empty_message_no_shared_libs;
+            default:
+                return R.string.app_details_empty_message_no_items;
         }
     }
 
