@@ -53,6 +53,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
@@ -117,6 +118,7 @@ import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
 import io.github.muntashirakon.AppManager.debloat.BloatwareDetailsDialog;
+import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
 import io.github.muntashirakon.AppManager.details.AppDetailsViewModel;
@@ -1195,7 +1197,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (tagCloud.bloatwareRemovalType != 0) {
             TagItem bloatwareTag = new TagItem();
             tagItems.add(bloatwareTag);
-            bloatwareTag.setText("Bloatware")
+            String label = getBloatwareSafetyLabel(context, tagCloud.bloatwareRemovalType);
+            bloatwareTag.setText(label)
                     .setColor(ColorCodes.getBloatwareIndicatorColor(context, tagCloud.bloatwareRemovalType))
                     .setOnClickListener(v -> {
                         BloatwareDetailsDialog dialog = BloatwareDetailsDialog.getInstance(mPackageName);
@@ -1370,6 +1373,36 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             .show());
         }
         return tagItems;
+    }
+
+    /**
+     * Map a {@link DebloatObject.Removal} flag to a short, human-readable label for
+     * the App Info tag cloud. We expose the safety call directly on the chip so
+     * users see "Bloatware · Safe" / "Bloatware · Caution" / etc. at a glance,
+     * instead of a generic "Bloatware" tag that requires a tap to disambiguate.
+     * The colour is still painted by {@link ColorCodes#getBloatwareIndicatorColor}.
+     */
+    @NonNull
+    private String getBloatwareSafetyLabel(@NonNull Context context,
+                                           @DebloatObject.Removal int removalType) {
+        @StringRes int suffixRes;
+        switch (removalType) {
+            case DebloatObject.REMOVAL_SAFE:
+                suffixRes = R.string.debloat_removal_safe;
+                break;
+            case DebloatObject.REMOVAL_REPLACE:
+                suffixRes = R.string.debloat_removal_replace;
+                break;
+            case DebloatObject.REMOVAL_CAUTION:
+                suffixRes = R.string.debloat_removal_caution;
+                break;
+            case DebloatObject.REMOVAL_UNSAFE:
+                suffixRes = R.string.debloat_removal_unsafe;
+                break;
+            default:
+                return "Bloatware";
+        }
+        return "Bloatware · " + context.getString(suffixRes);
     }
 
     private void displayRunningServices(

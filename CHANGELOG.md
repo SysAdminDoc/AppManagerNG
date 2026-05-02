@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Info bloatware safety rating
+- **Bloatware tag now surfaces the safety call directly** — App Info →
+  tag cloud previously showed a generic "Bloatware" chip coloured by
+  removal type. Tag text now reads "Bloatware · Safe", "Bloatware ·
+  Replace", "Bloatware · Caution", or "Bloatware · Unsafe", so users can
+  read the recommendation without tapping into the details dialog.
+  Colour is preserved (`ColorCodes.getBloatwareIndicatorColor`).
+
 ### Added — Onboarding replay (v0.4.0)
 - **Replay welcome wizard** action in Settings → Troubleshooting; clears
   `PREF_ONBOARDING_SHOWN_BOOL` and immediately surfaces the privilege-mode
