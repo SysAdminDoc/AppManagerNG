@@ -60,6 +60,7 @@ public class OpHistoryActivity extends BaseActivity {
     private TextInputEditText mFilterText;
     private TextView mEmptyStateTitle;
     private TextView mEmptyStateSummary;
+    private MaterialButton mEmptyStateAction;
     private final List<Chip> mFilterChips = new ArrayList<>();
     private List<OpHistoryItem> mCurrentOpHistories = Collections.emptyList();
     private Chip mChipSucceeded;
@@ -140,8 +141,10 @@ public class OpHistoryActivity extends BaseActivity {
         mEmptyStateSummary = emptyView.findViewById(R.id.empty_state_summary);
         mEmptyStateTitle.setText(R.string.op_history_empty_title);
         mEmptyStateSummary.setText(R.string.op_history_empty_message);
-        MaterialButton action = emptyView.findViewById(R.id.empty_state_action);
-        action.setVisibility(View.GONE);
+        mEmptyStateAction = emptyView.findViewById(R.id.empty_state_action);
+        mEmptyStateAction.setText(R.string.clear_filters);
+        mEmptyStateAction.setOnClickListener(v -> clearFilters());
+        mEmptyStateAction.setVisibility(View.GONE);
     }
 
     private void setupHistoryFilters() {
@@ -220,13 +223,18 @@ public class OpHistoryActivity extends BaseActivity {
         }
         mAdapter.setDefaultList(filteredList);
         boolean hasActiveFilters = hasActiveFilters();
+        boolean hasFilteredOutAllHistory = !mCurrentOpHistories.isEmpty()
+                && hasActiveFilters
+                && filteredList.isEmpty();
         mChipClearFilters.setVisibility(hasActiveFilters ? View.VISIBLE : View.GONE);
-        if (mCurrentOpHistories.isEmpty() || !hasActiveFilters) {
-            mEmptyStateTitle.setText(R.string.op_history_empty_title);
-            mEmptyStateSummary.setText(R.string.op_history_empty_message);
-        } else {
+        if (hasFilteredOutAllHistory) {
             mEmptyStateTitle.setText(R.string.op_history_empty_filtered_title);
             mEmptyStateSummary.setText(R.string.op_history_empty_filtered_message);
+            mEmptyStateAction.setVisibility(View.VISIBLE);
+        } else {
+            mEmptyStateTitle.setText(R.string.op_history_empty_title);
+            mEmptyStateSummary.setText(R.string.op_history_empty_message);
+            mEmptyStateAction.setVisibility(View.GONE);
         }
     }
 
