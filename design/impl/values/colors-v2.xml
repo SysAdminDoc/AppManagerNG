@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <!-- Brand tonal system -->
+    <color name="premium_brand_25">#F3FFFC</color>
+    <color name="premium_brand_50">#E7FFF9</color>
+    <color name="premium_brand_100">#C8FFF0</color>
+    <color name="premium_brand_200">#90F5DF</color>
+    <color name="premium_brand_300">#58E4CA</color>
+    <color name="premium_brand_400">#29CDB7</color>
+    <color name="premium_brand_500">#16A394</color>
+    <color name="premium_brand_600">#0B8278</color>
+    <color name="premium_brand_700">#086A63</color>
+    <color name="premium_brand_800">#07534F</color>
+    <color name="premium_brand_900">#063F3D</color>
+    <color name="premium_brand_950">#022A29</color>
+
+    <!-- Light surfaces -->
+    <color name="premium_surface_0_light">#F8FAF8</color>
+    <color name="premium_surface_1_light">#FFFFFF</color>
+    <color name="premium_surface_2_light">#F1F6F4</color>
+    <color name="premium_surface_3_light">#EAF1EF</color>
+
+    <!-- Dark surfaces -->
+    <color name="premium_surface_0_dark">#101413</color>
+    <color name="premium_surface_1_dark">#161B1A</color>
+    <color name="premium_surface_2_dark">#1D2321</color>
+    <color name="premium_surface_3_dark">#252C2A</color>
+
+    <!-- AMOLED surfaces -->
+    <color name="premium_surface_0_amoled">#000000</color>
+    <color name="premium_surface_1_amoled">#090D0C</color>
+    <color name="premium_surface_2_amoled">#101513</color>
+    <color name="premium_surface_3_amoled">#18201D</color>
+
+    <!-- Text emphasis -->
+    <color name="premium_text_high_light">#171D1B</color>
+    <color name="premium_text_medium_light">#53605C</color>
+    <color name="premium_text_disabled_light">#8E9995</color>
+    <color name="premium_text_high_dark">#F1F5F3</color>
+    <color name="premium_text_medium_dark">#B4C0BC</color>
+    <color name="premium_text_disabled_dark">#68736F</color>
+
+    <!-- Outline tiers -->
+    <color name="premium_outline_hairline_light">#D7E2DE</color>
+    <color name="premium_outline_muted_light">#BCC9C4</color>
+    <color name="premium_outline_focus_light">#16A394</color>
+    <color name="premium_outline_danger_light">#D92D20</color>
+    <color name="premium_outline_hairline_dark">#303A37</color>
+    <color name="premium_outline_muted_dark">#43504C</color>
+    <color name="premium_outline_focus_dark">#58E4CA</color>
+    <color name="premium_outline_danger_dark">#FFB4AB</color>
+    <color name="premium_outline_hairline_amoled">#202A27</color>
+    <color name="premium_outline_muted_amoled">#323E3A</color>
+
+    <!-- Semantic tiers -->
+    <color name="premium_success_bg_light">#DDF7E8</color>
+    <color name="premium_success_content_light">#0D6B3E</color>
+    <color name="premium_success_bg_dark">#123923</color>
+    <color name="premium_success_content_dark">#8FE6B3</color>
+
+    <color name="premium_warning_bg_light">#FFF0CC</color>
+    <color name="premium_warning_content_light">#8A5800</color>
+    <color name="premium_warning_bg_dark">#3F2D09</color>
+    <color name="premium_warning_content_dark">#FFD16B</color>
+
+    <color name="premium_danger_bg_light">#FFE0DE</color>
+    <color name="premium_danger_content_light">#B42318</color>
+    <color name="premium_danger_bg_dark">#471815</color>
+    <color name="premium_danger_content_dark">#FFB4AB</color>
+
+    <color name="premium_info_bg_light">#DCEBFF</color>
+    <color name="premium_info_content_light">#1D5FAE</color>
+    <color name="premium_info_bg_dark">#102B4D</color>
+    <color name="premium_info_content_dark">#A9C7FF</color>
+
+    <!-- Dark elevation overlays precomputed from brand tint over surface-0. -->
+    <color name="premium_elevated_1_dark">#111A18</color>
+    <color name="premium_elevated_2_dark">#111D1B</color>
+    <color name="premium_elevated_3_dark">#111F1D</color>
+    <color name="premium_elevated_4_dark">#11211E</color>
+    <color name="premium_elevated_5_dark">#11221F</color>
+
+    <!-- AMOLED elevation overlays keep surface-0 pure black. -->
+    <color name="premium_elevated_1_amoled">#010807</color>
+    <color name="premium_elevated_2_amoled">#020D0C</color>
+    <color name="premium_elevated_3_amoled">#02120F</color>
+    <color name="premium_elevated_4_amoled">#031411</color>
+    <color name="premium_elevated_5_amoled">#031613</color>
+</resources>

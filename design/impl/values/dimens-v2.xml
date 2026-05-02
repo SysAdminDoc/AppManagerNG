@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <dimen name="premium_zero">0dp</dimen>
+
+    <!-- 4dp spacing grid -->
+    <dimen name="premium_space_4">4dp</dimen>
+    <dimen name="premium_space_8">8dp</dimen>
+    <dimen name="premium_space_12">12dp</dimen>
+    <dimen name="premium_space_16">16dp</dimen>
+    <dimen name="premium_space_20">20dp</dimen>
+    <dimen name="premium_space_24">24dp</dimen>
+    <dimen name="premium_space_32">32dp</dimen>
+    <dimen name="premium_space_40">40dp</dimen>
+    <dimen name="premium_space_48">48dp</dimen>
+    <dimen name="premium_space_64">64dp</dimen>
+    <dimen name="premium_space_80">80dp</dimen>
+    <dimen name="premium_space_96">96dp</dimen>
+
+    <!-- Radius scale -->
+    <dimen name="premium_radius_none">0dp</dimen>
+    <dimen name="premium_radius_compact">4dp</dimen>
+    <dimen name="premium_radius_default">8dp</dimen>
+    <dimen name="premium_radius_card">12dp</dimen>
+    <dimen name="premium_radius_sheet">16dp</dimen>
+    <dimen name="premium_radius_modal">24dp</dimen>
+    <dimen name="premium_radius_pill">9999dp</dimen>
+
+    <!-- Elevation and strokes -->
+    <dimen name="premium_elevation_0">0dp</dimen>
+    <dimen name="premium_elevation_1">1dp</dimen>
+    <dimen name="premium_elevation_2">3dp</dimen>
+    <dimen name="premium_elevation_3">6dp</dimen>
+    <dimen name="premium_elevation_4">8dp</dimen>
+    <dimen name="premium_elevation_5">12dp</dimen>
+    <dimen name="premium_stroke_none">0dp</dimen>
+    <dimen name="premium_stroke_hairline">1dp</dimen>
+    <dimen name="premium_stroke_focus">2dp</dimen>
+
+    <!-- Icon scale -->
+    <dimen name="premium_icon_16">16dp</dimen>
+    <dimen name="premium_icon_20">20dp</dimen>
+    <dimen name="premium_icon_24">24dp</dimen>
+    <dimen name="premium_icon_32">32dp</dimen>
+    <dimen name="premium_icon_40">40dp</dimen>
+    <dimen name="premium_icon_48">48dp</dimen>
+    <dimen name="premium_icon_64">64dp</dimen>
+
+    <!-- Type scale -->
+    <dimen name="premium_type_display_large">32sp</dimen>
+    <dimen name="premium_type_headline_large">28sp</dimen>
+    <dimen name="premium_type_headline_medium">24sp</dimen>
+    <dimen name="premium_type_headline_small">22sp</dimen>
+    <dimen name="premium_type_title_large">20sp</dimen>
+    <dimen name="premium_type_title_medium">18sp</dimen>
+    <dimen name="premium_type_title_small">16sp</dimen>
+    <dimen name="premium_type_body_large">16sp</dimen>
+    <dimen name="premium_type_body_medium">14sp</dimen>
+    <dimen name="premium_type_body_small">12sp</dimen>
+    <dimen name="premium_type_label_large">14sp</dimen>
+    <dimen name="premium_type_label_medium">12sp</dimen>
+    <dimen name="premium_type_label_small">11sp</dimen>
+
+    <!-- MainActivity shell -->
+    <dimen name="premium_app_bar_height">64dp</dimen>
+    <dimen name="premium_search_height">48dp</dimen>
+    <dimen name="premium_main_status_min_height">44dp</dimen>
+    <dimen name="premium_main_list_top_padding">8dp</dimen>
+    <dimen name="premium_main_list_bottom_padding">32dp</dimen>
+
+    <!-- Main row -->
+    <dimen name="premium_main_list_margin_vertical">4dp</dimen>
+    <dimen name="premium_main_list_padding_horizontal">16dp</dimen>
+    <dimen name="premium_main_list_padding_vertical">12dp</dimen>
+    <dimen name="premium_main_icon_frame">52dp</dimen>
+    <dimen name="premium_badge_min_height">24dp</dimen>
+    <dimen name="premium_badge_min_width">24dp</dimen>
+    <dimen name="premium_badge_padding_horizontal">8dp</dimen>
+    <dimen name="premium_badge_padding_vertical">2dp</dimen>
+    <dimen name="premium_favorite_hit_size">32dp</dimen>
+
+    <!-- Controls -->
+    <dimen name="premium_chip_min_height">36dp</dimen>
+    <dimen name="premium_chip_touch_target">48dp</dimen>
+    <dimen name="premium_button_min_height">48dp</dimen>
+    <dimen name="premium_dialog_action_bar_height">64dp</dimen>
+</resources>
