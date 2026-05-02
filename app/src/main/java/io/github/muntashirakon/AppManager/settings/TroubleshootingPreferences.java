@@ -12,6 +12,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
@@ -21,8 +22,12 @@ import com.google.android.material.transition.MaterialSharedAxis;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
+import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class TroubleshootingPreferences extends PreferenceFragment {
     private Preference mBatteryOptPref;
@@ -123,6 +128,36 @@ public class TroubleshootingPreferences extends PreferenceFragment {
         }
         PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         boolean exempt = pm != null && pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
+        // SD-Maid-style auto-fix: when running with root/ADB privileges we can
+        // grant the whitelist exemption silently via the deviceidle binder
+        // instead of bouncing the user through the system dialog. Only takes
+        // the silent path when the user is *not* already exempt; if they are,
+        // route them to the system list so they can revoke if desired.
+        if (!exempt && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.DEVICE_POWER)) {
+            String packageName = ctx.getPackageName();
+            ThreadUtils.postOnBackgroundThread(() -> {
+                boolean ok = DeviceIdleManagerCompat.disableBatteryOptimization(packageName);
+                ThreadUtils.postOnMainThread(() -> {
+                    Context c = getContext();
+                    if (c == null) return;
+                    if (ok) {
+                        Toast.makeText(c, R.string.pref_battery_optimization_state_exempt,
+                                Toast.LENGTH_SHORT).show();
+                        refreshBatteryOptimizationSummary();
+                    } else {
+                        // Fell through (e.g. system service refused) — fall
+                        // back to the manual dialog rather than leaving the
+                        // user without recourse.
+                        launchBatteryOptimizationSystemFlow(c, false);
+                    }
+                });
+            });
+            return;
+        }
+        launchBatteryOptimizationSystemFlow(ctx, exempt);
+    }
+
+    private void launchBatteryOptimizationSystemFlow(@NonNull Context ctx, boolean exempt) {
         Intent intent;
         if (exempt) {
             // Already exempt — drop the user into the system-wide list so they
