@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Plural string audit (ROADMAP T10 closed)
+- Three remaining pluralizable count strings converted to `<plurals>`:
+  `main_status_showing_apps` ("Showing N of M apps"),
+  `main_status_all_apps` ("Showing N apps"), and
+  `bar_chart_content_description` ("Bar chart with N data points").
+  Callers in `MainActivity.updateListStatus` and
+  `BarChartView.updateContentDescription` now use
+  `getQuantityString()` so locales whose plural form differs by count
+  (Russian / Polish / Arabic / etc.) render correctly. Orphan
+  `selected_items_accessibility_description` (no callers) removed.
+- The remaining `%d`-using strings in `values/strings.xml` describe
+  IDs, positions, range bounds, or "X of Y" composites — none are
+  pluralizable, so the audit is closed.
+
 ### Added — Share profile as JSON (ROADMAP T8 closed)
 - New **Share as JSON** popup action on each profile in the Profiles
   list (`action_share` between Export and Shortcut). Sends the profile's

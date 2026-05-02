@@ -1002,9 +1002,14 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mListStatusView.setVisibility(View.VISIBLE);
             String base;
             if (displayedItemCount == totalItemCount) {
-                base = getString(R.string.main_status_all_apps, displayedItemCount);
+                base = getResources().getQuantityString(R.plurals.main_status_all_apps,
+                        displayedItemCount, displayedItemCount);
             } else {
-                base = getString(R.string.main_status_showing_apps, displayedItemCount, totalItemCount);
+                // Plurality on the *total* — "Showing 0 of 5 apps" / "Showing 0 of 1 app"
+                // reads naturally; the "showing" count is informational, the total is the
+                // count noun.
+                base = getResources().getQuantityString(R.plurals.main_status_showing_apps,
+                        totalItemCount, displayedItemCount, totalItemCount);
             }
             // Build suffix incrementally so we can chain '· N trackers · M dangerous perms'.
             StringBuilder line = new StringBuilder(base);

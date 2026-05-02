@@ -231,7 +231,7 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 |------|-------------|--------|
 | **Translation Platform (Weblate)** | Self-host or use Hosted Weblate (model: Neo Backup [S20]); link from CONTRIBUTING.md | Low |
 | **RTL Layout Verification** | Full test pass under Arabic/Hebrew locale; fix any mirroring or truncation issues | Medium |
-| **Plural String Audit** | Audit codebase for quantity strings that use `%d item` instead of `<plurals>` | Low |
+| ~~**Plural String Audit**~~ ✅ 2026-05-02 | Sweep complete. Codebase already shipped 66 `<plurals>` blocks; the remaining `%d`-using format strings split into pluralizable (`main_status_showing_apps`, `main_status_all_apps`, `bar_chart_content_description`) and non-pluralizable (IDs/positions/range bounds: `pid_and_ppid`, `user_with_id`, `external_multiple_data_dir`, `vt_success`, `tag_dangerous_perms` "X of Y" composites, etc.). The three pluralizable strings are now `<plurals>` blocks consumed via `getQuantityString()`; orphan `selected_items_accessibility_description` removed. | Low |
 | **Locale-Aware Date/Number Formatting** | Replace raw `SimpleDateFormat` instances with `DateTimeFormatter` + locale-aware formatting | Low |
 | **TalkBack Navigation Audit** | Full TalkBack pass on every major screen; fix traversal order, group headings, action labels | Medium |
 | **Content Descriptions on Icon Buttons** | Add `contentDescription` to all icon-only action buttons across the app | Low |

@@ -44,8 +44,14 @@
     <string name="error">Error</string>
     <string name="loading">Loading…</string>
     <string name="main_status_loading">Loading apps…</string>
-    <string name="main_status_showing_apps">Showing %1$d of %2$d apps</string>
-    <string name="main_status_all_apps">Showing %1$d apps</string>
+    <plurals name="main_status_showing_apps">
+        <item quantity="one">Showing %1$d of %2$d app</item>
+        <item quantity="other">Showing %1$d of %2$d apps</item>
+    </plurals>
+    <plurals name="main_status_all_apps">
+        <item quantity="one">Showing %1$d app</item>
+        <item quantity="other">Showing %1$d apps</item>
+    </plurals>
     <string name="main_status_with_tracker_suffix"><xliff:g id="status" example="Showing 600 apps">%1$s</xliff:g> · <xliff:g id="trackers" example="4521 trackers">%2$s</xliff:g></string>
     <string name="main_status_with_category_breakdown" translatable="false"><xliff:g id="base" example="Showing 600 apps · 4521 trackers">%1$s</xliff:g>\n<xliff:g id="categories" example="320 ad · 280 analytics">%2$s</xliff:g></string>
     <string name="main_status_breakdown_calculating">Calculating breakdown…</string>
@@ -1868,7 +1874,10 @@
     <string name="goto_previous">Previous</string>
     <string name="usage_this_week">This week</string>
     <string name="usage_last_week">Last week</string>
-    <string name="bar_chart_content_description">Bar chart with %d data points.</string>
+    <plurals name="bar_chart_content_description">
+        <item quantity="one">Bar chart with %d data point.</item>
+        <item quantity="other">Bar chart with %d data points.</item>
+    </plurals>
     <string name="usage_daily_bar_chart_accessibility_description">Usage at %1$s is %2$.0f minutes. Bar %3$d of %4$d</string>
     <string name="usage_weekly_hours_bar_chart_accessibility_description">Usage on %1$s is %2$.lf hours. Bar %3$d of %4$d</string>
     <string name="usage_weekly_minutes_bar_chart_accessibility_description">Usage on %1$s is %2$.0f minutes. Bar %3$d of %4$d</string>
@@ -1882,7 +1891,6 @@
     <string name="memory_usage_accessibility_description">The system is currently using %s memory out of %s, and the amount of available memory is %s. Among the occupied memory, the applications are using %s, %s are cached, and %s are used as memory buffers.</string>
     <string name="memory_usage_unavailable">Memory usage is unavailable right now.</string>
     <string name="swap_usage_accessibility_description">The system has allocated %s for swap and currently using %s.</string>
-    <string name="selected_items_accessibility_description">Selected %d out of %d items</string>
     <string name="adb_local_server_port">ADB local server port</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
     <!-- Profiles: share-profile-as-JSON popup action -->
