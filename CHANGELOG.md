@@ -28,8 +28,6 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   read the existing `values/dimens.xml` unchanged. No per-layout edits
   required — the new values propagate to every layout already consuming
   these tokens.
-
-### Added
 - **Sort by Dangerous Permissions**: new `SORT_BY_DANGEROUS_PERMS` option in
   the main app list (Sort menu). Mirrors the `SORT_BY_TRACKERS` shape —
   primary key is granted dangerous perms (most-privileged-by-actual-grant

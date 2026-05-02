@@ -50,12 +50,22 @@ ls -d app/src/main/res/values*
 
 ### 2. Programmatic orientation locks — CLEAN ✅
 
-`setRequestedOrientation` is used in **two** places, both for **reading** the orientation declared by *other* apps' activities (in `AppDetailsComponentsFragment` for the activity-info display). Neither call sets our own activities' orientation.
+```
+grep -rn "setRequestedOrientation" \
+  app/src/ libcore/ libserver/ libopenpgp/ hiddenapi/ server/ \
+  | grep -v "/build/"
+```
+
+Returns **zero matches**. AppManagerNG never calls `Activity.setRequestedOrientation()`. The Android 16 deprecation that ignores `ActivityInfo.SCREEN_ORIENTATION_*` constants when invoked via this API has no impact on any of our activities.
+
+The only places the codebase touches `screenOrientation` at all are two **read-only** sites that display the orientation declared by *other* apps' activities in the App Details view:
 
 ```
-app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java:663
-app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java:853
+app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java:663  // activityInfo.screenOrientation read
+app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java:853  // activityInfo.screenOrientation read
 ```
+
+Those reads observe the manifest of the package being inspected — they're a feature for the user, not a configuration for our own app. They are unaffected by the Android 16 behaviour change.
 
 ### 3. Layout density coverage — IMPROVED THIS PASS ⚠️→✅(partial)
 
