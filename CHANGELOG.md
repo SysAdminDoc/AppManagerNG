@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Details: copyable error dialog helper (UAD parity, ROADMAP iter-18 T4)
+- New `UIUtils.displayCopyableErrorDialog(context, title, message)` shows a
+  Material alert with OK + **Copy** buttons. Copy invokes `ClipboardUtils`
+  (which already handles >1MB error blobs via FileProvider URI fallback)
+  so users can paste failure detail straight into a bug report instead
+  of screenshotting + transcribing. Foundation only; high-traffic toast
+  failure sites migrate in a follow-up commit.
+
+### Changed — App Info / AppOps / Permissions: descriptions now selectable (UAD parity, ROADMAP iter-18 T10)
+- `item_app_details_appop.xml` and `item_app_details_perm.xml` now mark
+  `perm_description`, `perm_protection_level`, `op_mode_running_duration`
+  and `op_accept_reject_time` as `textIsSelectable="true"`. Long-press to
+  copy permission/op descriptions and runtime metadata directly from the
+  list — matches Universal Android Debloater's selectable-description
+  affordance.
+
 ### Added — Appearance: Preview new design (BETA) toggle (premium polish v0.4.x foundation)
 - New Settings → Appearance → "Preview new design (BETA)" switch
   (default OFF, key `PREF_PREMIUM_PREVIEW_BOOL`). When enabled the

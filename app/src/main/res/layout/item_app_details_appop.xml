@@ -36,6 +36,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textIsSelectable="true"
                 tools:text="@tools:sample/lorem" />
 
             <androidx.appcompat.widget.AppCompatTextView
@@ -43,6 +44,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textIsSelectable="true"
                 tools:text="@tools:sample/lorem" />
 
             <androidx.appcompat.widget.AppCompatTextView
@@ -50,6 +52,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textIsSelectable="true"
                 tools:text="@tools:sample/lorem" />
 
             <androidx.appcompat.widget.AppCompatTextView
@@ -57,6 +60,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textIsSelectable="true"
                 android:textSize="10sp"
                 tools:ignore="SmallSp"
                 tools:text="@tools:sample/lorem" />
