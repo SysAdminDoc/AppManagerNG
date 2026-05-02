@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Troubleshooting: auto-fix battery optimization via root/ADB (SD-Maid parity, ROADMAP iter-18 T20)
+- Settings → Troubleshooting → "Battery optimization" now auto-applies the
+  exemption when NG has root or ADB privileges (checks `DEVICE_POWER`). If
+  permitted: silently grants the whitelist in background, updates summary,
+  and shows a confirmation toast. If not: falls back to the system dialog.
+  Matches SD-Maid's "auto-fix" UX pattern. No user setup needed.
+
 ### Added — App Details: copyable error dialog helper (UAD parity, ROADMAP iter-18 T4)
 - New `UIUtils.displayCopyableErrorDialog(context, title, message)` shows a
   Material alert with OK + **Copy** buttons. Copy invokes `ClipboardUtils`
