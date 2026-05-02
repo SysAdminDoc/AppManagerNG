@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.app.AndroidFragment;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.util.UiUtils;
@@ -432,11 +433,9 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
         });
         TextView languageButton = view.findViewById(R.id.language);
-        languageButton.setOnClickListener(v -> {
-            // TODO: 13/9/22 Display all the supported languages
-        });
-        // TODO: 13/9/22 Enable setting custom tab size if possible (e.g. Makefile requires tab)
         TextView indentSizeButton = view.findViewById(R.id.tab_size);
+        languageButton.setOnClickListener(v -> showLanguagePicker(v, languageButton, indentSizeButton));
+        indentSizeButton.setOnClickListener(v -> showTabSizePicker(v, indentSizeButton));
         TextView lineSeparatorButton = view.findViewById(R.id.line_separator);
         lineSeparatorButton.setOnClickListener(v -> {
             PopupMenu popupMenu = new PopupMenu(requireContext(), v);
@@ -467,9 +466,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             popupMenu.show();
         });
         mPositionButton = view.findViewById(R.id.position);
-        mPositionButton.setOnClickListener(v -> {
-            // TODO: 13/9/22 Enable going to custom places
-        });
+        mPositionButton.setOnClickListener(v -> showGoToLineDialog());
         requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
         // Update live buttons at the start
@@ -494,9 +491,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             languageButton.setText(mViewModel.getLanguage());
             languageButton.setEnabled(!mViewModel.isReadOnly());
             indentSizeButton.setEnabled(!mViewModel.isReadOnly());
-            // TODO: 13/9/22 Use localization
-            CharSequence tabSize = mEditor.getTabWidth() + " " + (mEditor.getEditorLanguage().useTab() ? "tabs" : "spaces");
-            indentSizeButton.setText(tabSize);
+            indentSizeButton.setText(buildTabSizeLabel());
             lineSeparatorButton.setEnabled(!mViewModel.isReadOnly());
             mEditor.setText(content);
             lineSeparatorButton.setText(mEditor.getLineSeparator().name());
@@ -658,6 +653,108 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         if (mShareMenu != null) {
             mShareMenu.setEnabled(mViewModel.isBackedByAFile());
         }
+    }
+
+    /**
+     * Languages backed by tmLanguage grammar JSON in {@code assets/languages/}.
+     * Listed in alphabetical order; the picker mirrors this order.
+     */
+    private static final String[] SUPPORTED_LANGUAGES = {
+            "java", "json", "kotlin", "properties", "sh", "smali", "xml"
+    };
+
+    /** Indent widths exposed in the tab-size picker plus the "use real tabs" toggle. */
+    private static final int[] TAB_SIZE_OPTIONS = {2, 4, 8};
+
+    /**
+     * Show a popup with the seven tmLanguage-backed editor languages bundled
+     * in {@code app/src/main/assets/languages/}. Picking switches both the
+     * highlighter (`mEditor.setEditorLanguage`) and the persisted view-model
+     * choice so the indent label re-renders against the new language's
+     * useTab/useSpace default.
+     */
+    private void showLanguagePicker(@NonNull View anchor,
+                                    @NonNull TextView languageButton,
+                                    @NonNull TextView indentSizeButton) {
+        if (mViewModel == null || mViewModel.isReadOnly()) return;
+        PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        Menu menu = popup.getMenu();
+        menu.add(R.string.editor_language_picker_title).setEnabled(false);
+        String current = mViewModel.getLanguage();
+        for (String lang : SUPPORTED_LANGUAGES) {
+            menu.add(lang).setOnMenuItemClickListener(item -> {
+                mViewModel.setLanguage(lang);
+                mEditor.setEditorLanguage(getLanguage(lang));
+                languageButton.setText(lang);
+                indentSizeButton.setText(buildTabSizeLabel());
+                return true;
+            }).setChecked(lang.equals(current));
+        }
+        menu.setGroupCheckable(0, true, true);
+        popup.show();
+    }
+
+    /**
+     * Show a popup of standard indent widths (2 / 4 / 8 spaces). Picking calls
+     * {@code mEditor.setTabWidth(n)} and refreshes the indent label.
+     */
+    private void showTabSizePicker(@NonNull View anchor, @NonNull TextView indentSizeButton) {
+        if (mViewModel == null || mViewModel.isReadOnly()) return;
+        PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        Menu menu = popup.getMenu();
+        menu.add(R.string.editor_tab_size_picker_title).setEnabled(false);
+        for (int width : TAB_SIZE_OPTIONS) {
+            String label = getResources().getQuantityString(
+                    R.plurals.editor_tab_size_option_spaces, width, width);
+            menu.add(label).setOnMenuItemClickListener(item -> {
+                mEditor.setTabWidth(width);
+                indentSizeButton.setText(buildTabSizeLabel());
+                return true;
+            });
+        }
+        popup.show();
+    }
+
+    /**
+     * Compose the indent-mode label for the toolbar. "{n} tabs" / "{n} spaces"
+     * is now driven from `R.plurals` so non-English locales pluralise the
+     * unit correctly.
+     */
+    @NonNull
+    private CharSequence buildTabSizeLabel() {
+        int width = mEditor.getTabWidth();
+        boolean useTab = mEditor.getEditorLanguage().useTab();
+        int pluralRes = useTab
+                ? R.plurals.editor_tab_size_option_tabs
+                : R.plurals.editor_tab_size_option_spaces;
+        return getResources().getQuantityString(pluralRes, width, width);
+    }
+
+    /**
+     * Prompt for a 1-based line number and move the cursor there. Sora-editor
+     * indexes lines from 0 internally, so we subtract 1 before calling
+     * {@code setSelection}. Out-of-range input clamps to a valid line.
+     */
+    private void showGoToLineDialog() {
+        if (mViewModel == null) return;
+        int lineCount = mEditor.getText().getLineCount();
+        new TextInputDialogBuilder(requireContext(), R.string.editor_go_to_line_input_label)
+                .setTitle(R.string.editor_go_to_line_title)
+                .setInputInputType(android.text.InputType.TYPE_CLASS_NUMBER)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.go, (dialog, which, input, isChecked) -> {
+                    if (input == null) return;
+                    int line;
+                    try {
+                        line = Integer.parseInt(input.toString().trim());
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+                    if (line < 1) line = 1;
+                    if (line > lineCount) line = lineCount;
+                    mEditor.setSelection(line - 1, 0);
+                })
+                .show();
     }
 
     @MainThread

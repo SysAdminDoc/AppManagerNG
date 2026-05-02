@@ -246,6 +246,16 @@ public class CodeEditorViewModel extends AndroidViewModel {
         return mLanguage;
     }
 
+    /**
+     * Override the auto-detected language. Used by the manual language picker
+     * in {@link CodeEditorFragment} when the file extension misses or the user
+     * wants smali highlighting on a non-smali file. Does not re-tokenise on
+     * its own — caller is expected to follow up with {@code setEditorLanguage}.
+     */
+    public void setLanguage(@Nullable String language) {
+        mLanguage = language;
+    }
+
     public void generateJava(Content smaliContent) {
         if (!mCanGenerateJava) {
             return;

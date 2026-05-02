@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Code Editor: language / tab-size / go-to-line pickers (ROADMAP T14 ×3 closed)
+- **Language toolbar button** now opens a popup listing all seven
+  tmLanguage-backed languages bundled in `assets/languages/`
+  (java / json / kotlin / properties / sh / smali / xml). Picking switches
+  the syntax highlighter (`mEditor.setEditorLanguage`) and persists via
+  the new `CodeEditorViewModel.setLanguage()` setter; the indent-mode
+  label re-renders against the chosen language's `useTab/useSpace`
+  default.
+- **Tab-size toolbar button** opens a 2 / 4 / 8 popup wired to
+  `mEditor.setTabWidth(n)` so the user can override the language default
+  for files like Makefiles that need real tabs.
+- **Position toolbar button** now opens a "Go to line" dialog
+  (`TextInputDialogBuilder` numeric input) and moves the cursor via
+  `mEditor.setSelection(line - 1, 0)`; out-of-range input clamps to
+  `[1, lineCount]`.
+- The hardcoded "tabs"/"spaces" suffix on the indent label now reads
+  from `R.plurals.editor_tab_size_option_{tabs,spaces}` so non-English
+  locales render the correct plural form. Closes the four `CodeEditorFragment.java`
+  TODOs (`13/9/22 Display all the supported languages`, `13/9/22 Enable
+  setting custom tab size`, `13/9/22 Enable going to custom places`,
+  `13/9/22 Use localization`).
+
 ### Changed — Plural string audit (ROADMAP T10 closed)
 - Three remaining pluralizable count strings converted to `<plurals>`:
   `main_status_showing_apps` ("Showing N of M apps"),
