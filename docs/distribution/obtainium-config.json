@@ -1,11 +1,13 @@
 {
-  "__license__": "SPDX-License-Identifier: GPL-3.0-or-later",
-  "__doc__": "Obtainium AppConfig for AppManagerNG. Import via Obtainium > Add App > URL field, or paste this JSON via 'Import from JSON'. Obtainium ignores keys it does not recognise (the leading __ keys are inert).",
-  "id": "io.github.sysadmindoc.AppManagerNG",
-  "url": "https://github.com/SysAdminDoc/AppManagerNG",
-  "author": "SysAdminDoc",
-  "name": "AppManagerNG",
-  "preferredApkIndex": 0,
-  "additionalSettings": "{\"includePrereleases\":false,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"\",\"filterReleaseNotesByRegEx\":\"\",\"verifyLatestTag\":false,\"dontSortReleasesList\":false,\"useLatestAssetDateAsReleaseDate\":false,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionExtractionRegEx\":\"v?([0-9]+\\\\.[0-9]+\\\\.[0-9]+)\",\"matchGroupToUse\":\"1\",\"versionDetection\":true,\"releaseDateAsVersion\":false,\"useVersionCodeAsOSVersion\":false,\"apkFilterRegEx\":\"AppManagerNG-.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":true,\"appName\":\"AppManagerNG\",\"shizukuPretendToBeGooglePlay\":false,\"allowInsecure\":false,\"exemptFromBackgroundUpdates\":false,\"skipUpdateNotifications\":false,\"about\":\"AppManagerNG — power-user Android package manager. Continuation of MuntashirAkon/AppManager with progressive disclosure for casual users behind a Pro Mode toggle.\"}",
-  "overrideSource": null
+  "apps": [
+    {
+      "id": "io.github.sysadmindoc.AppManagerNG",
+      "url": "https://github.com/SysAdminDoc/AppManagerNG",
+      "author": "SysAdminDoc",
+      "name": "AppManagerNG",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":false,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"\",\"filterReleaseNotesByRegEx\":\"\",\"verifyLatestTag\":false,\"dontSortReleasesList\":false,\"useLatestAssetDateAsReleaseDate\":false,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionExtractionRegEx\":\"v?([0-9]+\\\\.[0-9]+\\\\.[0-9]+)\",\"matchGroupToUse\":\"1\",\"versionDetection\":true,\"releaseDateAsVersion\":false,\"useVersionCodeAsOSVersion\":false,\"apkFilterRegEx\":\"AppManagerNG-.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":true,\"appName\":\"AppManagerNG\",\"shizukuPretendToBeGooglePlay\":false,\"allowInsecure\":false,\"exemptFromBackgroundUpdates\":false,\"skipUpdateNotifications\":false,\"about\":\"AppManagerNG \u2014 power-user Android package manager. Continuation of MuntashirAkon/AppManager with progressive disclosure for casual users behind a Pro Mode toggle.\"}",
+      "overrideSource": null
+    }
+  ]
 }

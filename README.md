@@ -99,8 +99,8 @@ Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppMan
 2. **Add App** → paste the URL: `https://github.com/SysAdminDoc/AppManagerNG`
 3. *(Optional but recommended)* Use the bundled config file for fully pre-tuned settings (correct ABI auto-detection, version regex, prerelease-skipping):
 
-   - Open `Obtainium → Import/Export → Import from JSON`.
-   - Paste the contents of [`docs/distribution/obtainium-config.json`](docs/distribution/obtainium-config.json).
+   - Open `Obtainium → Settings → Import/Export → Import Apps From File`.
+   - Select [`docs/distribution/obtainium-config.json`](docs/distribution/obtainium-config.json) (the file is wrapped in the standard Obtainium `{"apps":[…]}` backup format so the import flow accepts it directly).
 
 Obtainium will then auto-track every signed release published to this repo and notify you on update.
 
