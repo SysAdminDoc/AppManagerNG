@@ -67,7 +67,7 @@ Required before any APK reaches real users. Every item here is blocking F-Droid 
 | ~~**NG-Specific CONTRIBUTING.md**~~ ✅ v0.2.0 | Replace upstream's CONTRIBUTING.rst; define AI code policy, commit format, PR expectations, upstream sync protocol | Low |
 | ~~**AppVerifier Fingerprint**~~ ✅ v0.2.0 | Add signing certificate SHA-256 to README (model: SAI, Obtainium, Canta all do this) | Trivial |
 | ~~**Android TV / Google TV Launcher Support**~~ ✅ pre-existing | `LEANBACK_LAUNCHER` category, `<uses-feature android:name="android.software.leanback" android:required="false"/>`, optional touchscreen, and `android:banner="@mipmap/ic_banner"` are already wired on `SplashActivity` (the user-facing launcher). Audited 2026-05-02; matches SD Maid SE v1.7.x model ([S112]). No work required. | Trivial |
-| **Publish Signing Cert Fingerprint at Stable URL** | Pin signing-cert SHA-256 fingerprint at a stable URL in the `gh-pages` site (e.g. `https://sysadmindoc.github.io/AppManagerNG/fingerprints.txt`) for AppVerifier programmatic verification. Reference: SD Maid SE v1.7.x ([S112]) "General: Publish APK signing certificate fingerprints". Reduces "is this APK legit?" support burden. | Trivial |
+| ~~**Publish Signing Cert Fingerprint at Stable URL**~~ ✅ 2026-05-02 | SHA-256 fingerprint published in machine-parseable form at [`docs/fingerprints.txt`](docs/fingerprints.txt), served via the stable `https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt` URL (no GitHub Pages activation required). Comment-tolerant `package:` / `sha256:` record pairs follow the SD Maid SE precedent ([S112]). README "Verifying releases" section links to the URL. | Trivial |
 
 ### T2 — Platform Compliance (Android 15/16)
 

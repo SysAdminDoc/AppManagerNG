@@ -121,6 +121,16 @@ Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
 apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
 ```
 
+### Stable fingerprint URL (for programmatic verification)
+
+The same fingerprint is published in machine-parseable form at a stable URL so
+AppVerifier and similar tools can fetch it without scraping the README:
+
+> <https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt>
+
+The file is comment-tolerant (`#` prefix) and uses the same `package:` /
+`sha256:` record pairs as [SD Maid SE's published fingerprints](https://github.com/d4rken-org/sdmaid-se).
+
 ## Build instructions
 
 See [BUILDING.rst](BUILDING.rst). Submodules must be initialized before building:
