@@ -438,7 +438,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | `ActivityInterceptor.java` | TODO | Results not sent back to original calling app | Medium | T8 |
 | ~~`Utils.java` (×5)~~ ✅ 2026-05-02 | FIXME (resolved) | Soft-input/service-flag/activity-flag/input-feature labels moved to `strings.xml`; protection-level tokens kept canonical (Android API identifiers) | Low–Med | T10 |
 | ~~`VirusTotal.java`~~ ✅ 2026-05-02 | TODO (resolved) | New `computeInitialPollWait(fileSize)` ramps the *first* poll wait roughly +1 s per MB above a 10 MB threshold, clamped to [60 s, 240 s] — no more polling a 200 MB upload at 60 s and burning the 4 req/min rate-limit quota. Subsequent polls stay at the 30 s floor. | Low | Scanner |
-| `AppTypeOption.java` | TODO | Play App Signing / PWA / overlay detection missing | Low | App Details |
+| ~~`AppTypeOption.java`~~ ✅ 2026-05-02 (partial) | TODO (resolved 2/3) | **Play App Signing** + **Overlay app** flags now active in the AppType filter (`mFrozenFlags` + `withFlagsCheck` / `withoutFlagsCheck`); backed by new `IFilterableAppInfo.usesPlayAppSigning()` / `isOverlay()` methods on both `FilterableAppInfo` (uses `PackageUtils.usesPlayAppSigning` + `PackageInfoCompat2.getOverlayTarget`) and `ApplicationItem` (lazy `fetchPackageInfo()` paths). PWA and short-code deferred — TWA detection requires manifest service-tag sniffing and short-code is not a stable PackageManager signal; would ship a half-accurate heuristic. | Low | App Details |
 | `PermissionsOption.java` | TODO | Permission flags not exposed in filter | Low | T7 |
 | `DataUsageOption.java` | TODO | Mobile/Wi-Fi split not shown | Low | T7 |
 | `TrackersOption.java` | TODO | Regex + tracker-name search not implemented | Low | T7 |

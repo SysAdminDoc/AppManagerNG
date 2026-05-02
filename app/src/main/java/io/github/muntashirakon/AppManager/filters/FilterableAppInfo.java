@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
@@ -403,6 +404,16 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     @Override
     public boolean isPrivileged() {
         return ApplicationInfoCompat.isPrivileged(mApplicationInfo);
+    }
+
+    @Override
+    public boolean isOverlay() {
+        return PackageInfoCompat2.getOverlayTarget(mPackageInfo) != null;
+    }
+
+    @Override
+    public boolean usesPlayAppSigning() {
+        return PackageUtils.usesPlayAppSigning(mApplicationInfo);
     }
 
     @RequiresApi(Build.VERSION_CODES.P)

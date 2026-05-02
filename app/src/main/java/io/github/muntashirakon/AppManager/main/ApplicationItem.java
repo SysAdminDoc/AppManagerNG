@@ -689,6 +689,25 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
         return false;
     }
 
+    @Override
+    public boolean isOverlay() {
+        fetchPackageInfo();
+        if (mPackageInfo != null) {
+            return io.github.muntashirakon.AppManager.compat.PackageInfoCompat2
+                    .getOverlayTarget(mPackageInfo) != null;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean usesPlayAppSigning() {
+        fetchPackageInfo();
+        if (mApplicationInfo != null) {
+            return PackageUtils.usesPlayAppSigning(mApplicationInfo);
+        }
+        return false;
+    }
+
     @RequiresApi(Build.VERSION_CODES.P)
     public boolean usesSensors() {
         if (mUsesSensors == null) {
