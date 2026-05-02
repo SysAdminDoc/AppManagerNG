@@ -42,6 +42,7 @@ import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptimizer;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -150,7 +151,9 @@ public class PackageInstallerService extends ForegroundService {
             public void onFinishedInstall(int sessionId, String packageName, int result,
                                           @Nullable String blockingPackage, @Nullable String statusMessage) {
                 boolean success = result == STATUS_SUCCESS;
-                OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, success);
+                OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, success,
+                        OperationJournalMetadata.forInstaller(PackageInstallerService.this, apkQueueItem,
+                                result, blockingPackage, statusMessage));
                 if (success) {
                     // Block trackers if requested
                     if (options.isBlockTrackers()) {
@@ -187,7 +190,9 @@ public class PackageInstallerService extends ForegroundService {
                     apkFile = apkSource.resolve();
                 } catch (Throwable th) {
                     Log.w(TAG, "Could not get ApkFile", th);
-                    OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false);
+                    OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
+                            OperationJournalMetadata.forInstaller(this, apkQueueItem,
+                                    STATUS_FAILURE_INVALID, null, th.getMessage()));
                     String packageName = apkQueueItem.getPackageName();
                     finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID, apkQueueItem.getAppLabel(), null, null);
                     return;
