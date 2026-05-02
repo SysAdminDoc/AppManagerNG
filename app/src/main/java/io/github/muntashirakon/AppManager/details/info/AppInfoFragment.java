@@ -20,6 +20,7 @@ import static io.github.muntashirakon.AppManager.utils.Utils.openAsFolderInFM;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -450,10 +451,15 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     ThreadUtils.postOnMainThread(() -> {
                         showProgressIndicator(false);
                         Context ctx = ContextUtils.getContext();
+                        Uri apkUri = FmProvider.getContentUri(tmpApkSource);
                         Intent intent = new Intent(Intent.ACTION_SEND)
                                 .setType("application/*")
-                                .putExtra(Intent.EXTRA_STREAM, FmProvider.getContentUri(tmpApkSource))
+                                .putExtra(Intent.EXTRA_STREAM, apkUri)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+                        // reach the chooser target on Android 18+ (auto-grant removed
+                        // for SEND/SEND_MULTIPLE/IMAGE_CAPTURE).
+                        intent.setClipData(ClipData.newRawUri("", apkUri));
                         ctx.startActivity(Intent.createChooser(intent, ctx.getString(R.string.share_apk))
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                     });

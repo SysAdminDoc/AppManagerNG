@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Pre-emptive Android 18 share-intent compliance (ROADMAP T3 closed)
+- All seven outgoing `ACTION_SEND` / `ACTION_SEND_MULTIPLE` paths that carry
+  a content URI (App Info APK share, log viewer attachment chooser, code
+  editor share, single + multi file-manager share, diagnostic export, crash
+  report) now set both `FLAG_GRANT_READ_URI_PERMISSION` and an explicit
+  `ClipData` so the chooser target keeps receiving read access once
+  Android 18 removes the implicit auto-grant for SEND/SEND_MULTIPLE/
+  IMAGE_CAPTURE. Multi-URI shares from the file manager now build a
+  multi-item `ClipData` rather than relying on the EXTRA_STREAM list alone.
+- Audit and full inventory at
+  [docs/audits/2026-05-02-android18-implicit-uri-grant.md](docs/audits/2026-05-02-android18-implicit-uri-grant.md).
+  No `IMAGE_CAPTURE` callers in source; `PackageInstaller` install path
+  streams via `openWrite()` and is unaffected.
+
 ### Changed — Utils.java flag-string i18n (ROADMAP T3 closed)
 - `Utils.getSoftInputString`, `getServiceFlagsString`,
   `getActivitiesFlagsString`, and `getInputFeaturesString` now read their
