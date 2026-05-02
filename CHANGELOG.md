@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Settings: Mode-of-Ops live capability refresh
+- Capability badges (Root / Wireless ADB / USB ADB) now refresh every time
+  the Mode-of-Ops settings screen resumes. Toggling Wireless debugging in
+  Quick Settings or granting root in another app while Settings is in the
+  background now reflects on return — no need to leave the screen entirely.
+
+### Added — Android TV launcher parity (audit)
+- Confirmed `SplashActivity` already declares `LEANBACK_LAUNCHER`, the
+  manifest declares leanback `uses-feature` with `required="false"` and
+  optional touchscreen, and the `ic_banner` mipmap is wired. AppManagerNG
+  appears on Android TV / Google TV launchers with no additional work.
+  ROADMAP item closed.
+
 ### Added — App Info bloatware safety rating
 - **Bloatware tag now surfaces the safety call directly** — App Info →
   tag cloud previously showed a generic "Bloatware" chip coloured by
