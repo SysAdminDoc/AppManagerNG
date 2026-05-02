@@ -1405,6 +1405,11 @@
     <string name="troubleshooting">Troubleshooting</string>
     <string name="pref_reload_apps">Reload apps</string>
     <string name="pref_reload_apps_msg">Reload the list of apps stored in App Manager database in case of unexpected behaviour.</string>
+    <string name="pref_replay_onboarding">Replay welcome wizard</string>
+    <string name="pref_replay_onboarding_msg">Re-open the privilege-mode picker and explainers shown on first launch. Your current mode stays active until you pick another card.</string>
+    <string name="pref_replay_tour">Replay quick tour</string>
+    <string name="pref_replay_tour_msg">Show the main-list quick tour the next time you open the app list.</string>
+    <string name="replay_tour_armed">Quick tour will appear next time you open the app list.</string>
     <string name="changelog_type_new">New</string>
     <string name="changelog_type_fix">Fix</string>
     <string name="changelog_type_improve">Improve</string>
