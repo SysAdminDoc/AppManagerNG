@@ -1885,4 +1885,46 @@
     <string name="selected_items_accessibility_description">Selected %d out of %d items</string>
     <string name="adb_local_server_port">ADB local server port</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
+    <!-- App Details: window soft-input flags (Utils.getSoftInputString) -->
+    <string name="soft_input_flag_adjust_nothing">Adjust nothing</string>
+    <string name="soft_input_flag_adjust_pan">Adjust pan</string>
+    <string name="soft_input_flag_adjust_resize">Adjust resize</string>
+    <string name="soft_input_flag_adjust_unspecified">Adjust unspecified</string>
+    <string name="soft_input_flag_state_always_hidden">Always hidden</string>
+    <string name="soft_input_flag_state_always_visible">Always visible</string>
+    <string name="soft_input_flag_state_hidden">Hidden</string>
+    <string name="soft_input_flag_state_visible">Visible</string>
+    <string name="soft_input_flag_state_unchanged">Unchanged</string>
+    <string name="soft_input_flag_state_unspecified">Unspecified</string>
+    <string name="soft_input_flag_forward_navigation">Forward navigation</string>
+    <string name="soft_input_flag_mask_adjust">Mask adjust</string>
+    <string name="soft_input_flag_mask_state">Mask state</string>
+    <string name="soft_input_flag_mode_changed">Mode changed</string>
+    <string name="soft_input_flag_none">None</string>
+    <!-- App Details: service info flags (Utils.getServiceFlagsString) -->
+    <string name="service_flag_stop_with_task">Stop with task</string>
+    <string name="service_flag_isolated_process">Isolated process</string>
+    <string name="service_flag_single_user">Single user</string>
+    <string name="service_flag_external_service">External service</string>
+    <string name="service_flag_use_app_zygote">Use app zygote</string>
+    <!-- App Details: activity info flags (Utils.getActivitiesFlagsString) -->
+    <string name="activity_flag_allow_reparenting">Allow reparenting</string>
+    <string name="activity_flag_always_retain_state">Always retain state</string>
+    <string name="activity_flag_auto_remove_recents">Auto-remove from recents</string>
+    <string name="activity_flag_clear_on_launch">Clear on launch</string>
+    <string name="activity_flag_enable_vr">Enable VR</string>
+    <string name="activity_flag_exclude_recents">Exclude from recents</string>
+    <string name="activity_flag_finish_close_dialogs">Finish on close dialogs</string>
+    <string name="activity_flag_finish_on_launch">Finish on launch</string>
+    <string name="activity_flag_hardware_accelerated">Hardware accelerated</string>
+    <string name="activity_flag_immersive">Immersive</string>
+    <string name="activity_flag_multiprocess">Multiprocess</string>
+    <string name="activity_flag_no_history">No history</string>
+    <string name="activity_flag_relinquish_identity">Relinquish identity</string>
+    <string name="activity_flag_resume_while_pausing">Resume while pausing</string>
+    <string name="activity_flag_single_user">Single user</string>
+    <string name="activity_flag_state_not_needed">State not needed</string>
+    <!-- App Details: input feature flags (Utils.getInputFeaturesString) -->
+    <string name="input_feature_five_way_nav">Five-way navigation</string>
+    <string name="input_feature_hard_keyboard">Hardware keyboard</string>
 </resources>

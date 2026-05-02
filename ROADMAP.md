@@ -96,7 +96,7 @@ These are `FIXME` / security issues identified in source that should not wait fo
 | ~~**Keystore Password Security**~~ ✅ v0.3.0 | `KeyStoreUtils.java` | Use `char[]` instead of `String` for keystore passwords (String is interned in heap; not clearable) | Low |
 | ~~**ABX-to-XML Lossless Fix**~~ ✅ v0.3.0 | `CodeEditorViewModel.java` | Current ABX→XML conversion is lossy; update serializer to round-trip without data loss | Medium |
 | ~~**Intent Interceptor OPEN_DOCUMENT**~~ ✅ v0.3.0 | `ActivityInterceptor.java` | Interceptor permanently breaks `android.intent.action.OPEN_DOCUMENT` (Issue #1767, 2 reactions); fix dispatch logic | Medium |
-| **Utils.java i18n (×5)** ⚠️ deferred v0.4.0 | `Utils.java` | Five hardcoded string instances that bypass Android's localization pipeline | Low |
+| ~~**Utils.java i18n (×5)**~~ ✅ 2026-05-02 | `Utils.java` | Soft-input / service-flag / activity-flag / input-feature flag strings now pull from `strings.xml`; `getProtectionLevelString` keeps Android's canonical manifest-protection-level tokens (`dangerous`, `signature\|privileged`, etc.) intentionally untranslated — they are technical identifiers, and a `protectionLevel.contains("dangerous")` check exists in `AppDetailsPermissionsFragment`. | Low |
 | **Android 18 Implicit URI Grant Removal** | `PackageInstaller` / share intents | Android 17 signals that `Send`, `SendMultiple`, and `ImageCapture` intents will stop auto-granting URI read/write to the target app in Android 18 ([S55]). Pre-emptively audit all APK-sharing and share-via-intent paths; add explicit `grantUriPermission()` calls before breakage ships. | Low |
 
 ### T4 — Observability & Process
@@ -436,7 +436,7 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | `FmProvider.java` | TODO | DocumentsProvider not properly implemented | Medium | T13 |
 | `FinderViewModel.java` | TODO | Multi-user support + uninstalled app backups missing | Medium | T7 |
 | `ActivityInterceptor.java` | TODO | Results not sent back to original calling app | Medium | T8 |
-| `Utils.java` (×5) | FIXME | Hardcoded strings bypass i18n | Low–Med | T10 |
+| ~~`Utils.java` (×5)~~ ✅ 2026-05-02 | FIXME (resolved) | Soft-input/service-flag/activity-flag/input-feature labels moved to `strings.xml`; protection-level tokens kept canonical (Android API identifiers) | Low–Med | T10 |
 | `VirusTotal.java` | TODO | `fetchFileReportOrScan` poll intervals are hardcoded (60 s then 30 s); should scale with `file.length()` per inline comment (L164, 2022-05-23). Low-urgency polish. | Low | Scanner |
 | `AppTypeOption.java` | TODO | Play App Signing / PWA / overlay detection missing | Low | App Details |
 | `PermissionsOption.java` | TODO | Permission flags not exposed in filter | Low | T7 |

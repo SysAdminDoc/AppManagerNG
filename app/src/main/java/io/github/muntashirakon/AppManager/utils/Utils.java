@@ -225,62 +225,62 @@ public class Utils {
         }
     }
 
-    // FIXME: Translation support
     @NonNull
     public static String getSoftInputString(int flag) {
+        Context ctx = ContextUtils.getContext();
         StringBuilder builder = new StringBuilder();
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING) != 0)
-            builder.append("Adjust nothing, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_adjust_nothing)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN) != 0)
-            builder.append("Adjust pan, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_adjust_pan)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE) != 0)
-            builder.append("Adjust resize, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_adjust_resize)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED) != 0)
-            builder.append("Adjust unspecified, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_adjust_unspecified)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN) != 0)
-            builder.append("Always hidden, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_always_hidden)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE) != 0)
-            builder.append("Always visible, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_always_visible)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN) != 0)
-            builder.append("Hidden, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_hidden)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE) != 0)
-            builder.append("Visible, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_visible)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED) != 0)
-            builder.append("Unchanged, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_unchanged)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED) != 0)
-            builder.append("Unspecified, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_state_unspecified)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_IS_FORWARD_NAVIGATION) != 0)
-            builder.append("ForwardNav, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_forward_navigation)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST) != 0)
-            builder.append("Mask adjust, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_mask_adjust)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_MASK_STATE) != 0)
-            builder.append("Mask state, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_mask_state)).append(", ");
         if ((flag & WindowManager.LayoutParams.SOFT_INPUT_MODE_CHANGED) != 0)
-            builder.append("Mode changed, ");
+            builder.append(ctx.getString(R.string.soft_input_flag_mode_changed)).append(", ");
         checkStringBuilderEnd(builder);
         String result = builder.toString();
-        return result.isEmpty() ? "null" : result;
+        return result.isEmpty() ? ctx.getString(R.string.soft_input_flag_none) : result;
     }
 
-    // FIXME Add translation support
     @NonNull
     public static CharSequence getServiceFlagsString(int flag) {
+        Context ctx = ContextUtils.getContext();
         StringBuilder builder = new StringBuilder();
         if ((flag & ServiceInfo.FLAG_STOP_WITH_TASK) != 0)
-            builder.append("Stop with task, ");
+            builder.append(ctx.getString(R.string.service_flag_stop_with_task)).append(", ");
         if ((flag & ServiceInfo.FLAG_ISOLATED_PROCESS) != 0)
-            builder.append("Isolated process, ");
+            builder.append(ctx.getString(R.string.service_flag_isolated_process)).append(", ");
 
         if ((flag & ServiceInfo.FLAG_SINGLE_USER) != 0)
-            builder.append("Single user, ");
+            builder.append(ctx.getString(R.string.service_flag_single_user)).append(", ");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if ((flag & ServiceInfo.FLAG_EXTERNAL_SERVICE) != 0)
-                builder.append("External service, ");
+                builder.append(ctx.getString(R.string.service_flag_external_service)).append(", ");
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 if ((flag & ServiceInfo.FLAG_USE_APP_ZYGOTE) != 0)
-                    builder.append("Use app zygote, ");
+                    builder.append(ctx.getString(R.string.service_flag_use_app_zygote)).append(", ");
             }
         }
         checkStringBuilderEnd(builder);
@@ -288,48 +288,52 @@ public class Utils {
         return TextUtils.isEmpty(result) ? "" : ("⚑ " + result);
     }
 
-    // FIXME Add translation support
     @NonNull
     public static String getActivitiesFlagsString(int flag) {
+        Context ctx = ContextUtils.getContext();
         StringBuilder builder = new StringBuilder();
         if ((flag & ActivityInfo.FLAG_ALLOW_TASK_REPARENTING) != 0)
-            builder.append("AllowReparenting, ");
+            builder.append(ctx.getString(R.string.activity_flag_allow_reparenting)).append(", ");
         if ((flag & ActivityInfo.FLAG_ALWAYS_RETAIN_TASK_STATE) != 0)
-            builder.append("AlwaysRetain, ");
+            builder.append(ctx.getString(R.string.activity_flag_always_retain_state)).append(", ");
         if ((flag & ActivityInfo.FLAG_AUTO_REMOVE_FROM_RECENTS) != 0)
-            builder.append("AutoRemove, ");
+            builder.append(ctx.getString(R.string.activity_flag_auto_remove_recents)).append(", ");
         if ((flag & ActivityInfo.FLAG_CLEAR_TASK_ON_LAUNCH) != 0)
-            builder.append("ClearOnLaunch, ");
+            builder.append(ctx.getString(R.string.activity_flag_clear_on_launch)).append(", ");
         if ((flag & ActivityInfo.FLAG_ENABLE_VR_MODE) != 0)
-            builder.append("EnableVR, ");
+            builder.append(ctx.getString(R.string.activity_flag_enable_vr)).append(", ");
         if ((flag & ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS) != 0)
-            builder.append("ExcludeRecent, ");
+            builder.append(ctx.getString(R.string.activity_flag_exclude_recents)).append(", ");
         if ((flag & ActivityInfo.FLAG_FINISH_ON_CLOSE_SYSTEM_DIALOGS) != 0)
-            builder.append("FinishCloseDialogs, ");
+            builder.append(ctx.getString(R.string.activity_flag_finish_close_dialogs)).append(", ");
         if ((flag & ActivityInfo.FLAG_FINISH_ON_TASK_LAUNCH) != 0)
-            builder.append("FinishLaunch, ");
+            builder.append(ctx.getString(R.string.activity_flag_finish_on_launch)).append(", ");
         if ((flag & ActivityInfo.FLAG_HARDWARE_ACCELERATED) != 0)
-            builder.append("HardwareAccel, ");
+            builder.append(ctx.getString(R.string.activity_flag_hardware_accelerated)).append(", ");
         if ((flag & ActivityInfo.FLAG_IMMERSIVE) != 0)
-            builder.append("Immersive, ");
+            builder.append(ctx.getString(R.string.activity_flag_immersive)).append(", ");
         if ((flag & ActivityInfo.FLAG_MULTIPROCESS) != 0)
-            builder.append("Multiprocess, ");
+            builder.append(ctx.getString(R.string.activity_flag_multiprocess)).append(", ");
         if ((flag & ActivityInfo.FLAG_NO_HISTORY) != 0)
-            builder.append("NoHistory, ");
+            builder.append(ctx.getString(R.string.activity_flag_no_history)).append(", ");
         if ((flag & ActivityInfo.FLAG_RELINQUISH_TASK_IDENTITY) != 0)
-            builder.append("RelinquishIdentity, ");
+            builder.append(ctx.getString(R.string.activity_flag_relinquish_identity)).append(", ");
         if ((flag & ActivityInfo.FLAG_RESUME_WHILE_PAUSING) != 0)
-            builder.append("Resume, ");
+            builder.append(ctx.getString(R.string.activity_flag_resume_while_pausing)).append(", ");
         if ((flag & ActivityInfo.FLAG_SINGLE_USER) != 0)
-            builder.append("Single, ");
+            builder.append(ctx.getString(R.string.activity_flag_single_user)).append(", ");
         if ((flag & ActivityInfo.FLAG_STATE_NOT_NEEDED) != 0)
-            builder.append("NotNeeded, ");
+            builder.append(ctx.getString(R.string.activity_flag_state_not_needed)).append(", ");
         checkStringBuilderEnd(builder);
         String result = builder.toString();
         return result.isEmpty() ? "⚐" : "⚑ " + result;
     }
 
-    // FIXME Add translation support
+    // Canonical Android API tokens — match the values accepted by
+    // android:protectionLevel="..." in AndroidManifest.xml. Intentionally not
+    // localised: they are technical identifiers (developers grep manifests for
+    // these literal tokens) and a programmatic .contains("dangerous") check
+    // exists in AppDetailsPermissionsFragment.
     @NonNull
     public static String getProtectionLevelString(PermissionInfo permissionInfo) {
         int basePermissionType = PermissionInfoCompat.getProtection(permissionInfo);
@@ -388,15 +392,15 @@ public class Utils {
         return protectionLevel;
     }
 
-    // FIXME Add translation support
     @NonNull
     public static String getInputFeaturesString(int flag) {
+        Context ctx = ContextUtils.getContext();
         String string = "";
         if ((flag & ConfigurationInfo.INPUT_FEATURE_FIVE_WAY_NAV) != 0)
-            string += "Five way nav";
+            string += ctx.getString(R.string.input_feature_five_way_nav);
         if ((flag & ConfigurationInfo.INPUT_FEATURE_HARD_KEYBOARD) != 0)
-            string += (string.isEmpty() ? "" : "|") + "Hard keyboard";
-        return string.isEmpty() ? "null" : string;
+            string += (string.isEmpty() ? "" : "|") + ctx.getString(R.string.input_feature_hard_keyboard);
+        return string.isEmpty() ? ctx.getString(R.string.soft_input_flag_none) : string;
     }
 
     @StringRes

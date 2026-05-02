@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Utils.java flag-string i18n (ROADMAP T3 closed)
+- `Utils.getSoftInputString`, `getServiceFlagsString`,
+  `getActivitiesFlagsString`, and `getInputFeaturesString` now read their
+  flag labels from `strings.xml` (`soft_input_flag_*`, `service_flag_*`,
+  `activity_flag_*`, `input_feature_*`) via `ContextUtils.getContext()`,
+  so the App Details Activities / Services / Other tabs respect the
+  device locale instead of hardcoded English.
+- `Utils.getProtectionLevelString` keeps Android's canonical manifest
+  `android:protectionLevel="..."` tokens (`dangerous`, `signature`,
+  `signature|privileged`, etc.) untranslated by design — they are
+  technical identifiers, and `AppDetailsPermissionsFragment` does a
+  `protectionLevel.contains("dangerous")` check that must keep working.
+  Replaced the stale `FIXME` with a comment documenting the rationale.
+
 ### Added — Settings: Mode-of-Ops live capability refresh
 - Capability badges (Root / Wireless ADB / USB ADB) now refresh every time
   the Mode-of-Ops settings screen resumes. Toggling Wireless debugging in
