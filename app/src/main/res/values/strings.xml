@@ -387,6 +387,10 @@
         <item quantity="one">Could not clear data from %1$d app</item>
         <item quantity="other">Could not clear data from %1$d apps</item>
     </plurals>
+    <plurals name="clear_uninstalled_app_data_confirmation">
+        <item quantity="one">Clear leftover data for %1$d uninstalled app? This cannot be undone from AppManagerNG.</item>
+        <item quantity="other">Clear leftover data for %1$d uninstalled apps? This cannot be undone from AppManagerNG.</item>
+    </plurals>
     <plurals name="alert_failed_to_uninstall">
         <item quantity="one">Could not uninstall %1$d app</item>
         <item quantity="other">Could not uninstall %1$d apps</item>
@@ -456,6 +460,7 @@
     <string name="launch_app">Launch</string>
     <string name="never_ask">Never ask</string>
     <string name="one_click_ops">1-click ops</string>
+    <string name="one_click_ops_notice">These operations can affect many apps at once. Review the package list before applying changes, especially when system apps are included.</string>
     <string name="changelog">Changelog</string>
     <string name="external_apk_no_app_op">External APK does not have any app operations</string>
     <string name="manifest_viewer">Manifest viewer</string>
@@ -484,18 +489,20 @@
     <string name="pref_import_existing_msg">Add components disabled by others apps to App Manager.
         Be careful when using this tool as there can be many false positives. Choose only the apps you\'re certain about.</string>
     <string name="clear_cache">Clear cache</string>
-    <string name="block_unblock_trackers_description">Block or unblock ad and tracking components in all the installed apps</string>
+    <string name="block_unblock_trackers_description">Find apps with tracker components, then choose which ones to block or unblock.</string>
     <string name="block_components_dots">Block components…</string>
     <string name="block_unblock_components_dots">Block/unblock components…</string>
     <string name="unblock_components_dots">Unblock components…</string>
-    <string name="block_unblock_components_description">Block or unblock all components identified by the given signatures</string>
-    <string name="deny_app_ops_description">Set a mode for app operations identified by the constant values, i.e., <tt>63</tt> or <tt>RUN_IN_BACKGROUND</tt></string>
+    <string name="block_unblock_components_description">Search component signatures across apps before applying block or unblock changes.</string>
+    <string name="deny_app_ops_description">Search app-ops constants such as <tt>63</tt> or <tt>RUN_IN_BACKGROUND</tt>, then apply the selected mode.</string>
     <string name="clear_data_from_uninstalled_apps">Clear data from uninstalled apps</string>
-    <string name="clear_data_from_uninstalled_apps_description">Clear data from apps that are uninstalled with <tt>DONT_DELETE_DATA</tt> flag</string>
+    <string name="clear_data_from_uninstalled_apps_description">Review leftover data for apps removed with <tt>DONT_DELETE_DATA</tt>.</string>
     <string name="clear_app_cache">Clear app cache</string>
     <string name="clear_app_cache_description">Clears the cache of all apps</string>
     <string name="no_tracker_found">No tracker found</string>
     <string name="failed_packages">Failed packages</string>
+    <string name="package_scan_failed">Package scan failed</string>
+    <string name="package_scan_failed_message">AppManagerNG could not load the package list for this operation.</string>
     <string name="input_signatures">Input signatures</string>
     <string name="input_signatures_description">Input signatures with spaces, e.g., <tt>com.facebook org.app2 com.app3</tt> etc.</string>
     <string name="filtered_packages">Filtered packages</string>
@@ -503,6 +510,9 @@
     <string name="input_app_ops_description">Input app op names and/or constants with spaces, e.g., <tt>WAKE_LOCK 63 72 CAMERA</tt> etc.</string>
     <string name="input_app_ops_description_profile">Input app op names and/or constants with spaces, e.g., <tt>WAKE_LOCK 63 72 CAMERA</tt> etc. Use <tt>*</tt> to apply for all configured app ops.</string>
     <string name="only_works_in_root_or_adb_mode">Only works in root or ADB mode</string>
+    <string name="root_or_adb_required">Root or ADB required</string>
+    <string name="trim_caches_permission_required_message">Cache trimming needs root or ADB access because Android restricts cache cleanup across apps.</string>
+    <string name="app_ops_permission_required_message">Changing app ops needs root, ADB, or system-level access.</string>
     <string name="failed_to_parse_some_numbers">Could not parse some numbers</string>
     <plurals name="no_of_splits">
         <item quantity="one">%1$d split</item>
@@ -590,7 +600,19 @@
         <item quantity="other">Verified with %d warnings</item>
     </plurals>
     <string name="apply_to_system_apps">Apply to system apps</string>
-    <string name="apply_to_system_apps_question">Apply to system apps too? Select \"No\" if unsure.</string>
+    <string name="apply_to_system_apps_question">Include system apps in this scan? Choose user apps only if unsure.</string>
+    <string name="user_apps_only">User apps only</string>
+    <string name="include_system_apps">Include system apps</string>
+    <string name="review_tracker_apps_title">Review tracker apps</string>
+    <string name="review_component_apps_title">Review component matches</string>
+    <string name="review_app_ops_apps_title">Review app-op matches</string>
+    <string name="review_orphan_data_title">Review leftover data</string>
+    <string name="no_trackers_to_review_message">No tracker components were found in the scanned apps.</string>
+    <string name="no_component_matches_message">No apps matched the component signatures you entered.</string>
+    <string name="no_app_ops_matches_message">No apps matched the selected app ops.</string>
+    <string name="no_uninstalled_app_data_message">No leftover data from uninstalled apps was found.</string>
+    <string name="no_packages_selected">No packages selected</string>
+    <string name="no_packages_selected_message">Select at least one package before applying this operation.</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
     <string name="skip_signature_checks">Skip signature checks</string>
@@ -1213,7 +1235,9 @@
     <string name="paste">Paste</string>
     <string name="user_root">Use root</string>
     <string name="trim_caches_in_all_apps">Trim caches in all apps</string>
-    <string name="trim_caches_in_all_apps_description">Deletes cache files from all applications, including the Android system</string>
+    <string name="trim_caches_in_all_apps_description">Remove temporary cache files across apps, including system apps.</string>
+    <string name="trim_caches">Trim caches</string>
+    <string name="trim_caches_confirmation_message">Delete temporary cache files for all apps, including system apps? App data and backups are not removed.</string>
     <string name="background">Background</string>
     <string name="staging_apk_files">Staging…</string>
     <string name="installer_app_installed">App installed</string>

@@ -20,6 +20,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.ArraySet;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -107,18 +108,18 @@ public class OneClickOpsActivity extends BaseActivity {
 
     private void setItems() {
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_trackers),
-                        getString(R.string.block_unblock_trackers_description))
+                        getString(R.string.block_unblock_trackers_description), R.drawable.ic_cctv_off)
                 .setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.block_unblock_trackers)
                         .setMessage(R.string.apply_to_system_apps_question)
-                        .setPositiveButton(R.string.no, (dialog, which) -> {
+                        .setPositiveButton(R.string.user_apps_only, (dialog, which) -> {
                             progressIndicator.show();
                             if (!wakeLock.isHeld()) {
                                 wakeLock.acquire();
                             }
                             mViewModel.blockTrackers(false);
                         })
-                        .setNegativeButton(R.string.yes, (dialog, which) -> {
+                        .setNegativeButton(R.string.include_system_apps, (dialog, which) -> {
                             progressIndicator.show();
                             if (!wakeLock.isHeld()) {
                                 wakeLock.acquire();
@@ -127,7 +128,7 @@ public class OneClickOpsActivity extends BaseActivity {
                         })
                         .show());
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_components_dots),
-                        getString(R.string.block_unblock_components_description))
+                        getString(R.string.block_unblock_components_description), R.drawable.ic_block)
                 .setOnClickListener(v -> new TextInputDialogBuilder(this, R.string.input_signatures)
                         .setHelperText(R.string.input_signatures_description)
                         .setCheckboxLabel(R.string.apply_to_system_apps)
@@ -144,18 +145,18 @@ public class OneClickOpsActivity extends BaseActivity {
                         .setNegativeButton(R.string.cancel, null)
                         .show());
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.set_mode_for_app_ops_dots),
-                        getString(R.string.deny_app_ops_description))
+                        getString(R.string.deny_app_ops_description), R.drawable.ic_tune)
                 .setOnClickListener(v -> showAppOpsSelectionDialog());
         mItemCreator.addItemWithTitleSubtitle(getText(R.string.back_up),
-                getText(R.string.backup_msg)).setOnClickListener(v ->
+                getText(R.string.backup_msg), R.drawable.ic_backup_restore).setOnClickListener(v ->
                 new BackupTasksDialogFragment().show(getSupportFragmentManager(),
                         BackupTasksDialogFragment.TAG));
         mItemCreator.addItemWithTitleSubtitle(getText(R.string.restore),
-                getText(R.string.restore_msg)).setOnClickListener(v ->
+                getText(R.string.restore_msg), R.drawable.ic_restore).setOnClickListener(v ->
                 new RestoreTasksDialogFragment().show(getSupportFragmentManager(),
                         RestoreTasksDialogFragment.TAG));
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_data_from_uninstalled_apps),
-                        getString(R.string.clear_data_from_uninstalled_apps_description))
+                        getString(R.string.clear_data_from_uninstalled_apps_description), R.drawable.ic_clear_data)
                 .setOnClickListener(v -> {
                     if (!wakeLock.isHeld()) {
                         wakeLock.acquire();
@@ -166,18 +167,18 @@ public class OneClickOpsActivity extends BaseActivity {
 //                        getString(R.string.clear_app_cache_description))
 //                .setOnClickListener(v -> clearAppCache());
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.trim_caches_in_all_apps),
-                        getString(R.string.trim_caches_in_all_apps_description))
+                        getString(R.string.trim_caches_in_all_apps_description), R.drawable.ic_clear_cache)
                 .setOnClickListener(v -> {
                     if (!SelfPermissions.checkSelfPermission(Manifest.permission.CLEAR_APP_CACHE)
                             && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.CLEAR_APP_CACHE)) {
-                        UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
+                        showInfoDialog(R.string.root_or_adb_required, R.string.trim_caches_permission_required_message);
                         return;
                     }
                     new MaterialAlertDialogBuilder(this)
                             .setTitle(R.string.trim_caches_in_all_apps)
-                            .setMessage(R.string.are_you_sure)
-                            .setNegativeButton(R.string.no, null)
-                            .setPositiveButton(R.string.yes, (dialog, which) -> {
+                            .setMessage(R.string.trim_caches_confirmation_message)
+                            .setNegativeButton(R.string.cancel, null)
+                            .setPositiveButton(R.string.trim_caches, (dialog, which) -> {
                                 progressIndicator.show();
                                 if (!wakeLock.isHeld()) {
                                     wakeLock.acquire();
@@ -188,7 +189,7 @@ public class OneClickOpsActivity extends BaseActivity {
                 });
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             mItemCreator.addItemWithTitleSubtitle(getString(R.string.title_perform_runtime_optimization_to_apps),
-                            getString(R.string.summary_perform_runtime_optimization_to_apps))
+                            getString(R.string.summary_perform_runtime_optimization_to_apps), R.drawable.ic_run_fast)
                     .setOnClickListener(v -> {
                         if (SelfPermissions.isSystemOrRootOrShell()) {
                             DexOptDialog dialog = DexOptDialog.getInstance(null);
@@ -225,11 +226,11 @@ public class OneClickOpsActivity extends BaseActivity {
         CpuUtils.releaseWakeLock(wakeLock);
         progressIndicator.hide();
         if (trackerCounts == null) {
-            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
         }
         if (trackerCounts.isEmpty()) {
-            UIUtils.displayShortToast(R.string.no_tracker_found);
+            showInfoDialog(R.string.no_tracker_found, R.string.no_trackers_to_review_message);
             return;
         }
         final ArrayList<String> trackerPackages = new ArrayList<>();
@@ -242,14 +243,16 @@ public class OneClickOpsActivity extends BaseActivity {
         }
         new SearchableMultiChoiceDialogBuilder<>(this, trackerPackages, trackerPackagesWithTrackerCount)
                 .addSelections(trackerPackages)
-                .setTitle(R.string.filtered_packages)
+                .setTitle(R.string.review_tracker_apps_title)
                 .setPositiveButton(R.string.block, (dialog, which, selectedPackages) -> {
+                    if (!requirePackageSelection(selectedPackages)) return;
                     progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_BLOCK_TRACKERS,
                             selectedPackages, null, null);
                     launchService(item);
                 })
                 .setNeutralButton(R.string.unblock, (dialog, which, selectedPackages) -> {
+                    if (!requirePackageSelection(selectedPackages)) return;
                     progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNBLOCK_TRACKERS,
                             selectedPackages, null, null);
@@ -263,11 +266,11 @@ public class OneClickOpsActivity extends BaseActivity {
         CpuUtils.releaseWakeLock(wakeLock);
         progressIndicator.hide();
         if (componentCounts == null) {
-            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
         }
         if (componentCounts.isEmpty()) {
-            UIUtils.displayShortToast(R.string.no_matching_package_found);
+            showInfoDialog(R.string.no_matching_package_found, R.string.no_component_matches_message);
             return;
         }
         SpannableStringBuilder builder;
@@ -283,14 +286,16 @@ public class OneClickOpsActivity extends BaseActivity {
         BatchComponentOptions options = new BatchComponentOptions(signatures);
         new SearchableMultiChoiceDialogBuilder<>(this, selectedPackages, packageNamesWithComponentCount)
                 .addSelections(selectedPackages)
-                .setTitle(R.string.filtered_packages)
+                .setTitle(R.string.review_component_apps_title)
                 .setPositiveButton(R.string.block, (dialog1, which1, selectedItems) -> {
+                    if (!requirePackageSelection(selectedItems)) return;
                     progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_BLOCK_COMPONENTS,
                             selectedItems, null, options);
                     launchService(item);
                 })
                 .setNeutralButton(R.string.unblock, (dialog1, which1, selectedItems) -> {
+                    if (!requirePackageSelection(selectedItems)) return;
                     progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNBLOCK_COMPONENTS,
                             selectedItems, null, options);
@@ -302,7 +307,7 @@ public class OneClickOpsActivity extends BaseActivity {
 
     private void showAppOpsSelectionDialog() {
         if (!SelfPermissions.canModifyAppOpMode()) {
-            UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
+            showInfoDialog(R.string.root_or_adb_required, R.string.app_ops_permission_required_message);
             return;
         }
         List<Integer> modes = AppOpsManagerCompat.getModeConstants();
@@ -347,11 +352,11 @@ public class OneClickOpsActivity extends BaseActivity {
         CpuUtils.releaseWakeLock(wakeLock);
         progressIndicator.hide();
         if (appOpCounts == null) {
-            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
         }
         if (appOpCounts.isEmpty()) {
-            UIUtils.displayShortToast(R.string.no_matching_package_found);
+            showInfoDialog(R.string.no_matching_package_found, R.string.no_app_ops_matches_message);
             return;
         }
         SpannableStringBuilder builder1;
@@ -367,8 +372,9 @@ public class OneClickOpsActivity extends BaseActivity {
         BatchAppOpsOptions options = new BatchAppOpsOptions(appOpList, mode);
         new SearchableMultiChoiceDialogBuilder<>(this, selectedPackages, packagesWithAppOpCount)
                 .addSelections(selectedPackages)
-                .setTitle(R.string.filtered_packages)
+                .setTitle(R.string.review_app_ops_apps_title)
                 .setPositiveButton(R.string.apply, (dialog1, which1, selectedItems) -> {
+                    if (!requirePackageSelection(selectedItems)) return;
                     progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_SET_APP_OPS,
                             selectedItems, null, options);
@@ -381,19 +387,50 @@ public class OneClickOpsActivity extends BaseActivity {
     private void clearData(@NonNull List<String> candidatePackages) {
         CpuUtils.releaseWakeLock(wakeLock);
         if (candidatePackages.isEmpty()) {
-            UIUtils.displayLongToast(R.string.no_matching_package_found);
+            showInfoDialog(R.string.no_matching_package_found, R.string.no_uninstalled_app_data_message);
             return;
         }
         String[] packages = candidatePackages.toArray(new String[0]);
         new SearchableMultiChoiceDialogBuilder<>(this, packages, packages)
-                .setTitle(R.string.filtered_packages)
-                .setPositiveButton(R.string.apply, (dialog1, which1, selectedItems) -> {
-                    progressIndicator.show();
-                    BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNINSTALL,
-                            selectedItems, null, null);
-                    launchService(item);
+                .addSelections(Arrays.asList(packages))
+                .setTitle(R.string.review_orphan_data_title)
+                .setPositiveButton(R.string.clear_data, (dialog1, which1, selectedItems) -> {
+                    if (!requirePackageSelection(selectedItems)) return;
+                    confirmClearData(selectedItems);
                 })
                 .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> progressIndicator.hide())
+                .show();
+    }
+
+    private void confirmClearData(@NonNull List<String> selectedItems) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.clear_data)
+                .setMessage(getResources().getQuantityString(R.plurals.clear_uninstalled_app_data_confirmation,
+                        selectedItems.size(), selectedItems.size()))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.clear_data, (dialog, which) -> {
+                    progressIndicator.show();
+                    BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNINSTALL,
+                            new ArrayList<>(selectedItems), null, null);
+                    launchService(item);
+                })
+                .show();
+    }
+
+    private boolean requirePackageSelection(@NonNull Collection<?> selectedItems) {
+        if (!selectedItems.isEmpty()) {
+            return true;
+        }
+        showInfoDialog(R.string.no_packages_selected, R.string.no_packages_selected_message);
+        return false;
+    }
+
+    private void showInfoDialog(@StringRes int titleRes, @StringRes int messageRes) {
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_information_circle)
+                .setTitle(titleRes)
+                .setMessage(messageRes)
+                .setPositiveButton(R.string.ok, null)
                 .show();
     }
 
