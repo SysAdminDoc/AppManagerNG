@@ -70,13 +70,15 @@ public class AppTypeOption extends FilterOption {
             put(APP_TYPE_HTTP_ONLY, "Uses cleartext (HTTP) traffic");
             put(APP_TYPE_BATTERY_OPT_ENABLED, "Battery optimized");
         }
-//        put(APP_TYPE_PLAY_APP_SIGNING, "Uses Play App Signing"); // TODO: 11/21/24
+        put(APP_TYPE_PLAY_APP_SIGNING, "Uses Play App Signing");
         put(APP_TYPE_SSAID, "Has SSAID");
         put(APP_TYPE_KEYSTORE, "Uses Android KeyStore");
         put(APP_TYPE_WITH_RULES, "Has rules");
-//        put(APP_TYPE_PWA, "Progressive web app (PWA)"); // TODO: 11/21/24
-//        put(APP_TYPE_SHORT_CODE, "Uses short code"); // TODO: 11/21/24
-//        put(APP_TYPE_OVERLAY, "Overlay app"); // TODO: 11/21/24
+        put(APP_TYPE_OVERLAY, "Overlay app");
+        // PWA / SHORT_CODE deferred — TWA detection requires manifest service-tag
+        // sniffing (no clean PackageInfo flag) and short-code is not a stable
+        // PackageManager signal. Filed back into the engineering-debt register
+        // rather than shipping a half-accurate heuristic.
     }};
 
     public AppTypeOption() {
@@ -199,6 +201,12 @@ public class AppTypeOption extends FilterOption {
         if ((flag & AppTypeOption.APP_TYPE_SSAID) != 0) {
             if (TextUtils.isEmpty(info.getSsaid())) return false;
         }
+        if ((flag & AppTypeOption.APP_TYPE_PLAY_APP_SIGNING) != 0) {
+            if (!info.usesPlayAppSigning()) return false;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_OVERLAY) != 0) {
+            if (!info.isOverlay()) return false;
+        }
         // All requested flags are matched
         return true;
     }
@@ -269,6 +277,12 @@ public class AppTypeOption extends FilterOption {
         }
         if ((flag & AppTypeOption.APP_TYPE_SSAID) != 0) {
             if (TextUtils.isEmpty(info.getSsaid())) return true;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_PLAY_APP_SIGNING) != 0) {
+            if (!info.usesPlayAppSigning()) return true;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_OVERLAY) != 0) {
+            if (!info.isOverlay()) return true;
         }
         // All requested flags are present, so "not all flags missing"
         return false;

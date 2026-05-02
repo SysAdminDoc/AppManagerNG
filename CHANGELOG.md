@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — AppType filter: Play App Signing + Overlay flags (eng-debt TODO partially closed)
+- The AppType filter (used by Saved Filters and Finder) gains two
+  previously-stubbed flags: **Uses Play App Signing** (APK signed by
+  Google rather than the developer's release key) and **Overlay app**
+  (Resource Runtime Overlay declaring an `<overlay>` manifest tag).
+  Both flags work in `with_flags` and `without_flags` modes.
+- New `IFilterableAppInfo.usesPlayAppSigning()` / `isOverlay()` methods
+  implemented on both `FilterableAppInfo` (eager via
+  `PackageUtils.usesPlayAppSigning` and `PackageInfoCompat2.getOverlayTarget`)
+  and `ApplicationItem` (lazy via `fetchPackageInfo()`). PWA and
+  short-code remain on the TODO list pending a stable detection signal —
+  TWA detection requires manifest service-tag sniffing and short-code
+  isn't exposed by `PackageManager`.
+
 ### Added — Code Editor: language / tab-size / go-to-line pickers (ROADMAP T14 ×3 closed)
 - **Language toolbar button** now opens a popup listing all seven
   tmLanguage-backed languages bundled in `assets/languages/`
