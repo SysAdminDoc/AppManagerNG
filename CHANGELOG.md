@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Share profile as JSON (ROADMAP T8 closed)
+- New **Share as JSON** popup action on each profile in the Profiles
+  list (`action_share` between Export and Shortcut). Sends the profile's
+  pretty-printed JSON via `Intent.ACTION_SEND` — Telegram / KDE Connect
+  / email / Gmail draft / Slack pick it up directly, no SAF round-trip
+  required. The wire format is identical to what `Export` writes, so
+  the receiving NG instance can re-import via the existing Import
+  action verbatim. File-export remains for share targets that need an
+  attachment.
+- The companion file-roundtrip Import + Export paths were already wired
+  in `ProfilesActivity` (`ActivityResultContracts.GetContent` /
+  `CreateDocument("application/json")`); ROADMAP row was stale, now
+  closed.
+
 ### Added — Signing-cert SHA-256 chip in App Info (ROADMAP T18 closed)
 - New "Sign · SHA-256 21:5F…38:6C" chip in the App Info tag cloud
   surfaces the colon-separated, upper-case SHA-256 fingerprint of the

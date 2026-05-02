@@ -158,6 +158,31 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
         dialog.show(getSupportFragmentManager(), NewProfileDialogFragment.TAG);
     }
 
+    /**
+     * Share a profile's JSON definition via {@link Intent#ACTION_SEND}. Mirrors
+     * the existing Export-to-file action but skips the SAF round-trip when the
+     * user just wants to ping the profile to another device, a chat, or email
+     * for cross-device sync. The receiving NG instance can re-import via the
+     * Import action; share targets that need a file should use Export instead.
+     */
+    private void shareProfileAsJson(@NonNull BaseProfile profile) {
+        try {
+            Path profilePath = ProfileManager.findProfilePathById(profile.profileId);
+            BaseProfile loaded = BaseProfile.fromPath(profilePath);
+            String json = loaded.serializeToJson().toString(2);
+            String subject = getString(R.string.share_profile_subject, profile.name);
+            Intent send = new Intent(Intent.ACTION_SEND)
+                    .setType("application/json")
+                    .putExtra(Intent.EXTRA_SUBJECT, subject)
+                    .putExtra(Intent.EXTRA_TITLE, profile.name + ".am.json")
+                    .putExtra(Intent.EXTRA_TEXT, json);
+            startActivity(Intent.createChooser(send, getString(R.string.share_profile_chooser_title)));
+        } catch (IOException | JSONException | RuntimeException e) {
+            Log.e(TAG, "Share failed: ", e);
+            UIUtils.displayShortToast(R.string.share_failed);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_profiles_actions, menu);
@@ -294,6 +319,8 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     } else if (id == R.id.action_export) {
                         mActivity.mProfileId = profile.profileId;
                         mActivity.mExportProfile.launch(profile.name + ".am.json");
+                    } else if (id == R.id.action_share) {
+                        mActivity.shareProfileAsJson(profile);
                     } else if (id == R.id.action_copy) {
                         Utils.copyToClipboard(mActivity, profile.name, profile.profileId);
                     } else if (id == R.id.action_shortcut) {

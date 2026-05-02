@@ -1885,6 +1885,11 @@
     <string name="selected_items_accessibility_description">Selected %d out of %d items</string>
     <string name="adb_local_server_port">ADB local server port</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
+    <!-- Profiles: share-profile-as-JSON popup action -->
+    <string name="share_profile_json">Share as JSON</string>
+    <string name="share_profile_subject">AppManager profile · %1$s</string>
+    <string name="share_profile_chooser_title">Share profile</string>
+    <string name="share_failed">Share failed.</string>
     <!-- App Info: signing certificate SHA-256 tag chip + dialog -->
     <string name="cert_fingerprint_chip_label">Sign · SHA-256 %1$s</string>
     <string name="cert_fingerprint_dialog_title">Signing certificate SHA-256</string>
