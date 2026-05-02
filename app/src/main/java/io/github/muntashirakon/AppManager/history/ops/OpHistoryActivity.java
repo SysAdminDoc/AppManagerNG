@@ -429,7 +429,8 @@ public class OpHistoryActivity extends BaseActivity {
             });
             holder.execBtn.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(R.string.title_confirm_execution)
-                    .setMessage(history.getExecutionConfirmationMessage(mActivity))
+                    .setMessage(OperationPreflight.fromHistory(mActivity, history)
+                            .getConfirmationMessage(mActivity, history))
                     .setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.action_run, (dialog, which) ->
                             mActivity.mViewModel.getServiceLauncherIntent(history))

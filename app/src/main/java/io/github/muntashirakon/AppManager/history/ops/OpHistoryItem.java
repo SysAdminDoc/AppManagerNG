@@ -105,8 +105,26 @@ public class OpHistoryItem {
     }
 
     @NonNull
+    public String getLocalizedRisk(@NonNull Context context) {
+        return metadata != null
+                ? metadata.getLocalizedRisk(context)
+                : context.getString(R.string.op_history_risk_medium);
+    }
+
+    @NonNull
     public String getModeLabel() {
         return metadata != null ? metadata.getModeLabel() : "";
+    }
+
+    public boolean requiresRestart() {
+        return metadata != null && metadata.requiresRestart();
+    }
+
+    @NonNull
+    public String getLocalizedRollbackHint(@NonNull Context context) {
+        return metadata != null
+                ? metadata.getLocalizedRollbackHint(context)
+                : context.getString(R.string.op_history_rollback_none);
     }
 
     public boolean matchesQuery(@NonNull Context context, @NonNull String query) {
@@ -155,16 +173,14 @@ public class OpHistoryItem {
                         R.plurals.op_history_failed_count,
                         metadata.getFailedCount(),
                         metadata.getFailedCount()));
-        appendLine(context, detail, R.string.op_history_detail_risk,
-                metadata.getLocalizedRisk(context));
+        appendLine(context, detail, R.string.op_history_detail_risk, getLocalizedRisk(context));
         appendLine(context, detail, R.string.op_history_detail_replayable,
                 context.getString(metadata.isReplayable() ? R.string.yes : R.string.no));
         appendLine(context, detail, R.string.op_history_detail_reversible,
                 context.getString(metadata.isReversible() ? R.string.yes : R.string.no));
         appendLine(context, detail, R.string.op_history_detail_restart,
-                context.getString(metadata.requiresRestart() ? R.string.yes : R.string.no));
-        appendLine(context, detail, R.string.op_history_detail_rollback,
-                metadata.getLocalizedRollbackHint(context));
+                context.getString(requiresRestart() ? R.string.yes : R.string.no));
+        appendLine(context, detail, R.string.op_history_detail_rollback, getLocalizedRollbackHint(context));
         List<String> targetPreview = metadata.getTargetPreview();
         if (!targetPreview.isEmpty()) {
             appendLine(context, detail, R.string.op_history_detail_target_preview,
@@ -179,9 +195,8 @@ public class OpHistoryItem {
 
     @NonNull
     public String getExecutionConfirmationMessage(@NonNull Context context) {
-        return context.getString(R.string.op_history_execute_confirmation)
-                + "\n\n"
-                + getDetailMessage(context);
+        return OperationPreflight.fromHistory(context, this)
+                .getConfirmationMessage(context, this);
     }
 
     private static void appendLine(@NonNull Context context,
