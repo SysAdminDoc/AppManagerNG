@@ -278,7 +278,9 @@
     <string name="go_back">Go back</string>
     <string name="go">Go</string>
     <string name="grant_usage_access">Grant usage access</string>
-    <string name="grant_usage_acess_message">Used to display app usage info.</string>
+    <string name="grant_usage_acess_message">Allow AppManagerNG in Android settings to show screen time, launch counts, and network usage by app.</string>
+    <string name="app_usage_permission_empty_message">Usage access is off. Allow AppManagerNG in Android settings, then return here to load the report.</string>
+    <string name="app_usage_open_usage_settings">Open usage access</string>
     <string name="share_apk">Share APK</string>
     <string name="failed_to_extract_apk_file">Could not extract APK file</string>
     <string name="menu_remove_rules">Remove rules</string>
@@ -322,6 +324,11 @@
     <string name="no_content">No content</string>
     <string name="app_usage_empty_title">No usage data</string>
     <string name="app_usage_empty_message">Try another time range or refresh after Android has collected usage stats.</string>
+    <string name="app_usage_no_mobile_data">No mobile data</string>
+    <string name="app_usage_no_wifi_data">No Wi-Fi data</string>
+    <string name="app_usage_data_plain"><xliff:g id="sent" example="1 MB">%1$s</xliff:g> sent, <xliff:g id="received" example="5 MB">%2$s</xliff:g> received</string>
+    <string name="app_usage_user_badge_a11y">User %1$d</string>
+    <string name="app_usage_item_content_description"><xliff:g id="app_label" example="App Manager">%1$s</xliff:g>, package <xliff:g id="package_name" example="io.github.muntashirakon.AppManager">%2$s</xliff:g>, last used <xliff:g id="last_used" example="2 hrs ago">%3$s</xliff:g>, <xliff:g id="screen_time" example="3 times, 1 hr">%4$s</xliff:g>, mobile data <xliff:g id="mobile_data" example="1 MB sent, 5 MB received">%5$s</xliff:g>, Wi-Fi data <xliff:g id="wifi_data" example="No Wi-Fi data">%6$s</xliff:g>, <xliff:g id="percent" example="32">%7$d</xliff:g>%% of visible screen time.</string>
     <string name="view_in_settings">View in Settings</string>
     <string name="uninstall_app_message">Do you want to uninstall this app?</string>
     <string name="failed_to_uninstall">Could not uninstall <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
