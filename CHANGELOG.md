@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 per-app Keystore key-cap audit (clean; ROADMAP T2 closed)
+- Audit confirms NG can never exceed Android 17's 50,000-key per-app
+  `AndroidKeyStore` cap: it generates at most **two** static, idempotently
+  guarded aliases (`aes_local_protection` on API ≥ M, plus a legacy
+  `rsa_wrap_local_protection` on pre-M devices) — both in
+  `CompatUtil.getAesGcmLocalProtectionKey()` behind `containsAlias`
+  checks. All backup-crypto paths route through a file-backed BKS
+  keystore (`am_keystore.bks` via `KeyStoreManager`) which is outside
+  the platform-managed Keystore. No remediation needed; roadmap row
+  closed. Audit at
+  [docs/audits/2026-05-02-android17-keystore-key-cap.md](docs/audits/2026-05-02-android17-keystore-key-cap.md).
+
 ### Changed — Pre-emptive Android 18 share-intent compliance (ROADMAP T3 closed)
 - All seven outgoing `ACTION_SEND` / `ACTION_SEND_MULTIPLE` paths that carry
   a content URI (App Info APK share, log viewer attachment chooser, code
