@@ -14,8 +14,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   into the user-facing UI.
 - **Obtainium config** (`docs/distribution/obtainium-config.json`):
   ready-to-import Obtainium AppConfig pointing at GitHub Releases with
-  artifact regex for the signed `app-release.apk`. README "Install via
-  Obtainium" section documents the flow.
+  artifact regex for the signed `AppManagerNG-<version>-{arm64-v8a,universal}.apk`
+  files (auto-ABI selection enabled). README "Install" section adds an
+  "Install via Obtainium" subsection with paste-and-go instructions plus
+  an AppVerifier pairing tip.
 
 ### Compliance
 - **`elegantTextHeight` audit (clean)**: Android 16 / targetSdk=36 silently

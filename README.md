@@ -86,6 +86,27 @@ See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
 - **v0.4.0** — Onboarding flow (root/Shizuku/ADB capability detection + plain-language explainer)
 - **v0.5.0** — Settings reorganization, global in-app search, contextual help
 
+## Install
+
+### Direct download
+Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `AppManagerNG-<version>-arm64-v8a.apk` for modern devices or `AppManagerNG-<version>-universal.apk` for maximum compatibility (older 32-bit ARM and x86_64 emulators).
+
+### Via Obtainium
+
+[Obtainium](https://github.com/ImranR98/Obtainium) is the recommended path for users who want automatic update checks straight from GitHub Releases without going through any store.
+
+1. Install Obtainium.
+2. **Add App** → paste the URL: `https://github.com/SysAdminDoc/AppManagerNG`
+3. *(Optional but recommended)* Use the bundled config file for fully pre-tuned settings (correct ABI auto-detection, version regex, prerelease-skipping):
+
+   - Open `Obtainium → Import/Export → Import from JSON`.
+   - Paste the contents of [`docs/distribution/obtainium-config.json`](docs/distribution/obtainium-config.json).
+
+Obtainium will then auto-track every signed release published to this repo and notify you on update.
+
+> [!TIP]
+> Pair Obtainium with [AppVerifier](https://github.com/soupslurpr/AppVerifier) so every Obtainium-fetched APK is checked against the published certificate fingerprint below before install.
+
 ## Verifying releases
 
 APK signing certificate SHA-256 fingerprint:
