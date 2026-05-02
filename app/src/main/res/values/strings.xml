@@ -1674,6 +1674,11 @@
     <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
+    <string name="op_preflight_rerun_intro">Review the current capability state before running this saved operation again.</string>
+    <string name="op_preflight_current_mode">Current mode</string>
+    <string name="op_preflight_saved_mode">Saved mode</string>
+    <string name="op_preflight_mode_changed_warning">The current mode does not match the mode recorded for this operation. Results can differ if permissions or privileges changed.</string>
+    <string name="op_preflight_not_replayable_warning">This saved operation is marked as not replayable.</string>
     <string name="op_history_legacy_metadata_summary">Legacy entry · saved before safety metadata</string>
     <string name="op_history_legacy_metadata_detail">This entry was created before the operation journal recorded safety metadata.</string>
     <string name="op_history_item_metadata"><xliff:g id="risk" example="High risk">%1$s</xliff:g> · <xliff:g id="target_count" example="3 targets">%2$s</xliff:g> · <xliff:g id="mode" example="ADB">%3$s</xliff:g></string>
