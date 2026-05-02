@@ -63,11 +63,14 @@ import io.github.muntashirakon.widget.RecyclerView;
 
 public class OpHistoryActivity extends BaseActivity {
     private static final long ONE_DAY_MILLIS = 24L * 60 * 60 * 1000;
+    private static final int CLEANUP_VISIBLE = -1;
     private static final int CLEANUP_SUCCESSFUL = 0;
     private static final int CLEANUP_FAILED = 1;
     private static final int CLEANUP_OLDER_THAN_7_DAYS = 2;
     private static final int CLEANUP_OLDER_THAN_30_DAYS = 3;
     private static final int CLEANUP_OLDER_THAN_90_DAYS = 4;
+    private static final int CLEANUP_OLDER_THAN_180_DAYS = 5;
+    private static final int CLEANUP_OLDER_THAN_365_DAYS = 6;
     private static final int SORT_NEWEST_FIRST = 0;
     private static final int SORT_HIGHEST_RISK_FIRST = 1;
     private static final int SORT_MOST_FAILURES_FIRST = 2;
@@ -111,6 +114,7 @@ public class OpHistoryActivity extends BaseActivity {
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
         setContentView(R.layout.activity_op_history);
         setSupportActionBar(findViewById(R.id.toolbar));
+        mSortMode = normalizeSortMode(Prefs.Privacy.getOpHistorySortOrder());
         mViewModel = new ViewModelProvider(this).get(OpHistoryViewModel.class);
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
@@ -544,15 +548,19 @@ public class OpHistoryActivity extends BaseActivity {
     @Override
     public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
         boolean hasVisibleHistory = !getVisibleHistory().isEmpty();
+        boolean hasAnyHistory = !mCurrentOpHistories.isEmpty();
         menu.findItem(R.id.action_export_json).setEnabled(hasVisibleHistory);
         menu.findItem(R.id.action_export_csv).setEnabled(hasVisibleHistory);
+        menu.findItem(R.id.action_export_all_json).setEnabled(hasAnyHistory);
+        menu.findItem(R.id.action_export_all_csv).setEnabled(hasAnyHistory);
         menu.findItem(R.id.action_share_history).setEnabled(hasVisibleHistory);
+        menu.findItem(R.id.action_share_all_history).setEnabled(hasAnyHistory);
         MenuItem sortItem = menu.findItem(R.id.action_sort_history);
-        sortItem.setEnabled(!mCurrentOpHistories.isEmpty());
+        sortItem.setEnabled(hasAnyHistory);
         if (sortItem.getSubMenu() != null) {
             sortItem.getSubMenu().findItem(getSortMenuItemId()).setChecked(true);
         }
-        menu.findItem(R.id.action_cleanup_history).setEnabled(!mCurrentOpHistories.isEmpty());
+        menu.findItem(R.id.action_cleanup_history).setEnabled(hasAnyHistory);
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -565,8 +573,14 @@ public class OpHistoryActivity extends BaseActivity {
             exportVisibleHistory(true);
         } else if (id == R.id.action_export_csv) {
             exportVisibleHistory(false);
+        } else if (id == R.id.action_export_all_json) {
+            exportAllHistory(true);
+        } else if (id == R.id.action_export_all_csv) {
+            exportAllHistory(false);
         } else if (id == R.id.action_share_history) {
             shareVisibleHistory();
+        } else if (id == R.id.action_share_all_history) {
+            shareAllHistory();
         } else if (id == R.id.action_cleanup_history) {
             showHistoryCleanupDialog();
         } else if (id == R.id.action_sort_history_newest) {
@@ -587,11 +601,20 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void setSortMode(int sortMode) {
+        sortMode = normalizeSortMode(sortMode);
         if (mSortMode != sortMode) {
             mSortMode = sortMode;
+            Prefs.Privacy.setOpHistorySortOrder(sortMode);
             applyFilters();
         }
         invalidateOptionsMenu();
+    }
+
+    private static int normalizeSortMode(int sortMode) {
+        if (sortMode < SORT_NEWEST_FIRST || sortMode > SORT_LABEL) {
+            return SORT_NEWEST_FIRST;
+        }
+        return sortMode;
     }
 
     private int getSortMenuItemId() {
@@ -611,7 +634,14 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void exportVisibleHistory(boolean asJson) {
-        List<OpHistoryItem> histories = getVisibleHistory();
+        exportHistory(getVisibleHistory(), asJson);
+    }
+
+    private void exportAllHistory(boolean asJson) {
+        exportHistory(getAllHistoryForAction(), asJson);
+    }
+
+    private void exportHistory(@NonNull List<OpHistoryItem> histories, boolean asJson) {
         if (histories.isEmpty()) {
             UIUtils.displayShortToast(R.string.no_history);
             return;
@@ -657,6 +687,15 @@ public class OpHistoryActivity extends BaseActivity {
         shareHistory(histories, getString(R.string.op_history));
     }
 
+    private void shareAllHistory() {
+        List<OpHistoryItem> histories = getAllHistoryForAction();
+        if (histories.isEmpty()) {
+            UIUtils.displayShortToast(R.string.no_history);
+            return;
+        }
+        shareHistory(histories, getString(R.string.op_history));
+    }
+
     private void shareHistory(@NonNull List<OpHistoryItem> histories, @NonNull String subject) {
         Intent shareIntent = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
@@ -670,23 +709,43 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void showHistoryCleanupDialog() {
-        CharSequence[] labels = {
-                getString(R.string.op_history_cleanup_delete_successful),
-                getString(R.string.op_history_cleanup_delete_failed),
-                getString(R.string.op_history_cleanup_delete_older_7d),
-                getString(R.string.op_history_cleanup_delete_older_30d),
-                getString(R.string.op_history_cleanup_delete_older_90d)
-        };
+        int visibleCount = getVisibleHistory().size();
+        List<CharSequence> labels = new ArrayList<>();
+        List<Integer> cleanupTypes = new ArrayList<>();
+        if (visibleCount > 0) {
+            labels.add(getResources().getQuantityString(
+                    R.plurals.op_history_cleanup_delete_visible, visibleCount, visibleCount));
+            cleanupTypes.add(CLEANUP_VISIBLE);
+        }
+        labels.add(getString(R.string.op_history_cleanup_delete_successful));
+        cleanupTypes.add(CLEANUP_SUCCESSFUL);
+        labels.add(getString(R.string.op_history_cleanup_delete_failed));
+        cleanupTypes.add(CLEANUP_FAILED);
+        labels.add(getString(R.string.op_history_cleanup_delete_older_7d));
+        cleanupTypes.add(CLEANUP_OLDER_THAN_7_DAYS);
+        labels.add(getString(R.string.op_history_cleanup_delete_older_30d));
+        cleanupTypes.add(CLEANUP_OLDER_THAN_30_DAYS);
+        labels.add(getString(R.string.op_history_cleanup_delete_older_90d));
+        cleanupTypes.add(CLEANUP_OLDER_THAN_90_DAYS);
+        labels.add(getString(R.string.op_history_cleanup_delete_older_180d));
+        cleanupTypes.add(CLEANUP_OLDER_THAN_180_DAYS);
+        labels.add(getString(R.string.op_history_cleanup_delete_older_365d));
+        cleanupTypes.add(CLEANUP_OLDER_THAN_365_DAYS);
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.op_history_cleanup)
-                .setItems(labels, (dialog, which) -> confirmHistoryCleanup(which, labels[which]))
+                .setItems(labels.toArray(new CharSequence[0]), (dialog, which) ->
+                        confirmHistoryCleanup(cleanupTypes.get(which), labels.get(which)))
                 .show();
     }
 
     private void confirmHistoryCleanup(int cleanupType, @NonNull CharSequence label) {
+        int visibleCount = getVisibleHistory().size();
         new MaterialAlertDialogBuilder(this)
                 .setTitle(label)
-                .setMessage(R.string.op_history_cleanup_confirmation)
+                .setMessage(cleanupType == CLEANUP_VISIBLE
+                        ? getResources().getQuantityString(
+                        R.plurals.op_history_cleanup_visible_confirmation, visibleCount, visibleCount)
+                        : getString(R.string.op_history_cleanup_confirmation))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) -> runHistoryCleanup(cleanupType))
                 .show();
@@ -695,6 +754,9 @@ public class OpHistoryActivity extends BaseActivity {
     private void runHistoryCleanup(int cleanupType) {
         mProgressIndicator.show();
         switch (cleanupType) {
+            case CLEANUP_VISIBLE:
+                mViewModel.deleteHistories(getVisibleHistory());
+                break;
             case CLEANUP_SUCCESSFUL:
                 mViewModel.deleteHistoryByStatus(OpHistoryManager.STATUS_SUCCESS);
                 break;
@@ -710,12 +772,25 @@ public class OpHistoryActivity extends BaseActivity {
             case CLEANUP_OLDER_THAN_90_DAYS:
                 mViewModel.deleteHistoryOlderThan(90);
                 break;
+            case CLEANUP_OLDER_THAN_180_DAYS:
+                mViewModel.deleteHistoryOlderThan(180);
+                break;
+            case CLEANUP_OLDER_THAN_365_DAYS:
+                mViewModel.deleteHistoryOlderThan(365);
+                break;
         }
     }
 
     @NonNull
     private List<OpHistoryItem> getVisibleHistory() {
         return mAdapter != null ? mAdapter.getCurrentList() : Collections.emptyList();
+    }
+
+    @NonNull
+    private List<OpHistoryItem> getAllHistoryForAction() {
+        List<OpHistoryItem> histories = new ArrayList<>(mCurrentOpHistories);
+        sortHistory(histories);
+        return histories;
     }
 
     static class OpHistoryAdapter extends RecyclerView.Adapter<OpHistoryAdapter.ViewHolder> {
@@ -880,6 +955,20 @@ public class OpHistoryActivity extends BaseActivity {
                 synchronized (mOpHistoriesLiveData) {
                     OpHistoryManager.deleteHistoryItem(opHistoryItem.getId());
                     mDeleteHistoryLiveData.postValue(true);
+                    mOpHistoriesLiveData.postValue(loadOpHistoryItems());
+                }
+            });
+        }
+
+        public void deleteHistories(@NonNull List<OpHistoryItem> opHistoryItems) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                synchronized (mOpHistoriesLiveData) {
+                    int deletedCount = 0;
+                    for (OpHistoryItem opHistoryItem : opHistoryItems) {
+                        OpHistoryManager.deleteHistoryItem(opHistoryItem.getId());
+                        ++deletedCount;
+                    }
+                    mCleanupHistoryLiveData.postValue(deletedCount);
                     mOpHistoriesLiveData.postValue(loadOpHistoryItems());
                 }
             });

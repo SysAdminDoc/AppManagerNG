@@ -16,9 +16,27 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_export_all_json"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/op_history_export_all_json"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_export_all_csv"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/op_history_export_all_csv"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_share_history"
         android:icon="@drawable/ic_share"
         android:title="@string/op_history_share_summary"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_share_all_history"
+        android:icon="@drawable/ic_share"
+        android:title="@string/op_history_share_all_summary"
         app:showAsAction="never" />
 
     <item

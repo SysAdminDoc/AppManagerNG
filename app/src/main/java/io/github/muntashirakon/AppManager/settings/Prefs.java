@@ -630,6 +630,14 @@ public final class Prefs {
         public static void setOpHistoryRetentionDays(int retentionDays) {
             AppPref.set(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT, retentionDays);
         }
+
+        public static int getOpHistorySortOrder() {
+            return AppPref.getInt(AppPref.PrefKey.PREF_OP_HISTORY_SORT_ORDER_INT);
+        }
+
+        public static void setOpHistorySortOrder(int sortOrder) {
+            AppPref.set(AppPref.PrefKey.PREF_OP_HISTORY_SORT_ORDER_INT, sortOrder);
+        }
     }
 
     public static final class Signing {
