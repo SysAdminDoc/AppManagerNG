@@ -340,6 +340,25 @@ public class UIUtils {
         Toast.makeText(appContext, appContext.getResources().getQuantityString(res, count, args), Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Show an error dialog with a "Copy" action so users can paste the failure
+     * detail into a bug report instead of transcribing it from a screenshot.
+     */
+    @UiThread
+    public static void displayCopyableErrorDialog(@NonNull Context context,
+                                                  @Nullable CharSequence title,
+                                                  @NonNull CharSequence message) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(title != null ? title : context.getString(R.string.error))
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.copy, (d, w) -> {
+                    ClipboardUtils.copyToClipboard(context, "error", message.toString());
+                    displayShortToast(R.string.copied_to_clipboard);
+                })
+                .show();
+    }
+
     @NonNull
     public static AutoFitGridLayoutManager getGridLayoutAt450Dp(@NonNull Context context) {
         return new AutoFitGridLayoutManager(context, UiUtils.dpToPx(context, 450));
