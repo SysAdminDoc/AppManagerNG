@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.logcat;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.database.MatrixCursor;
@@ -117,11 +118,15 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
 
     public static void startChooser(@NonNull Context context, @Nullable String subject,
                                     @NonNull String attachmentType, @NonNull Path attachment) {
+        Uri attachmentUri = FmProvider.getContentUri(attachment);
         Intent actionSendIntent = new Intent(Intent.ACTION_SEND)
                 .setType(attachmentType)
                 .putExtra(Intent.EXTRA_SUBJECT, subject)
-                .putExtra(Intent.EXTRA_STREAM, FmProvider.getContentUri(attachment))
+                .putExtra(Intent.EXTRA_STREAM, attachmentUri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+        // reach the chooser target on Android 18+ (auto-grant removed).
+        actionSendIntent.setClipData(ClipData.newRawUri("", attachmentUri));
         try {
             context.startActivity(Intent.createChooser(actionSendIntent, context.getResources().getText(R.string.send_log_title))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.editor;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -589,10 +590,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         } else if (id == R.id.action_share) {
             Path filePath = mViewModel.getSourceFile();
             if (filePath != null) {
+                Uri fileUri = FmProvider.getContentUri(filePath);
                 Intent intent = new Intent(Intent.ACTION_SEND)
                         .setType(filePath.getType())
-                        .putExtra(Intent.EXTRA_STREAM, FmProvider.getContentUri(filePath))
+                        .putExtra(Intent.EXTRA_STREAM, fileUri)
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+                // reach the chooser target on Android 18+ (auto-grant removed).
+                intent.setClipData(ClipData.newRawUri("", fileUri));
                 startActivity(Intent.createChooser(intent, getString(R.string.share)));
             }
             return true;
