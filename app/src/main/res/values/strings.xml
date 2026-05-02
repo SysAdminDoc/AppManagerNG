@@ -1685,7 +1685,13 @@
     <string name="op_history_export_filename_csv" translatable="false">app-manager-operation-history.csv</string>
     <string name="op_history_export_success">Operation history exported.</string>
     <string name="op_history_share_title">Share operation history</string>
+    <string name="op_history_sort_newest">Newest first</string>
+    <string name="op_history_sort_risk">Highest risk first</string>
+    <string name="op_history_sort_failures">Most failures first</string>
+    <string name="op_history_sort_type">Type</string>
+    <string name="op_history_sort_label">Name</string>
     <string name="op_history_cleanup">Clean up history</string>
+    <string name="op_history_cleanup_confirmation">Delete matching history entries? This cannot be undone. Completed operations are not reverted.</string>
     <string name="op_history_cleanup_delete_successful">Delete successful entries</string>
     <string name="op_history_cleanup_delete_failed">Delete failed entries</string>
     <string name="op_history_cleanup_delete_older_7d">Delete entries older than 7 days</string>

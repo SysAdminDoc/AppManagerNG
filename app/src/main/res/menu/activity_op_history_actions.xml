@@ -22,6 +22,41 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_sort_history"
+        android:icon="@drawable/ic_sort"
+        android:title="@string/sort"
+        app:showAsAction="never">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/action_sort_history_newest"
+                    android:checkable="true"
+                    android:title="@string/op_history_sort_newest" />
+
+                <item
+                    android:id="@+id/action_sort_history_risk"
+                    android:checkable="true"
+                    android:title="@string/op_history_sort_risk" />
+
+                <item
+                    android:id="@+id/action_sort_history_failures"
+                    android:checkable="true"
+                    android:title="@string/op_history_sort_failures" />
+
+                <item
+                    android:id="@+id/action_sort_history_type"
+                    android:checkable="true"
+                    android:title="@string/op_history_sort_type" />
+
+                <item
+                    android:id="@+id/action_sort_history_label"
+                    android:checkable="true"
+                    android:title="@string/op_history_sort_label" />
+            </group>
+        </menu>
+    </item>
+
+    <item
         android:id="@+id/action_cleanup_history"
         android:icon="@drawable/ic_brush"
         android:title="@string/op_history_cleanup"
