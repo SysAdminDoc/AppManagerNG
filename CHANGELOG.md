@@ -5,6 +5,73 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Premium facelift design system (foundation)
+- **`design/` deliverable folder** (audit, spec, impl, plan, README) — full
+  v2 design system reference: palette, typography, 4dp spacing ladder,
+  elevation tokens, motion vocabulary, iconography choice, and 5 drop-in
+  reference XML files (themes-v2, colors-v2, dimens-v2, item_main_v2,
+  activity_main_v2). Read order: [design/README.md](design/README.md).
+- **Pain-point inventory** ([design/audit/4-painpoints.md](design/audit/4-painpoints.md))
+  catalogues 16 dated surfaces with concrete fix proposals and benchmark
+  references (Linear, Arc, Things 3, 1Password 8, Obsidian).
+- **4-release rollout plan** ([design/plan/3-rollout.md](design/plan/3-rollout.md))
+  for shipping the facelift behind a Pro Mode "Preview new design" toggle
+  (v0.4.x foundation → v0.5.x top-5 migration → v0.6.x long tail → v0.7.x
+  toggle removal).
+
+### Added — Main list polish (preview)
+- **Semantic threshold tinting** for the tracker indicator (green ≤4,
+  amber 5-19, red ≥20) and the dangerous-permission badge (success when
+  zero granted, warning below 50%, danger 50%+).
+- **Risk-tinted package name** on app rows when a heuristic combination
+  of granted-perms + tracker count crosses a danger threshold.
+- **Restyled main status banner** with stronger metric typography,
+  clearer "filtered N of M" affordance, and tonal background.
+- **Refined empty state** (`view_main_empty_state.xml`) with explicit
+  active-filter description and reset-filter affordance.
+- New `ColorCodes` semantic colors and `Widget.AppTheme.Chip.MainFilter` /
+  `Widget.AppTheme.Chip.MainSuggestion` chip styles.
+
+### Added — Settings & onboarding polish
+- Tighter `m3_preference*.xml` row treatments (preference category
+  indicator, dual-pane divider, focused-pane state).
+- Onboarding fragment redesign: tonally-tinted mode-of-operation cards,
+  status background drawables, plain-language privilege explainer.
+- Reorganised `preferences_main.xml` to match the new tier hierarchy.
+
+### Added — Operation Activity Log (ROADMAP T8 closed)
+- Persistent journal of every operation AppManagerNG performs (freeze,
+  backup, batch, install, profile execution). Per-entry metadata: target
+  app(s), operation type, timestamp, mode (root/ADB/Shizuku/no-root),
+  risk tier, success/failure, scope.
+- `OpHistoryActivity` reachable from main overflow → "History" with
+  aggregate summary, package/operation/mode/target search, success/risk
+  filter chips, risk-tinted card borders, FAB.
+- New helpers: `OperationJournalMetadata`, `OperationPreflight`,
+  `OperationHistoryExporter` (with Robolectric test). Per-entry copy/
+  delete actions; rerun preflight gates dangerous reruns.
+- Debug-only "Add sample entries" menu action under `BuildConfig.DEBUG`
+  for development verification — never visible in release builds.
+
+### ROADMAP additions (research-driven)
+- New T19 tier: **Package-Aware Storage Analysis** (App Details Storage
+  Panel, Leftover Detection After Uninstall, APK Duplicate Finder,
+  Backup Duplicate Cleaner — SD Maid SE / UAD-NG models).
+- T2 row: **Android 17 Keystore Per-App Key Cap** (50,000-key audit
+  before targetSdk=37 bump).
+- T3 row: **Android 18 Implicit URI Grant Removal** (preemptive
+  `grantUriPermission()` audit before Android 18 ships).
+- T7 rows: **Finder Relevance-Based Search Scoring** (Levenshtein) and
+  **Finder Description-Field Search** (debloat-list metadata).
+- T8 row: **Multi-Tag per App** (Hail v1.10.0 model, many-to-many join
+  table on the existing Room schema).
+- T9 rows: **Permission Policy Flags Display** + **MiUI-Specific AppOps
+  Mapping** (Inure 106.5.0 model).
+- T12 rows: **Native Library Sizes in App Details** + **Batch APK
+  Installer from File Manager** (Inure 107.0.0/.1 model).
+- New sources S65–S68 logged. Full research at
+  [docs/research/2026-05-02-android-power-tools.md](docs/research/2026-05-02-android-power-tools.md).
+
 ### Compliance
 - **Android 17 `MessageQueue` audit (clean)**: lock-free `MessageQueue`
   shipping in Android 17 / targetSdk=37 crashes apps that reach into

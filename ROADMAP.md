@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-02 (factory iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
+**Last updated:** 2026-05-02 (factory iter-8: multi-tag per app, relevance/description search, permission policy flags, native lib sizes, batch APK installer, Android 17 Keystore key cap + Android 18 URI grant preemptive fixes, T19 Package-Aware Storage Analysis, S65–S68; iter-7: Android 17 MessageQueue audit, Adaptive Layout audit, tablet density overrides; iter-6: sort-by-dangerous-perms, elegantTextHeight audit, Obtainium config; baseline post-v0.3.0 fifth full research cycle 2026-05-01).  
 **Next revision due:** v0.6.0 release.
 
 **Related research:** [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md).
@@ -83,6 +83,7 @@ Unaddressed items here will become regressions when targetSdk=36 is enforced on 
 | ~~**`elegantTextHeight` Audit**~~ ✅ 2026-05-01 | Audit all layouts for reliance on `elegantTextHeight` attribute — it is ignored for apps targeting API 36. Affects text rendering in Arabic, Thai, Indic scripts ([S44]). **Result: zero source matches; no remediation required.** See [docs/audits/2026-05-01-elegant-text-height.md](docs/audits/2026-05-01-elegant-text-height.md). | Low |
 | **WorkManager Quota Testing (Android 16)** ⏸ blocked-by Scheduled Auto-Backup | Backup scheduler (T6) must be tested under Android 16's stricter JobScheduler quota model: quota now applies when app is in top-state or running alongside a foreground service. Use `WorkInfo.getStopReason()` / `JobParameters.getStopReason()` for diagnostics ([S45]). **Pre-flight 2026-05-02: zero WorkManager / androidx.work / JobScheduler references in current source — there is no backup scheduler yet to instrument. Item is parked until ROADMAP T6 'Scheduled Auto-Backup' lands; the diagnostics will be wired in as part of that feature, not as a standalone task.** | Low (after dependency lands) |
 | ~~**Android 17 MessageQueue Compatibility**~~ ✅ 2026-05-02 | Android 17 ships a lock-free `MessageQueue` for targetSdk=37 apps ([S55]). NG must audit any direct access to `MessageQueue` private fields (used in some root-shell polling paths); `IllegalReflectiveAccess` will escalate to crashes under this impl. **Audit clean — zero source matches; root-shell IPC uses libsu shell processes, not MessageQueue reflection.** See [docs/audits/2026-05-02-android17-messagequeue.md](docs/audits/2026-05-02-android17-messagequeue.md). Other Android 17 behaviour-change gates remain. | Low |
+| **Android 17 Keystore Per-App Key Cap** | Android 17 enforces a 50,000-key limit per non-system app targeting API 37 ([S55]). NG's backup encryption and per-app signing operations may accumulate keys over time; audit `KeyStoreManager` and all backup-crypto paths before the targetSdk=37 bump to confirm key count stays within the cap and any excess is pruned. | Low |
 
 ### T3 — Critical Bug Fixes & Security Debt
 
@@ -94,6 +95,7 @@ These are `FIXME` / security issues identified in source that should not wait fo
 | ~~**ABX-to-XML Lossless Fix**~~ ✅ v0.3.0 | `CodeEditorViewModel.java` | Current ABX→XML conversion is lossy; update serializer to round-trip without data loss | Medium |
 | ~~**Intent Interceptor OPEN_DOCUMENT**~~ ✅ v0.3.0 | `ActivityInterceptor.java` | Interceptor permanently breaks `android.intent.action.OPEN_DOCUMENT` (Issue #1767, 2 reactions); fix dispatch logic | Medium |
 | **Utils.java i18n (×5)** ⚠️ deferred v0.4.0 | `Utils.java` | Five hardcoded string instances that bypass Android's localization pipeline | Low |
+| **Android 18 Implicit URI Grant Removal** | `PackageInstaller` / share intents | Android 17 signals that `Send`, `SendMultiple`, and `ImageCapture` intents will stop auto-granting URI read/write to the target app in Android 18 ([S55]). Pre-emptively audit all APK-sharing and share-via-intent paths; add explicit `grantUriPermission()` calls before breakage ships. | Low |
 
 ### T4 — Observability & Process
 
@@ -163,6 +165,8 @@ Code exists (`FinderActivity`, `FinderViewModel`) but is incomplete per `TODO` m
 | **Filter: Permission Flags** | Filter by granted/denied/custom/fixed permission flags in app detail permission list (PermissionsOption.java TODO) | Low |
 | **Filter: Data Usage Split** | Show separate mobile vs Wi-Fi data totals in data usage filter (DataUsageOption.java TODO) | Low |
 | **Frozen/Disabled Filter in App List** | Surface "frozen" and "disabled" as distinct, first-class filter options in the main app list alongside existing User/System filters. Canta v3.2.x model ([S43]). | Low |
+| **Finder: Relevance-Based Search Scoring** | Apply Levenshtein distance scoring to Finder results; surface closest package-name and component-name matches first rather than flat substring order. Inure build106.3.3 model ([S66]). | Low |
+| **Finder: Description-Field Search** | Include debloat-list human-readable descriptions in the Finder search index so users can find system apps by plain-language purpose (e.g. "fax" → `TelephonyUI.apk`). UAD-NG v1.2.0 model ([S67]); requires android-debloat-list metadata bundle ([S23]). | Low |
 
 ### T8 — Profiles & Automation
 
@@ -177,6 +181,7 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 | **Profile Import/Export** | Share profile definitions as JSON between devices or via backup | Low |
 | **Intent Interceptor: Return Results** | Send activity results back to the original calling app after interception (ActivityInterceptor.java TODO) | Medium |
 | **Operation Activity Log** | Persistent log of every operation AM has performed (freeze, backup, AppOps change, etc.); filterable by app, type, date (Issue #143 [S13], 3 reactions) | Medium |
+| **Multi-Tag per App** | Allow assigning multiple named tags to each app; batch freeze, backup, profile, and filter operations target tag sets instead of hand-picked lists. Hail v1.10.0 model ([S65]). Schema decision required — tags stored in the Room `apps` table alongside existing `tracker_count`/`dangerous_perm_total` columns; many-to-many via a `app_tags` join table. | Medium |
 
 ### T9 — Privacy & Security
 
@@ -188,6 +193,8 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 | **Sort by Dangerous Permissions** | New main-list sort option using `dangerous_perm_total` / `dangerous_perm_granted` columns added in Room schema v9 (shipped v0.4.0 dev); surfaces most-permissive apps at the top. Sort infrastructure already exists for `tracker_count` — minimal extension required. | Low |
 | **Privacy Dashboard Integration** | Surface Android 12+ permission usage history (timeline view) inside AM app details | Medium |
 | **App Signing Key Change Alert** | Alert when the signing certificate of an installed update differs from the previously stored one | Medium |
+| **Permission Policy Flags Display** | Surface `requestedPermissionsFlags` bits (system-fixed, user-set, review-required, preinstalled, installer-exempt) alongside each permission entry in the App Details permissions list. `PackageInfo.requestedPermissionsFlags` already available; pure UI addition. Inure build106.5.0 model ([S66]). | Low |
+| **MiUI-Specific AppOps Mapping** | Surface MIUI extended op-codes with human-readable descriptions and full edit support for MIUI/Xiaomi devices. Conditional on `Build.MANUFACTURER.equals("Xiaomi")`; requires embedding a MIUI op-code lookup table. Inure build106.5.0 model ([S66]). | Low–Med |
 
 ### T10 — i18n & Accessibility
 
@@ -228,6 +235,8 @@ Upstream has committed to "basic APK editing" in its Upcoming Features list. NG 
 | **ARSC Resource Table Editing** | Visual editor for string/resource tables via ARSCLib (already dep'd) | High | — |
 | **AndroidManifest Visual Editor** | Point-and-click editor for common manifest attributes | High | — |
 | **APK Merge (splits → universal)** | Merge split APK set into a single universal APK (model: APKEditor V1.4.8 [S48]) | Medium | — |
+| **Native Library Sizes in App Details** | In the App Details library tab, display the file size of each loaded `.so` alongside the library name; enumerate `ApplicationInfo.nativeLibraryDir` entries. Inure build107.0.1 model ([S66]). | Low | — |
+| **Batch APK Installer from File Manager** | Allow selecting multiple APK/APKS files in the built-in File Manager and installing them in a single batch `PackageInstaller` session. Inure build107.0.0 model ([S66]). | Medium | — |
 
 ### T13 — Database & File System
 
@@ -287,6 +296,17 @@ Low-effort, high-usability items gated on platform API availability or upstream 
 | **app-manager:// Deep Link** | Support `app-manager://details?id=<pkg>&user=<uid>` deep links; enables Quick Settings tiles, widgets, and Tasker actions to open specific app's detail page. Upstream ships this in v4.0.x. | Low (pull) | Upstream |
 | **Unfreeze on Shortcut Launch** | If user taps a home-screen shortcut for a frozen app, offer to unfreeze temporarily; auto-re-freeze when screen is locked. Pull upstream v4.0.1 model ([S39]). Pairs with T8 "Saved Filter Presets" for freeze-group workflows. | Low (pull) | Upstream v4.0.1+ |
 | **Certificate Hash in App Detail** | Surface signing certificate SHA-256 prominently in App Details for easy cross-verification with AppVerifier/AppChecker. Obtainium v1.3.0 model ([S51]). AM already collects cert data; this is UI surfacing only. | Low | — |
+
+### T19 — Package-Aware Storage Analysis
+
+App-centric storage views informed by SD Maid SE's CorpseFinder ([S24]) and UAD-NG's description-search model ([S67]). NG will not replicate SD Maid SE's full storage engine — scope is limited to per-app storage panels and post-uninstall cleanup that naturally extends the existing App Details view. Items in this tier gate on storage access permissions or root.
+
+| Item | Description | Effort | Dependency |
+|------|-------------|--------|------------|
+| **App Details Storage Panel** | In App Details, show APK size, split sizes, installed data, cache, OBB, external data, backup archive sizes, and orphan leftovers in a single collapsible panel. SD Maid SE CorpseFinder model ([S24]). | Medium | — |
+| **Leftover Detection After Uninstall** | After uninstalling an app, scan for orphan directories (`Android/data/<pkg>`, `Android/obb/<pkg>`, root-accessible `/data/data/<pkg>` stubs) and offer one-tap cleanup. SD Maid SE CorpseFinder model ([S24]). | Medium | Root or `MANAGE_EXTERNAL_STORAGE` |
+| **APK Duplicate Finder** | Find multiple copies of the same package/version APK across Downloads, backup dirs, and SD card by matching package name + signing cert + version code; flag in File Manager and backup list. SD Maid SE deduplicator model ([S42]). | Medium | File access |
+| **Backup Duplicate Cleaner** | Detect the same package + version + variant backed up more than once across backup roots; offer to delete redundant copies. Extension of Backup Retention Policy (T6). | Low | T6 Retention Policy |
 
 ---
 
@@ -356,6 +376,8 @@ Issues catalogued in source that slow or block future work. Resolve before the f
 | Android 17 memory limits | Compliance | All-apps change: Android 17 introduces RAM-based per-app `AnonSwap` memory limits; exit detected via `ApplicationExitInfo.REASON_OTHER` with `"MemoryLimiter:AnonSwap"` description ([S55]). JADX decompile and APK-signature parsing are the heaviest NG operations; profile under low-memory devices before T12 ships. | Medium | T12 |
 | Android 17 `usesCleartextTraffic` deprecation | Compliance | Android 17 begins enforcement of `usesCleartextTraffic`; apps that omit the Network Security Config manifest attribute will trigger lint errors on targetSdk=37 ([S55]). Audit NG's `network_security_config.xml` and all `http://` URLs in manifests before bumping targetSdk. | Low | T9 |
 | Android 17 ECH default-on | Compliance | Apps targeting API 37 get ECH (Encrypted Client Hello) applied to all TLS connections by default ([S54]). NG must add a `<domainEncryption>` element to `network_security_config.xml` if any network endpoint (e.g. wireless ADB LAN pair) must opt out of ECH to avoid negotiation failures on older firmware. | Low | T5, T9 |
+| Android 17 per-app Keystore key cap | Compliance | Non-system apps targeting API 37 are limited to 50,000 Keystore keys ([S55]). Backup encryption and per-app signing paths may accumulate keys over time; audit `KeyStoreManager` before the targetSdk=37 bump and prune any excess. | Low | T2, T9 |
+| Android 18 implicit URI grant removal (planned) | Compliance | Android 17 preview signals that `Send`/`SendMultiple`/`ImageCapture` intents will stop auto-granting URI permissions to targets in Android 18 ([S55]). Pre-emptively audit APK-sharing intent paths; add explicit `grantUriPermission()` calls to prevent silent share breakage. | Low | T3, T5 |
 
 ---
 
@@ -464,3 +486,7 @@ All external sources cited above.
 | S62 | https://accrescent.app/features | Accrescent: key-pinning on first install, signed metadata, no TOFU, no accounts required, unattended updates, split APK support, min-version pinning |
 | S63 | https://github.com/soupslurpr/AppVerifier/releases | AppVerifier v0.5.0–v0.8.2: APK file verification via VIEW/SEND intent, cert hash display, multi-signer support; v0.8.0 removed Material dep (-1 MB) |
 | S64 | https://f-droid.org/docs/Inclusion_How-To/ | F-Droid inclusion requirements: FOSS-only deps, Fastlane metadata directory, CLI buildable, reproducible builds preferred |
+| S65 | https://github.com/aistra0528/Hail/releases/tag/v1.10.0 | Hail v1.10.0: multi-tag per app, URI schema for automation API, KernelSU App Profile support, Xposed auto-unfreeze hooks, Auto-Freeze QS tile |
+| S66 | https://github.com/Hamza417/Inure/releases | Inure build106.3.3–build107.0.1: Levenshtein relevance search, native library sizes, MiUI AppOps support, permission policy flags display, batch APK installer, terminal security fix |
+| S67 | https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases/tag/v1.2.0 | UAD-NG v1.2.0: dynamically fetched package list (no app update needed for list changes), search in descriptions, package state + cross-user verification, selectable/copyable descriptions |
+| S68 | https://github.com/timschneeb/awesome-shizuku | awesome-shizuku: curated list of 50+ apps using Shizuku for elevated operations — reference for rootless capability expansion, vendor-specific Shizuku tooling landscape |
