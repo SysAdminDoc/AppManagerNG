@@ -30,7 +30,7 @@ Hard constraints:
 |---------|-------|-----------------|
 | **v0.2.0** ✅ | Identity | `applicationId` + namespace rename → `io.github.sysadmindoc.AppManagerNG`; new release keystore; GitHub Actions release pipeline; NG-specific CONTRIBUTING.md |
 | **v0.3.0** ✅ | UX Refresh | Material 3 dashboard; Pro Mode toggle; edge-to-edge (Android 15/16 compliance); AMOLED/dark/light themes |
-| **v0.4.0** 🔨 In Progress | Onboarding | Root/Shizuku/ADB capability detection wizard; plain-language privilege explainer; first-run flow |
+| **v0.4.0** 🔨 In Progress | Onboarding & Premium Polish Foundation | Root/Shizuku/ADB capability detection wizard; plain-language privilege explainer; first-run flow; **v2 design system foundation behind opt-in toggle** (calmer palette, tighter typography, pill controls — see [Premium Polish Track](#premium-polish-track-v04x--v07x)) |
 | **v0.5.0** | Settings & Discovery | Settings reorganization by task; global in-app search; contextual help tooltips; in-app changelog viewer |
 | **v0.6.0** | Rootless Power | Shizuku integration; rootless debloat; wireless ADB auto-pairing |
 
@@ -447,6 +447,19 @@ Cross-cutting research deltas mined from KernelSU v3.2, Magisk v30.7, Shizuku v1
 | ~~**Neo-Backup-Style KeepAndroidOpen Banner**~~ ✅ shipped 2026-05-02 | Neo Backup 8.3.17 surfaces a "Keep Android open during long backups" banner when a backup operation begins on Android 14+ to combat aggressive Doze/standby kills ([S135]). NG's backup operation should display the same banner under Android 14+ given the new JobScheduler quota tightening. Shipped: long Toast warning fired from `BackupRestoreDialogFragment.startOperation()` whenever `MODE_BACKUP` runs on `SDK_INT >= UPSIDE_DOWN_CAKE` (API 34+). | T6 | **Now** |
 | **Glance Widget Parity Audit** | androidx.glance enables Compose-style home-screen widgets ([S136]). NG ships zero home-screen widgets today; an exploration pass to evaluate a 1×1 "Last backup status", 2×1 "Foreground app freeze toggle", and 4×1 "Schedule next-run" widget set would unlock a use-case category competitors (Hail, Neo Backup) already cover. Effort 3/5; UC. | T8 | **Under Consideration** |
 | **Repo-Rename Detection for Upstream Pin** | Obtainium v1.4.x added GitHub repo-rename detection so its source watcher follows owner/name changes ([S121]). NG's eng-debt register pins the upstream-source URL to `MuntashirAkon/AppManager`; a CI check that hits the GitHub API and asserts the repo still resolves to that name (and otherwise opens an issue) would prevent silent breakage of the upstream-sync flow. Effort 1/5. | Eng-Debt | **Next** |
+
+---
+
+## Premium Polish Track (v0.4.x → v0.7.x)
+
+Parallel work-stream off the Onboarding theme (v0.4.0). The four-step rollout drafted in `design/plan/3-rollout.md` migrates AppManagerNG from the existing M3 token plane to a refined v2 token plane (calmer surfaces, tighter typography, pill-shaped FAB/search, outlined card variants). Each phase is independently revertable.
+
+| Phase | Status | Scope |
+|-------|--------|-------|
+| ~~**v0.4.x Foundation**~~ ✅ shipped 2026-05-03 | Done | `app/src/main/res/values/{colors,dimens,themes}-v2.xml` copied verbatim from `design/impl/`. New pref `PREF_PREMIUM_PREVIEW_BOOL` (default OFF). `Prefs.Appearance.getAppTheme()` routes to `AppTheme.V2` / `AppTheme.V2.Amoled` when enabled, classic `AppTheme` / `AppTheme.Black` otherwise. Toggle exposed at Settings → Appearance → "Preview new design (BETA)". `getTransparentAppTheme()` deferred — transparent surfaces stay classic until v0.5.x. No layout files modified. |
+| **v0.5.x Top-5 Surface Migration** | Pending | Migrate `activity_main_v2.xml`, `item_main_v2.xml`, plus AppDetails / AppUsage / Settings to v2 layouts behind the same toggle. Reference layouts already exist in `design/impl/layout/`. |
+| **v0.6.x Default Flip** | Pending | Default `PREF_PREMIUM_PREVIEW_BOOL` to `true`; expose a "Use legacy design" escape hatch in Appearance for one release. |
+| **v0.7.x Toggle Removal** | Pending | Delete the toggle, drop classic `AppTheme*` definitions, retire `colors-v2.xml`/`themes-v2.xml` filenames in favor of canonical `colors.xml`/`themes.xml`. |
 
 ---
 
