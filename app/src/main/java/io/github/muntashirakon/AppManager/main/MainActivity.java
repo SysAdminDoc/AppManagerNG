@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.debloat.DebloaterActivity;
 import io.github.muntashirakon.AppManager.filters.FinderActivity;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryActivity;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
 import io.github.muntashirakon.AppManager.misc.LabsActivity;
@@ -388,6 +389,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (id == R.id.action_profiles) {
             Intent profilesIntent = new Intent(this, ProfilesActivity.class);
             startActivity(profilesIntent);
+        } else if (id == R.id.action_op_history) {
+            Intent opHistoryIntent = new Intent(this, OpHistoryActivity.class);
+            startActivity(opHistoryIntent);
         } else if (id == R.id.action_labs) {
             Intent intent = new Intent(getApplicationContext(), LabsActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
