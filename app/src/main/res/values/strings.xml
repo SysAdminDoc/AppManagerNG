@@ -1676,6 +1676,8 @@
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
     <string name="op_history_execute_confirmation">Run this operation again with the saved options.</string>
+    <string name="op_history_action_rerun">Rerun operation</string>
+    <string name="op_history_action_not_replayable">Operation cannot be rerun</string>
     <string name="op_preflight_rerun_intro">Review the current capability state before running this saved operation again.</string>
     <string name="op_preflight_current_mode">Current mode</string>
     <string name="op_preflight_saved_mode">Saved mode</string>

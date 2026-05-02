@@ -492,7 +492,11 @@ public class OpHistoryActivity extends BaseActivity {
                     .setPositiveButton(R.string.action_run, (dialog, which) ->
                             mActivity.mViewModel.getServiceLauncherIntent(history))
                     .show());
-            holder.execBtn.setEnabled(history.isReplayable());
+            boolean replayable = history.isReplayable();
+            holder.execBtn.setEnabled(replayable);
+            holder.execBtn.setContentDescription(mActivity.getString(replayable
+                    ? R.string.op_history_action_rerun
+                    : R.string.op_history_action_not_replayable));
         }
     }
 
