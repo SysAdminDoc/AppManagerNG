@@ -1420,6 +1420,11 @@
     <string name="pref_replay_tour">Replay quick tour</string>
     <string name="pref_replay_tour_msg">Show the main-list quick tour the next time you open the app list.</string>
     <string name="replay_tour_armed">Quick tour will appear next time you open the app list.</string>
+    <string name="pref_battery_optimization">Battery optimization</string>
+    <string name="pref_battery_optimization_msg">Some scheduled operations (backups, observers, freeze rules) can be paused by Android\'s power-saving heuristics. Tap to manage AppManagerNG\'s exemption.</string>
+    <string name="pref_battery_optimization_state_exempt">Exempt — power-saving will not pause AppManagerNG.</string>
+    <string name="pref_battery_optimization_state_optimized">Optimized — system may pause AppManagerNG when idle. Tap to request an exemption.</string>
+    <string name="pref_battery_optimization_unsupported">Battery optimization controls are not available on this device.</string>
     <string name="changelog_type_new">New</string>
     <string name="changelog_type_fix">Fix</string>
     <string name="changelog_type_improve">Improve</string>
