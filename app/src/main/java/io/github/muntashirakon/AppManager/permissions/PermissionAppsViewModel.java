@@ -148,29 +148,33 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     }
 
     public void togglePermission(@NonNull AppRow row) {
+        mLoading.postValue(true);
         mExecutor.submit(() -> {
-            int userId = UserHandleHidden.myUserId();
             int successCount = 0;
             int failedCount = 0;
-            boolean targetGrant = !row.anyGranted;
-            for (String permName : mGroup.permissions) {
-                PermissionToggleHelper.State s = PermissionToggleHelper.load(
-                        row.packageName, userId, permName, mAppOpsManager);
-                if (s == null || !s.modifiable) continue;
-                if (s.granted == targetGrant) {
-                    successCount++;
-                    continue;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                boolean targetGrant = !row.anyGranted;
+                for (String permName : mGroup.permissions) {
+                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                            row.packageName, userId, permName, mAppOpsManager);
+                    if (s == null || !s.modifiable) continue;
+                    if (s.granted == targetGrant) {
+                        successCount++;
+                        continue;
+                    }
+                    Boolean newState = PermissionToggleHelper.toggle(
+                            row.packageName, userId, permName, mAppOpsManager);
+                    if (newState != null) successCount++;
+                    else failedCount++;
                 }
-                Boolean newState = PermissionToggleHelper.toggle(
-                        row.packageName, userId, permName, mAppOpsManager);
-                if (newState != null) successCount++;
-                else failedCount++;
+                if (successCount > 0) {
+                    row.anyGranted = targetGrant;
+                }
+            } finally {
+                // Reload to refresh other rows / counts and clear the busy state.
+                loadInternal();
             }
-            if (successCount > 0) {
-                row.anyGranted = targetGrant;
-            }
-            // Reload to refresh other rows / counts
-            loadInternal();
             if (failedCount > 0) {
                 mToast.postValue(getApplication().getString(
                         io.github.muntashirakon.AppManager.R.string.failed_to_revoke_permission));
@@ -227,72 +231,80 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     }
 
     public void revokeForAll() {
+        mLoading.postValue(true);
         mExecutor.submit(() -> {
-            int userId = UserHandleHidden.myUserId();
             int affected = 0;
             int skipped = 0;
             int failed = 0;
-            List<AppRow> current = mRows.getValue();
-            if (current == null) return;
-            for (AppRow row : current) {
-                if (!row.anyGranted || !row.anyModifiable) continue;
-                if (isCriticalPackage(row.packageName)) {
-                    skipped++;
-                    continue;
-                }
-                boolean anySuccess = false;
-                for (String permName : mGroup.permissions) {
-                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
-                            row.packageName, userId, permName, mAppOpsManager);
-                    if (s == null || !s.modifiable || !s.granted) continue;
-                    if (PermissionToggleHelper.revoke(row.packageName, userId, permName, mAppOpsManager)) {
-                        anySuccess = true;
-                    } else {
-                        failed++;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                List<AppRow> current = mRows.getValue();
+                if (current == null) return;
+                for (AppRow row : current) {
+                    if (!row.anyGranted || !row.anyModifiable) continue;
+                    if (isCriticalPackage(row.packageName)) {
+                        skipped++;
+                        continue;
                     }
+                    boolean anySuccess = false;
+                    for (String permName : mGroup.permissions) {
+                        PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                                row.packageName, userId, permName, mAppOpsManager);
+                        if (s == null || !s.modifiable || !s.granted) continue;
+                        if (PermissionToggleHelper.revoke(row.packageName, userId, permName, mAppOpsManager)) {
+                            anySuccess = true;
+                        } else {
+                            failed++;
+                        }
+                    }
+                    if (anySuccess) affected++;
                 }
-                if (anySuccess) affected++;
+                String msg = getApplication().getResources().getQuantityString(
+                        io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_revoked,
+                        affected, affected);
+                if (skipped > 0) {
+                    msg = msg + " " + getApplication().getResources().getQuantityString(
+                            io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_skipped,
+                            skipped, skipped);
+                }
+                mToast.postValue(msg);
+                mLastSkippedCount.postValue(skipped);
+            } finally {
+                loadInternal();
             }
-            String msg = getApplication().getResources().getQuantityString(
-                    io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_revoked,
-                    affected, affected);
-            if (skipped > 0) {
-                msg = msg + " " + getApplication().getResources().getQuantityString(
-                        io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_skipped,
-                        skipped, skipped);
-            }
-            mToast.postValue(msg);
-            mLastSkippedCount.postValue(skipped);
-            loadInternal();
         });
     }
 
     public void grantForAll() {
+        mLoading.postValue(true);
         mExecutor.submit(() -> {
-            int userId = UserHandleHidden.myUserId();
             int affected = 0;
             int failed = 0;
-            List<AppRow> current = mRows.getValue();
-            if (current == null) return;
-            for (AppRow row : current) {
-                if (!row.anyModifiable) continue;
-                boolean anySuccess = false;
-                for (String permName : mGroup.permissions) {
-                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
-                            row.packageName, userId, permName, mAppOpsManager);
-                    if (s == null || !s.modifiable || s.granted) continue;
-                    if (PermissionToggleHelper.grant(row.packageName, userId, permName, mAppOpsManager)) {
-                        anySuccess = true;
-                    } else {
-                        failed++;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                List<AppRow> current = mRows.getValue();
+                if (current == null) return;
+                for (AppRow row : current) {
+                    if (!row.anyModifiable) continue;
+                    boolean anySuccess = false;
+                    for (String permName : mGroup.permissions) {
+                        PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                                row.packageName, userId, permName, mAppOpsManager);
+                        if (s == null || !s.modifiable || s.granted) continue;
+                        if (PermissionToggleHelper.grant(row.packageName, userId, permName, mAppOpsManager)) {
+                            anySuccess = true;
+                        } else {
+                            failed++;
+                        }
                     }
+                    if (anySuccess) affected++;
                 }
-                if (anySuccess) affected++;
+                mToast.postValue(getApplication().getResources().getQuantityString(
+                        io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_granted,
+                        affected, affected));
+            } finally {
+                loadInternal();
             }
-            mToast.postValue(getApplication().getResources().getQuantityString(
-                    io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_granted,
-                    affected, affected));
-            loadInternal();
         });
     }
 
