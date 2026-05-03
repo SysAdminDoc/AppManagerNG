@@ -248,6 +248,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             TextView title;
             TextView summary;
             TextView profileType;
+            TextView profileState;
             MaterialButton applyButton;
             MaterialButton moreButton;
 
@@ -256,6 +257,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 title = itemView.findViewById(android.R.id.title);
                 summary = itemView.findViewById(android.R.id.summary);
                 profileType = itemView.findViewById(R.id.profile_type);
+                profileState = itemView.findViewById(R.id.profile_state);
                 applyButton = itemView.findViewById(R.id.profile_apply);
                 moreButton = itemView.findViewById(R.id.profile_more);
             }
@@ -313,9 +315,11 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             holder.summary.setText(summary);
             holder.summary.setVisibility(TextUtils.isEmpty(summary) ? View.GONE : View.VISIBLE);
             CharSequence profileType = getProfileTypeLabel(profile.type);
+            CharSequence profileState = getProfileStateLabel(profile.state);
             holder.profileType.setText(profileType);
+            holder.profileState.setText(mActivity.getString(R.string.profile_state_badge, profileState));
             holder.itemView.setContentDescription(mActivity.getString(
-                    R.string.profile_item_content_description, profile.name, profileType, summary));
+                    R.string.profile_item_content_description, profile.name, profileType, profileState, summary));
             holder.applyButton.setContentDescription(mActivity.getString(
                     R.string.profile_apply_content_description, profile.name));
             holder.moreButton.setContentDescription(mActivity.getString(
@@ -417,6 +421,14 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 return mActivity.getString(R.string.filters);
             }
             return mActivity.getString(R.string.apps);
+        }
+
+        @NonNull
+        private CharSequence getProfileStateLabel(@Nullable String profileState) {
+            if (BaseProfile.STATE_OFF.equals(profileState)) {
+                return mActivity.getString(R.string.off);
+            }
+            return mActivity.getString(R.string.on);
         }
 
         @Override
