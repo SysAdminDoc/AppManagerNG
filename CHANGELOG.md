@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Permission Inspector: review and bulk-revoke permissions across apps
+
+- New top-level screen accessible from the main overflow menu (shield-key icon) that inverts the standard "app -> permissions" view. Catalog lists 12 curated dangerous permission groups (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) each with a "X of Y apps granted" count. Tap a group to drill into the per-permission list of every app that requested it; toggle individual apps with a Material switch, or use the master "Revoke for all apps" toolbar action to mass-revoke in one shot. Persists changes through `ComponentsBlocker` so they survive reinstalls, same as the existing per-app permissions tab. SDK-version-gated for permission groups added in API 29/31/33/34.
+
 ### Added — Main List & Item Layout: v2 Design System Integration (v0.5.x surface migration phase 1)
 - New `activity_main_v2.xml` and `item_main_v2.xml` wired behind the `PREF_PREMIUM_PREVIEW_BOOL` 
   toggle. When enabled, MainActivity and MainRecyclerAdapter load v2 layouts with refined v2 token 

@@ -61,6 +61,11 @@
         android:title="@string/debloater_title" />
 
     <item
+        android:id="@+id/action_permission_inspector"
+        android:icon="@drawable/ic_shield_key"
+        android:title="@string/title_permission_inspector" />
+
+    <item
         android:id="@+id/action_labs"
         android:icon="@drawable/ic_package"
         android:title="@string/title_labs_activity" />

@@ -2145,4 +2145,39 @@
     <!-- App Details: input feature flags (Utils.getInputFeaturesString) -->
     <string name="input_feature_five_way_nav">Five-way navigation</string>
     <string name="input_feature_hard_keyboard">Hardware keyboard</string>
+    <!-- Permission Inspector -->
+    <string name="title_permission_inspector">Permission Inspector</string>
+    <string name="summary_permission_inspector">Review which apps have which permissions, revoke individually or in bulk.</string>
+    <string name="master_revoke_all">Revoke for all apps</string>
+    <string name="permission_inspector_no_apps">No apps request this permission.</string>
+    <string name="perm_inspector_count_fmt">%1$d of %2$d apps granted</string>
+    <plurals name="perm_inspector_bulk_revoked">
+        <item quantity="one">Revoked from %d app</item>
+        <item quantity="other">Revoked from %d apps</item>
+    </plurals>
+
+    <string name="perm_group_camera">Camera</string>
+    <string name="perm_group_camera_summary">Apps that can take photos and record video.</string>
+    <string name="perm_group_microphone">Microphone</string>
+    <string name="perm_group_microphone_summary">Apps that can record audio.</string>
+    <string name="perm_group_location">Location</string>
+    <string name="perm_group_location_summary">Apps that can access precise, coarse, or background location.</string>
+    <string name="perm_group_contacts">Contacts</string>
+    <string name="perm_group_contacts_summary">Apps that can read or modify your contacts and accounts.</string>
+    <string name="perm_group_sms">SMS</string>
+    <string name="perm_group_sms_summary">Apps that can send, receive, or read SMS, MMS and cell-broadcast messages.</string>
+    <string name="perm_group_phone">Phone</string>
+    <string name="perm_group_phone_summary">Apps that can place calls, read phone state, or access call logs.</string>
+    <string name="perm_group_storage">Files and media</string>
+    <string name="perm_group_storage_summary">Apps that can read or write files, photos, video and audio.</string>
+    <string name="perm_group_calendar">Calendar</string>
+    <string name="perm_group_calendar_summary">Apps that can read or modify your calendar events.</string>
+    <string name="perm_group_body_sensors">Body sensors</string>
+    <string name="perm_group_body_sensors_summary">Apps that can access heart rate and other body sensors.</string>
+    <string name="perm_group_activity_recognition">Physical activity</string>
+    <string name="perm_group_activity_recognition_summary">Apps that can detect steps and physical activity.</string>
+    <string name="perm_group_nearby_devices">Nearby devices</string>
+    <string name="perm_group_nearby_devices_summary">Apps that can scan, connect to, or advertise to Bluetooth and Wi-Fi devices.</string>
+    <string name="perm_group_notifications">Notifications</string>
+    <string name="perm_group_notifications_summary">Apps that can post notifications.</string>
 </resources>

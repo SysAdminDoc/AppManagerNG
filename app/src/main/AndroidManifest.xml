@@ -563,6 +563,16 @@
             android:exported="false"
             android:label="@string/debloater_title" />
         <activity
+            android:name=".permissions.PermissionInspectorActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/title_permission_inspector" />
+        <activity
+            android:name=".permissions.PermissionAppsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/title_permission_inspector" />
+        <activity
             android:name=".details.AppDetailsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="false" />
