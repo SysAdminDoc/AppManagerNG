@@ -1958,6 +1958,7 @@
     <string name="op_history_more_actions_content_description">More actions for %1$s</string>
     <string name="op_history_rerun_content_description">Rerun %1$s</string>
     <string name="op_history_detail_line"><xliff:g id="label" example="Status">%1$s</xliff:g>: <xliff:g id="value" example="Succeeded">%2$s</xliff:g></string>
+    <string name="op_history_detail_header_summary"><xliff:g id="type" example="Batch operations">%1$s</xliff:g> · <xliff:g id="metadata" example="High risk · 3 targets · ADB">%2$s</xliff:g></string>
     <string name="op_history_detail_status">Status</string>
     <string name="op_history_detail_time">Time</string>
     <string name="op_history_detail_metadata">Metadata</string>
@@ -1966,6 +1967,7 @@
     <string name="op_history_detail_section_safety">Safety</string>
     <string name="op_history_detail_section_recovery">Recovery</string>
     <string name="op_history_detail_section_targets">Targets</string>
+    <string name="op_history_detail_full_details">Details</string>
     <string name="op_history_detail_operation">Operation</string>
     <string name="op_history_detail_mode">Mode</string>
     <string name="op_history_detail_targets">Targets</string>

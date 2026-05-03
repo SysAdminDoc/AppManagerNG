@@ -21,6 +21,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -467,13 +468,46 @@ public class OpHistoryActivity extends BaseActivity {
 
     private void showHistoryDetails(@NonNull OpHistoryItem history) {
         String detailMessage = history.getDetailMessage(this);
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(history.getLabel(this))
-                .setMessage(detailMessage)
-                .setNegativeButton(R.string.copy, (dialog, which) -> copyHistoryDetails(history, detailMessage))
-                .setNeutralButton(R.string.delete, (dialog, which) -> showDeleteHistoryConfirmation(history))
+        String title = history.getLabel(this);
+        Intent targetIntent = history.getPrimaryTargetIntent(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_op_history_details, null, false);
+        TextView titleView = dialogView.findViewById(R.id.op_history_detail_title);
+        TextView summaryView = dialogView.findViewById(R.id.op_history_detail_summary);
+        TextView statusView = dialogView.findViewById(R.id.op_history_detail_status);
+        TextView riskView = dialogView.findViewById(R.id.op_history_detail_risk);
+        TextView bodyView = dialogView.findViewById(R.id.op_history_detail_body);
+        MaterialButton openTargetButton = dialogView.findViewById(R.id.op_history_detail_open_target);
+        MaterialButton rerunButton = dialogView.findViewById(R.id.op_history_detail_rerun);
+        View actionRow = dialogView.findViewById(R.id.op_history_detail_action_row);
+        boolean replayable = history.isReplayable();
+        boolean hasTarget = targetIntent != null;
+        titleView.setText(title);
+        summaryView.setText(getString(R.string.op_history_detail_header_summary,
+                history.getLocalizedType(this), history.getMetadataSummary(this)));
+        statusView.setText(history.getLocalizedStatus(this));
+        statusView.setTextColor(history.getStatus()
+                ? ColorCodes.getSuccessColor(this)
+                : ColorCodes.getFailureColor(this));
+        riskView.setText(history.getLocalizedRisk(this));
+        bodyView.setText(detailMessage);
+        openTargetButton.setVisibility(hasTarget ? View.VISIBLE : View.GONE);
+        rerunButton.setVisibility(replayable ? View.VISIBLE : View.GONE);
+        actionRow.setVisibility(hasTarget || replayable ? View.VISIBLE : View.GONE);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .setNegativeButton(R.string.copy, (dialogInterface, which) -> copyHistoryDetails(history, detailMessage))
+                .setNeutralButton(R.string.delete, (dialogInterface, which) -> showDeleteHistoryConfirmation(history))
                 .setPositiveButton(R.string.close, null)
-                .show();
+                .create();
+        openTargetButton.setOnClickListener(v -> {
+            dialog.dismiss();
+            openHistoryTarget(targetIntent);
+        });
+        rerunButton.setOnClickListener(v -> {
+            dialog.dismiss();
+            showRerunConfirmation(history);
+        });
+        dialog.show();
     }
 
     private void showHistoryActions(@NonNull OpHistoryItem history) {
