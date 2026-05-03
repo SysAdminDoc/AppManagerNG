@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textview.MaterialTextView;
 
@@ -78,7 +79,20 @@ public class PermissionAppsActivity extends BaseActivity {
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
             }
         });
+        mViewModel.getLastSkippedCount().observe(this, count -> {
+            if (count != null && count > 0) {
+                showInfoDialog();
+            }
+        });
         mViewModel.load();
+    }
+
+    private void showInfoDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.perm_inspector_info_title)
+                .setMessage(R.string.perm_inspector_info_body)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     @Override
@@ -92,6 +106,12 @@ public class PermissionAppsActivity extends BaseActivity {
         int id = item.getItemId();
         if (id == R.id.action_revoke_all) {
             if (mViewModel != null) mViewModel.revokeForAll();
+            return true;
+        } else if (id == R.id.action_grant_all) {
+            if (mViewModel != null) mViewModel.grantForAll();
+            return true;
+        } else if (id == R.id.action_perm_inspector_info) {
+            showInfoDialog();
             return true;
         } else if (id == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();

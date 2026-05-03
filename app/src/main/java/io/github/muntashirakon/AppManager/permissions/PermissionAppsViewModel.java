@@ -57,6 +57,8 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     private final MutableLiveData<List<AppRow>> mRows = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> mToast = new MutableLiveData<>();
+    /** Emits the skipped-package count after revokeForAll() so the UI can surface an explanation. */
+    private final MutableLiveData<Integer> mLastSkippedCount = new MutableLiveData<>();
 
     private PermissionGroupCatalog.Group mGroup;
 
@@ -67,6 +69,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     public MutableLiveData<List<AppRow>> getRows() { return mRows; }
     public MutableLiveData<Boolean> getLoading() { return mLoading; }
     public MutableLiveData<String> getToast() { return mToast; }
+    public MutableLiveData<Integer> getLastSkippedCount() { return mLastSkippedCount; }
 
     public PermissionGroupCatalog.Group getGroup() { return mGroup; }
 
@@ -259,6 +262,36 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                         skipped, skipped);
             }
             mToast.postValue(msg);
+            mLastSkippedCount.postValue(skipped);
+            loadInternal();
+        });
+    }
+
+    public void grantForAll() {
+        mExecutor.submit(() -> {
+            int userId = UserHandleHidden.myUserId();
+            int affected = 0;
+            int failed = 0;
+            List<AppRow> current = mRows.getValue();
+            if (current == null) return;
+            for (AppRow row : current) {
+                if (!row.anyModifiable) continue;
+                boolean anySuccess = false;
+                for (String permName : mGroup.permissions) {
+                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                            row.packageName, userId, permName, mAppOpsManager);
+                    if (s == null || !s.modifiable || s.granted) continue;
+                    if (PermissionToggleHelper.grant(row.packageName, userId, permName, mAppOpsManager)) {
+                        anySuccess = true;
+                    } else {
+                        failed++;
+                    }
+                }
+                if (anySuccess) affected++;
+            }
+            mToast.postValue(getApplication().getResources().getQuantityString(
+                    io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_granted,
+                    affected, affected));
             loadInternal();
         });
     }

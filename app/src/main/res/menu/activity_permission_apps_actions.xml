@@ -6,4 +6,14 @@
         android:icon="@drawable/ic_block"
         android:title="@string/master_revoke_all"
         app:showAsAction="ifRoom|withText" />
+    <item
+        android:id="@+id/action_grant_all"
+        android:icon="@drawable/ic_check_circle"
+        android:title="@string/master_grant_all"
+        app:showAsAction="ifRoom|withText" />
+    <item
+        android:id="@+id/action_perm_inspector_info"
+        android:icon="@drawable/ic_information_circle"
+        android:title="@string/perm_inspector_info_title"
+        app:showAsAction="ifRoom" />
 </menu>
