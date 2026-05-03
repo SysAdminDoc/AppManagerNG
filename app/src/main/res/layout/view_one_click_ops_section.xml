@@ -1,0 +1,29 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="?attr/listItemMarginHorizontal"
+    android:paddingTop="@dimen/padding_large"
+    android:paddingBottom="@dimen/padding_small">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/one_click_section_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAllCaps="true"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="?attr/colorPrimary"
+        tools:text="Review and change" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/one_click_section_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_very_small"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        tools:text="Find apps first, then apply changes from a reviewed list." />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

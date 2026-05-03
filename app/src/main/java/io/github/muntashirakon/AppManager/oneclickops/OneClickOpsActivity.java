@@ -15,13 +15,17 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.text.SpannableStringBuilder;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.ArraySet;
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -62,10 +66,11 @@ public class OneClickOpsActivity extends BaseActivity {
 
     private OneClickOpsViewModel mViewModel;
     private ListItemCreator mItemCreator;
+    private LinearLayoutCompat mContainer;
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            progressIndicator.hide();
+            setBusy(false);
         }
     };
 
@@ -81,6 +86,7 @@ public class OneClickOpsActivity extends BaseActivity {
         setContentView(R.layout.activity_one_click_ops);
         setSupportActionBar(findViewById(R.id.toolbar));
         mViewModel = new ViewModelProvider(this).get(OneClickOpsViewModel.class);
+        mContainer = findViewById(R.id.container);
         mItemCreator = new ListItemCreator(this, R.id.container);
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
@@ -95,32 +101,33 @@ public class OneClickOpsActivity extends BaseActivity {
         mViewModel.getClearDataCandidates().observe(this, this::clearData);
         mViewModel.watchTrimCachesResult().observe(this, isSuccessful -> {
             CpuUtils.releaseWakeLock(wakeLock);
-            progressIndicator.hide();
+            setBusy(false);
             UIUtils.displayShortToast(isSuccessful ? R.string.done : R.string.failed);
         });
         mViewModel.getAppsInstalledByAmForDexOpt().observe(this, packages -> {
             CpuUtils.releaseWakeLock(wakeLock);
-            progressIndicator.hide();
+            setBusy(false);
             DexOptDialog dialog = DexOptDialog.getInstance(packages);
             dialog.show(getSupportFragmentManager(), DexOptDialog.TAG);
         });
     }
 
     private void setItems() {
+        addSectionHeader(R.string.one_click_ops_section_review_title, R.string.one_click_ops_section_review_summary);
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_trackers),
                         getString(R.string.block_unblock_trackers_description), R.drawable.ic_cctv_off)
                 .setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.block_unblock_trackers)
                         .setMessage(R.string.apply_to_system_apps_question)
                         .setPositiveButton(R.string.user_apps_only, (dialog, which) -> {
-                            progressIndicator.show();
+                            setBusy(true);
                             if (!wakeLock.isHeld()) {
                                 wakeLock.acquire();
                             }
                             mViewModel.blockTrackers(false);
                         })
                         .setNegativeButton(R.string.include_system_apps, (dialog, which) -> {
-                            progressIndicator.show();
+                            setBusy(true);
                             if (!wakeLock.isHeld()) {
                                 wakeLock.acquire();
                             }
@@ -135,7 +142,7 @@ public class OneClickOpsActivity extends BaseActivity {
                         .setTitle(R.string.block_unblock_components_dots)
                         .setPositiveButton(R.string.search, (dialog, which, signatureNames, systemApps) -> {
                             if (signatureNames == null) return;
-                            progressIndicator.show();
+                            setBusy(true);
                             if (!wakeLock.isHeld()) {
                                 wakeLock.acquire();
                             }
@@ -147,6 +154,7 @@ public class OneClickOpsActivity extends BaseActivity {
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.set_mode_for_app_ops_dots),
                         getString(R.string.deny_app_ops_description), R.drawable.ic_tune)
                 .setOnClickListener(v -> showAppOpsSelectionDialog());
+        addSectionHeader(R.string.one_click_ops_section_backup_title, R.string.one_click_ops_section_backup_summary);
         mItemCreator.addItemWithTitleSubtitle(getText(R.string.back_up),
                 getText(R.string.backup_msg), R.drawable.ic_backup_restore).setOnClickListener(v ->
                 new BackupTasksDialogFragment().show(getSupportFragmentManager(),
@@ -155,9 +163,12 @@ public class OneClickOpsActivity extends BaseActivity {
                 getText(R.string.restore_msg), R.drawable.ic_restore).setOnClickListener(v ->
                 new RestoreTasksDialogFragment().show(getSupportFragmentManager(),
                         RestoreTasksDialogFragment.TAG));
+        addSectionHeader(R.string.one_click_ops_section_maintenance_title,
+                R.string.one_click_ops_section_maintenance_summary);
         mItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_data_from_uninstalled_apps),
                         getString(R.string.clear_data_from_uninstalled_apps_description), R.drawable.ic_clear_data)
                 .setOnClickListener(v -> {
+                    setBusy(true);
                     if (!wakeLock.isHeld()) {
                         wakeLock.acquire();
                     }
@@ -179,7 +190,7 @@ public class OneClickOpsActivity extends BaseActivity {
                             .setMessage(R.string.trim_caches_confirmation_message)
                             .setNegativeButton(R.string.cancel, null)
                             .setPositiveButton(R.string.trim_caches, (dialog, which) -> {
-                                progressIndicator.show();
+                                setBusy(true);
                                 if (!wakeLock.isHeld()) {
                                     wakeLock.acquire();
                                 }
@@ -196,14 +207,21 @@ public class OneClickOpsActivity extends BaseActivity {
                             dialog.show(getSupportFragmentManager(), DexOptDialog.TAG);
                             return;
                         }
-                        progressIndicator.show();
+                        setBusy(true);
                         if (!wakeLock.isHeld()) {
                             wakeLock.acquire();
                         }
                         mViewModel.listAppsInstalledByAmForDexOpt();
                     });
         }
-        progressIndicator.hide();
+        setBusy(false);
+    }
+
+    private void addSectionHeader(@StringRes int titleRes, @StringRes int summaryRes) {
+        View section = LayoutInflater.from(this).inflate(R.layout.view_one_click_ops_section, mContainer, false);
+        ((TextView) section.findViewById(R.id.one_click_section_title)).setText(titleRes);
+        ((TextView) section.findViewById(R.id.one_click_section_summary)).setText(summaryRes);
+        mContainer.addView(section);
     }
 
     @Override
@@ -217,14 +235,12 @@ public class OneClickOpsActivity extends BaseActivity {
     protected void onPause() {
         super.onPause();
         unregisterReceiver(mBatchOpsBroadCastReceiver);
-        if (progressIndicator != null) {
-            progressIndicator.hide();
-        }
+        setBusy(false);
     }
 
     private void blockTrackers(@Nullable List<ItemCount> trackerCounts) {
         CpuUtils.releaseWakeLock(wakeLock);
-        progressIndicator.hide();
+        setBusy(false);
         if (trackerCounts == null) {
             showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
@@ -246,14 +262,12 @@ public class OneClickOpsActivity extends BaseActivity {
                 .setTitle(R.string.review_tracker_apps_title)
                 .setPositiveButton(R.string.block, (dialog, which, selectedPackages) -> {
                     if (!requirePackageSelection(selectedPackages)) return;
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_BLOCK_TRACKERS,
                             selectedPackages, null, null);
                     launchService(item);
                 })
                 .setNeutralButton(R.string.unblock, (dialog, which, selectedPackages) -> {
                     if (!requirePackageSelection(selectedPackages)) return;
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNBLOCK_TRACKERS,
                             selectedPackages, null, null);
                     launchService(item);
@@ -264,7 +278,7 @@ public class OneClickOpsActivity extends BaseActivity {
 
     private void blockComponents(@Nullable List<ItemCount> componentCounts, @NonNull String[] signatures) {
         CpuUtils.releaseWakeLock(wakeLock);
-        progressIndicator.hide();
+        setBusy(false);
         if (componentCounts == null) {
             showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
@@ -289,14 +303,12 @@ public class OneClickOpsActivity extends BaseActivity {
                 .setTitle(R.string.review_component_apps_title)
                 .setPositiveButton(R.string.block, (dialog1, which1, selectedItems) -> {
                     if (!requirePackageSelection(selectedItems)) return;
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_BLOCK_COMPONENTS,
                             selectedItems, null, options);
                     launchService(item);
                 })
                 .setNeutralButton(R.string.unblock, (dialog1, which1, selectedItems) -> {
                     if (!requirePackageSelection(selectedItems)) return;
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNBLOCK_COMPONENTS,
                             selectedItems, null, options);
                     launchService(item);
@@ -338,7 +350,7 @@ public class OneClickOpsActivity extends BaseActivity {
                         UIUtils.displayShortToast(R.string.failed_to_parse_some_numbers);
                         return;
                     }
-                    progressIndicator.show();
+                    setBusy(true);
                     if (!wakeLock.isHeld()) {
                         wakeLock.acquire();
                     }
@@ -350,7 +362,7 @@ public class OneClickOpsActivity extends BaseActivity {
 
     private void setAppOps(@Nullable List<AppOpCount> appOpCounts, @NonNull int[] appOpList, int mode) {
         CpuUtils.releaseWakeLock(wakeLock);
-        progressIndicator.hide();
+        setBusy(false);
         if (appOpCounts == null) {
             showInfoDialog(R.string.package_scan_failed, R.string.package_scan_failed_message);
             return;
@@ -375,17 +387,17 @@ public class OneClickOpsActivity extends BaseActivity {
                 .setTitle(R.string.review_app_ops_apps_title)
                 .setPositiveButton(R.string.apply, (dialog1, which1, selectedItems) -> {
                     if (!requirePackageSelection(selectedItems)) return;
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_SET_APP_OPS,
                             selectedItems, null, options);
                     launchService(item);
                 })
-                .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> progressIndicator.hide())
+                .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> setBusy(false))
                 .show();
     }
 
     private void clearData(@NonNull List<String> candidatePackages) {
         CpuUtils.releaseWakeLock(wakeLock);
+        setBusy(false);
         if (candidatePackages.isEmpty()) {
             showInfoDialog(R.string.no_matching_package_found, R.string.no_uninstalled_app_data_message);
             return;
@@ -398,7 +410,7 @@ public class OneClickOpsActivity extends BaseActivity {
                     if (!requirePackageSelection(selectedItems)) return;
                     confirmClearData(selectedItems);
                 })
-                .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> progressIndicator.hide())
+                .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> setBusy(false))
                 .show();
     }
 
@@ -409,7 +421,6 @@ public class OneClickOpsActivity extends BaseActivity {
                         selectedItems.size(), selectedItems.size()))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.clear_data, (dialog, which) -> {
-                    progressIndicator.show();
                     BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNINSTALL,
                             new ArrayList<>(selectedItems), null, null);
                     launchService(item);
@@ -450,8 +461,33 @@ public class OneClickOpsActivity extends BaseActivity {
     }
 
     private void launchService(@NonNull BatchQueueItem queueItem) {
+        setBusy(true);
         Intent intent = BatchOpsService.getServiceIntent(this, queueItem);
         ContextCompat.startForegroundService(this, intent);
+    }
+
+    private void setBusy(boolean isBusy) {
+        if (progressIndicator != null) {
+            if (isBusy) {
+                progressIndicator.show();
+            } else {
+                progressIndicator.hide();
+            }
+        }
+        if (mContainer != null) {
+            mContainer.setAlpha(isBusy ? 0.62f : 1f);
+            setViewAndChildrenEnabled(mContainer, !isBusy);
+        }
+    }
+
+    private void setViewAndChildrenEnabled(@NonNull View view, boolean isEnabled) {
+        view.setEnabled(isEnabled);
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); ++i) {
+                setViewAndChildrenEnabled(group.getChildAt(i), isEnabled);
+            }
+        }
     }
 
     @NonNull
