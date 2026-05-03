@@ -98,6 +98,7 @@ public class AppPref {
         PREF_FM_SORT_ORDER_INT,
         PREF_FM_SORT_REVERSE_BOOL,
 
+        PREF_GUIDED_MODE_BOOL,
         PREF_GLOBAL_BLOCKING_ENABLED_BOOL,
         PREF_DEFAULT_BLOCKING_METHOD_STR,
 
@@ -421,6 +422,7 @@ public class AppPref {
             case PREF_ZIP_ALIGN_BOOL:
             case PREF_SEND_NOTIFICATIONS_TO_CONNECTED_DEVICES_BOOL:
             case PREF_ENABLE_AUTO_LOCK_BOOL:
+            case PREF_GUIDED_MODE_BOOL:
                 return true;
             case PREF_CONCURRENCY_THREAD_COUNT_INT:
             case PREF_APP_THEME_CUSTOM_INT:

@@ -45,6 +45,7 @@
             android:minHeight="@dimen/premium_main_status_min_height"
             android:paddingHorizontal="@dimen/premium_space_16"
             android:paddingVertical="@dimen/premium_space_8"
+            android:lineSpacingExtra="@dimen/main_status_line_spacing"
             android:text="@string/main_status_loading"
             android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant"
@@ -78,6 +79,17 @@
                     android:checkable="false"
                     android:text="@string/sort"
                     app:chipIcon="@drawable/ic_sort"
+                    app:chipIconVisible="true"
+                    app:closeIconVisible="false" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_guide"
+                    style="@style/Widget.AppTheme.V2.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:text="@string/guide"
+                    app:chipIcon="@drawable/ic_information_circle"
                     app:chipIconVisible="true"
                     app:closeIconVisible="false" />
 

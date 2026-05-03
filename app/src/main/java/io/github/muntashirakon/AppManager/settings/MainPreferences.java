@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceGroup;
+import androidx.preference.SwitchPreferenceCompat;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +44,7 @@ public class MainPreferences extends PreferenceFragment implements SearchView.On
             Ops.MODE_NO_ROOT);
 
     private FragmentActivity mActivity;
+    private SwitchPreferenceCompat mGuidedModePref;
     private Preference mModePref;
     private Preference mLocalePref;
     private Preference mNoResultsPref;
@@ -64,6 +66,12 @@ public class MainPreferences extends PreferenceFragment implements SearchView.On
         // Mode of operation
         mModePref = requirePreference("mode_of_operations");
         mModes = getResources().getStringArray(R.array.modes);
+        mGuidedModePref = requirePreference("guided_mode");
+        mGuidedModePref.setChecked(Prefs.Experience.isGuidedModeEnabled());
+        mGuidedModePref.setOnPreferenceChangeListener((preference, newValue) -> {
+            Prefs.Experience.setGuidedModeEnabled((boolean) newValue);
+            return true;
+        });
         mNoResultsPref = new Preference(requireContext());
         mNoResultsPref.setKey("settings_search_no_results");
         mNoResultsPref.setIcon(R.drawable.ic_information_circle);

@@ -42,6 +42,12 @@
         app:title="@string/pref_mode_of_operations"
         tools:summary="Auto" />
 
+    <SwitchPreferenceCompat
+        app:icon="@drawable/ic_information_circle"
+        app:key="guided_mode"
+        app:summary="@string/pref_guided_mode_msg"
+        app:title="@string/pref_guided_mode" />
+
     <PreferenceCategory
         app:key="settings_package_workflows"
         app:summary="@string/pref_cat_settings_package_workflows_summary"

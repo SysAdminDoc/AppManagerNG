@@ -75,6 +75,7 @@
     <dimen name="premium_main_icon_frame">52dp</dimen>
     <dimen name="premium_badge_min_height">24dp</dimen>
     <dimen name="premium_badge_min_width">24dp</dimen>
+    <dimen name="premium_badge_max_width">84dp</dimen>
     <dimen name="premium_badge_padding_horizontal">8dp</dimen>
     <dimen name="premium_badge_padding_vertical">2dp</dimen>
     <dimen name="premium_favorite_hit_size">32dp</dimen>

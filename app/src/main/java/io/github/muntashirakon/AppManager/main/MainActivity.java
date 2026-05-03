@@ -559,6 +559,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mBatchOpsHandler.updateConstraints();
             mMultiSelectionView.updateCounter(false);
         }
+        refreshGuidedControls();
         refreshQuickFilterChips();
         ContextCompat.registerReceiver(this, mBatchOpsBroadCastReceiver,
                 new IntentFilter(BatchOpsService.ACTION_BATCH_OPS_COMPLETED), ContextCompat.RECEIVER_NOT_EXPORTED);
@@ -762,8 +763,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
      * doesn't trap the user.
      */
     private void maybeShowMainListTour() {
+        if (!Prefs.Experience.isGuidedModeEnabled()) return;
         if (AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL)) return;
         AppPref.set(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL, true);
+        showMainListGuide();
+    }
+
+    private void showMainListGuide() {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.main_tour_title)
                 .setMessage(R.string.main_tour_message)
@@ -772,6 +778,11 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void bindQuickFilterChips() {
+        Chip guideChip = findViewById(R.id.chip_guide);
+        if (guideChip != null) {
+            guideChip.setOnClickListener(v -> showMainListGuide());
+        }
+        refreshGuidedControls();
         for (int[] entry : QUICK_FILTER_CHIPS) {
             bindQuickFilterChip(entry[0], entry[1]);
         }
@@ -795,6 +806,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         }
         refreshQuickFilterChips();
         refreshSortChipLabel();
+    }
+
+    private void refreshGuidedControls() {
+        Chip guideChip = findViewById(R.id.chip_guide);
+        if (guideChip != null) {
+            guideChip.setVisibility(Prefs.Experience.isGuidedModeEnabled() ? View.VISIBLE : View.GONE);
+        }
     }
 
     /**
@@ -1026,29 +1044,39 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                         R.plurals.main_status_perm_suffix, permGrantedSum, permGrantedSum));
             }
             String statusLine = line.toString();
-            mListStatusView.setText(statusLine);
+            boolean canFilterTrackers = trackerSum > 0
+                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
+            boolean canFilterPermissions = permGrantedSum > 0
+                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
+            String displayStatusLine = statusLine;
+            if (Prefs.Experience.isGuidedModeEnabled()) {
+                int hintRes = canFilterTrackers ? R.string.main_status_guided_trackers_hint
+                        : canFilterPermissions ? R.string.main_status_guided_permissions_hint
+                        : R.string.main_status_guided_details_hint;
+                displayStatusLine = getString(R.string.main_status_with_guided_hint,
+                        statusLine, getString(hintRes));
+            }
+            mListStatusView.setText(displayStatusLine);
             // Tap-to-filter shortcut: prefers trackers when present (the bigger user
             // goal), falls back to perms-granted otherwise. No-op when both filters
             // are already on; user uses the Clear chip to undo.
-            if (trackerSum > 0
-                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS)) {
+            if (canFilterTrackers) {
                 mListStatusView.setClickable(true);
                 mListStatusView.setFocusable(true);
                 setListStatusActionable(true);
                 mListStatusActionHint = getString(R.string.main_status_filter_trackers_a11y);
-                setListStatusContentDescription(statusLine);
+                setListStatusContentDescription(displayStatusLine);
                 mListStatusView.setOnClickListener(v -> {
                     if (viewModel == null) return;
                     viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
                     refreshQuickFilterChips();
                 });
-            } else if (permGrantedSum > 0
-                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS)) {
+            } else if (canFilterPermissions) {
                 mListStatusView.setClickable(true);
                 mListStatusView.setFocusable(true);
                 setListStatusActionable(true);
                 mListStatusActionHint = getString(R.string.main_status_filter_permissions_a11y);
-                setListStatusContentDescription(statusLine);
+                setListStatusContentDescription(displayStatusLine);
                 mListStatusView.setOnClickListener(v -> {
                     if (viewModel == null) return;
                     viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
@@ -1059,7 +1087,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 mListStatusView.setClickable(false);
                 setListStatusActionable(false);
                 mListStatusActionHint = null;
-                setListStatusContentDescription(statusLine);
+                setListStatusContentDescription(displayStatusLine);
             }
         }
         if (displayedItemCount > 0) {
