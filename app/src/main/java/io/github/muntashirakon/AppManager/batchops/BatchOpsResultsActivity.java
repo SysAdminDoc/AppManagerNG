@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
@@ -41,9 +42,22 @@ public class BatchOpsResultsActivity extends BaseActivity {
     private RecyclerView mRecyclerView;
     private AppCompatEditText mLogViewer;
     private MaterialTextView mStatusSummary;
+    private MaterialTextView mStatusMeta;
     private MaterialTextView mFailedAppsTitle;
-    private MaterialTextView mEmptyAppsView;
+    private MaterialTextView mFailedAppsSummaryView;
+    private MaterialTextView mLogsTitle;
+    private MaterialTextView mLogsSummary;
+    private View mEmptyState;
     private MaterialButton mLogToggler;
+    private MaterialButton mRetryButton;
+    @Nullable
+    private MenuItem mRetryMenu;
+    private int mFailedAppCount;
+    @NonNull
+    private String mFailedAppsSummary = "";
+    @NonNull
+    private String mQueueTitle = "";
+    private boolean mRetryStarted;
     private boolean mHasLogs;
     private boolean mLogsVisible;
 
@@ -63,11 +77,23 @@ public class BatchOpsResultsActivity extends BaseActivity {
         setSupportActionBar(findViewById(R.id.toolbar));
         findViewById(R.id.progress_linear).setVisibility(View.GONE);
         mStatusSummary = findViewById(R.id.batch_result_status_summary);
+        mStatusMeta = findViewById(R.id.batch_result_status_meta);
         mFailedAppsTitle = findViewById(R.id.batch_result_failed_apps_title);
-        mEmptyAppsView = findViewById(R.id.batch_result_empty_apps);
+        mFailedAppsSummaryView = findViewById(R.id.batch_result_failed_apps_summary);
+        mEmptyState = findViewById(android.R.id.empty);
+        MaterialTextView emptyTitle = findViewById(R.id.empty_state_title);
+        MaterialTextView emptySummary = findViewById(R.id.empty_state_summary);
+        MaterialButton emptyAction = findViewById(R.id.empty_state_action);
+        emptyTitle.setText(R.string.batch_results_no_failed_apps_title);
+        emptySummary.setText(R.string.batch_results_no_failed_apps_message);
+        emptyAction.setVisibility(View.GONE);
         mRecyclerView = findViewById(R.id.list);
         mRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        mRetryButton = findViewById(R.id.action_retry_failed);
+        mRetryButton.setOnClickListener(v -> confirmRetry());
         mLogToggler = findViewById(R.id.action_view_logs);
+        mLogsTitle = findViewById(R.id.batch_result_logs_title);
+        mLogsSummary = findViewById(R.id.batch_result_logs_summary);
         mLogViewer = findViewById(R.id.text);
         mLogViewer.setKeyListener(null);
         mLogToggler.setOnClickListener(v -> setLogsVisible(!mLogsVisible));
@@ -96,6 +122,7 @@ public class BatchOpsResultsActivity extends BaseActivity {
             finish();
             return;
         }
+        mRetryStarted = false;
         setTitle(R.string.batch_ops_results_title);
         String failureMessage = intent.getStringExtra(BatchOpsService.EXTRA_FAILURE_MESSAGE);
         ArrayList<CharSequence> packageLabels = PackageUtils.packagesToAppLabels(getPackageManager(),
@@ -108,21 +135,25 @@ public class BatchOpsResultsActivity extends BaseActivity {
     }
 
     private void updateResultSummary(@Nullable String failureMessage, int failedAppCount) {
-        String failedAppsSummary = getResources().getQuantityString(R.plurals.batch_results_failed_app_count,
+        mFailedAppCount = failedAppCount;
+        mFailedAppsSummary = getResources().getQuantityString(R.plurals.batch_results_failed_app_count,
                 failedAppCount, failedAppCount);
-        String queueTitle = mBatchQueueItem != null ? mBatchQueueItem.getTitle() : null;
-        if (TextUtils.isEmpty(queueTitle)) {
-            queueTitle = getString(R.string.batch_ops);
+        mQueueTitle = mBatchQueueItem != null ? mBatchQueueItem.getTitle() : null;
+        if (TextUtils.isEmpty(mQueueTitle)) {
+            mQueueTitle = getString(R.string.batch_ops);
         }
-        mFailedAppsTitle.setText(failedAppsSummary);
+        mStatusMeta.setText(getString(R.string.batch_results_meta, mFailedAppsSummary, mQueueTitle));
+        mFailedAppsTitle.setText(mFailedAppsSummary);
+        mFailedAppsTitle.setVisibility(failedAppCount > 0 ? View.VISIBLE : View.GONE);
+        mFailedAppsSummaryView.setVisibility(failedAppCount > 0 ? View.VISIBLE : View.GONE);
         mRecyclerView.setVisibility(failedAppCount > 0 ? View.VISIBLE : View.GONE);
-        mEmptyAppsView.setVisibility(failedAppCount > 0 ? View.GONE : View.VISIBLE);
+        mEmptyState.setVisibility(failedAppCount > 0 ? View.GONE : View.VISIBLE);
         if (TextUtils.isEmpty(failureMessage)) {
             mStatusSummary.setText(R.string.batch_results_unknown_failure_summary);
         } else {
-            mStatusSummary.setText(getString(R.string.batch_results_failure_summary,
-                    failureMessage, failedAppsSummary, queueTitle));
+            mStatusSummary.setText(failureMessage);
         }
+        updateRetryState();
     }
 
     private void setLogs(@Nullable String logs) {
@@ -134,6 +165,8 @@ public class BatchOpsResultsActivity extends BaseActivity {
 
     private void setLogsVisible(boolean visible) {
         mLogsVisible = visible && mHasLogs;
+        mLogsTitle.setVisibility(mLogsVisible ? View.VISIBLE : View.GONE);
+        mLogsSummary.setVisibility(mLogsVisible ? View.VISIBLE : View.GONE);
         mLogViewer.setVisibility(mLogsVisible ? View.VISIBLE : View.GONE);
         if (mHasLogs) {
             mLogToggler.setText(mLogsVisible ? R.string.hide_logs : R.string.view_logs);
@@ -156,7 +189,16 @@ public class BatchOpsResultsActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_batch_ops_results_actions, menu);
+        mRetryMenu = menu.findItem(R.id.action_retry);
+        updateRetryState();
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        mRetryMenu = menu.findItem(R.id.action_retry);
+        updateRetryState();
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -166,15 +208,52 @@ public class BatchOpsResultsActivity extends BaseActivity {
             finish();
             return true;
         } else if (id == R.id.action_retry) {
-            if (mBatchQueueItem != null) {
-                Intent BatchOpsIntent = BatchOpsService.getServiceIntent(this, mBatchQueueItem);
-                ContextCompat.startForegroundService(this, BatchOpsIntent);
-                item.setEnabled(false);
-                UIUtils.displayShortToast(R.string.operation_running);
-            }
+            confirmRetry();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void confirmRetry() {
+        if (!canRetry()) {
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.batch_results_retry_confirm_title)
+                .setMessage(getString(R.string.batch_results_retry_confirm_body, mQueueTitle, mFailedAppsSummary))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.batch_results_retry_failed_apps, (dialog, which) -> retryFailedApps())
+                .show();
+    }
+
+    private void retryFailedApps() {
+        if (!canRetry() || mBatchQueueItem == null) {
+            return;
+        }
+        Intent batchOpsIntent = BatchOpsService.getServiceIntent(this, mBatchQueueItem);
+        ContextCompat.startForegroundService(this, batchOpsIntent);
+        mRetryStarted = true;
+        updateRetryState();
+        UIUtils.displayShortToast(R.string.batch_results_retry_started);
+    }
+
+    private boolean canRetry() {
+        return mBatchQueueItem != null && mFailedAppCount > 0 && !mRetryStarted;
+    }
+
+    private void updateRetryState() {
+        boolean hasFailedApps = mFailedAppCount > 0;
+        boolean canRetry = canRetry();
+        if (mRetryButton != null) {
+            mRetryButton.setVisibility(hasFailedApps ? View.VISIBLE : View.GONE);
+            mRetryButton.setEnabled(canRetry);
+            mRetryButton.setText(mRetryStarted ? R.string.operation_running : R.string.batch_results_retry_failed_apps);
+        }
+        if (mRetryMenu != null) {
+            mRetryMenu.setVisible(hasFailedApps);
+            mRetryMenu.setEnabled(canRetry);
+            mRetryMenu.setTitle(mRetryStarted ? R.string.operation_running : R.string.batch_results_retry_failed_apps);
+        }
     }
 
     @Override

@@ -683,11 +683,20 @@
     <string name="batch_results_failed_title">Operation needs attention</string>
     <string name="batch_results_failure_summary">%1$s\n%2$s · %3$s</string>
     <string name="batch_results_unknown_failure_summary">The operation finished with an issue. Check the logs before retrying.</string>
+    <string name="batch_results_meta">%1$s · %2$s</string>
     <plurals name="batch_results_failed_app_count">
         <item quantity="one">%d failed app</item>
         <item quantity="other">%d failed apps</item>
     </plurals>
-    <string name="batch_results_no_failed_apps_message">No failed apps were reported. The logs may contain the reason this result was shown.</string>
+    <string name="batch_results_failed_apps_summary">Only the apps listed below are queued if you retry from this screen.</string>
+    <string name="batch_results_retry_failed_apps">Retry failed apps</string>
+    <string name="batch_results_retry_confirm_title">Retry failed apps?</string>
+    <string name="batch_results_retry_confirm_body">Retries %1$s for %2$s. Apps that already completed are not included.</string>
+    <string name="batch_results_retry_started">Retry started for failed apps.</string>
+    <string name="batch_results_no_failed_apps_title">No failed apps listed</string>
+    <string name="batch_results_no_failed_apps_message">No failed apps were reported. Review the log for the reason this result was shown.</string>
+    <string name="batch_results_logs_title">Execution log</string>
+    <string name="batch_results_logs_summary">Review the captured log before retrying or sharing diagnostics.</string>
     <string name="hide_logs">Hide logs</string>
     <string name="batch_results_no_logs_button">No logs available</string>
     <string name="batch_results_no_logs_message">No logs were captured for this operation.</string>
