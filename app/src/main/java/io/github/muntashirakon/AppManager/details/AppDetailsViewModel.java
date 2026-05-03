@@ -583,6 +583,43 @@ public class AppDetailsViewModel extends AndroidViewModel {
         });
     }
 
+    @AnyThread
+    @GuardedBy("blockerLocker")
+    public void updateRulesForComponents(@NonNull List<AppDetailsComponentItem> componentItems,
+                                         @NonNull RuleType type,
+                                         @ComponentRule.ComponentStatus String componentStatus,
+                                         @AppDetailsFragment.Property int propertyToReload) {
+        if (mExternalApk || componentItems.isEmpty()) return;
+        mExecutor.submit(() -> {
+            Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::pauseWatcher);
+            synchronized (mBlockerLocker) {
+                try {
+                    waitForBlockerOrExit();
+                    mBlocker.setMutable();
+                    for (AppDetailsComponentItem componentItem : componentItems) {
+                        String componentName = componentItem.name;
+                        if (mBlocker.hasComponentName(componentName)) {
+                            mBlocker.deleteComponent(componentName);
+                        }
+                        mBlocker.addComponent(componentName, type, componentStatus);
+                    }
+                    if (Prefs.Blocking.globalBlockingEnabled()
+                            || (mRuleApplicationStatus.getValue() != null
+                            && RULE_APPLIED == mRuleApplicationStatus.getValue())) {
+                        mBlocker.applyRules(true);
+                    }
+                    setRuleApplicationStatus();
+                    mBlocker.commit();
+                    mBlocker.setReadOnly();
+                } finally {
+                    Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::resumeWatcher);
+                    mBlockerLocker.notifyAll();
+                }
+            }
+            load(propertyToReload);
+        });
+    }
+
     @Nullable
     public ComponentRule getComponentRule(String componentName) {
         synchronized (mBlockerLocker) {

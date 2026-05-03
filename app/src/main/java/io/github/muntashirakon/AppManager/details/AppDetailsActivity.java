@@ -29,6 +29,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
@@ -138,6 +139,8 @@ public class AppDetailsActivity extends BaseActivity {
     private ViewPager2 mViewPager;
     private TypedArray mTabTitleIds;
     private Fragment[] mTabFragments;
+    private boolean[] mLoadedTabs;
+    private boolean mPackageReady;
 
     private boolean mBackToMainPage;
     @Nullable
@@ -182,6 +185,7 @@ public class AppDetailsActivity extends BaseActivity {
         // Initialize tabs
         mTabTitleIds = getResources().obtainTypedArray(R.array.TAB_TITLES);
         mTabFragments = new Fragment[mTabTitleIds.length()];
+        mLoadedTabs = new boolean[mTabTitleIds.length()];
         if (mPackageName == null && mApkSource == null) {
             UIUtils.displayLongToast(R.string.empty_package_name);
             finish();
@@ -202,10 +206,16 @@ public class AppDetailsActivity extends BaseActivity {
             progressDialog.show();
         }
         // Set tabs
-        mViewPager.setOffscreenPageLimit(4);
+        mViewPager.setOffscreenPageLimit(1);
         mViewPager.setAdapter(new AppDetailsFragmentPagerAdapter(this));
         new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> tab.setText(mTabTitleIds.getString(position)))
                 .attach();
+        mViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                loadSelectedTab(false);
+            }
+        });
         // Apply incoming deep-link hints (initial tab + tracker sort) only on the first
         // creation; on rotation/restoration the user's last tab/sort selection wins.
         if (savedInstanceState == null) {
@@ -238,6 +248,8 @@ public class AppDetailsActivity extends BaseActivity {
             ApplicationInfo applicationInfo = packageInfo.applicationInfo;
             // Set title as the package label
             setTitle(applicationInfo.loadLabel(getPackageManager()));
+            mPackageReady = true;
+            loadSelectedTab(false);
         });
         // Check for the existence of package
         model.getIsPackageExistLiveData().observe(this, isPackageExist -> {
@@ -254,7 +266,8 @@ public class AppDetailsActivity extends BaseActivity {
         // Check for package changes
         model.isPackageChanged().observe(this, isPackageChanged -> {
             if (isPackageChanged && model.isPackageExist()) {
-                loadTabs();
+                invalidateLoadedTabs();
+                loadSelectedTab(true);
             }
         });
     }
@@ -363,10 +376,30 @@ public class AppDetailsActivity extends BaseActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void loadTabs() {
+    private void invalidateLoadedTabs() {
+        if (mLoadedTabs != null) {
+            Arrays.fill(mLoadedTabs, false);
+        }
+    }
+
+    private void loadSelectedTab(boolean force) {
+        if (!mPackageReady || mViewPager == null || mLoadedTabs == null || !model.isPackageExist()) {
+            return;
+        }
         @AppDetailsFragment.Property int id = mViewPager.getCurrentItem();
-        Log.d("ADA - " + mTabTitleIds.getText(id), "isPackageChanged called");
-        for (int i = 0; i < mTabTitleIds.length(); ++i) model.load(i);
+        loadTab(id, force);
+    }
+
+    private void loadTab(@AppDetailsFragment.Property int id, boolean force) {
+        if (id < 0 || id >= mLoadedTabs.length) {
+            return;
+        }
+        if (!force && mLoadedTabs[id]) {
+            return;
+        }
+        mLoadedTabs[id] = true;
+        Log.d("ADA - " + mTabTitleIds.getText(id), "loading selected tab");
+        model.load(id);
     }
 
     // For tab layout
