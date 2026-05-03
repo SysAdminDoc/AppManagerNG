@@ -75,20 +75,20 @@ jobs:
       - name: Locate APK artifacts
         id: apks
         run: |
-          ARM64=$(find app/build/outputs/apk/release -name "*arm64*" | head -1)
-          UNIVERSAL=$(find app/build/outputs/apk/release -name "*universal*" | head -1)
-          # Rename to versioned filenames
-          mv "$ARM64" "app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-arm64-v8a.apk"
-          mv "$UNIVERSAL" "app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk"
-          echo "ARM64=app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-arm64-v8a.apk" >> "$GITHUB_OUTPUT"
-          echo "UNIVERSAL=app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk" >> "$GITHUB_OUTPUT"
+          SRC="app/build/outputs/apk/release/app-release.apk"
+          DEST="app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk"
+          mv "$SRC" "$DEST"
+          echo "UNIVERSAL=$DEST" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release and upload APKs
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "AppManagerNG ${{ github.ref_name }}" \
-            --generate-notes \
-            "${{ steps.apks.outputs.ARM64 }}" \
-            "${{ steps.apks.outputs.UNIVERSAL }}"
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" "${{ steps.apks.outputs.UNIVERSAL }}" --clobber
+          else
+            gh release create "${{ github.ref_name }}" \
+              --title "AppManagerNG ${{ github.ref_name }}" \
+              --generate-notes \
+              "${{ steps.apks.outputs.UNIVERSAL }}"
+          fi

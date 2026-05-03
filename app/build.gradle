@@ -39,10 +39,13 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file('dev_keystore.jks')
-            storePassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
-            keyPassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
-            keyAlias 'key0'
+            def devKeystore = file('dev_keystore.jks')
+            if (devKeystore.exists()) {
+                storeFile devKeystore
+                storePassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
+                keyPassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
+                keyAlias 'key0'
+            }
         }
         release {
             def props = new Properties()
@@ -67,7 +70,9 @@ android {
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-DEBUG'
-            signingConfig signingConfigs.debug
+            if (file('dev_keystore.jks').exists()) {
+                signingConfig signingConfigs.debug
+            }
             resValue "string", "app_name", "AM-NG Debug"
         }
     }
