@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.Set;
@@ -56,6 +58,11 @@ public class BackupFragment extends Fragment {
         boolean allowCustomUsers = requireArguments().getBoolean(ARG_ALLOW_CUSTOM_USERS);
 
         MaterialAlertView messageView = view.findViewById(R.id.message);
+        TextView summaryTitle = view.findViewById(R.id.backup_restore_summary_title);
+        TextView summaryBody = view.findViewById(R.id.backup_restore_summary_body);
+        TextView summaryMeta = view.findViewById(R.id.backup_restore_summary_meta);
+        TextView actionStatus = view.findViewById(R.id.action_status);
+        MaterialButton backupButton = view.findViewById(R.id.action_backup);
         RecyclerView recyclerView = view.findViewById(android.R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
         int supportedFlags = BackupFlags.getSupportedBackupFlags();
@@ -66,6 +73,13 @@ public class BackupFragment extends Fragment {
         }
         FlagsAdapter adapter = new FlagsAdapter(mContext, BackupFlags.fromPref().getFlags(), supportedFlags);
         recyclerView.setAdapter(adapter);
+        summaryTitle.setText(R.string.backup_dialog_summary_title);
+        summaryMeta.setText(getString(R.string.backup_dialog_meta,
+                getResources().getQuantityString(R.plurals.backup_dialog_installed_app_count,
+                        mViewModel.getInstalledAppCount(), mViewModel.getInstalledAppCount()),
+                getExistingBaseBackupSummary()));
+        adapter.setOnSelectionChangeListener((selectedFlags, selectedFlagCount) ->
+                updateActionState(backupButton, actionStatus, summaryBody, selectedFlags, selectedFlagCount));
 
         Set<CharSequence> uninstalledApps = mViewModel.getUninstalledApps();
         if (!uninstalledApps.isEmpty()) {
@@ -76,7 +90,7 @@ public class BackupFragment extends Fragment {
             messageView.setText(sb);
             messageView.setVisibility(View.VISIBLE);
         }
-        view.findViewById(R.id.action_backup).setOnClickListener(v -> {
+        backupButton.setOnClickListener(v -> {
             BackupFlags newFlags = new BackupFlags(adapter.getSelectedFlags());
             handleBackup(newFlags);
         });
@@ -122,5 +136,31 @@ public class BackupFragment extends Fragment {
                 mViewModel.prepareForOperation(operationInfo);
             }
         }
+    }
+
+    private void updateActionState(@NonNull MaterialButton backupButton, @NonNull TextView actionStatus,
+                                   @NonNull TextView summaryBody, @BackupFlags.BackupFlag int selectedFlags,
+                                   int selectedFlagCount) {
+        boolean hasSelectedContent = selectedFlagCount > 0;
+        backupButton.setEnabled(hasSelectedContent);
+        if (hasSelectedContent) {
+            actionStatus.setText(getResources().getQuantityString(R.plurals.backup_restore_content_selected_count,
+                    selectedFlagCount, selectedFlagCount));
+        } else {
+            actionStatus.setText(R.string.backup_restore_no_content_selected);
+        }
+        summaryBody.setText((selectedFlags & BackupFlags.BACKUP_MULTIPLE) != 0
+                ? R.string.backup_dialog_summary_named
+                : R.string.backup_dialog_summary_base);
+    }
+
+    @NonNull
+    private String getExistingBaseBackupSummary() {
+        int baseBackupCount = mViewModel.getBaseBackupCount();
+        if (baseBackupCount == 0) {
+            return getString(R.string.backup_dialog_no_existing_base_backups);
+        }
+        return getResources().getQuantityString(R.plurals.backup_dialog_existing_base_backup_count,
+                baseBackupCount, baseBackupCount);
     }
 }

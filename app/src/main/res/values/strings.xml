@@ -1560,6 +1560,48 @@
     <string name="backup_apps_cannot_be_backed_up">The following apps are not installed and cannot be backed up:</string>
     <string name="delete_base_backups_confirmation">Delete the base backups for these apps? Named backups are kept.</string>
     <string name="restore_multiple_backups_confirmation">Restore backups for the selected apps? Existing app data may be replaced.</string>
+    <string name="backup_dialog_summary_title">Backup review</string>
+    <string name="backup_dialog_summary_base">Back up installed apps with the selected data types. Existing base backups are replaced only after confirmation.</string>
+    <string name="backup_dialog_summary_named">Create named backups with the selected data types. Base backups remain untouched.</string>
+    <string name="backup_dialog_meta">%1$s - %2$s</string>
+    <plurals name="backup_dialog_installed_app_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> installed app</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> installed apps</item>
+    </plurals>
+    <string name="backup_dialog_no_existing_base_backups">No existing base backups</string>
+    <plurals name="backup_dialog_existing_base_backup_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> existing base backup</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> existing base backups</item>
+    </plurals>
+    <string name="restore_dialog_summary_title">Restore review</string>
+    <string name="restore_dialog_summary_multiple">Restore base backups for selected apps. Existing app data may be replaced.</string>
+    <string name="restore_dialog_meta">%1$s - %2$s</string>
+    <plurals name="restore_dialog_restorable_app_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> restorable app</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> restorable apps</item>
+    </plurals>
+    <string name="restore_dialog_no_skipped_apps">No skipped apps</string>
+    <plurals name="restore_dialog_skipped_app_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> skipped app</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> skipped apps</item>
+    </plurals>
+    <string name="restore_single_summary_title">Restore point</string>
+    <string name="restore_single_summary_installed">Choose one backup version to restore. Existing app data may be replaced.</string>
+    <string name="restore_single_summary_uninstalled">Choose one backup version to install and restore this app.</string>
+    <plurals name="backup_restore_version_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> backup version</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> backup versions</item>
+    </plurals>
+    <string name="backup_restore_no_content_selected">Choose at least one data type.</string>
+    <plurals name="backup_restore_content_selected_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> data type selected</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> data types selected</item>
+    </plurals>
+    <string name="backup_restore_select_one_backup">Select one backup to restore.</string>
+    <plurals name="backup_restore_backup_selection_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> backup selected</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> backups selected</item>
+    </plurals>
     <string name="backup_review_apps_title">Review apps to back up</string>
     <string name="restore_review_apps_title">Review apps to restore</string>
     <string name="backup_empty_all_apps_title">No installed apps to back up</string>
