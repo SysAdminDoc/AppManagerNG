@@ -66,7 +66,13 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
 
     protected DexOptOptions(@NonNull JSONObject jsonObject) throws JSONException {
         packages = JSONUtils.getArray(String.class, jsonObject.optJSONArray("packages"));
-        compilerFiler = jsonObject.getString("compiler_filter");
+        compilerFiler = JSONUtils.optString(jsonObject, "compiler_filter");
+        if (compilerFiler == null) {
+            compilerFiler = JSONUtils.optString(jsonObject, "compiler_filer");
+        }
+        if (compilerFiler == null) {
+            compilerFiler = getDefaultCompilerFilterForInstallation();
+        }
         compileLayouts = jsonObject.getBoolean("compile_layouts");
         clearProfileData = jsonObject.getBoolean("clear_profile_data");
         checkProfiles = jsonObject.getBoolean("check_profiles");
@@ -82,7 +88,7 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("packages", JSONUtils.getJSONArray(packages));
-        jsonObject.put("compiler_filer", compilerFiler);
+        jsonObject.put("compiler_filter", compilerFiler);
         jsonObject.put("compile_layouts", compileLayouts);
         jsonObject.put("clear_profile_data", clearProfileData);
         jsonObject.put("check_profiles", checkProfiles);

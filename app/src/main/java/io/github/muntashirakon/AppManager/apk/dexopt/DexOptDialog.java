@@ -13,11 +13,14 @@ import android.widget.AutoCompleteTextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,27 +80,43 @@ public class DexOptDialog extends DialogFragment {
         boolean isRootOrSystem = uid == Ops.SYSTEM_UID || uid == Ops.ROOT_UID;
         // Inflate view
         View view = View.inflate(requireContext(), R.layout.dialog_dexopt, null);
+        String[] packages = mOptions.packages;
+        MaterialTextView scopeView = view.findViewById(R.id.optimization_scope);
+        TextInputLayout compilerFilterLayout = view.findViewById(R.id.compiler_filter_layout);
         AutoCompleteTextView compilerFilterSelectionView = view.findViewById(R.id.compiler_filter);
         MaterialCheckBox compileLayoutsCheck = view.findViewById(R.id.compile_layouts);
+        MaterialTextView compileLayoutsSummary = view.findViewById(R.id.compile_layouts_summary);
         MaterialCheckBox clearProfileDataCheck = view.findViewById(R.id.clear_profile_data);
+        MaterialTextView clearProfileDataSummary = view.findViewById(R.id.clear_profile_data_summary);
         MaterialCheckBox checkProfilesCheck = view.findViewById(R.id.check_profiles);
         MaterialCheckBox forceCompilationCheck = view.findViewById(R.id.force_compilation);
         MaterialCheckBox forceDexOptCheck = view.findViewById(R.id.force_dexopt);
+        MaterialTextView forceDexOptSummary = view.findViewById(R.id.force_dexopt_summary);
+        if (packages == null) {
+            scopeView.setText(R.string.dexopt_scope_all);
+        } else {
+            scopeView.setText(getResources().getQuantityString(R.plurals.dexopt_scope_selected,
+                    packages.length, packages.length));
+        }
         compilerFilterSelectionView.setText(mOptions.compilerFiler);
         checkProfilesCheck.setChecked(mOptions.checkProfiles);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Compile layout options was introduced in Android 10 and removed in Android 12
             compileLayoutsCheck.setVisibility(View.GONE);
+            compileLayoutsSummary.setVisibility(View.GONE);
         }
         if (!isRootOrSystem) {
             // clearProfileData and forceDexOpt can only be run as root/system
-            clearProfileDataCheck.setVisibility(View.GONE);
-            forceDexOptCheck.setVisibility(View.GONE);
+            clearProfileDataCheck.setEnabled(false);
+            clearProfileDataSummary.setText(R.string.dexopt_root_only_summary);
+            forceDexOptCheck.setEnabled(false);
+            forceDexOptSummary.setText(R.string.dexopt_root_only_summary);
         }
 
         // Set listeners
         compilerFilterSelectionView.setAdapter(new AnyFilterArrayAdapter<>(requireContext(), io.github.muntashirakon.ui.R.layout.auto_complete_dropdown_item,
                 COMPILER_FILTERS));
+        compilerFilterSelectionView.setOnItemClickListener((parent, itemView, position, id) -> compilerFilterLayout.setError(null));
         compileLayoutsCheck.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.compileLayouts = isChecked);
         clearProfileDataCheck.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.clearProfileData = isChecked);
         checkProfilesCheck.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.checkProfiles = isChecked);
@@ -107,30 +126,46 @@ public class DexOptDialog extends DialogFragment {
             forceDexOptCheck.setChecked(true);
         }
 
-        return new MaterialAlertDialogBuilder(requireContext())
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.title_perform_runtime_optimization_to_apps)
                 .setView(view)
-                .setPositiveButton(R.string.action_run, (dialog, which) -> {
-                    Editable compilerFilterRaw = compilerFilterSelectionView.getText();
-                    if (TextUtils.isEmpty(compilerFilterRaw)) {
-                        return;
-                    }
-                    String compilerFiler = compilerFilterRaw.toString().trim();
-                    if (!COMPILER_FILTERS.contains(compilerFiler)) {
-                        // Invalid compiler filter
-                        return;
-                    }
-                    mOptions.compilerFiler = compilerFiler;
-                    launchOp();
-                })
+                .setPositiveButton(R.string.action_run, null)
                 .setNegativeButton(R.string.cancel, null)
-                .setNeutralButton(R.string.reset_to_default, (dialog, which) -> {
-                    mOptions.compilerFiler = DexOptOptions.getDefaultCompilerFilterForInstallation();
-                    mOptions.forceCompilation = true;
-                    mOptions.clearProfileData = true;
-                    launchOp();
-                })
+                .setNeutralButton(R.string.dexopt_run_defaults, null)
                 .create();
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (prepareOptionsFromInput(compilerFilterSelectionView, compilerFilterLayout)) {
+                    dialog.dismiss();
+                    launchOp();
+                }
+            });
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                mOptions.compilerFiler = DexOptOptions.getDefaultCompilerFilterForInstallation();
+                mOptions.forceCompilation = true;
+                mOptions.clearProfileData = isRootOrSystem;
+                dialog.dismiss();
+                launchOp();
+            });
+        });
+        return dialog;
+    }
+
+    private boolean prepareOptionsFromInput(@NonNull AutoCompleteTextView compilerFilterSelectionView,
+                                            @NonNull TextInputLayout compilerFilterLayout) {
+        Editable compilerFilterRaw = compilerFilterSelectionView.getText();
+        if (TextUtils.isEmpty(compilerFilterRaw)) {
+            compilerFilterLayout.setError(getString(R.string.dexopt_compiler_filter_required));
+            return false;
+        }
+        String compilerFilter = compilerFilterRaw.toString().trim();
+        if (!COMPILER_FILTERS.contains(compilerFilter)) {
+            compilerFilterLayout.setError(getString(R.string.dexopt_compiler_filter_invalid));
+            return false;
+        }
+        compilerFilterLayout.setError(null);
+        mOptions.compilerFiler = compilerFilter;
+        return true;
     }
 
     private void launchOp() {
