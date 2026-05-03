@@ -98,6 +98,7 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
         } else if (id == R.id.action_clear) {
             if (mLogListAdapter != null) {
                 mLogListAdapter.clear();
+                updateEmptyState();
                 UIUtils.displayLongToast(R.string.log_cleared);
             }
         } else if (id == R.id.action_record) {
@@ -131,7 +132,8 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
             Log.d(TAG, "Truncating %d lines from log list to avoid out of memory errors", numItemsToRemove);
         }
 
-        if (mAutoscrollToBottom) {
+        updateEmptyState();
+        if (mAutoscrollToBottom && mLogListAdapter.getItemCount() > 0) {
             mRecyclerView.scrollToPosition(mLogListAdapter.getItemCount() - 1);
         }
     }

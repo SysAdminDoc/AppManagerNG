@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.logcat;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.Filter;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.CallSuper;
@@ -24,6 +26,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -54,11 +57,19 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         LogViewerActivity.SearchingInterface, Filter.FilterListener{
     public static final String TAG = AbsLogViewerFragment.class.getSimpleName();
 
-    protected RecyclerView mRecyclerView;
+    protected io.github.muntashirakon.widget.RecyclerView mRecyclerView;
     protected MultiSelectionView mMultiSelectionView;
     protected LogViewerViewModel mViewModel;
     protected LogViewerActivity mActivity;
     protected LogViewerRecyclerAdapter mLogListAdapter;
+    @Nullable
+    private View mEmptyView;
+    @Nullable
+    private TextView mEmptyStateTitle;
+    @Nullable
+    private TextView mEmptyStateSummary;
+    @Nullable
+    private MaterialButton mEmptyStateAction;
 
     protected boolean mAutoscrollToBottom = true;
     @Nullable
@@ -123,6 +134,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         mMultiSelectionView.setOnSelectionModeChangeListener(this);
         mMultiSelectionView.hide();
         mRecyclerView.setAdapter(mLogListAdapter);
+        bindEmptyState(view);
         mRecyclerView.addOnScrollListener(mRecyclerViewScrollListener);
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
         // Observers
@@ -138,8 +150,10 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
             }
             mActivity.supportInvalidateOptionsMenu();
         });
-        mViewModel.observeLogLevelLiveData().observe(getViewLifecycleOwner(), logLevel ->
-                mLogListAdapter.setLogLevelLimit(logLevel));
+        mViewModel.observeLogLevelLiveData().observe(getViewLifecycleOwner(), logLevel -> {
+            mLogListAdapter.setLogLevelLimit(logLevel);
+            updateEmptyState();
+        });
     }
 
     @Override
@@ -233,13 +247,74 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
     @Override
     public void onQuery(@Nullable SearchCriteria searchCriteria) {
         mSearchCriteria = searchCriteria;
+        updateEmptyState();
         Filter filter = mLogListAdapter.getFilter();
         filter.filter(searchCriteria != null ? searchCriteria.query : null, this);
     }
 
     @Override
     public final void onFilterComplete(int count) {
-        mRecyclerView.scrollToPosition(count - 1);
+        if (count > 0) {
+            mRecyclerView.scrollToPosition(count - 1);
+        }
+        updateEmptyState();
+    }
+
+    protected void updateEmptyState() {
+        if (mEmptyView == null || mEmptyStateTitle == null || mEmptyStateSummary == null || mEmptyStateAction == null) {
+            return;
+        }
+        if (isFilterHidingLogs()) {
+            mEmptyStateTitle.setText(R.string.log_viewer_empty_filtered_title);
+            mEmptyStateSummary.setText(R.string.log_viewer_empty_filtered_message);
+            mEmptyStateAction.setText(R.string.clear_filters);
+            mEmptyStateAction.setVisibility(View.VISIBLE);
+        } else {
+            mEmptyStateTitle.setText(getDefaultEmptyStateTitleRes());
+            mEmptyStateSummary.setText(getDefaultEmptyStateMessageRes());
+            mEmptyStateAction.setVisibility(View.GONE);
+        }
+    }
+
+    protected int getDefaultEmptyStateTitleRes() {
+        return R.string.log_viewer_empty_live_title;
+    }
+
+    protected int getDefaultEmptyStateMessageRes() {
+        return R.string.log_viewer_empty_live_message;
+    }
+
+    private void bindEmptyState(@NonNull View view) {
+        mEmptyView = view.findViewById(android.R.id.empty);
+        if (mEmptyView == null) {
+            return;
+        }
+        mEmptyStateTitle = mEmptyView.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = mEmptyView.findViewById(R.id.empty_state_summary);
+        mEmptyStateAction = mEmptyView.findViewById(R.id.empty_state_action);
+        if (mEmptyStateAction != null) {
+            mEmptyStateAction.setOnClickListener(v -> clearLogFilters());
+        }
+        mRecyclerView.setEmptyView(mEmptyView);
+        updateEmptyState();
+    }
+
+    private boolean isFilterHidingLogs() {
+        return mLogListAdapter != null
+                && mLogListAdapter.getItemCount() == 0
+                && mLogListAdapter.getRealSize() > 0
+                && (hasActiveSearch() || mLogListAdapter.getLogLevelLimit() > Log.VERBOSE);
+    }
+
+    private boolean hasActiveSearch() {
+        return mSearchCriteria != null && !mSearchCriteria.isEmpty();
+    }
+
+    private void clearLogFilters() {
+        mLogListAdapter.setLogLevelLimit(Log.VERBOSE);
+        mViewModel.setLogLevel(Log.VERBOSE);
+        mActivity.clearSearchQuery();
+        updateEmptyState();
     }
 
     @NonNull

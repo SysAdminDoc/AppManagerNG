@@ -361,12 +361,15 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         LogLine logLine = getItem(position);
         holder.logLine = logLine;
 
-        int levelColor = getBackgroundColorForLogLevel(context, logLine.getLogLevel());
         TextView t = holder.logLevel;
-        t.setText(logLine.getProcessIdText());
-        t.setBackgroundColor(levelColor);
-        t.setTextColor(getForegroundColorForLogLevel(context, logLine.getLogLevel()));
-        t.setVisibility(logLine.getLogLevel() == -1 ? View.GONE : View.VISIBLE);
+        boolean hasLogLevel = logLine.getLogLevel() != -1;
+        if (hasLogLevel) {
+            int levelColor = getBackgroundColorForLogLevel(context, logLine.getLogLevel());
+            t.setText(logLine.getProcessIdText());
+            t.setBackgroundColor(levelColor);
+            t.setTextColor(getForegroundColorForLogLevel(context, logLine.getLogLevel()));
+        }
+        t.setVisibility(hasLogLevel ? View.VISIBLE : View.GONE);
 
         holder.itemView.setBackgroundResource(0);
         holder.contentView.setBackgroundResource(position % 2 == 0 ? io.github.muntashirakon.ui.R.drawable.item_semi_transparent : io.github.muntashirakon.ui.R.drawable.item_transparent);
@@ -380,7 +383,7 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         TextView tag = holder.tag;
         tag.setSingleLine(!logLine.isExpanded());
         tag.setText(logLine.getTagName());
-        tag.setVisibility(logLine.getLogLevel() == -1 ? View.GONE : View.VISIBLE);
+        tag.setVisibility(hasLogLevel ? View.VISIBLE : View.GONE);
 
         //EXPANDED INFO
         boolean extraInfoIsVisible = logLine.isExpanded() && logLine.getPid() != -1 // -1 marks lines like 'beginning of /dev/log...'
@@ -404,6 +407,9 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         }
 
         tag.setTextColor(getOrCreateTagColor(context, logLine.getTagName()));
+        holder.itemView.setContentDescription(context.getString(R.string.log_viewer_row_content_description,
+                logLine.getTagName() == null ? context.getString(R.string.log_viewer_unknown_tag) : logLine.getTagName(),
+                logLine.getLogOutput() == null ? "" : logLine.getLogOutput()));
         // Single click on the item:
         // 1. If it is in selection mode, select the item
         // 2. Otherwise, expand the item
