@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Permission Inspector: master grant + info dialog
+- New "Grant for all apps" toolbar action mirrors the existing "Revoke for all" — mass-grants the permission group to every modifiable app on the device. Useful when you've over-revoked and want to start fresh.
+- New info icon on the toolbar opens a dialog explaining what the screen does and, importantly, **why some apps are skipped during a bulk revoke** (OS- and vendor-critical packages — GMS, GSF, system UI, telephony/media providers, fused location, Samsung location/IMS, etc. — are excluded from the bulk action because revoking from them can crash system_server). Per-app toggles remain unrestricted.
+- The same explanation dialog auto-pops after a bulk revoke whenever any app was skipped, so users see the reason in context.
+
 ### Fixed — Permission Inspector: bulk-revoke could reboot device
 - The master "Revoke for all apps" action now skips a denylist of critical system packages (`android`, `com.google.android.gms`/`gsf`, `com.android.systemui`, `com.android.settings`, `com.android.phone`, telephony/media/contacts providers, `com.android.location.fused`, Samsung location/IMS/phone services, etc.) and any `com.android.server.*` / `com.google.android.gms.*` subpackage. Revoking `ACCESS_FINE_LOCATION` / `ACCESS_BACKGROUND_LOCATION` from these crashed `system_server` and rebooted the device on Samsung One UI. Per-app toggles remain unrestricted — the guard only applies to the bulk action. A toast now reports both how many apps were revoked and how many were skipped.
 

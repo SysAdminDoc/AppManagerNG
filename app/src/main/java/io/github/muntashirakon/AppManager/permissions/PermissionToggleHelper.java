@@ -163,6 +163,23 @@ public final class PermissionToggleHelper {
         }
     }
 
+    /** Force a grant regardless of current state. Used by the master toggle. */
+    @WorkerThread
+    public static boolean grant(@NonNull String packageName, int userId, @NonNull String permissionName,
+                                @NonNull AppOpsManagerCompat appOpsManager) {
+        State s = load(packageName, userId, permissionName, appOpsManager);
+        if (s == null || !s.modifiable || s.permission == null || s.packageInfo == null) return false;
+        if (s.granted) return true;
+        try {
+            PermUtils.grantPermission(s.packageInfo, s.permission, appOpsManager, true, true);
+            persistRule(packageName, userId, permissionName, s.permission);
+            return true;
+        } catch (Throwable th) {
+            th.printStackTrace();
+            return false;
+        }
+    }
+
     private static void persistRule(@NonNull String packageName, int userId,
                                     @NonNull String permissionName, @NonNull Permission permission) {
         try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(packageName, userId)) {

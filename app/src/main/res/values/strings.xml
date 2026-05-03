@@ -2149,11 +2149,18 @@
     <string name="title_permission_inspector">Permission Inspector</string>
     <string name="summary_permission_inspector">Review which apps have which permissions, revoke individually or in bulk.</string>
     <string name="master_revoke_all">Revoke for all apps</string>
+    <string name="master_grant_all">Grant for all apps</string>
+    <string name="perm_inspector_info_title">About this screen</string>
+    <string name="perm_inspector_info_body">Lists every app on this device that requests this permission.\n\n• Toggle a single app to grant or revoke just that one.\n• \"Revoke for all apps\" mass-revokes the permission from every modifiable app.\n• \"Grant for all apps\" mass-grants the permission to every modifiable app.\n\nWhy some apps are skipped during \"Revoke for all\":\nA short list of OS- and vendor-critical packages is excluded from the bulk revoke because revoking permissions like Location from them can crash system_server and reboot the device. This includes Google Play services (com.google.android.gms / gsf), the system UI, Settings, Phone, telephony / media / contacts providers, the fused location provider, Samsung location and IMS services, and AppManager itself.\n\nIndividual per-app toggles are NOT restricted — if you really need to revoke from one of those packages you can still tap its switch directly. Treat that as a power-user action.</string>
     <string name="permission_inspector_no_apps">No apps request this permission.</string>
     <string name="perm_inspector_count_fmt">%1$d of %2$d apps granted</string>
     <plurals name="perm_inspector_bulk_revoked">
         <item quantity="one">Revoked from %d app</item>
         <item quantity="other">Revoked from %d apps</item>
+    </plurals>
+    <plurals name="perm_inspector_bulk_granted">
+        <item quantity="one">Granted to %d app</item>
+        <item quantity="other">Granted to %d apps</item>
     </plurals>
     <plurals name="perm_inspector_bulk_skipped">
         <item quantity="one">Skipped %d critical system app.</item>
