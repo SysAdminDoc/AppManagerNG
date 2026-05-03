@@ -182,6 +182,16 @@ public final class Prefs {
         }
     }
 
+    public static final class Experience {
+        public static boolean isGuidedModeEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_GUIDED_MODE_BOOL);
+        }
+
+        public static void setGuidedModeEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_GUIDED_MODE_BOOL, enabled);
+        }
+    }
+
     public static final class BackupRestore {
         public static boolean backupAppsWithKeyStore() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_BACKUP_ANDROID_KEYSTORE_BOOL);

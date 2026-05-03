@@ -6,6 +6,7 @@
     <string name="require_no_permission">No permission required</string>
     <string name="activities">Activities</string>
     <string name="launch">Launch</string>
+    <string name="guide">Guide</string>
     <string name="refresh">Refresh</string>
     <string name="no_activities">No activities</string>
     <string name="receivers">Receivers</string>
@@ -57,6 +58,10 @@
     <string name="main_status_breakdown_calculating">Calculating breakdown…</string>
     <string name="main_status_filter_trackers_a11y">Tap to show only apps with unblocked trackers.</string>
     <string name="main_status_filter_permissions_a11y">Tap to show only apps with granted dangerous permissions.</string>
+    <string name="main_status_with_guided_hint" translatable="false"><xliff:g id="status" example="Showing 120 apps">%1$s</xliff:g>\n<xliff:g id="hint" example="Tap any app for details.">%2$s</xliff:g></string>
+    <string name="main_status_guided_trackers_hint">Tap this panel to focus apps with trackers.</string>
+    <string name="main_status_guided_permissions_hint">Tap this panel to focus apps with granted dangerous permissions.</string>
+    <string name="main_status_guided_details_hint">Tap an app for details. Long-press to select apps.</string>
     <string name="tag_dangerous_perms"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions</string>
     <string name="perms_cta_title"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
     <string name="perms_cta_subtitle_can_revoke">Revoke every granted dangerous permission for this app. You can re-grant individual permissions from Android Settings if needed.</string>
@@ -67,8 +72,8 @@
         <item quantity="one">⚠ This APK contains <xliff:g id="count" example="1">%1$d</xliff:g> known tracking SDK. You can block trackers from the App info screen after installing.</item>
         <item quantity="other">⚠ This APK contains <xliff:g id="count" example="24">%1$d</xliff:g> known tracking SDKs. You can block trackers from the App info screen after installing.</item>
     </plurals>
-    <string name="main_tour_title">Quick tour</string>
-    <string name="main_tour_message">Use the chip row to switch common views without opening the full filter sheet.\n\nThe status panel summarizes visible trackers and granted dangerous permissions. Tap it to jump into the most urgent filtered view.\n\nBadges on each app highlight backups, trackers, and dangerous permissions. Tap a badge to go straight to the relevant detail tab.\n\nLong-press an app icon for quick actions without leaving the list.</string>
+    <string name="main_tour_title">App list guide</string>
+    <string name="main_tour_message">Tap an app row to open its AppManagerNG details. Tap the app icon to launch the app itself when Android allows it.\n\nUse the chip row to switch common views without opening the full filter sheet. The Sort chip opens the full list controls.\n\nThe status panel summarizes visible trackers and granted dangerous permissions. Tap it to jump into the most urgent filtered view.\n\nBadges on each app highlight backups, trackers, and dangerous permissions. Tap a badge to go straight to the relevant detail tab.\n\nLong-press a row to select apps for batch actions. Long-press an app icon for single-app quick actions.</string>
     <string name="got_it">Got it</string>
     <plurals name="main_status_tracker_suffix">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
@@ -88,8 +93,9 @@
     <string name="main_list_debuggable_indicator">Debuggable app</string>
     <string name="main_list_installed_state">Installed</string>
     <string name="main_list_uninstalled_state">Not installed</string>
-    <string name="main_list_app_content_description">%1$s, %2$s, package %3$s, %4$s, %5$s</string>
-    <string name="main_list_select_app">Select %1$s</string>
+    <string name="main_list_app_content_description">%1$s, %2$s, package %3$s, %4$s, %5$s. Double tap for app details.</string>
+    <string name="main_list_open_app">Open <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
+    <string name="main_list_select_app">Select <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="app_details_app_icon">App icon</string>
     <string name="app_details_empty_title_no_matches">No matching details</string>
     <string name="app_details_empty_message_no_matches">Search is hiding every item in this tab.</string>
@@ -127,8 +133,8 @@
     <string name="system">System</string>
     <string name="user">User</string>
     <string name="sort">Sort</string>
-    <string name="main_sort_chip_label"><xliff:g id="sort_label" example="App label">%1$s</xliff:g></string>
-    <string name="main_sort_chip_label_reversed"><xliff:g id="sort_label" example="App label">%1$s</xliff:g> ↓</string>
+    <string name="main_sort_chip_label">Sort: <xliff:g id="sort_label" example="App label">%1$s</xliff:g></string>
+    <string name="main_sort_chip_label_reversed">Sort: <xliff:g id="sort_label" example="App label">%1$s</xliff:g> ↓</string>
     <string name="version_name_with_code">Version <xliff:g id="version_name" example="2.5.17">%1$s</xliff:g> (<xliff:g id="version_code" example="365">%2$d</xliff:g>)</string>
     <string name="app_info">App info</string>
     <string name="fdroid" translatable="false">F-Droid</string>
@@ -1377,7 +1383,7 @@
     <string name="magisk_denylist">Magisk DenyList</string>
     <string name="failed_to_enable_magisk_deny_list">Could not enable Magisk DenyList</string>
     <string name="failed_to_disable_magisk_deny_list">Could not disable Magisk DenyList</string>
-    <string name="mode_of_op_with_inferred_mode_of_op">%1$s (Inferred mode: %2$s)</string>
+    <string name="mode_of_op_with_inferred_mode_of_op">Selected: %1$s. Active now: %2$s</string>
     <string name="primary_abi">Primary ABI</string>
     <string name="backup_keep_device_awake_warning">Backup started. Keep the device awake and AppManager open until it finishes — Android 14+ may kill long-running backups in Doze.</string>
     <string name="device_page_size">Device page size</string>
@@ -1606,6 +1612,8 @@
     <string name="pref_appearance_description">Theme, typography, layout direction, and feature visibility.</string>
     <string name="pref_privacy">Privacy</string>
     <string name="pref_privacy_description">Screen lock, authorization, Internet access, and session behavior.</string>
+    <string name="pref_guided_mode">Guided experience</string>
+    <string name="pref_guided_mode_msg">Show plain-language guides, contextual help, and recovery hints. Advanced tools stay available.</string>
     <string name="user_manual">User manual</string>
     <string name="get_help">Get help</string>
     <string name="pref_advanced_pref">Users, APK naming, concurrency, freezing, and expert defaults.</string>
