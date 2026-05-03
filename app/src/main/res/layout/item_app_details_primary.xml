@@ -11,19 +11,6 @@
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
     android:layout_marginVertical="?attr/listItemMarginVertical">
 
-    <com.google.android.material.chip.Chip
-        android:id="@+id/type"
-        style="@style/Widget.AppTheme.CardView.Outlined.DiagonallyRounded"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:minHeight="@dimen/premium_badge_min_height"
-        android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
-        android:textAllCaps="true"
-        tools:text="Type" />
-
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -33,7 +20,9 @@
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <androidx.appcompat.widget.AppCompatImageView
@@ -41,31 +30,48 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginEnd="@dimen/padding_small"
-                android:layout_weight="0"
                 android:contentDescription="@string/str_logo" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:paddingEnd="@dimen/padding_small"
                 android:orientation="vertical">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/label"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
                     android:ellipsize="end"
-                    android:gravity="center"
-                    android:maxLines="1"
+                    android:gravity="start"
+                    android:maxLines="2"
+                    android:textAlignment="viewStart"
                     android:textIsSelectable="true"
                     android:textAppearance="?android:attr/textAppearanceListItem"
                     tools:text="@tools:sample/lorem" />
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/orientation"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/type"
+                    style="@style/Widget.AppTheme.CardView.Outlined.DiagonallyRounded"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
+                    android:textAllCaps="true"
+                    tools:text="Firebase Analytics · Analytics" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/orientation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:ellipsize="end"
+                    android:maxLines="2"
                     android:textIsSelectable="true"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     tools:text="@tools:sample/lorem" />
@@ -76,8 +82,7 @@
                 android:id="@+id/toggle_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="0"
+                android:layout_gravity="top"
                 android:clickable="false"
                 android:focusable="false" />
 
