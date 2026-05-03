@@ -11,9 +11,12 @@
     <io.github.muntashirakon.widget.NestedScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:fitsSystemWindows="true"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingTop="@dimen/padding_medium"
+        android:paddingBottom="@dimen/padding_very_large"
         android:scrollbars="vertical"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
@@ -22,35 +25,95 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/batch_result_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/batch_result_status_background"
+                android:minHeight="@dimen/main_status_min_height"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/padding_medium"
+                android:paddingVertical="@dimen/padding_medium">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/batch_result_status_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/batch_results_failed_title"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnErrorContainer" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/batch_result_status_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnErrorContainer"
+                    tools:text="@string/batch_results_unknown_failure_summary" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batch_result_failed_apps_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_large"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="@plurals/batch_results_failed_app_count" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/list"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_small"
                 android:overScrollMode="never"
-                tools:listitem="@android:layout/simple_list_item_1" />
+                tools:itemCount="3"
+                tools:listitem="@layout/item_batch_ops_result_app" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batch_result_empty_apps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_small"
+                android:background="@drawable/main_status_background"
+                android:paddingHorizontal="@dimen/padding_medium"
+                android:paddingVertical="@dimen/padding_medium"
+                android:text="@string/batch_results_no_failed_apps_message"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/action_view_logs"
+                style="@style/Widget.AppTheme.Button.FilledTonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:layout_marginHorizontal="@dimen/padding_medium"
-                android:text="@string/view_logs" />
+                android:layout_marginTop="@dimen/padding_large"
+                android:text="@string/view_logs"
+                app:icon="@drawable/ic_history"
+                app:iconGravity="textStart" />
 
             <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/text"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_small"
+                android:background="@drawable/main_status_background"
                 android:fontFamily="monospace"
                 android:gravity="top"
+                android:minHeight="160dp"
                 android:padding="@dimen/padding_small"
-                android:textSize="@dimen/font_size_medium"
                 android:textIsSelectable="true"
+                android:textSize="@dimen/font_size_medium"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant"
                 android:visibility="gone"
-                android:background="@null"
-                tools:visibility="visible"
-                tools:text="@tools:sample/lorem/random" />
-
+                tools:text="@tools:sample/lorem/random"
+                tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
