@@ -670,6 +670,19 @@
     <string name="operation_running">Operation running…</string>
     <string name="full_stop_tap_to_see_details">. Tap to see details.</string>
     <string name="try_again">Try again</string>
+    <string name="batch_ops_results_title">Batch result</string>
+    <string name="batch_results_failed_title">Operation needs attention</string>
+    <string name="batch_results_failure_summary">%1$s\n%2$s · %3$s</string>
+    <string name="batch_results_unknown_failure_summary">The operation finished with an issue. Check the logs before retrying.</string>
+    <plurals name="batch_results_failed_app_count">
+        <item quantity="one">%d failed app</item>
+        <item quantity="other">%d failed apps</item>
+    </plurals>
+    <string name="batch_results_no_failed_apps_message">No failed apps were reported. The logs may contain the reason this result was shown.</string>
+    <string name="hide_logs">Hide logs</string>
+    <string name="batch_results_no_logs_button">No logs available</string>
+    <string name="batch_results_no_logs_message">No logs were captured for this operation.</string>
+    <string name="batch_results_failed_app_content_description">Failed app: %1$s</string>
     <string name="install_app_message">Do you want to install this app?</string>
     <string name="reinstall">Reinstall</string>
     <string name="unblock_trackers">Unblock trackers</string>
