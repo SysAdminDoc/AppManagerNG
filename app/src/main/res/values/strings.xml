@@ -491,7 +491,13 @@
     <string name="launch_app">Launch</string>
     <string name="never_ask">Never ask</string>
     <string name="one_click_ops">1-click ops</string>
-    <string name="one_click_ops_notice">These operations can affect many apps at once. Review the package list before applying changes, especially when system apps are included.</string>
+    <string name="one_click_ops_notice">These operations can affect many apps at once. AppManagerNG builds a review list before changes are applied; include system apps only when you understand the impact.</string>
+    <string name="one_click_ops_section_review_title">Review and change</string>
+    <string name="one_click_ops_section_review_summary">Find apps first, then apply tracker, component, or app-op changes from a reviewed list.</string>
+    <string name="one_click_ops_section_backup_title">Backup and recovery</string>
+    <string name="one_click_ops_section_backup_summary">Create or restore app data after reviewing the generated package list.</string>
+    <string name="one_click_ops_section_maintenance_title">Maintenance</string>
+    <string name="one_click_ops_section_maintenance_summary">Clean leftover data, trim caches, and optimize runtime artifacts with permission-aware safeguards.</string>
     <string name="changelog">Changelog</string>
     <string name="external_apk_no_app_op">External APK does not have any app operations</string>
     <string name="manifest_viewer">Manifest viewer</string>
@@ -1059,8 +1065,8 @@
     <string name="restore_not_installed_msg">Restore apps that exist only in your backups.</string>
     <string name="restore_latest">Restore latest backups</string>
     <string name="restore_latest_msg">Restore backed-up versions that are newer than the installed app.</string>
-    <string name="backup_msg">Back up apps with data</string>
-    <string name="restore_msg">Restore apps with data</string>
+    <string name="backup_msg">Back up selected apps, data, and related metadata from a reviewed task list.</string>
+    <string name="restore_msg">Restore selected apps and data after reviewing what will be reapplied.</string>
     <string name="drm_free_apkm_msg">The APKM file is DRM-free, no need to convert it to APKS.</string>
     <string name="back_up">Back up</string>
     <string name="internal_storage">Internal storage</string>
