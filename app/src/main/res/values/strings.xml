@@ -2155,6 +2155,10 @@
         <item quantity="one">Revoked from %d app</item>
         <item quantity="other">Revoked from %d apps</item>
     </plurals>
+    <plurals name="perm_inspector_bulk_skipped">
+        <item quantity="one">Skipped %d critical system app.</item>
+        <item quantity="other">Skipped %d critical system apps.</item>
+    </plurals>
 
     <string name="perm_group_camera">Camera</string>
     <string name="perm_group_camera_summary">Apps that can take photos and record video.</string>
