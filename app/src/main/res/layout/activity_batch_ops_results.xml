@@ -25,34 +25,108 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <androidx.appcompat.widget.LinearLayoutCompat
-                android:id="@+id/batch_result_status"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/batch_result_status_card"
+                style="@style/Widget.AppTheme.V2.Card.Header"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/batch_result_status_background"
-                android:minHeight="@dimen/main_status_min_height"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingVertical="@dimen/padding_medium">
+                app:contentPadding="@dimen/premium_space_16">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/batch_result_status_title"
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/batch_results_failed_title"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorOnErrorContainer" />
+                    android:orientation="vertical">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/batch_result_status_summary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/padding_very_small"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnErrorContainer"
-                    tools:text="@string/batch_results_unknown_failure_summary" />
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-            </androidx.appcompat.widget.LinearLayoutCompat>
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:layout_width="@dimen/premium_icon_40"
+                            android:layout_height="@dimen/premium_icon_40"
+                            android:background="?attr/colorErrorContainer"
+                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
+                            android:padding="@dimen/premium_space_8"
+                            android:src="@drawable/ic_information_circle"
+                            app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
+                            app:tint="?attr/colorOnErrorContainer" />
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/premium_space_12"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/batch_result_status_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/batch_results_failed_title"
+                                android:textAppearance="?attr/textAppearanceTitleMedium"
+                                android:textColor="?attr/colorOnSurface" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/batch_result_status_summary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="@string/batch_results_unknown_failure_summary" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/batch_result_status_meta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_12"
+                        android:background="@drawable/main_status_background"
+                        android:gravity="center"
+                        android:paddingHorizontal="@dimen/premium_space_12"
+                        android:paddingVertical="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="3 failed apps · Batch operations" />
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_12"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/action_retry_failed"
+                            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/batch_results_retry_failed_apps"
+                            app:icon="@drawable/ic_replay"
+                            app:iconGravity="textStart" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/action_view_logs"
+                            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/padding_small"
+                            android:layout_weight="1"
+                            android:text="@string/view_logs"
+                            app:icon="@drawable/ic_history"
+                            app:iconGravity="textStart" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/batch_result_failed_apps_title"
@@ -63,6 +137,15 @@
                 android:textColor="?attr/colorOnSurface"
                 tools:text="@plurals/batch_results_failed_app_count" />
 
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batch_result_failed_apps_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_very_small"
+                android:text="@string/batch_results_failed_apps_summary"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/list"
                 android:layout_width="match_parent"
@@ -72,30 +155,36 @@
                 tools:itemCount="3"
                 tools:listitem="@layout/item_batch_ops_result_app" />
 
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/batch_result_empty_apps"
+            <include
+                android:id="@android:id/empty"
+                layout="@layout/view_list_empty_state"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/padding_small"
-                android:background="@drawable/main_status_background"
-                android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingVertical="@dimen/padding_medium"
-                android:text="@string/batch_results_no_failed_apps_message"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/action_view_logs"
-                style="@style/Widget.AppTheme.Button.FilledTonalButton"
-                android:layout_width="wrap_content"
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batch_result_logs_title"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
                 android:layout_marginTop="@dimen/padding_large"
-                android:text="@string/view_logs"
-                app:icon="@drawable/ic_history"
-                app:iconGravity="textStart" />
+                android:text="@string/batch_results_logs_title"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorOnSurface"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batch_result_logs_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_very_small"
+                android:text="@string/batch_results_logs_summary"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/text"

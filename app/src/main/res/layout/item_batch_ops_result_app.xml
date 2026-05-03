@@ -1,24 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
     android:layout_marginVertical="@dimen/main_list_card_margin_vertical"
-    android:background="@drawable/main_status_background"
-    android:minHeight="48dp"
-    android:orientation="vertical"
-    android:paddingHorizontal="@dimen/padding_medium"
-    android:paddingVertical="@dimen/padding_small">
+    app:cardElevation="0dp">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@android:id/text1"
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="2"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurface"
-        tools:text="@string/app_name" />
+        android:gravity="center_vertical"
+        android:minHeight="56dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="?attr/listItemPaddingHorizontal"
+        android:paddingVertical="@dimen/padding_small">
 
-</androidx.appcompat.widget.LinearLayoutCompat>
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="@dimen/premium_icon_40"
+            android:layout_height="@dimen/premium_icon_40"
+            android:background="?attr/colorErrorContainer"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:padding="@dimen/premium_space_8"
+            android:src="@drawable/ic_information_circle"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
+            app:tint="?attr/colorOnErrorContainer" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@android:id/text1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/padding_medium"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="@string/app_name" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>
