@@ -92,19 +92,22 @@ class AppInfoRecyclerAdapter extends RecyclerView.Adapter<AppInfoRecyclerAdapter
             return;
         }
         if (listItem.type == LIST_ITEM_REGULAR_ACTION) {
-            holder.actionDivider.setVisibility(listItem.getOnActionClickListener() != null ? View.VISIBLE : View.GONE);
-            if (listItem.getActionIconRes() != 0) {
+            boolean hasAction = listItem.getOnActionClickListener() != null && holder.actionIcon != null;
+            if (holder.actionDivider != null) {
+                holder.actionDivider.setVisibility(hasAction ? View.VISIBLE : View.GONE);
+            }
+            if (hasAction && listItem.getActionIconRes() != 0) {
                 holder.actionIcon.setIconResource(listItem.getActionIconRes());
             }
-            if (listItem.getActionContentDescription() != null) {
+            if (hasAction && listItem.getActionContentDescription() != null) {
                 holder.actionIcon.setContentDescription(listItem.getActionContentDescription());
-            } else if (listItem.getActionContentDescriptionRes() != 0) {
+            } else if (hasAction && listItem.getActionContentDescriptionRes() != 0) {
                 holder.actionIcon.setContentDescription(mContext.getString(listItem.getActionContentDescriptionRes()));
             }
-            if (listItem.getOnActionClickListener() != null) {
+            if (hasAction) {
                 holder.actionIcon.setVisibility(View.VISIBLE);
                 holder.actionIcon.setOnClickListener(listItem.getOnActionClickListener());
-            } else holder.actionIcon.setVisibility(View.GONE);
+            } else if (holder.actionIcon != null) holder.actionIcon.setVisibility(View.GONE);
         }
     }
 
@@ -121,11 +124,17 @@ class AppInfoRecyclerAdapter extends RecyclerView.Adapter<AppInfoRecyclerAdapter
 
         public ViewHolder(@NonNull View itemView, @ListItem.ListItemType int viewType) {
             super(itemView);
-            itemView.findViewById(R.id.icon_frame).setVisibility(View.GONE);
+            View iconFrame = itemView.findViewById(R.id.icon_frame);
+            if (iconFrame != null) {
+                iconFrame.setVisibility(View.GONE);
+            }
             switch (viewType) {
                 case LIST_ITEM_GROUP_BEGIN: {
                     title = itemView.findViewById(android.R.id.title);
-                    itemView.findViewById(android.R.id.summary).setVisibility(View.GONE);
+                    View summary = itemView.findViewById(android.R.id.summary);
+                    if (summary != null) {
+                        summary.setVisibility(View.GONE);
+                    }
                     break;
                 }
                 case LIST_ITEM_REGULAR:
@@ -140,7 +149,10 @@ class AppInfoRecyclerAdapter extends RecyclerView.Adapter<AppInfoRecyclerAdapter
                 case LIST_ITEM_INLINE:
                     title = itemView.findViewById(android.R.id.title);
                     subtitle = itemView.findViewById(android.R.id.text1);
-                    itemView.findViewById(android.R.id.summary).setVisibility(View.GONE);
+                    View summary = itemView.findViewById(android.R.id.summary);
+                    if (summary != null) {
+                        summary.setVisibility(View.GONE);
+                    }
                     break;
             }
         }
