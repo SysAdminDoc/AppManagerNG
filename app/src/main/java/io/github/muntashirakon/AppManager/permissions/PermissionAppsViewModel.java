@@ -175,15 +175,68 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         });
     }
 
+    /**
+     * Critical system packages that the OS or vendor depends on for core
+     * services (location provider, telephony, push, settings UI). Bulk-revoke
+     * skips these to avoid system_server crashes / reboot loops. Per-app
+     * toggles are still unrestricted — this only affects the master action.
+     */
+    private static final java.util.Set<String> CRITICAL_PACKAGES;
+    static {
+        java.util.HashSet<String> s = new java.util.HashSet<>();
+        s.add("android");
+        s.add("com.android.systemui");
+        s.add("com.android.settings");
+        s.add("com.android.phone");
+        s.add("com.android.providers.telephony");
+        s.add("com.android.providers.contacts");
+        s.add("com.android.providers.calendar");
+        s.add("com.android.providers.media");
+        s.add("com.android.providers.media.module");
+        s.add("com.android.bluetooth");
+        s.add("com.android.nfc");
+        s.add("com.android.location.fused");
+        s.add("com.android.shell");
+        s.add("com.google.android.gms");
+        s.add("com.google.android.gsf");
+        s.add("com.google.android.ext.services");
+        s.add("com.google.android.permissioncontroller");
+        s.add("com.google.android.packageinstaller");
+        s.add("com.android.permissioncontroller");
+        s.add("com.samsung.android.location");
+        s.add("com.samsung.android.providers.context");
+        s.add("com.samsung.android.bluetooth");
+        s.add("com.sec.location.nsflp2");
+        s.add("com.sec.android.app.camera");
+        s.add("com.sec.phone");
+        s.add("com.sec.imsservice");
+        s.add("com.sec.epdg");
+        s.add("io.github.muntashirakon.AppManager");
+        CRITICAL_PACKAGES = java.util.Collections.unmodifiableSet(s);
+    }
+
+    private static boolean isCriticalPackage(@NonNull String pkg) {
+        if (CRITICAL_PACKAGES.contains(pkg)) return true;
+        // Match common system-service prefixes we don't enumerate
+        return pkg.startsWith("com.android.server.")
+                || pkg.startsWith("com.google.android.gms.")
+                || pkg.equals("com.google.android.apps.maps"); // map provider; revoking BG loc here has rebooted devices
+    }
+
     public void revokeForAll() {
         mExecutor.submit(() -> {
             int userId = UserHandleHidden.myUserId();
             int affected = 0;
+            int skipped = 0;
             int failed = 0;
             List<AppRow> current = mRows.getValue();
             if (current == null) return;
             for (AppRow row : current) {
                 if (!row.anyGranted || !row.anyModifiable) continue;
+                if (isCriticalPackage(row.packageName)) {
+                    skipped++;
+                    continue;
+                }
                 boolean anySuccess = false;
                 for (String permName : mGroup.permissions) {
                     PermissionToggleHelper.State s = PermissionToggleHelper.load(
@@ -197,9 +250,15 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                 }
                 if (anySuccess) affected++;
             }
-            mToast.postValue(getApplication().getResources().getQuantityString(
+            String msg = getApplication().getResources().getQuantityString(
                     io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_revoked,
-                    affected, affected));
+                    affected, affected);
+            if (skipped > 0) {
+                msg = msg + " " + getApplication().getResources().getQuantityString(
+                        io.github.muntashirakon.AppManager.R.plurals.perm_inspector_bulk_skipped,
+                        skipped, skipped);
+            }
+            mToast.postValue(msg);
             loadInternal();
         });
     }

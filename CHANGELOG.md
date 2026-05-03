@@ -5,6 +5,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Permission Inspector: bulk-revoke could reboot device
+- The master "Revoke for all apps" action now skips a denylist of critical system packages (`android`, `com.google.android.gms`/`gsf`, `com.android.systemui`, `com.android.settings`, `com.android.phone`, telephony/media/contacts providers, `com.android.location.fused`, Samsung location/IMS/phone services, etc.) and any `com.android.server.*` / `com.google.android.gms.*` subpackage. Revoking `ACCESS_FINE_LOCATION` / `ACCESS_BACKGROUND_LOCATION` from these crashed `system_server` and rebooted the device on Samsung One UI. Per-app toggles remain unrestricted — the guard only applies to the bulk action. A toast now reports both how many apps were revoked and how many were skipped.
+
 ### Added — Permission Inspector: review and bulk-revoke permissions across apps
 
 - New top-level screen accessible from the main overflow menu (shield-key icon) that inverts the standard "app -> permissions" view. Catalog lists 12 curated dangerous permission groups (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) each with a "X of Y apps granted" count. Tap a group to drill into the per-permission list of every app that requested it; toggle individual apps with a Material switch, or use the master "Revoke for all apps" toolbar action to mass-revoke in one shot. Persists changes through `ComponentsBlocker` so they survive reinstalls, same as the existing per-app permissions tab. SDK-version-gated for permission groups added in API 29/31/33/34.
