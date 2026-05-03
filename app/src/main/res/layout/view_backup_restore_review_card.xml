@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AppTheme.V2.Card.Header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/padding_medium"
+    android:layout_marginTop="@dimen/padding_small"
+    android:layout_marginBottom="@dimen/padding_small"
+    app:contentPadding="@dimen/premium_space_16">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/backup_restore_summary_icon"
+                android:layout_width="@dimen/premium_icon_40"
+                android:layout_height="@dimen/premium_icon_40"
+                android:background="?attr/colorPrimaryContainer"
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                android:padding="@dimen/premium_space_8"
+                android:src="@drawable/ic_backup_restore"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
+                app:tint="?attr/colorOnPrimaryContainer" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/premium_space_12"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/backup_restore_summary_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="@string/backup_dialog_summary_title" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/backup_restore_summary_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="@string/backup_dialog_summary_base" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/backup_restore_summary_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/premium_space_12"
+            android:background="@drawable/main_status_background"
+            android:gravity="center"
+            android:paddingHorizontal="@dimen/premium_space_12"
+            android:paddingVertical="@dimen/premium_space_8"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="3 installed apps - 1 existing base backup" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.google.android.material.card.MaterialCardView>

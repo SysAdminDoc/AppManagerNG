@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.oneclickops;
 
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.View;
@@ -11,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -159,9 +161,16 @@ public class RestoreTasksDialogFragment extends DialogFragment {
                     .show();
             return;
         }
-        new SearchableMultiChoiceDialogBuilder<>(mActivity, applicationItems, applicationLabels)
+        final int[] selectedItemCount = {applicationItems.size()};
+        SearchableMultiChoiceDialogBuilder<ApplicationItem> dialogBuilder =
+                new SearchableMultiChoiceDialogBuilder<>(mActivity, applicationItems, applicationLabels)
                 .addSelections(applicationItems)
                 .setTitle(R.string.restore_review_apps_title)
+                .setOnMultiChoiceClickListener((dialog, which, item, isChecked) -> {
+                    selectedItemCount[0] += isChecked ? 1 : -1;
+                    ((AlertDialog) dialog).getButton(DialogInterface.BUTTON_POSITIVE)
+                            .setEnabled(selectedItemCount[0] > 0);
+                })
                 .setPositiveButton(R.string.restore, (dialog, which, selectedItems) -> {
                     if (isDetached()) return;
                     BackupRestoreDialogFragment fragment = BackupRestoreDialogFragment.getInstance(
@@ -171,7 +180,10 @@ public class RestoreTasksDialogFragment extends DialogFragment {
                     if (isDetached()) return;
                     fragment.show(getParentFragmentManager(), BackupRestoreDialogFragment.TAG);
                 })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                .setNegativeButton(R.string.cancel, null);
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.setOnShowListener(dialogInterface -> dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+                .setEnabled(selectedItemCount[0] > 0));
+        dialog.show();
     }
 }

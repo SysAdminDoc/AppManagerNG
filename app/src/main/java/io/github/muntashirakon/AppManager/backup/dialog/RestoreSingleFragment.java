@@ -12,6 +12,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckedTextView;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -56,10 +58,24 @@ public class RestoreSingleFragment extends Fragment {
         mViewModel = new ViewModelProvider(requireParentFragment()).get(BackupRestoreDialogViewModel.class);
         mContext = requireContext();
 
+        ImageView summaryIcon = view.findViewById(R.id.backup_restore_summary_icon);
+        TextView summaryTitle = view.findViewById(R.id.backup_restore_summary_title);
+        TextView summaryBody = view.findViewById(R.id.backup_restore_summary_body);
+        TextView summaryMeta = view.findViewById(R.id.backup_restore_summary_meta);
+        TextView actionStatus = view.findViewById(R.id.action_status);
         RecyclerView recyclerView = view.findViewById(android.R.id.list);
         MaterialButton restoreButton = view.findViewById(R.id.action_restore);
         MaterialButton deleteButton = view.findViewById(R.id.action_delete);
         MaterialButton moreButton = view.findViewById(R.id.more);
+
+        summaryIcon.setImageResource(R.drawable.ic_restore);
+        summaryTitle.setText(R.string.restore_single_summary_title);
+        summaryBody.setText(mViewModel.getBackupInfo().isInstalled()
+                ? R.string.restore_single_summary_installed
+                : R.string.restore_single_summary_uninstalled);
+        int backupVersionCount = mViewModel.getBackupVersionCount();
+        summaryMeta.setText(getResources().getQuantityString(R.plurals.backup_restore_version_count,
+                backupVersionCount, backupVersionCount));
 
         recyclerView.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
         BackupAdapter adapter = new BackupAdapter(mContext, mViewModel.getBackupInfo().getBackupMetadataList(),
@@ -67,6 +83,7 @@ public class RestoreSingleFragment extends Fragment {
                     restoreButton.setEnabled(selectionCount == 1);
                     deleteButton.setEnabled(selectionCount > 0);
                     moreButton.setEnabled(selectionCount > 0);
+                    updateActionStatus(actionStatus, selectionCount);
                 });
         recyclerView.setAdapter(adapter);
 
@@ -144,6 +161,15 @@ public class RestoreSingleFragment extends Fragment {
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void updateActionStatus(@NonNull TextView actionStatus, int selectionCount) {
+        if (selectionCount == 0) {
+            actionStatus.setText(R.string.backup_restore_select_one_backup);
+        } else {
+            actionStatus.setText(getResources().getQuantityString(R.plurals.backup_restore_backup_selection_count,
+                    selectionCount, selectionCount));
+        }
     }
 
     private void handleDelete(List<BackupMetadataV5> selectedBackups) {

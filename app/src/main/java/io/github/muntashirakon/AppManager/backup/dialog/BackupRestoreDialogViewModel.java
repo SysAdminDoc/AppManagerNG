@@ -130,6 +130,44 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
         return mAllowCustomUsersInBackup;
     }
 
+    public int getInstalledAppCount() {
+        int installedAppCount = 0;
+        for (BackupInfo backupInfo : mBackupInfoList) {
+            if (backupInfo.isInstalled()) {
+                ++installedAppCount;
+            }
+        }
+        return installedAppCount;
+    }
+
+    public int getBaseBackupCount() {
+        int baseBackupCount = 0;
+        for (BackupInfo backupInfo : mBackupInfoList) {
+            if (backupInfo.hasBaseBackup()) {
+                ++baseBackupCount;
+            }
+        }
+        return baseBackupCount;
+    }
+
+    public int getRestoreCandidateCount() {
+        int restoreCandidateCount = 0;
+        for (BackupInfo backupInfo : mBackupInfoList) {
+            if (backupInfo.hasBaseBackup()) {
+                ++restoreCandidateCount;
+            }
+        }
+        return restoreCandidateCount;
+    }
+
+    public int getBackupVersionCount() {
+        int backupVersionCount = 0;
+        for (BackupInfo backupInfo : mBackupInfoList) {
+            backupVersionCount += backupInfo.getBackupMetadataList().size();
+        }
+        return backupVersionCount;
+    }
+
     public void setPreferredUserForRestore(@UserIdInt int preferredUserForRestore) {
         mPreferredUsersForRestore = new int[]{preferredUserForRestore};
     }

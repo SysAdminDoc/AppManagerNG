@@ -22,6 +22,14 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.AdapterUtils;
 
 class FlagsAdapter extends RecyclerView.Adapter<FlagsAdapter.ViewHolder> {
+    private static final int NON_CONTENT_FLAGS = BackupFlags.BACKUP_MULTIPLE
+            | BackupFlags.BACKUP_CUSTOM_USERS
+            | BackupFlags.BACKUP_NO_SIGNATURE_CHECK;
+
+    public interface OnSelectionChangeListener {
+        void onSelectionChanged(@BackupFlags.BackupFlag int selectedFlags, int selectedContentFlagCount);
+    }
+
     private final int mLayoutId;
     private final List<Integer> mSupportedBackupFlags;
     private final CharSequence[] mSupportedBackupFlagNames;
@@ -30,6 +38,7 @@ class FlagsAdapter extends RecyclerView.Adapter<FlagsAdapter.ViewHolder> {
 
     @BackupFlags.BackupFlag
     private int mSelectedFlags;
+    private OnSelectionChangeListener mOnSelectionChangeListener;
 
     @SuppressLint("RestrictedApi")
     public FlagsAdapter(@NonNull Context context, @BackupFlags.BackupFlag int flags,
@@ -52,6 +61,21 @@ class FlagsAdapter extends RecyclerView.Adapter<FlagsAdapter.ViewHolder> {
 
     public int getSelectedFlags() {
         return mSelectedFlags;
+    }
+
+    public int getSelectedContentFlagCount() {
+        int selectedFlagCount = 0;
+        for (int flag : mSupportedBackupFlags) {
+            if ((mSelectedFlags & flag) != 0 && (flag & NON_CONTENT_FLAGS) == 0) {
+                ++selectedFlagCount;
+            }
+        }
+        return selectedFlagCount;
+    }
+
+    public void setOnSelectionChangeListener(@NonNull OnSelectionChangeListener onSelectionChangeListener) {
+        mOnSelectionChangeListener = onSelectionChangeListener;
+        notifySelectionChanged();
     }
 
     @NonNull
@@ -77,6 +101,7 @@ class FlagsAdapter extends RecyclerView.Adapter<FlagsAdapter.ViewHolder> {
                 // Now selected
                 mSelectedFlags |= flag;
             }
+            notifySelectionChanged();
             notifyItemChanged(position, AdapterUtils.STUB);
         });
     }
@@ -95,6 +120,12 @@ class FlagsAdapter extends RecyclerView.Adapter<FlagsAdapter.ViewHolder> {
             // textAppearanceBodyLarge
             item.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             item.setTextColor(UIUtils.getTextColorSecondary(item.getContext()));
+        }
+    }
+
+    private void notifySelectionChanged() {
+        if (mOnSelectionChangeListener != null) {
+            mOnSelectionChangeListener.onSelectionChanged(mSelectedFlags, getSelectedContentFlagCount());
         }
     }
 }
