@@ -36,6 +36,12 @@ interface that doesn't punish casual users for opening it.
 > introduce the AppManagerNG UX overhaul incrementally, in working increments, with full
 > attribution to upstream contributions preserved.
 
+## What's new in NG
+
+### Permission Inspector
+
+A new main-menu entry that flips the standard "app -> permissions" view on its head. Pick a permission group (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) and see every installed app that holds it, with a one-tap toggle per app and a master **Revoke for all apps** action in the toolbar. Changes persist through the same rule store the per-app permissions tab uses, so they survive reinstalls.
+
 ## Features (inherited from upstream baseline)
 
 ### General
