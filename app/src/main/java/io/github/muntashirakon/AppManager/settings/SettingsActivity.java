@@ -11,6 +11,8 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentManager;
@@ -30,6 +32,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfUriManager;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.UiUtils;
 
 public class SettingsActivity extends BaseActivity implements PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
@@ -58,6 +61,8 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     }
 
     public LinearProgressIndicator progressIndicator;
+    @Nullable
+    public SearchView searchView;
     @NonNull
     private List<String> mKeys = Collections.emptyList();
     @NonNull
@@ -79,6 +84,12 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
         progressIndicator.hide();
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayShowCustomEnabled(true);
+            searchView = UIUtils.setupSearchView(actionBar, null);
+            searchView.setQueryHint(getString(R.string.search_settings));
+        }
         // Apply necessary padding: ignore start
         if (mSecondaryToolbar != null) {
             UiUtils.applyWindowInsetsAsPadding(mSecondaryToolbar, true, false, false, true);

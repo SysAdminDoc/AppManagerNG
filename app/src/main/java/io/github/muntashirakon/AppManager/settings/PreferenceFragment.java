@@ -55,6 +55,12 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
     public void onStart() {
         requireActivity().setTitle(getTitle());
         super.onStart();
+        if (requireActivity() instanceof SettingsActivity) {
+            SettingsActivity settingsActivity = (SettingsActivity) requireActivity();
+            if (settingsActivity.searchView != null) {
+                settingsActivity.searchView.setVisibility(this instanceof MainPreferences ? View.VISIBLE : View.GONE);
+            }
+        }
         updateUi();
     }
 

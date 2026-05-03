@@ -286,6 +286,9 @@
     <string name="menu_remove_rules">Remove rules</string>
     <string name="menu_apply_rules">Apply rules</string>
     <string name="search">Search</string>
+    <string name="search_settings">Search settings</string>
+    <string name="settings_search_empty_title">No matching settings</string>
+    <string name="settings_search_empty_message">Try a feature name, permission, workflow, or preference keyword.</string>
     <string name="dev_protected_data_dir">Device-protected data directory</string>
     <string name="native_library_dir">Native JNI library directory</string>
     <string name="process_name">Process name</string>
@@ -1059,6 +1062,9 @@
     <string name="enable_battery_optimization">Enable battery optimization?</string>
     <string name="choose_what_to_do">Choose what to do.</string>
     <string name="app_details_tracker_dialog_message">Block disables known ad, analytics, and tracking components for this app. Unblock restores those components if the app stops working correctly.</string>
+    <string name="app_details_tracker_review_message">Unblocked trackers: <xliff:g id="unblocked" example="4">%1$d</xliff:g>\nAlready blocked: <xliff:g id="blocked" example="2">%2$d</xliff:g>\n\nChanges apply only to this tab. Blocking known ad, analytics, and tracking components can reduce tracking, but may affect login, notifications, payments, or crash reporting.</string>
+    <string name="app_details_tracker_block_review_message">This changes only the current tab. Blocking known ad, analytics, and tracking components can reduce tracking, but may affect login, notifications, payments, or crash reporting. You can undo from the confirmation message.</string>
+    <string name="app_details_tracker_no_trackers_in_tab">No tracker components in this tab</string>
     <string name="has_net_policy">Net policy</string>
     <string name="net_policy">Net policy</string>
     <string name="initializing">Initializing…</string>
@@ -1419,6 +1425,8 @@
     <string name="tracker_cta_subtitle_unblocked">Tap to block ad, analytics and crash-reporting components in this app.</string>
     <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
+    <string name="component_switch_allowed_a11y">Component allowed: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to block.</string>
+    <string name="component_switch_blocked_a11y">Component blocked: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to allow.</string>
     <plurals name="tracker_block_in_tab_activities">
         <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker activity</item>
         <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker activities</item>
@@ -1434,6 +1442,18 @@
     <plurals name="tracker_block_in_tab_providers">
         <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker provider</item>
         <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker providers</item>
+    </plurals>
+    <plurals name="app_details_tracker_block_review_title">
+        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker?</item>
+        <item quantity="other">Block <xliff:g id="count" example="4">%1$d</xliff:g> trackers?</item>
+    </plurals>
+    <plurals name="app_details_trackers_blocked_snackbar">
+        <item quantity="one">Blocked <xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
+        <item quantity="other">Blocked <xliff:g id="count" example="4">%1$d</xliff:g> trackers</item>
+    </plurals>
+    <plurals name="app_details_trackers_unblocked_snackbar">
+        <item quantity="one">Unblocked <xliff:g id="count" example="1">%1$d</xliff:g> tracker</item>
+        <item quantity="other">Unblocked <xliff:g id="count" example="4">%1$d</xliff:g> trackers</item>
     </plurals>
     <string name="failed_to_launch_app">Could not launch this app.</string>
     <string name="quick_action_block_trackers">Block trackers</string>

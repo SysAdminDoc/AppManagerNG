@@ -35,11 +35,11 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Locale;
@@ -63,7 +63,6 @@ import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
-import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -175,13 +174,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 viewModel.applyRules();
             }
         } else if (id == R.id.action_block_unblock_trackers) {  // Components
-            new MaterialAlertDialogBuilder(activity)
-                    .setTitle(R.string.block_unblock_trackers)
-                    .setMessage(R.string.app_details_tracker_dialog_message)
-                    .setPositiveButton(R.string.block, (dialog, which) -> blockUnblockTrackers(true))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setNeutralButton(R.string.unblock, (dialog, which) -> blockUnblockTrackers(false))
-                    .show();
+            showTrackerReviewDialog();
         } else if (id == R.id.action_sort_by_name) {  // All
             setSortBy(AppDetailsFragment.SORT_BY_NAME);
             item.setChecked(true);
@@ -253,28 +246,66 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         }
     }
 
-    private void blockUnblockTrackers(boolean block) {
-        if (viewModel == null) return;
-        // TODO: 19/3/23 Do it via ViewModel
-        List<UserPackagePair> userPackagePairs = Collections.singletonList(new UserPackagePair(mPackageName,
-                UserHandleHidden.myUserId()));
-        ThreadUtils.postOnBackgroundThread(() -> {
-            List<UserPackagePair> failedPkgList = block ? ComponentUtils.blockTrackingComponents(userPackagePairs)
-                    : ComponentUtils.unblockTrackingComponents(userPackagePairs);
-            if (!failedPkgList.isEmpty()) {
-                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(block ? R.string.failed_to_block_trackers
-                        : R.string.failed_to_unblock_trackers));
-            } else {
-                ThreadUtils.postOnMainThread(() -> {
-                    UIUtils.displayShortToast(block ? R.string.trackers_blocked_successfully
-                            : R.string.trackers_unblocked_successfully);
-                    if (!isDetached()) {
-                        refreshDetails();
-                    }
-                });
-            }
-            viewModel.setRuleApplicationStatus();
-        });
+    private void showTrackerReviewDialog() {
+        if (mAdapter == null) return;
+        List<AppDetailsComponentItem> unblockedTrackers = getTrackerItems(mAdapter.getSnapshot(), true);
+        List<AppDetailsComponentItem> blockedTrackers = getTrackerItems(mAdapter.getSnapshot(), false);
+        if (unblockedTrackers.isEmpty() && blockedTrackers.isEmpty()) {
+            UIUtils.displayShortToast(R.string.app_details_tracker_no_trackers_in_tab);
+            return;
+        }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.block_unblock_trackers)
+                .setMessage(getString(R.string.app_details_tracker_review_message,
+                        unblockedTrackers.size(), blockedTrackers.size()))
+                .setNegativeButton(R.string.cancel, null);
+        if (!unblockedTrackers.isEmpty()) {
+            builder.setPositiveButton(R.string.block, (dialog, which) -> applyScopedTrackerRules(true, unblockedTrackers, true));
+        } else {
+            builder.setPositiveButton(R.string.unblock, (dialog, which) -> applyScopedTrackerRules(false, blockedTrackers, true));
+        }
+        if (!unblockedTrackers.isEmpty() && !blockedTrackers.isEmpty()) {
+            builder.setNeutralButton(R.string.unblock, (dialog, which) -> applyScopedTrackerRules(false, blockedTrackers, true));
+        }
+        builder.show();
+    }
+
+    @NonNull
+    private List<AppDetailsComponentItem> getTrackerItems(@NonNull List<AppDetailsItem<?>> source, boolean onlyUnblocked) {
+        List<AppDetailsComponentItem> trackerItems = new ArrayList<>();
+        for (AppDetailsItem<?> di : source) {
+            if (!(di instanceof AppDetailsComponentItem)) continue;
+            AppDetailsComponentItem ci = (AppDetailsComponentItem) di;
+            if (!ci.isTracker()) continue;
+            if (onlyUnblocked && ci.isBlocked()) continue;
+            if (!onlyUnblocked && !ci.isBlocked()) continue;
+            trackerItems.add(ci);
+        }
+        return trackerItems;
+    }
+
+    private void applyScopedTrackerRules(boolean block, @NonNull List<AppDetailsComponentItem> trackerItems,
+                                         boolean showUndo) {
+        if (viewModel == null || trackerItems.isEmpty()) return;
+        List<AppDetailsComponentItem> snapshot = new ArrayList<>(trackerItems);
+        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        if (mTrackerBlockInTabButton != null) {
+            mTrackerBlockInTabButton.setEnabled(false);
+        }
+        String componentStatus = block
+                ? ComponentRule.COMPONENT_TO_BE_BLOCKED_IFW_DISABLE
+                : ComponentRule.COMPONENT_TO_BE_DEFAULTED;
+        viewModel.updateRulesForComponents(snapshot, ruleTypeForCurrentTab(), componentStatus, mNeededProperty);
+        if (!showUndo || getView() == null) {
+            return;
+        }
+        int count = snapshot.size();
+        String message = getResources().getQuantityString(block
+                ? R.plurals.app_details_trackers_blocked_snackbar
+                : R.plurals.app_details_trackers_unblocked_snackbar, count, count);
+        Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG)
+                .setAction(R.string.undo, v -> applyScopedTrackerRules(!block, snapshot, false))
+                .show();
     }
 
     private void configureEmptyState() {
@@ -381,23 +412,17 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         mTrackerBlockInTabButton.setContentDescription(mTrackerBlockInTabButton.getText());
         mTrackerBlockInTabButton.setEnabled(true);
         mTrackerBlockInTabButton.setVisibility(View.VISIBLE);
-        mTrackerBlockInTabButton.setOnClickListener(v -> {
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            mTrackerBlockInTabButton.setEnabled(false);
-            ThreadUtils.postOnBackgroundThread(() -> {
-                RuleType ruleType = ruleTypeForCurrentTab();
-                String status = io.github.muntashirakon.AppManager.rules.struct.ComponentRule
-                        .COMPONENT_TO_BE_BLOCKED_IFW_DISABLE;
-                for (AppDetailsComponentItem item : unblockedTrackers) {
-                    viewModel.updateRulesForComponent(item, ruleType, status);
-                }
-                ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
-                    UIUtils.displayShortToast(R.string.trackers_blocked_successfully);
-                    refreshDetails();
-                });
-            });
-        });
+        mTrackerBlockInTabButton.setOnClickListener(v -> showScopedTrackerBlockDialog(unblockedTrackers));
+    }
+
+    private void showScopedTrackerBlockDialog(@NonNull List<AppDetailsComponentItem> unblockedTrackers) {
+        int count = unblockedTrackers.size();
+        new MaterialAlertDialogBuilder(activity)
+                .setTitle(getResources().getQuantityString(R.plurals.app_details_tracker_block_review_title, count, count))
+                .setMessage(R.string.app_details_tracker_block_review_message)
+                .setPositiveButton(R.string.block, (dialog, which) -> applyScopedTrackerRules(true, unblockedTrackers, true))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     @NonNull
@@ -488,6 +513,13 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     }
                 });
             });
+        }
+
+        @NonNull
+        List<AppDetailsItem<?>> getSnapshot() {
+            synchronized (mAdapterList) {
+                return new ArrayList<>(mAdapterList);
+            }
         }
 
         /**
@@ -606,6 +638,9 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.blockingMethod.setVisibility(View.GONE);
             }
             holder.toggleSwitch.setChecked(!isBlocked);
+            holder.toggleSwitch.setContentDescription(getString(isBlocked
+                    ? R.string.component_switch_blocked_a11y
+                    : R.string.component_switch_allowed_a11y, item.name));
             holder.toggleSwitch.setVisibility(View.VISIBLE);
             holder.toggleSwitch.setOnClickListener(buttonView -> {
                 String componentStatus = item.isBlocked()
