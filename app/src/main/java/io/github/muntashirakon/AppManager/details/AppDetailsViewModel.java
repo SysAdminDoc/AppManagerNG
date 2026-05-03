@@ -568,11 +568,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 }
                 // Add to the list
                 mBlocker.addComponent(componentName, type, componentStatus);
-                // Apply rules if global blocking enable or already applied
-                if (Prefs.Blocking.globalBlockingEnabled()
-                        || (mRuleApplicationStatus.getValue() != null && RULE_APPLIED == mRuleApplicationStatus.getValue())) {
-                    mBlocker.applyRules(true);
-                }
+                // Direct edits should take effect immediately. The saved rule
+                // list and the actual component state should not drift apart.
+                mBlocker.applyRules(true);
                 // Set new status
                 setRuleApplicationStatus();
                 // Commit changes
@@ -603,11 +601,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         }
                         mBlocker.addComponent(componentName, type, componentStatus);
                     }
-                    if (Prefs.Blocking.globalBlockingEnabled()
-                            || (mRuleApplicationStatus.getValue() != null
-                            && RULE_APPLIED == mRuleApplicationStatus.getValue())) {
-                        mBlocker.applyRules(true);
-                    }
+                    mBlocker.applyRules(true);
                     setRuleApplicationStatus();
                     mBlocker.commit();
                     mBlocker.setReadOnly();

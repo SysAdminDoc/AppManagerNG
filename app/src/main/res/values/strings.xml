@@ -283,8 +283,8 @@
     <string name="app_usage_open_usage_settings">Open usage access</string>
     <string name="share_apk">Share APK</string>
     <string name="failed_to_extract_apk_file">Could not extract APK file</string>
-    <string name="menu_remove_rules">Remove rules</string>
-    <string name="menu_apply_rules">Apply rules</string>
+    <string name="menu_remove_rules">Turn off saved rules</string>
+    <string name="menu_apply_rules">Apply saved rules</string>
     <string name="search">Search</string>
     <string name="search_settings">Search settings</string>
     <string name="settings_search_empty_title">No matching settings</string>
@@ -350,7 +350,7 @@
     <string name="no_app_ops">No app operations</string>
     <string name="failed_to_enable_op">Could not enable the requested app op</string>
     <string name="failed_to_disable_op">Could not disable the requested app op</string>
-    <string name="rules_not_applied">Rules are not applied</string>
+    <string name="rules_not_applied">Saved component rules are inactive. New edits apply automatically; use the menu to apply older saved rules.</string>
     <string name="str_logo">Logo</string>
     <string name="pref_global_blocking_enabled">Instant component blocking</string>
     <string name="pref_global_blocking_enabled_msg">Lets you block any component of any app without explicitly turning on blocking for the app.</string>
