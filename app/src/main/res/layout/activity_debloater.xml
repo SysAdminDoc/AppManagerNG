@@ -25,23 +25,48 @@
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progress_linear"
             style="@style/Widget.AppTheme.LinearProgressIndicator"
-            android:indeterminate="true"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/debloater_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_very_small"
+            android:layout_marginBottom="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:text="@string/debloater_status_loading"
+            tools:visibility="visible" />
 
     </io.github.muntashirakon.widget.AppBarLayout>
 
-    <io.github.muntashirakon.widget.RecyclerView
-        android:id="@+id/recycler_view"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="none"
-        android:focusable="false"
-        android:clipToPadding="false"
-        android:fitsSystemWindows="true"
-        app:fastScrollerEnabled="true"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
-        tools:listitem="@layout/item_main" />
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <io.github.muntashirakon.widget.RecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fitsSystemWindows="true"
+            android:focusable="false"
+            android:scrollbars="none"
+            app:fastScrollerEnabled="true"
+            tools:listitem="@layout/item_debloater" />
+
+        <include
+            android:id="@android:id/empty"
+            layout="@layout/view_list_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 
     <io.github.muntashirakon.widget.MultiSelectionView
         android:id="@+id/selection_view"

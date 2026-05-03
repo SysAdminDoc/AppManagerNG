@@ -24,6 +24,7 @@ import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
@@ -113,12 +114,15 @@ public class DebloaterRecyclerViewAdapter extends MultiSelectionView.Adapter<Deb
             sb.append(" — ").append(warning);
         }
         CharSequence label = debloatObject.getLabelOrPackageName();
+        String typeLabel = debloatObject.type.toUpperCase(Locale.ROOT);
         holder.iconView.setImageDrawable(icon);
-        holder.listTypeView.setText(debloatObject.type);
+        holder.listTypeView.setText(typeLabel);
         holder.packageNameView.setText(debloatObject.packageName);
         holder.descriptionView.setText(sb);
         holder.itemView.setStrokeColor(removalColor);
         holder.labelView.setText(label);
+        holder.itemView.setContentDescription(context.getString(R.string.debloater_item_content_description,
+                label, debloatObject.packageName, context.getString(removalRes), typeLabel));
         holder.itemView.setOnLongClickListener(v -> {
             toggleSelection(position);
             AccessibilityUtils.requestAccessibilityFocus(holder.itemView);

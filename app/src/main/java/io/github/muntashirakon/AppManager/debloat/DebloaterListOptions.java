@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 
 import java.lang.annotation.Retention;
@@ -61,7 +62,7 @@ public class DebloaterListOptions extends CapsuleBottomSheetDialogFragment {
     public static final int FILTER_REMOVAL_SAFE = 1 << 6;
     public static final int FILTER_REMOVAL_REPLACE = 1 << 7;
     public static final int FILTER_REMOVAL_CAUTION = 1 << 8;
-     public static final int FILTER_REMOVAL_UNSAFE = 1 << 9;
+    public static final int FILTER_REMOVAL_UNSAFE = 1 << 9;
 
     public static final int FILTER_USER_APPS = 1 << 10;
     public static final int FILTER_SYSTEM_APPS = 1 << 11;
@@ -102,6 +103,11 @@ public class DebloaterListOptions extends CapsuleBottomSheetDialogFragment {
     }
 
     private DebloaterViewModel mModel;
+    private ViewGroup mListTypes;
+    private ViewGroup mRemovalTypes;
+    private ViewGroup mFilterOptions;
+    private MaterialButton mClearFilters;
+    private boolean mUpdatingFilters;
 
     @NonNull
     @Override
@@ -114,30 +120,68 @@ public class DebloaterListOptions extends CapsuleBottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
         DebloaterActivity activity = (DebloaterActivity) requireActivity();
         mModel = activity.viewModel;
-        ViewGroup listTypes = view.findViewById(R.id.list_types);
+        mClearFilters = view.findViewById(R.id.clear_filter_options);
+        mClearFilters.setOnClickListener(v -> clearActiveFilters());
+        mListTypes = view.findViewById(R.id.list_types);
         for (int i = 0; i < LIST_FILTER_MAP.size(); ++i) {
-            listTypes.addView(getFilterChip(listTypes.getContext(), LIST_FILTER_MAP.keyAt(i), LIST_FILTER_MAP.valueAt(i)));
+            mListTypes.addView(getFilterChip(mListTypes.getContext(), LIST_FILTER_MAP.keyAt(i), LIST_FILTER_MAP.valueAt(i)));
         }
-        ViewGroup removalTypes = view.findViewById(R.id.removal_types);
+        mRemovalTypes = view.findViewById(R.id.removal_types);
         for (int i = 0; i < REMOVAL_FILTER_MAP.size(); ++i) {
-            removalTypes.addView(getFilterChip(removalTypes.getContext(), REMOVAL_FILTER_MAP.keyAt(i), REMOVAL_FILTER_MAP.valueAt(i)));
+            mRemovalTypes.addView(getFilterChip(mRemovalTypes.getContext(), REMOVAL_FILTER_MAP.keyAt(i), REMOVAL_FILTER_MAP.valueAt(i)));
         }
-        ViewGroup filterView = view.findViewById(R.id.filter_options);
+        mFilterOptions = view.findViewById(R.id.filter_options);
         for (int i = 0; i < NORMAL_FILTER_MAP.size(); ++i) {
-            filterView.addView(getFilterChip(filterView.getContext(), NORMAL_FILTER_MAP.keyAt(i), NORMAL_FILTER_MAP.valueAt(i)));
+            mFilterOptions.addView(getFilterChip(mFilterOptions.getContext(), NORMAL_FILTER_MAP.keyAt(i), NORMAL_FILTER_MAP.valueAt(i)));
         }
+        updateClearFiltersVisibility();
     }
 
     public Chip getFilterChip(@NonNull Context context, @Filter int flag, @StringRes int strRes) {
         Chip chip = new Chip(context);
         chip.setFocusable(true);
+        chip.setCheckable(true);
         chip.setCloseIconVisible(false);
+        chip.setId(flag);
         chip.setText(strRes);
         chip.setChecked(mModel.hasFilterFlag(flag));
         chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (mUpdatingFilters) {
+                return;
+            }
             if (isChecked) mModel.addFilterFlag(flag);
             else mModel.removeFilterFlag(flag);
+            updateClearFiltersVisibility();
         });
         return chip;
+    }
+
+    private void clearActiveFilters() {
+        mUpdatingFilters = true;
+        clearChipGroup(mListTypes);
+        clearChipGroup(mRemovalTypes);
+        clearChipGroup(mFilterOptions);
+        mUpdatingFilters = false;
+        mModel.clearFilters();
+        updateClearFiltersVisibility();
+    }
+
+    private void clearChipGroup(@Nullable ViewGroup chipGroup) {
+        if (chipGroup == null) {
+            return;
+        }
+        for (int i = 0; i < chipGroup.getChildCount(); ++i) {
+            View child = chipGroup.getChildAt(i);
+            if (child instanceof Chip) {
+                ((Chip) child).setChecked(false);
+            }
+        }
+    }
+
+    private void updateClearFiltersVisibility() {
+        if (mClearFilters == null || mModel == null) {
+            return;
+        }
+        mClearFilters.setVisibility(mModel.hasActiveFilters() ? View.VISIBLE : View.GONE);
     }
 }

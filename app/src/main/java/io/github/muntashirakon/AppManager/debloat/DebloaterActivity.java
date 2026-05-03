@@ -10,6 +10,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -18,9 +20,11 @@ import androidx.appcompat.app.ActionBar;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.textview.MaterialTextView;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -47,6 +51,12 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     private LinearProgressIndicator mProgressIndicator;
     private MultiSelectionView mMultiSelectionView;
     private DebloaterRecyclerViewAdapter mAdapter;
+    private AdvancedSearchView mSearchView;
+    private MaterialTextView mListSummaryView;
+    private View mEmptyState;
+    private TextView mEmptyStateTitle;
+    private TextView mEmptyStateSummary;
+    private MaterialButton mEmptyStateAction;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
@@ -78,17 +88,26 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setDisplayShowCustomEnabled(true);
-            UIUtils.setupAdvancedSearchView(actionBar, this);
+            mSearchView = UIUtils.setupAdvancedSearchView(actionBar, this);
         }
         viewModel = new ViewModelProvider(this).get(DebloaterViewModel.class);
 
         mProgressIndicator = findViewById(R.id.progress_linear);
+        mProgressIndicator.setVisibilityAfterHide(View.GONE);
         mProgressIndicator.show();
+        mListSummaryView = findViewById(R.id.debloater_summary);
+        mListSummaryView.setVisibility(View.VISIBLE);
+        mListSummaryView.setText(R.string.debloater_status_loading);
 
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        mEmptyState = findViewById(android.R.id.empty);
+        configureEmptyState();
+        recyclerView.setEmptyView(mEmptyState);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         mAdapter = new DebloaterRecyclerViewAdapter(this);
+        mAdapter.setHasStableIds(true);
         recyclerView.setAdapter(mAdapter);
+        mEmptyState.setVisibility(View.GONE);
         mMultiSelectionView = findViewById(R.id.selection_view);
         mMultiSelectionView.setAdapter(mAdapter);
         mMultiSelectionView.hide();
@@ -99,8 +118,18 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         viewModel.getDebloatObjectListLiveData().observe(this, debloatObjects -> {
             mProgressIndicator.hide();
             mAdapter.setAdapterList(debloatObjects);
+            updateDebloaterState(debloatObjects.size());
         });
         viewModel.loadPackages();
+    }
+
+    private void configureEmptyState() {
+        ImageView icon = mEmptyState.findViewById(R.id.empty_state_icon);
+        icon.setImageResource(R.drawable.ic_package);
+        mEmptyStateTitle = mEmptyState.findViewById(R.id.empty_state_title);
+        mEmptyStateSummary = mEmptyState.findViewById(R.id.empty_state_summary);
+        mEmptyStateAction = mEmptyState.findViewById(R.id.empty_state_action);
+        mEmptyStateAction.setOnClickListener(v -> handleEmptyStateAction());
     }
 
     @Override
@@ -185,6 +214,9 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
 
     @Override
     public boolean onQueryTextChange(String newText, int type) {
+        if (mProgressIndicator != null) {
+            mProgressIndicator.show();
+        }
         viewModel.setQuery(newText, type);
         return true;
     }
@@ -192,6 +224,70 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     @Override
     public boolean onQueryTextSubmit(String query, int type) {
         return false;
+    }
+
+    private void updateDebloaterState(int displayedItemCount) {
+        if (viewModel == null) {
+            return;
+        }
+        int totalItemCount = viewModel.getTotalItemCount();
+        if (mListSummaryView != null) {
+            String summary;
+            if (displayedItemCount == totalItemCount) {
+                summary = getResources().getQuantityString(R.plurals.debloater_status_all_recommendations,
+                        displayedItemCount, displayedItemCount);
+            } else {
+                summary = getResources().getQuantityString(R.plurals.debloater_status_showing_recommendations,
+                        totalItemCount, displayedItemCount, totalItemCount);
+            }
+            if (viewModel.hasActiveFilters()) {
+                summary = summary + " · " + getString(R.string.debloater_status_filters_active);
+            }
+            mListSummaryView.setVisibility(View.VISIBLE);
+            mListSummaryView.setText(summary);
+        }
+        if (mEmptyState != null) {
+            mEmptyState.setVisibility(displayedItemCount > 0 ? View.GONE : View.VISIBLE);
+        }
+        if (displayedItemCount > 0 || mEmptyState == null) {
+            return;
+        }
+        if (viewModel.hasSearchQuery()) {
+            mEmptyStateTitle.setText(R.string.debloater_empty_title_no_matches);
+            mEmptyStateSummary.setText(R.string.debloater_empty_message_search);
+            mEmptyStateAction.setText(R.string.debloater_empty_action_clear_search);
+            mEmptyStateAction.setIconResource(com.google.android.material.R.drawable.mtrl_ic_cancel);
+        } else if (viewModel.hasActiveFilters()) {
+            mEmptyStateTitle.setText(R.string.debloater_empty_title_no_matches);
+            mEmptyStateSummary.setText(R.string.debloater_empty_message_filters);
+            mEmptyStateAction.setText(R.string.clear_filters);
+            mEmptyStateAction.setIconResource(R.drawable.ic_filter_list);
+        } else {
+            mEmptyStateTitle.setText(R.string.debloater_empty_title_no_recommendations);
+            mEmptyStateSummary.setText(R.string.debloater_empty_message_no_recommendations);
+            mEmptyStateAction.setText(R.string.refresh);
+            mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+        }
+    }
+
+    private void handleEmptyStateAction() {
+        if (viewModel == null) {
+            return;
+        }
+        if (mProgressIndicator != null) {
+            mProgressIndicator.show();
+        }
+        if (viewModel.hasSearchQuery()) {
+            if (mSearchView != null) {
+                mSearchView.setQuery("", true);
+            } else {
+                viewModel.setQuery("", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+            }
+        } else if (viewModel.hasActiveFilters()) {
+            viewModel.clearFilters();
+        } else {
+            viewModel.loadPackages();
+        }
     }
 
     private void showFreezeUnfreezeDialog(int freezeType) {
