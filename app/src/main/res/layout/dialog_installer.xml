@@ -14,8 +14,11 @@
         android:id="@+id/message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="@dimen/padding_large"
+        android:lineSpacingExtra="2dp"
+        android:paddingHorizontal="@dimen/premium_space_20"
+        android:paddingVertical="@dimen/premium_space_20"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurface"
         tools:text="@tools:sample/lorem" />
 
     <androidx.appcompat.widget.LinearLayoutCompat

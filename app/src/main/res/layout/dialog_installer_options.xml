@@ -3,21 +3,42 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:clipToPadding="false"
+    android:fillViewport="false"
+    android:overScrollMode="ifContentScrolls">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingVertical="8dp"
-        android:paddingHorizontal="16dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/premium_space_20"
+        android:paddingTop="@dimen/premium_space_12"
+        android:paddingBottom="@dimen/premium_space_16">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/installer_options_install_target_title"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorPrimary" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/premium_space_4"
+            android:layout_marginBottom="@dimen/premium_space_12"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_install_target_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <io.github.muntashirakon.widget.MaterialSpinner
             android:id="@+id/user"
             style="@style/Widget.AppTheme.MaterialSpinner.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/premium_space_8"
             android:hint="@string/select_user" />
 
         <io.github.muntashirakon.widget.MaterialSpinner
@@ -25,15 +46,15 @@
             style="@style/Widget.AppTheme.MaterialSpinner.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/premium_space_8"
             android:hint="@string/install_location" />
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.AppTheme.TextInputLayout.Small"
             android:id="@+id/installer"
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:hint="@string/installer_app"
             app:endIconMode="custom"
             app:endIconDrawable="@drawable/ic_refresh"
@@ -49,13 +70,40 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_12"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_installer_app_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
         <io.github.muntashirakon.widget.MaterialSpinner
             android:id="@+id/package_source"
             style="@style/Widget.AppTheme.MaterialSpinner.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/premium_space_20"
             android:hint="@string/pref_default_package_source" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/installer_options_trust_title"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorPrimary" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/premium_space_4"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_trust_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_disable_verification"
@@ -64,12 +112,34 @@
             android:layout_height="wrap_content"
             android:text="@string/pref_disable_apk_verification" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_disable_verification_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_disable_verification_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_update_ownership"
             style="@style/Widget.AppTheme.MaterialSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/pref_request_update_ownership" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_update_ownership_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/pref_request_update_ownership_description"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_set_origin"
@@ -78,12 +148,34 @@
             android:layout_height="wrap_content"
             android:text="@string/pref_set_origin" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_set_origin_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/pref_set_origin_description"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_sign_apk"
             style="@style/Widget.AppTheme.MaterialSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/pref_sign_apk" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_sign_apk_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_sign_apk_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_optimize"
@@ -92,12 +184,33 @@
             android:layout_height="wrap_content"
             android:text="@string/optimize_option_force_dexopt" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_optimize_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_optimize_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/action_block_trackers"
             style="@style/Widget.AppTheme.MaterialSwitch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/block_trackers" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/action_block_trackers_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:lineSpacingExtra="1dp"
+            android:text="@string/installer_options_block_trackers_summary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </ScrollView>
