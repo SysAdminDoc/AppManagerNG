@@ -6,6 +6,9 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,13 +28,16 @@ import java.util.Queue;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
 import io.github.muntashirakon.io.Path;
 
 public class ProfileApplierActivity extends BaseActivity {
+    private static final String TAG = "ProfileApplierActivity";
     private static final String EXTRA_SHORTCUT_TYPE = "shortcut";
 
     public static final String EXTRA_PROFILE_ID = "prof";
@@ -100,6 +106,7 @@ public class ProfileApplierActivity extends BaseActivity {
     }
 
     public static class ProfileApplierInfo {
+        @Nullable
         public BaseProfile profile;
         public String profileId;
         @ShortcutType
@@ -107,6 +114,7 @@ public class ProfileApplierActivity extends BaseActivity {
         @Nullable
         public String state;
         public boolean notify;
+        public boolean loadFailed;
     }
 
     private final Queue<Intent> mQueue = new LinkedList<>();
@@ -151,6 +159,8 @@ public class ProfileApplierActivity extends BaseActivity {
         boolean notify = intent.getBooleanExtra(EXTRA_NOTIFY, true);
         if (shortcutType == null || profileId == null) {
             // Invalid shortcut
+            UIUtils.displayShortToast(R.string.profile_apply_invalid_shortcut);
+            next();
             return;
         }
         ProfileApplierInfo info = new ProfileApplierInfo();
@@ -163,6 +173,11 @@ public class ProfileApplierActivity extends BaseActivity {
 
     private void handleShortcut(@Nullable ProfileApplierInfo info) {
         if (info == null) {
+            next();
+            return;
+        }
+        if (info.loadFailed || info.profile == null) {
+            UIUtils.displayShortToast(R.string.profile_apply_load_failed);
             next();
             return;
         }
@@ -185,8 +200,9 @@ public class ProfileApplierActivity extends BaseActivity {
                         .setSubtitle(R.string.choose_a_profile_state);
                 new SearchableSingleChoiceDialogBuilder<>(this, states, statesL)
                         .setTitle(titleBuilder.build())
+                        .setView(createApplyReviewView(info))
                         .setSelection(info.state)
-                        .setPositiveButton(R.string.ok, (dialog, which, selectedState) -> {
+                        .setPositiveButton(R.string.apply_now, (dialog, which, selectedState) -> {
                             info.state = selectedState;
                             Intent aIntent = ProfileApplierService.getIntent(this,
                                     ProfileQueueItem.fromProfiledApplierInfo(info), info.notify);
@@ -199,6 +215,43 @@ public class ProfileApplierActivity extends BaseActivity {
             default:
                 next();
         }
+    }
+
+    @NonNull
+    private View createApplyReviewView(@NonNull ProfileApplierInfo info) {
+        View view = LayoutInflater.from(this).inflate(R.layout.view_profile_apply_review, null, false);
+        ((TextView) view.findViewById(R.id.profile_apply_review_summary))
+                .setText(getProfileApplyReviewSummary(info.profile.type));
+        ((TextView) view.findViewById(R.id.profile_apply_review_meta)).setText(getString(
+                R.string.profile_apply_review_meta,
+                getProfileTypeLabel(info.profile.type),
+                getProfileStateLabel(info.state)));
+        ((TextView) view.findViewById(R.id.profile_apply_review_id)).setText(getString(
+                R.string.profile_apply_review_id, info.profile.profileId));
+        return view;
+    }
+
+    private int getProfileApplyReviewSummary(int profileType) {
+        if (profileType == BaseProfile.PROFILE_TYPE_APPS_FILTER) {
+            return R.string.profile_apply_review_filters_summary;
+        }
+        return R.string.profile_apply_review_apps_summary;
+    }
+
+    @NonNull
+    private String getProfileTypeLabel(int profileType) {
+        if (profileType == BaseProfile.PROFILE_TYPE_APPS_FILTER) {
+            return getString(R.string.filters);
+        }
+        return getString(R.string.apps);
+    }
+
+    @NonNull
+    private String getProfileStateLabel(@Nullable String profileState) {
+        if (BaseProfile.STATE_OFF.equals(profileState)) {
+            return getString(R.string.off);
+        }
+        return getString(R.string.on);
     }
 
     public static class ProfileApplierViewModel extends AndroidViewModel {
@@ -215,7 +268,9 @@ public class ProfileApplierActivity extends BaseActivity {
                     info.profile = BaseProfile.fromPath(profilePath);
                     mProfileLiveData.postValue(info);
                 } catch (IOException | JSONException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Failed to load profile: ", e);
+                    info.loadFailed = true;
+                    mProfileLiveData.postValue(info);
                 }
             });
         }

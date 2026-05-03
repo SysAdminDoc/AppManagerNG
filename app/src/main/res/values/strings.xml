@@ -804,8 +804,16 @@
     </plurals>
     <string name="profile_apply_content_description">Apply %1$s</string>
     <string name="profile_more_actions_content_description">More actions for %1$s</string>
-    <string name="profile_item_content_description">%1$s, %2$s profile. %3$s</string>
+    <string name="profile_state_badge">State: %1$s</string>
+    <string name="profile_item_content_description">%1$s, %2$s profile, saved state %3$s. %4$s</string>
     <string name="profile_delete_confirmation">This profile will be permanently deleted. Existing shortcuts that use it may stop working.</string>
+    <string name="profile_apply_review_title">Review before applying</string>
+    <string name="profile_apply_review_apps_summary">Runs the saved app actions in this profile. Choose the state to apply before continuing.</string>
+    <string name="profile_apply_review_filters_summary">Runs this profile against apps matching its saved filters. Choose the state to apply before continuing.</string>
+    <string name="profile_apply_review_meta">%1$s profile - default state %2$s</string>
+    <string name="profile_apply_review_id">ID: %1$s</string>
+    <string name="profile_apply_load_failed">Could not load this profile. It may have been moved or deleted.</string>
+    <string name="profile_apply_invalid_shortcut">This profile shortcut is no longer valid.</string>
     <string name="keystore">KeyStore</string>
     <string name="apply_now">Apply now…</string>
     <string name="routine_ops">Routine ops</string>
