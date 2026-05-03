@@ -94,6 +94,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     private String mSearchQuery;
     @Nullable
     private com.google.android.material.button.MaterialButton mTrackerBlockInTabButton;
+    @Nullable
+    private com.google.android.material.button.MaterialButton mComponentGuideButton;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -116,12 +118,19 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         mSearchQuery = viewModel.getSearchQuery();
         mPackageName = viewModel.getPackageName();
         mTrackerBlockInTabButton = view.findViewById(R.id.tracker_block_in_tab);
+        mComponentGuideButton = view.findViewById(R.id.component_guide);
+        if (mComponentGuideButton != null) {
+            mComponentGuideButton.setOnClickListener(v -> showComponentGuideDialog());
+            mComponentGuideButton.setTooltipText(getString(R.string.app_details_component_guide_tooltip));
+        }
+        refreshComponentGuideButton();
         viewModel.get(mNeededProperty).observe(getViewLifecycleOwner(), appDetailsItems -> {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mPackageName = viewModel.getPackageName();
                 mIsExternalApk = viewModel.isExternalApk();
                 configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
+                refreshComponentGuideButton();
                 refreshTabTrackerBlockButton(appDetailsItems);
             } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
         });
@@ -175,6 +184,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             }
         } else if (id == R.id.action_block_unblock_trackers) {  // Components
             showTrackerReviewDialog();
+        } else if (id == R.id.action_component_guide) {  // Components
+            showComponentGuideDialog();
         } else if (id == R.id.action_sort_by_name) {  // All
             setSortBy(AppDetailsFragment.SORT_BY_NAME);
             item.setChecked(true);
@@ -213,6 +224,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 }
             }
         }
+        refreshComponentGuideButton();
     }
 
     @Override
@@ -268,6 +280,25 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             builder.setNeutralButton(R.string.unblock, (dialog, which) -> applyScopedTrackerRules(false, blockedTrackers, true));
         }
         builder.show();
+    }
+
+    private void showComponentGuideDialog() {
+        boolean canModify = viewModel != null && !mIsExternalApk && SelfPermissions.canModifyAppComponentStates(
+                viewModel.getUserId(), viewModel.getPackageName(), viewModel.isTestOnlyApp());
+        new MaterialAlertDialogBuilder(activity)
+                .setIcon(R.drawable.ic_information_circle)
+                .setTitle(R.string.app_details_component_guide_title)
+                .setMessage(canModify
+                        ? R.string.app_details_component_guide_message
+                        : R.string.app_details_component_guide_read_only_message)
+                .setPositiveButton(R.string.got_it, null)
+                .show();
+    }
+
+    @MainThread
+    private void refreshComponentGuideButton() {
+        if (mComponentGuideButton == null) return;
+        mComponentGuideButton.setVisibility(Prefs.Experience.isGuidedModeEnabled() ? View.VISIBLE : View.GONE);
     }
 
     @NonNull

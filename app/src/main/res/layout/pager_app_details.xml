@@ -41,7 +41,23 @@
                 app:iconGravity="textStart"
                 app:iconPadding="@dimen/padding_small"
                 tools:visibility="visible"
-                tools:text="Block 12 trackers in Activities" />
+                tools:text="Review 12 trackers in Activities" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/component_guide"
+                style="@style/Widget.AppTheme.Button.OutlinedButton.Dense"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/padding_small"
+                android:minHeight="@dimen/premium_button_min_height"
+                android:text="@string/app_details_component_guide"
+                android:textAlignment="center"
+                android:visibility="gone"
+                app:icon="@drawable/ic_information_circle"
+                app:iconGravity="textStart"
+                app:iconPadding="@dimen/padding_small"
+                tools:visibility="visible" />
 
             <FrameLayout
                 android:layout_width="match_parent"

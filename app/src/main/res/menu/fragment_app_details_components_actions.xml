@@ -22,6 +22,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_component_guide"
+        android:icon="@drawable/ic_information_circle"
+        android:title="@string/app_details_component_guide"
+        app:showAsAction="never" />
+
+    <item
         android:icon="@drawable/ic_sort"
         android:title="@string/sort"
         app:showAsAction="never">
