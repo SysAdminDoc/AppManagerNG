@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.3.0-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.4.0-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -89,8 +89,8 @@ See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
 
 - **v0.2.0** — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
 - **v0.3.0** — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance)
-- **v0.4.0** — Onboarding flow (root/Shizuku/ADB capability detection + plain-language explainer)
-- **v0.5.0** — Settings reorganization, global in-app search, contextual help
+- **v0.4.0** — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action)
+- **v0.5.0** — Onboarding flow, settings reorganization, global in-app search, contextual help
 
 ## Install
 
