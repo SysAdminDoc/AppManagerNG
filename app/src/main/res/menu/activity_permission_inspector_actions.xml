@@ -1,0 +1,9 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_restore_critical"
+        android:icon="@drawable/ic_check_circle"
+        android:title="@string/perm_recovery_action"
+        app:showAsAction="ifRoom|withText" />
+</menu>
