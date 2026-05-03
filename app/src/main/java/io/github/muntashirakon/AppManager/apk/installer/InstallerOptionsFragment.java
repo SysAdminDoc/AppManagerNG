@@ -38,6 +38,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textview.MaterialTextView;
 
 import java.text.Collator;
 import java.util.ArrayList;
@@ -101,6 +102,7 @@ public class InstallerOptionsFragment extends DialogFragment {
     private TextInputLayout mInstallerAppLayout;
     private EditText mInstallerAppField;
     private MaterialSwitch mBlockTrackersSwitch;
+    private MaterialTextView mBlockTrackersSummary;
     @Nullable
     private OnClickListener mClickListener;
     private String mPackageName;
@@ -131,35 +133,45 @@ public class InstallerOptionsFragment extends DialogFragment {
         mInstallerAppLayout = mDialogView.findViewById(R.id.installer);
         mInstallerAppField = Objects.requireNonNull(mInstallerAppLayout.getEditText());
         MaterialSwitch disableVerificationSwitch = mDialogView.findViewById(R.id.action_disable_verification);
+        MaterialTextView disableVerificationSummary = mDialogView.findViewById(R.id.action_disable_verification_summary);
         MaterialSwitch setOriginSwitch = mDialogView.findViewById(R.id.action_set_origin);
         MaterialSwitch reqUpdateOwnershipSwitch = mDialogView.findViewById(R.id.action_update_ownership);
+        MaterialTextView reqUpdateOwnershipSummary = mDialogView.findViewById(R.id.action_update_ownership_summary);
         MaterialSwitch signApkSwitch = mDialogView.findViewById(R.id.action_sign_apk);
         MaterialSwitch forceDexOptSwitch = mDialogView.findViewById(R.id.action_optimize);
+        MaterialTextView forceDexOptSummary = mDialogView.findViewById(R.id.action_optimize_summary);
         mBlockTrackersSwitch = mDialogView.findViewById(R.id.action_block_trackers);
+        mBlockTrackersSummary = mDialogView.findViewById(R.id.action_block_trackers_summary);
         // Set values and defaults
         mPm = requireContext().getPackageManager();
         boolean canInstallForOtherUsers = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.INTERACT_ACROSS_USERS_FULL);
         int selectedUser = getSelectedUserId(canInstallForOtherUsers);
-        boolean canBlockTrackers = SelfPermissions.canModifyAppComponentStates(selectedUser, mPackageName, mIsTestOnly);
         initUserSpinner(canInstallForOtherUsers);
         initInstallLocationSpinner();
         initPackageSourceSpinner();
         initInstallerAppSpinner();
-        disableVerificationSwitch.setEnabled(SelfPermissions.isSystemOrRootOrShell());
+        boolean canDisableVerification = SelfPermissions.isSystemOrRootOrShell();
+        disableVerificationSwitch.setEnabled(canDisableVerification);
+        if (!canDisableVerification) {
+            disableVerificationSummary.setText(R.string.installer_options_disable_verification_unavailable);
+        }
         disableVerificationSwitch.setChecked(mOptions.isDisableApkVerification());
         disableVerificationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.setDisableApkVerification(isChecked));
         setOriginSwitch.setChecked(mOptions.isSetOriginatingPackage());
         setOriginSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.setSetOriginatingPackage(isChecked));
-        reqUpdateOwnershipSwitch.setVisibility(Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ? View.VISIBLE : View.GONE);
+        boolean canRequestUpdateOwnership = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+        reqUpdateOwnershipSwitch.setVisibility(canRequestUpdateOwnership ? View.VISIBLE : View.GONE);
+        reqUpdateOwnershipSummary.setVisibility(canRequestUpdateOwnership ? View.VISIBLE : View.GONE);
         reqUpdateOwnershipSwitch.setChecked(mOptions.requestUpdateOwnership());
         reqUpdateOwnershipSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.requestUpdateOwnership(isChecked));
         signApkSwitch.setChecked(mOptions.isSignApkFiles());
         signApkSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.setSignApkFiles(isChecked));
-        forceDexOptSwitch.setVisibility(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? View.VISIBLE : View.GONE);
+        boolean canForceDexOpt = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
+        forceDexOptSwitch.setVisibility(canForceDexOpt ? View.VISIBLE : View.GONE);
+        forceDexOptSummary.setVisibility(canForceDexOpt ? View.VISIBLE : View.GONE);
         forceDexOptSwitch.setChecked(mOptions.isForceDexOpt());
         forceDexOptSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.setForceDexOpt(isChecked));
-        mBlockTrackersSwitch.setChecked(canBlockTrackers && mOptions.isBlockTrackers());
-        mBlockTrackersSwitch.setEnabled(canBlockTrackers);
+        updateBlockTrackersOption(selectedUser);
         mBlockTrackersSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> mOptions.setBlockTrackers(isChecked));
         return new MaterialAlertDialogBuilder(requireActivity())
                 .setTitle(R.string.installer_options)
@@ -216,13 +228,21 @@ public class InstallerOptionsFragment extends DialogFragment {
         mUserSelectionSpinner.setAdapter(userAdapter);
         mUserSelectionSpinner.setSelection(selectedUserPosition);
         mUserSelectionSpinner.setOnItemClickListener((parent, view, position, id) -> {
-            mOptions.setUserId(userIds[position]);
+            int userId = userIds[position];
+            mOptions.setUserId(userId);
             // Update block trackers option
-            boolean canBlockTrackers = SelfPermissions.canModifyAppComponentStates(selectedUser, mPackageName, mIsTestOnly);
-            mBlockTrackersSwitch.setChecked(canBlockTrackers && mOptions.isBlockTrackers());
-            mBlockTrackersSwitch.setEnabled(canBlockTrackers);
+            updateBlockTrackersOption(userId);
         });
         mUserSelectionSpinner.setEnabled(canInstallForOtherUsers);
+    }
+
+    private void updateBlockTrackersOption(int userId) {
+        boolean canBlockTrackers = SelfPermissions.canModifyAppComponentStates(userId, mPackageName, mIsTestOnly);
+        mBlockTrackersSwitch.setChecked(canBlockTrackers && mOptions.isBlockTrackers());
+        mBlockTrackersSwitch.setEnabled(canBlockTrackers);
+        mBlockTrackersSummary.setText(canBlockTrackers
+                ? R.string.installer_options_block_trackers_summary
+                : R.string.installer_options_block_trackers_unavailable);
     }
 
     private void initInstallLocationSpinner() {
@@ -258,7 +278,7 @@ public class InstallerOptionsFragment extends DialogFragment {
         mPackageSourceSpinner.setAdapter(pkgSourceAdapter);
         mPackageSourceSpinner.setSelection(pkgSource);
         mPackageSourceSpinner.setOnItemClickListener((parent, view, position, id) ->
-                mOptions.setInstallLocation(PKG_SOURCES[position]));
+                mOptions.setPackageSource(PKG_SOURCES[position]));
     }
 
     private void initInstallerAppSpinner() {
