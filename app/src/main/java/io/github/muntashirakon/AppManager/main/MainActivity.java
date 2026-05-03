@@ -405,6 +405,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (id == R.id.action_debloater) {
             Intent intent = new Intent(getApplicationContext(), DebloaterActivity.class);
             startActivity(intent);
+        } else if (id == R.id.action_permission_inspector) {
+            Intent intent = new Intent(getApplicationContext(),
+                    io.github.muntashirakon.AppManager.permissions.PermissionInspectorActivity.class);
+            startActivity(intent);
         } else return super.onOptionsItemSelected(item);
         return true;
     }
