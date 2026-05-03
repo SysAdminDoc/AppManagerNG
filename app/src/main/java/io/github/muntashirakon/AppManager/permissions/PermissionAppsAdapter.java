@@ -25,6 +25,7 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
 
     private final List<PermissionAppsViewModel.AppRow> mRows = new ArrayList<>();
     private final OnAppToggle mToggle;
+    private boolean mInteractionsEnabled = true;
 
     PermissionAppsAdapter(OnAppToggle toggle) {
         mToggle = toggle;
@@ -33,6 +34,12 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
     void submit(List<PermissionAppsViewModel.AppRow> rows) {
         mRows.clear();
         if (rows != null) mRows.addAll(rows);
+        notifyDataSetChanged();
+    }
+
+    void setInteractionsEnabled(boolean enabled) {
+        if (mInteractionsEnabled == enabled) return;
+        mInteractionsEnabled = enabled;
         notifyDataSetChanged();
     }
 
@@ -53,13 +60,24 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
         h.pkg.setText(r.packageName);
         h.toggle.setOnCheckedChangeListener(null);
         h.toggle.setChecked(r.anyGranted);
-        h.toggle.setEnabled(r.anyModifiable);
+        String status = h.itemView.getResources().getString(!r.anyModifiable
+                ? R.string.perm_app_status_read_only
+                : r.anyGranted
+                        ? R.string.perm_app_status_granted
+                        : R.string.perm_app_status_not_granted);
+        h.status.setText(status);
+        h.itemView.setContentDescription(h.itemView.getResources().getString(
+                R.string.perm_app_row_a11y, r.label, r.packageName, status));
+        boolean enabled = mInteractionsEnabled && r.anyModifiable;
+        h.itemView.setEnabled(enabled);
+        h.toggle.setEnabled(enabled);
+        h.itemView.setAlpha(enabled ? 1f : 0.62f);
         View.OnClickListener click = v -> {
-            if (!r.anyModifiable) return;
+            if (!mInteractionsEnabled || !r.anyModifiable) return;
             if (mToggle != null) mToggle.onToggle(r);
         };
-        h.itemView.setOnClickListener(click);
-        h.toggle.setOnClickListener(click);
+        h.itemView.setOnClickListener(enabled ? click : null);
+        h.toggle.setOnClickListener(enabled ? click : null);
     }
 
     @Override
@@ -71,6 +89,7 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
         final ImageView icon;
         final MaterialTextView label;
         final MaterialTextView pkg;
+        final MaterialTextView status;
         final MaterialSwitch toggle;
 
         VH(@NonNull View v) {
@@ -78,6 +97,7 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
             icon = v.findViewById(R.id.app_icon);
             label = v.findViewById(R.id.app_label);
             pkg = v.findViewById(R.id.app_package);
+            status = v.findViewById(R.id.permission_status);
             toggle = v.findViewById(R.id.permission_switch);
         }
     }

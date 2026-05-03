@@ -17,7 +17,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.textview.MaterialTextView;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,6 +36,10 @@ public class PermissionInspectorActivity extends BaseActivity {
     private PermissionInspectorViewModel mViewModel;
     private PermissionInspectorAdapter mAdapter;
     private LinearProgressIndicator mProgress;
+    private MaterialTextView mSummary;
+    private MenuItem mRestoreCriticalMenu;
+    private boolean mLoading;
+    private boolean mRestoring;
     private final ExecutorService mRecoveryExecutor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -49,6 +55,7 @@ public class PermissionInspectorActivity extends BaseActivity {
 
         mProgress = findViewById(R.id.progress_linear);
         mProgress.setVisibilityAfterHide(View.GONE);
+        mSummary = findViewById(R.id.inspector_summary);
 
         RecyclerView recycler = findViewById(R.id.recycler_view);
         recycler.setLayoutManager(new LinearLayoutManager(this));
@@ -60,10 +67,15 @@ public class PermissionInspectorActivity extends BaseActivity {
         recycler.setAdapter(mAdapter);
 
         mViewModel = new ViewModelProvider(this).get(PermissionInspectorViewModel.class);
-        mViewModel.getRows().observe(this, rows -> mAdapter.submit(rows));
+        mViewModel.getRows().observe(this, rows -> {
+            mAdapter.submit(rows);
+            updateSummary(rows);
+        });
         mViewModel.getLoading().observe(this, loading -> {
-            if (Boolean.TRUE.equals(loading)) mProgress.show();
-            else mProgress.hide();
+            mLoading = Boolean.TRUE.equals(loading);
+            if (mLoading) mProgress.show();
+            else if (!mRestoring) mProgress.hide();
+            invalidateOptionsMenu();
         });
         mViewModel.load();
     }
@@ -77,7 +89,15 @@ public class PermissionInspectorActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_permission_inspector_actions, menu);
+        mRestoreCriticalMenu = menu.findItem(R.id.action_restore_critical);
+        updateMenuState();
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        updateMenuState();
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -95,21 +115,54 @@ public class PermissionInspectorActivity extends BaseActivity {
     }
 
     private void runRecovery() {
+        mRestoring = true;
         Toast.makeText(this, R.string.perm_recovery_running, Toast.LENGTH_SHORT).show();
         mProgress.show();
+        invalidateOptionsMenu();
         mRecoveryExecutor.submit(() -> {
-            PermissionRecovery.Result result =
-                    PermissionRecovery.restoreAll(new AppOpsManagerCompat());
-            runOnUiThread(() -> {
-                mProgress.hide();
-                String msg = getString(R.string.perm_recovery_done_fmt,
-                        result.packagesProcessed,
-                        result.permissionsRestored,
-                        result.rulesCleared);
-                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-                if (mViewModel != null) mViewModel.load();
-            });
+            try {
+                PermissionRecovery.Result result =
+                        PermissionRecovery.restoreAll(new AppOpsManagerCompat());
+                runOnUiThread(() -> {
+                    finishRecoveryUi();
+                    String msg = getString(R.string.perm_recovery_done_fmt,
+                            result.packagesProcessed,
+                            result.permissionsRestored,
+                            result.rulesCleared);
+                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                    if (mViewModel != null) mViewModel.load();
+                });
+            } catch (Throwable th) {
+                runOnUiThread(() -> {
+                    finishRecoveryUi();
+                    Toast.makeText(this, R.string.perm_recovery_failed, Toast.LENGTH_LONG).show();
+                });
+            }
         });
+    }
+
+    private void updateSummary(@Nullable List<PermissionInspectorViewModel.Row> rows) {
+        if (mSummary == null || rows == null) return;
+        int requested = 0;
+        int granted = 0;
+        for (PermissionInspectorViewModel.Row row : rows) {
+            requested += row.requestedCount;
+            granted += row.grantedCount;
+        }
+        mSummary.setText(getString(R.string.perm_inspector_summary_stats,
+                rows.size(), requested, granted));
+    }
+
+    private void finishRecoveryUi() {
+        mRestoring = false;
+        if (!mLoading) mProgress.hide();
+        invalidateOptionsMenu();
+    }
+
+    private void updateMenuState() {
+        if (mRestoreCriticalMenu != null) {
+            mRestoreCriticalMenu.setEnabled(!mLoading && !mRestoring);
+        }
     }
 
     @Override

@@ -46,11 +46,17 @@ class PermissionInspectorAdapter extends RecyclerView.Adapter<PermissionInspecto
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         PermissionInspectorViewModel.Row r = mRows.get(position);
+        String label = h.itemView.getResources().getString(r.group.labelRes);
+        String groupSummary = h.itemView.getResources().getString(r.group.summaryRes);
+        String countSummary = h.itemView.getResources().getString(
+                R.string.perm_inspector_count_fmt, r.grantedCount, r.requestedCount);
         h.icon.setImageResource(r.group.iconRes);
-        h.label.setText(r.group.labelRes);
-        h.summary.setText(h.itemView.getResources().getString(
-                R.string.perm_inspector_count_fmt, r.grantedCount, r.requestedCount));
-        h.count.setText(String.valueOf(r.grantedCount));
+        h.label.setText(label);
+        h.summary.setText(groupSummary);
+        h.count.setText(h.itemView.getResources().getString(
+                R.string.perm_inspector_count_short_fmt, r.grantedCount, r.requestedCount));
+        h.itemView.setContentDescription(h.itemView.getResources().getString(
+                R.string.perm_inspector_group_a11y, label, countSummary, groupSummary));
         h.itemView.setOnClickListener(v -> {
             if (mClick != null) mClick.onClick(r.group);
         });

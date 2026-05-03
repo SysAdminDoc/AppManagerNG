@@ -28,16 +28,80 @@
             android:layout_height="wrap_content"
             android:indeterminate="true" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/inspector_summary"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/inspector_header"
+            style="@style/Widget.AppTheme.V2.Card.Header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/padding_medium"
             android:layout_marginTop="@dimen/padding_very_small"
             android:layout_marginBottom="@dimen/padding_small"
-            android:text="@string/summary_permission_inspector"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            app:contentPadding="@dimen/premium_space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:layout_width="@dimen/premium_icon_40"
+                        android:layout_height="@dimen/premium_icon_40"
+                        android:background="?attr/colorTertiaryContainer"
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no"
+                        android:padding="@dimen/premium_space_8"
+                        android:src="@drawable/ic_shield_key"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
+                        app:tint="?attr/colorOnTertiaryContainer" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/premium_space_12"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/perm_inspector_header_title"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/summary_permission_inspector"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/inspector_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_12"
+                    android:background="@drawable/main_status_background"
+                    android:gravity="center"
+                    android:paddingHorizontal="@dimen/premium_space_12"
+                    android:paddingVertical="@dimen/premium_space_8"
+                    android:text="@string/perm_inspector_summary_loading"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
     </io.github.muntashirakon.widget.AppBarLayout>
 
@@ -53,6 +117,8 @@
             android:clipToPadding="false"
             android:fitsSystemWindows="true"
             android:focusable="false"
+            android:paddingTop="@dimen/premium_space_8"
+            android:paddingBottom="@dimen/premium_space_32"
             android:scrollbars="none"
             tools:listitem="@layout/item_permission_group" />
 

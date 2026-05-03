@@ -23,10 +23,12 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="6dp"
+            android:layout_width="@dimen/premium_icon_48"
+            android:layout_height="@dimen/premium_icon_48"
             android:background="?attr/colorSecondaryContainer"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:padding="@dimen/premium_space_12"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
             app:tint="?attr/colorOnSecondaryContainer"
             tools:src="@drawable/ic_cctv_off" />
@@ -49,9 +51,11 @@
                 android:id="@+id/summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:maxLines="2"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="3 of 27 apps granted" />
+                tools:text="Apps that can take photos and record video." />
 
         </LinearLayout>
 
@@ -60,12 +64,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/padding_small"
-            android:background="?attr/colorPrimaryContainer"
+            android:background="@drawable/permission_count_badge_background"
             android:paddingHorizontal="@dimen/padding_small"
             android:paddingVertical="@dimen/padding_very_small"
             android:textAppearance="?attr/textAppearanceLabelLarge"
             android:textColor="?attr/colorOnPrimaryContainer"
-            tools:text="3" />
+            tools:text="3/27" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="@dimen/premium_icon_20"
+            android:layout_height="@dimen/premium_icon_20"
+            android:layout_marginStart="@dimen/premium_space_8"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_next"
+            app:tint="?attr/colorOnSurfaceVariant" />
 
     </LinearLayout>
 
