@@ -30,7 +30,7 @@ Hard constraints:
 |---------|-------|-----------------|
 | **v0.2.0** ✅ | Identity | `applicationId` + namespace rename → `io.github.sysadmindoc.AppManagerNG`; new release keystore; GitHub Actions release pipeline; NG-specific CONTRIBUTING.md |
 | **v0.3.0** ✅ | UX Refresh | Material 3 dashboard; Pro Mode toggle; edge-to-edge (Android 15/16 compliance); AMOLED/dark/light themes |
-| **v0.4.0** 🔨 In Progress | Onboarding & Premium Polish Foundation | Root/Shizuku/ADB capability detection wizard; plain-language privilege explainer; first-run flow; **v2 design system foundation behind opt-in toggle** (calmer palette, tighter typography, pill controls — see [Premium Polish Track](#premium-polish-track-v04x--v07x)) |
+| **v0.4.0** ✅ | Permission Inspector | Review and bulk-revoke dangerous runtime permissions across all installed apps; critical-package denylist guard; in-app recovery action for previously revoked system packages |
 | **v0.5.0** | Settings & Discovery | Settings reorganization by task; global in-app search; contextual help tooltips; in-app changelog viewer |
 | **v0.6.0** | Rootless Power | Shizuku integration; rootless debloat; wireless ADB auto-pairing |
 

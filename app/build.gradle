@@ -14,8 +14,8 @@ android {
         applicationId 'io.github.sysadmindoc.AppManagerNG'
         minSdk min_sdk
         targetSdk target_sdk
-        versionCode 3
-        versionName "0.3.0"
+        versionCode 4
+        versionName "0.4.0"
         // AndroidX JUnit4 instrumentation runner so AndroidJUnit4-annotated tests
         // (e.g. AppsDbMigrationTest) are discovered. Default is the legacy
         // android.test.InstrumentationTestRunner which would silently skip them.
