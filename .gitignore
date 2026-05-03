@@ -12,7 +12,7 @@ toybox/src/main/jniLibs
 app/src/main/assets/am.jar
 app/src/main/assets/main.jar
 pids
-logs
+/logs
 node_modules
 npm-debug.log
 coverage/
