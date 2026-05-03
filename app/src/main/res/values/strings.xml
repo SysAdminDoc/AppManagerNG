@@ -1071,6 +1071,11 @@
     <string name="app_details_tracker_review_message">Unblocked trackers: <xliff:g id="unblocked" example="4">%1$d</xliff:g>\nAlready blocked: <xliff:g id="blocked" example="2">%2$d</xliff:g>\n\nChanges apply only to this tab. Blocking known ad, analytics, and tracking components can reduce tracking, but may affect login, notifications, payments, or crash reporting.</string>
     <string name="app_details_tracker_block_review_message">This changes only the current tab. Blocking known ad, analytics, and tracking components can reduce tracking, but may affect login, notifications, payments, or crash reporting. You can undo from the confirmation message.</string>
     <string name="app_details_tracker_no_trackers_in_tab">No tracker components in this tab</string>
+    <string name="app_details_component_guide">Component guide</string>
+    <string name="app_details_component_guide_tooltip">Explain component blocking controls</string>
+    <string name="app_details_component_guide_title">How component blocking works</string>
+    <string name="app_details_component_guide_message">Use the switch to allow or block one component. Tracker chips mark known ad, analytics, or tracking SDKs.\n\nChanges apply immediately. Long-press a switch to choose the blocking method. Use the menu to review trackers, sort this tab, or apply older saved rules.</string>
+    <string name="app_details_component_guide_read_only_message">This tab is currently read-only because AppManagerNG cannot modify component states for this source or access mode.\n\nYou can still inspect component names, tracker chips, permissions, process names, and sort the list.</string>
     <string name="has_net_policy">Net policy</string>
     <string name="net_policy">Net policy</string>
     <string name="initializing">Initializing…</string>
@@ -1434,20 +1439,20 @@
     <string name="component_switch_allowed_a11y">Component allowed: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to block.</string>
     <string name="component_switch_blocked_a11y">Component blocked: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to allow.</string>
     <plurals name="tracker_block_in_tab_activities">
-        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker activity</item>
-        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker activities</item>
+        <item quantity="one">Review <xliff:g id="count" example="1">%1$d</xliff:g> tracker activity</item>
+        <item quantity="other">Review <xliff:g id="count" example="3">%1$d</xliff:g> tracker activities</item>
     </plurals>
     <plurals name="tracker_block_in_tab_services">
-        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker service</item>
-        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker services</item>
+        <item quantity="one">Review <xliff:g id="count" example="1">%1$d</xliff:g> tracker service</item>
+        <item quantity="other">Review <xliff:g id="count" example="3">%1$d</xliff:g> tracker services</item>
     </plurals>
     <plurals name="tracker_block_in_tab_receivers">
-        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker receiver</item>
-        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker receivers</item>
+        <item quantity="one">Review <xliff:g id="count" example="1">%1$d</xliff:g> tracker receiver</item>
+        <item quantity="other">Review <xliff:g id="count" example="3">%1$d</xliff:g> tracker receivers</item>
     </plurals>
     <plurals name="tracker_block_in_tab_providers">
-        <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker provider</item>
-        <item quantity="other">Block <xliff:g id="count" example="3">%1$d</xliff:g> tracker providers</item>
+        <item quantity="one">Review <xliff:g id="count" example="1">%1$d</xliff:g> tracker provider</item>
+        <item quantity="other">Review <xliff:g id="count" example="3">%1$d</xliff:g> tracker providers</item>
     </plurals>
     <plurals name="app_details_tracker_block_review_title">
         <item quantity="one">Block <xliff:g id="count" example="1">%1$d</xliff:g> tracker?</item>
