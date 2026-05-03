@@ -52,6 +52,14 @@ public class DebloaterViewModel extends AndroidViewModel {
         return (mFilterFlags & flag) != 0;
     }
 
+    public boolean hasActiveFilters() {
+        return mFilterFlags != DebloaterListOptions.FILTER_NO_FILTER;
+    }
+
+    public boolean hasSearchQuery() {
+        return !TextUtils.isEmpty(mQueryString);
+    }
+
     public void addFilterFlag(@DebloaterListOptions.Filter int flag) {
         mFilterFlags |= flag;
         AppPref.set(AppPref.PrefKey.PREF_DEBLOATER_FILTER_FLAGS_INT, mFilterFlags);
@@ -60,6 +68,12 @@ public class DebloaterViewModel extends AndroidViewModel {
 
     public void removeFilterFlag(@DebloaterListOptions.Filter int flag) {
         mFilterFlags &= ~flag;
+        AppPref.set(AppPref.PrefKey.PREF_DEBLOATER_FILTER_FLAGS_INT, mFilterFlags);
+        loadPackages();
+    }
+
+    public void clearFilters() {
+        mFilterFlags = DebloaterListOptions.FILTER_NO_FILTER;
         AppPref.set(AppPref.PrefKey.PREF_DEBLOATER_FILTER_FLAGS_INT, mFilterFlags);
         loadPackages();
     }
@@ -127,7 +141,9 @@ public class DebloaterViewModel extends AndroidViewModel {
         mExecutor.submit(() -> {
             loadDebloatObjects();
             List<DebloatObject> debloatObjects = new ArrayList<>();
-            if (mFilterFlags != DebloaterListOptions.FILTER_NO_FILTER) {
+            if (mFilterFlags == DebloaterListOptions.FILTER_NO_FILTER) {
+                debloatObjects.addAll(mDebloatObjects);
+            } else {
                 for (DebloatObject debloatObject : mDebloatObjects) {
                     // List
                     if ((mFilterFlags & DebloaterListOptions.FILTER_LIST_AOSP) == 0 && debloatObject.type.equals("aosp")) {

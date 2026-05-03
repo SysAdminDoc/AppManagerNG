@@ -4,15 +4,16 @@
     style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:clickable="true"
-    android:focusable="true"
-    android:checkable="true"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
-    android:layout_marginVertical="?attr/listItemMarginVertical">
+    android:layout_marginVertical="?attr/listItemMarginVertical"
+    android:checkable="true"
+    android:clickable="true"
+    android:focusable="true">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="@dimen/main_list_min_height"
         android:orientation="horizontal"
         android:paddingHorizontal="?attr/listItemPaddingHorizontal"
         android:paddingVertical="?attr/listItemPaddingVertical">
@@ -20,63 +21,77 @@
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="@dimen/icon_size"
             android:layout_height="match_parent"
-            android:gravity="center"
             android:layout_marginEnd="@dimen/padding_small"
+            android:gravity="top|center_horizontal"
             android:orientation="vertical">
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/icon"
                 android:layout_width="@dimen/icon_size"
                 android:layout_height="@dimen/icon_size"
-                android:layout_weight="0"
                 android:layout_gravity="top|center_horizontal"
-                tools:srcCompat="@mipmap/ic_launcher_round"
-                android:contentDescription="@string/str_logo" />
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                tools:srcCompat="@mipmap/ic_launcher_round" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/list_type"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="top|center_horizontal"
+                android:layout_marginTop="@dimen/padding_very_small"
+                android:background="@drawable/badge_background"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:minHeight="@dimen/main_list_badge_min_height"
+                android:minWidth="@dimen/main_list_badge_min_width"
+                android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
+                android:paddingVertical="@dimen/main_list_badge_padding_vertical"
                 android:textAppearance="?attr/textAppearanceLabelSmall"
-                tools:text="OEM"
-                tools:ignore="SmallSp" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:ignore="SmallSp"
+                tools:text="OEM" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
                 android:ellipsize="end"
+                android:maxLines="2"
                 android:textAppearance="?attr/textAppearanceListItem"
+                android:textColor="?attr/colorOnSurface"
                 tools:text="@string/app_name" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/package_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:layout_marginTop="@dimen/padding_very_small"
                 android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceListItemSecondary"
-                android:textStyle="italic"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="io.github.muntashirakon.AppManager" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/apk_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceListItemSecondary"
+                android:layout_marginTop="@dimen/padding_very_small"
                 android:autoLink="web"
-                tools:text="@tools:sample/lorem/random"
-                tools:ignore="SmallSp" />
+                android:maxLines="3"
+                android:textAppearance="?attr/textAppearanceListItemSecondary"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:ignore="SmallSp"
+                tools:text="@tools:sample/lorem/random" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

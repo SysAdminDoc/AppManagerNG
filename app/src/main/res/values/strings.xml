@@ -1685,6 +1685,24 @@
     <string name="uninstall_app">Uninstall %1$s</string>
     <string name="debloat_list_type">List</string>
     <string name="debloat_removal_type">Type</string>
+    <string name="debloater_list_options_summary">Choose which source lists, safety levels, and app states are visible.</string>
+    <string name="debloater_status_loading">Loading debloat recommendations…</string>
+    <plurals name="debloater_status_all_recommendations">
+        <item quantity="one">%d debloat recommendation</item>
+        <item quantity="other">%d debloat recommendations</item>
+    </plurals>
+    <plurals name="debloater_status_showing_recommendations">
+        <item quantity="one">Showing %1$d of %2$d recommendation</item>
+        <item quantity="other">Showing %1$d of %2$d recommendations</item>
+    </plurals>
+    <string name="debloater_status_filters_active">filters active</string>
+    <string name="debloater_empty_title_no_recommendations">No debloat recommendations</string>
+    <string name="debloater_empty_title_no_matches">No matching recommendations</string>
+    <string name="debloater_empty_message_no_recommendations">Refresh recommendations or adjust list options if installed system apps should appear here.</string>
+    <string name="debloater_empty_message_filters">Current list, safety, or app-state filters are hiding every recommendation. Clearing filters shows every list entry, including unsafe and uninstalled items.</string>
+    <string name="debloater_empty_message_search">Search is hiding every recommendation in the current debloat list.</string>
+    <string name="debloater_empty_action_clear_search">Clear search</string>
+    <string name="debloater_item_content_description">%1$s, package %2$s, %3$s, %4$s list</string>
     <string name="system_app_put_back">Put back</string>
     <string name="debloater_title">Debloater</string>
     <string name="debloat_list_aosp">AOSP</string>
