@@ -620,6 +620,14 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
         mSearchView.clearFocus();
     }
 
+    void clearSearchQuery() {
+        mDynamicallyEnteringSearchQuery = true;
+        search(null);
+        mSearchView.setQuery("", false);
+        mSearchView.clearFocus();
+        populateSuggestionsAdapter(null);
+    }
+
     @Nullable
     SearchCriteria getSearchQuery() {
         return mSearchCriteria;

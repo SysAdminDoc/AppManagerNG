@@ -1098,6 +1098,16 @@
     <string name="import_from_oab">Import from OAndBackup</string>
     <string name="import_from_tb">Import from Titanium Backup</string>
     <string name="log_viewer">Log viewer</string>
+    <string name="log_viewer_empty_live_title">Waiting for log entries</string>
+    <string name="log_viewer_empty_live_message">Live logging is running. New entries will appear here as they arrive.</string>
+    <string name="log_viewer_empty_filtered_title">No matching log entries</string>
+    <string name="log_viewer_empty_filtered_message">The current search or log level is hiding every entry. Clear filters to return to the full stream.</string>
+    <string name="log_viewer_empty_saved_title">No log entries</string>
+    <string name="log_viewer_empty_saved_message">This saved log does not contain any readable entries.</string>
+    <string name="log_viewer_empty_saved_unavailable_title">Cannot open saved log</string>
+    <string name="log_viewer_empty_saved_unavailable_message">The selected log file is unavailable or cannot be read from this location.</string>
+    <string name="log_viewer_unknown_tag">Unknown tag</string>
+    <string name="log_viewer_row_content_description">Log entry from <xliff:g id="tag" example="ActivityManager">%1$s</xliff:g>: <xliff:g id="message" example="Starting activity">%2$s</xliff:g></string>
     <string name="pref_log_viewer_msg">Display density, buffers, filters, and saved log behavior.</string>
     <string name="restart_log_viewer_to_see_changes">Restart log viewer window to see changes.</string>
     <string name="filename">Filename</string>

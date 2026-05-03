@@ -42,13 +42,16 @@ public class SavedLogViewerFragment extends AbsLogViewerFragment implements LogV
     }
 
     private String mFilename = "";
+    private boolean mLogFileUnavailable;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Uri uri = BundleCompat.getParcelable(requireArguments(), ARG_FILE_URI, Uri.class);
         if (uri == null) {
-            // TODO: 31/5/22 Handle invalid URI
+            mLogFileUnavailable = true;
+            mActivity.hideProgressBar();
+            updateEmptyState();
             return;
         }
         mFilename = uri.getLastPathSegment();
@@ -86,7 +89,22 @@ public class SavedLogViewerFragment extends AbsLogViewerFragment implements LogV
             mActivity.addToAutocompleteSuggestions(logLine);
         }
 
-        mRecyclerView.scrollToPosition(mLogListAdapter.getItemCount() - 1);
+        updateEmptyState();
+        if (mLogListAdapter.getItemCount() > 0) {
+            mRecyclerView.scrollToPosition(mLogListAdapter.getItemCount() - 1);
+        }
+    }
+
+    @Override
+    protected int getDefaultEmptyStateTitleRes() {
+        return mLogFileUnavailable ? R.string.log_viewer_empty_saved_unavailable_title
+                : R.string.log_viewer_empty_saved_title;
+    }
+
+    @Override
+    protected int getDefaultEmptyStateMessageRes() {
+        return mLogFileUnavailable ? R.string.log_viewer_empty_saved_unavailable_message
+                : R.string.log_viewer_empty_saved_message;
     }
 
     @Override
