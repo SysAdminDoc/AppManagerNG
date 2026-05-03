@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Permission Inspector: recovery action for previously revoked critical packages
+- New "Restore system app permissions" action on the Permission Inspector home screen. Re-grants every dangerous permission to a fixed set of OS- and vendor-critical packages (Phone, system UI, Settings, telephony/contacts/media providers, fused location, Google Play services / GSF, Samsung location & IMS, etc.) and clears any persisted ComponentsBlocker permission rules for those packages so a bad state from a pre-guard build cannot survive reboot or reinstall.
+- Required because earlier builds without the bulk-revoke guard could leave Phone, voicemail, location services, and other system functions broken via REVOKED_COMPAT appop flags. The recovery action makes that recoverable from inside the app instead of via adb.
+
 ### Added — Permission Inspector: master grant + info dialog
 - New "Grant for all apps" toolbar action mirrors the existing "Revoke for all" — mass-grants the permission group to every modifiable app on the device. Useful when you've over-revoked and want to start fresh.
 - New info icon on the toolbar opens a dialog explaining what the screen does and, importantly, **why some apps are skipped during a bulk revoke** (OS- and vendor-critical packages — GMS, GSF, system UI, telephony/media providers, fused location, Samsung location/IMS, etc. — are excluded from the bulk action because revoking from them can crash system_server). Per-app toggles remain unrestricted.
