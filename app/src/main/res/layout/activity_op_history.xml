@@ -31,9 +31,15 @@
             android:id="@+id/history_summary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_medium"
+            android:layout_marginHorizontal="@dimen/padding_small"
             android:layout_marginTop="@dimen/padding_very_small"
-            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:background="@drawable/main_status_background"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/main_status_min_height"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_small"
+            android:text="@string/op_history_status_loading"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:visibility="gone"
             tools:text="@string/op_history_empty_message"
@@ -218,7 +224,7 @@
             android:clipToPadding="false"
             android:fitsSystemWindows="true"
             app:fastScrollerEnabled="true"
-            tools:listitem="@layout/m3_preference" />
+            tools:listitem="@layout/item_op_history" />
 
         <include
             android:id="@android:id/empty"

@@ -14,7 +14,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -119,6 +118,7 @@ public class OpHistoryActivity extends BaseActivity {
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
         mHistorySummary = findViewById(R.id.history_summary);
+        showHistoryLoadingState();
         RecyclerView listView = findViewById(android.R.id.list);
         listView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         View emptyView = findViewById(android.R.id.empty);
@@ -137,6 +137,7 @@ public class OpHistoryActivity extends BaseActivity {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.clear_history, (dialog, which) -> {
                     mProgressIndicator.show();
+                    showHistoryLoadingState();
                     mViewModel.clearHistory();
                 })
                 .show());
@@ -170,6 +171,7 @@ public class OpHistoryActivity extends BaseActivity {
         OpHistoryManager.getHistoryAddedLiveData().observe(this, opHistory -> {
             // New history added
             mProgressIndicator.show();
+            showHistoryLoadingState();
             mViewModel.loadOpHistories();
         });
         mProgressIndicator.show();
@@ -186,6 +188,11 @@ public class OpHistoryActivity extends BaseActivity {
         mEmptyStateAction.setText(R.string.clear_filters);
         mEmptyStateAction.setOnClickListener(v -> clearFilters());
         mEmptyStateAction.setVisibility(View.GONE);
+    }
+
+    private void showHistoryLoadingState() {
+        mHistorySummary.setText(R.string.op_history_status_loading);
+        mHistorySummary.setVisibility(View.VISIBLE);
     }
 
     private void setupHistoryFilters() {
@@ -288,11 +295,11 @@ public class OpHistoryActivity extends BaseActivity {
             mHistorySummary.setVisibility(View.GONE);
             return;
         }
-        int successCount = 0;
+        int failedCount = 0;
         int highRiskCount = 0;
         for (OpHistoryItem history : filteredList) {
-            if (history.getStatus()) {
-                ++successCount;
+            if (!history.getStatus()) {
+                ++failedCount;
             }
             if (history.getRisk() == OperationJournalMetadata.RISK_HIGH) {
                 ++highRiskCount;
@@ -306,15 +313,15 @@ public class OpHistoryActivity extends BaseActivity {
                 R.plurals.op_history_operation_count,
                 totalCount,
                 totalCount);
-        String succeeded = getResources().getQuantityString(
-                R.plurals.op_history_succeeded_count,
-                successCount,
-                successCount);
+        String failed = getResources().getQuantityString(
+                R.plurals.op_history_failed_count,
+                failedCount,
+                failedCount);
         String highRisk = getResources().getQuantityString(
                 R.plurals.op_history_high_risk_count,
                 highRiskCount,
                 highRiskCount);
-        mHistorySummary.setText(getString(R.string.op_history_summary, shown, total, succeeded, highRisk));
+        mHistorySummary.setText(getString(R.string.op_history_summary, shown, total, failed, highRisk));
         mHistorySummary.setVisibility(View.VISIBLE);
     }
 
@@ -533,6 +540,7 @@ public class OpHistoryActivity extends BaseActivity {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
                     mProgressIndicator.show();
+                    showHistoryLoadingState();
                     mViewModel.deleteHistory(history);
                 })
                 .show();
@@ -595,6 +603,7 @@ public class OpHistoryActivity extends BaseActivity {
             setSortMode(SORT_LABEL);
         } else if (id == R.id.action_seed_history) {
             mProgressIndicator.show();
+            showHistoryLoadingState();
             mViewModel.addDebugHistoryFixtures();
         } else return super.onOptionsItemSelected(item);
         return true;
@@ -753,6 +762,7 @@ public class OpHistoryActivity extends BaseActivity {
 
     private void runHistoryCleanup(int cleanupType) {
         mProgressIndicator.show();
+        showHistoryLoadingState();
         switch (cleanupType) {
             case CLEANUP_VISIBLE:
                 mViewModel.deleteHistories(getVisibleHistory());
@@ -802,19 +812,23 @@ public class OpHistoryActivity extends BaseActivity {
         static class ViewHolder extends RecyclerView.ViewHolder {
             MaterialCardView itemView;
             TextView type;
+            TextView status;
             TextView title;
             TextView execTime;
             TextView metadata;
-            Button execBtn;
+            MaterialButton execBtn;
+            MaterialButton moreBtn;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 this.itemView = (MaterialCardView) itemView;
                 type = itemView.findViewById(R.id.type);
+                status = itemView.findViewById(R.id.status);
                 title = itemView.findViewById(android.R.id.title);
                 execTime = itemView.findViewById(android.R.id.summary);
                 metadata = itemView.findViewById(R.id.item_metadata);
                 execBtn = itemView.findViewById(R.id.item_action);
+                moreBtn = itemView.findViewById(R.id.item_more);
             }
         }
 
@@ -866,29 +880,41 @@ public class OpHistoryActivity extends BaseActivity {
             synchronized (mAdapterList) {
                 history = mAdapterList.get(position);
             }
-            holder.itemView.setStrokeColor(history.getStatus() ? mColorSuccess : mColorFailure);
-            holder.type.setText(history.getLocalizedType(mActivity));
-            holder.title.setText(history.getLabel(mActivity));
+            boolean succeeded = history.getStatus();
+            String status = mActivity.getString(succeeded
+                    ? R.string.op_history_status_success
+                    : R.string.op_history_status_failure);
+            String title = history.getLabel(mActivity);
+            String type = history.getLocalizedType(mActivity);
+            String metadata = history.getMetadataSummary(mActivity);
+            holder.itemView.setStrokeColor(succeeded ? mColorSuccess : mColorFailure);
+            holder.status.setText(status);
+            holder.status.setTextColor(succeeded ? mColorSuccess : mColorFailure);
+            holder.type.setText(type);
+            holder.title.setText(title);
             holder.execTime.setText(DateUtils.formatLongDateTime(mActivity, history.getTimestamp()));
-            holder.metadata.setText(history.getMetadataSummary(mActivity));
+            holder.metadata.setText(metadata);
             holder.itemView.setContentDescription(mActivity.getString(R.string.op_history_item_content_description,
-                    history.getLabel(mActivity),
-                    history.getLocalizedType(mActivity),
-                    history.getMetadataSummary(mActivity)));
+                    title,
+                    status,
+                    type,
+                    metadata));
             holder.itemView.setOnClickListener(v -> mActivity.showHistoryDetails(history));
             holder.itemView.setOnLongClickListener(v -> {
                 mActivity.showHistoryActions(history);
                 return true;
             });
+            holder.moreBtn.setContentDescription(mActivity.getString(
+                    R.string.op_history_more_actions_content_description, title));
+            holder.moreBtn.setOnClickListener(v -> mActivity.showHistoryActions(history));
             boolean replayable = history.isReplayable();
-            holder.execBtn.setVisibility(replayable ? View.VISIBLE : View.INVISIBLE);
+            holder.execBtn.setVisibility(replayable ? View.VISIBLE : View.GONE);
             holder.execBtn.setEnabled(replayable);
             holder.execBtn.setClickable(replayable);
             holder.execBtn.setFocusable(replayable);
             holder.execBtn.setOnClickListener(replayable ? v -> mActivity.showRerunConfirmation(history) : null);
-            holder.execBtn.setContentDescription(mActivity.getString(replayable
-                    ? R.string.op_history_action_rerun
-                    : R.string.op_history_action_not_replayable));
+            holder.execBtn.setContentDescription(mActivity.getString(
+                    R.string.op_history_rerun_content_description, title));
         }
     }
 
