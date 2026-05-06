@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Docs — ROADMAP iter-19 research delta (2026-05-06)
+- Appended "Iter-19 Research Additions" table to `ROADMAP.md` covering 30 new items mined from a three-day GitHub-issue / community-pain-point sweep, a Shizuku-era competitor harvest (`timschneeb/awesome-shizuku`), and Android 17 Beta 4 + F-Droid 2.0 platform deltas. New themes: Hidden-API compatibility harness, GCM-cipher reuse on large OBB backup (#1958), Shizuku-permission auto-revoke warning on data-clear (Canta #359), Hidden-Shizuku fork detection, OEM debloat-blocker bypass (OPlus / Samsung / MIUI), per-app rollback / undo, Tasker parameterized intent API, freeze / operation audit-log UI, settings import/export portability, install-date filter, Android 17 16 KB page-size fix, Google Play Contacts/Location-button policy enforcement, KernelSU ADB-Root privilege enum, Blocker-style IFW rule editor, Amarok-Hider `pm hide` toggle, Language-Selector per-app locale via Shizuku, InstallerX-style biometric install gate, debuggable-app rootless backup, F-Droid 2.0 ROM JSON pre-seeding format, F-Droid 2.0 protobuf index v2, Android 17 ACCESS_LOCAL_NETWORK + static-final reflection ban + 50K Keystore cap + ML-DSA cert OIDs + cleartext deprecation, OwnDroid Dhizuku DPM mode, FireOS SYSTEM USER privilege backend, PI install-interception, UpgradeAll getter-plugin API, Material You / Monet widget theming. Two explicit rejects (Shizuku-iptables firewall, Thanox-style Accessibility-Service auto-freeze) per NG philosophy.
+- Source Appendix extended S137–S171 (35 new sources). All iter-19 rows cite `[S###]` references.
+
 ## v0.4.0 — 2026-05-02
 
 ### Fixed — Permission Inspector: recovery action for previously revoked critical packages
