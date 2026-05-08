@@ -16,7 +16,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.os.BundleCompat;
 
 import com.google.android.material.button.MaterialButton;
@@ -58,7 +57,7 @@ public class RunningAppDetails extends CapsuleBottomSheetDialogFragment {
             dismiss();
             return;
         }
-        LinearLayoutCompat appContainer = view.findViewById(R.id.app_container);
+        View appContainer = view.findViewById(R.id.app_container);
         ImageView appIcon = view.findViewById(R.id.icon);
         MaterialButton openAppInfoButton = view.findViewById(R.id.info);
         TextView appLabel = view.findViewById(R.id.name);
@@ -99,6 +98,7 @@ public class RunningAppDetails extends CapsuleBottomSheetDialogFragment {
         if (processItem instanceof AppProcessItem) {
             PackageInfo packageInfo = ((AppProcessItem) processItem).packageInfo;
             appContainer.setVisibility(View.VISIBLE);
+            openAppInfoButton.setVisibility(View.VISIBLE);
             ImageLoader.getInstance().displayImage(packageInfo.packageName, packageInfo.applicationInfo, appIcon);
             appLabel.setText(packageInfo.applicationInfo.loadLabel(requireContext().getPackageManager()));
             packageName.setText(packageInfo.packageName);
@@ -109,7 +109,11 @@ public class RunningAppDetails extends CapsuleBottomSheetDialogFragment {
                 dismiss();
             });
         } else {
-            appContainer.setVisibility(View.GONE);
+            appContainer.setVisibility(View.VISIBLE);
+            appIcon.setImageResource(R.drawable.ic_pulse);
+            appLabel.setText(processItem.name);
+            packageName.setText(R.string.running_apps_system_process_summary);
+            openAppInfoButton.setVisibility(View.GONE);
         }
     }
 }

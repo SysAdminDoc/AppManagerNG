@@ -2,7 +2,7 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
+    style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
@@ -10,24 +10,24 @@
     android:checkable="true"
     android:clickable="true"
     android:focusable="true"
-    android:minHeight="@dimen/main_list_min_height"
-    app:cardElevation="0dp">
+    android:minHeight="@dimen/main_list_min_height">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="?attr/listItemPaddingHorizontal"
         android:paddingVertical="?attr/listItemPaddingVertical">
 
-        <androidx.appcompat.widget.AppCompatImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/icon"
             android:layout_width="@dimen/main_list_icon_size"
             android:layout_height="@dimen/main_list_icon_size"
             android:layout_gravity="top"
             android:layout_marginEnd="@dimen/main_list_icon_margin_end"
-            android:layout_weight="0"
             android:contentDescription="@null"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
             tools:srcCompat="@mipmap/ic_launcher" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -36,55 +36,76 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/process_name"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:textAppearance="?android:attr/textAppearanceListItem"
-                android:textColor="?attr/colorOnSurface"
-                tools:text="@string/app_name" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/process_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="@string/app_name" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/process_kind"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/premium_space_8"
+                    android:background="@drawable/badge_background"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="@string/running_apps_app_process" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/package_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:ellipsize="middle"
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textStyle="italic"
                 tools:text="io.github.muntashirakon.AppManager" />
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/process_ids"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
                 android:ellipsize="end"
-                android:gravity="center_vertical"
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="Process ID: 10000, Parent Process ID: 1000" />
+                tools:text="Process ID: 10000, Parent process ID: 1000" />
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/memory_usage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="Memory: 162 MB, Virtual Memory: 14.72 GB" />
+                tools:text="Memory: 162 MB, Virtual memory: 14.72 GB" />
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/user_state_info"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
@@ -95,7 +116,9 @@
                 android:id="@+id/selinux_context"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:ellipsize="middle"
+                android:fontFamily="monospace"
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
@@ -110,7 +133,6 @@
             android:layout_height="@dimen/icon_size"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="@dimen/padding_small"
-            android:layout_weight="0"
             android:contentDescription="@string/abc_action_menu_overflow_description"
             android:padding="@dimen/padding_small"
             app:icon="@drawable/ic_more_vert"

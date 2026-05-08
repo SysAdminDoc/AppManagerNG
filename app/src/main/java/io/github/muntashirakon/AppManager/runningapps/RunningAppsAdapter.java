@@ -53,6 +53,7 @@ import io.github.muntashirakon.widget.MultiSelectionView;
 public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectionView.ViewHolder> {
     private static final int VIEW_TYPE_MEMORY_INFO = 1;
     private static final int VIEW_TYPE_PROCESS_INFO = 2;
+    private static final int VIEW_TYPE_EMPTY = 3;
 
     private final RunningAppsActivity mActivity;
     private final RunningAppsViewModel mModel;
@@ -71,7 +72,13 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
 
     void setDefaultList(@NonNull List<ProcessItem> processItems) {
         synchronized (mLock) {
-            AdapterUtils.notifyDataSetChanged(this, 1, mProcessItems, processItems);
+            mProcessItems.clear();
+            for (ProcessItem processItem : processItems) {
+                if (processItem != null) {
+                    mProcessItems.add(processItem);
+                }
+            }
+            notifyDataSetChanged();
         }
         notifySelectionChange();
     }
@@ -83,6 +90,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
 
     @Override
     public int getItemViewType(int position) {
+        if (isEmptyPlaceholderPosition(position)) return VIEW_TYPE_EMPTY;
         if (position == 0) return VIEW_TYPE_MEMORY_INFO;
         return VIEW_TYPE_PROCESS_INFO;
     }
@@ -94,13 +102,19 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.header_running_apps_memory_info, parent, false);
             return new HeaderViewHolder(view);
         }
+        if (viewType == VIEW_TYPE_EMPTY) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_list_empty_state, parent, false);
+            return new EmptyViewHolder(view);
+        }
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_running_app, parent, false);
         return new BodyViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull MultiSelectionView.ViewHolder holder, int position) {
-        if (position == 0) {
+        if (isEmptyPlaceholderPosition(position)) {
+            onBindViewHolder((EmptyViewHolder) holder);
+        } else if (position == 0) {
             onBindViewHolder((HeaderViewHolder) holder);
         } else {
             onBindViewHolder((BodyViewHolder) holder, position);
@@ -150,7 +164,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         // Set color info
         Spannable memInfo = UIUtils.charSequenceToSpannable(context.getString(R.string.memory_chart_info,
                 fAppMemory, fCachedMemory, fBuffers, fFreeMemory));
-        setColors(holder.itemView, memInfo, new int[]{com.google.android.material.R.attr.colorOnSurface, androidx.appcompat.R.attr.colorPrimary, com.google.android.material.R.attr.colorTertiary,
+        setColors(holder.itemView, memInfo, new int[]{androidx.appcompat.R.attr.colorPrimary, com.google.android.material.R.attr.colorTertiary, com.google.android.material.R.attr.colorSecondary,
                 com.google.android.material.R.attr.colorSurfaceVariant});
         holder.mMemoryInfoView.setText(memInfo);
 
@@ -176,15 +190,42 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         // Set color and size info
         Spannable swapInfo = UIUtils.charSequenceToSpannable(context.getString(R.string.swap_chart_info, Formatter
                 .formatShortFileSize(context, usedSwap), Formatter.formatShortFileSize(context, totalSwap - usedSwap)));
-        setColors(holder.itemView, swapInfo, new int[]{com.google.android.material.R.attr.colorOnSurface, com.google.android.material.R.attr.colorSurfaceVariant});
+        setColors(holder.itemView, swapInfo, new int[]{androidx.appcompat.R.attr.colorPrimary, com.google.android.material.R.attr.colorSurfaceVariant});
         holder.mSwapInfoView.setText(swapInfo);
         holder.itemView.setContentDescription(contentDescription);
+    }
+
+    private void onBindViewHolder(@NonNull EmptyViewHolder holder) {
+        boolean hasFilters = mModel != null && mModel.getFilter() != RunningAppsActivity.FILTER_NONE;
+        boolean hasQuery = mModel != null && !TextUtils.isEmpty(mModel.getQuery());
+        boolean isFiltered = hasFilters || hasQuery;
+        holder.title.setText(isFiltered ? R.string.running_apps_empty_filtered_title : R.string.running_apps_empty_title);
+        holder.summary.setText(isFiltered
+                ? R.string.running_apps_empty_filtered_summary
+                : R.string.running_apps_empty_no_processes_summary);
+        holder.action.setVisibility(View.VISIBLE);
+        if (isFiltered) {
+            if (hasFilters && hasQuery) {
+                holder.action.setText(R.string.running_apps_empty_clear_search_and_filters);
+            } else if (hasQuery) {
+                holder.action.setText(R.string.running_apps_empty_clear_search);
+            } else {
+                holder.action.setText(R.string.running_apps_empty_clear_filters);
+            }
+            holder.action.setIconResource(R.drawable.ic_filter_list);
+            holder.action.setOnClickListener(v -> mActivity.clearSearchAndFilters());
+        } else {
+            holder.action.setText(R.string.refresh);
+            holder.action.setIconResource(R.drawable.ic_refresh);
+            holder.action.setOnClickListener(v -> mActivity.refresh());
+        }
+        holder.itemView.setContentDescription(holder.title.getText() + ". " + holder.summary.getText());
     }
 
     private void onBindViewHolder(@NonNull BodyViewHolder holder, int position) {
         ProcessItem processItem;
         synchronized (mLock) {
-            processItem = mProcessItems.get(position);
+            processItem = mProcessItems.get(positionToProcessIndex(position));
         }
         ApplicationInfo applicationInfo;
         if (processItem instanceof AppProcessItem) {
@@ -198,11 +239,14 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         // Set process name
         holder.processName.setText(UIUtils.getHighlightedText(processName, mModel.getQuery(), mQueryStringHighlightColor));
         // Set package name
-        AdapterUtils.setVisible(holder.packageName, applicationInfo != null);
         String packageName = mActivity.getString(R.string.running_apps_system_process);
         if (applicationInfo != null) {
             packageName = applicationInfo.packageName;
+            holder.processKind.setText(R.string.running_apps_app_process);
             holder.packageName.setText(UIUtils.getHighlightedText(packageName, mModel.getQuery(), mQueryStringHighlightColor));
+        } else {
+            holder.processKind.setText(R.string.running_apps_system_process);
+            holder.packageName.setText(R.string.running_apps_system_process_summary);
         }
         // Set process IDs
         String processIds = mActivity.getString(R.string.pid_and_ppid, processItem.pid, processItem.ppid);
@@ -318,49 +362,52 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
 
     @Override
     public long getItemId(int position) {
+        if (isEmptyPlaceholderPosition(position)) {
+            return Long.MIN_VALUE;
+        }
         if (position == 0) {
             return mProcMemoryInfo != null ? mProcMemoryInfo.hashCode() : View.NO_ID;
         }
         synchronized (mLock) {
-            return mProcessItems.get(position).hashCode();
+            return mProcessItems.get(positionToProcessIndex(position)).hashCode();
         }
     }
 
     @Override
     protected boolean select(int position) {
-        if (position == 0) {
+        if (position == 0 || isEmptyPlaceholderPosition(position)) {
             return false;
         }
         synchronized (mLock) {
-            mModel.select(mProcessItems.get(position));
+            mModel.select(mProcessItems.get(positionToProcessIndex(position)));
             return true;
         }
     }
 
     @Override
     protected boolean deselect(int position) {
-        if (position == 0) {
+        if (position == 0 || isEmptyPlaceholderPosition(position)) {
             return false;
         }
         synchronized (mLock) {
-            mModel.deselect(mProcessItems.get(position));
+            mModel.deselect(mProcessItems.get(positionToProcessIndex(position)));
             return true;
         }
     }
 
     @Override
     protected boolean isSelected(int position) {
-        if (position == 0) {
+        if (position == 0 || isEmptyPlaceholderPosition(position)) {
             return false;
         }
         synchronized (mLock) {
-            return mModel.isSelected(mProcessItems.get(position));
+            return mModel.isSelected(mProcessItems.get(positionToProcessIndex(position)));
         }
     }
 
     @Override
     protected boolean isSelectable(int position) {
-        return position > 0;
+        return position > 0 && !isEmptyPlaceholderPosition(position);
     }
 
     @Override
@@ -387,8 +434,29 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
     @Override
     public int getItemCount() {
         synchronized (mLock) {
-            return mProcessItems.size();
+            if (mProcessItems.isEmpty()) {
+                return isFilteredState() ? 1 : 2;
+            }
+            return 1 + mProcessItems.size();
         }
+    }
+
+    private boolean isEmptyPlaceholderPosition(int position) {
+        synchronized (mLock) {
+            if (!mProcessItems.isEmpty()) {
+                return false;
+            }
+            return isFilteredState() ? position == 0 : position == 1;
+        }
+    }
+
+    private int positionToProcessIndex(int position) {
+        return position - 1;
+    }
+
+    private boolean isFilteredState() {
+        return mModel != null && (mModel.getFilter() != RunningAppsActivity.FILTER_NONE
+                || !TextUtils.isEmpty(mModel.getQuery()));
     }
 
     private static void setColors(@NonNull View v, @NonNull Spannable text, @NonNull @AttrRes int[] colors) {
@@ -444,6 +512,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         ImageView icon;
         MaterialButton more;
         TextView processName;
+        TextView processKind;
         TextView packageName;
         TextView processIds;
         TextView memoryUsage;
@@ -456,11 +525,32 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             icon = itemView.findViewById(R.id.icon);
             more = itemView.findViewById(R.id.more);
             processName = itemView.findViewById(R.id.process_name);
+            processKind = itemView.findViewById(R.id.process_kind);
             packageName = itemView.findViewById(R.id.package_name);
             processIds = itemView.findViewById(R.id.process_ids);
             memoryUsage = itemView.findViewById(R.id.memory_usage);
             userAndStateInfo = itemView.findViewById(R.id.user_state_info);
             selinuxContext = itemView.findViewById(R.id.selinux_context);
+        }
+    }
+
+    static class EmptyViewHolder extends MultiSelectionView.ViewHolder {
+        final TextView title;
+        final TextView summary;
+        final MaterialButton action;
+
+        EmptyViewHolder(@NonNull View itemView) {
+            super(itemView);
+            ViewGroup.LayoutParams layoutParams = itemView.getLayoutParams();
+            if (layoutParams != null) {
+                layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                itemView.setLayoutParams(layoutParams);
+            }
+            itemView.setMinimumHeight(itemView.getResources()
+                    .getDimensionPixelSize(R.dimen.running_apps_empty_state_min_height));
+            title = itemView.findViewById(R.id.empty_state_title);
+            summary = itemView.findViewById(R.id.empty_state_summary);
+            action = itemView.findViewById(R.id.empty_state_action);
         }
     }
 }

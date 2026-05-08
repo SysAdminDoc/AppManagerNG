@@ -396,10 +396,28 @@
     </plurals>
     <string name="running_apps_status_empty_no_processes">No running processes are available yet. AppManagerNG will keep refreshing.</string>
     <string name="running_apps_status_empty_filtered">No processes match the current search or filters. Clear filters or search text to recover the full list.</string>
+    <string name="running_apps_memory_overview_title">Device memory</string>
+    <string name="running_apps_memory_overview_summary">Live RAM and swap pressure from the current process snapshot.</string>
+    <string name="running_apps_empty_title">No running processes found</string>
+    <string name="running_apps_empty_filtered_title">No matching processes</string>
+    <string name="running_apps_empty_no_processes_summary">AppManagerNG will keep checking. Use refresh to request a new snapshot.</string>
+    <string name="running_apps_empty_filtered_summary">The current filters or search text hide every process. Clear filters or edit the search query.</string>
+    <string name="running_apps_empty_clear_filters">Clear filters</string>
+    <string name="running_apps_empty_clear_search">Clear search</string>
+    <string name="running_apps_empty_clear_search_and_filters">Clear search and filters</string>
     <string name="running_apps_system_process">System process</string>
+    <string name="running_apps_app_process">App process</string>
+    <string name="running_apps_system_process_summary">System or native process</string>
     <string name="running_apps_process_content_description"><xliff:g id="process_name" example="App Manager">%1$s</xliff:g>, <xliff:g id="package_name" example="io.github.muntashirakon.AppManager">%2$s</xliff:g>. <xliff:g id="process_ids" example="Process ID: 10000, Parent process ID: 1000">%3$s</xliff:g>. <xliff:g id="memory_usage" example="Memory: 162 MB, Virtual memory: 14.72 GB">%4$s</xliff:g>. <xliff:g id="user_state" example="User: u0_a167 (10167), State: Sleeping">%5$s</xliff:g>.</string>
     <string name="running_apps_select_process">Select <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
     <string name="running_apps_more_actions_for_process">More actions for <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
+    <string name="running_apps_process_details_title">Process details</string>
+    <string name="running_apps_process_details_subtitle">Live process telemetry from the current snapshot.</string>
+    <string name="running_apps_process_identity">Identity</string>
+    <string name="running_apps_process_resources">Resource usage</string>
+    <string name="running_apps_process_runtime">Runtime state</string>
+    <string name="running_apps_process_security">Security and command line</string>
+    <string name="running_apps_open_app_info">Open app details</string>
     <string name="running_apps_enable_system_kill">Allow killing system processes</string>
     <string name="running_apps_disable_system_kill">Do not kill system processes</string>
     <string name="running_apps_system_kill_enabled">System process killing enabled. Use with care.</string>

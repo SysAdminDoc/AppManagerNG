@@ -1,356 +1,472 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:clipToPadding="false">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="@dimen/padding_small"
-        android:paddingBottom="@dimen/padding_small"
-        android:paddingStart="@dimen/padding_medium"
-        android:paddingEnd="@dimen/padding_medium"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/premium_space_20"
+        android:paddingTop="@dimen/premium_space_12"
+        android:paddingBottom="@dimen/premium_space_24">
 
-        <androidx.appcompat.widget.LinearLayoutCompat
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/app_container"
+            style="@style/Widget.AppTheme.V2.Card.Header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/font_size_small"
-            android:orientation="horizontal">
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/icon"
-                android:layout_width="@dimen/icon_size"
-                android:layout_height="@dimen/icon_size"
-                android:layout_weight="0"
-                android:layout_gravity="center"
-                android:layout_marginEnd="@dimen/padding_small"
-                tools:srcCompat="@mipmap/ic_launcher_round" />
+            app:contentPadding="@dimen/premium_space_16">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textIsSelectable="true"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    tools:text="@string/app_name" />
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/icon"
+                    android:layout_width="@dimen/premium_icon_48"
+                    android:layout_height="@dimen/premium_icon_48"
+                    android:background="?attr/colorSecondaryContainer"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
+                    tools:srcCompat="@mipmap/ic_launcher_round" />
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/package_name"
-                    android:layout_width="match_parent"
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:textIsSelectable="true"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textStyle="italic"
-                    tools:text="@string/app_name" />
+                    android:layout_marginStart="@dimen/premium_space_12"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textIsSelectable="true"
+                        tools:text="@string/app_name" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/package_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:ellipsize="middle"
+                        android:maxLines="1"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textIsSelectable="true"
+                        tools:text="io.github.muntashirakon.AppManager" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_8"
+                        android:text="@string/running_apps_process_details_subtitle"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/info"
+                    style="@style/Widget.AppTheme.Button.IconButton.InverseColor"
+                    android:layout_width="@dimen/icon_size"
+                    android:layout_height="@dimen/icon_size"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/premium_space_8"
+                    android:contentDescription="@string/running_apps_open_app_info"
+                    app:icon="@drawable/ic_information"
+                    app:iconSize="@dimen/premium_icon_24" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/info"
-                style="@style/Widget.AppTheme.Button.IconButton.InverseColor"
-                android:layout_width="@dimen/icon_size"
-                android:layout_height="@dimen/icon_size"
-                android:layout_weight="0"
-                android:layout_marginStart="@dimen/padding_small"
-                android:layout_gravity="center"
-                app:iconSize="30dp"
-                app:icon="@drawable/ic_information" />
+        </com.google.android.material.card.MaterialCardView>
 
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:hint="@string/process_name"
-            app:hintEnabled="true">
+            android:layout_marginTop="@dimen/premium_space_20"
+            android:text="@string/running_apps_process_identity"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-            <io.github.muntashirakon.widget.TextInputTextView
-                android:id="@+id/process_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none"
-                android:textIsSelectable="true"
-                android:maxLines="2"
-                tools:text="@tools:sample/us_zipcodes" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:orientation="horizontal">
+            android:layout_marginTop="@dimen/premium_space_8"
+            app:contentPadding="@dimen/premium_space_16">
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:hint="@string/process_id"
-                app:hintEnabled="true">
+                android:orientation="vertical">
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/pid"
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.AppTheme.TextInputLayout.Small"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:hint="@string/process_name"
+                    app:hintEnabled="true">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <io.github.muntashirakon.widget.TextInputTextView
+                        android:id="@+id/process_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:maxLines="2"
+                        android:textIsSelectable="true"
+                        tools:text="@string/app_name" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/parent_process_id"
-                app:hintEnabled="true">
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/ppid"
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:layout_marginTop="@dimen/premium_space_8"
+                    android:orientation="horizontal">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:layout_weight="1"
+                        android:hint="@string/process_id"
+                        app:hintEnabled="true">
 
-        </androidx.appcompat.widget.LinearLayoutCompat>
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/pid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="10000" />
 
-        <androidx.appcompat.widget.LinearLayoutCompat
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/parent_process_id"
+                        app:hintEnabled="true">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/ppid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="1000" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:orientation="horizontal">
+            android:layout_marginTop="@dimen/premium_space_20"
+            android:text="@string/running_apps_process_resources"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:hint="@string/memory"
-                app:hintEnabled="true">
-
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/rss"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/virtual_memory"
-                app:hintEnabled="true">
-
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/vsz"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:orientation="horizontal">
+            android:layout_marginTop="@dimen/premium_space_8"
+            app:contentPadding="@dimen/premium_space_16">
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:hint="@string/cpu_percent"
-                app:hintEnabled="true">
+                android:orientation="vertical">
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/cpu_percent"
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:orientation="horizontal">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:layout_weight="1"
+                        android:hint="@string/memory"
+                        app:hintEnabled="true">
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/cpu_time"
-                app:hintEnabled="true">
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/rss"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="162 MB" />
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/cpu_time"
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/virtual_memory"
+                        app:hintEnabled="true">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/vsz"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="14.72 GB" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:layout_marginTop="@dimen/premium_space_8"
+                    android:orientation="horizontal">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:layout_weight="1"
+                        android:hint="@string/cpu_percent"
+                        app:hintEnabled="true">
 
-        </androidx.appcompat.widget.LinearLayoutCompat>
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/cpu_percent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="0.42" />
 
-        <androidx.appcompat.widget.LinearLayoutCompat
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/cpu_time"
+                        app:hintEnabled="true">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/cpu_time"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="2 min" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:orientation="horizontal">
+            android:layout_marginTop="@dimen/premium_space_20"
+            android:text="@string/running_apps_process_runtime"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:hint="@string/priority"
-                app:hintEnabled="true">
-
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/priority"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/threads"
-                app:hintEnabled="true">
-
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/threads"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:orientation="horizontal">
+            android:layout_marginTop="@dimen/premium_space_8"
+            app:contentPadding="@dimen/premium_space_16">
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:hint="@string/user"
-                app:hintEnabled="true">
+                android:orientation="vertical">
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/user"
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:orientation="horizontal">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:layout_weight="1"
+                        android:hint="@string/priority"
+                        app:hintEnabled="true">
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/state"
-                app:hintEnabled="true">
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/priority"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="0" />
 
-                <io.github.muntashirakon.widget.TextInputTextView
-                    android:id="@+id/state"
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/threads"
+                        app:hintEnabled="true">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/threads"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="18" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textIsSelectable="true"
-                    tools:text="@tools:sample/us_zipcodes" />
+                    android:layout_marginTop="@dimen/premium_space_8"
+                    android:orientation="horizontal">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:layout_weight="1"
+                        android:hint="@string/user"
+                        app:hintEnabled="true">
 
-        </androidx.appcompat.widget.LinearLayoutCompat>
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/user"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="u0_a167 (10167)" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.AppTheme.TextInputLayout.Small"
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.AppTheme.TextInputLayout.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/state"
+                        app:hintEnabled="true">
+
+                        <io.github.muntashirakon.widget.TextInputTextView
+                            android:id="@+id/state"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textIsSelectable="true"
+                            tools:text="Sleeping" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginBottom="@dimen/padding_small"
-            android:hint="@string/selinux"
-            app:hintEnabled="true">
+            android:layout_marginTop="@dimen/premium_space_20"
+            android:text="@string/running_apps_process_security"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-            <io.github.muntashirakon.widget.TextInputTextView
-                android:id="@+id/selinux_context"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none"
-                android:textIsSelectable="true"
-                android:maxLines="2"
-                app:fontFamily="monospace"
-                tools:text="@tools:sample/us_zipcodes" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.AppTheme.TextInputLayout.Small"
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/commandline_args"
-            app:hintEnabled="true">
+            android:layout_marginTop="@dimen/premium_space_8"
+            app:contentPadding="@dimen/premium_space_16">
 
-            <io.github.muntashirakon.widget.TextInputTextView
-                android:id="@+id/cli_args"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:textIsSelectable="true"
-                android:maxLines="3"
-                app:fontFamily="monospace"
-                tools:text="@tools:sample/us_zipcodes" />
+                android:orientation="vertical">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.AppTheme.TextInputLayout.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/selinux"
+                    app:hintEnabled="true">
+
+                    <io.github.muntashirakon.widget.TextInputTextView
+                        android:id="@+id/selinux_context"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="none"
+                        android:maxLines="2"
+                        android:textIsSelectable="true"
+                        tools:text="u:r:untrusted_app:s0:c110,c257" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.AppTheme.TextInputLayout.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_8"
+                    android:hint="@string/commandline_args"
+                    app:hintEnabled="true">
+
+                    <io.github.muntashirakon.widget.TextInputTextView
+                        android:id="@+id/cli_args"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="none"
+                        android:maxLines="4"
+                        android:textIsSelectable="true"
+                        tools:text="/system/bin/app_process64 --zygote" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </com.google.android.material.card.MaterialCardView>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </ScrollView>

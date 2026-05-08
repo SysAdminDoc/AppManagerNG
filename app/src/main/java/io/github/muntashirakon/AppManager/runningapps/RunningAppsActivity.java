@@ -48,6 +48,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
+import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.MultiSelectionView;
 
 public class RunningAppsActivity extends BaseActivity implements MultiSelectionView.OnSelectionChangeListener,
@@ -105,6 +106,8 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @Nullable
     private MultiSelectionView mMultiSelectionView;
     @Nullable
+    private AdvancedSearchView mSearchView;
+    @Nullable
     private Menu mSelectionMenu;
     @Nullable
     private Timer mTimer;
@@ -128,7 +131,7 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayShowCustomEnabled(true);
-            UIUtils.setupAdvancedSearchView(actionBar, this);
+            mSearchView = UIUtils.setupAdvancedSearchView(actionBar, this);
         }
         model = new ViewModelProvider(this).get(RunningAppsViewModel.class);
         mProgressIndicator = findViewById(R.id.progress_linear);
@@ -463,6 +466,18 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mProgressIndicator.show();
         model.loadProcesses();
         model.loadMemoryInfo();
+    }
+
+    void clearSearchAndFilters() {
+        if (mSearchView != null && !TextUtils.isEmpty(mSearchView.getQuery())) {
+            mSearchView.setQuery("", false);
+            mSearchView.clearFocus();
+            UiUtils.hideKeyboard(mSearchView);
+        }
+        if (model != null) {
+            model.clearFiltersAndQuery();
+        }
+        invalidateOptionsMenu();
     }
 
     private void updateRunningAppsStatus(@NonNull List<ProcessItem> processList) {

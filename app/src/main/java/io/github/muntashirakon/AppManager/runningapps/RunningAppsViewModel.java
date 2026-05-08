@@ -331,6 +331,19 @@ public class RunningAppsViewModel extends AndroidViewModel {
         mExecutor.submit(this::filterAndSort);
     }
 
+    public void clearFilters() {
+        mFilter = RunningAppsActivity.FILTER_NONE;
+        Prefs.RunningApps.setFilters(mFilter);
+        mExecutor.submit(this::filterAndSort);
+    }
+
+    public void clearFiltersAndQuery() {
+        mFilter = RunningAppsActivity.FILTER_NONE;
+        mQuery = null;
+        Prefs.RunningApps.setFilters(mFilter);
+        mExecutor.submit(this::filterAndSort);
+    }
+
     public int getFilter() {
         return mFilter;
     }
