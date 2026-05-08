@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Per-OEM Debloat Risk Ribbon (Samsung One UI 8.5) (2026-05-08)
+- New [`OemBloatRiskTable`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/OemBloatRiskTable.java) helper resolves vendor-aware known-bad debloat warnings from a `(package, Build.MANUFACTURER, vendor-OS-version)` triple, where vendor-OS-version comes from the platform's vendor-specific system property (`ro.build.version.oneui` for Samsung One UI, `ro.mi.os.version.name` / `ro.miui.ui.version.code` for Xiaomi HyperOS / MIUI).
+- First entry: `com.samsung.android.smartsuggestions` on Samsung One UI 8.5 (`ro.build.version.oneui == 80500`) — UAD-NG #1394 documented Settings → Mobile-Networks crash-loop on Galaxy A57. The new warning string `oem_bloat_risk_samsung_smartsuggestions_oneui85` ships with localizable copy directing users to disable/freeze the package instead of removing it.
+- Wired into [`BloatwareDetailsDialog.bind()`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/BloatwareDetailsDialog.java) via a new `composeWarning()` helper: vendor-known-bad ribbon leads, the upstream debloat-list warning trails for additional context, and the alert chip is forced to `ALERT_TYPE_WARN` regardless of the upstream removal rating (a system-surface crash loop is not "info").
+- Resolution order is exact match → wildcard match (`*` handles devices where the vendor-OS-version property is unreadable). Generic "this looks Samsung-y" warnings stay on the upstream string; this surface is reserved for verified field reports keyed to a specific OEM/version combo. Reference: [S188]. Closes the iter-20 Now/T7 row.
+
 ### Added — Cert dialog now shows Subject + Issuer (2026-05-08)
 - The "Sign · SHA-256" tag chip's dialog in App Info now exposes the X.509 **Subject** and **Issuer** distinguished names alongside the SHA-256 fingerprint, so users vetting an APK can see who the certificate claims to be issued *to* without dropping to `apksigner verify --print-certs`.
 - New `AppInfoViewModel.populateSigningCertInfo()` (replaces `computeSigningCertSha256`) writes `signingCertSha256` / `signingCertSubject` / `signingCertIssuer` together off the same `X509Certificate` instance — Subject/Issuer come from `getSubjectX500Principal().getName()` / `getIssuerX500Principal().getName()` (RFC 2253 form). All three stay `null` for unparseable / multi-signer / unsigned packages.
