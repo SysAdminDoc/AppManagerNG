@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Docs — GrapheneOS A16 background-install fix patch reference (2026-05-08)
+- New [`docs/patch-references/2026-05-08-grapheneos-a16-background-install.md`](docs/patch-references/2026-05-08-grapheneos-a16-background-install.md) captures both fixes from GrapheneOS AppStore Release 36: (a) wrap user-confirmation `startActivity()` in an `isResumed` check + defer to `onPostResume()` when paused (Android 16 `IllegalStateException: Can not perform this action after onSaveInstanceState`), and (b) audit `getCallingPackage()` + `getReferrer()` and drop queued `PendingActions` when an external untrusted caller re-targets the activity.
+- Port deferred until an Android 16 test device is available; doc lists the exact NG site ([`PackageInstallerActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerActivity.java)) and validation steps. Closes the iter-20 Now/T11 row in patch-reference form.
+
 ### Fixed — Debloater shortcut crash on pre-A13 / Unisoc devices (2026-05-08)
 - Added `.debloat.DebloaterActivityAlias` (`android:exported="true"`, `targetActivity=".debloat.DebloaterActivity"`) in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so external launcher pins / Tasker shortcuts / third-party app shortcuts resolve to a stable component name on platforms where pinning the underlying activity directly fails with `ActivityNotFoundException`. Reproduces upstream AM #1963 (Moto g22 / Unisoc T606 / Android 12).
 - The alias has no `CATEGORY_LAUNCHER` filter — it does not appear as a separate launcher icon. Closes the iter-20 Now/T2 row.
