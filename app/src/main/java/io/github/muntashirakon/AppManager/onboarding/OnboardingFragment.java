@@ -177,10 +177,14 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private static String buildRootManagerSuffix(@NonNull RootManagerInfo info) {
         String name = info.displayName();
         if (name == null) return "";
-        if (info.zygiskNextPresent) {
-            return name + " + ZygiskNext";
+        StringBuilder sb = new StringBuilder(name);
+        if (info.suiPresent) {
+            sb.append(" + Sui");
         }
-        return name;
+        if (info.zygiskNextPresent) {
+            sb.append(" + ZygiskNext");
+        }
+        return sb.toString();
     }
 
     /**

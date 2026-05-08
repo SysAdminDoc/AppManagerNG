@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Sui (Magisk-module Shizuku) detection in onboarding (2026-05-08)
+- New `checkSuiViaShell()` probe in [`runner/RootManagerInfo`](app/src/main/java/io/github/muntashirakon/AppManager/runner/RootManagerInfo.java) reads `/data/adb/modules/sui/` whenever the privileged shell already returned a non-NONE root manager (Magisk / KernelSU / APatch). New `RootManagerInfo.suiPresent` boolean carries the result through to consumers.
+- [`OnboardingFragment.buildRootManagerSuffix()`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) appends a " + Sui" suffix on the Root status line alongside the existing ZygiskNext suffix; combined cases render as e.g. "Detected · Magisk + Sui" or "Detected · KernelSU + Sui + ZygiskNext".
+- Sui has no `moe.shizuku.privileged.api` package install, so the Magisk-module marker is the only authoritative signal — the iter-20 `PackageManager` enumeration approach the row originally proposed is unnecessary once the marker is read directly. The "prefer Sui over Shizuku" routing decision is deferred to the still-pending Privilege Health-Check screen (T5); `info.suiPresent` is the wire for it. Reference: [S178]. Closes the iter-20 Now/T5 row.
+
 ### Docs — GrapheneOS A16 background-install fix patch reference (2026-05-08)
 - New [`docs/patch-references/2026-05-08-grapheneos-a16-background-install.md`](docs/patch-references/2026-05-08-grapheneos-a16-background-install.md) captures both fixes from GrapheneOS AppStore Release 36: (a) wrap user-confirmation `startActivity()` in an `isResumed` check + defer to `onPostResume()` when paused (Android 16 `IllegalStateException: Can not perform this action after onSaveInstanceState`), and (b) audit `getCallingPackage()` + `getReferrer()` and drop queued `PendingActions` when an external untrusted caller re-targets the activity.
 - Port deferred until an Android 16 test device is available; doc lists the exact NG site ([`PackageInstallerActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerActivity.java)) and validation steps. Closes the iter-20 Now/T11 row in patch-reference form.
