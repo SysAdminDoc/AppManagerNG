@@ -5,10 +5,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingHorizontal="@dimen/padding_very_large"
-    android:paddingVertical="@dimen/padding_large"
+    android:paddingHorizontal="@dimen/premium_space_32"
+    android:paddingVertical="@dimen/premium_space_24"
     tools:visibility="visible">
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -27,7 +28,7 @@
         android:id="@+id/empty_state_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/padding_large"
+        android:layout_marginTop="@dimen/premium_space_20"
         android:gravity="center"
         android:text="@string/main_empty_title_no_apps"
         android:textAppearance="?attr/textAppearanceTitleMedium"
@@ -38,7 +39,7 @@
         android:id="@+id/empty_state_summary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/padding_small"
+        android:layout_marginTop="@dimen/premium_space_8"
         android:gravity="center"
         android:maxWidth="@dimen/main_empty_summary_max_width"
         android:text="@string/main_empty_message_no_apps"
@@ -51,7 +52,7 @@
         style="@style/Widget.AppTheme.Button.FilledTonalButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/padding_large"
+        android:layout_marginTop="@dimen/premium_space_20"
         android:text="@string/refresh"
         app:icon="@drawable/ic_refresh" />
 

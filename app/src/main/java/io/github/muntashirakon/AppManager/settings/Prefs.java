@@ -126,18 +126,11 @@ public final class Prefs {
 
         @StyleRes
         public static int getAppTheme() {
-            boolean preview = AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL);
             switch (AppPref.getInt(AppPref.PrefKey.PREF_APP_THEME_CUSTOM_INT)) {
                 case 1: // Full black theme
-                    if (preview) {
-                        return io.github.muntashirakon.AppManager.R.style.AppTheme_V2_Amoled;
-                    }
-                    return io.github.muntashirakon.ui.R.style.AppTheme_Black;
+                    return io.github.muntashirakon.AppManager.R.style.AppTheme_V2_Amoled;
                 default: // Normal theme
-                    if (preview) {
-                        return io.github.muntashirakon.AppManager.R.style.AppTheme_V2;
-                    }
-                    return io.github.muntashirakon.ui.R.style.AppTheme;
+                    return io.github.muntashirakon.AppManager.R.style.AppTheme_V2;
             }
         }
 
@@ -154,11 +147,12 @@ public final class Prefs {
         }
 
         public static boolean isPremiumPreviewEnabled() {
-            return AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL);
+            return true;
         }
 
         public static void setPremiumPreviewEnabled(boolean enabled) {
-            AppPref.set(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL, enabled);
+            // Preference compatibility for older installs; the refreshed interface is now the default.
+            AppPref.set(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL, true);
         }
 
         public static boolean isPureBlackTheme() {

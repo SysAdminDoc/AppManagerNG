@@ -213,11 +213,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @SuppressLint("RestrictedApi")
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
-        // Load v2 layout if premium preview toggle is enabled
-        int layoutRes = AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL) 
-                ? R.layout.activity_main_v2 
-                : R.layout.activity_main;
-        setContentView(layoutRes);
+        setContentView(R.layout.activity_main_v2);
         setSupportActionBar(findViewById(R.id.toolbar));
         getOnBackPressedDispatcher().addCallback(this, mOnBackPressedCallback);
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);

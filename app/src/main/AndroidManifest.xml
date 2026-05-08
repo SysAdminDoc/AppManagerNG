@@ -171,7 +171,7 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/AppTheme.V2"
         tools:ignore="UnusedAttribute">
         <activity
             android:name=".filters.FinderActivity"

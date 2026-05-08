@@ -69,15 +69,7 @@ public class AppearancePreferences extends PreferenceFragment {
             AppearanceUtils.applyConfigurationChangesToActivities();
             return true;
         });
-        // Premium preview (v2 design system)
-        SwitchPreferenceCompat premiumPreview = Objects.requireNonNull(findPreference("premium_preview"));
-        premiumPreview.setChecked(Prefs.Appearance.isPremiumPreviewEnabled());
-        premiumPreview.setOnPreferenceChangeListener((preference, newValue) -> {
-            Prefs.Appearance.setPremiumPreviewEnabled((boolean) newValue);
-            AppearanceUtils.applyConfigurationChangesToActivities();
-            return true;
-        });
-        // Black theme/custom theme
+        // Font preference
         SwitchPreferenceCompat useSystemFontPref = Objects.requireNonNull(findPreference("use_system_font"));
         useSystemFontPref.setChecked(Prefs.Appearance.useSystemFont());
         useSystemFontPref.setOnPreferenceChangeListener((preference, newValue) -> {

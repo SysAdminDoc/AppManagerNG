@@ -4,11 +4,11 @@
     <style name="AppTheme.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?attr/colorSurface</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.V2</item>
     </style>
 
     <style name="AppTheme.Splash.Black" parent="AppTheme.Splash">
-        <item name="postSplashScreenTheme">@style/AppTheme.Black</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.V2.Amoled</item>
     </style>
 
     <style name="AppTheme.AppWidgetContainerParent" parent="AppTheme">

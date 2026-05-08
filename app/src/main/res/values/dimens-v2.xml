@@ -21,7 +21,7 @@
     <dimen name="premium_radius_none">0dp</dimen>
     <dimen name="premium_radius_compact">4dp</dimen>
     <dimen name="premium_radius_default">8dp</dimen>
-    <dimen name="premium_radius_card">12dp</dimen>
+    <dimen name="premium_radius_card">10dp</dimen>
     <dimen name="premium_radius_sheet">16dp</dimen>
     <dimen name="premium_radius_modal">24dp</dimen>
     <dimen name="premium_radius_pill">9999dp</dimen>
@@ -52,7 +52,7 @@
     <dimen name="premium_type_headline_medium">24sp</dimen>
     <dimen name="premium_type_headline_small">22sp</dimen>
     <dimen name="premium_type_title_large">20sp</dimen>
-    <dimen name="premium_type_title_medium">18sp</dimen>
+    <dimen name="premium_type_title_medium">16sp</dimen>
     <dimen name="premium_type_title_small">16sp</dimen>
     <dimen name="premium_type_body_large">16sp</dimen>
     <dimen name="premium_type_body_medium">14sp</dimen>
@@ -69,10 +69,10 @@
     <dimen name="premium_main_list_bottom_padding">32dp</dimen>
 
     <!-- Main row -->
-    <dimen name="premium_main_list_margin_vertical">4dp</dimen>
+    <dimen name="premium_main_list_margin_vertical">3dp</dimen>
     <dimen name="premium_main_list_padding_horizontal">16dp</dimen>
     <dimen name="premium_main_list_padding_vertical">12dp</dimen>
-    <dimen name="premium_main_icon_frame">52dp</dimen>
+    <dimen name="premium_main_icon_frame">54dp</dimen>
     <dimen name="premium_badge_min_height">24dp</dimen>
     <dimen name="premium_badge_min_width">24dp</dimen>
     <dimen name="premium_badge_max_width">84dp</dimen>

@@ -2,5 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="?attr/colorSecondaryContainer" />
+    <solid android:color="?attr/colorPrimaryContainer" />
+    <stroke
+        android:width="@dimen/premium_stroke_hairline"
+        android:color="?attr/colorOutlineVariant" />
 </shape>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <color name="premium_color_primary">@color/premium_brand_300</color>
+    <color name="premium_color_on_primary">@color/premium_brand_950</color>
+    <color name="premium_color_primary_container">@color/premium_brand_900</color>
+    <color name="premium_color_on_primary_container">@color/premium_brand_100</color>
+    <color name="premium_color_secondary">#A8BEC7</color>
+    <color name="premium_color_on_secondary">#153137</color>
+    <color name="premium_color_secondary_container">#243238</color>
+    <color name="premium_color_on_secondary_container">@color/premium_text_high_dark</color>
+    <color name="premium_surface_0">@color/premium_surface_0_dark</color>
+    <color name="premium_surface_1">@color/premium_surface_1_dark</color>
+    <color name="premium_surface_2">@color/premium_surface_2_dark</color>
+    <color name="premium_surface_3">@color/premium_surface_3_dark</color>
+    <color name="premium_text_high">@color/premium_text_high_dark</color>
+    <color name="premium_text_medium">@color/premium_text_medium_dark</color>
+    <color name="premium_text_disabled">@color/premium_text_disabled_dark</color>
+    <color name="premium_outline_hairline">@color/premium_outline_hairline_dark</color>
+    <color name="premium_outline_muted">@color/premium_outline_muted_dark</color>
+    <color name="premium_outline_focus">@color/premium_outline_focus_dark</color>
+    <color name="premium_outline_danger">@color/premium_outline_danger_dark</color>
+    <color name="premium_success_bg">@color/premium_success_bg_dark</color>
+    <color name="premium_success_content">@color/premium_success_content_dark</color>
+    <color name="premium_warning_bg">@color/premium_warning_bg_dark</color>
+    <color name="premium_warning_content">@color/premium_warning_content_dark</color>
+    <color name="premium_danger_bg">@color/premium_danger_bg_dark</color>
+    <color name="premium_danger_content">@color/premium_danger_content_dark</color>
+    <color name="premium_info_bg">@color/premium_info_bg_dark</color>
+    <color name="premium_info_content">@color/premium_info_content_dark</color>
+</resources>

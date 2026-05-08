@@ -59,7 +59,6 @@ import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
-import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -197,11 +196,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Load v2 layout if premium preview toggle is enabled
-        int layoutRes = AppPref.getBoolean(AppPref.PrefKey.PREF_PREMIUM_PREVIEW_BOOL) 
-                ? R.layout.item_main_v2 
-                : R.layout.item_main;
-        final View view = LayoutInflater.from(parent.getContext()).inflate(layoutRes, parent, false);
+        final View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_main_v2, parent, false);
         return new ViewHolder(view);
     }
 

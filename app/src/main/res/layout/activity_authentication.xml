@@ -4,9 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:fitsSystemWindows="true"
-    android:paddingHorizontal="@dimen/padding_very_large"
-    android:paddingVertical="@dimen/padding_large"
+    android:paddingHorizontal="@dimen/premium_space_32"
+    android:paddingVertical="@dimen/premium_space_24"
     tools:context=".main.SplashActivity">
 
     <androidx.appcompat.widget.LinearLayoutCompat
@@ -19,8 +20,8 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/icon"
-            android:layout_width="88dp"
-            android:layout_height="88dp"
+            android:layout_width="@dimen/main_empty_icon_container_size"
+            android:layout_height="@dimen/main_empty_icon_container_size"
             android:background="@drawable/main_empty_icon_background"
             android:contentDescription="@null"
             android:importantForAccessibility="no"
@@ -31,19 +32,19 @@
             android:id="@+id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_large"
+            android:layout_marginTop="@dimen/premium_space_20"
             android:gravity="center"
             android:maxLines="2"
             android:text="@string/app_name"
             android:textAlignment="center"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.TitleLarge"
             android:textColor="?attr/colorOnSurface" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/state_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginTop="@dimen/premium_space_8"
             android:gravity="center"
             android:maxWidth="320dp"
             android:text="@string/authenticating"
@@ -55,7 +56,7 @@
             style="@style/Widget.AppTheme.CircularProgressIndicator.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_large"
+            android:layout_marginTop="@dimen/premium_space_20"
             android:indeterminate="true"
             android:importantForAccessibility="no"
             app:indicatorSize="32dp"
