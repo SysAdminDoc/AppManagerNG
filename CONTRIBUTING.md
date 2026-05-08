@@ -97,6 +97,36 @@ so translations stay synchronized across all locales.
 
 ---
 
+## Pulling AOSP source for `hiddenapi/`
+
+The [`hiddenapi/`](hiddenapi/) module ships hand-curated stub declarations of Android private
+APIs that AppManagerNG reflects against. When updating these stubs against a new platform release
+(e.g. annual SDK bump, hidden-API compatibility-harness refresh — ROADMAP iter-19 row), pull
+sources from the **`android-latest-release`** branch on
+<https://android.googlesource.com/platform/frameworks/base/>:
+
+```bash
+git clone --depth 1 \
+  --branch android-latest-release \
+  https://android.googlesource.com/platform/frameworks/base.git \
+  /tmp/aosp-frameworks-base
+```
+
+**Do not** pull from `master` / `main` / a date-stamped tag / `android-mainline`. AOSP moved to a
+trunk-stable publishing model in 2026 — public source publishing now happens on a **Q2 + Q4
+cadence** rather than continuous, and `master` mirrors a transient mid-quarter snapshot whose
+stub interfaces may not survive to a published Android release. The `android-latest-release` ref
+is the official always-pointing-at-the-most-recent-stable AOSP branch and is the only safe target
+for stub harvesting that needs to track shipping Android versions.
+
+If you need a specific Android version's stubs (e.g. backporting a hidden-API change for
+compatibility), use the platform-specific branch (`android-15.0.0_r1`, etc.) and document it in
+the commit message.
+
+Reference: ROADMAP "AOSP Source-Pull Retarget to `android-latest-release`" row (iter-20, S204).
+
+---
+
 ## Architecture overview
 
 AppManagerNG uses a mixed Java + Kotlin + C/C++ codebase:

@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Docs — AOSP source-pull retarget to `android-latest-release` (2026-05-08)
+- AOSP moved to a trunk-stable publishing cadence in 2026: public source publishing now happens on a Q2 + Q4 schedule rather than continuous; `master` reflects a transient mid-quarter snapshot whose private-API surface may not survive to a published Android release.
+- Pinned the **`android-latest-release`** branch as the only safe target for `hiddenapi/` stub harvesting in two places:
+  - new "Pulling AOSP source for `hiddenapi/`" section in [`CONTRIBUTING.md`](CONTRIBUTING.md);
+  - new [`hiddenapi/README.md`](hiddenapi/README.md) for in-module visibility.
+- Both forbid `master` / `main` / `android-mainline` / date-stamped tags and point version-specific backports at version-tagged branches (`android-15.0.0_r1`, `android-16.0.0_r1`, etc.).
+- The iter-19 Hidden-API Compatibility Harness will inherit this pinning from day 1; no script exists yet to retarget, so the work is documentation-only. Closes the iter-20 Now/Eng-Debt row.
+
 ### Build — Gson 2.13.2 → 2.14.0 (2026-05-08)
 - `gson_version` bumped 2.13.2 → 2.14.0 in [`versions.gradle:26`](versions.gradle).
 - Built-in `java.time` adapters drop the `--add-opens` requirement on JDK17 CI runners.
