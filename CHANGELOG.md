@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security — CVE-2026-0073 disclosure for ADB mode (2026-05-08)
+- New [`docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md`](docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md) discloses the Critical zero-click proximal RCE in `adbd` patched in the May 2026 Android Security Bulletin. AppManagerNG's ADB mode and Shizuku-via-wireless-debug provisioning talk to the same daemon, so devices below patch level `2026-05-01` carry residual risk.
+- AppManagerNG itself is **not vulnerable** — the bug is in the platform `adbd` binary, not in any code we ship. Advisory documents impact split (USB-ADB on trusted network = moderate, wireless-debug = high), recommended actions for end users + downstream packagers, and the cross-reference to the sideload-verification doc (BR/ID/SG/TH overlap). Closes the iter-20 Now/T5 row; the companion in-app patch-level banner is deferred to the upcoming Onboarding Capability Wizard.
+
 ### Compliance — Android 17 `System.load()` read-only native audit (2026-05-08)
 - **Audit clean — zero matches.** Recursive sweep across all source roots; AppManagerNG does not extract native libraries to disk via any of its own code paths and does not use `System.load(absolutePath)` anywhere.
 - Two `System.loadLibrary("am")` call sites (`AhoCorasick.java:7`, `CpuUtils.java:13`) use the canonical AOSP path; the platform installer handles the read-only flag for bundled `jniLibs/`.
