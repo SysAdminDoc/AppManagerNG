@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Google Play Contacts / Location-Button Policy audit (clean) (2026-05-08)
+- Audit clean — the policy does not apply. NG's manifest declares only `READ_PHONE_STATE` (used for the telephony-side mobile/Wi-Fi data-usage split). NG does **not** declare `READ_CONTACTS`, `WRITE_CONTACTS`, `GET_ACCOUNTS`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `READ_PHONE_NUMBERS`, or any call-log / SMS permission.
+- The contact and location permission strings that appear in [`PermissionGroupCatalog.java`](app/src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionGroupCatalog.java) are **label constants** for the Permission Inspector UI to render groups when inspecting *other* installed apps; AppManagerNG itself never requests them at runtime. The iter-19 ROADMAP row's claim to the contrary was incorrect; the audit corrects the record.
+- No NG UI button reveals contact info or precise location; no remediation required before the 2026-05-15 Google Play Console enforcement window. Audit at [`docs/audits/2026-05-08-google-play-contacts-location-policy.md`](docs/audits/2026-05-08-google-play-contacts-location-policy.md). Closes the iter-19 Now/Eng-Debt row.
+
 ### Security — CVE-2026-0073 disclosure for ADB mode (2026-05-08)
 - New [`docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md`](docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md) discloses the Critical zero-click proximal RCE in `adbd` patched in the May 2026 Android Security Bulletin. AppManagerNG's ADB mode and Shizuku-via-wireless-debug provisioning talk to the same daemon, so devices below patch level `2026-05-01` carry residual risk.
 - AppManagerNG itself is **not vulnerable** — the bug is in the platform `adbd` binary, not in any code we ship. Advisory documents impact split (USB-ADB on trusted network = moderate, wireless-debug = high), recommended actions for end users + downstream packagers, and the cross-reference to the sideload-verification doc (BR/ID/SG/TH overlap). Closes the iter-20 Now/T5 row; the companion in-app patch-level banner is deferred to the upcoming Onboarding Capability Wizard.
