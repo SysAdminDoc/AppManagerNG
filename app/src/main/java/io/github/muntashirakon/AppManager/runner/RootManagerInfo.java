@@ -14,11 +14,11 @@ import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.settings.Ops;
 
 /**
- * Detects which Android root manager is in use and whether the ZygiskNext layer
- * is loaded on top of it. Surfaced in the onboarding capability sheet and the
- * privilege health-check screen so users can see <em>which</em> root provider
- * has actually granted AppManagerNG superuser — important when more than one
- * coexists (Magisk + ZygiskNext, KernelSU + ZygiskNext, APatch + ZygiskNext).
+ * Detects which Android root manager is in use and whether the ZygiskNext or
+ * Sui layers are loaded on top of it. Surfaced in the onboarding capability
+ * sheet and the privilege health-check screen so users can see <em>which</em>
+ * root provider has actually granted AppManagerNG superuser — important when
+ * more than one coexists (Magisk + ZygiskNext, KernelSU + Sui, etc.).
  *
  * <p>Detection strategies, in order:
  * <ol>
@@ -37,6 +37,9 @@ import io.github.muntashirakon.AppManager.settings.Ops;
  *   <li>KernelSU v3.2.x — {@code /data/adb/ksu} / {@code apd} daemon</li>
  *   <li>APatch — {@code /data/adb/ap} (kernel patch via KernelPatch, ARM64)</li>
  *   <li>ZygiskNext v1.3.x — {@code /data/adb/modules/zygisksu}</li>
+ *   <li>Sui — Magisk-module form of Shizuku, no separate
+ *       {@code moe.shizuku.privileged.api} package install, marker at
+ *       {@code /data/adb/modules/sui}.</li>
  * </ul>
  */
 public final class RootManagerInfo {
@@ -66,11 +69,14 @@ public final class RootManagerInfo {
     @NonNull
     public final Source source;
     public final boolean zygiskNextPresent;
+    public final boolean suiPresent;
 
-    private RootManagerInfo(@NonNull Manager manager, @NonNull Source source, boolean zygiskNextPresent) {
+    private RootManagerInfo(@NonNull Manager manager, @NonNull Source source,
+                            boolean zygiskNextPresent, boolean suiPresent) {
         this.manager = manager;
         this.source = source;
         this.zygiskNextPresent = zygiskNextPresent;
+        this.suiPresent = suiPresent;
     }
 
     /**
@@ -85,11 +91,12 @@ public final class RootManagerInfo {
             Manager fromShell = detectViaShell();
             if (fromShell != Manager.UNKNOWN) {
                 boolean zn = fromShell != Manager.NONE && checkZygiskNextViaShell();
-                return new RootManagerInfo(fromShell, Source.MARKER, zn);
+                boolean sui = fromShell != Manager.NONE && checkSuiViaShell();
+                return new RootManagerInfo(fromShell, Source.MARKER, zn, sui);
             }
         }
         Manager fromPackages = detectViaPackages(ctx);
-        return new RootManagerInfo(fromPackages, fromPackages == Manager.NONE ? Source.NONE : Source.PACKAGE, false);
+        return new RootManagerInfo(fromPackages, fromPackages == Manager.NONE ? Source.NONE : Source.PACKAGE, false, false);
     }
 
     @AnyThread
@@ -139,6 +146,20 @@ public final class RootManagerInfo {
     private static boolean checkZygiskNextViaShell() {
         Runner.Result r = Runner.runCommand(
                 "if [ -d /data/adb/modules/zygisksu ]; then echo YES; else echo NO; fi");
+        return r.isSuccessful() && "YES".equals(r.getOutput().trim());
+    }
+
+    /**
+     * Sui (Magisk-module form of Shizuku) ships under a stable module ID.
+     * Skips the {@code moe.shizuku.privileged.api} package install so its presence
+     * is invisible to {@link PackageManager}; the only authoritative signal is the
+     * Magisk module marker. Effectively superset-equivalent to a Shizuku binding
+     * but with zero-UI permission grants for already-trusted apps.
+     */
+    @WorkerThread
+    private static boolean checkSuiViaShell() {
+        Runner.Result r = Runner.runCommand(
+                "if [ -d /data/adb/modules/sui ]; then echo YES; else echo NO; fi");
         return r.isSuccessful() && "YES".equals(r.getOutput().trim());
     }
 
