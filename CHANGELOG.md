@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 `System.load()` read-only native audit (2026-05-08)
+- **Audit clean — zero matches.** Recursive sweep across all source roots; AppManagerNG does not extract native libraries to disk via any of its own code paths and does not use `System.load(absolutePath)` anywhere.
+- Two `System.loadLibrary("am")` call sites (`AhoCorasick.java:7`, `CpuUtils.java:13`) use the canonical AOSP path; the platform installer handles the read-only flag for bundled `jniLibs/`.
+- Forty-plus `IoUtils.copy` call sites — none of them write `.so` files. Audit at [`docs/audits/2026-05-08-android17-system-load-readonly.md`](docs/audits/2026-05-08-android17-system-load-readonly.md). Closes the iter-20 Now/Eng-Debt row.
+
 ### Docs — AOSP source-pull retarget to `android-latest-release` (2026-05-08)
 - AOSP moved to a trunk-stable publishing cadence in 2026: public source publishing now happens on a Q2 + Q4 schedule rather than continuous; `master` reflects a transient mid-quarter snapshot whose private-API surface may not survive to a published Android release.
 - Pinned the **`android-latest-release`** branch as the only safe target for `hiddenapi/` stub harvesting in two places:
