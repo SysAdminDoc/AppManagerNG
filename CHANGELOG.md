@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — libsu 6.0.0 `Shell.cmd` migration audit (clean) (2026-05-08)
+- **Audit clean — zero matches.** Recursive sweep across `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/` returned 0 `Shell.sh(` / `Shell.su(` / `FLAG_REDIRECT_STDERR` references.
+- The single `Shell.cmd(` call site in [`RemoteShellImpl.java:25`](app/src/main/java/io/github/muntashirakon/AppManager/ipc/RemoteShellImpl.java#L25) implements the 6.0.0 idiom; all other privileged shell invocations route through NG's `Runner.runCommand` abstraction on top of it.
+- Audit at [`docs/audits/2026-05-08-libsu-shell-cmd-migration.md`](docs/audits/2026-05-08-libsu-shell-cmd-migration.md). Closes the iter-20 Engineering Debt Register row "libsu `6.0.0`".
+
 ### Added — LocalServer bootstrap-failure signature line (2026-05-08)
 - New `logBootstrapFailureSignature()` helper in [`LocalServer.checkConnect()`](app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServer.java) emits a single-line failure signature whenever the privileged-shell handshake throws (`IOException` / `AdbPairingRequiredException`). The signature captures `Build.MANUFACTURER/PRODUCT/DEVICE`, `SDK_INT`, `Build.ID`, `ro.lineage.version` (when present), the exception class + message, and the cause chain.
 - Bug reporters can copy this one `Log.e("IPC", …)` line into an issue instead of a full audit log. Targets in particular the LineageOS 23.2 / Android 16 root-binder regression (AM #1962 / [S185]) where the SELinux denial in `system_server` kills the handshake silently. The actual SELinux denial line still has to come from `dmesg` / `logcat` separately, but the device + exception fingerprint is now structured and trivially diff-able across reports.
