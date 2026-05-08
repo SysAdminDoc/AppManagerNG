@@ -553,9 +553,12 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
          * Cycle ALLOWED → IGNORED → ERRORED → ALLOWED for the row-tap toggle. Any
          * other current mode (FOREGROUND, DEFAULT, etc.) re-enters the cycle at
          * ALLOWED so the user always lands on a known three-state ladder.
+         *
+         * <p>Non-static because Java 8 source compatibility forbids static
+         * members inside inner classes. No instance state is touched.
          */
         @AppOpsManagerCompat.Mode
-        private static int nextAppOpModeInCycle(@AppOpsManagerCompat.Mode int currentMode) {
+        private int nextAppOpModeInCycle(@AppOpsManagerCompat.Mode int currentMode) {
             switch (currentMode) {
                 case android.app.AppOpsManager.MODE_ALLOWED:
                     return android.app.AppOpsManager.MODE_IGNORED;
