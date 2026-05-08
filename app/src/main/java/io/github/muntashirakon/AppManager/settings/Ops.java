@@ -167,6 +167,30 @@ public class Ops {
     }
 
     /**
+     * Whether the configured mode is ADB but the working shell is actually
+     * running with uid 0 — the "ADB Root" surface KernelSU v3.2.3+ added
+     * (also reachable via APatch's adb-root toggle and Magisk's kang mode).
+     *
+     * <p>This is privilege-equivalent to root but follows the ADB code-path
+     * for transport. <b>Trust caveat:</b> "anyone can plug in via USB" — a
+     * device left unattended on a desk with USB debugging enabled grants
+     * any laptop the same uid-0 surface; consumers (Privilege Health-Check
+     * screen, onboarding wizard) MUST gate elevated trust on explicit user
+     * confirmation before treating this as full-root for sensitive ops.
+     *
+     * <p>Cheap and safe to call from any thread — reads three already-cached
+     * static booleans plus the working-uid sentinel; no shell round-trip.
+     * The KernelSU-presence check is intentionally not folded in here so
+     * that APatch/Magisk paths still register; callers wanting a stricter
+     * "root manager confirmed" gate should pair this with
+     * {@code RootManagerInfo.detect()}.
+     */
+    @AnyThread
+    public static boolean isAdbShellRoot() {
+        return sIsAdb && !sDirectRoot && getWorkingUid() == ROOT_UID;
+    }
+
+    /**
      * Whether the current App Manager session is authenticated by the user. It does two things:
      * <ol>
      *     <li>If security is enabled, it marks that the user has got passed the security challenge.

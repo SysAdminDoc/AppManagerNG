@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — `Ops.isAdbShellRoot()` detection helper (2026-05-08)
+- New static helper [`Ops.isAdbShellRoot()`](app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java) returns true when the configured mode is ADB but the working shell's uid is 0 — the "ADB Root" surface KernelSU v3.2.3+ added in 2026 (also reachable via APatch's adb-root toggle and Magisk's kang mode).
+- Cheap, all-thread-safe, no shell round-trip. The detection layer intentionally doesn't gate on KernelSU specifically because APatch / Magisk-kang reach the same privilege state; callers wanting a stricter "root manager confirmed" gate pair this with `RootManagerInfo.detect()`.
+- The javadoc carries the trust caveat ("anyone can plug in via USB"): a device left unattended with USB debugging enabled grants any laptop the same uid-0 surface, so consumers (the still-pending Privilege Health-Check screen and onboarding wizard) MUST gate elevated trust on explicit user confirmation before treating this as full-root for sensitive ops. Reference: [S166]. Closes the iter-20 Now/T9 row at the detection-foundation layer; UX confirmation flow lands with the Privilege Health-Check screen.
+
 ### Changed — Backup-name dialog now autocompletes from prior backup names (2026-05-08)
 - The "Multiple backup" name dialog in [`BackupFragment.handleBackup()`](app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupFragment.java) is now backed by `TextInputDropdownDialogBuilder` instead of `TextInputDialogBuilder`. Users tagging a fresh backup get an autocomplete dropdown of every prior backup label across the apps in scope, so re-using the same tag as last time is one tap instead of a full retype.
 - New `collectExistingBackupNames()` walks `viewModel.getBackupInfoList()` → per-backup `BackupMetadataV5.metadata.backupName` and feeds the de-duplicated `LinkedHashSet` into `setDropdownItems(items, -1, true)` (filterable), so typing narrows the suggestion list as the user goes. Empty/null names are skipped.
