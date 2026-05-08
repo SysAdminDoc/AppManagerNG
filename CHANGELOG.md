@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## v0.4.1 — 2026-05-08
+
+Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/iter-20 ROADMAP drains plus one CONFIRMED audit finding flagged for design (GCM cipher reuse). All changes ship as user-visible polish + compliance + diagnostics; no breaking format changes. The GCM cipher-reuse bug in `AESCrypto.handleFiles()` is documented but **not yet fixed** — multi-file AES-encrypted backups produced by v0.4.0 and v0.4.1 cannot be trusted to restore. OpenPGP / RSA / ECC backup modes are unaffected; single-file AES backups are unaffected. See the audit at `docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md` for remediation options. The next release will pick a fix path and ship it behind a backup metadata version flag.
+
 ### Audit — GCM cipher reuse in `AESCrypto.handleFiles()` (CONFIRMED BUG, needs-design) (2026-05-08)
 - ⚠️ **Confirmed:** [`AESCrypto.handleFiles()`](app/src/main/java/io/github/muntashirakon/AppManager/crypto/AESCrypto.java) instantiates a single `GCMBlockCipher` once before the per-file for-loop and reuses it across every file with the same `mIv`. After file 0's `doFinal()`, the cipher is in finalized state; iteration 1 wraps the same cipher in a fresh `CipherOutputStream`, with behavior that's either fail-fast or silent nonce-reuse depending on BouncyCastle's internals. This matches upstream AM issue #1958.
 - GCM mode has a hard cryptographic invariant: `(key, IV)` must NEVER encrypt more than one distinct plaintext. Reuse silently breaks confidentiality and breaks the auth tag. The single-file `encrypt(InputStream, OutputStream)` path creates its own cipher and isn't affected; only the multi-file `handleFiles` path triggers the bug. OpenPGP / RSA / ECC modes are unaffected.

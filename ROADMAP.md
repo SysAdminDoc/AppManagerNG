@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-08 (iter-20 drain — 19 Now/Eng-Debt rows closed + 1 audit-confirmed bug flagged for design (GCM cipher reuse): sideload-verification doc · BC 1.84 CVE bump · Gson 2.14.0 · AOSP source-pull pinned to `android-latest-release` · `System.load()` audit (clean) · CVE-2026-0073 ADB advisory · Google Play Contacts/Location-Button audit (clean) · Android 17 static-final reflection audit (1 fix, 1 deferred) · Debloater activity-alias for pre-A13/Unisoc · GrapheneOS A16 background-install patch reference · Sui Magisk-module detection in onboarding · AppOps row-tap 3-state cycle · cert dialog Subject + Issuer · Per-OEM debloat risk ribbon · backup-name autocomplete dropdown · KernelSU ADB-Root detection helper · A16 QPR2 clearUserData shell fallback · LocalServer bootstrap-failure signature · libsu 6.0.0 audit (clean) · zip-slip protection audit (clean) · GCM cipher reuse audit (confirmed, needs-design)).
+**Last updated:** 2026-05-08 — v0.4.1 maintenance release (iter-20 drain: 19 Now/Eng-Debt rows closed + 1 audit-confirmed bug flagged for design — GCM cipher reuse). See `CHANGELOG.md` for the complete row list.
 **Next revision due:** v0.6.0 release.
 
 **Related research:** [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md).
