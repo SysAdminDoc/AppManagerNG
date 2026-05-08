@@ -2217,6 +2217,9 @@
     <!-- App Info: signing certificate SHA-256 tag chip + dialog -->
     <string name="cert_fingerprint_chip_label">Sign · SHA-256 %1$s</string>
     <string name="cert_fingerprint_dialog_title">Signing certificate SHA-256</string>
+    <string name="cert_fingerprint_dialog_sha256_header">SHA-256 fingerprint</string>
+    <string name="cert_fingerprint_dialog_subject_header">Subject</string>
+    <string name="cert_fingerprint_dialog_issuer_header">Issuer</string>
     <!-- App Details: window soft-input flags (Utils.getSoftInputString) -->
     <string name="soft_input_flag_adjust_nothing">Adjust nothing</string>
     <string name="soft_input_flag_adjust_pan">Adjust pan</string>

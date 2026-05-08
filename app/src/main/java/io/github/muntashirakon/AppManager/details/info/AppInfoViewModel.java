@@ -147,26 +147,32 @@ public class AppInfoViewModel extends AndroidViewModel {
 
     /**
      * Compute the colon-separated upper-case hex SHA-256 of the package's
-     * current X.509 signing certificate, suitable for one-line display and
-     * cross-verification with AppVerifier or {@code apksigner verify --print-certs}.
-     * Returns {@code null} when the package has no signers, more than one
-     * current signer, or the digest can't be computed.
+     * current X.509 signing certificate plus its Subject and Issuer DNs,
+     * and write the trio into {@code tagCloud}. Suitable for one-line tag
+     * display and cross-verification with AppVerifier or
+     * {@code apksigner verify --print-certs}. All three fields stay
+     * {@code null} when the package has no signers, more than one current
+     * signer, or the digest can't be computed.
      */
     @WorkerThread
-    @Nullable
-    private static String computeSigningCertSha256(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
+    private static void populateSigningCertInfo(@NonNull TagCloud tagCloud,
+                                                @NonNull PackageInfo packageInfo,
+                                                boolean isExternalApk) {
         try {
             SignerInfo signerInfo = PackageUtils.getSignerInfo(packageInfo, isExternalApk);
-            if (signerInfo == null) return null;
+            if (signerInfo == null) return;
             X509Certificate[] certs = signerInfo.getCurrentSignerCerts();
             // Multi-signer APKs are rare; surfacing only the single-signer case
             // keeps the tag chip unambiguous. Multi-signer details are reachable
             // through the icon-tap verify flow.
-            if (certs == null || certs.length != 1) return null;
-            String hex = DigestUtils.getHexDigest(DigestUtils.SHA_256, certs[0].getEncoded());
-            return colonifyHex(hex);
+            if (certs == null || certs.length != 1) return;
+            X509Certificate cert = certs[0];
+            String hex = DigestUtils.getHexDigest(DigestUtils.SHA_256, cert.getEncoded());
+            tagCloud.signingCertSha256 = colonifyHex(hex);
+            tagCloud.signingCertSubject = cert.getSubjectX500Principal().getName();
+            tagCloud.signingCertIssuer = cert.getIssuerX500Principal().getName();
         } catch (Throwable t) {
-            return null;
+            // Leave all three fields null; the cert chip simply won't appear.
         }
     }
 
@@ -330,7 +336,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.hasKeyStoreItems = KeyStoreUtils.hasKeyStore(applicationInfo.uid);
             tagCloud.hasMasterKeyInKeyStore = KeyStoreUtils.hasMasterKey(applicationInfo.uid);
             tagCloud.usesPlayAppSigning = PackageUtils.usesPlayAppSigning(applicationInfo);
-            tagCloud.signingCertSha256 = computeSigningCertSha256(packageInfo, isExternalApk);
+            populateSigningCertInfo(tagCloud, packageInfo, isExternalApk);
             if (ThreadUtils.isInterrupted()) {
                 return;
             }
@@ -582,6 +588,21 @@ public class AppInfoViewModel extends AndroidViewModel {
          */
         @Nullable
         public String signingCertSha256;
+        /**
+         * X.509 Subject DN of the current signing certificate (RFC 2253 form).
+         * {@code null} when the cert wasn't computable. Surfaced alongside the
+         * fingerprint in the cert dialog so users vetting an APK can see who
+         * the certificate claims to be issued <em>to</em>, not just the digest.
+         */
+        @Nullable
+        public String signingCertSubject;
+        /**
+         * X.509 Issuer DN of the current signing certificate (RFC 2253 form).
+         * Differs from {@link #signingCertSubject} only for CA-issued certs;
+         * self-signed APKs (the Android norm) have Subject == Issuer.
+         */
+        @Nullable
+        public String signingCertIssuer;
     }
 
     public static class AppInfo {
