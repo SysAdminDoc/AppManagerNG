@@ -2159,6 +2159,8 @@
     <string name="icon">icon</string>
     <string name="preview">Preview</string>
     <string name="debloat_removal_unsafe">Unsafe</string>
+    <!-- Debloater: OEM-specific known-bad warnings (BloatwareDetailsDialog). -->
+    <string name="oem_bloat_risk_samsung_smartsuggestions_oneui85">Removing this on Samsung One UI 8.5 has been reported to crash-loop Settings → Mobile Networks (UAD-NG #1394). Disable / freeze it instead, or restore from a backup before retrying.</string>
     <string name="sort_by_cpu_time">CPU time</string>
     <string name="pref_request_update_ownership">Request \"update ownership\"</string>
     <string name="pref_default_package_source">Default package source</string>

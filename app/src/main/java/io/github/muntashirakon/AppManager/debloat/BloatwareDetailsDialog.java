@@ -137,11 +137,21 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         }
         mAppLabelView.setText(debloatObject.getLabelOrPackageName());
         mPackageNameView.setText(debloatObject.packageName);
-        String warning = debloatObject.getWarning();
-        if (warning != null) {
+        // Compose the warning ribbon: vendor-aware known-bad rules win over the
+        // upstream debloat-list copy because they're keyed off (package,
+        // Build.MANUFACTURER, vendor-OS-version) and reflect verified field
+        // reports of system-surface crash loops on specific OEM/version combos.
+        CharSequence oemWarning = OemBloatRiskTable.getKnownBadWarning(requireContext(), debloatObject.packageName);
+        String upstreamWarning = debloatObject.getWarning();
+        CharSequence composedWarning = composeWarning(oemWarning, upstreamWarning);
+        if (composedWarning != null) {
             mWarningView.setVisibility(View.VISIBLE);
-            mWarningView.setText(warning);
-            if (debloatObject.getRemoval() >= DebloatObject.REMOVAL_CAUTION) {
+            mWarningView.setText(composedWarning);
+            // Vendor-known-bad rules always escalate to WARN regardless of upstream
+            // removal rating; a Settings → Mobile-Networks crash-loop is not "info".
+            if (oemWarning != null) {
+                mWarningView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
+            } else if (debloatObject.getRemoval() >= DebloatObject.REMOVAL_CAUTION) {
                 mWarningView.setAlertType(MaterialAlertView.ALERT_TYPE_INFO);
             } else mWarningView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
         } else mWarningView.setVisibility(View.GONE);
@@ -172,6 +182,24 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         mFlowLayout.removeAllViews();
         addTag(mFlowLayout, debloatObject.type);
         addTag(mFlowLayout, removalRes, removalColor);
+    }
+
+    /**
+     * Stitch the OEM-aware known-bad warning on top of the upstream
+     * debloat-list warning. The OEM warning leads (it's the more specific
+     * signal); the upstream warning trails as additional context. Returns
+     * {@code null} when both are empty so the ribbon can be hidden.
+     */
+    @Nullable
+    private static CharSequence composeWarning(@Nullable CharSequence oem, @Nullable String upstream) {
+        boolean hasOem = oem != null && oem.length() > 0;
+        boolean hasUpstream = upstream != null && !upstream.isEmpty();
+        if (hasOem && hasUpstream) {
+            return new SpannableStringBuilder().append(oem).append("\n\n").append(upstream);
+        }
+        if (hasOem) return oem;
+        if (hasUpstream) return upstream;
+        return null;
     }
 
     private void updateDialog(@Nullable List<SuggestionObject> suggestionObjects) {
