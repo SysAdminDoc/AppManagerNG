@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Debloater shortcut crash on pre-A13 / Unisoc devices (2026-05-08)
+- Added `.debloat.DebloaterActivityAlias` (`android:exported="true"`, `targetActivity=".debloat.DebloaterActivity"`) in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so external launcher pins / Tasker shortcuts / third-party app shortcuts resolve to a stable component name on platforms where pinning the underlying activity directly fails with `ActivityNotFoundException`. Reproduces upstream AM #1963 (Moto g22 / Unisoc T606 / Android 12).
+- The alias has no `CATEGORY_LAUNCHER` filter — it does not appear as a separate launcher icon. Closes the iter-20 Now/T2 row.
+
 ### Compliance — Android 17 static-final reflection audit (1 fix, 1 deferred) (2026-05-08)
 - Audited 20 `setAccessible(true)` call sites across `app/`, `libcore/`, `server/` for the Android 17 ban on `Field.set()` against `static final` fields with `setAccessible(true)`.
 - 17 sites safe (10 `Method`/`Constructor`, 7 read-only `Field.get`).

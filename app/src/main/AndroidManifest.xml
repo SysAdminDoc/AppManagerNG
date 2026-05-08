@@ -562,6 +562,24 @@
             android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/debloater_title" />
+
+        <!--
+            Activity-alias for the Debloater. Survives launches from external
+            shortcut callers (Tasker, launcher pin, third-party app shortcuts)
+            on platforms where pinning the underlying activity directly fails
+            with ActivityNotFoundException — observed on pre-Android-13 budget
+            Unisoc devices (Moto g22, Unisoc T606) per upstream AM #1963.
+
+            android:exported="true" so external launchers can resolve the
+            component name; an internal-only intent-filter would defeat the
+            purpose. The alias does not declare a CATEGORY_LAUNCHER filter,
+            so it does not appear as a separate launcher icon.
+        -->
+        <activity-alias
+            android:name=".debloat.DebloaterActivityAlias"
+            android:exported="true"
+            android:label="@string/debloater_title"
+            android:targetActivity=".debloat.DebloaterActivity" />
         <activity
             android:name=".permissions.PermissionInspectorActivity"
             android:enableOnBackInvokedCallback="true"
