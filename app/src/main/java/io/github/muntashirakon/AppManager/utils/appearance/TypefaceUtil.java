@@ -62,7 +62,11 @@ public class TypefaceUtil {
                     allFontsForThisApp.put(entry.getKey(), entry.getValue());
                 }
             }
-            field.set(null, allFontsForThisApp);
+            // Mutating allFontsForThisApp via remove()/put() above already updates
+            // Typeface.sSystemFontMap in place — no need to write the reference back via
+            // Field.set(null, ...). Calling Field.set() against a static-final field
+            // throws IllegalAccessException for apps targeting Android 17 (API 37) even
+            // with setAccessible(true). See docs/audits/2026-05-08-android17-static-final-reflection.md.
             field.setAccessible(false);
         } catch (Exception e) {
             Log.w(TAG, "Could not restore fonts", e);

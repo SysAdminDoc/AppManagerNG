@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 static-final reflection audit (1 fix, 1 deferred) (2026-05-08)
+- Audited 20 `setAccessible(true)` call sites across `app/`, `libcore/`, `server/` for the Android 17 ban on `Field.set()` against `static final` fields with `setAccessible(true)`.
+- 17 sites safe (10 `Method`/`Constructor`, 7 read-only `Field.get`).
+- 1 fixed: [`TypefaceUtil.restoreFonts()`](app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/TypefaceUtil.java) wrote a same-reference back to `Typeface.sSystemFontMap` (static-final). Removed the redundant `Field.set()` call — the map's contents are mutated in place via `remove()` / `put()` so the write-back was a no-op. Behavior preserved.
+- 1 deferred: [`RootServiceMain.startService()`](server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java) writes to `Resources.mSystem` (static-final). Currently `targetSdk=36` so the site is not yet broken; flagged for the targetSdk=37 bump task with three remediation options documented in the audit. Audit at [`docs/audits/2026-05-08-android17-static-final-reflection.md`](docs/audits/2026-05-08-android17-static-final-reflection.md). Closes the iter-20 Now/Eng-Debt audit row.
+
 ### Compliance — Google Play Contacts / Location-Button Policy audit (clean) (2026-05-08)
 - Audit clean — the policy does not apply. NG's manifest declares only `READ_PHONE_STATE` (used for the telephony-side mobile/Wi-Fi data-usage split). NG does **not** declare `READ_CONTACTS`, `WRITE_CONTACTS`, `GET_ACCOUNTS`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `READ_PHONE_NUMBERS`, or any call-log / SMS permission.
 - The contact and location permission strings that appear in [`PermissionGroupCatalog.java`](app/src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionGroupCatalog.java) are **label constants** for the Permission Inspector UI to render groups when inspecting *other* installed apps; AppManagerNG itself never requests them at runtime. The iter-19 ROADMAP row's claim to the contrary was incorrect; the audit corrects the record.
