@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Cert dialog now shows Subject + Issuer (2026-05-08)
+- The "Sign · SHA-256" tag chip's dialog in App Info now exposes the X.509 **Subject** and **Issuer** distinguished names alongside the SHA-256 fingerprint, so users vetting an APK can see who the certificate claims to be issued *to* without dropping to `apksigner verify --print-certs`.
+- New `AppInfoViewModel.populateSigningCertInfo()` (replaces `computeSigningCertSha256`) writes `signingCertSha256` / `signingCertSubject` / `signingCertIssuer` together off the same `X509Certificate` instance — Subject/Issuer come from `getSubjectX500Principal().getName()` / `getIssuerX500Principal().getName()` (RFC 2253 form). All three stay `null` for unparseable / multi-signer / unsigned packages.
+- [`AppInfoFragment.showCertFingerprintDialog()`](app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java) renders the trio as labelled sections; new strings `cert_fingerprint_dialog_{sha256,subject,issuer}_header`. Copy button still copies fingerprint-only to keep AppVerifier / `apksigner` paste-compatibility.
+- The iter-20 row's other layout-density bullets (SDK-row reorder, two-column trackers|SDK, popup `maxHeightPercent`) target an upstream `app_info_card.xml` that doesn't exist in NG — App Info is a full pager fragment, not a bottom-sheet popup, so those don't map. Reference: AM #1966 / [S187]. Closes the iter-20 Now/T21 row (Subject + Issuer scope).
+
 ### Changed — AppOps row-tap cycles ALLOWED → IGNORED → ERRORED (2026-05-08)
 - Row-tap on an AppOps entry in App Details (`AppDetailsPermissionsFragment`) now cycles **ALLOWED → IGNORED → ERRORED → ALLOWED** instead of binary toggling between ALLOWED and a derived deny.
 - The IGNORE (`MODE_IGNORED`) state silently no-ops the op without throwing `SecurityException`, matching platform behavior. It's the correct option for ops that misbehaving apps would otherwise crash on if DENY (`MODE_ERRORED`) is set — Inure build106.5.0 model.

@@ -1220,10 +1220,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         // verify can copy and compare in one tap.
         if (tagCloud.signingCertSha256 != null) {
             String fp = tagCloud.signingCertSha256;
+            String subject = tagCloud.signingCertSubject;
+            String issuer = tagCloud.signingCertIssuer;
             TagItem certTag = new TagItem();
             tagItems.add(certTag);
             certTag.setText(getString(R.string.cert_fingerprint_chip_label, shortFingerprint(fp)))
-                    .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp));
+                    .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp, subject, issuer));
         }
         if (tagCloud.hasKeyStoreItems) {
             TagItem keyStoreTag = new TagItem();
@@ -1438,16 +1440,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     /**
-     * Surface the full SHA-256 fingerprint with a Copy button so users
-     * cross-verifying against AppVerifier or {@code apksigner verify
-     * --print-certs} output can paste it in a single step. The clipboard
-     * action also matches the icon-tap verify-from-clipboard flow already
-     * present in this fragment.
+     * Surface the full SHA-256 fingerprint plus the Subject and Issuer DNs
+     * with a Copy button (digest-only, matching the existing
+     * AppVerifier / {@code apksigner verify --print-certs} cross-check flow).
+     * Subject and Issuer are RFC 2253 distinguished names from the X.509
+     * certificate; they're informational only — only the fingerprint is
+     * cryptographically meaningful, but the DNs let users see who the
+     * certificate claims to be issued <em>to</em> at a glance.
      */
-    private void showCertFingerprintDialog(@NonNull Context context, @NonNull String fingerprint) {
+    private void showCertFingerprintDialog(@NonNull Context context, @NonNull String fingerprint,
+                                           @Nullable String subject, @Nullable String issuer) {
+        StringBuilder body = new StringBuilder();
+        body.append(getString(R.string.cert_fingerprint_dialog_sha256_header))
+                .append('\n').append(fingerprint);
+        if (subject != null) {
+            body.append("\n\n").append(getString(R.string.cert_fingerprint_dialog_subject_header))
+                    .append('\n').append(subject);
+        }
+        if (issuer != null) {
+            body.append("\n\n").append(getString(R.string.cert_fingerprint_dialog_issuer_header))
+                    .append('\n').append(issuer);
+        }
         new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.cert_fingerprint_dialog_title)
-                .setMessage(fingerprint)
+                .setMessage(body.toString())
                 .setPositiveButton(R.string.copy, (d, w) -> {
                     ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                     if (cm != null) {
