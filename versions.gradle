@@ -23,7 +23,7 @@ ext {
     documentfile_version = "1.1.0" // AppCompat still includes the buggy implementation of documentfile library (1.0.0)
     duration_picker = "c3c89adf3d" // https://github.com/MuntashirAkon/time-duration-picker
     fastscroll_version = "1.3.0" // https://github.com/zhanghai/AndroidFastScroll
-    gson_version = "2.13.2" // https://github.com/google/gson
+    gson_version = "2.14.0" // https://github.com/google/gson — built-in java.time adapters (drops `--add-opens` requirement on JDK17), strict duplicate-JSON-key handling (malformed profile / debloat-list / backup manifest with `{"foo": null, "foo": …}` now throws instead of silently overwriting)
     hiddenapibypass_version = "6.1" // https://github.com/LSPosed/AndroidHiddenApiBypass
     jadx_version = "1.4.7" // https://github.com/MuntashirAkon/jadx-android
     jb_annotation_version = "26.1.0" // https://github.com/JetBrains/java-annotations (Compile-only)

@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Build — Gson 2.13.2 → 2.14.0 (2026-05-08)
+- `gson_version` bumped 2.13.2 → 2.14.0 in [`versions.gradle:26`](versions.gradle).
+- Built-in `java.time` adapters drop the `--add-opens` requirement on JDK17 CI runners.
+- Strict duplicate-JSON-key handling: malformed `{"foo": null, "foo": …}` now throws `JsonSyntaxException` instead of silently overwriting. Audited every Gson call-site (7 files); zero `setLenient(true)` opt-outs in the codebase, so all parse paths benefit. Audit + verification plan at [`docs/audits/2026-05-08-gson-2-14-0-bump.md`](docs/audits/2026-05-08-gson-2-14-0-bump.md). Closes the iter-20 Now/Eng-Debt row; supersedes the Engineering Debt Register entry that pinned 2.13.2.
+
 ### Security — BouncyCastle 1.83 → 1.84 (CVE-2026-3505 / 5588 / 5598) (2026-05-08)
 - `bouncycastle_version` bumped 1.83 → 1.84 in [`versions.gradle:21`](versions.gradle); CVE list inlined as a trailing comment so the rationale lives at the dependency line.
 - Closes **CVE-2026-3505** (PGP AEAD chunk-size DoS — directly relevant since `libopenpgp` powers OpenPGP-encrypted backup archives), **CVE-2026-5588**, and **CVE-2026-5598** (FrodoKEM non-constant-time compare; pre-emptive against future ML-DSA / PQ adoption).
