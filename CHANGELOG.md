@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Audit — GCM cipher reuse in `AESCrypto.handleFiles()` (CONFIRMED BUG, needs-design) (2026-05-08)
+- ⚠️ **Confirmed:** [`AESCrypto.handleFiles()`](app/src/main/java/io/github/muntashirakon/AppManager/crypto/AESCrypto.java) instantiates a single `GCMBlockCipher` once before the per-file for-loop and reuses it across every file with the same `mIv`. After file 0's `doFinal()`, the cipher is in finalized state; iteration 1 wraps the same cipher in a fresh `CipherOutputStream`, with behavior that's either fail-fast or silent nonce-reuse depending on BouncyCastle's internals. This matches upstream AM issue #1958.
+- GCM mode has a hard cryptographic invariant: `(key, IV)` must NEVER encrypt more than one distinct plaintext. Reuse silently breaks confidentiality and breaks the auth tag. The single-file `encrypt(InputStream, OutputStream)` path creates its own cipher and isn't affected; only the multi-file `handleFiles` path triggers the bug. OpenPGP / RSA / ECC modes are unaffected.
+- **Remediation requires backup format planning**, not a one-line cipher re-init (re-init with the same IV is still nonce reuse). Three options documented at [`docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md`](docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md): (A) HKDF-Expand-derive per-file IV (no format change, old backups stay broken — they're already corrupt); (B) per-file IV stored alongside ciphertext (clean, requires metadata version bump); (C) fresh Crypto instance per file.
+- **No code change shipped** in this commit — the audit is the deliverable. The next pass picks an option, ships the fix behind a metadata-version flag, and adds a synthetic-4-GB-blob round-trip regression test. Reference: AM #1958 / [S138].
+
 ### Compliance — Zip-slip protection audit (clean) (2026-05-08)
 - **Audit clean — every disk-writing extraction path canonicalizes the output path and rejects traversal entries before any bytes are written.**
 - `TarUtils.extract` and `AndroidBackupExtractor.extract` both carry the canonical "double-check" guard from upstream AM v4.0.0-alpha02: pre-write `Paths.normalize(entry.getName())` + `startsWith("../")` rejection, plus post-create `realFilePath.startsWith(realDestPath)` containment verification. Both raise `IOException("Zip slip vulnerability detected!")` with diff-able expected/actual paths on the (extremely unlikely) malicious-archive case.
