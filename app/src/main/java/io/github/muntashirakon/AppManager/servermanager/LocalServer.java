@@ -112,10 +112,53 @@ public class LocalServer {
             } catch (IOException | AdbPairingRequiredException e) {
                 mConnectStarted = false;
                 mConnectLock.notify();
+                logBootstrapFailureSignature(e);
                 throw e;
             }
             mConnectStarted = false;
             mConnectLock.notify();
+        }
+    }
+
+    /**
+     * Emit a single-line bootstrap-failure signature when the privileged shell
+     * handshake throws — captures device fingerprint, LineageOS property, root
+     * mode, and the exception's class + cause chain so bug-reporters can paste
+     * one line into an issue instead of a full audit log. Targets in particular
+     * the LineageOS 23.2 / Android 16 root-binder regression (upstream AM
+     * #1962, [S185]) where the SELinux denial in {@code system_server} kills
+     * the handshake silently and users have no signal to act on.
+     */
+    private static void logBootstrapFailureSignature(@NonNull Exception e) {
+        try {
+            String lineage = io.github.muntashirakon.AppManager.misc.SystemProperties
+                    .get("ro.lineage.version", "");
+            StringBuilder sig = new StringBuilder("LocalServer bootstrap failed: ")
+                    .append(android.os.Build.MANUFACTURER).append('/')
+                    .append(android.os.Build.PRODUCT).append('/')
+                    .append(android.os.Build.DEVICE)
+                    .append(" (sdk=").append(android.os.Build.VERSION.SDK_INT)
+                    .append(", id=").append(android.os.Build.ID).append(')');
+            if (!lineage.isEmpty()) {
+                sig.append(" [LineageOS ").append(lineage).append(']');
+            }
+            sig.append(" — ").append(e.getClass().getSimpleName());
+            String msg = e.getMessage();
+            if (msg != null && !msg.isEmpty()) {
+                sig.append(": ").append(msg);
+            }
+            Throwable cause = e.getCause();
+            if (cause != null && cause != e) {
+                sig.append(" (caused by ").append(cause.getClass().getSimpleName());
+                String causeMsg = cause.getMessage();
+                if (causeMsg != null && !causeMsg.isEmpty()) {
+                    sig.append(": ").append(causeMsg);
+                }
+                sig.append(')');
+            }
+            Log.e("IPC", sig.toString());
+        } catch (Throwable ignored) {
+            // Diagnostic logging must never mask the original failure.
         }
     }
 

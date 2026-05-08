@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — LocalServer bootstrap-failure signature line (2026-05-08)
+- New `logBootstrapFailureSignature()` helper in [`LocalServer.checkConnect()`](app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServer.java) emits a single-line failure signature whenever the privileged-shell handshake throws (`IOException` / `AdbPairingRequiredException`). The signature captures `Build.MANUFACTURER/PRODUCT/DEVICE`, `SDK_INT`, `Build.ID`, `ro.lineage.version` (when present), the exception class + message, and the cause chain.
+- Bug reporters can copy this one `Log.e("IPC", …)` line into an issue instead of a full audit log. Targets in particular the LineageOS 23.2 / Android 16 root-binder regression (AM #1962 / [S185]) where the SELinux denial in `system_server` kills the handshake silently. The actual SELinux denial line still has to come from `dmesg` / `logcat` separately, but the device + exception fingerprint is now structured and trivially diff-able across reports.
+- Diagnostic logging is wrapped in a try/catch so it can never mask the original failure. Closes the iter-20 Now/T2 row.
+
 ### Fixed — A16 QPR2 silent `clearApplicationUserData` failure (2026-05-08)
 - [`PackageManagerCompat.clearApplicationUserData()`](app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java) now snapshots `IStorageStatsManager.queryStatsForPackage()` `dataBytes + cacheBytes` pre-clear, calls the hidden-API IPC path, re-snapshots post-clear, and when the post-clear size hasn't dropped below the pre-clear baseline (with a 64 KiB tolerance for the user-data dir's skeleton state), runs `pm clear --user N <pkg>` as a shell fallback.
 - The IPC path is also fallen-back-to-shell when it throws, so true IPC failures plus the QPR2 silent-success class of bug both route to the same shell remediation. The 64 KiB tolerance avoids false positives on the small placeholder state the OS retains even after a clean wipe; full-MB-or-GB silent-failure cases (Poco F3 / Infinity-X 3.9 / Root mode on QPR2) are caught and recovered.
