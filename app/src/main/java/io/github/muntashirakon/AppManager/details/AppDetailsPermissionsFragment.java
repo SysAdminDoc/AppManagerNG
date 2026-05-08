@@ -549,6 +549,23 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             }
         }
 
+        /**
+         * Cycle ALLOWED → IGNORED → ERRORED → ALLOWED for the row-tap toggle. Any
+         * other current mode (FOREGROUND, DEFAULT, etc.) re-enters the cycle at
+         * ALLOWED so the user always lands on a known three-state ladder.
+         */
+        @AppOpsManagerCompat.Mode
+        private static int nextAppOpModeInCycle(@AppOpsManagerCompat.Mode int currentMode) {
+            switch (currentMode) {
+                case android.app.AppOpsManager.MODE_ALLOWED:
+                    return android.app.AppOpsManager.MODE_IGNORED;
+                case android.app.AppOpsManager.MODE_IGNORED:
+                    return android.app.AppOpsManager.MODE_ERRORED;
+                default:
+                    return android.app.AppOpsManager.MODE_ALLOWED;
+            }
+        }
+
         private void getAppOpsView(@NonNull Context context, @NonNull ViewHolder holder, int index) {
             AppDetailsAppOpItem item;
             synchronized (mAdapterList) {
@@ -653,14 +670,21 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             // op granted
             holder.toggleSwitch.setChecked(item.isAllowed());
             holder.itemView.setOnClickListener(v -> {
-                boolean isAllowed = !item.isAllowed();
-                // TODO: 22/5/23 Perform using a ViewModel
+                // Three-state cycle ALLOWED → IGNORED → ERRORED → ALLOWED, matching Inure's
+                // AppOps editor model. The IGNORE state is the correct option for ops that
+                // misbehaving apps would otherwise crash on if DENY (ERRORED) is set, since
+                // IGNORE silently no-ops the op without throwing SecurityException. Long-press
+                // still opens the full single-choice mode picker (FOREGROUND/DEFAULT/etc.).
+                int nextMode = nextAppOpModeInCycle(item.getMode());
                 ThreadUtils.postOnBackgroundThread(() -> {
-                    if (viewModel != null && viewModel.setAppOpMode(item)) {
-                        ThreadUtils.postOnMainThread(() -> notifyItemChanged(index, AdapterUtils.STUB));
+                    if (viewModel != null && viewModel.setAppOpMode(item, nextMode)) {
+                        ThreadUtils.postOnMainThread(() -> {
+                            notifyItemChanged(index, AdapterUtils.STUB);
+                            UIUtils.displayShortToast(AppOpsManagerCompat.modeToName(nextMode));
+                        });
                     } else {
-                        ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(isAllowed
-                                ? R.string.failed_to_enable_op : R.string.failed_to_disable_op));
+                        ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
+                                R.string.failed_to_change_app_op_mode));
                     }
                 });
             });
