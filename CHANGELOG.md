@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — A16 QPR2 silent `clearApplicationUserData` failure (2026-05-08)
+- [`PackageManagerCompat.clearApplicationUserData()`](app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java) now snapshots `IStorageStatsManager.queryStatsForPackage()` `dataBytes + cacheBytes` pre-clear, calls the hidden-API IPC path, re-snapshots post-clear, and when the post-clear size hasn't dropped below the pre-clear baseline (with a 64 KiB tolerance for the user-data dir's skeleton state), runs `pm clear --user N <pkg>` as a shell fallback.
+- The IPC path is also fallen-back-to-shell when it throws, so true IPC failures plus the QPR2 silent-success class of bug both route to the same shell remediation. The 64 KiB tolerance avoids false positives on the small placeholder state the OS retains even after a clean wipe; full-MB-or-GB silent-failure cases (Poco F3 / Infinity-X 3.9 / Root mode on QPR2) are caught and recovered.
+- New helpers: `clearApplicationUserDataViaIpc()`, `clearApplicationUserDataViaShell()`, `queryAppDataBytesQuietly()`. Reference: AM #1965 / [S184]. Closes the iter-20 Now/T2 row.
+
 ### Added — `Ops.isAdbShellRoot()` detection helper (2026-05-08)
 - New static helper [`Ops.isAdbShellRoot()`](app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java) returns true when the configured mode is ADB but the working shell's uid is 0 — the "ADB Root" surface KernelSU v3.2.3+ added in 2026 (also reachable via APatch's adb-root toggle and Magisk's kang mode).
 - Cheap, all-thread-safe, no shell round-trip. The detection layer intentionally doesn't gate on KernelSU specifically because APatch / Magisk-kang reach the same privilege state; callers wanting a stricter "root manager confirmed" gate pair this with `RootManagerInfo.detect()`.

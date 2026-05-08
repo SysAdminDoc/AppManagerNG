@@ -59,6 +59,7 @@ import java.util.Set;
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -522,8 +523,59 @@ public final class PackageManagerCompat {
         return returnCode;
     }
 
+    /**
+     * Threshold for treating a post-clear data-size delta as "actually cleared".
+     * Android 16 QPR2 surfaced a class of bug ([S184]) where the
+     * {@code IPackageManager.clearApplicationUserData} hidden API returns success
+     * but leaves the data partition fully populated; a simple equality check
+     * isn't enough because the user-data dir naturally retains a few KB of
+     * skeleton state (default prefs, `cache/` placeholder, lib symlinks) even
+     * after a clean wipe. 64 KiB tolerates that floor while still flagging the
+     * silent-failure case where 100s of MB / GBs persist.
+     */
+    private static final long DATA_DROP_TOLERANCE_BYTES = 64L * 1024L;
+
     @RequiresPermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
     public static void clearApplicationUserData(@NonNull UserPackagePair pair) throws AndroidException {
+        long preSize = queryAppDataBytesQuietly(pair);
+        AndroidException ipcException = null;
+        try {
+            clearApplicationUserDataViaIpc(pair);
+        } catch (AndroidException e) {
+            ipcException = e;
+        }
+        // Post-clear ground-truth check. The IPC return value is unreliable on
+        // some Android 16 QPR2 builds (Poco F3 / Infinity-X 3.9 / Root mode —
+        // upstream AM #1965 [S184]); the data partition stays populated despite
+        // a "success" result. Compare baseline vs. post-clear sizes via
+        // StorageStatsManager and fall back to the `pm clear --user N` shell
+        // path when the delta proves the IPC lied.
+        boolean shouldFallback;
+        if (ipcException != null) {
+            shouldFallback = true;
+        } else if (preSize >= 0) {
+            long postSize = queryAppDataBytesQuietly(pair);
+            shouldFallback = postSize >= 0 && postSize > preSize - DATA_DROP_TOLERANCE_BYTES;
+            if (shouldFallback) {
+                Log.w(TAG, "clearApplicationUserData: IPC reported success for " + pair
+                        + " but data size " + postSize + "B did not drop from " + preSize + "B"
+                        + " (tolerance " + DATA_DROP_TOLERANCE_BYTES + "B); falling back to pm-clear shell");
+            }
+        } else {
+            // Couldn't measure — trust the IPC result. Real-world: pre-O / no
+            // STORAGE_STATS_SERVICE / package not yet indexed.
+            shouldFallback = false;
+        }
+        if (shouldFallback && !clearApplicationUserDataViaShell(pair)) {
+            if (ipcException != null) throw ipcException;
+            throw new AndroidException("pm clear shell fallback failed for " + pair
+                    + " after IPC clear silently left data in place");
+        }
+        BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{pair.getPackageName()});
+    }
+
+    @RequiresPermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+    private static void clearApplicationUserDataViaIpc(@NonNull UserPackagePair pair) throws AndroidException {
         IPackageManager pm = getPackageManager();
         ClearDataObserver obs = new ClearDataObserver();
         pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
@@ -539,7 +591,48 @@ public final class PackageManagerCompat {
         if (!obs.isSuccessful()) {
             throw new AndroidException("Could not clear data of package " + pair);
         }
-        BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{pair.getPackageName()});
+    }
+
+    /**
+     * Shell-path fallback for {@link #clearApplicationUserData} on Android 16
+     * QPR2 builds where the hidden-API path silently leaves data in place.
+     * Returns {@code true} when {@code pm clear --user N <pkg>} prints
+     * "Success" on stdout. Requires a privileged shell (root or ADB).
+     */
+    private static boolean clearApplicationUserDataViaShell(@NonNull UserPackagePair pair) {
+        Runner.Result r = Runner.runCommand(new String[]{
+                "pm", "clear",
+                "--user", String.valueOf(pair.getUserId()),
+                pair.getPackageName(),
+        });
+        if (!r.isSuccessful()) return false;
+        String output = r.getOutput() == null ? "" : r.getOutput().trim();
+        // Older Android: "Success" on success, "Failed" on failure.
+        // Android 12+ : same. Use a startsWith check so trailing newline doesn't trip us.
+        return output.startsWith("Success");
+    }
+
+    /**
+     * Measure the on-disk data + cache size of a package via
+     * {@link android.app.usage.IStorageStatsManager}. Returns {@code -1} on any
+     * failure (pre-O, missing service, exception). Used as a baseline for the
+     * post-clear ground-truth check; never throws.
+     */
+    private static long queryAppDataBytesQuietly(@NonNull UserPackagePair pair) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return -1L;
+        try {
+            android.app.usage.IStorageStatsManager statsService =
+                    android.app.usage.IStorageStatsManager.Stub.asInterface(
+                            ProxyBinder.getService(Context.STORAGE_STATS_SERVICE));
+            android.app.usage.StorageStats stats = statsService.queryStatsForPackage(
+                    null /* uuid: internal */,
+                    pair.getPackageName(),
+                    pair.getUserId(),
+                    ContextUtils.getContext().getPackageName());
+            return stats.getDataBytes() + stats.getCacheBytes();
+        } catch (Throwable t) {
+            return -1L;
+        }
     }
 
     @RequiresPermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
