@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Zip-slip protection audit (clean) (2026-05-08)
+- **Audit clean — every disk-writing extraction path canonicalizes the output path and rejects traversal entries before any bytes are written.**
+- `TarUtils.extract` and `AndroidBackupExtractor.extract` both carry the canonical "double-check" guard from upstream AM v4.0.0-alpha02: pre-write `Paths.normalize(entry.getName())` + `startsWith("../")` rejection, plus post-create `realFilePath.startsWith(realDestPath)` containment verification. Both raise `IOException("Zip slip vulnerability detected!")` with diff-able expected/actual paths on the (extremely unlikely) malicious-archive case.
+- Archive-to-archive converters (`SBConverter`, `OABConverter`, `TBConverter`) cache entries by extension to `FileCache.createCachedFile()` or do tar-to-tar metadata copying — they never use the source entry name as a disk path, so they're inherently safe; any malicious entry name is re-encoded into the output archive and rejected at the eventual extraction step. `ApkUtils.getManifestFromApk` is in-memory only.
+- Audit at [`docs/audits/2026-05-08-zip-slip-protection.md`](docs/audits/2026-05-08-zip-slip-protection.md). Closes the iter-20 Engineering Debt Register row "Zip-slip protection in APK/backup extraction".
+
 ### Compliance — libsu 6.0.0 `Shell.cmd` migration audit (clean) (2026-05-08)
 - **Audit clean — zero matches.** Recursive sweep across `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/` returned 0 `Shell.sh(` / `Shell.su(` / `FLAG_REDIRECT_STDERR` references.
 - The single `Shell.cmd(` call site in [`RemoteShellImpl.java:25`](app/src/main/java/io/github/muntashirakon/AppManager/ipc/RemoteShellImpl.java#L25) implements the 6.0.0 idiom; all other privileged shell invocations route through NG's `Runner.runCommand` abstraction on top of it.
