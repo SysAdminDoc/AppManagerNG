@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security — BouncyCastle 1.83 → 1.84 (CVE-2026-3505 / 5588 / 5598) (2026-05-08)
+- `bouncycastle_version` bumped 1.83 → 1.84 in [`versions.gradle:21`](versions.gradle); CVE list inlined as a trailing comment so the rationale lives at the dependency line.
+- Closes **CVE-2026-3505** (PGP AEAD chunk-size DoS — directly relevant since `libopenpgp` powers OpenPGP-encrypted backup archives), **CVE-2026-5588**, and **CVE-2026-5598** (FrodoKEM non-constant-time compare; pre-emptive against future ML-DSA / PQ adoption).
+- Audit at [`docs/audits/2026-05-08-bouncycastle-1-84-cve-bump.md`](docs/audits/2026-05-08-bouncycastle-1-84-cve-bump.md). Closes the iter-20 Now/Eng-Debt row; supersedes the long-standing low-urgency Engineering Debt Register entry that pinned 1.83.
+
 ### Docs — Sideloading Verification position document (2026-05-08)
 - New [`docs/sideload-verification.md`](docs/sideload-verification.md) explaining what AppManagerNG does and does not do regarding Google's [Android Developer Verification](https://developers.google.com/android/play-protect/developer-verification) program — preempts the user-confusion wave when the 2026-09-30 enforcement starts hitting BR/ID/SG/TH users on certified devices.
 - README "Install" section gains an `IMPORTANT` callout linking the document for users in the four enforcement regions.
