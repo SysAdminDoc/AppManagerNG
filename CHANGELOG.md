@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Backup-name dialog now autocompletes from prior backup names (2026-05-08)
+- The "Multiple backup" name dialog in [`BackupFragment.handleBackup()`](app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupFragment.java) is now backed by `TextInputDropdownDialogBuilder` instead of `TextInputDialogBuilder`. Users tagging a fresh backup get an autocomplete dropdown of every prior backup label across the apps in scope, so re-using the same tag as last time is one tap instead of a full retype.
+- New `collectExistingBackupNames()` walks `viewModel.getBackupInfoList()` → per-backup `BackupMetadataV5.metadata.backupName` and feeds the de-duplicated `LinkedHashSet` into `setDropdownItems(items, -1, true)` (filterable), so typing narrows the suggestion list as the user goes. Empty/null names are skipped.
+- Re-scoped from the iter-20 row's original wording: NG's multi-tag dao hasn't shipped yet, so the *applicable* user-facing surface today is the backup-name dialog. When the multi-tag dao lands, the same `setDropdownItems` adapter pattern can be reused for the tag-add dialog with zero code change. Reference: Neo-Backup 8.3.17 / [S135]. Closes the iter-20 Now/T8 row.
+
 ### Added — Per-OEM Debloat Risk Ribbon (Samsung One UI 8.5) (2026-05-08)
 - New [`OemBloatRiskTable`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/OemBloatRiskTable.java) helper resolves vendor-aware known-bad debloat warnings from a `(package, Build.MANUFACTURER, vendor-OS-version)` triple, where vendor-OS-version comes from the platform's vendor-specific system property (`ro.build.version.oneui` for Samsung One UI, `ro.mi.os.version.name` / `ro.miui.ui.version.code` for Xiaomi HyperOS / MIUI).
 - First entry: `com.samsung.android.smartsuggestions` on Samsung One UI 8.5 (`ro.build.version.oneui == 80500`) — UAD-NG #1394 documented Settings → Mobile-Networks crash-loop on Galaxy A57. The new warning string `oem_bloat_risk_samsung_smartsuggestions_oneui85` ships with localizable copy directing users to disable/freeze the package instead of removing it.

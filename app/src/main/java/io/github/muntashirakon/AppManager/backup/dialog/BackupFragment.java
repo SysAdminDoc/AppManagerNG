@@ -21,13 +21,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
-import io.github.muntashirakon.dialog.TextInputDialogBuilder;
+import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
 import io.github.muntashirakon.widget.MaterialAlertView;
 
 public class BackupFragment extends Fragment {
@@ -105,10 +110,17 @@ public class BackupFragment extends Fragment {
             // Multiple backup is requested, no need to warn users about backups since the
             // user has a choice between overwriting the existing backup or create a new one
             // TODO(18/9/20): Add overwrite option
-            new TextInputDialogBuilder(mContext, R.string.input_backup_name)
+            // Suggest previously-used backup names (Neo-Backup-style) so users can
+            // tag a fresh backup with the same label as last time without retyping.
+            List<String> existingNames = collectExistingBackupNames();
+            TextInputDropdownDialogBuilder dialog = new TextInputDropdownDialogBuilder(requireActivity(),
+                    R.string.input_backup_name)
                     .setTitle(R.string.backup)
-                    .setHelperText(R.string.input_backup_name_description)
-                    .setPositiveButton(R.string.ok, (dialog, which, input, isChecked) -> {
+                    .setHelperText(R.string.input_backup_name_description);
+            if (!existingNames.isEmpty()) {
+                dialog.setDropdownItems(existingNames, -1, true);
+            }
+            dialog.setPositiveButton(R.string.ok, (d, which, input, isChecked) -> {
                         String backupName;
                         if (TextUtils.isEmpty(input)) {
                             backupName = DateUtils.formatMediumDateTime(mContext, System.currentTimeMillis());
@@ -152,6 +164,27 @@ public class BackupFragment extends Fragment {
         summaryBody.setText((selectedFlags & BackupFlags.BACKUP_MULTIPLE) != 0
                 ? R.string.backup_dialog_summary_named
                 : R.string.backup_dialog_summary_base);
+    }
+
+    /**
+     * Walk every {@link BackupInfo} in scope and harvest the distinct
+     * non-empty {@code backupName} fields from prior backups so the
+     * "Multiple backup" name dialog can autocomplete from them. Order is
+     * insertion-stable (LinkedHashSet) so the dropdown matches the list
+     * the user already sees in Backup → Restore.
+     */
+    @NonNull
+    private List<String> collectExistingBackupNames() {
+        Set<String> names = new LinkedHashSet<>();
+        for (BackupInfo backupInfo : mViewModel.getBackupInfoList()) {
+            for (BackupMetadataV5 metadata : backupInfo.getBackupMetadataList()) {
+                String name = metadata.metadata == null ? null : metadata.metadata.backupName;
+                if (name != null && !name.isEmpty()) {
+                    names.add(name);
+                }
+            }
+        }
+        return names.isEmpty() ? Collections.emptyList() : new ArrayList<>(names);
     }
 
     @NonNull
