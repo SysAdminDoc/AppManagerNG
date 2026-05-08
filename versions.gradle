@@ -18,7 +18,7 @@ ext {
     arsclib_version = "66051037ef" // https://github.com/MuntashirAkon/ARSCLib
     baksmali_version = "3.0.9" // https://github.com/google/smali/tags
     biometric_version = "1.4.0-alpha04" // API 21-22 support dropped in 1.4.0-alpha05
-    bouncycastle_version = "1.83" // https://www.bouncycastle.org/download/bouncy-castle-java
+    bouncycastle_version = "1.84" // https://www.bouncycastle.org/download/bouncy-castle-java — CVE-2026-3505 (PGP AEAD chunk-size DoS), CVE-2026-5588, CVE-2026-5598 (FrodoKEM non-constant-time compare)
     desugar_jdk_version = "2.1.5" // https://github.com/google/desugar_jdk_libs
     documentfile_version = "1.1.0" // AppCompat still includes the buggy implementation of documentfile library (1.0.0)
     duration_picker = "c3c89adf3d" // https://github.com/MuntashirAkon/time-duration-picker
