@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — AppOps row-tap cycles ALLOWED → IGNORED → ERRORED (2026-05-08)
+- Row-tap on an AppOps entry in App Details (`AppDetailsPermissionsFragment`) now cycles **ALLOWED → IGNORED → ERRORED → ALLOWED** instead of binary toggling between ALLOWED and a derived deny.
+- The IGNORE (`MODE_IGNORED`) state silently no-ops the op without throwing `SecurityException`, matching platform behavior. It's the correct option for ops that misbehaving apps would otherwise crash on if DENY (`MODE_ERRORED`) is set — Inure build106.5.0 model.
+- A short Toast names the new mode after each tap (`AppOpsManagerCompat.modeToName(mode)`); long-press still opens the full single-choice mode picker (FOREGROUND/DEFAULT/etc.) for advanced users.
+- New `nextAppOpModeInCycle()` helper in [`AppDetailsPermissionsFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsPermissionsFragment.java). Reference: [S131]. Closes the iter-20 Now/T9 row.
+
 ### Added — Sui (Magisk-module Shizuku) detection in onboarding (2026-05-08)
 - New `checkSuiViaShell()` probe in [`runner/RootManagerInfo`](app/src/main/java/io/github/muntashirakon/AppManager/runner/RootManagerInfo.java) reads `/data/adb/modules/sui/` whenever the privileged shell already returned a non-NONE root manager (Magisk / KernelSU / APatch). New `RootManagerInfo.suiPresent` boolean carries the result through to consumers.
 - [`OnboardingFragment.buildRootManagerSuffix()`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) appends a " + Sui" suffix on the Root status line alongside the existing ZygiskNext suffix; combined cases render as e.g. "Detected · Magisk + Sui" or "Detected · KernelSU + Sui + ZygiskNext".
