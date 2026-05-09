@@ -3,4 +3,4 @@
 	url = https://github.com/MuntashirAkon/android-libraries.git
 [submodule "scripts/android-debloat-list"]
 	path = scripts/android-debloat-list
-	url = https://github.com/MuntashirAkon/android-debloat-list.git
+	url = https://github.com/SysAdminDoc/android-debloat-list.git
