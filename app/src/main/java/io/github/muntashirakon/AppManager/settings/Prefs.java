@@ -16,6 +16,8 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StyleRes;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.util.Pair;
 
 import org.json.JSONException;
@@ -43,6 +45,7 @@ import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
+import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -114,6 +117,13 @@ public final class Prefs {
 
         public static void setLanguage(@NonNull String language) {
             AppPref.set(AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR, language);
+            // Mirror the in-app language preference into AppCompatDelegate so the OS-side per-app
+            // locale (Settings → Apps → AppManagerNG → Language on API 33+, SharedPreferences-backed
+            // back-port on API 26-32) stays in sync. ROADMAP iter-22 [S269] — Per-App Locale Picker.
+            LocaleListCompat localeList = LangUtils.LANG_AUTO.equals(language)
+                    ? LocaleListCompat.getEmptyLocaleList()
+                    : LocaleListCompat.forLanguageTags(language);
+            AppCompatDelegate.setApplicationLocales(localeList);
         }
 
         public static int getLayoutDirection() {
