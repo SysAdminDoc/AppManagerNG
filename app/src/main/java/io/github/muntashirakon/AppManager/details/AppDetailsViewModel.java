@@ -1413,23 +1413,34 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @SuppressLint("SwitchIntDef")
     @WorkerThread
     private void sortComponents(List<AppDetailsItem<ComponentInfo>> appDetailsItems) {
-        // First sort by name
-        Collections.sort(appDetailsItems, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
-        if (mSortOrderComponents == AppDetailsFragment.SORT_BY_NAME) return;
         Collections.sort(appDetailsItems, (o1, o2) -> {
+            AppDetailsComponentItem component1 = (AppDetailsComponentItem) o1;
+            AppDetailsComponentItem component2 = (AppDetailsComponentItem) o2;
+            // Tracker components should never be buried inside long component lists.
+            int trackerCompare = -Boolean.compare(component1.isTracker(), component2.isTracker());
+            if (trackerCompare != 0) return trackerCompare;
             switch (mSortOrderComponents) {
-                // No need to sort by name since we've already done it
                 case AppDetailsFragment.SORT_BY_BLOCKED:
-                    return -Boolean.compare(
-                            ((AppDetailsComponentItem) o1).isBlocked(),
-                            ((AppDetailsComponentItem) o2).isBlocked());
+                    int blockedCompare = -Boolean.compare(component1.isBlocked(), component2.isBlocked());
+                    if (blockedCompare != 0) return blockedCompare;
+                    break;
                 case AppDetailsFragment.SORT_BY_TRACKERS:
-                    return -Boolean.compare(
-                            ((AppDetailsComponentItem) o1).isTracker(),
-                            ((AppDetailsComponentItem) o2).isTracker());
+                    int trackerLabelCompare = compareTrackerLabel(component1, component2);
+                    if (trackerLabelCompare != 0) return trackerLabelCompare;
+                    break;
             }
-            return 0;
+            return o1.name.compareToIgnoreCase(o2.name);
         });
+    }
+
+    private static int compareTrackerLabel(@NonNull AppDetailsComponentItem component1,
+                                           @NonNull AppDetailsComponentItem component2) {
+        String trackerLabel1 = component1.getTrackerLabel();
+        String trackerLabel2 = component2.getTrackerLabel();
+        if (trackerLabel1 == null && trackerLabel2 == null) return 0;
+        if (trackerLabel1 == null) return 1;
+        if (trackerLabel2 == null) return -1;
+        return trackerLabel1.compareToIgnoreCase(trackerLabel2);
     }
 
     public boolean isComponentDisabled(@NonNull ComponentInfo componentInfo) {

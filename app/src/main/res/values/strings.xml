@@ -495,7 +495,7 @@
     <string name="sort_by_dangerous_permissions">Dangerous first</string>
     <string name="sort_by_denied_permissions">Denied first</string>
     <string name="deny_dangerous_permissions">Deny dangerous permissions</string>
-    <string name="sort_by_tracker_components">Trackers first</string>
+    <string name="sort_by_tracker_components">Tracker label</string>
     <string name="unknown_op">Unknown operation</string>
     <plurals name="alert_failed_to_disable_trackers">
         <item quantity="one">Could not disable trackers from %1$d app</item>
@@ -1115,8 +1115,8 @@
     <string name="app_details_component_guide">Component guide</string>
     <string name="app_details_component_guide_tooltip">Explain component blocking controls</string>
     <string name="app_details_component_guide_title">How component blocking works</string>
-    <string name="app_details_component_guide_message">Use the switch to allow or block one component. Tracker chips mark known ad, analytics, or tracking SDKs.\n\nChanges apply immediately. Long-press a switch to choose the blocking method. Use the menu to review trackers, sort this tab, or apply older saved rules.</string>
-    <string name="app_details_component_guide_read_only_message">This tab is currently read-only because AppManagerNG cannot modify component states for this source or access mode.\n\nYou can still inspect component names, tracker chips, permissions, process names, and sort the list.</string>
+    <string name="app_details_component_guide_message">Use the switch to allow or block one component. Tracker chips mark known ad, analytics, or tracking SDKs, and tracker rows stay at the top of every component sort.\n\nChanges apply immediately. Long-press a switch to choose the blocking method. Use the menu to review trackers, sort this tab, or apply older saved rules.</string>
+    <string name="app_details_component_guide_read_only_message">This tab is currently read-only because AppManagerNG cannot modify component states for this source or access mode.\n\nYou can still inspect component names, tracker chips, permissions, process names, and sort the list. Tracker rows stay grouped at the top.</string>
     <string name="has_net_policy">Net policy</string>
     <string name="net_policy">Net policy</string>
     <string name="initializing">Initializing…</string>
