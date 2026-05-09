@@ -26,6 +26,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.app.PublicTwilightManager;
 import androidx.collection.ArrayMap;
 import androidx.core.app.ActivityCompat;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.view.WindowCompat;
 
 import com.google.android.material.color.DynamicColors;
@@ -103,9 +104,58 @@ public final class AppearanceUtils {
     public static void init(@NonNull Application application) {
         application.registerActivityLifecycleCallbacks(new ActivityAppearanceCallback());
         application.registerComponentCallbacks(new ComponentAppearanceCallback(application));
+        // Reconcile the in-app `Prefs.Appearance.getLanguage()` source-of-truth with the OS-side
+        // per-app locale (`AppCompatDelegate.getApplicationLocales()`) before applying any locale
+        // override. Two drift cases this resolves:
+        //   1. User changed locale via Settings → Apps → AppManagerNG → Language on API 33+.
+        //      AppCompatDelegate reflects the OS choice; Prefs is stale.
+        //   2. User changed locale via the in-app picker on a pre-`AppLocalesMetadataHolderService`
+        //      build of NG. Prefs has the chosen tag; AppCompatDelegate is still empty.
+        // Without this reconciliation `applyOnlyLocale()` would override the OS choice with the
+        // stale Prefs value (case 1), or the in-app picker would silently fail to surface in
+        // system Settings (case 2).
+        reconcileLocalePreference();
         applyOnlyLocale(application);
         if (Prefs.Appearance.useSystemFont()) {
             TypefaceUtil.replaceFontsWithSystem(application);
+        }
+    }
+
+    /**
+     * Bidirectional sync between the in-app language preference (`Prefs.Appearance.getLanguage()`)
+     * and the OS-side per-app locale (`AppCompatDelegate.getApplicationLocales()`).
+     *
+     * <p>OS-side wins when non-empty (the user just used the OS surface and is the most recent
+     * authority). Prefs wins when AppCompatDelegate is empty but Prefs has a non-AUTO value
+     * (back-fills the OS surface from the existing in-app preference).
+     */
+    private static void reconcileLocalePreference() {
+        try {
+            LocaleListCompat osLocales = AppCompatDelegate.getApplicationLocales();
+            String prefLang = Prefs.Appearance.getLanguage();
+            if (!osLocales.isEmpty()) {
+                String osTag = osLocales.toLanguageTags();
+                if (!osTag.equalsIgnoreCase(prefLang) && !LangUtils.LANG_AUTO.equals(prefLang)) {
+                    // OS-side authoritative: persist into Prefs without triggering the
+                    // setLanguage()→setApplicationLocales() round-trip that would overwrite
+                    // the OS value.
+                    io.github.muntashirakon.AppManager.utils.AppPref.set(
+                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR, osTag);
+                } else if (LangUtils.LANG_AUTO.equals(prefLang)) {
+                    // OS picked a locale but our Prefs is "auto" — sync forward so subsequent
+                    // in-app reads agree with the active locale.
+                    io.github.muntashirakon.AppManager.utils.AppPref.set(
+                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR, osTag);
+                }
+            } else if (!LangUtils.LANG_AUTO.equals(prefLang)) {
+                // Prefs has a non-AUTO value, OS-side is empty (e.g. first launch after the
+                // iter-22 wiring landed). Push the in-app preference into AppCompatDelegate so
+                // the OS-side per-app locale picker reflects reality.
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(prefLang));
+            }
+        } catch (Throwable th) {
+            // Locale reconciliation is a best-effort polish step — never let it kill app startup.
+            android.util.Log.w(TAG, "Locale reconciliation failed; continuing with Prefs as truth.", th);
         }
     }
 
