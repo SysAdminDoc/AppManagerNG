@@ -48,28 +48,54 @@ jobs:
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "status=$status"
+          # Defensive: validate `actual` is a single-line owner/name slug before writing it to
+          # GITHUB_OUTPUT. Even though the GitHub API's `full_name` field is constrained to a
+          # safe character set, a future API change or a redirect leak could otherwise let
+          # newlines / control chars contaminate the output and slip into downstream contexts.
           if [ "$status" != "200" ]; then
             echo "::error::GitHub API returned HTTP $status for $EXPECTED_SLUG"
-            echo "drift=true" >> $GITHUB_OUTPUT
-            echo "actual=unreachable (HTTP $status)" >> $GITHUB_OUTPUT
+            {
+              echo "drift=true"
+              echo "actual=unreachable_http_$status"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           actual=$(echo "$body" | jq -r '.full_name')
-          echo "Canonical full_name from GitHub: $actual"
-          echo "actual=$actual" >> $GITHUB_OUTPUT
-          if [ "$actual" != "$EXPECTED_SLUG" ]; then
-            echo "drift=true" >> $GITHUB_OUTPUT
-          else
-            echo "drift=false" >> $GITHUB_OUTPUT
+          # Strict slug validation: owner/name with only alphanumerics, dashes, underscores, and a
+          # single forward slash. Anything outside that pattern is treated as drift-with-unknown.
+          if ! printf '%s' "$actual" | grep -Eq '^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$'; then
+            echo "::error::GitHub API returned a malformed full_name: $(printf '%s' "$actual" | head -c 80)"
+            {
+              echo "drift=true"
+              echo "actual=malformed_response"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "Canonical full_name from GitHub: $actual"
+          {
+            echo "actual=$actual"
+            if [ "$actual" != "$EXPECTED_SLUG" ]; then
+              echo "drift=true"
+            else
+              echo "drift=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
       - name: Open issue on drift
         if: steps.probe.outputs.drift == 'true'
         uses: actions/github-script@v7
+        env:
+          # Pass via env, not via `${{ ... }}` interpolation into the script body. Direct
+          # interpolation is a script-injection antipattern flagged by GitHub's own security
+          # documentation: a value containing `'`, `\\`, ``, or a newline could break out of
+          # the string literal and execute arbitrary JS in the runner context. The probe step
+          # validates the slug before writing it, but defending in depth here means the script
+          # is structurally safe even if the validation regex regresses.
+          ACTUAL_SLUG: ${{ steps.probe.outputs.actual }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const expected = process.env.EXPECTED_SLUG;
-            const actual = '${{ steps.probe.outputs.actual }}';
+            const actual = process.env.ACTUAL_SLUG;
             const title = `Upstream slug drift: ${expected} → ${actual}`;
             // Idempotency: if an open issue already exists with this exact title, don't dupe.
             const existing = await github.rest.issues.listForRepo({

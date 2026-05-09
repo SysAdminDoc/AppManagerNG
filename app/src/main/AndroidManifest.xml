@@ -518,7 +518,22 @@
                 <data
                     android:host="details"
                     android:scheme="app-manager" />
-                <!-- Short alias: am://app/<pkg>?user=<uid> — ROADMAP iter-22 T8 [S246] -->
+            </intent-filter>
+            <!--
+                Short alias: am://app/<pkg>?user=<uid> — ROADMAP iter-22 T8 [S246].
+                Kept in its own intent-filter block (rather than co-located with the canonical
+                app-manager://details filter above) so the OS resolver only routes URIs that
+                match this exact (scheme, host) pair to us. SelfUriManager.getUserPackagePairFromUri()
+                already enforces the strict pairing in code; the split-filter is defense-in-depth
+                against a future regression in that parser or against any platform behaviour that
+                merges `<data>` elements within a single filter into an OR-of-attributes match.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="app"
                     android:scheme="am" />
