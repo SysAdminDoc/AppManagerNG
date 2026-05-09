@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — `am://app/<pkg>` short-alias deep link + intent-API documentation (2026-05-09)
+- New `am://app/<pkg>?user=<uid>` URI scheme as a short alias for the canonical `app-manager://details?id=<pkg>&user=<uid>`. Parses through the existing [`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java) — both schemes share the code path so consumers downstream don't change.
+- Intent-filter `<data android:host="app" android:scheme="am"/>` added to the existing `details.AppInfoActivity` activity-alias in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Mirrors `hail://`'s shape.
+- New [`docs/intent-api.md`](docs/intent-api.md) documents the full URI / broadcast-intent surface: shipped App Info alias, reserved-but-not-yet-wired shapes (`am://freeze/<pkg>`, `am://profile/<id>/run`, `am://install?source=<url>`), and the roadmapped `com.sysadmindoc.appmanagerng.action.*` broadcast schema (signature-permission-gated). Tasker / MacroDroid integration notes spelled out.
+- The freeze / profile / install shapes are deliberately not wired yet — they need the broadcast-intent automation surface (iter-22 T8 [S247]) for the authorization model. Reserved here so a future implementation doesn't churn the schema.
+- Closes ROADMAP iter-22 T8 row "`am://` URI Scheme — Concrete Schema" (Effort 1/5, [S246]) for the App Info alias slice; remaining shapes carried forward.
+
 ### Added — Static launcher shortcuts for power-user entry points (2026-05-09)
 - Long-pressing the AppManagerNG icon on the launcher now surfaces three core entry points: **1-Click Ops** (batch operations), **Running Apps** (process inspector), and **Finder** (cross-app search). Shortcuts shipped at [`app/src/main/res/xml/shortcuts.xml`](app/src/main/res/xml/shortcuts.xml) and registered on `SplashActivity` via `<meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>`.
 - `FinderActivity` and `OneClickOpsActivity` flipped to `exported="true"` in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so the launcher can dispatch the shortcut intents. `RunningAppsActivity` was already exported.

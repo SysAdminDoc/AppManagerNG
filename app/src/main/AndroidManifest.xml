@@ -498,6 +498,10 @@
                 <data
                     android:host="details"
                     android:scheme="app-manager" />
+                <!-- Short alias: am://app/<pkg>?user=<uid> — ROADMAP iter-22 T8 [S246] -->
+                <data
+                    android:host="app"
+                    android:scheme="am" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
