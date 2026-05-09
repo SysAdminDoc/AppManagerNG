@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — CI Dependency CVE Scan (PR review + weekly OWASP) (2026-05-09)
+- New [`.github/workflows/dependency-scan.yml`](.github/workflows/dependency-scan.yml) ships two layers:
+    - **PR Dependency Review** (`actions/dependency-review-action@v4`) on every pull request: fails the PR on HIGH/CRITICAL CVEs introduced by a dependency change. Also denies CC-BY-NC* / CC-BY-ND* / AGPL-1.0 license bumps up-front (GPL-3.0-or-later redistribution compatibility — see ROADMAP iter-19 DDG Tracker Radar reject [S69]).
+    - **Weekly OWASP Dependency Check** (Sunday 04:13 UTC, staggered off the existing CodeQL Thursday 14:43 cadence) plus `workflow_dispatch`: runs `./gradlew dependencyCheckAggregate` and uploads HTML + SARIF reports as artifacts (30-day retention). Catches CVEs disclosed *after* a dependency landed.
+- `org.owasp:dependency-check-gradle:13.1.1` plugin wired into [`build.gradle`](build.gradle) at the root; `dependency_check_version = '13.1.1'` declared in [`versions.gradle`](versions.gradle).
+- Local runs default to `failBuildOnCVSS = 11.0` (effectively never fail) so the report is purely informational on developer machines; CI uses `continue-on-error: true` and surfaces the report as an artifact rather than killing the weekly cadence on a single new CVE. NVD API rate limit honored via optional `NVD_API_KEY` secret with anonymous fallback.
+- Suppression file path is wired but optional (`config/owasp-suppressions.xml`) — populate on first weekly audit to silence vendored-AAR false positives without losing the failing-on-real-CVE behavior.
+- Closes ROADMAP iter-22 row "CI Dependency CVE Scan" — T4 Now (Effort 2/5). Reference: [S274].
+
 ### Added — `am://app/<pkg>` short-alias deep link + intent-API documentation (2026-05-09)
 - New `am://app/<pkg>?user=<uid>` URI scheme as a short alias for the canonical `app-manager://details?id=<pkg>&user=<uid>`. Parses through the existing [`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java) — both schemes share the code path so consumers downstream don't change.
 - Intent-filter `<data android:host="app" android:scheme="am"/>` added to the existing `details.AppInfoActivity` activity-alias in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Mirrors `hail://`'s shape.
