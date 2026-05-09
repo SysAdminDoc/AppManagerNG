@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Predictive-Back WebView Freeze (Obtainium #2911) audit (clean) (2026-05-09)
+- **Audit clean — no remediation required.** The iter-20 roadmap row's premise that NG ships WebView surfaces in `RulesActivity` and an APK-info preview pane is stale; neither activity exists in NG. Component Rules surfaces are `RulesFragment` RecyclerView UIs, not WebView.
+- The single WebView surface in NG is [`HelpActivity`](app/src/main/java/io/github/muntashirakon/AppManager/misc/HelpActivity.java) and it already uses the correct predictive-back propagation pattern: `android:enableOnBackInvokedCallback="true"` declared in the manifest, `OnBackPressedCallback` registered via `getOnBackPressedDispatcher().addCallback(...)`, and the WebView's `canGoBack()` state tracked on `doUpdateVisitedHistory()` so predictive-back animation only previews when there's a back-stack entry.
+- The Obtainium #2911 regression class only affects activities that bypass the dispatcher or register a raw `OnBackInvokedCallback` without integrating with the WebView's back-stack — neither pattern is present in NG.
+- Audit at [`docs/audits/2026-05-09-predictive-back-webview.md`](docs/audits/2026-05-09-predictive-back-webview.md). Establishes the canonical pattern for any future WebView-hosting activity (in-app changelog viewer planned for v0.5.0, JADX decompile pane in T12). Reference: [S200].
+
 ### Added — Upstream repo-rename watcher CI workflow (2026-05-09)
 - New [`.github/workflows/upstream-rename-watch.yml`](.github/workflows/upstream-rename-watch.yml) hits the GitHub API on a weekly cadence (Wednesday 09:27 UTC, staggered off CodeQL Thursday 14:43 + dependency-scan Sunday 04:13) plus `workflow_dispatch`. Asserts that `MuntashirAkon/AppManager` still resolves to the same `full_name`; on drift, auto-opens an `upstream-sync`/`eng-debt`-labelled issue containing a 7-step rename audit checklist (workflow `EXPECTED_SLUG`, README baseline + Credits, ROADMAP baseline + research-source citations, CLAUDE.md Origin section, CHANGELOG historical refs, submodule URLs, Obtainium config, Sphinx docs).
 - Idempotent — never opens a duplicate issue for the same drift in a single window. Uses unauthenticated GitHub API (full-name lookup needs no auth) so it does not consume `GITHUB_TOKEN` rate limits for the third-party probe; `GITHUB_TOKEN` is used only for the issue creation.
