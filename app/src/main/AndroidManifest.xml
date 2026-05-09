@@ -1429,6 +1429,23 @@
             android:exported="false"
             android:grantUriPermissions="true" />
 
+        <!--
+            AppLocalesMetadataHolderService — back-ports per-app locale storage to API 26-32.
+            On API 33+ the platform reads `android:localeConfig` directly and the OS surfaces
+            Settings → Apps → AppManagerNG → Language. Below API 33, AppCompatDelegate falls back
+            to this service's `autoStoreLocales` meta-data + SharedPreferences round-trip so that
+            `AppCompatDelegate.setApplicationLocales(...)` survives process death.
+            ROADMAP iter-22 [S269] — Per-App Locale Picker.
+        -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
         <meta-data
             android:name="android.permission.INTERNET.mode"
             android:value="runtime" />

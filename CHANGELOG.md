@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Per-app locale picker now syncs with OS Settings (2026-05-09)
+- The in-app **Settings → Appearance → Language** picker now mirrors its selection to `AppCompatDelegate.setApplicationLocales(...)` after persisting the in-app preference. On Android 13+ (API 33+) AppManagerNG appears under **Settings → Apps → AppManagerNG → Language** and the OS-side picker stays in sync with the in-app picker bidirectionally.
+- New `AppLocalesMetadataHolderService` registration in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) (with `autoStoreLocales=true`, `enabled=false`) provides the SharedPreferences-backed back-port so per-app locale selection survives process death on API 26-32 devices via androidx.appcompat 1.7.1.
+- The `LANG_AUTO` setting maps to `LocaleListCompat.getEmptyLocaleList()` so "Auto" tracks the system locale through the platform mechanism instead of the legacy NG-only override pipeline.
+- Existing `AppearanceUtils.applyConfigurationChangesToActivities()` activity-recreate path is unchanged — in-app re-render after a language change is still immediate.
+- Closes ROADMAP iter-22 row "Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales`)" — T10 Now (Effort 1/5). Reference: [S269].
+
 ## v0.4.1 — 2026-05-08
 
 Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/iter-20 ROADMAP drains plus one CONFIRMED audit finding flagged for design (GCM cipher reuse). All changes ship as user-visible polish + compliance + diagnostics; no breaking format changes. The GCM cipher-reuse bug in `AESCrypto.handleFiles()` is documented but **not yet fixed** — multi-file AES-encrypted backups produced by v0.4.0 and v0.4.1 cannot be trusted to restore. OpenPGP / RSA / ECC backup modes are unaffected; single-file AES backups are unaffected. See the audit at `docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md` for remediation options. The next release will pick a fix path and ship it behind a backup metadata version flag.
