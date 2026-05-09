@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Static launcher shortcuts for power-user entry points (2026-05-09)
+- Long-pressing the AppManagerNG icon on the launcher now surfaces three core entry points: **1-Click Ops** (batch operations), **Running Apps** (process inspector), and **Finder** (cross-app search). Shortcuts shipped at [`app/src/main/res/xml/shortcuts.xml`](app/src/main/res/xml/shortcuts.xml) and registered on `SplashActivity` via `<meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>`.
+- `FinderActivity` and `OneClickOpsActivity` flipped to `exported="true"` in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so the launcher can dispatch the shortcut intents. `RunningAppsActivity` was already exported.
+- Pinned per-app shortcuts (Freeze / Force-Stop / Clear Cache) continue to flow through `ShortcutManagerCompat` in `CreateShortcutDialogFragment` and the existing FreezeUnfreeze service path; this commit is the static-launcher anchor the upcoming dynamic top-N pinned-app set will extend.
+- Closes ROADMAP T8 row "Launcher Shortcuts for AM Features" (Issue #660 [S32]). Iter-22 [S252] dynamic per-app shortcut work remains.
+
 ### Added — Per-app locale picker now syncs with OS Settings (2026-05-09)
 - The in-app **Settings → Appearance → Language** picker now mirrors its selection to `AppCompatDelegate.setApplicationLocales(...)` after persisting the in-app preference. On Android 13+ (API 33+) AppManagerNG appears under **Settings → Apps → AppManagerNG → Language** and the OS-side picker stays in sync with the in-app picker bidirectionally.
 - New `AppLocalesMetadataHolderService` registration in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) (with `autoStoreLocales=true`, `enabled=false`) provides the SharedPreferences-backed back-port so per-app locale selection survives process death on API 26-32 devices via androidx.appcompat 1.7.1.
