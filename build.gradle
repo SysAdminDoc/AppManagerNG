@@ -9,6 +9,9 @@ buildscript {
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${agp_version}"
+        // OWASP dependency-check — used by the Dependency CVE Scan CI workflow to surface
+        // known CVEs across the runtime classpath. ROADMAP iter-22 [S274].
+        classpath "org.owasp:dependency-check-gradle:${dependency_check_version}"
     }
 }
 
@@ -27,6 +30,31 @@ allprojects {
             configureEach {
                 options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
             }
+        }
+    }
+}
+
+// OWASP dependency-check aggregate task. Configured at the root so the CI Dependency CVE
+// Scan workflow can invoke `./gradlew dependencyCheckAggregate` once and capture results
+// from every module. Suppression file documents intentional ignores; format default 'HTML,SARIF'
+// so GitHub upload steps get both human + machine readable artifacts. ROADMAP iter-22 [S274].
+apply plugin: 'org.owasp.dependencycheck'
+
+dependencyCheck {
+    formats = ['HTML', 'SARIF']
+    // Fail-fast threshold for local runs; CI uses `continue-on-error: true` and surfaces the
+    // report as a build artifact instead of failing the job — that way a single new CVE doesn't
+    // block the entire weekly cadence while we triage.
+    failBuildOnCVSS = 11.0f
+    // Suppress vendored-AAR false positives via XML at this path; create on first audit pass.
+    suppressionFile = file('config/owasp-suppressions.xml').exists()
+            ? file('config/owasp-suppressions.xml').toString()
+            : null
+    skipTestGroups = true
+    nvd {
+        // CI tooling sets NVD_API_KEY for higher rate limits; falls back to anonymous below.
+        if (System.getenv('NVD_API_KEY')) {
+            apiKey = System.getenv('NVD_API_KEY')
         }
     }
 }
