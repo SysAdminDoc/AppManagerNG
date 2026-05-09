@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.shortcut;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -46,27 +47,43 @@ public class ShortcutDispatchActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent in = getIntent();
-        String action = in == null ? null : in.getAction();
-        Intent out;
-        if (ACTION_OPEN_ONE_CLICK_OPS.equals(action)) {
-            out = new Intent(this, OneClickOpsActivity.class);
-        } else if (ACTION_OPEN_FINDER.equals(action)) {
-            out = new Intent(this, FinderActivity.class);
-        } else {
-            // Unknown action — refuse to dispatch. Anything fired at this trampoline must
-            // declare one of the explicit ACTION_* constants above. Treating unknown actions
-            // as a no-op (instead of e.g. defaulting to MainActivity) keeps the surface tight
-            // against unintentional or malicious callers.
-            Log.w(TAG, "Refusing to dispatch unknown shortcut action: " + action);
+        try {
+            Intent in = getIntent();
+            String action = in == null ? null : in.getAction();
+            Intent out;
+            if (ACTION_OPEN_ONE_CLICK_OPS.equals(action)) {
+                out = new Intent(this, OneClickOpsActivity.class);
+            } else if (ACTION_OPEN_FINDER.equals(action)) {
+                out = new Intent(this, FinderActivity.class);
+            } else {
+                // Unknown action — refuse to dispatch. Anything fired at this trampoline must
+                // declare one of the explicit ACTION_* constants above. Treating unknown actions
+                // as a no-op (instead of e.g. defaulting to MainActivity) keeps the surface tight
+                // against unintentional or malicious callers. Log the *truncated* action so a
+                // hostile caller cannot pollute the device log with arbitrary-length entries.
+                String safeAction = action == null ? "<null>"
+                        : (action.length() > 80 ? action.substring(0, 80) + "…" : action);
+                Log.w(TAG, "Refusing to dispatch unknown shortcut action: " + safeAction);
+                return;
+            }
+            // FLAG_ACTIVITY_NEW_TASK so we can launch a regular task without sharing affinity
+            // with the (transparent / no-task) trampoline. CLEAR_TOP keeps a single instance of
+            // the target if the user re-fires the shortcut while it's already foregrounded.
+            out.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            try {
+                startActivity(out);
+            } catch (ActivityNotFoundException e) {
+                // Target component disabled (e.g. user disabled it via PackageManager) or
+                // removed by an upgrade migration that didn't update shortcuts.xml. Don't
+                // crash the trampoline; just no-op and let the user retry from MainActivity.
+                Log.w(TAG, "Shortcut target unavailable; trampoline finishing.", e);
+            }
+        } finally {
+            // Single exit point. The Theme.NoDisplay activity contract requires finish() to be
+            // called before returning from onCreate; the try/finally guarantees that even if
+            // something unexpected throws above we don't leave a phantom no-display task on
+            // the recents stack.
             finish();
-            return;
         }
-        // FLAG_ACTIVITY_NEW_TASK so we can launch a regular task without sharing affinity with
-        // the (transparent / no-task) trampoline. CLEAR_TOP keeps a single instance of the
-        // target if the user re-fires the shortcut while it's already foregrounded.
-        out.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(out);
-        finish();
     }
 }
