@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Dependency CVE scan — surfaces known vulnerabilities in transitive deps that AppManagerNG
+# inherits from its many vendored libraries (apksig-android, libadb-android, jadx-android,
+# ARSCLib, sora-editor, BouncyCastle, fo-dicom, etc.). Two independent layers:
+#
+#   1. dependency-review-action — runs on every PR; fails the PR if a HIGH/CRITICAL CVE is
+#      introduced by a dependency change. Catches regressions at review time.
+#   2. OWASP dependency-check (gradle plugin) — runs on a weekly schedule and on workflow_dispatch;
+#      produces a full HTML/SARIF report uploaded as artifact. Catches CVEs disclosed *after*
+#      the dependency landed.
+#
+# ROADMAP iter-22 [S274] — CI Dependency CVE Scan (T4 Now, Effort 2/5).
+name: "Dependency CVE Scan"
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Weekly Sunday 04:13 UTC — staggered off the existing CodeQL Thu 14:43 cadence.
+    - cron: '13 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pr-dependency-review:
+    name: PR Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Fail the PR on HIGH/CRITICAL severity. MEDIUM/LOW are surfaced as comment-only.
+          fail-on-severity: high
+          # GPL-3.0-or-later compatibility: deny incompatible licenses up-front so we never
+          # silently ingest a library we couldn't redistribute. List from the "Rejected"
+          # column in docs/dependency-policy.md (CC-BY-NC* in particular — see ROADMAP
+          # iter-19 DDG Tracker Radar row [S69]).
+          deny-licenses: AGPL-1.0, CC-BY-NC-1.0, CC-BY-NC-2.0, CC-BY-NC-2.5, CC-BY-NC-3.0, CC-BY-NC-4.0, CC-BY-NC-SA-1.0, CC-BY-NC-SA-2.0, CC-BY-NC-SA-2.5, CC-BY-NC-SA-3.0, CC-BY-NC-SA-4.0, CC-BY-ND-4.0, CC-BY-NC-ND-4.0
+          comment-summary-in-pr: on-failure
+
+  weekly-cve-audit:
+    name: Weekly OWASP Dependency Check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+      # OWASP dependency-check Gradle plugin runs against the configured runtimeClasspath
+      # configurations across all modules. The first run downloads the NVD CVE database
+      # (~700 MB); subsequent runs hit the GitHub Actions Gradle cache.
+      - name: Run OWASP Dependency Check
+        run: ./gradlew dependencyCheckAggregate --info
+        continue-on-error: true
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: build/reports/dependency-check-report.html
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-sarif
+          path: build/reports/dependency-check-report.sarif
+          if-no-files-found: warn
+          retention-days: 30
