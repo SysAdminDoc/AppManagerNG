@@ -250,17 +250,6 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <io.github.muntashirakon.widget.FlowLayout
-                android:id="@+id/tag_cloud"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
-                android:nextFocusUp="@id/version"
-                android:nextFocusDown="@id/horizontal_layout"
-                android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingTop="@dimen/padding_small"
-                tools:listItem="@layout/item_chip" />
-
             <io.github.muntashirakon.widget.NestedScrollableHost
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -276,8 +265,8 @@
                         android:id="@+id/horizontal_layout"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:nextFocusUp="@id/tag_cloud"
-                        android:nextFocusDown="@android:id/list"
+                        android:nextFocusUp="@id/version"
+                        android:nextFocusDown="@id/tag_cloud"
                         android:paddingHorizontal="@dimen/padding_medium"
                         android:paddingVertical="@dimen/padding_small"
                         tools:listItem="@layout/item_app_info_action" />
@@ -285,6 +274,17 @@
                 </HorizontalScrollView>
 
             </io.github.muntashirakon.widget.NestedScrollableHost>
+
+            <io.github.muntashirakon.widget.FlowLayout
+                android:id="@+id/tag_cloud"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:nextFocusUp="@id/horizontal_layout"
+                android:nextFocusDown="@android:id/list"
+                android:paddingHorizontal="@dimen/padding_medium"
+                android:paddingTop="@dimen/padding_small"
+                tools:listItem="@layout/item_chip" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@android:id/list"
