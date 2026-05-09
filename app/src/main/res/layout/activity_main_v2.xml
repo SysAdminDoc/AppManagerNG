@@ -58,9 +58,11 @@
             android:layout_height="wrap_content"
             android:clipToPadding="false"
             android:fillViewport="true"
+            android:fadingEdgeLength="@dimen/premium_space_16"
             android:paddingHorizontal="@dimen/premium_space_16"
             android:paddingTop="@dimen/premium_space_4"
             android:paddingBottom="@dimen/premium_space_8"
+            android:requiresFadingEdge="horizontal"
             android:scrollbars="none">
 
             <com.google.android.material.chip.ChipGroup
@@ -99,7 +101,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_user_apps" />
+                    android:contentDescription="@string/filter_user_apps"
+                    android:text="@string/user" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_system"
@@ -107,7 +110,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_system_apps" />
+                    android:contentDescription="@string/filter_system_apps"
+                    android:text="@string/system" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_frozen"
