@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-09 — Iter-22 Research Additions appended (operational layer: reliability/recoverability, migration, automation surface, form-factor expansion, i18n, observability+testing+CI, plugin ecosystem). 35 net-new rows + 56 new sources (S225–S280).
+**Last updated:** 2026-05-09 — Iter-22 incremental drain begins: T10 Per-App Locale Picker shipped (`AppCompatDelegate.setApplicationLocales` wiring + `AppLocalesMetadataHolderService` back-port).
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -623,7 +623,7 @@ Same-day phase-2 extension after iter-21. Where iter-21 covered datasets and mod
 |------|-------------|-------|------|
 | **Hosted Weblate Bridge (NewPipe / Tachiyomi Pattern)** | Bridge to upstream's `hosted.weblate.org/projects/app-manager/` as a separate `app-manager-ng` component sharing upstream's glossary + TM. Cost ~1 day setup, free hosting. Win: every locale upstream gains flows downstream, NG-specific strings (Pro mode, M3 dashboard labels) translate independently. Self-hosted Weblate is overkill at this scale; Crowdin OSS reintroduces a proprietary dep. Effort 2/5. Reference: [S266], [S267]. | T10 | **Now** |
 | **Pseudolocale Build Variants + RTL CI Pass** | Add `en_XA` (accented + bracketed text — catches truncation) and `en_XB` (RTL mirror of English — catches RTL layout breaks) build variants. CI runs `connectedCheck` against both, captures screenshots, posts a PR comment with diffs. Standard Android i18n hygiene. Effort 2/5. Reference: [S268]. | T10 | **Next** |
-| **Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales`)** | Android 13+ surfaces per-app locales in system Settings via `AppLocalesMetadataHolderService`; backports to API 26+ via androidx.appcompat 1.6+. Lets users override the system locale for AM-NG specifically (English-language UI on a Chinese-locale device, etc.). Effort 1/5. Reference: [S269]. | T10 | **Now** |
+| ~~**Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales`)**~~ ✅ 2026-05-09 | Wired the in-app language preference into the OS-side per-app locale: [`Prefs.Appearance.setLanguage()`](app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java) now calls `AppCompatDelegate.setApplicationLocales(LocaleListCompat)` after persisting the preference, and registers `androidx.appcompat.app.AppLocalesMetadataHolderService` (`autoStoreLocales=true`, `enabled=false`) in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) for API 26-32 SharedPreferences-backed back-port. `android:localeConfig="@xml/locales_config"` was already declared at the application level, so on API 33+ the OS surfaces AM-NG in **Settings → Apps → AppManagerNG → Language** out of the box; the new wiring keeps that surface in sync with the in-app picker bidirectionally. `LANG_AUTO` maps to `LocaleListCompat.getEmptyLocaleList()` so "Auto" tracks the system locale via the platform mechanism rather than NG's own override pipeline. The existing `AppearanceUtils.applyConfigurationChangesToActivities()` recreate path remains untouched and continues to drive immediate in-app re-render. Reference: [S269]. | T10 | **Now** |
 
 ### Observability + Testing + CI
 
