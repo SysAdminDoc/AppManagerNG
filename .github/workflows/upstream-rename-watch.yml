@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Upstream repo-rename watcher.
+#
+# AppManagerNG forks from MuntashirAkon/AppManager. The upstream-sync flow (manual cherry-picks +
+# CHANGELOG references + Obtainium config + research-source citations) all hard-codes that
+# slug. If upstream renames the repo (owner change, name change, or relocation to an
+# organization), our links silently break and we keep cherry-picking from a no-op redirect for
+# weeks before anyone notices.
+#
+# This workflow hits the GitHub API on a weekly cadence and asserts the canonical full_name still
+# resolves to MuntashirAkon/AppManager. If it doesn't, it opens an issue with the new full_name
+# so a maintainer can run the rename across the codebase in one pass.
+#
+# ROADMAP iter-18 [S121] — "Repo-Rename Detection for Upstream Pin" (Eng-Debt Next, Effort 1/5).
+name: "Upstream Rename Watch"
+
+on:
+  schedule:
+    # Weekly Wednesday 09:27 UTC — staggered off the existing CodeQL Thursday 14:43 cadence
+    # and the new Sunday 04:13 dependency-scan cadence.
+    - cron: '27 9 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    name: Resolve canonical upstream slug
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      EXPECTED_SLUG: MuntashirAkon/AppManager
+      # The git-clone URL from .gitmodules / docs / scripts. Updating EXPECTED_SLUG above is
+      # not enough on its own — the codebase has dozens of inline references that need a
+      # coordinated rename pass too. Issues opened by this workflow link the audit checklist.
+    steps:
+      - name: Probe canonical full_name via GitHub API
+        id: probe
+        run: |
+          set -euo pipefail
+          # Use the unauthenticated API — `${{ secrets.GITHUB_TOKEN }}` is per-repo and would
+          # gain us nothing for a third-party-repo lookup.
+          response=$(curl -sSL -w "\n%{http_code}" \
+            "https://api.github.com/repos/${EXPECTED_SLUG}")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "status=$status"
+          if [ "$status" != "200" ]; then
+            echo "::error::GitHub API returned HTTP $status for $EXPECTED_SLUG"
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "actual=unreachable (HTTP $status)" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          actual=$(echo "$body" | jq -r '.full_name')
+          echo "Canonical full_name from GitHub: $actual"
+          echo "actual=$actual" >> $GITHUB_OUTPUT
+          if [ "$actual" != "$EXPECTED_SLUG" ]; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+          else
+            echo "drift=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Open issue on drift
+        if: steps.probe.outputs.drift == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const expected = process.env.EXPECTED_SLUG;
+            const actual = '${{ steps.probe.outputs.actual }}';
+            const title = `Upstream slug drift: ${expected} → ${actual}`;
+            // Idempotency: if an open issue already exists with this exact title, don't dupe.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'upstream-sync',
+              per_page: 100
+            });
+            const dup = existing.data.find(i => i.title === title);
+            if (dup) {
+              core.info(`Existing issue #${dup.number} already tracking this drift — skipping.`);
+              return;
+            }
+            const body = [
+              `Upstream watcher detected a slug change.`,
+              ``,
+              `- **Expected**: \`${expected}\``,
+              `- **Actual (from GitHub API)**: \`${actual}\``,
+              ``,
+              `### Audit checklist`,
+              ``,
+              `- [ ] Update \`EXPECTED_SLUG\` in \`.github/workflows/upstream-rename-watch.yml\``,
+              `- [ ] Update upstream URL in \`README.md\` (Credits + baseline references)`,
+              `- [ ] Update \`ROADMAP.md\` baseline line + research-source citations`,
+              `- [ ] Update \`CLAUDE.md\` Origin section`,
+              `- [ ] Update \`CHANGELOG.md\` historical references where applicable`,
+              `- [ ] Re-run \`git submodule status\` — verify \`scripts/android-libraries\` and`,
+              `      \`scripts/android-debloat-list\` URLs are independent of this rename`,
+              `- [ ] Update Obtainium config at \`docs/distribution/obtainium-config.json\` if it`,
+              `      references the upstream slug for cross-link surfacing`,
+              `- [ ] Update Sphinx docs in \`docs/\` if applicable`,
+              ``,
+              `Triggered by ROADMAP iter-18 row "Repo-Rename Detection for Upstream Pin" [S121].`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['upstream-sync', 'eng-debt']
+            });
+            core.warning(`Opened issue: ${title}`);

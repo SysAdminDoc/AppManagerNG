@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Upstream repo-rename watcher CI workflow (2026-05-09)
+- New [`.github/workflows/upstream-rename-watch.yml`](.github/workflows/upstream-rename-watch.yml) hits the GitHub API on a weekly cadence (Wednesday 09:27 UTC, staggered off CodeQL Thursday 14:43 + dependency-scan Sunday 04:13) plus `workflow_dispatch`. Asserts that `MuntashirAkon/AppManager` still resolves to the same `full_name`; on drift, auto-opens an `upstream-sync`/`eng-debt`-labelled issue containing a 7-step rename audit checklist (workflow `EXPECTED_SLUG`, README baseline + Credits, ROADMAP baseline + research-source citations, CLAUDE.md Origin section, CHANGELOG historical refs, submodule URLs, Obtainium config, Sphinx docs).
+- Idempotent — never opens a duplicate issue for the same drift in a single window. Uses unauthenticated GitHub API (full-name lookup needs no auth) so it does not consume `GITHUB_TOKEN` rate limits for the third-party probe; `GITHUB_TOKEN` is used only for the issue creation.
+- Closes ROADMAP iter-18 row "Repo-Rename Detection for Upstream Pin" — Eng-Debt Next (Effort 1/5). Reference: [S121].
+
 ### Added — Pseudolocale resources on debug builds (2026-05-09)
 - `pseudoLocalesEnabled true` set on the `debug` build type in [`app/build.gradle`](app/build.gradle); release builds stay clean.
 - Debug AM-NG now ships `en-XA` (accented + bracketed pseudolocale that catches truncation and untranslatable string regressions) and `en-XB` (RTL mirror of English that catches mirroring/layout breakage). Activate via `adb shell setprop persist.sys.locale en-XA` or **Settings → Developer options → Pseudolocale** on Android 13+.
