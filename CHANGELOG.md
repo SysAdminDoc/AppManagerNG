@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security — Static-shortcut export regression closed; trampoline-based dispatch (2026-05-09)
+
+Hardening pass on the iter-22 static launcher shortcuts that landed earlier the same day. The original implementation flipped `OneClickOpsActivity` and `FinderActivity` to `android:exported="true"` so the launcher could resolve the shortcut intents. **`OneClickOpsActivity` accepts an `EXTRA_OP` intent extra that triggers a destructive batch operation (clear cache for all installed apps) without confirmation when set to `OP_CLEAR_CACHE` — this path is intended for the trusted in-process clear-cache home-screen widget (`ClearCacheAppWidget`), not for arbitrary callers.** Combined with the export, any installed app could fire the activity with the destructive extra after the user was process-authenticated, silently clearing the cache of every app on the device. **`FinderActivity` was reverted to `exported=false` for symmetry / minimum exposure.**
+
+Fix:
+
+- **`OneClickOpsActivity` and `FinderActivity` reverted to `android:exported="false"`** in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Verified post-fix: `am start -n io.github.sysadmindoc.AppManagerNG.debug/io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity --ei op 16` is rejected with `Permission Denial: ... not exported`.
+- **New trampoline activity** [`shortcut/ShortcutDispatchActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java) — the only exported component the launcher resolves to for shortcuts. Hard-whitelists two action constants (`OPEN_ONE_CLICK_OPS`, `OPEN_FINDER`), constructs a fresh `Intent` for the unexported target, and **does not forward intent extras**. Untrusted callers cannot smuggle in `EXTRA_OP` or any other destructive extra.
+- **`shortcuts.xml` updated** to target the trampoline via the explicit action constants instead of the underlying activities.
+- The widget / pinned-shortcut consent flow (`ClearCacheAppWidget` → `PendingIntent.getActivity(OneClickOpsActivity.class, EXTRA_OP=OP_CLEAR_CACHE)`) is unaffected — that path is in-process and the destructive extra is the user's explicit consent at widget tap time.
+- End-to-end verification on Samsung S25 Ultra (`SM-S938B`): trampoline dispatches `OPEN_FINDER` and `OPEN_ONE_CLICK_OPS` correctly; activity stack shows the unexported target as the foreground activity; passing `--ei op 16` to the trampoline action does not trigger the destructive shortcut path because `OneClickOpsActivity` opens with no extras.
+
+### Fixed — Per-app locale store-of-truth reconciliation at startup (2026-05-09)
+
+Companion fix to the iter-22 Per-App Locale Picker that landed earlier today. The original wiring made `Prefs.Appearance.setLanguage()` mirror to `AppCompatDelegate.setApplicationLocales()` so the OS-side per-app locale (Settings → Apps → AppManagerNG → Language on Android 13+) stays in sync when the user changes language **in-app**. It did not handle the inverse: when the user changes the language **in the OS surface**, `AppCompatDelegate` updated but `Prefs` was stale; `LangUtils.getFromPreference()` (the in-app source-of-truth read by `AppearanceUtils.applyOnlyLocale()` on every activity recreate) then overrode the OS choice with the stale Prefs value on the next configuration change.
+
+Fix: new [`AppearanceUtils.reconcileLocalePreference()`](app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java) runs on `Application.onCreate()` (via `AppearanceUtils.init()`) **before** any locale is applied:
+
+- If `AppCompatDelegate.getApplicationLocales()` is non-empty and disagrees with `Prefs.Appearance.getLanguage()` → persist the OS-side value into `Prefs` (OS is the most recent authority).
+- If `Prefs` has a non-`AUTO` value but `AppCompatDelegate` is empty (first launch after the iter-22 wiring landed, or a user with a long-standing in-app language preference) → push `Prefs` into `AppCompatDelegate` so the OS-side picker reflects reality.
+- Wrapped in `try/catch` so a binder failure during `LocaleManager` reconciliation can never kill app startup.
+
 ### Compliance — Predictive-Back WebView Freeze (Obtainium #2911) audit (clean) (2026-05-09)
 - **Audit clean — no remediation required.** The iter-20 roadmap row's premise that NG ships WebView surfaces in `RulesActivity` and an APK-info preview pane is stale; neither activity exists in NG. Component Rules surfaces are `RulesFragment` RecyclerView UIs, not WebView.
 - The single WebView surface in NG is [`HelpActivity`](app/src/main/java/io/github/muntashirakon/AppManager/misc/HelpActivity.java) and it already uses the correct predictive-back propagation pattern: `android:enableOnBackInvokedCallback="true"` declared in the manifest, `OnBackPressedCallback` registered via `getOnBackPressedDispatcher().addCallback(...)`, and the WebView's `canGoBack()` state tracked on `doUpdateVisitedHistory()` so predictive-back animation only previews when there's a back-stack entry.

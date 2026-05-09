@@ -2,11 +2,24 @@
 <!--
     Static launcher shortcuts surfaced when the user long-presses the AppManagerNG icon.
     ROADMAP iter-22 (Automation Surface) and iter-20 T8 "Launcher Shortcuts for AM Features"
-    [S252]. Three core power-user entry points: 1-Click Ops (batch operations), Running Apps
-    (currently running processes), and Finder (cross-app search). Pinned per-app shortcuts
-    (Freeze / Force-Stop / Clear Cache) are still wired through the in-app share sheet via
-    ShortcutManagerCompat in CreateShortcutDialogFragment; this file only carries the static
-    launcher anchor.
+    [S252].
+
+    All shortcut intents target ShortcutDispatchActivity (a thin exported trampoline) using
+    explicit action constants — *not* the underlying activities directly. This is intentional:
+
+    * Static shortcut intents fire from the launcher process, so the resolved component must be
+      exported. Several AM activities (notably OneClickOpsActivity) accept intent extras that
+      trigger destructive operations without confirmation in the home-screen-widget /
+      pinned-shortcut consent flow. Exporting those activities directly so the launcher can
+      dispatch shortcuts would also let any installed app fire those destructive extras after
+      the user is process-authenticated.
+    * The trampoline whitelists shortcut actions, never reads or forwards arbitrary extras,
+      and constructs a fresh Intent for the unexported target. This preserves both the
+      shortcut UX and the existing widget/pinned-shortcut consent model.
+
+    Pinned per-app shortcuts (Freeze / Force-Stop / Clear Cache) continue to flow through
+    ShortcutManagerCompat in CreateShortcutDialogFragment and the FreezeUnfreeze service path.
+    This file only carries the static launcher anchor.
 -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
@@ -16,8 +29,8 @@
         android:shortcutLongLabel="@string/shortcut_one_click_ops_long"
         android:shortcutShortLabel="@string/shortcut_one_click_ops_short">
         <intent
-            android:action="android.intent.action.VIEW"
-            android:targetClass="io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity"
+            android:action="io.github.muntashirakon.AppManager.shortcut.action.OPEN_ONE_CLICK_OPS"
+            android:targetClass="io.github.muntashirakon.AppManager.shortcut.ShortcutDispatchActivity"
             android:targetPackage="${applicationId}" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
@@ -42,8 +55,8 @@
         android:shortcutLongLabel="@string/shortcut_finder_long"
         android:shortcutShortLabel="@string/shortcut_finder_short">
         <intent
-            android:action="android.intent.action.VIEW"
-            android:targetClass="io.github.muntashirakon.AppManager.filters.FinderActivity"
+            android:action="io.github.muntashirakon.AppManager.shortcut.action.OPEN_FINDER"
+            android:targetClass="io.github.muntashirakon.AppManager.shortcut.ShortcutDispatchActivity"
             android:targetPackage="${applicationId}" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
