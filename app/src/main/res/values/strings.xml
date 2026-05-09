@@ -2332,4 +2332,11 @@
     <string name="perm_group_nearby_devices_summary">Apps that can scan, connect to, or advertise to Bluetooth and Wi-Fi devices.</string>
     <string name="perm_group_notifications">Notifications</string>
     <string name="perm_group_notifications_summary">Apps that can post notifications.</string>
+    <!-- Launcher app shortcuts (long-press the AppManagerNG icon). ROADMAP iter-22 / iter-20 T8 [S252]. -->
+    <string name="shortcut_one_click_ops_short">1-Click Ops</string>
+    <string name="shortcut_one_click_ops_long">Open 1-Click Ops</string>
+    <string name="shortcut_running_apps_short">Running</string>
+    <string name="shortcut_running_apps_long">Show running apps</string>
+    <string name="shortcut_finder_short">Finder</string>
+    <string name="shortcut_finder_long">Cross-app search</string>
 </resources>

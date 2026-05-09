@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Static launcher shortcuts surfaced when the user long-presses the AppManagerNG icon.
+    ROADMAP iter-22 (Automation Surface) and iter-20 T8 "Launcher Shortcuts for AM Features"
+    [S252]. Three core power-user entry points: 1-Click Ops (batch operations), Running Apps
+    (currently running processes), and Finder (cross-app search). Pinned per-app shortcuts
+    (Freeze / Force-Stop / Clear Cache) are still wired through the in-app share sheet via
+    ShortcutManagerCompat in CreateShortcutDialogFragment; this file only carries the static
+    launcher anchor.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_cursor_default_click"
+        android:shortcutId="one_click_ops"
+        android:shortcutLongLabel="@string/shortcut_one_click_ops_long"
+        android:shortcutShortLabel="@string/shortcut_one_click_ops_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity"
+            android:targetPackage="${applicationId}" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_run_fast"
+        android:shortcutId="running_apps"
+        android:shortcutLongLabel="@string/shortcut_running_apps_long"
+        android:shortcutShortLabel="@string/shortcut_running_apps_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.github.muntashirakon.AppManager.runningapps.RunningAppsActivity"
+            android:targetPackage="${applicationId}" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_find_and_replace"
+        android:shortcutId="finder"
+        android:shortcutLongLabel="@string/shortcut_finder_long"
+        android:shortcutShortLabel="@string/shortcut_finder_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.github.muntashirakon.AppManager.filters.FinderActivity"
+            android:targetPackage="${applicationId}" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-09 — Iter-22 incremental drain begins: T10 Per-App Locale Picker shipped (`AppCompatDelegate.setApplicationLocales` wiring + `AppLocalesMetadataHolderService` back-port).
+**Last updated:** 2026-05-09 — Iter-22 incremental drain: T10 Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales` wiring + `AppLocalesMetadataHolderService` back-port) + T8 Launcher Shortcuts for AM Features (static set: 1-Click Ops, Running Apps, Finder).
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -197,7 +197,7 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 |------|-------------|--------|
 | **Routine Operations / Scheduler** | Event-triggered profile execution: boot, custom interval, network available, charging, screen on/off, app foreground/background (full spec: Issue #61 [S03]) | High |
 | **Saved Filter Presets** | Persist named filter configurations that auto-include all user apps, allow excluding specific user apps, and manually include specific system apps (Issue #1718 [S38]). Distinct from Finder — these are persistent main-list presets. | Medium |
-| **Launcher Shortcuts for AM Features** | Configurable home screen shortcuts to up to 4 user-chosen AM functions (1-Click Ops, App Usage, Running Apps, Profiles, etc.). Android GSI Shortcuts API (Issue #660 [S32]). | Low |
+| ~~**Launcher Shortcuts for AM Features**~~ ✅ 2026-05-09 (static set) | Static launcher shortcuts shipped at [`app/src/main/res/xml/shortcuts.xml`](app/src/main/res/xml/shortcuts.xml) and wired onto `SplashActivity` via `<meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>`. Three core power-user entry points exposed on long-press of the AM icon: **1-Click Ops** (batch operations), **Running Apps** (process inspector), and **Finder** (cross-app search). `FinderActivity` and `OneClickOpsActivity` flipped to `exported="true"` so the launcher can dispatch the shortcut intents. Pinned per-app shortcuts (Freeze / Force-Stop / Clear Cache) remain wired through `ShortcutManagerCompat` in `CreateShortcutDialogFragment`; this commit is the static-launcher anchor that the upcoming dynamic top-N pinned-app set (iter-22 [S252]) will extend. Issue #660 [S32]. | Low |
 | **Profile State Conditions** | Profiles with conditions (execute only if battery > X%, only between hours Y–Z) | Medium |
 | **Schedule Result Notifications with Detail** | When a scheduled operation completes, include in the result notification *what was actually done*: e.g. "Backup complete: 47 apps, 2.3GB, 0 errors". Reference: SD Maid SE v1.7.x ([S112]) "Show what was cleaned in result notifications". Use `Notification.BigTextStyle` or Android 16+ `Notification.ProgressStyle` for finished work summary. | Low |
 | **Searchable Schedule Tags** | Allow tagging schedules and routine operations (e.g. "weekly", "pre-update", "test"); search/filter by tag in scheduler view. Reference: Neo Backup v8.3.17 ([S114]) "Existing tags suggestion in the adding dialog". Reduces clutter in heavy-user scheduler dashboards. | Low |
