@@ -74,6 +74,11 @@ android {
                 signingConfig signingConfigs.debug
             }
             resValue "string", "app_name", "AM-NG Debug"
+            // Generate pseudolocale resources (`en_XA` accented + bracketed, `en_XB` RTL mirror)
+            // so debug builds can be switched to a pseudolocale via `adb shell setprop persist.sys.locale en-XA`
+            // and surface i18n breakage (truncation, missing-translatable strings, RTL layout breaks)
+            // before real translations land. ROADMAP iter-22 T10 [S268]. Off on release builds.
+            pseudoLocalesEnabled true
         }
     }
     lint {

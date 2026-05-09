@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Pseudolocale resources on debug builds (2026-05-09)
+- `pseudoLocalesEnabled true` set on the `debug` build type in [`app/build.gradle`](app/build.gradle); release builds stay clean.
+- Debug AM-NG now ships `en-XA` (accented + bracketed pseudolocale that catches truncation and untranslatable string regressions) and `en-XB` (RTL mirror of English that catches mirroring/layout breakage). Activate via `adb shell setprop persist.sys.locale en-XA` or **Settings → Developer options → Pseudolocale** on Android 13+.
+- The CI screenshot-diff portion of the iter-22 T10 row stays open — it gates on the upcoming **Espresso + UI Automator Smoke Pack** providing the headless instrumentation pipe the screenshot capture needs.
+- Closes the build-side half of ROADMAP iter-22 T10 row "Pseudolocale Build Variants + RTL CI Pass" (Effort 2/5, [S268]).
+
 ### Added — CI Dependency CVE Scan (PR review + weekly OWASP) (2026-05-09)
 - New [`.github/workflows/dependency-scan.yml`](.github/workflows/dependency-scan.yml) ships two layers:
     - **PR Dependency Review** (`actions/dependency-review-action@v4`) on every pull request: fails the PR on HIGH/CRITICAL CVEs introduced by a dependency change. Also denies CC-BY-NC* / CC-BY-ND* / AGPL-1.0 license bumps up-front (GPL-3.0-or-later redistribution compatibility — see ROADMAP iter-19 DDG Tracker Radar reject [S69]).
