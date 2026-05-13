@@ -213,7 +213,8 @@ public class SplashActivity extends AppCompatActivity {
     private boolean initPermissionChecks() {
         List<String> permissionsToBeAsked = new ArrayList<>(ASKED_PERMISSIONS.size());
         for (String permission : ASKED_PERMISSIONS.keySet()) {
-            if (!SelfPermissions.checkSelfPermission(permission)) {
+            boolean required = Boolean.TRUE.equals(ASKED_PERMISSIONS.get(permission));
+            if (required && !SelfPermissions.checkSelfPermission(permission)) {
                 permissionsToBeAsked.add(permission);
             }
         }
