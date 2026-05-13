@@ -1770,6 +1770,8 @@
     <string name="filter_apps_with_saf">With SAF</string>
     <string name="filter_apps_with_ssaid">With SSAID</string>
     <string name="action_continue">Continue</string>
+    <string name="allow_notifications">Allow notifications</string>
+    <string name="not_now">Not now</string>
     <string name="install_for_another_user">Install for…</string>
     <string name="confirm_uninstallation">Confirm uninstallation</string>
     <string name="grant_required_permission">Grant required permission</string>
@@ -1974,6 +1976,8 @@
     <string name="status_connected_via_mode">Connected via %s</string>
     <string name="status_not_connected_via_mode">Could not connect via %s</string>
     <string name="adb_pairing_instruction">Please navigate to the developer options to enable wireless debugging and generate a pairing code. Click <b>Manual</b> if you\'ve already opened the developer options.</string>
+    <string name="adb_pairing_notification_permission_title">Allow pairing notifications?</string>
+    <string name="adb_pairing_notification_permission_message">Wireless pairing uses an ongoing notification to show status and enter the pairing code. Allow notifications so AppManagerNG can keep this pairing flow visible.</string>
     <string name="adb_pairing_searching_for_port">Searching…</string>
     <string name="adb_pairing_stop_searching">Stop</string>
     <string name="adb_pairing_input_pairing_code">Pairing code</string>

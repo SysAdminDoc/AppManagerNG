@@ -52,6 +52,7 @@ import io.github.muntashirakon.AppManager.users.Owners;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -548,26 +549,33 @@ public class Ops {
     @NoOps
     public static void pairAdbInput(@NonNull FragmentActivity activity,
                                     @NonNull AdbConnectionInterface callback) {
+        Runnable startPairing = () -> {
+            Intent adbPairingServiceIntent = new Intent(activity, AdbPairingService.class)
+                    .setAction(AdbPairingService.ACTION_START_PAIRING);
+            ContextCompat.startForegroundService(activity, adbPairingServiceIntent);
+            callback.pairAdb();
+        };
+        Runnable openDeveloperOptionsAndPair = () -> {
+            Intent developerOptionsIntent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.startActivity(developerOptionsIntent);
+            startPairing.run();
+        };
         new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.wireless_debugging)
                 .setMessage(R.string.adb_pairing_instruction)
                 .setCancelable(false)
-                .setNeutralButton(R.string.action_manual, (dialog, which) -> {
-                    Intent adbPairingServiceIntent = new Intent(activity, AdbPairingService.class)
-                            .setAction(AdbPairingService.ACTION_START_PAIRING);
-                    ContextCompat.startForegroundService(activity, adbPairingServiceIntent);
-                    callback.pairAdb();
-                })
+                .setNeutralButton(R.string.action_manual, (dialog, which) ->
+                        NotificationUtils.requestPostNotificationsForWorkflow(activity,
+                                R.string.adb_pairing_notification_permission_title,
+                                R.string.adb_pairing_notification_permission_message,
+                                startPairing))
                 .setNegativeButton(R.string.cancel, (dialog, which) -> callback.onStatusReceived(STATUS_FAILURE))
-                .setPositiveButton(R.string.go, (dialog, which) -> {
-                    Intent developerOptionsIntent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    Intent adbPairingServiceIntent = new Intent(activity, AdbPairingService.class)
-                            .setAction(AdbPairingService.ACTION_START_PAIRING);
-                    activity.startActivity(developerOptionsIntent);
-                    ContextCompat.startForegroundService(activity, adbPairingServiceIntent);
-                    callback.pairAdb();
-                })
+                .setPositiveButton(R.string.go, (dialog, which) ->
+                        NotificationUtils.requestPostNotificationsForWorkflow(activity,
+                                R.string.adb_pairing_notification_permission_title,
+                                R.string.adb_pairing_notification_permission_message,
+                                openDeveloperOptionsAndPair))
                 .show();
     }
 
