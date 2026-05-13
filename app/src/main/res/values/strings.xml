@@ -966,11 +966,14 @@
     <string name="source_stamp_verified">SourceStamp verified.</string>
     <string name="source_stamp_verified_and_identified_to_be_from_source">SourceStamp verified and identified to be from <xliff:g id="source" example="Google Play">%1$s</xliff:g>.</string>
     <string name="splits">Splits</string>
-    <string name="input_keystore_pass">Input KeyStore password</string>
-    <string name="input_keystore_pass_description">Enter the AppManagerNG KeyStore password. If you\'re seeing this for the first time, please use a password generator to generate a password and save it in a secure place before inserting it here.</string>
-    <string name="input_keystore_pass_msg">Tap here to enter KeyStore password</string>
+    <string name="input_keystore_pass">Recovery password</string>
+    <string name="input_keystore_pass_description">Enter the AppManagerNG recovery password you saved earlier. This unlocks encrypted backups and signing keys stored by AppManagerNG.</string>
+    <string name="input_keystore_pass_msg">Tap here to enter recovery password</string>
+    <string name="keystore_password_generated_title">Recovery password</string>
+    <string name="keystore_password_input_title">Unlock recovery password</string>
+    <string name="keystore_password_field_hint">Recovery password</string>
     <string name="input_keystore_alias_pass">Password for alias <b>%1$s</b></string>
-    <string name="input_keystore_alias_pass_description">Insert password for the alias <b>%1$s</b>. You can leave this empty if the password is the same as the KeyStore password.</string>
+    <string name="input_keystore_alias_pass_description">Insert password for the alias <b>%1$s</b>. You can leave this empty if the password matches the recovery password.</string>
     <string name="input_keystore_alias_pass_msg">Tap here to provide password for %1$s</string>
     <string name="no_app_ops_permission">No permission to display app ops</string>
     <string name="this_action_cannot_be_undone">This action cannot be undone.</string>
@@ -1340,8 +1343,8 @@
     <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for App Manager is a subfolder named <tt>AppManager</tt>.</string>
     <string name="storage">Storage</string>
     <string name="files">Files</string>
-    <string name="keystore_password_info">The following is the AppManagerNG KeyStore password. Please store it in a secure place if you\'re going to back up/restore AppManagerNG KeyStore. <b>This message will not be displayed again.</b></string>
-    <string name="keystore_pass_cannot_be_empty">KeyStore password cannot be empty.</string>
+    <string name="keystore_password_info">AppManagerNG generated this recovery password for encrypted backups and signing keys. Store it somewhere safe before continuing; AppManagerNG will not show it again.</string>
+    <string name="keystore_pass_cannot_be_empty">Recovery password cannot be empty.</string>
     <string name="invalid_password">Invalid password, try again.</string>
     <string name="adb_pair">Pair</string>
     <string name="paired_successfully">Paired.</string>
