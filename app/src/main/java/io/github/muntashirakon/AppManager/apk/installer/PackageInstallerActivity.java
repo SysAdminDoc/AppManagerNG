@@ -65,6 +65,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
+import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -345,9 +346,21 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (mModel.getApkFile().hasObb() && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
             // Need to request permissions if not given
             mStoragePermission.request(granted -> {
-                if (granted) launchInstallerService();
+                if (granted) requestInstallerNotificationsAndLaunch();
             });
-        } else launchInstallerService();
+        } else requestInstallerNotificationsAndLaunch();
+    }
+
+    @UiThread
+    private void requestInstallerNotificationsAndLaunch() {
+        if (!Utils.canDisplayNotification(this)) {
+            launchInstallerService();
+            return;
+        }
+        NotificationUtils.requestPostNotificationsForWorkflow(this,
+                R.string.installer_notification_permission_title,
+                R.string.installer_notification_permission_message,
+                this::launchInstallerService);
     }
 
     @UiThread
@@ -609,4 +622,3 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
     }
 }
-

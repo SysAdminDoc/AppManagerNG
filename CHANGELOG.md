@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Contextual notification permission for installer progress (2026-05-13)
+
+- Added a just-in-time Android 13+ notification rationale before the installer foreground service starts, so install progress, completion, and failure feedback remain visible when the user sends an install to the background.
+
 ### Changed — Contextual notification permission for batch operations (2026-05-13)
 
 - Added a just-in-time Android 13+ notification rationale before long-running batch operations so progress, completion, and failure feedback are not silently hidden.
