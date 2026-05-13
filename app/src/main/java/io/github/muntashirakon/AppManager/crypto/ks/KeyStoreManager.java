@@ -115,8 +115,10 @@ public class KeyStoreManager {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_keystore_password, null);
         TextInputEditText editText = view.findViewById(R.id.ks_pass);
         editText.setText(password, 0, password.length);
+        TextInputLayout tv = view.findViewById(android.R.id.text2);
+        tv.setHint(R.string.keystore_password_field_hint);
         return new MaterialAlertDialogBuilder(activity)
-                .setTitle(R.string.keystore)
+                .setTitle(R.string.keystore_password_generated_title)
                 .setView(view)
                 .setNegativeButton(R.string.close, null)
                 .setCancelable(false)
@@ -138,9 +140,9 @@ public class KeyStoreManager {
         editText.setCursorVisible(true);
         view.findViewById(android.R.id.text1).setVisibility(View.GONE);
         TextInputLayout tv = view.findViewById(android.R.id.text2);
-        tv.setHint(R.string.input_keystore_pass);
+        tv.setHint(R.string.keystore_password_field_hint);
         AlertDialog alertDialog = new MaterialAlertDialogBuilder(activity)
-                .setTitle(R.string.keystore)
+                .setTitle(R.string.keystore_password_input_title)
                 .setView(view)
                 .setPositiveButton(R.string.ok, null)
                 .setNegativeButton(R.string.delete, null)

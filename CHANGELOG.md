@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — First-run prompt sequencing and recovery-password handoff (2026-05-13)
+
+- Deferred optional notification permission checks from cold startup so first-run opens with AppManagerNG-owned security context instead of an Android permission sheet.
+- Clarified the pre-auth KeyStore handoff as a recovery password, with calmer generated/input copy and a denser readable password field.
+
 ### Changed — Premium polish: shape system, first-run trust, and warning tone (2026-05-13)
 
 - Normalized the Material shape language away from capsule-style surfaces: chips, popup menus, bottom sheets, onboarding/icon frames, screen-time widget markers, app-info headers, dashed panels, badges, status bars, and shared card/list shapes now use bounded 8–12dp radii while true icon-only controls remain circular.
