@@ -138,6 +138,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
@@ -149,6 +150,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainer</item>
@@ -160,6 +162,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
@@ -176,7 +179,7 @@
 
     <style name="Widget.AppTheme.V2.Button.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
         <item name="elevation">@dimen/premium_elevation_3</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.CircleComponent</item>
     </style>
 
     <style name="Widget.AppTheme.V2.Button.EFAB" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">

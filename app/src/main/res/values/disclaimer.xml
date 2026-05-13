@@ -2,14 +2,13 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="disclaimer_header">Disclaimer</string>
-    <string name="disclaimer_body">AppManagerNG exposes privileged operations that can break apps or your device when misused. The maintainers accept no responsibility for damage caused by using this application. If you are not yet comfortable with what root, Shizuku, or ADB privileges actually do, stay on the no-root path until you are.
-
-        \n\nAny link to a third-party app or website is provided for convenience only. The maintainers do not control or vouch for that external content.
-
-        \n\nBy continuing, you accept full responsibility for how you use AppManagerNG and waive any claim for damages or monetary compensation arising from misuse.
-    </string>
+    <string name="disclaimer_subtitle">AppManagerNG is powerful software. Use privileged actions deliberately.</string>
+    <string name="disclaimer_body">AppManagerNG exposes privileged operations that can break apps or your device when misused. The maintainers accept no responsibility for damage caused by using this application. If you are not yet comfortable with what root, Shizuku, or ADB privileges actually do, stay on the no-root path until you are.\n\nAny link to a third-party app or website is provided for convenience only. The maintainers do not control or vouch for that external content.\n\nBy continuing, you accept full responsibility for how you use AppManagerNG and waive any claim for damages or monetary compensation arising from misuse.</string>
+    <string name="disclaimer_privileged_operations">Root, Shizuku, and ADB modes can change packages, permissions, app data, and system behavior. If you are unsure, stay in no-root mode until you understand the impact.</string>
+    <string name="disclaimer_third_party">Links to third-party apps and websites are provided for convenience. AppManagerNG does not control or endorse external content.</string>
+    <string name="disclaimer_acceptance">By continuing, you accept responsibility for how you use AppManagerNG.</string>
     <string name="disclaimer_footer" translatable="false">AppManagerNG · derived from App Manager © 2020–2025 Muntashir Al-Islam (GPL-3.0-or-later)</string>
     <string name="disclaimer_agree_forever">Never show this again</string>
-    <string name="disclaimer_agree">I Agree</string>
+    <string name="disclaimer_agree">I understand</string>
     <string name="disclaimer_exit">Exit</string>
 </resources>

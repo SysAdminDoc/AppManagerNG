@@ -22,9 +22,9 @@
     <dimen name="premium_radius_compact">4dp</dimen>
     <dimen name="premium_radius_default">8dp</dimen>
     <dimen name="premium_radius_card">10dp</dimen>
-    <dimen name="premium_radius_sheet">16dp</dimen>
-    <dimen name="premium_radius_modal">24dp</dimen>
-    <dimen name="premium_radius_pill">9999dp</dimen>
+    <dimen name="premium_radius_sheet">12dp</dimen>
+    <dimen name="premium_radius_modal">12dp</dimen>
+    <dimen name="premium_radius_pill">8dp</dimen>
 
     <!-- Elevation and strokes -->
     <dimen name="premium_elevation_0">0dp</dimen>
