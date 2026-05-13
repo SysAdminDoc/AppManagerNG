@@ -65,7 +65,7 @@
         <item name="listItemMarginHorizontal">@dimen/padding_small</item>
         <item name="listItemPaddingVertical">12dp</item>
         <item name="listItemPaddingHorizontal">?android:attr/listPreferredItemPaddingStart</item>
-        <item name="listItemCornerRadius">16dp</item>
+        <item name="listItemCornerRadius">10dp</item>
         <item name="listItemIndicatorWidth">9dp</item>
 
         <!-- Dialog -->
@@ -188,6 +188,7 @@
         <item name="chipMinHeight">24dp</item>
         <item name="chipMinTouchTargetSize">24dp</item>
         <item name="chipIconSize">18dp</item>
+        <item name="chipCornerRadius">8dp</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.BodySmall</item>
     </style>
 
@@ -195,6 +196,7 @@
         <item name="chipMinHeight">24dp</item>
         <item name="chipMinTouchTargetSize">24dp</item>
         <item name="chipIconSize">18dp</item>
+        <item name="chipCornerRadius">8dp</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.BodySmall</item>
     </style>
 
@@ -210,6 +212,7 @@
         <item name="chipMinHeight">24dp</item>
         <item name="chipMinTouchTargetSize">24dp</item>
         <item name="chipIconSize">18dp</item>
+        <item name="chipCornerRadius">8dp</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.BodySmall</item>
     </style>
 
@@ -217,6 +220,7 @@
         <item name="chipMinHeight">24dp</item>
         <item name="chipMinTouchTargetSize">24dp</item>
         <item name="chipIconSize">18dp</item>
+        <item name="chipCornerRadius">8dp</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.BodySmall</item>
     </style>
 
@@ -224,6 +228,7 @@
         <item name="chipMinHeight">24dp</item>
         <item name="chipMinTouchTargetSize">24dp</item>
         <item name="chipIconSize">18dp</item>
+        <item name="chipCornerRadius">8dp</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.BodySmall</item>
     </style>
 
@@ -262,7 +267,7 @@
 
     <!-- MaterialCardView -->
     <style name="Widget.AppTheme.CardView.Elevated" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">18dp</item>
+        <item name="cardCornerRadius">10dp</item>
     </style>
 
     <style name="Widget.AppTheme.CardView.ListItem" parent="Widget.Material3.CardView.Elevated">
@@ -591,15 +596,15 @@
     </style>
 
     <style name="ShapeAppearance.AppTheme.SmallComponent" parent="ShapeAppearance.Material3.SmallComponent">
-        <item name="cornerSize">12dp</item>
+        <item name="cornerSize">8dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">10dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
-        <item name="cornerSize">24dp</item>
+        <item name="cornerSize">12dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.CircleComponent" parent="">
@@ -607,28 +612,28 @@
     </style>
 
     <style name="ShapeAppearance.AppTheme.DiagonallyRounded" parent="">
-        <item name="cornerSize">24dp</item>
+        <item name="cornerSize">8dp</item>
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeBottomRight">0dp</item>
         <item name="cornerSizeTopLeft">0dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.LeftRounded" parent="">
-        <item name="cornerSize">24dp</item>
+        <item name="cornerSize">8dp</item>
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeTopRight">0dp</item>
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.RightRounded" parent="">
-        <item name="cornerSize">24dp</item>
+        <item name="cornerSize">8dp</item>
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeTopLeft">0dp</item>
         <item name="cornerSizeBottomLeft">0dp</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.MediumComponent.RoundedTop" parent="">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">12dp</item>
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeBottomLeft">0dp</item>
         <item name="cornerSizeBottomRight">0dp</item>

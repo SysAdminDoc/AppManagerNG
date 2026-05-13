@@ -105,10 +105,10 @@ public final class BuildExpiryChecker {
 
     private static Uri getUpdateUri() {
         if (getBuildType() == BUILD_TYPE_DEBUG) {
-            return Uri.parse("https://github.com/MuntashirAkon/AppManager/actions/workflows/debug_build.yml");
+            return Uri.parse("https://github.com/SysAdminDoc/AppManagerNG/actions");
         }
-        // TODO: 3/12/22 For Stable builds, check F-Droid too
-        return Uri.parse("https://github.com/MuntashirAkon/AppManager/releases");
+        // Stable builds currently update through the NG GitHub release channel.
+        return Uri.parse("https://github.com/SysAdminDoc/AppManagerNG/releases/latest");
     }
 
     @BuildType
