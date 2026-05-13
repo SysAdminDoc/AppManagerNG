@@ -84,9 +84,9 @@ public abstract class BaseActivity extends PerProcessActivity {
             BuildExpiryChecker.getBuildExpiredDialog(this, (dialog, which) -> doAuthenticate(savedInstanceState)).show();
             return;
         }
-        // Init permission checks
+        // Init required permission checks. Optional permissions should not block authentication startup.
         mSavedInstanceState = savedInstanceState;
-        if (!initPermissionChecks(true)) {
+        if (!initPermissionChecks(false)) {
             mSavedInstanceState = null;
             // Run authentication
             doAuthenticate(savedInstanceState);
