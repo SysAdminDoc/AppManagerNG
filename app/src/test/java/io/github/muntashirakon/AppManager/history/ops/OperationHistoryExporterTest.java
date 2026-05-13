@@ -52,7 +52,28 @@ public class OperationHistoryExporterTest {
         assertTrue(exported.contains("\"com.example.app\""));
     }
 
+    @Test
+    public void exportCsvDefusesFormulaInjection() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        // Hostile app label crafted to trigger Excel / LibreOffice Calc formula evaluation.
+        // The label comes from PackageManager.loadLabel(), which is fully attacker-controlled
+        // by any installed app; without escaping it would land verbatim in the CSV cell.
+        OpHistoryItem history = createInstallerHistoryWithLabel("=HYPERLINK(\"http://evil/\",\"click\")");
+
+        String exported = OperationHistoryExporter.toCsv(context, Collections.singletonList(history));
+
+        // Defence: a single apostrophe is prepended so spreadsheet apps treat the cell as text.
+        assertTrue("expected formula-injection defuse",
+                exported.contains("\"'=HYPERLINK(\"\"http://evil/\"\",\"\"click\"\")\""));
+        // And the raw, un-defused form must not appear.
+        assertFalse(exported.contains("\"=HYPERLINK"));
+    }
+
     private static OpHistoryItem createInstallerHistory() throws Exception {
+        return createInstallerHistoryWithLabel("Example App");
+    }
+
+    private static OpHistoryItem createInstallerHistoryWithLabel(String appLabel) throws Exception {
         OpHistory opHistory = new OpHistory();
         opHistory.id = 42;
         opHistory.type = OpHistoryManager.HISTORY_TYPE_INSTALLER;
@@ -60,7 +81,7 @@ public class OperationHistoryExporterTest {
         opHistory.status = OpHistoryManager.STATUS_SUCCESS;
         opHistory.serializedData = new JSONObject()
                 .put("package_name", "com.example.app")
-                .put("app_label", "Example App")
+                .put("app_label", appLabel)
                 .put("install_existing", true)
                 .toString();
         opHistory.serializedExtra = new JSONObject()

@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security — Deep-link parser hardening + CSV-injection defuse (2026-05-13)
+
+Audit pass on NG-authored surfaces that handle attacker-influenced strings. Two real bugs fixed:
+
+- **`SelfUriManager.getUserPackagePairFromUri()` crash + validation-bypass** ([`self/SelfUriManager.java`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java)). The deep-link parser routing both `app-manager://details?id=…&user=…` and `am://app/<pkg>?user=…` through `AppDetailsActivity` had two issues that any installed app could trigger by firing a crafted `VIEW` intent at the exported intent-filter:
+    1. `TextUtils.isDigitsOnly("99999999999999")` returns `true`, but `Integer.parseInt` on a string ≥ 2³¹ throws `NumberFormatException`. The exception bubbled out of `onCreate()` and crashed the activity. Now wrapped in `try { … } catch (NumberFormatException)` with a fall-through to `myUserId()`.
+    2. The package-name validation was applied to `pkg.trim()` but the un-trimmed `pkg` was passed into `UserPackagePair`. A URL-encoded leading/trailing space (`?id=%20com.foo`) would pass `PackageUtils.validateName()` yet land a whitespace-padded package name in the activity's `mPackageName` field, breaking every downstream `PackageManager` lookup. Now trims **before** validation and uses the trimmed value end-to-end.
+    Reference: surfaced during the iter-22 `am://` short-alias audit.
+
+- **`OperationHistoryExporter.toCsv()` CSV / formula injection** ([`history/ops/OperationHistoryExporter.java`](app/src/main/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporter.java)). Operation-history CSV exports include attacker-influenced fields — app labels come from `PackageManager.loadLabel()` (fully controlled by the installed app), and installer failure messages may include vendor-provided text. A hostile package installed with a label like `=HYPERLINK("http://evil/","click")` would land that string verbatim in an exported CSV cell; Excel and LibreOffice Calc evaluate any cell whose first character is `= + - @ \t \r` as a formula, opening data-exfiltration and (on unpatched Excel + legacy DDE) code-execution windows when the user opens the export. New `escapeCsvField()` prepends the OWASP-standard apostrophe defuse to any value beginning with a trigger character; embedded double-quote escaping is unchanged. Regression test landed in [`OperationHistoryExporterTest.exportCsvDefusesFormulaInjection`](app/src/test/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporterTest.java).
+
 ### Security — Hardening pass on iter-22 changes (2026-05-09)
 
 Defense-in-depth follow-up to the iter-22 work that landed earlier today. Three findings, all addressed:

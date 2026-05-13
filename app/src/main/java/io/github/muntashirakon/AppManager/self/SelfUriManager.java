@@ -43,14 +43,29 @@ public class SelfUriManager {
         } else {
             return null;
         }
-        String userIdStr = detailsUri.getQueryParameter("user");
-        if (pkg != null && PackageUtils.validateName(pkg.trim())) {
-            int userId;
-            if (userIdStr != null && TextUtils.isDigitsOnly(userIdStr)) {
-                userId = Integer.parseInt(userIdStr);
-            } else userId = UserHandleHidden.myUserId();
-            return new UserPackagePair(pkg, userId);
+        if (pkg == null) {
+            return null;
         }
-        return null;
+        // Trim before validation AND store the trimmed value — otherwise URL-decoded leading/trailing
+        // whitespace bypasses validateName() (which is called on the trimmed copy) yet propagates into
+        // the resolved package name, breaking downstream PackageManager lookups.
+        pkg = pkg.trim();
+        if (!PackageUtils.validateName(pkg)) {
+            return null;
+        }
+        int userId = UserHandleHidden.myUserId();
+        String userIdStr = detailsUri.getQueryParameter("user");
+        // isDigitsOnly() does not bound-check — any digit string longer than INT_MAX's 10 digits, or
+        // legitimately ≤10 digits but ≥ 2^31, would throw NumberFormatException out of an exported
+        // intent-filter (any installed app can craft such a URI), crashing AppDetailsActivity. Treat
+        // any unparseable user id as "current user" instead of letting the activity die.
+        if (userIdStr != null && TextUtils.isDigitsOnly(userIdStr) && !userIdStr.isEmpty()) {
+            try {
+                userId = Integer.parseInt(userIdStr);
+            } catch (NumberFormatException ignored) {
+                // Out-of-range — fall through to myUserId().
+            }
+        }
+        return new UserPackagePair(pkg, userId);
     }
 }
