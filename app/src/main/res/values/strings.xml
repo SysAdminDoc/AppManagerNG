@@ -731,6 +731,8 @@
     <string name="reinstall">Reinstall</string>
     <string name="unblock_trackers">Unblock trackers</string>
     <string name="package_installer">Package installer</string>
+    <string name="installer_notification_permission_title">Allow installer notifications?</string>
+    <string name="installer_notification_permission_message">Installations can continue after you leave this dialog. Allow notifications so AppManagerNG can show install progress, completion, and failures.</string>
     <string name="install_in_progress">Installing app…</string>
     <string name="installer_error_security">Could not access the APK files. Check storage permissions and try again.</string>
     <string name="installer_error_session_create">Could not create an installer session.</string>
