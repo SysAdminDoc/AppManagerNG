@@ -87,8 +87,31 @@ public final class OperationHistoryExporter {
                 builder.append(',');
             }
             builder.append('"');
-            builder.append(values[i].replace("\"", "\"\""));
+            builder.append(escapeCsvField(values[i]));
             builder.append('"');
         }
+    }
+
+    /**
+     * Defuse CSV / formula injection: Excel and LibreOffice Calc treat any cell whose first
+     * character is one of {@code = + - @ \t \r} as a formula, which can leak data via
+     * {@code =WEBSERVICE(...)} or even invoke {@code cmd.exe} via legacy DDE on unpatched Excel.
+     * Operation-history fields include attacker-influenced text (app labels, package names,
+     * failure messages from the platform), so we prepend a literal apostrophe — the standard
+     * OWASP defence — for any value beginning with a trigger character. The leading
+     * apostrophe is hidden by Excel/Calc and harmless in tools that follow RFC 4180.
+     * Embedded double quotes are escaped (RFC 4180) the same way as before.
+     */
+    @NonNull
+    private static String escapeCsvField(@NonNull String value) {
+        String escaped = value.replace("\"", "\"\"");
+        if (!escaped.isEmpty()) {
+            char first = escaped.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@'
+                    || first == '\t' || first == '\r') {
+                return "'" + escaped;
+            }
+        }
+        return escaped;
     }
 }
