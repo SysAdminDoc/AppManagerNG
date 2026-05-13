@@ -174,9 +174,10 @@ public class MaterialAlertView extends TextInputLayout {
             }
             case ALERT_TYPE_WARN: {
                 setStartIconDrawable(R.drawable.ic_caution);
-                ColorStateList foreground = ColorStateList.valueOf(MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnErrorContainer));
-                ColorStateList background = ColorStateList.valueOf(MaterialColors.getColor(this, com.google.android.material.R.attr.colorErrorContainer));
-                setBoxBackgroundColorStateList(background);
+                int surface = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurfaceContainerHigh);
+                int color = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnErrorContainer);
+                ColorStateList foreground = ColorStateList.valueOf(color);
+                setBoxBackgroundColor(MaterialColors.layer(surface, color, 0.14f));
                 setStartIconTintList(foreground);
                 mTextInputTextView.setTextColor(foreground);
                 break;

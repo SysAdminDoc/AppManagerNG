@@ -12,7 +12,7 @@
     </style>
 
     <style name="AppTheme.AppWidgetContainerParent" parent="AppTheme">
-        <item name="appWidgetRadius">24dp</item>
+        <item name="appWidgetRadius">12dp</item>
         <item name="appWidgetPadding">16dp</item>
         <item name="appWidgetInnerRadius">4dp</item>
     </style>
@@ -63,7 +63,7 @@
     </style>
 
     <style name="Widget.AppTheme.CardView.TrustCta" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">16dp</item>
+        <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">0dp</item>
         <item name="cardBackgroundColor">?attr/colorSurface</item>
         <item name="strokeWidth">1dp</item>
@@ -71,7 +71,7 @@
     </style>
 
     <style name="Widget.AppTheme.CardView.OnboardingMode" parent="Widget.Material3.CardView.Outlined">
-        <item name="cardCornerRadius">16dp</item>
+        <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">0dp</item>
         <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
         <item name="strokeWidth">1dp</item>
@@ -82,6 +82,7 @@
     <style name="Widget.AppTheme.Chip.MainFilter" parent="Widget.AppTheme.Chip.Filter">
         <item name="chipMinHeight">32dp</item>
         <item name="chipMinTouchTargetSize">40dp</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>
@@ -90,6 +91,7 @@
     <style name="Widget.AppTheme.Chip.MainSuggestion" parent="Widget.AppTheme.Chip.Suggestion">
         <item name="chipMinHeight">32dp</item>
         <item name="chipMinTouchTargetSize">40dp</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>

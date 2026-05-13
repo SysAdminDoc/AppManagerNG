@@ -21,7 +21,7 @@
     <dimen name="main_list_badge_padding_horizontal">10dp</dimen>
     <dimen name="main_list_badge_padding_vertical">4dp</dimen>
     <dimen name="main_status_min_height">48dp</dimen>
-    <dimen name="main_status_corner_radius">16dp</dimen>
+    <dimen name="main_status_corner_radius">10dp</dimen>
     <dimen name="main_empty_icon_container_size">96dp</dimen>
     <dimen name="main_empty_icon_padding">28dp</dimen>
     <dimen name="main_empty_summary_max_width">420dp</dimen>

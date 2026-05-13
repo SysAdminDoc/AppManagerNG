@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
+    android:shape="rectangle">
+    <corners android:radius="@dimen/premium_radius_pill" />
     <solid android:color="#000" />
 </shape>
