@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Contextual notification permission for wireless pairing (2026-05-13)
+
+- Moved the Android 13+ notification ask into the wireless ADB pairing flow, with a clear rationale that pairing status and pairing-code entry use the ongoing notification.
+
 ### Changed — First-run prompt sequencing and recovery-password handoff (2026-05-13)
 
 - Deferred optional notification permission checks from cold startup so first-run opens with AppManagerNG-owned security context instead of an Android permission sheet.
