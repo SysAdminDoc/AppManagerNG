@@ -10,20 +10,29 @@ import android.os.Build;
 import android.os.Process;
 import android.provider.Settings;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.IntDef;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.fragment.app.FragmentActivity;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -32,6 +41,8 @@ public final class NotificationUtils {
     private static final String HIGH_PRIORITY_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.HIGH_PRIORITY";
     private static final String INSTALL_CONFIRM_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.INSTALL_CONFIRM";
     private static final String FREEZE_UNFREEZE_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.FREEZE_UNFREEZE";
+    private static final String POST_NOTIFICATION_REQUEST_KEY =
+            NotificationUtils.class.getName() + ".POST_NOTIFICATIONS";
 
     public static final NotificationProgressHandler.NotificationManagerInfo HIGH_PRIORITY_NOTIFICATION_INFO =
             new NotificationProgressHandler.NotificationManagerInfo(
@@ -95,6 +106,42 @@ public final class NotificationUtils {
         int notificationId = nextNotificationId(notificationTag);
         displayNotification(context, HIGH_PRIORITY_CHANNEL_ID, "Alerts",
                 NotificationManagerCompat.IMPORTANCE_HIGH, notificationTag , notificationId, notification);
+    }
+
+    @MainThread
+    public static void requestPostNotificationsForWorkflow(@NonNull FragmentActivity activity,
+                                                           @StringRes int titleRes,
+                                                           @StringRes int messageRes,
+                                                           @NonNull Runnable continuation) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            continuation.run();
+            return;
+        }
+        new MaterialAlertDialogBuilder(activity)
+                .setTitle(titleRes)
+                .setMessage(messageRes)
+                .setCancelable(false)
+                .setPositiveButton(R.string.allow_notifications,
+                        (dialog, which) -> requestPostNotifications(activity, continuation))
+                .setNegativeButton(R.string.not_now, (dialog, which) -> continuation.run())
+                .show();
+    }
+
+    @MainThread
+    private static void requestPostNotifications(@NonNull FragmentActivity activity,
+                                                 @NonNull Runnable continuation) {
+        String key = POST_NOTIFICATION_REQUEST_KEY + "." + System.nanoTime();
+        AtomicReference<ActivityResultLauncher<String>> launcherRef = new AtomicReference<>();
+        launcherRef.set(activity.getActivityResultRegistry().register(key,
+                new ActivityResultContracts.RequestPermission(), isGranted -> {
+                    ActivityResultLauncher<String> launcher = launcherRef.getAndSet(null);
+                    if (launcher != null) {
+                        launcher.unregister();
+                    }
+                    continuation.run();
+                }));
+        launcherRef.get().launch(Manifest.permission.POST_NOTIFICATIONS);
     }
 
     public static void displayFreezeUnfreezeNotification(@NonNull Context context,
