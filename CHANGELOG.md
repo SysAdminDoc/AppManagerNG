@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Contextual notification permission for batch operations (2026-05-13)
+
+- Added a just-in-time Android 13+ notification rationale before long-running batch operations so progress, completion, and failure feedback are not silently hidden.
+- Corrected the persistent session notification text to describe that tapping opens notification settings.
+
 ### Changed — Contextual notification permission for wireless pairing (2026-05-13)
 
 - Moved the Android 13+ notification ask into the wireless ADB pairing flow, with a clear rationale that pairing status and pairing-code entry use the ongoing notification.

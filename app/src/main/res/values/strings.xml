@@ -700,6 +700,8 @@
     <string name="installer_error_lidl_rom">Your ROM is incompatible with Rootless Installer.</string>
     <string name="failed_to_fetch_package_info">Could not fetch package info</string>
     <string name="batch_ops">Batch operations</string>
+    <string name="batch_ops_notification_permission_title">Allow batch operation notifications?</string>
+    <string name="batch_ops_notification_permission_message">Batch operations can keep working after you leave this screen. Allow notifications so AppManagerNG can show progress, completion, and failures.</string>
     <string name="operation_running">Operation running…</string>
     <string name="full_stop_tap_to_see_details">. Tap to see details.</string>
     <string name="try_again">Try again</string>
@@ -1936,7 +1938,7 @@
     <string name="title_description">Description</string>
     <string name="module_name">Module name</string>
     <string name="app_manager_is_running">AppManagerNG is running</string>
-    <string name="tap_to_open_notification_settings">Tap to hide</string>
+    <string name="tap_to_open_notification_settings">Tap for notification settings</string>
     <string name="app_manager_is_unlocked">AppManagerNG is unlocked</string>
     <string name="action_lock_app">Lock</string>
     <string name="pref_enable_persistent_session">Run App Manager in the background</string>
