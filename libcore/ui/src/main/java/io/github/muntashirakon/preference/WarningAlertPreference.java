@@ -38,11 +38,18 @@ public class WarningAlertPreference extends DefaultAlertPreference {
     @Override
     public void onBindViewHolder(@NonNull PreferenceViewHolder holder) {
         super.onBindViewHolder(holder);
-        int background = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorErrorContainer);
+        int surface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSurfaceContainerHigh);
         int foreground = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnErrorContainer);
+        int background = MaterialColors.layer(surface, foreground, 0.14f);
+        int outline = MaterialColors.layer(surface, foreground, 0.36f);
         if (holder.itemView instanceof MaterialCardView) {
             MaterialCardView cardView = (MaterialCardView) holder.itemView;
             cardView.setCardBackgroundColor(background);
+            cardView.setStrokeColor(outline);
+        }
+        final TextView titleView = (TextView) holder.findViewById(android.R.id.title);
+        if (titleView != null) {
+            titleView.setTextColor(foreground);
         }
         final TextView summaryView = (TextView) holder.findViewById(android.R.id.summary);
         if (summaryView != null) {

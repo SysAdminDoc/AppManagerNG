@@ -1742,8 +1742,8 @@
     <string name="waiting_for_the_phone_to_be_locked">Waiting for the phone to be locked…</string>
     <string name="action_stop_service">Stop</string>
     <string name="app_manager_build_expired">Update required</string>
-    <string name="app_manager_build_expired_message">To ensure the safety of your device and data, the version of AppManagerNG you\'re using has been retired. You have to update it to the latest version to continue to use it, or uninstall it if no update is available.</string>
-    <string name="app_manager_build_expiring_soon_warning">This version of AppManagerNG will expire very soon. Please update it to the latest version.</string>
+    <string name="app_manager_build_expired_message">This AppManagerNG build has been retired to protect your device and data. Update to the latest AppManagerNG release to continue, or uninstall this build if no update is available.</string>
+    <string name="app_manager_build_expiring_soon_warning">Update soon. This AppManagerNG build is nearing retirement so privileged operations stay aligned with current Android security behavior.</string>
     <string name="app_can_write_and_execute_in_same_place">The app violates <a href="https://en.wikipedia.org/wiki/W%5EX">W^X policy</a> and is capable of writing and executing in the same directory or in the same portion of memory. This allows the execution of arbitrary executables either by the modification of executables embedded within the app or by downloading them from the Internet. Unless this is the intended behaviour of the app (e.g. terminal emulators), it is recommended to find a newer version of the app that targets SDK 29 (Android 10) and later, or find alternatives.</string>
     <string name="renamed_successfully">Renamed</string>
     <string name="selinux_context">SELinux context</string>

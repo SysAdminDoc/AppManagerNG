@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,35 +12,92 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="@dimen/padding_medium"
-        android:paddingTop="@dimen/padding_very_small"
+        android:paddingTop="@dimen/padding_medium"
         android:paddingEnd="@dimen/padding_medium"
-        android:paddingBottom="@dimen/padding_very_small">
+        android:paddingBottom="@dimen/padding_small">
 
-        <androidx.appcompat.widget.AppCompatTextView
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="@dimen/padding_small"
-            android:paddingBottom="@dimen/padding_small"
-            android:gravity="center_horizontal"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textAllCaps="true"
-            android:text="@string/disclaimer_header" />
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <androidx.appcompat.widget.AppCompatTextView
+            <FrameLayout
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginEnd="@dimen/padding_small"
+                android:background="@drawable/main_empty_icon_background"
+                android:padding="14dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_shield_key"
+                    app:tint="?attr/colorPrimary" />
+
+            </FrameLayout>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclaimer_header"
+                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:text="@string/disclaimer_subtitle"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <io.github.muntashirakon.widget.MaterialAlertView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/disclaimer_body" />
+            android:layout_marginTop="@dimen/padding_medium"
+            android:text="@string/disclaimer_privileged_operations"
+            app:alertType="warn" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/padding_medium"
-            android:text="@string/disclaimer_footer" />
+            android:text="@string/disclaimer_third_party"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:text="@string/disclaimer_acceptance"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:text="@string/disclaimer_footer"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/agree_forever"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
             android:text="@string/disclaimer_agree_forever" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

@@ -5,20 +5,20 @@
         <shape>
             <solid android:color="@macro/m3_comp_menu_container_color" />
             <corners
-                android:bottomLeftRadius="16dp"
-                android:bottomRightRadius="16dp"
-                android:topLeftRadius="16dp"
-                android:topRightRadius="16dp" />
+                android:bottomLeftRadius="10dp"
+                android:bottomRightRadius="10dp"
+                android:topLeftRadius="10dp"
+                android:topRightRadius="10dp" />
         </shape>
     </item>
     <item>
         <shape>
             <solid android:color="@color/m3_popupmenu_overlay_color" />
             <corners
-                android:bottomLeftRadius="16dp"
-                android:bottomRightRadius="16dp"
-                android:topLeftRadius="16dp"
-                android:topRightRadius="16dp" />
+                android:bottomLeftRadius="10dp"
+                android:bottomRightRadius="10dp"
+                android:topLeftRadius="10dp"
+                android:topRightRadius="10dp" />
         </shape>
     </item>
 </layer-list>
