@@ -74,6 +74,7 @@ import io.github.muntashirakon.AppManager.usage.AppUsageActivity;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
@@ -988,11 +989,16 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
     private void handleBatchOp(@BatchOpsManager.OpType int op, @Nullable IBatchOpOptions options) {
         if (viewModel == null) return;
-        showProgressIndicator(true);
         BatchOpsManager.Result input = new BatchOpsManager.Result(viewModel.getSelectedPackagesWithUsers());
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(op, input.getFailedPackages(), input.getAssociatedUsers(), options);
-        Intent intent = BatchOpsService.getServiceIntent(this, item);
-        ContextCompat.startForegroundService(this, intent);
+        NotificationUtils.requestPostNotificationsForWorkflow(this,
+                R.string.batch_ops_notification_permission_title,
+                R.string.batch_ops_notification_permission_message,
+                () -> {
+                    showProgressIndicator(true);
+                    Intent intent = BatchOpsService.getServiceIntent(this, item);
+                    ContextCompat.startForegroundService(this, intent);
+                });
     }
 
     void showProgressIndicator(boolean show) {
