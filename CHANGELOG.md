@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## v0.4.2 — 2026-05-13
+
 ### Changed — Contextual notification permission for installer progress (2026-05-13)
 
 - Added a just-in-time Android 13+ notification rationale before the installer foreground service starts, so install progress, completion, and failure feedback remain visible when the user sends an install to the background.
