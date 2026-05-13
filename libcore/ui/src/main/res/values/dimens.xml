@@ -23,6 +23,6 @@
      Dropdown menus in AutoCompleteTextView when coupled with TextInputLayout uses unacceptable hard-coded values for
       background radius and vertical padding. They are overriden here to have a consistent UI design.
       -->
-    <dimen name="mtrl_shape_corner_size_small_component">16dp</dimen>
+    <dimen name="mtrl_shape_corner_size_small_component">8dp</dimen>
     <dimen name="mtrl_exposed_dropdown_menu_popup_vertical_padding">0dp</dimen>
 </resources>

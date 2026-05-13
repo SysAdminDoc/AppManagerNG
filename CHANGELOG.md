@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Premium polish: shape system, first-run trust, and warning tone (2026-05-13)
+
+- Normalized the Material shape language away from capsule-style surfaces: chips, popup menus, bottom sheets, onboarding/icon frames, screen-time widget markers, app-info headers, dashed panels, badges, status bars, and shared card/list shapes now use bounded 8–12dp radii while true icon-only controls remain circular.
+- Reworked the first-run disclaimer into a clearer trust panel with a stronger hierarchy, visible privileged-operations callout, separated external-project disclosure, and a calmer **I understand** confirmation label.
+- Softened warning alert treatments so debug-expiry and privileged-risk notices read as elevated guidance instead of hard error blocks.
+- Updated build-expiry copy and update links to point to AppManagerNG release/actions channels instead of the upstream App Manager project.
+
 ### Security — Deep-link parser hardening + CSV-injection defuse (2026-05-13)
 
 Audit pass on NG-authored surfaces that handle attacker-influenced strings. Two real bugs fixed:
