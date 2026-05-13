@@ -1,0 +1,6 @@
+Premium polish release focused on trust, clarity, and feedback.
+
+- Refined first-run security handoff, warning tone, and shape consistency.
+- Added contextual notification permission asks for wireless pairing, batch operations, and installer progress.
+- Improved progress/completion visibility for long-running workflows.
+- Includes recent security hardening and UX refinements from the post-v0.4.1 polish series.
