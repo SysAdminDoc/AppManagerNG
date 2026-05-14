@@ -226,6 +226,17 @@
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Shizuku is running and authorized" />
 
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/hint_shizuku_autostart"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:text="@string/onboarding_mode_shizuku_autostart_tip"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
                 <androidx.appcompat.widget.AppCompatImageButton

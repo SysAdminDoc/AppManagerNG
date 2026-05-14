@@ -150,7 +150,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 R.string.onboarding_mode_root_status_detected,
                 R.string.onboarding_mode_root_status_missing);
         TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
-        bindShizukuStatus(shizukuStatus);
+        TextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
+        bindShizukuStatus(shizukuStatus, shizukuAutoStartHint);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
         bindAdbWifiStatus(adbWifiStatus);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
@@ -242,11 +243,18 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
 
     private void bindCapabilityStatus(@Nullable TextView statusView, boolean available,
                                       int availableTextRes, int unavailableTextRes) {
+        bindCapabilityStatus(statusView, available, availableTextRes, unavailableTextRes, null);
+    }
+
+    private void bindCapabilityStatus(@Nullable TextView statusView, boolean available,
+                                      int availableTextRes, int unavailableTextRes,
+                                      @Nullable Object[] formatArgs) {
         if (statusView == null) return;
         int color = MaterialColors.getColor(statusView, available
                 ? com.google.android.material.R.attr.colorOnPrimaryContainer
                 : com.google.android.material.R.attr.colorOnSurfaceVariant);
-        statusView.setText(available ? availableTextRes : unavailableTextRes);
+        int textRes = available ? availableTextRes : unavailableTextRes;
+        statusView.setText(formatArgs != null ? getString(textRes, formatArgs) : getString(textRes));
         statusView.setTextColor(color);
         statusView.setCompoundDrawablePadding(getResources()
                 .getDimensionPixelSize(io.github.muntashirakon.ui.R.dimen.padding_very_small));
@@ -260,11 +268,18 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
     }
 
-    private void bindShizukuStatus(@Nullable TextView statusView) {
+    private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint) {
         if (statusView == null) return;
         int statusRes;
+        Object[] args = null;
         boolean available;
-        if (ShizukuBridge.hasPermission()) {
+        boolean recommendedVersion = ShizukuBridge.isRecommendedManagerVersion(requireContext());
+        String versionName = ShizukuBridge.getInstalledVersionName(requireContext());
+        if (!recommendedVersion && ShizukuBridge.supportsUserService() && versionName != null) {
+            statusRes = R.string.onboarding_mode_shizuku_status_update_recommended;
+            args = new Object[]{versionName};
+            available = false;
+        } else if (ShizukuBridge.hasPermission()) {
             statusRes = R.string.onboarding_mode_shizuku_status_ready;
             available = true;
         } else if (ShizukuBridge.supportsUserService()) {
@@ -274,7 +289,20 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             statusRes = R.string.onboarding_mode_shizuku_status_missing;
             available = false;
         }
-        bindCapabilityStatus(statusView, available, statusRes, statusRes);
+        bindCapabilityStatus(statusView, available, statusRes, statusRes, args);
+        bindShizukuAutoStartHint(autoStartHint, recommendedVersion);
+    }
+
+    private void bindShizukuAutoStartHint(@Nullable TextView autoStartHint, boolean recommendedVersion) {
+        if (autoStartHint == null) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            autoStartHint.setVisibility(View.GONE);
+            return;
+        }
+        autoStartHint.setVisibility(View.VISIBLE);
+        autoStartHint.setText(recommendedVersion
+                ? R.string.onboarding_mode_shizuku_autostart_tip
+                : R.string.onboarding_mode_shizuku_update_for_autostart);
     }
 
     private void bindAdbWifiStatus(@Nullable TextView statusView) {

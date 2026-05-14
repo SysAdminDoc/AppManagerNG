@@ -2,15 +2,21 @@
 
 package io.github.muntashirakon.AppManager.shizuku;
 
+import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Process;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import rikka.shizuku.Shizuku;
 
 public final class ShizukuBridge {
+    public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
+    public static final String MIN_RECOMMENDED_MANAGER_VERSION = "13.6.0";
     public static final int MIN_USER_SERVICE_VERSION = 10;
     public static final int REQUEST_PERMISSION_CODE = 0x5348;
 
@@ -69,5 +75,58 @@ public final class ShizukuBridge {
         } catch (Throwable e) {
             return Process.myUid();
         }
+    }
+
+    @AnyThread
+    @Nullable
+    public static String getInstalledVersionName(@NonNull Context context) {
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(PACKAGE_NAME, 0);
+            return packageInfo.versionName;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    @AnyThread
+    public static boolean isRecommendedManagerVersion(@NonNull Context context) {
+        String versionName = getInstalledVersionName(context);
+        return versionName != null && compareVersion(versionName, MIN_RECOMMENDED_MANAGER_VERSION) >= 0;
+    }
+
+    private static int compareVersion(@NonNull String versionName, @NonNull String requiredVersionName) {
+        int[] version = parseVersionPrefix(versionName);
+        int[] required = parseVersionPrefix(requiredVersionName);
+        for (int i = 0; i < Math.max(version.length, required.length); ++i) {
+            int current = i < version.length ? version[i] : 0;
+            int expected = i < required.length ? required[i] : 0;
+            if (current != expected) {
+                return current - expected;
+            }
+        }
+        return 0;
+    }
+
+    @NonNull
+    private static int[] parseVersionPrefix(@NonNull String versionName) {
+        String normalized = versionName.startsWith("v") ? versionName.substring(1) : versionName;
+        String[] parts = normalized.split("[^0-9]+");
+        int[] version = new int[Math.min(parts.length, 3)];
+        int count = 0;
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            try {
+                version[count++] = Integer.parseInt(part);
+            } catch (NumberFormatException ignore) {
+                version[count++] = 0;
+            }
+            if (count == version.length) break;
+        }
+        if (count == version.length) {
+            return version;
+        }
+        int[] compact = new int[count];
+        System.arraycopy(version, 0, compact, 0, count);
+        return compact;
     }
 }
