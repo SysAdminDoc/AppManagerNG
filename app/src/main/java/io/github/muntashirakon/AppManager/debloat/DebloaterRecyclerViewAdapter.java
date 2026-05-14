@@ -111,7 +111,17 @@ public class DebloaterRecyclerViewAdapter extends MultiSelectionView.Adapter<Deb
         }
         sb.append(getColoredText(context.getString(removalRes), removalColor));
         if (!TextUtils.isEmpty(warning)) {
-            sb.append(" — ").append(warning);
+            sb.append(" - ").append(warning);
+        }
+        int dependencies = debloatObject.getDependencies().length;
+        int requiredBy = debloatObject.getRequiredBy().length;
+        if (requiredBy > 0) {
+            sb.append(" - ").append(context.getResources().getQuantityString(
+                    R.plurals.debloat_card_required_by, requiredBy, requiredBy));
+        }
+        if (dependencies > 0) {
+            sb.append(" - ").append(context.getResources().getQuantityString(
+                    R.plurals.debloat_card_dependencies, dependencies, dependencies));
         }
         CharSequence label = debloatObject.getLabelOrPackageName();
         String typeLabel = debloatObject.type.toUpperCase(Locale.ROOT);

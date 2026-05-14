@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Rootless Debloat via Shizuku/ADB shell (2026-05-14)
+
+- Added a Debloater uninstall path that uses `pm uninstall --user <id>` through the active Shizuku/ADB shell service, avoiding the accessibility-driven uninstall flow when a rootless privileged shell is available.
+- Expanded Debloater safety feedback so selected removals show safe/replace/caution/unsafe counts, dependency or required-by warning counts, and high-risk examples before the batch starts.
+- Debloater list rows now surface dependency and required-by counts from the bundled android-debloat-list metadata, making risky removals visible before opening the details sheet.
+
 ### Added — Guided Wireless ADB setup (2026-05-14)
 
 - Added a first-run Wireless ADB setup affordance in onboarding, including Android 11+ fallback guidance, direct pairing/connect recovery, and remembered paired-device status.

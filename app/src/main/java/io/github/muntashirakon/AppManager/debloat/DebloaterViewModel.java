@@ -117,6 +117,17 @@ public class DebloaterViewModel extends AndroidViewModel {
     }
 
     @NonNull
+    public List<DebloatObject> getSelectedDebloatObjects() {
+        List<DebloatObject> selectedDebloatObjects = new ArrayList<>();
+        for (DebloatObject debloatObject : mDebloatObjects) {
+            if (mSelectedPackages.containsKey(debloatObject.packageName)) {
+                selectedDebloatObjects.add(debloatObject);
+            }
+        }
+        return selectedDebloatObjects;
+    }
+
+    @NonNull
     public ArrayList<UserPackagePair> getSelectedPackagesWithUsers() {
         ArrayList<UserPackagePair> userPackagePairs = new ArrayList<>();
         int myUserId = UserHandleHidden.myUserId();

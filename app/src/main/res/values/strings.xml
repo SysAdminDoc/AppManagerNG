@@ -1886,6 +1886,25 @@
     <string name="debloater_empty_message_search">Search is hiding every recommendation in the current debloat list.</string>
     <string name="debloater_empty_action_clear_search">Clear search</string>
     <string name="debloater_item_content_description">%1$s, package %2$s, %3$s, %4$s list</string>
+    <plurals name="debloat_card_dependencies">
+        <item quantity="one">Depends on %d package</item>
+        <item quantity="other">Depends on %d packages</item>
+    </plurals>
+    <plurals name="debloat_card_required_by">
+        <item quantity="one">Required by %d package</item>
+        <item quantity="other">Required by %d packages</item>
+    </plurals>
+    <string name="rootless_debloat_uninstall_title">Remove selected apps for this user?</string>
+    <string name="rootless_debloat_confirmation_intro_pm">Selected apps will be removed for their selected Android user through %1$s using pm uninstall --user.</string>
+    <string name="rootless_debloat_confirmation_intro_standard">Selected apps will be removed through the package installer path.</string>
+    <string name="rootless_debloat_confirmation_safety">Safety ratings: %1$d safe, %2$d replace, %3$d caution, %4$d unsafe.</string>
+    <plurals name="rootless_debloat_dependency_warnings">
+        <item quantity="one">%d selected app declares dependency or required-by warnings.</item>
+        <item quantity="other">%d selected apps declare dependency or required-by warnings.</item>
+    </plurals>
+    <string name="rootless_debloat_confirmation_risky_examples">Review first: %1$s.</string>
+    <string name="rootless_debloat_confirmation_footer">This removes apps from the selected user profile. System packages can usually be restored later with Install existing if the base APK remains on the device.</string>
+    <string name="remove_for_user">Remove for user</string>
     <string name="system_app_put_back">Put back</string>
     <string name="debloater_title">Debloater</string>
     <string name="debloat_list_aosp">AOSP</string>

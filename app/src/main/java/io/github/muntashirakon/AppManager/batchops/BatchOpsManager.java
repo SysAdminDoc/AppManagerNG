@@ -59,6 +59,7 @@ import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
 import io.github.muntashirakon.AppManager.compat.StorageManagerCompat;
+import io.github.muntashirakon.AppManager.debloat.RootlessDebloat;
 import io.github.muntashirakon.AppManager.logs.Logger;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
@@ -843,7 +844,8 @@ public class BatchOpsManager {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         AccessibilityMultiplexer accessibility = AccessibilityMultiplexer.getInstance();
-        if (!SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
+        boolean canUsePmUninstall = RootlessDebloat.canUsePmUninstall();
+        if (!canUsePmUninstall && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
             // Try to use accessibility in unprivileged mode
             accessibility.enableUninstall(true);
         }
@@ -852,8 +854,14 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
-            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-            if (!installer.uninstall(pair.getPackageName(), pair.getUserId(), false)) {
+            boolean uninstalled;
+            if (canUsePmUninstall) {
+                uninstalled = RootlessDebloat.uninstallForUser(pair, false);
+            } else {
+                PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                uninstalled = installer.uninstall(pair.getPackageName(), pair.getUserId(), false);
+            }
+            if (!uninstalled) {
                 log("====> op=UNINSTALL, pkg=" + pair);
                 failedPackages.add(pair);
             }

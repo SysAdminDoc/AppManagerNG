@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,6 +26,9 @@ import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textview.MaterialTextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -185,7 +189,7 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_uninstall) {
-            handleBatchOpWithWarning(BatchOpsManager.OP_UNINSTALL);
+            showDebloatUninstallDialog();
         } else if (id == R.id.action_put_back) {
             // TODO: 8/8/22
         } else if (id == R.id.action_freeze_unfreeze) {
@@ -311,13 +315,78 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                 .show();
     }
 
-    private void handleBatchOpWithWarning(@BatchOpsManager.OpType int op) {
+    private void showDebloatUninstallDialog() {
+        if (viewModel == null) return;
+        List<DebloatObject> selectedObjects = viewModel.getSelectedDebloatObjects();
+        if (selectedObjects.isEmpty()) return;
+        boolean usesPmUninstall = RootlessDebloat.canUsePmUninstall();
         new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.are_you_sure)
-                .setMessage(R.string.this_action_cannot_be_undone)
-                .setPositiveButton(R.string.yes, (dialog, which) -> handleBatchOp(op))
-                .setNegativeButton(R.string.no, null)
+                .setTitle(R.string.rootless_debloat_uninstall_title)
+                .setMessage(buildDebloatUninstallMessage(selectedObjects, usesPmUninstall))
+                .setPositiveButton(usesPmUninstall ? R.string.remove_for_user : R.string.uninstall,
+                        (dialog, which) -> handleBatchOp(BatchOpsManager.OP_UNINSTALL))
+                .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    @NonNull
+    private String buildDebloatUninstallMessage(@NonNull List<DebloatObject> selectedObjects,
+                                                boolean usesPmUninstall) {
+        int safe = 0;
+        int replace = 0;
+        int caution = 0;
+        int unsafe = 0;
+        int dependencyWarnings = 0;
+        List<String> reviewFirst = new ArrayList<>();
+        for (DebloatObject debloatObject : selectedObjects) {
+            switch (debloatObject.getRemoval()) {
+                case DebloatObject.REMOVAL_SAFE:
+                    ++safe;
+                    break;
+                case DebloatObject.REMOVAL_REPLACE:
+                    ++replace;
+                    break;
+                case DebloatObject.REMOVAL_UNSAFE:
+                    ++unsafe;
+                    break;
+                default:
+                case DebloatObject.REMOVAL_CAUTION:
+                    ++caution;
+                    break;
+            }
+            boolean hasDependencyWarning = debloatObject.getDependencies().length > 0
+                    || debloatObject.getRequiredBy().length > 0;
+            if (hasDependencyWarning) {
+                ++dependencyWarnings;
+            }
+            if ((debloatObject.getRemoval() >= DebloatObject.REMOVAL_CAUTION || hasDependencyWarning)
+                    && reviewFirst.size() < 5) {
+                reviewFirst.add(debloatObject.getLabelOrPackageName().toString());
+            }
+        }
+        StringBuilder message = new StringBuilder();
+        if (usesPmUninstall) {
+            message.append(getString(R.string.rootless_debloat_confirmation_intro_pm,
+                    RootlessDebloat.getProviderLabel(this)));
+        } else {
+            message.append(getString(R.string.rootless_debloat_confirmation_intro_standard));
+        }
+        message.append("\n\n")
+                .append(getString(R.string.rootless_debloat_confirmation_safety,
+                        safe, replace, caution, unsafe));
+        if (dependencyWarnings > 0) {
+            message.append("\n")
+                    .append(getResources().getQuantityString(
+                            R.plurals.rootless_debloat_dependency_warnings,
+                            dependencyWarnings, dependencyWarnings));
+        }
+        if (!reviewFirst.isEmpty()) {
+            message.append("\n")
+                    .append(getString(R.string.rootless_debloat_confirmation_risky_examples,
+                            TextUtils.join(", ", reviewFirst)));
+        }
+        message.append("\n\n").append(getString(R.string.rootless_debloat_confirmation_footer));
+        return message.toString();
     }
 
     private void handleBatchOp(@BatchOpsManager.OpType int op) {
