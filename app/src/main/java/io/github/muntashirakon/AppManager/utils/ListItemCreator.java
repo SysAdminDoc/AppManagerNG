@@ -29,7 +29,11 @@ public class ListItemCreator {
     public ImageView itemIcon;
 
     public ListItemCreator(@NonNull Activity activity, @IdRes int resIdMenuContainer) {
-        mListContainer = activity.findViewById(resIdMenuContainer);
+        this(activity, activity.findViewById(resIdMenuContainer));
+    }
+
+    public ListItemCreator(@NonNull Activity activity, @NonNull LinearLayoutCompat listContainer) {
+        mListContainer = listContainer;
         mListContainer.removeAllViews();
         mLayoutInflater = activity.getLayoutInflater();
     }
