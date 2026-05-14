@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later
 
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
 buildscript {
     apply from: 'versions.gradle'
 
@@ -24,6 +26,10 @@ allprojects {
         google()
         mavenCentral()
         maven { url "https://jitpack.io" }
+    }
+    tasks.withType(AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
     }
     gradle.projectsEvaluated {
         tasks.withType(JavaCompile).tap {

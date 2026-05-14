@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Reproducible release verification (2026-05-14)
+
+- Added a two-clean-build release gate that compares signed APK SHA-256 hashes before publishing, plus a release checksum sidecar and local Windows/Linux reproducibility verification scripts.
+- Normalized Gradle archive ordering/timestamps and server-jar D8 input ordering so release artifacts are stable across clean builds.
+
 ## v0.4.2 — 2026-05-13
 
 ### Changed — Contextual notification permission for installer progress (2026-05-13)

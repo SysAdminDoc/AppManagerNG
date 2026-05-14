@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-09 — Iter-22 incremental drain (7 rows closed): T10 Per-App Locale Picker, T8 Launcher Shortcuts (static set), T8 `am://` URI Scheme (App Info alias + intent-API docs), T4 CI Dependency CVE Scan, T10 Pseudolocale build-side, Eng-Debt Upstream Repo-Rename Watcher, T2 Predictive-Back WebView audit (clean).
+**Last updated:** 2026-05-14 — T1 Reproducible Builds closed with a two-clean-build signed APK hash gate, release checksum sidecar, deterministic archive settings, and stable server-jar input ordering.
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -63,7 +63,7 @@ Required before any APK reaches real users. Every item here is blocking F-Droid 
 | ~~**applicationId Rename**~~ ✅ v0.2.0 | Change `io.github.muntashirakon.AppManager` → `io.github.sysadmindoc.AppManagerNG`; update all `BuildConfig` references | Low |
 | ~~**New Release Keystore**~~ ✅ v0.2.0 | Generate NG-specific signing key; document SHA-256 fingerprint in README for AppVerifier compatibility | Low |
 | ~~**GitHub Actions Release Pipeline**~~ ✅ v0.2.0 | `release.yml`: tag push → build → sign → upload APK to GitHub Releases; parallel arm64-v8a / universal ABIs | Medium |
-| **Reproducible Builds** | Match upstream's reproducible build config (added in upstream v4.0.5); CI diff step compares release APK binary hash | Medium |
+| ~~**Reproducible Builds**~~ ✅ 2026-05-14 | Release publishing now runs [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh): two clean signed `:app:assembleRelease` builds from the same tag, SHA-256 comparison, and publish blocked on mismatch. Windows maintainers can run the same contract via [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1). Gradle archive tasks use reproducible ordering/timestamps; `server` D8 inputs for `am.jar` / `main.jar` are sorted; release assets include a `.sha256` sidecar. Details at [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md). | Medium |
 | **IzzyOnDroid Listing** | Submit after rename; IzzyOnDroid is faster than F-Droid proper and the primary privacy-community distribution channel | Low |
 | **F-Droid Listing** | Submit to F-Droid proper after IzzyOnDroid pass; requires REUSE compliance (already in place) | Low–Med |
 | ~~**Obtainium Config**~~ ✅ 2026-05-01 | Publish pre-built app config at `apps.obtainium.imranr.dev` so users can track NG updates directly. **Shipped at [docs/distribution/obtainium-config.json](docs/distribution/obtainium-config.json) with README "Install via Obtainium" section. Submission to apps.obtainium.imranr.dev is a separate manual PR step (out-of-band).** | Trivial |
