@@ -726,6 +726,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data android:scheme="content" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.INSTALL_PACKAGE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
                 <data android:scheme="package" />
             </intent-filter>
             <intent-filter>
