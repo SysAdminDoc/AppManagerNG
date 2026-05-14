@@ -32,6 +32,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
+import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -44,6 +45,7 @@ public class ModeOfOpsPreference extends Fragment {
     private static final List<String> MODE_NAMES = Arrays.asList(
             Ops.MODE_AUTO,
             Ops.MODE_ROOT,
+            Ops.MODE_SHIZUKU,
             Ops.MODE_ADB_OVER_TCP,
             Ops.MODE_ADB_WIFI,
             Ops.MODE_NO_ROOT);
@@ -172,6 +174,11 @@ public class ModeOfOpsPreference extends Fragment {
                     updateViews();
                     Ops.connectAdbInput(requireActivity(), mModel);
                     return;
+                case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
+                    mModeOfOpsAlertDialog.dismiss();
+                    updateViews();
+                    Ops.requestShizukuPermission(requireActivity(), mModel);
+                    return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         mModeOfOpsAlertDialog.dismiss();
@@ -272,6 +279,7 @@ public class ModeOfOpsPreference extends Fragment {
      */
     private void bindCapabilities(@NonNull View view) {
         com.google.android.material.textview.MaterialTextView rootRow = view.findViewById(R.id.capability_root);
+        com.google.android.material.textview.MaterialTextView shizukuRow = view.findViewById(R.id.capability_shizuku);
         com.google.android.material.textview.MaterialTextView adbWifiRow = view.findViewById(R.id.capability_adb_wifi);
         com.google.android.material.textview.MaterialTextView adbUsbRow = view.findViewById(R.id.capability_adb_usb);
         if (rootRow != null) {
@@ -279,6 +287,14 @@ public class ModeOfOpsPreference extends Fragment {
                     getString(Ops.hasRoot()
                             ? R.string.mode_of_op_capability_status_detected
                             : R.string.mode_of_op_capability_status_missing)));
+        }
+        if (shizukuRow != null) {
+            int statusRes = ShizukuBridge.hasPermission()
+                    ? R.string.mode_of_op_capability_status_authorized
+                    : ShizukuBridge.supportsUserService()
+                    ? R.string.mode_of_op_capability_status_permission_required
+                    : R.string.mode_of_op_capability_status_missing;
+            shizukuRow.setText(getString(R.string.mode_of_op_capability_shizuku, getString(statusRes)));
         }
         if (adbWifiRow != null) {
             adbWifiRow.setText(getString(R.string.mode_of_op_capability_adb_wifi,
@@ -325,6 +341,8 @@ public class ModeOfOpsPreference extends Fragment {
         switch (mode) {
             case Ops.MODE_ROOT:
                 return uid != Ops.ROOT_UID;
+            case Ops.MODE_SHIZUKU:
+                return uid != Ops.ROOT_UID && uid != Ops.SYSTEM_UID && uid != Ops.SHELL_UID;
             case Ops.MODE_ADB_OVER_TCP:
             case Ops.MODE_ADB_WIFI:
                 return uid > Ops.SHELL_UID;

@@ -113,6 +113,14 @@
                     tools:text="• Root: detected" />
 
                 <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/capability_shizuku"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    tools:text="• Shizuku: authorized" />
+
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/capability_adb_wifi"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

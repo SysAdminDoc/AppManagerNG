@@ -33,6 +33,7 @@
     <array name="modes">
         <item>@string/auto</item>
         <item>@string/root</item>
+        <item>@string/shizuku</item>
         <item>@string/adb_over_tcp</item>
         <item>@string/wireless_debugging</item>
         <item>@string/no_root</item>

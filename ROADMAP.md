@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-14 — T1 Reproducible Builds closed with a two-clean-build signed APK hash gate, release checksum sidecar, deterministic archive settings, and stable server-jar input ordering.
+**Last updated:** 2026-05-14 — T5 Shizuku Privilege Provider closed with Shizuku/Sui UserService binders, automatic runtime detection, mode-selection UI/status copy, and Android 7.0+ provider gating.
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -122,7 +122,7 @@ Shizuku support is the single most-requested upstream feature with 31 reactions 
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Shizuku Privilege Provider** | Add Shizuku as a third privilege path alongside root/ADB via `ShizukuProvider` binder; make privilege selection automatic at runtime | High |
+| ~~**Shizuku Privilege Provider**~~ ✅ 2026-05-14 | Added Shizuku/Sui UserService as a first-class privilege path alongside root and ADB, with automatic runtime detection, permission recovery, mode-selection status, onboarding copy, and Android 7.0+ provider gating. | High |
 | **Wireless ADB Auto-Pairing** | Guide user through Android 11+ wireless ADB pairing in onboarding; persist paired device | Medium |
 | **Rootless Debloat (Shizuku)** | Expose `pm uninstall --user 0` via Shizuku; integrate android-debloat-list ([S23]) safety ratings and dependency warnings | Medium |
 | **Factory-Reset Before System App Uninstall** | Factory-reset a system app to its shipping state before uninstalling; prevents stub-app stalling issues on some ROMs. Canta model ([S43]). | Low |

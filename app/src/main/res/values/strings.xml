@@ -931,6 +931,9 @@
     <string name="send_selected">Send selected</string>
     <string name="pref_mode_of_operations">Mode of operation</string>
     <string name="adb_over_tcp">ADB over TCP</string>
+    <string name="shizuku">Shizuku</string>
+    <string name="shizuku_shell">Shizuku (shell)</string>
+    <string name="shizuku_root">Shizuku (root)</string>
     <string name="allow_routine_ops">Allow routine ops</string>
     <string name="profile_state">Profile state</string>
     <string name="allow_routine_ops_msg">Allow the profile to be used in the routine operations</string>
@@ -1435,6 +1438,12 @@
     <string name="failed_to_use_the_current_mode_of_operation">Unable to use the current mode of operation. Falling back to no-root mode for this session.</string>
     <string name="warning_working_on_root_mode">Warning: Working on root instead of ADB mode.</string>
     <string name="warning_working_on_system_mode">Warning: Working on system instead of ADB mode.</string>
+    <string name="working_on_shizuku_mode">Working through Shizuku shell mode</string>
+    <string name="working_on_shizuku_root_mode">Working through Shizuku root mode</string>
+    <string name="working_on_shizuku_system_mode">Working through Shizuku system mode</string>
+    <string name="shizuku_permission_required_title">Allow Shizuku access?</string>
+    <string name="shizuku_permission_denied_message">Shizuku is running, but AppManagerNG is not authorized. Open Shizuku and allow AppManagerNG under Authorized applications, then try again.</string>
+    <string name="shizuku_unavailable_message">Shizuku is not running, this device is below Android 7.0, or Shizuku is too old for UserService mode. Start Shizuku v11 or newer on Android 7.0+, then try again.</string>
     <string name="magisk_denylist">Magisk DenyList</string>
     <string name="failed_to_enable_magisk_deny_list">Could not enable Magisk DenyList</string>
     <string name="failed_to_disable_magisk_deny_list">Could not disable Magisk DenyList</string>
@@ -1527,6 +1536,11 @@
     <string name="onboarding_mode_root_summary">Most powerful. Required for component blocking via IFW, full backup/restore, and direct privileged operations.</string>
     <string name="onboarding_mode_root_status_detected">Root detected on this device</string>
     <string name="onboarding_mode_root_status_missing">Not detected — only pick this if you know root is set up</string>
+    <string name="onboarding_mode_shizuku_title">Shizuku</string>
+    <string name="onboarding_mode_shizuku_summary">Rootless privileged mode. Uses Shizuku or Sui to run AppManagerNG services as shell or root without a local ADB daemon.</string>
+    <string name="onboarding_mode_shizuku_status_ready">Shizuku is running and authorized</string>
+    <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku is running — authorization required</string>
+    <string name="onboarding_mode_shizuku_status_missing">Not running — start Shizuku first</string>
     <string name="onboarding_mode_adb_wifi_title">Wireless ADB (Android 11+)</string>
     <string name="onboarding_mode_adb_wifi_summary">Connect via Wireless debugging. Most features unlocked, no PC needed after pairing.</string>
     <string name="onboarding_mode_adb_tcp_title">ADB over TCP</string>
@@ -1547,17 +1561,21 @@
     <string name="onboarding_mode_root_pick_without_detection">A working root binary was not detected on this device. Picking Root anyway is fine if your root manager hides su until first request, but most operations will fail until you grant root.\n\nContinue with Root mode?</string>
     <string name="onboarding_mode_info_a11y">Learn more about <xliff:g id="mode" example="Auto">%1$s</xliff:g> mode</string>
     <string name="onboarding_explainer_pick_this">Pick this</string>
-    <string name="onboarding_mode_auto_explainer">AppManagerNG checks your device on every cold start in this order:\n\n1. Root (Magisk / KernelSU / SuperSU) — picked if a working su binary is present.\n2. Wireless debugging (Android 11+) — used if you enabled and paired it.\n3. ADB over TCP — used if a PC opened the daemon over USB previously.\n4. No-root — final fallback. Limited features but always works.\n\nPick this if you are not sure. AppManagerNG re-checks on every launch, so if you set up Wireless ADB later it picks up automatically.</string>
+    <string name="onboarding_mode_auto_explainer">AppManagerNG checks your device on every cold start in this order:\n\n1. Root (Magisk / KernelSU / SuperSU) — picked if a working su binary is present.\n2. Shizuku or Sui — used when it is running and AppManagerNG is authorized.\n3. Wireless debugging (Android 11+) — used if you enabled and paired it.\n4. ADB over TCP — used if a PC opened the daemon over USB previously.\n5. No-root — final fallback. Limited features but always works.\n\nPick this if you are not sure. AppManagerNG re-checks on every launch, so if you set up Shizuku or Wireless ADB later it picks up automatically.</string>
     <string name="onboarding_mode_root_explainer">Root unlocks the most powerful operations:\n\n• Component blocking via Intent Firewall (IFW) — survives reboots, can be applied to any app including system apps.\n• Full backup/restore including app data, encrypted with your AppManagerNG keystore.\n• Direct system-API calls without going through the limited PackageInstaller.\n• AppOps and runtime-permission control beyond what Settings exposes.\n\nRequires a Magisk, KernelSU, or SuperSU setup on the device. AppManagerNG will request su access the first time you trigger a privileged operation.</string>
+    <string name="onboarding_mode_shizuku_explainer">Shizuku lets AppManagerNG bind its privileged service through the Shizuku or Sui process instead of launching its own root/ADB daemon:\n\n• Works without rooting the app itself when Shizuku is started through ADB.\n• Can use root privileges when backed by Sui or a root-started Shizuku session.\n• Unlocks shell-level package, app-op, permission, force-stop, and install flows without keeping a local ADB socket open.\n• Does not turn shell into full root; protected app data and IFW paths still require root.\n\nStart Shizuku first, authorize AppManagerNG, then pick this mode. Auto mode will also choose Shizuku when it is already authorized.</string>
     <string name="onboarding_mode_adb_wifi_explainer">Wireless debugging (Android 11+) lets AppManagerNG run on the same uid as ADB without requiring a PC after the initial pairing:\n\n• Most features of root mode are available — component blocking via PackageManager, AppOps tweaks, force-stop, clear data.\n• IFW-based blocking is unavailable (root-only); the disable path is used instead.\n• Backup/restore can read app APKs but not protected app data.\n\nEnable Wireless debugging in Developer options &gt; Wireless debugging, pair it once with your phone\'s pairing dialog, and AppManagerNG can connect from then on.</string>
     <string name="onboarding_mode_adb_tcp_explainer">ADB over TCP runs AppManagerNG with shell-uid privileges using the ADB daemon already running on the device. The first connection requires a PC over USB to start the daemon; after that the device alone is enough.\n\nFeature parity with Wireless debugging mode — most operations work, IFW blocking does not.\n\nUse this on devices older than Android 11, or if Wireless debugging refuses to pair.</string>
     <string name="onboarding_mode_no_root_explainer">No-root mode uses only what Android exposes to a regular app:\n\n• Launching apps and viewing their metadata.\n• System uninstall flow (a confirmation dialog) for sideloaded apps.\n• Reading the bundled tracker dataset to show which apps contain known SDKs.\n\nBlocking trackers, force-stopping apps, clearing data, restoring backups, and most other privileged operations are not available.\n\nWorks on every device with no setup. Pick this if you do not have root and do not want to enable ADB.</string>
     <string name="mode_of_op_capabilities_title">Available on this device</string>
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
+    <string name="mode_of_op_capability_shizuku">• Shizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_adb_wifi">• Wireless debugging: <xliff:g id="status" example="active">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_adb_usb">• USB debugging: <xliff:g id="status" example="enabled">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_status_detected">detected</string>
     <string name="mode_of_op_capability_status_missing">not detected</string>
+    <string name="mode_of_op_capability_status_authorized">authorized</string>
+    <string name="mode_of_op_capability_status_permission_required">permission required</string>
     <string name="mode_of_op_capability_status_active">active</string>
     <string name="mode_of_op_capability_status_inactive">not active</string>
     <string name="mode_of_op_capability_status_enabled">enabled</string>

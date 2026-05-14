@@ -183,6 +183,8 @@ dependencies {
     // Privileged
     implementation "com.github.MuntashirAkon:libadb-android:${libadb_version}"
     implementation "com.github.topjohnwu.libsu:core:${libsu_version}"
+    implementation "dev.rikka.shizuku:api:${shizuku_version}"
+    implementation "dev.rikka.shizuku:provider:${shizuku_version}"
     implementation "org.lsposed.hiddenapibypass:hiddenapibypass:${hiddenapibypass_version}"
     implementation "dev.rikka.tools.refine:runtime:${refine_version}"
 
