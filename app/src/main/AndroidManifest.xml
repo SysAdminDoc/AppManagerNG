@@ -173,6 +173,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.V2"
         tools:ignore="UnusedAttribute">
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+            android:value="true"
+            tools:targetApi="31" />
+
         <activity
             android:name=".filters.FinderActivity"
             android:enableOnBackInvokedCallback="true"
@@ -472,6 +477,11 @@
                     android:scheme="market" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".main.MainSplitPlaceholderActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/app_info" />
         <activity
             android:name=".terminal.TermActivity"
             android:enableOnBackInvokedCallback="true"

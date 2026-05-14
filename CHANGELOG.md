@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Adaptive app-details split on large screens (2026-05-14)
+
+- Added AndroidX Activity Embedding for the high-traffic Main → AppDetails flow so ≥900dp displays can keep the app catalog and details open side by side.
+- Added a calm split-placeholder panel for wide screens before an app is selected, and pinned WindowManager to the latest stable line that preserves the repo's API 21 floor.
+
 ### Changed — Reproducible release verification (2026-05-14)
 
 - Added a two-clean-build release gate that compares signed APK SHA-256 hashes before publishing, plus a release checksum sidecar and local Windows/Linux reproducibility verification scripts.

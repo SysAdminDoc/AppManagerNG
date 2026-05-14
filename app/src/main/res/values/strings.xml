@@ -90,6 +90,8 @@
     <string name="main_empty_message_no_matches_with_filters">Active filters: <xliff:g id="filter_list" example="With trackers, Frozen apps">%1$s</xliff:g>. Tap below to clear them.</string>
     <string name="main_empty_action_clear_search">Clear search</string>
     <string name="main_empty_action_clear_filters">Clear filters</string>
+    <string name="main_split_placeholder_title">Select an app</string>
+    <string name="main_split_placeholder_summary">Choose an app from the list to keep the catalog and details open side by side.</string>
     <string name="main_list_debuggable_indicator">Debuggable app</string>
     <string name="main_list_installed_state">Installed</string>
     <string name="main_list_uninstalled_state">Not installed</string>
