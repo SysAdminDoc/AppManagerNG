@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Triggered by a vX.Y.Z tag push.
-# Builds a signed release APK (arm64-v8a + universal), creates a GitHub Release,
-# and uploads both APK variants as release assets.
+# Builds a signed release APK twice from a clean tree, compares the binary hashes,
+# creates a GitHub Release, and uploads the verified APK plus SHA-256 sidecar.
 #
 # Required GitHub Secrets:
 #   SIGNING_KEYSTORE_BASE64  — base64-encoded AppManagerNG-release.jks
@@ -69,26 +69,31 @@ jobs:
       - name: Grant Gradle execute permission
         run: chmod +x gradlew
 
-      - name: Build release APKs
-        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+      - name: Verify reproducible release APK
+        run: bash scripts/verify_reproducible_release.sh
 
       - name: Locate APK artifacts
         id: apks
         run: |
-          SRC="app/build/outputs/apk/release/app-release.apk"
+          SRC="build/reproducible-release/AppManagerNG-reproducible-release.apk"
           DEST="app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}-universal.apk"
-          mv "$SRC" "$DEST"
+          CHECKSUM="${DEST}.sha256"
+          cp "$SRC" "$DEST"
+          HASH="$(sha256sum "$DEST" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" "$(basename "$DEST")" > "$CHECKSUM"
           echo "UNIVERSAL=$DEST" >> "$GITHUB_OUTPUT"
+          echo "CHECKSUM=$CHECKSUM" >> "$GITHUB_OUTPUT"
 
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
-            gh release upload "${{ github.ref_name }}" "${{ steps.apks.outputs.UNIVERSAL }}" --clobber
+            gh release upload "${{ github.ref_name }}" "${{ steps.apks.outputs.UNIVERSAL }}" "${{ steps.apks.outputs.CHECKSUM }}" --clobber
           else
             gh release create "${{ github.ref_name }}" \
               --title "AppManagerNG ${{ github.ref_name }}" \
               --generate-notes \
-              "${{ steps.apks.outputs.UNIVERSAL }}"
+              "${{ steps.apks.outputs.UNIVERSAL }}" \
+              "${{ steps.apks.outputs.CHECKSUM }}"
           fi
