@@ -65,10 +65,10 @@ android.libraryVariants.configureEach { variant ->
             def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
             buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
                 !it.fileName.toString().startsWith("IRootServiceManager")
-            }.map { it.toString() }.collect(Collectors.toList()))
+            }.sorted().map { it.toString() }.collect(Collectors.toList()))
             buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
                 !it.fileName.toString().startsWith("RootServiceMain")
-            }.map { it.toString() }.collect(Collectors.toList()))
+            }.sorted().map { it.toString() }.collect(Collectors.toList()))
             injected.execOps.exec {
                 workingDir = project.rootDir
                 executable = d8Executable
@@ -80,10 +80,10 @@ android.libraryVariants.configureEach { variant ->
             buildArgs = ['--release', '--output', mainJar, '--classpath', androidJar]
             buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
                 it.fileName.toString().startsWith("IRootServiceManager") || it.fileName.toString().startsWith("ServerUtils")
-            }.map { it.toString() }.collect(Collectors.toList()))
+            }.sorted().map { it.toString() }.collect(Collectors.toList()))
             buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
                 it.fileName.toString().startsWith("RootServiceMain")
-            }.map { it.toString() }.collect(Collectors.toList()))
+            }.sorted().map { it.toString() }.collect(Collectors.toList()))
             injected.execOps.exec {
                 workingDir = project.rootDir
                 executable = d8Executable

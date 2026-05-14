@@ -130,6 +130,13 @@ Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
 apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
 ```
 
+Release publishing also runs a two-build reproducibility gate: CI builds the
+signed APK twice from a clean checkout, compares the binary SHA-256 hashes, and
+uploads a `.sha256` sidecar only when the bytes match. Maintainers can run the
+same check locally with [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
+on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
+on Linux CI; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+
 ### Stable fingerprint URL (for programmatic verification)
 
 The same fingerprint is published in machine-parseable form at a stable URL so
