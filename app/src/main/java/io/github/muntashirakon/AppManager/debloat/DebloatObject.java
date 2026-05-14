@@ -82,6 +82,8 @@ public class DebloatObject {
     @Nullable
     private Boolean mSystemApp = null;
     @Nullable
+    private Boolean mUpdatedSystemApp = null;
+    @Nullable
     private Boolean mFrozen = null;
     @Nullable
     private List<SuggestionObject> mSuggestions;
@@ -187,6 +189,10 @@ public class DebloatObject {
         return Boolean.FALSE.equals(mSystemApp);
     }
 
+    public boolean isUpdatedSystemApp() {
+        return Boolean.TRUE.equals(mUpdatedSystemApp);
+    }
+
     public boolean isFrozen() {
         return Boolean.TRUE.equals(mFrozen);
     }
@@ -208,6 +214,7 @@ public class DebloatObject {
         mInstalled = false;
         mUsers = null;
         mSystemApp = null;
+        mUpdatedSystemApp = null;
         mFrozen = null;
         List<App> apps = appDb.getAllApplications(packageName);
         for (App app : apps) {
@@ -216,7 +223,8 @@ public class DebloatObject {
             }
             mInstalled = true;
             addUser(app.userId);
-            mSystemApp = app.isSystemApp();
+            mUpdatedSystemApp = (app.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+            mSystemApp = app.isSystemApp() || mUpdatedSystemApp;
             mFrozen = !app.isEnabled;
             mLabel = app.packageLabel;
             if (getIcon() == null) {
@@ -224,7 +232,8 @@ public class DebloatObject {
                     ApplicationInfo ai = PackageManagerCompat.getApplicationInfo(packageName,
                             MATCH_UNINSTALLED_PACKAGES | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, app.userId);
                     mInstalled = (ai.flags & ApplicationInfo.FLAG_INSTALLED) != 0;
-                    mSystemApp = ApplicationInfoCompat.isSystemApp(ai);
+                    mUpdatedSystemApp = (ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+                    mSystemApp = ApplicationInfoCompat.isSystemApp(ai) || mUpdatedSystemApp;
                     mLabel = ai.loadLabel(pm);
                     mIcon = ai.loadIcon(pm);
                     mFrozen = FreezeUtils.isFrozen(ai);

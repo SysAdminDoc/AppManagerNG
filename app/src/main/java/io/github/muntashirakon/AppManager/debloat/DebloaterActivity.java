@@ -337,6 +337,7 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         int caution = 0;
         int unsafe = 0;
         int dependencyWarnings = 0;
+        int updatedSystemApps = 0;
         List<String> reviewFirst = new ArrayList<>();
         for (DebloatObject debloatObject : selectedObjects) {
             switch (debloatObject.getRemoval()) {
@@ -359,6 +360,9 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             if (hasDependencyWarning) {
                 ++dependencyWarnings;
             }
+            if (debloatObject.isUpdatedSystemApp()) {
+                ++updatedSystemApps;
+            }
             if ((debloatObject.getRemoval() >= DebloatObject.REMOVAL_CAUTION || hasDependencyWarning)
                     && reviewFirst.size() < 5) {
                 reviewFirst.add(debloatObject.getLabelOrPackageName().toString());
@@ -379,6 +383,12 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                     .append(getResources().getQuantityString(
                             R.plurals.rootless_debloat_dependency_warnings,
                             dependencyWarnings, dependencyWarnings));
+        }
+        if (updatedSystemApps > 0) {
+            message.append("\n")
+                    .append(getResources().getQuantityString(
+                            R.plurals.rootless_debloat_factory_reset_updates,
+                            updatedSystemApps, updatedSystemApps));
         }
         if (!reviewFirst.isEmpty()) {
             message.append("\n")

@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Factory-reset before system app uninstall (2026-05-14)
+
+- Updated Debloater uninstall flows to reset updated system apps back to their factory version before user-scope removal, avoiding stale updated-system stubs on ROMs that otherwise leave packages in a stalled state.
+- Added confirmation and row-level copy for updated system apps so the reset step is explicit before the batch starts.
+
 ### Added — Rootless Debloat via Shizuku/ADB shell (2026-05-14)
 
 - Added a Debloater uninstall path that uses `pm uninstall --user <id>` through the active Shizuku/ADB shell service, avoiding the accessibility-driven uninstall flow when a rootless privileged shell is available.

@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import java.util.ArrayList;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -31,6 +32,10 @@ public final class RootlessDebloat {
     }
 
     public static boolean uninstallForUser(@NonNull UserPackagePair pair, boolean keepData) {
+        if (!PackageInstallerCompat.factoryResetUpdatedSystemApp(pair.getPackageName(), pair.getUserId(), keepData)) {
+            return false;
+        }
+
         ArrayList<String> command = new ArrayList<>();
         command.add("pm");
         command.add("uninstall");

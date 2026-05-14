@@ -1894,6 +1894,7 @@
         <item quantity="one">Required by %d package</item>
         <item quantity="other">Required by %d packages</item>
     </plurals>
+    <string name="debloat_card_factory_reset_update">Updated system app; resets before removal</string>
     <string name="rootless_debloat_uninstall_title">Remove selected apps for this user?</string>
     <string name="rootless_debloat_confirmation_intro_pm">Selected apps will be removed for their selected Android user through %1$s using pm uninstall --user.</string>
     <string name="rootless_debloat_confirmation_intro_standard">Selected apps will be removed through the package installer path.</string>
@@ -1901,6 +1902,10 @@
     <plurals name="rootless_debloat_dependency_warnings">
         <item quantity="one">%d selected app declares dependency or required-by warnings.</item>
         <item quantity="other">%d selected apps declare dependency or required-by warnings.</item>
+    </plurals>
+    <plurals name="rootless_debloat_factory_reset_updates">
+        <item quantity="one">%d updated system app will be reset to the factory version before removal.</item>
+        <item quantity="other">%d updated system apps will be reset to the factory version before removal.</item>
     </plurals>
     <string name="rootless_debloat_confirmation_risky_examples">Review first: %1$s.</string>
     <string name="rootless_debloat_confirmation_footer">This removes apps from the selected user profile. System packages can usually be restored later with Install existing if the base APK remains on the device.</string>

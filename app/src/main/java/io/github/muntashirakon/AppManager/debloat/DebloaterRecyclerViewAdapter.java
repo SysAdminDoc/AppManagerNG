@@ -115,6 +115,9 @@ public class DebloaterRecyclerViewAdapter extends MultiSelectionView.Adapter<Deb
         }
         int dependencies = debloatObject.getDependencies().length;
         int requiredBy = debloatObject.getRequiredBy().length;
+        if (debloatObject.isUpdatedSystemApp()) {
+            sb.append(" - ").append(context.getString(R.string.debloat_card_factory_reset_update));
+        }
         if (requiredBy > 0) {
             sb.append(" - ").append(context.getResources().getQuantityString(
                     R.plurals.debloat_card_required_by, requiredBy, requiredBy));
