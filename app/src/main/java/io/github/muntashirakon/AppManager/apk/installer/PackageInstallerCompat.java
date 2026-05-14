@@ -65,6 +65,7 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
+import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -1164,6 +1165,11 @@ public final class PackageInstallerCompat {
                 Log.d(TAG, "Uninstall: Requires INTERACT_ACROSS_USERS and INTERACT_ACROSS_USERS_FULL permissions.");
                 return false;
             }
+            if (userId != UserHandleHidden.USER_ALL && !factoryResetUpdatedSystemApp(packageName, userId, keepData)) {
+                callFinish(STATUS_FAILURE_SESSION_CREATE);
+                Log.e(TAG, "Uninstall: Could not factory-reset updated system app %s", packageName);
+                return false;
+            }
             int flags;
             try {
                 flags = getDeleteFlags(packageName, userId, keepData);
@@ -1242,6 +1248,41 @@ public final class PackageInstallerCompat {
         } finally {
             unregisterReceiver();
         }
+    }
+
+    public static boolean factoryResetUpdatedSystemApp(@NonNull String packageName, @UserIdInt int userId,
+                                                       boolean keepData) {
+        if (!isUpdatedSystemApp(packageName, userId)) {
+            return true;
+        }
+        boolean reset = false;
+        if (SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
+            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+            reset = installer.uninstall(packageName, UserHandleHidden.USER_ALL, keepData);
+        }
+        if (!reset) {
+            reset = factoryResetUpdatedSystemAppViaShell(packageName);
+        }
+        if (reset) {
+            BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{packageName});
+        }
+        return reset;
+    }
+
+    private static boolean isUpdatedSystemApp(@NonNull String packageName, @UserIdInt int userId) {
+        try {
+            PackageInfo info = PackageManagerCompat.getPackageInfo(packageName, MATCH_UNINSTALLED_PACKAGES
+                    | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
+            return (info.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    private static boolean factoryResetUpdatedSystemAppViaShell(@NonNull String packageName) {
+        Runner.Result result = Runner.runCommand(new String[]{"pm", "uninstall-system-updates", packageName});
+        String output = result.getOutput().trim();
+        return result.isSuccessful() && output.endsWith("Success") && !output.contains("Couldn't uninstall package");
     }
 
     @DeleteFlags
