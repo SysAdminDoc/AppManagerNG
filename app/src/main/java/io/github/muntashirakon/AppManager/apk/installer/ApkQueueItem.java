@@ -49,7 +49,7 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
             if ("package".equals(uri.getScheme())) {
                 item = new ApkQueueItem(uri.getSchemeSpecificPart(), true);
             } else { // file, content
-                item = new ApkQueueItem(ApkSource.getCachedApkSource(uri, mimeType));
+                item = new ApkQueueItem(ApkSource.getApkSource(uri, mimeType));
                 item.mOriginatingUri = originatingUri;
                 item.mOriginatingPackage = originatingPackage;
                 if (takeFlags > 0) {
@@ -63,7 +63,7 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
 
     @NonNull
     public static ApkQueueItem fromApkSource(@NonNull ApkSource apkSource) {
-        return new ApkQueueItem(apkSource.toCachedSource());
+        return new ApkQueueItem(apkSource);
     }
 
     @Nullable

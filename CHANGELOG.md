@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Installer source streaming (2026-05-14)
+
+- Installer queue items now preserve direct file/content URI sources instead of first staging every APK into the app cache.
+- PackageInstaller session writes prefer the original readable source stream when possible, while retaining cache-backed fallbacks for preview parsing, signing, and APKM conversion.
+- Tightened APK cleanup so closing an `ApkFile` no longer attempts to delete user-provided source files.
+
 ### Added — Debloat presets (2026-05-14)
 
 - Added Privacy, Gaming, and Minimal OEM presets to Debloater so installed recommendations can be selected as curated batches with a recommended freeze or removal path.

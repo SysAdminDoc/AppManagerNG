@@ -676,7 +676,10 @@ public final class ApkFile implements AutoCloseable {
         public long getFileSize() {
             if (Paths.exists(mCachedFile)) return mCachedFile.length();
             if (mZipEntry != null) return mZipEntry.getSize();
-            if (Paths.exists(mSource)) return mSource.length();
+            if (Paths.exists(mSource)) {
+                long length = mSource.length();
+                return length > 0 ? length : -1;
+            }
             else throw new RuntimeException("Neither zipEntry nor source is defined.");
         }
 
@@ -686,8 +689,10 @@ public final class ApkFile implements AutoCloseable {
         @WorkerThread
         public long getFileSize(boolean signed) {
             try {
-                return (signed ? getSignedFile() : getRealCachedFile()).length();
+                return signed ? getSignedFile().length() : getFileSize();
             } catch (IOException e) {
+                return -1;
+            } catch (RuntimeException e) {
                 return -1;
             }
         }
@@ -758,9 +763,19 @@ public final class ApkFile implements AutoCloseable {
             FileUtils.deleteSilently(mCachedFile);
             FileUtils.deleteSilently(mIdsigFile);
             FileUtils.deleteSilently(mSignedFile);
-            if (mSource != null && !mSource.getAbsolutePath().startsWith("/proc/self")
-                    && !mSource.getAbsolutePath().startsWith("/data/app")) {
+            if (isAppCacheFile(mSource)) {
                 FileUtils.deleteSilently(mSource);
+            }
+        }
+
+        private boolean isAppCacheFile(@Nullable File file) {
+            if (file == null) return false;
+            try {
+                String sourcePath = file.getCanonicalPath();
+                String cachePath = FileUtils.getCachePath().getCanonicalPath();
+                return sourcePath.equals(cachePath) || sourcePath.startsWith(cachePath + File.separator);
+            } catch (IOException e) {
+                return false;
             }
         }
 
@@ -772,9 +787,9 @@ public final class ApkFile implements AutoCloseable {
          */
         @NonNull
         private InputStream getRealInputStream() throws IOException {
+            if (Paths.exists(mSource)) return new FileInputStream(mSource);
             if (Paths.exists(mCachedFile)) return new FileInputStream(mCachedFile);
             if (mZipEntry != null) return Objects.requireNonNull(mZipFile).getInputStream(mZipEntry);
-            if (Paths.exists(mSource)) return new FileInputStream(mSource);
             else throw new IOException("Neither zipEntry nor source is defined.");
         }
 
