@@ -20,6 +20,7 @@ import com.google.android.material.color.MaterialColors;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
@@ -91,6 +92,9 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCardActions(view, R.id.card_mode_root, R.id.info_mode_root, R.id.status_root, Ops.MODE_ROOT,
                 R.string.onboarding_mode_root_title, R.string.onboarding_mode_root_summary,
                 R.string.onboarding_mode_root_explainer);
+        bindCardActions(view, R.id.card_mode_shizuku, R.id.info_mode_shizuku, R.id.status_shizuku,
+                Ops.MODE_SHIZUKU, R.string.onboarding_mode_shizuku_title,
+                R.string.onboarding_mode_shizuku_summary, R.string.onboarding_mode_shizuku_explainer);
         bindCardActions(view, R.id.card_mode_adb_wifi, R.id.info_mode_adb_wifi, R.id.status_adb_wifi,
                 Ops.MODE_ADB_WIFI, R.string.onboarding_mode_adb_wifi_title,
                 R.string.onboarding_mode_adb_wifi_summary, R.string.onboarding_mode_adb_wifi_explainer);
@@ -133,6 +137,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCapabilityStatus(rootStatus, Ops.hasRoot(),
                 R.string.onboarding_mode_root_status_detected,
                 R.string.onboarding_mode_root_status_missing);
+        TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
+        bindShizukuStatus(shizukuStatus);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
         bindCapabilityStatus(adbWifiStatus, isWirelessDebuggingActive(),
                 R.string.onboarding_mode_adb_wifi_status_active,
@@ -194,7 +200,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
      */
     private void highlightActiveMode(@NonNull View root, @NonNull String activeMode) {
         int activeCardId = cardIdFor(activeMode);
-        int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_adb_wifi,
+        int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_shizuku, R.id.card_mode_adb_wifi,
                 R.id.card_mode_adb_tcp, R.id.card_mode_no_root};
         int active = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary);
         int strokeWidthActive = (int) (2 * getResources().getDisplayMetrics().density);
@@ -215,6 +221,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private int cardIdFor(@NonNull String mode) {
         switch (mode) {
             case Ops.MODE_ROOT:        return R.id.card_mode_root;
+            case Ops.MODE_SHIZUKU:     return R.id.card_mode_shizuku;
             case Ops.MODE_ADB_WIFI:    return R.id.card_mode_adb_wifi;
             case Ops.MODE_ADB_OVER_TCP:return R.id.card_mode_adb_tcp;
             case Ops.MODE_NO_ROOT:     return R.id.card_mode_no_root;
@@ -241,6 +248,23 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             DrawableCompat.setTint(icon, color);
         }
         statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
+    }
+
+    private void bindShizukuStatus(@Nullable TextView statusView) {
+        if (statusView == null) return;
+        int statusRes;
+        boolean available;
+        if (ShizukuBridge.hasPermission()) {
+            statusRes = R.string.onboarding_mode_shizuku_status_ready;
+            available = true;
+        } else if (ShizukuBridge.supportsUserService()) {
+            statusRes = R.string.onboarding_mode_shizuku_status_needs_permission;
+            available = true;
+        } else {
+            statusRes = R.string.onboarding_mode_shizuku_status_missing;
+            available = false;
+        }
+        bindCapabilityStatus(statusView, available, statusRes, statusRes);
     }
 
     /**

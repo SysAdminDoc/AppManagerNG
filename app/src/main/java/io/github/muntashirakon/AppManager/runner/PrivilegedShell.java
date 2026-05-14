@@ -20,8 +20,7 @@ import io.github.muntashirakon.AppManager.utils.ParcelFileDescriptorUtil;
 class PrivilegedShell extends Runner {
     @Override
     public boolean isRoot() {
-        // ADB shell in App Manager always runs in no-root
-        return false;
+        return io.github.muntashirakon.AppManager.settings.Ops.isWorkingUidRoot();
     }
 
     @WorkerThread

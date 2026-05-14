@@ -168,6 +168,81 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_mode_shizuku"
+            style="@style/Widget.AppTheme.CardView.OnboardingMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_small"
+            android:clickable="true"
+            android:focusable="true">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/padding_medium">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:background="@drawable/onboarding_mode_icon_background"
+                    android:contentDescription="@null"
+                    android:padding="@dimen/padding_small"
+                    app:srcCompat="@drawable/ic_shield_key"
+                    app:tint="?attr/colorOnSecondaryContainer" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_mode_shizuku_title"
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/onboarding_mode_shizuku_summary"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/status_shizuku"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:background="@drawable/onboarding_status_background"
+                        android:minHeight="26dp"
+                        android:paddingHorizontal="@dimen/padding_small"
+                        android:paddingVertical="3dp"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        tools:text="Shizuku is running and authorized" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/info_mode_shizuku"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/onboarding_mode_info"
+                    android:padding="12dp"
+                    app:srcCompat="@drawable/ic_information_circle"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_adb_wifi"
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"

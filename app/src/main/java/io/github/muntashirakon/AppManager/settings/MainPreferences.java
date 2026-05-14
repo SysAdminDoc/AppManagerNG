@@ -39,6 +39,7 @@ public class MainPreferences extends PreferenceFragment implements SearchView.On
     private static final List<String> MODE_NAMES = Arrays.asList(
             Ops.MODE_AUTO,
             Ops.MODE_ROOT,
+            Ops.MODE_SHIZUKU,
             Ops.MODE_ADB_OVER_TCP,
             Ops.MODE_ADB_WIFI,
             Ops.MODE_NO_ROOT);
