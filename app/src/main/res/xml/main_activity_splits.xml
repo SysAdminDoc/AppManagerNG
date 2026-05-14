@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources xmlns:window="http://schemas.android.com/apk/res-auto">
+    <SplitPairRule
+        window:clearTop="false"
+        window:finishPrimaryWithSecondary="never"
+        window:finishSecondaryWithPrimary="always"
+        window:splitLayoutDirection="locale"
+        window:splitMaxAspectRatioInPortrait="alwaysAllow"
+        window:splitMinWidthDp="900"
+        window:splitRatio="0.42">
+        <SplitPairFilter
+            window:primaryActivityName="io.github.muntashirakon.AppManager.main.MainActivity"
+            window:secondaryActivityName="io.github.muntashirakon.AppManager.details.AppDetailsActivity" />
+    </SplitPairRule>
+
+    <SplitPlaceholderRule
+        window:placeholderActivityName="io.github.muntashirakon.AppManager.main.MainSplitPlaceholderActivity"
+        window:splitLayoutDirection="locale"
+        window:splitMaxAspectRatioInPortrait="alwaysAllow"
+        window:splitMinWidthDp="900"
+        window:splitRatio="0.42"
+        window:stickyPlaceholder="false">
+        <ActivityFilter
+            window:activityName="io.github.muntashirakon.AppManager.main.MainActivity" />
+    </SplitPlaceholderRule>
+</resources>

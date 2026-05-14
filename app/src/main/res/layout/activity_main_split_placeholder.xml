@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/premium_space_32"
+    android:paddingVertical="@dimen/premium_space_24"
+    tools:context=".main.MainSplitPlaceholderActivity">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:layout_width="@dimen/main_empty_icon_container_size"
+        android:layout_height="@dimen/main_empty_icon_container_size"
+        android:alpha="0.86"
+        android:background="@drawable/main_empty_icon_background"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:padding="@dimen/main_empty_icon_padding"
+        android:src="@drawable/ic_information_circle"
+        app:tint="?attr/colorOnSecondaryContainer" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/premium_space_20"
+        android:gravity="center"
+        android:text="@string/main_split_placeholder_title"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textColor="?attr/colorOnSurface" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/premium_space_8"
+        android:gravity="center"
+        android:maxWidth="@dimen/main_empty_summary_max_width"
+        android:text="@string/main_split_placeholder_summary"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>
