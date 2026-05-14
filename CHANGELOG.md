@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Debloat presets (2026-05-14)
+
+- Added Privacy, Gaming, and Minimal OEM presets to Debloater so installed recommendations can be selected as curated batches with a recommended freeze or removal path.
+- Presets now preview installed match counts, explain their selection logic, and route through the existing reviewed freeze/remove confirmations before any changes run.
+
 ### Changed — Factory-reset before system app uninstall (2026-05-14)
 
 - Updated Debloater uninstall flows to reset updated system apps back to their factory version before user-scope removal, avoiding stale updated-system stubs on ROMs that otherwise leave packages in a stalled state.

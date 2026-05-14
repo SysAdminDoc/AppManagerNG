@@ -1870,6 +1870,25 @@
     <string name="debloat_removal_type">Type</string>
     <string name="debloater_list_options_summary">Choose which source lists, safety levels, and app states are visible.</string>
     <string name="debloater_status_loading">Loading debloat recommendations…</string>
+    <string name="debloat_presets">Presets</string>
+    <string name="debloat_presets_intro">Choose a curated set of installed recommendations. AppManagerNG selects the matching packages first so you can review them before applying changes.</string>
+    <string name="debloat_preset_privacy">Privacy</string>
+    <string name="debloat_preset_privacy_summary">Targets installed packages tied to ads, analytics, personalization, cloud storefronts, recommendations, or telemetry. Freeze first so the change is reversible.</string>
+    <string name="debloat_preset_gaming">Gaming</string>
+    <string name="debloat_preset_gaming_summary">Targets installed game centers, boosters, arcades, and vendor game services. Freeze first to confirm games and performance modes still behave as expected.</string>
+    <string name="debloat_preset_minimal_oem">Minimal OEM</string>
+    <string name="debloat_preset_minimal_oem_summary">Targets installed OEM or carrier recommendations marked safe, with no dependency or required-by warnings. Removal is still confirmed before it starts.</string>
+    <string name="debloat_preset_preview_title">%1$s preset</string>
+    <string name="debloat_preset_recommended_action">Recommended action: %1$s.</string>
+    <string name="debloat_preset_action_freeze">Freeze selection</string>
+    <string name="debloat_preset_action_remove">Remove selection</string>
+    <string name="debloat_preset_no_matches_title">No installed matches</string>
+    <string name="debloat_preset_no_matches_message">The %1$s preset did not match any installed debloat recommendations on this device.</string>
+    <string name="review_selection">Review selection</string>
+    <plurals name="debloat_preset_match_count">
+        <item quantity="one">%d installed match</item>
+        <item quantity="other">%d installed matches</item>
+    </plurals>
     <plurals name="debloater_status_all_recommendations">
         <item quantity="one">%d debloat recommendation</item>
         <item quantity="other">%d debloat recommendations</item>

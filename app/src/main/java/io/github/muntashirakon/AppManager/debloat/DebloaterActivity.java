@@ -165,6 +165,9 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             DebloaterListOptions dialog = new DebloaterListOptions();
             dialog.show(getSupportFragmentManager(), DebloaterListOptions.TAG);
             return true;
+        } else if (id == R.id.action_debloat_presets) {
+            showDebloatPresetPicker();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -312,6 +315,85 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                 .setNegativeButton(R.string.cancel, null)
                 .setNeutralButton(R.string.unfreeze, (dialog, which, selectedItem) ->
                         handleBatchOp(BatchOpsManager.OP_UNFREEZE))
+                .show();
+    }
+
+    private void showDebloatPresetPicker() {
+        if (viewModel == null) return;
+        DebloatPreset[] presets = DebloatPreset.values();
+        String[] labels = new String[presets.length];
+        int[] counts = new int[presets.length];
+        for (int i = 0; i < presets.length; ++i) {
+            DebloatPreset preset = presets[i];
+            counts[i] = viewModel.countPresetMatches(preset);
+            labels[i] = getString(preset.getTitleRes()) + "\n"
+                    + getResources().getQuantityString(R.plurals.debloat_preset_match_count, counts[i], counts[i]);
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.debloat_presets)
+                .setMessage(R.string.debloat_presets_intro)
+                .setItems(labels, (dialog, which) -> showDebloatPresetPreview(presets[which], counts[which]))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showDebloatPresetPreview(@NonNull DebloatPreset preset, int matchCount) {
+        if (matchCount == 0) {
+            showNoDebloatPresetMatches(preset);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.debloat_preset_preview_title, getString(preset.getTitleRes())))
+                .setMessage(buildDebloatPresetPreviewMessage(preset, matchCount))
+                .setPositiveButton(getDebloatPresetActionLabel(preset), (dialog, which) -> {
+                    if (!selectDebloatPreset(preset)) {
+                        showNoDebloatPresetMatches(preset);
+                        return;
+                    }
+                    if (preset.getRecommendedAction() == DebloatPreset.ACTION_FREEZE) {
+                        showFreezeUnfreezeDialog(Prefs.Blocking.getDefaultFreezingMethod());
+                    } else {
+                        showDebloatUninstallDialog();
+                    }
+                })
+                .setNeutralButton(R.string.review_selection, (dialog, which) -> selectDebloatPreset(preset))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private String buildDebloatPresetPreviewMessage(@NonNull DebloatPreset preset, int matchCount) {
+        String action = getString(preset.getRecommendedAction() == DebloatPreset.ACTION_FREEZE
+                ? R.string.freeze : R.string.remove_for_user);
+        return getString(preset.getSummaryRes()) + "\n\n"
+                + getResources().getQuantityString(R.plurals.debloat_preset_match_count, matchCount, matchCount)
+                + "\n"
+                + getString(R.string.debloat_preset_recommended_action, action);
+    }
+
+    private int getDebloatPresetActionLabel(@NonNull DebloatPreset preset) {
+        return preset.getRecommendedAction() == DebloatPreset.ACTION_FREEZE
+                ? R.string.debloat_preset_action_freeze
+                : R.string.debloat_preset_action_remove;
+    }
+
+    private boolean selectDebloatPreset(@NonNull DebloatPreset preset) {
+        int selected = viewModel.selectPreset(preset);
+        if (selected == 0) {
+            return false;
+        }
+        mAdapter.notifyDataSetChanged();
+        mMultiSelectionView.show();
+        mMultiSelectionView.updateCounter(false);
+        return true;
+    }
+
+    private void showNoDebloatPresetMatches(@NonNull DebloatPreset preset) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.debloat_preset_no_matches_title)
+                .setMessage(getString(R.string.debloat_preset_no_matches_message,
+                        getString(preset.getTitleRes())))
+                .setPositiveButton(R.string.ok, null)
                 .show();
     }
 

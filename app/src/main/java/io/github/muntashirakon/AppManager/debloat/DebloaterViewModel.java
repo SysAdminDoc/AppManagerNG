@@ -127,6 +127,30 @@ public class DebloaterViewModel extends AndroidViewModel {
         return selectedDebloatObjects;
     }
 
+    public int countPresetMatches(@NonNull DebloatPreset preset) {
+        return getPresetMatches(preset).size();
+    }
+
+    public int selectPreset(@NonNull DebloatPreset preset) {
+        List<DebloatObject> matches = getPresetMatches(preset);
+        mSelectedPackages.clear();
+        for (DebloatObject debloatObject : matches) {
+            select(debloatObject);
+        }
+        return matches.size();
+    }
+
+    @NonNull
+    private List<DebloatObject> getPresetMatches(@NonNull DebloatPreset preset) {
+        List<DebloatObject> matches = new ArrayList<>();
+        for (DebloatObject debloatObject : mDebloatObjects) {
+            if (preset.matches(debloatObject)) {
+                matches.add(debloatObject);
+            }
+        }
+        return matches;
+    }
+
     @NonNull
     public ArrayList<UserPackagePair> getSelectedPackagesWithUsers() {
         ArrayList<UserPackagePair> userPackagePairs = new ArrayList<>();
