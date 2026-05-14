@@ -65,8 +65,13 @@ public class OneClickOpsActivity extends BaseActivity {
     PowerManager.WakeLock wakeLock;
 
     private OneClickOpsViewModel mViewModel;
-    private ListItemCreator mItemCreator;
+    private ListItemCreator mReviewItemCreator;
+    private ListItemCreator mBackupItemCreator;
+    private ListItemCreator mMaintenanceItemCreator;
     private LinearLayoutCompat mContainer;
+    private LinearLayoutCompat mReviewContainer;
+    private LinearLayoutCompat mBackupContainer;
+    private LinearLayoutCompat mMaintenanceContainer;
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -87,7 +92,7 @@ public class OneClickOpsActivity extends BaseActivity {
         setSupportActionBar(findViewById(R.id.toolbar));
         mViewModel = new ViewModelProvider(this).get(OneClickOpsViewModel.class);
         mContainer = findViewById(R.id.container);
-        mItemCreator = new ListItemCreator(this, R.id.container);
+        initItemContainers();
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
         wakeLock = CpuUtils.getPartialWakeLock("1-click_ops");
@@ -112,9 +117,29 @@ public class OneClickOpsActivity extends BaseActivity {
         });
     }
 
+    private void initItemContainers() {
+        mReviewContainer = findViewById(R.id.one_click_review_container);
+        mBackupContainer = findViewById(R.id.one_click_backup_container);
+        mMaintenanceContainer = findViewById(R.id.one_click_maintenance_container);
+        if (mReviewContainer == null || mBackupContainer == null || mMaintenanceContainer == null) {
+            ListItemCreator itemCreator = new ListItemCreator(this, mContainer);
+            mReviewContainer = mContainer;
+            mBackupContainer = mContainer;
+            mMaintenanceContainer = mContainer;
+            mReviewItemCreator = itemCreator;
+            mBackupItemCreator = itemCreator;
+            mMaintenanceItemCreator = itemCreator;
+            return;
+        }
+        mReviewItemCreator = new ListItemCreator(this, mReviewContainer);
+        mBackupItemCreator = new ListItemCreator(this, mBackupContainer);
+        mMaintenanceItemCreator = new ListItemCreator(this, mMaintenanceContainer);
+    }
+
     private void setItems() {
-        addSectionHeader(R.string.one_click_ops_section_review_title, R.string.one_click_ops_section_review_summary);
-        mItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_trackers),
+        addSectionHeader(mReviewContainer, R.string.one_click_ops_section_review_title,
+                R.string.one_click_ops_section_review_summary);
+        mReviewItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_trackers),
                         getString(R.string.block_unblock_trackers_description), R.drawable.ic_cctv_off)
                 .setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.block_unblock_trackers)
@@ -134,7 +159,7 @@ public class OneClickOpsActivity extends BaseActivity {
                             mViewModel.blockTrackers(true);
                         })
                         .show());
-        mItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_components_dots),
+        mReviewItemCreator.addItemWithTitleSubtitle(getString(R.string.block_unblock_components_dots),
                         getString(R.string.block_unblock_components_description), R.drawable.ic_block)
                 .setOnClickListener(v -> new TextInputDialogBuilder(this, R.string.input_signatures)
                         .setHelperText(R.string.input_signatures_description)
@@ -151,21 +176,22 @@ public class OneClickOpsActivity extends BaseActivity {
                         })
                         .setNegativeButton(R.string.cancel, null)
                         .show());
-        mItemCreator.addItemWithTitleSubtitle(getString(R.string.set_mode_for_app_ops_dots),
+        mReviewItemCreator.addItemWithTitleSubtitle(getString(R.string.set_mode_for_app_ops_dots),
                         getString(R.string.deny_app_ops_description), R.drawable.ic_tune)
                 .setOnClickListener(v -> showAppOpsSelectionDialog());
-        addSectionHeader(R.string.one_click_ops_section_backup_title, R.string.one_click_ops_section_backup_summary);
-        mItemCreator.addItemWithTitleSubtitle(getText(R.string.back_up),
+        addSectionHeader(mBackupContainer, R.string.one_click_ops_section_backup_title,
+                R.string.one_click_ops_section_backup_summary);
+        mBackupItemCreator.addItemWithTitleSubtitle(getText(R.string.back_up),
                 getText(R.string.backup_msg), R.drawable.ic_backup_restore).setOnClickListener(v ->
                 new BackupTasksDialogFragment().show(getSupportFragmentManager(),
                         BackupTasksDialogFragment.TAG));
-        mItemCreator.addItemWithTitleSubtitle(getText(R.string.restore),
+        mBackupItemCreator.addItemWithTitleSubtitle(getText(R.string.restore),
                 getText(R.string.restore_msg), R.drawable.ic_restore).setOnClickListener(v ->
                 new RestoreTasksDialogFragment().show(getSupportFragmentManager(),
                         RestoreTasksDialogFragment.TAG));
-        addSectionHeader(R.string.one_click_ops_section_maintenance_title,
+        addSectionHeader(mMaintenanceContainer, R.string.one_click_ops_section_maintenance_title,
                 R.string.one_click_ops_section_maintenance_summary);
-        mItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_data_from_uninstalled_apps),
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_data_from_uninstalled_apps),
                         getString(R.string.clear_data_from_uninstalled_apps_description), R.drawable.ic_clear_data)
                 .setOnClickListener(v -> {
                     setBusy(true);
@@ -177,7 +203,7 @@ public class OneClickOpsActivity extends BaseActivity {
 //        mItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_app_cache),
 //                        getString(R.string.clear_app_cache_description))
 //                .setOnClickListener(v -> clearAppCache());
-        mItemCreator.addItemWithTitleSubtitle(getString(R.string.trim_caches_in_all_apps),
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.trim_caches_in_all_apps),
                         getString(R.string.trim_caches_in_all_apps_description), R.drawable.ic_clear_cache)
                 .setOnClickListener(v -> {
                     if (!SelfPermissions.checkSelfPermission(Manifest.permission.CLEAR_APP_CACHE)
@@ -199,7 +225,7 @@ public class OneClickOpsActivity extends BaseActivity {
                             .show();
                 });
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            mItemCreator.addItemWithTitleSubtitle(getString(R.string.title_perform_runtime_optimization_to_apps),
+            mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.title_perform_runtime_optimization_to_apps),
                             getString(R.string.summary_perform_runtime_optimization_to_apps), R.drawable.ic_run_fast)
                     .setOnClickListener(v -> {
                         if (SelfPermissions.isSystemOrRootOrShell()) {
@@ -217,11 +243,12 @@ public class OneClickOpsActivity extends BaseActivity {
         setBusy(false);
     }
 
-    private void addSectionHeader(@StringRes int titleRes, @StringRes int summaryRes) {
-        View section = LayoutInflater.from(this).inflate(R.layout.view_one_click_ops_section, mContainer, false);
+    private void addSectionHeader(@NonNull LinearLayoutCompat container, @StringRes int titleRes,
+                                  @StringRes int summaryRes) {
+        View section = LayoutInflater.from(this).inflate(R.layout.view_one_click_ops_section, container, false);
         ((TextView) section.findViewById(R.id.one_click_section_title)).setText(titleRes);
         ((TextView) section.findViewById(R.id.one_click_section_summary)).setText(summaryRes);
-        mContainer.addView(section);
+        container.addView(section);
     }
 
     @Override
@@ -475,7 +502,7 @@ public class OneClickOpsActivity extends BaseActivity {
             }
         }
         if (mContainer != null) {
-            mContainer.setAlpha(isBusy ? 0.62f : 1f);
+            mContainer.animate().alpha(isBusy ? 0.62f : 1f).setDuration(150L).start();
             setViewAndChildrenEnabled(mContainer, !isBusy);
         }
     }
