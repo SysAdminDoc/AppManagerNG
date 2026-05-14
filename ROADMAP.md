@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-14 — T5 Rootless Debloat closed with Shizuku/ADB shell `pm uninstall --user` execution, selected-app safety summaries, and dependency/required-by warnings from the bundled debloat dataset.
+**Last updated:** 2026-05-14 — T5 installer source streaming now avoids the previous up-front cached-source copy for file/content APK inputs and preserves direct source streams for the final PackageInstaller session write when possible.
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -127,7 +127,7 @@ Shizuku support is the single most-requested upstream feature with 31 reactions 
 | ~~**Rootless Debloat (Shizuku)**~~ ✅ 2026-05-14 | Added a Shizuku/ADB shell `pm uninstall --user <id>` path for Debloater uninstall batches, bypassing accessibility prompts when the privileged shell is active. Selection confirmation now summarizes android-debloat-list safety ratings, dependency/required-by warnings, and high-risk examples before removal; Debloater rows also surface dependency counts inline. | Medium |
 | ~~**Factory-Reset Before System App Uninstall**~~ ✅ 2026-05-14 | Updated uninstall flows to reset updated system apps back to the factory version before user-scope removal, using `pm uninstall-system-updates` when a Shizuku/ADB/root shell is active and surfacing the reset in Debloater confirmation/card copy. | Low |
 | ~~**Debloat Presets**~~ ✅ 2026-05-14 | Added Privacy, Gaming, and Minimal OEM Debloater presets that select installed recommendations as curated batches, preview match counts and rationale, then route through the reviewed freeze/remove confirmations before applying the recommended action. | Medium |
-| **Install Without Staging APK** | Direct `PackageInstaller` session without staging to cache; faster installs on constrained storage (Issue #1671 [S17]) | Medium |
+| ~~**Install Without Staging APK**~~ ✅ 2026-05-14 | Installer queue items now preserve direct file/content `UriApkSource` inputs instead of forcing a global `CachedApkSource` copy. The final PackageInstaller session write streams from the original source when available, falls back to preview caches only when needed, keeps signed/APKM conversions cache-backed, and no longer risks deleting user-provided source APK files during `ApkFile` cleanup. Issue #1671 [S17]. | Medium |
 | **Install Existing Apps via `package:` URI** | Support `package:package-name` installer URI to install an already-present APK for the current user (e.g. system apps installed for another user); pull upstream v4.0.5 model ([S01]). Combine-safe with `SEND_MULTIPLE` for mixed-URI install batches. | Low (pull) |
 | **Onboarding Capability Wizard** | Detect root/Shizuku/wireless-ADB at first launch; show plain-language capability matrix ("What you can do with each privilege level"). Include Shizuku ≥v13.6.0 minimum version check (required for Android 16 QPR1 [S22]) and auto-start on trusted WLAN tip for Android 13+ ([S22]). | Medium |
 | **USB Debugging Prompt in Shizuku Setup** | During Shizuku setup wizard, explicitly prompt user to also enable USB Debugging alongside Developer Options — without it, `adb pair` and `adb connect` fail silently. Canta v3.2.0 model (fix for issue #284 [S43]). | Low |
