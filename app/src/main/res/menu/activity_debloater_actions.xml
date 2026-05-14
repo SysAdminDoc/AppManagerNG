@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_debloat_presets"
+        android:icon="@drawable/ic_tune"
+        android:title="@string/debloat_presets"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_list_options"
         android:icon="@drawable/ic_list_status"
         android:title="@string/list_options"
