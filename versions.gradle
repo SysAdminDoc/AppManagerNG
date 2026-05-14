@@ -42,6 +42,7 @@ ext {
     swipe_refresh_version = "1.2.0"
     unapkm_version = "v1.4" // https://github.com/MuntashirAkon/unapkm-android
     webkit_version = "1.14.0" // API 21-22 support dropped in 1.15.x
+    window_version = "1.4.0" // https://developer.android.com/jetpack/androidx/releases/window — latest Activity Embedding stable line compatible with minSdk 21
     zstd_version = "1.5.7-7" // https://github.com/luben/zstd-jni
 
     // Test dependencies

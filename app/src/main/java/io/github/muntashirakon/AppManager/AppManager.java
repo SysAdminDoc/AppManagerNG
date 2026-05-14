@@ -8,6 +8,7 @@ import android.os.Build;
 import android.sun.security.provider.JavaKeyStoreProvider;
 
 import androidx.annotation.Keep;
+import androidx.window.embedding.RuleController;
 
 import com.topjohnwu.superuser.Shell;
 
@@ -39,11 +40,17 @@ public class AppManager extends Application {
     public void onCreate() {
         super.onCreate();
         Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
+        configureActivityEmbeddingSplits();
         AppearanceUtils.init(this);
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new JavaKeyStoreProvider());
         Security.addProvider(new BouncyCastleProvider());
         ProfilingTriggerHelper.registerTriggersIfSupported(this);
+    }
+
+    private void configureActivityEmbeddingSplits() {
+        RuleController.getInstance(this)
+                .setRules(RuleController.parseRules(this, R.xml.main_activity_splits));
     }
 
     @Keep
