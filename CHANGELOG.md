@@ -10,6 +10,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added AndroidX Activity Embedding for the high-traffic Main → AppDetails flow so ≥900dp displays can keep the app catalog and details open side by side.
 - Added a calm split-placeholder panel for wide screens before an app is selected, and pinned WindowManager to the latest stable line that preserves the repo's API 21 floor.
 - Added a ≥900dp OneClickOps layout that separates review actions from backup and maintenance actions, while preserving the phone layout and smoothing busy-state transitions.
+- Added ≥900dp backup/restore review layouts that keep the summary card beside the package or backup-version list, reducing vertical scanning and making the final action state easier to compare before committing changes.
 
 ### Changed — Reproducible release verification (2026-05-14)
 
