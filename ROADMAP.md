@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-14 — T5 Shizuku Privilege Provider closed with Shizuku/Sui UserService binders, automatic runtime detection, mode-selection UI/status copy, and Android 7.0+ provider gating.
+**Last updated:** 2026-05-14 — T5 Wireless ADB Auto-Pairing closed with first-run setup affordances, pairing metadata persistence, remembered-device status copy, and Android 11 fallback guidance.
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
@@ -123,7 +123,7 @@ Shizuku support is the single most-requested upstream feature with 31 reactions 
 | Item | Description | Effort |
 |------|-------------|--------|
 | ~~**Shizuku Privilege Provider**~~ ✅ 2026-05-14 | Added Shizuku/Sui UserService as a first-class privilege path alongside root and ADB, with automatic runtime detection, permission recovery, mode-selection status, onboarding copy, and Android 7.0+ provider gating. | High |
-| **Wireless ADB Auto-Pairing** | Guide user through Android 11+ wireless ADB pairing in onboarding; persist paired device | Medium |
+| ~~**Wireless ADB Auto-Pairing**~~ ✅ 2026-05-14 | Added guided Android 11+ Wireless ADB setup from onboarding, persisted successful pairing metadata, surfaced remembered-device status in onboarding/settings, and kept ADB-over-TCP fallback guidance for older devices. | Medium |
 | **Rootless Debloat (Shizuku)** | Expose `pm uninstall --user 0` via Shizuku; integrate android-debloat-list ([S23]) safety ratings and dependency warnings | Medium |
 | **Factory-Reset Before System App Uninstall** | Factory-reset a system app to its shipping state before uninstalling; prevents stub-app stalling issues on some ROMs. Canta model ([S43]). | Low |
 | **Debloat Presets** | Named debloat configurations (e.g. "Privacy", "Gaming", "Minimal OEM") that batch-apply recommended freeze/remove actions. Canta model ([S43]). | Medium |

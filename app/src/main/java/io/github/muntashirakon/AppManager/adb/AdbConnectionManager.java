@@ -16,6 +16,7 @@ import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.adb.AbsAdbConnectionManager;
 
@@ -58,6 +59,7 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
         try {
             ThreadUtils.ensureWorkerThread();
             pair(host, port, pairingCode);
+            ServerConfig.setLastAdbPairing(host, port);
             mPairingObserver.postValue(null);
         } catch (Exception e) {
             Log.w(TAG, "Pairing failed.", e);

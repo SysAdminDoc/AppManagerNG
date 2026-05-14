@@ -35,6 +35,9 @@ public final class ServerConfig {
     public static final int DEFAULT_ADB_PORT = 5555;
     static final String SERVER_RUNNER_EXEC_NAME = "run_server.sh";
     private static final String LOCAL_TOKEN = "l_token";
+    private static final String ADB_LAST_PAIRING_HOST = "adb_last_pairing_host";
+    private static final String ADB_LAST_PAIRING_PORT = "adb_last_pairing_port";
+    private static final String ADB_LAST_PAIRING_TIME = "adb_last_pairing_time";
     private static final File[] SERVER_RUNNER_EXEC = new File[2];
     private static final File[] SERVER_RUNNER_JAR = new File[2];
     private static final SharedPreferences sPreferences = ContextUtils.getContext()
@@ -124,6 +127,28 @@ public final class ServerConfig {
     @NoOps
     public static void setAdbPort(@IntRange(from = 0, to = 65535) int port) {
         sPreferences.edit().putInt("adb_port", port).apply();
+    }
+
+    @AnyThread
+    @NoOps
+    public static void setLastAdbPairing(@NonNull String host, @IntRange(from = 0, to = 65535) int port) {
+        sPreferences.edit()
+                .putString(ADB_LAST_PAIRING_HOST, host)
+                .putInt(ADB_LAST_PAIRING_PORT, port)
+                .putLong(ADB_LAST_PAIRING_TIME, System.currentTimeMillis())
+                .apply();
+    }
+
+    @AnyThread
+    @NoOps
+    public static boolean hasPairedAdbDevice() {
+        return sPreferences.getLong(ADB_LAST_PAIRING_TIME, 0) > 0;
+    }
+
+    @AnyThread
+    @NoOps
+    public static int getLastAdbPairingPort() {
+        return sPreferences.getInt(ADB_LAST_PAIRING_PORT, DEFAULT_ADB_PORT);
     }
 
     @AnyThread

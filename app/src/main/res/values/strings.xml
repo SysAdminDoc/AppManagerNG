@@ -1548,6 +1548,7 @@
     <string name="onboarding_mode_no_root_title">No root</string>
     <string name="onboarding_mode_no_root_summary">Limited features (the system uninstall flow, reading info, launching apps). Works on every device with no setup.</string>
     <string name="onboarding_mode_adb_wifi_status_active">Wireless debugging is active</string>
+    <string name="onboarding_mode_adb_wifi_status_paired">Paired — enable Wireless debugging to reconnect</string>
     <string name="onboarding_mode_adb_wifi_status_inactive">Not active — enable in Developer options &gt; Wireless debugging</string>
     <string name="onboarding_mode_adb_tcp_status_active">USB debugging is enabled</string>
     <string name="onboarding_mode_adb_tcp_status_inactive">Not enabled — turn on USB debugging in Developer options first</string>
@@ -1561,6 +1562,12 @@
     <string name="onboarding_mode_root_pick_without_detection">A working root binary was not detected on this device. Picking Root anyway is fine if your root manager hides su until first request, but most operations will fail until you grant root.\n\nContinue with Root mode?</string>
     <string name="onboarding_mode_info_a11y">Learn more about <xliff:g id="mode" example="Auto">%1$s</xliff:g> mode</string>
     <string name="onboarding_explainer_pick_this">Pick this</string>
+    <string name="onboarding_mode_adb_wifi_setup">Set up</string>
+    <string name="onboarding_mode_adb_wifi_pick_only">Pick only</string>
+    <string name="onboarding_mode_adb_wifi_setup_prompt">Wireless ADB needs a one-time Android pairing step before AppManagerNG can reconnect by itself. Start setup now, or pick this mode and pair later from the next launch.</string>
+    <string name="onboarding_mode_adb_wifi_requires_android_11">Wireless ADB pairing requires Android 11 or newer. Use ADB over TCP on this device.</string>
+    <string name="adb_pairing_connected">Wireless ADB connected.</string>
+    <string name="adb_pairing_not_finished">Wireless ADB setup did not finish.</string>
     <string name="onboarding_mode_auto_explainer">AppManagerNG checks your device on every cold start in this order:\n\n1. Root (Magisk / KernelSU / SuperSU) — picked if a working su binary is present.\n2. Shizuku or Sui — used when it is running and AppManagerNG is authorized.\n3. Wireless debugging (Android 11+) — used if you enabled and paired it.\n4. ADB over TCP — used if a PC opened the daemon over USB previously.\n5. No-root — final fallback. Limited features but always works.\n\nPick this if you are not sure. AppManagerNG re-checks on every launch, so if you set up Shizuku or Wireless ADB later it picks up automatically.</string>
     <string name="onboarding_mode_root_explainer">Root unlocks the most powerful operations:\n\n• Component blocking via Intent Firewall (IFW) — survives reboots, can be applied to any app including system apps.\n• Full backup/restore including app data, encrypted with your AppManagerNG keystore.\n• Direct system-API calls without going through the limited PackageInstaller.\n• AppOps and runtime-permission control beyond what Settings exposes.\n\nRequires a Magisk, KernelSU, or SuperSU setup on the device. AppManagerNG will request su access the first time you trigger a privileged operation.</string>
     <string name="onboarding_mode_shizuku_explainer">Shizuku lets AppManagerNG bind its privileged service through the Shizuku or Sui process instead of launching its own root/ADB daemon:\n\n• Works without rooting the app itself when Shizuku is started through ADB.\n• Can use root privileges when backed by Sui or a root-started Shizuku session.\n• Unlocks shell-level package, app-op, permission, force-stop, and install flows without keeping a local ADB socket open.\n• Does not turn shell into full root; protected app data and IFW paths still require root.\n\nStart Shizuku first, authorize AppManagerNG, then pick this mode. Auto mode will also choose Shizuku when it is already authorized.</string>
@@ -1577,6 +1584,7 @@
     <string name="mode_of_op_capability_status_authorized">authorized</string>
     <string name="mode_of_op_capability_status_permission_required">permission required</string>
     <string name="mode_of_op_capability_status_active">active</string>
+    <string name="mode_of_op_capability_status_paired">paired, inactive</string>
     <string name="mode_of_op_capability_status_inactive">not active</string>
     <string name="mode_of_op_capability_status_enabled">enabled</string>
     <string name="mode_of_op_capability_status_disabled">disabled</string>

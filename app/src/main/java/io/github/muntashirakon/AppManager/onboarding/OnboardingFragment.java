@@ -3,7 +3,10 @@
 package io.github.muntashirakon.AppManager.onboarding;
 
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,26 +16,29 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
+import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 /**
  * First-run picker for the privilege level AppManagerNG should use (Auto / Root /
  * Wireless ADB / ADB over TCP / No-root). Shown once after the user has accepted
  * the disclaimer; tracked via {@link AppPref.PrefKey#PREF_ONBOARDING_SHOWN_BOOL}.
  *
- * <p>The sheet does not perform any privilege bring-up — it only writes the user's
- * choice to {@link Ops#setMode(String)} so subsequent launches honor it. Bring-up
- * (Su, ADB pairing, Shizuku connection) is owned by {@code BaseActivity} via
- * {@code Ops.init(...)} and handles its own dialogs there.
+ * <p>The sheet primarily writes the user's choice to {@link Ops#setMode(String)}.
+ * Wireless ADB also exposes a first-run setup affordance because pairing is an
+ * explicit user-guided flow; other privilege bring-up still happens from the
+ * normal mode initialisation path.
  *
  * <p>For Root, the card surfaces a "✓ Detected" / "Not detected" status by calling
  * {@link Ops#hasRoot()} on bind. Wireless ADB / ADB-TCP / No-root are always
@@ -51,6 +57,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     /** Optional callback fired after the user picks a mode or cancels. */
     @Nullable
     private Runnable mOnDismissCallback;
+    @Nullable
+    private Ops.AdbConnectionInterface mWirelessSetupCallback;
 
     /**
      * Wires a continuation to run on the host activity once the user has finished
@@ -104,6 +112,10 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCardActions(view, R.id.card_mode_no_root, R.id.info_mode_no_root, View.NO_ID, Ops.MODE_NO_ROOT,
                 R.string.onboarding_mode_no_root_title, R.string.onboarding_mode_no_root_summary,
                 R.string.onboarding_mode_no_root_explainer);
+        View setupWirelessAdb = view.findViewById(R.id.action_setup_adb_wifi);
+        if (setupWirelessAdb != null) {
+            setupWirelessAdb.setOnClickListener(v -> startWirelessAdbSetup());
+        }
         // Highlight the currently active mode card so a user replaying the wizard
         // from Settings can see at a glance which mode is in effect. Nothing to
         // highlight on a true first-run — the saved mode will already be the
@@ -140,9 +152,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
         bindShizukuStatus(shizukuStatus);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
-        bindCapabilityStatus(adbWifiStatus, isWirelessDebuggingActive(),
-                R.string.onboarding_mode_adb_wifi_status_active,
-                R.string.onboarding_mode_adb_wifi_status_inactive);
+        bindAdbWifiStatus(adbWifiStatus);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
         bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
                 R.string.onboarding_mode_adb_tcp_status_active,
@@ -267,6 +277,23 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         bindCapabilityStatus(statusView, available, statusRes, statusRes);
     }
 
+    private void bindAdbWifiStatus(@Nullable TextView statusView) {
+        if (statusView == null) return;
+        if (isWirelessDebuggingActive()) {
+            bindCapabilityStatus(statusView, true,
+                    R.string.onboarding_mode_adb_wifi_status_active,
+                    R.string.onboarding_mode_adb_wifi_status_active);
+        } else if (ServerConfig.hasPairedAdbDevice()) {
+            bindCapabilityStatus(statusView, false,
+                    R.string.onboarding_mode_adb_wifi_status_paired,
+                    R.string.onboarding_mode_adb_wifi_status_paired);
+        } else {
+            bindCapabilityStatus(statusView, false,
+                    R.string.onboarding_mode_adb_wifi_status_inactive,
+                    R.string.onboarding_mode_adb_wifi_status_inactive);
+        }
+    }
+
     /**
      * Wire tap-to-pick plus a visible details affordance on a mode card. Tap commits
      * the choice via {@link #pick}; details/long-press surfaces an extended explainer
@@ -303,6 +330,100 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> pick(mode))
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    private void startWirelessAdbSetup() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.onboarding_mode_adb_wifi_title)
+                    .setMessage(R.string.onboarding_mode_adb_wifi_requires_android_11)
+                    .setPositiveButton(R.string.onboarding_mode_adb_tcp_title, (d, w) -> commit(Ops.MODE_ADB_OVER_TCP))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return;
+        }
+        FragmentActivity activity = requireActivity();
+        Ops.AdbConnectionInterface callback = getWirelessSetupCallback(activity);
+        Ops.setMode(Ops.MODE_ADB_WIFI);
+        AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
+        mOnDismissCallback = null;
+        dismissAllowingStateLoss();
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (ServerConfig.hasPairedAdbDevice()) {
+                Ops.connectWirelessDebugging(activity, callback);
+            } else {
+                Ops.pairAdbInput(activity, callback);
+            }
+        });
+    }
+
+    @NonNull
+    private Ops.AdbConnectionInterface getWirelessSetupCallback(@NonNull FragmentActivity activity) {
+        if (mWirelessSetupCallback != null) return mWirelessSetupCallback;
+        mWirelessSetupCallback = new Ops.AdbConnectionInterface() {
+            @Override
+            public void connectAdb(int port) {
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    int status = Ops.connectAdb(activity.getApplicationContext(), port, Ops.STATUS_FAILURE);
+                    ThreadUtils.postOnMainThread(() -> handleWirelessSetupStatus(activity, status));
+                });
+            }
+
+            @Override
+            public void pairAdb() {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    onStatusReceived(Ops.STATUS_FAILURE);
+                    return;
+                }
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    int status = Ops.pairAdb(activity.getApplicationContext());
+                    ThreadUtils.postOnMainThread(() -> handleWirelessSetupStatus(activity, status));
+                });
+            }
+
+            @Override
+            public void onStatusReceived(int status) {
+                ThreadUtils.postOnMainThread(() -> handleWirelessSetupStatus(activity, status));
+            }
+        };
+        return mWirelessSetupCallback;
+    }
+
+    private void handleWirelessSetupStatus(@NonNull FragmentActivity activity, @Ops.Status int status) {
+        if (activity.isFinishing() || activity.isDestroyed()) return;
+        Ops.AdbConnectionInterface callback = getWirelessSetupCallback(activity);
+        switch (status) {
+            case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        int next = Ops.autoConnectWirelessDebugging(activity.getApplicationContext());
+                        ThreadUtils.postOnMainThread(() -> handleWirelessSetupStatus(activity, next));
+                    });
+                }
+                return;
+            case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.connectWirelessDebugging(activity, callback);
+                }
+                return;
+            case Ops.STATUS_ADB_CONNECT_REQUIRED:
+                Ops.connectAdbInput(activity, callback);
+                return;
+            case Ops.STATUS_ADB_PAIRING_REQUIRED:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.pairAdbInput(activity, callback);
+                }
+                return;
+            case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
+                Ops.displayIncompleteUsbDebuggingMessage(activity);
+                return;
+            case Ops.STATUS_SUCCESS:
+                UIUtils.displayShortToast(R.string.adb_pairing_connected);
+                return;
+            case Ops.STATUS_FAILURE:
+            default:
+                UIUtils.displayShortToast(R.string.adb_pairing_not_finished);
+        }
     }
 
     /** True when USB debugging (ADB over USB) is enabled in Developer options. */
@@ -346,7 +467,34 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                     .show();
             return;
         }
+        if (Ops.MODE_ADB_WIFI.equals(mode)) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.onboarding_mode_adb_wifi_title)
+                        .setMessage(R.string.onboarding_mode_adb_wifi_requires_android_11)
+                        .setPositiveButton(R.string.onboarding_mode_adb_tcp_title, (d, w) -> commit(Ops.MODE_ADB_OVER_TCP))
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
+                return;
+            }
+            if (!isWirelessDebuggingActive() || !ServerConfig.hasPairedAdbDevice()) {
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.onboarding_mode_adb_wifi_title)
+                        .setMessage(R.string.onboarding_mode_adb_wifi_setup_prompt)
+                        .setPositiveButton(R.string.onboarding_mode_adb_wifi_setup, (d, w) -> startWirelessAdbSetup())
+                        .setNeutralButton(R.string.onboarding_mode_adb_wifi_pick_only, (d, w) -> commit(mode))
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
+                return;
+            }
+        }
         commit(mode);
+    }
+
+    @Override
+    public void onDestroyView() {
+        mWirelessSetupCallback = null;
+        super.onDestroyView();
     }
 
     private void commit(@NonNull @Ops.Mode String mode) {
