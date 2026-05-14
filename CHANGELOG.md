@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Package URI install intake (2026-05-14)
+
+- Added external installer handling for `package:package-name` view/install intents so already-present packages can be installed for the current user through the installer surface.
+- Improved mixed install batches by reading package/file/content URIs from both `EXTRA_STREAM` and `ClipData` on `SEND_MULTIPLE`, de-duplicating repeated entries before they enter the queue.
+
 ### Changed — Installer source streaming (2026-05-14)
 
 - Installer queue items now preserve direct file/content URI sources instead of first staging every APK into the app cache.

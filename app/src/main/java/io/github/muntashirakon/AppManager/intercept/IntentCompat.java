@@ -23,6 +23,7 @@ import static io.github.muntashirakon.AppManager.intercept.AddIntentExtraFragmen
 import static io.github.muntashirakon.AppManager.intercept.AddIntentExtraFragment.TYPE_URI_ARR;
 import static io.github.muntashirakon.AppManager.intercept.AddIntentExtraFragment.Type;
 
+import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentHidden;
@@ -116,21 +117,30 @@ public final class IntentCompat {
     @Nullable
     public static List<Uri> getDataUris(@NonNull Intent intent) {
         if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
+            List<Uri> filteredUris = new ArrayList<>();
             List<Uri> inputUris = getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri.class);
-            if (inputUris == null) {
-                return null;
+            if (inputUris != null) {
+                for (Uri uri : inputUris) {
+                    addSanitizedUri(filteredUris, uri);
+                }
             }
-            List<Uri> filteredUris = new ArrayList<>(inputUris.size());
-            for (Uri uri : inputUris) {
-                Uri fixedUri = FmUtils.sanitizeContentInput(uri);
-                if (fixedUri != null) {
-                    filteredUris.add(fixedUri);
+            ClipData clipData = intent.getClipData();
+            if (clipData != null) {
+                for (int i = 0; i < clipData.getItemCount(); ++i) {
+                    addSanitizedUri(filteredUris, clipData.getItemAt(i).getUri());
                 }
             }
             return filteredUris.isEmpty() ? null : filteredUris;
         }
         Uri uri = getDataUri(intent);
         return uri != null ? Collections.singletonList(uri) : null;
+    }
+
+    private static void addSanitizedUri(@NonNull List<Uri> uris, @Nullable Uri uri) {
+        Uri fixedUri = FmUtils.sanitizeContentInput(uri);
+        if (fixedUri != null && !uris.contains(fixedUri)) {
+            uris.add(fixedUri);
+        }
     }
 
     public static void removeFlags(@NonNull Intent intent, int flags) {
