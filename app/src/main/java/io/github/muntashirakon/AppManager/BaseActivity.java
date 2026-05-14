@@ -161,6 +161,11 @@ public abstract class BaseActivity extends PerProcessActivity {
                     mDisplayLoader = false;
                     Ops.connectAdbInput(this, mViewModel);
                     return;
+                case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
+                    Log.d(TAG, "Request Shizuku permission.");
+                    mDisplayLoader = false;
+                    Ops.requestShizukuPermission(this, mViewModel);
+                    return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     Log.d(TAG, "Display pairing dialog.");
                     mDisplayLoader = false;

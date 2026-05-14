@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Shizuku privilege provider (2026-05-14)
+
+- Added Shizuku/Sui UserService as a first-class privileged binder path alongside root and ADB, including automatic mode detection, permission recovery, and shell/root/system uid status handling.
+- Added Shizuku onboarding and mode-selection status copy so users can see whether Shizuku is running, authorized, missing, or below the supported Android 7.0+ runtime boundary.
+
 ### Changed — Adaptive large-screen workflows (2026-05-14)
 
 - Added AndroidX Activity Embedding for the high-traffic Main → AppDetails flow so ≥900dp displays can keep the app catalog and details open side by side.
