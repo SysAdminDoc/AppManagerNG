@@ -298,9 +298,7 @@ public class ModeOfOpsPreference extends Fragment {
         }
         if (adbWifiRow != null) {
             adbWifiRow.setText(getString(R.string.mode_of_op_capability_adb_wifi,
-                    getString(isWirelessDebuggingActive()
-                            ? R.string.mode_of_op_capability_status_active
-                            : R.string.mode_of_op_capability_status_inactive)));
+                    getString(getWirelessDebuggingStatusText())));
         }
         if (adbUsbRow != null) {
             adbUsbRow.setText(getString(R.string.mode_of_op_capability_adb_usb,
@@ -327,6 +325,16 @@ public class ModeOfOpsPreference extends Fragment {
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    private int getWirelessDebuggingStatusText() {
+        if (isWirelessDebuggingActive()) {
+            return R.string.mode_of_op_capability_status_active;
+        }
+        if (ServerConfig.hasPairedAdbDevice()) {
+            return R.string.mode_of_op_capability_status_paired;
+        }
+        return R.string.mode_of_op_capability_status_inactive;
     }
 
     private static boolean requireRemoteServer(@NonNull String mode) {

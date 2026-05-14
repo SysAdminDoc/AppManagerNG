@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Guided Wireless ADB setup (2026-05-14)
+
+- Added a first-run Wireless ADB setup affordance in onboarding, including Android 11+ fallback guidance, direct pairing/connect recovery, and remembered paired-device status.
+- Persisted successful Wireless ADB pairing metadata so onboarding and mode settings can distinguish a never-paired device from a paired device that simply needs Wireless debugging enabled again.
+
 ### Added — Shizuku privilege provider (2026-05-14)
 
 - Added Shizuku/Sui UserService as a first-class privileged binder path alongside root and ADB, including automatic mode detection, permission recovery, and shell/root/system uid status handling.
