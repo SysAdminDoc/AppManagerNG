@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Capability onboarding (2026-05-14)
+
+- Added a Shizuku manager version check to the onboarding capability wizard so v13.6.0+ guidance is visible before users rely on Shizuku for Android 16 QPR1-era rootless flows.
+- Added the Android 13+ trusted-WLAN auto-start tip to the Shizuku onboarding card, keeping the rootless recovery guidance visible during first-run and replayed onboarding.
+
 ### Added — Package URI install intake (2026-05-14)
 
 - Added external installer handling for `package:package-name` view/install intents so already-present packages can be installed for the current user through the installer surface.

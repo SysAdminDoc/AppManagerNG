@@ -1540,7 +1540,10 @@
     <string name="onboarding_mode_shizuku_summary">Rootless privileged mode. Uses Shizuku or Sui to run AppManagerNG services as shell or root without a local ADB daemon.</string>
     <string name="onboarding_mode_shizuku_status_ready">Shizuku is running and authorized</string>
     <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku is running — authorization required</string>
+    <string name="onboarding_mode_shizuku_status_update_recommended">Shizuku %1$s detected — update to v13.6.0+ for Android 16 QPR1 and trusted-WLAN auto-start</string>
     <string name="onboarding_mode_shizuku_status_missing">Not running — start Shizuku first</string>
+    <string name="onboarding_mode_shizuku_autostart_tip">Tip: In Shizuku v13.6.0+, enable trusted-WLAN auto-start so rootless mode can come back after reboot without a PC.</string>
+    <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku v13.6.0+ is recommended for Android 16 QPR1 support and trusted-WLAN auto-start on Android 13+.</string>
     <string name="onboarding_mode_adb_wifi_title">Wireless ADB (Android 11+)</string>
     <string name="onboarding_mode_adb_wifi_summary">Connect via Wireless debugging. Most features unlocked, no PC needed after pairing.</string>
     <string name="onboarding_mode_adb_tcp_title">ADB over TCP</string>
