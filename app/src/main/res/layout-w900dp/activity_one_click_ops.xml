@@ -1,0 +1,84 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".oneclickops.OneClickOpsActivity">
+
+    <include layout="@layout/appbar" />
+
+    <io.github.muntashirakon.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fitsSystemWindows="true"
+        android:scrollbars="vertical"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/premium_space_32">
+
+            <io.github.muntashirakon.widget.MaterialAlertView
+                android:id="@+id/one_click_ops_notice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/premium_space_16"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:layout_marginBottom="@dimen/premium_space_8"
+                android:text="@string/one_click_ops_notice"
+                app:alertType="info" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/premium_space_8">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/one_click_review_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical" />
+
+                <com.google.android.material.divider.MaterialDivider
+                    android:layout_width="@dimen/settings_pane_divider_width"
+                    android:layout_height="match_parent"
+                    android:layout_marginHorizontal="@dimen/premium_space_8"
+                    app:dividerColor="?attr/colorOutlineVariant" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/one_click_backup_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/one_click_maintenance_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </io.github.muntashirakon.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
