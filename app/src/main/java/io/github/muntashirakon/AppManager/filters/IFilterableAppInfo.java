@@ -150,6 +150,14 @@ public interface IFilterableAppInfo {
     @NonNull
     AppUsageStatsManager.DataUsage getDataUsage();
 
+    /** Cellular-only data usage, or {@link AppUsageStatsManager.DataUsage#EMPTY} when unknown. */
+    @NonNull
+    AppUsageStatsManager.DataUsage getMobileDataUsage();
+
+    /** Wi-Fi-only data usage, or {@link AppUsageStatsManager.DataUsage#EMPTY} when unknown. */
+    @NonNull
+    AppUsageStatsManager.DataUsage getWifiDataUsage();
+
     int getTimesOpened();
 
     long getTotalScreenTime();

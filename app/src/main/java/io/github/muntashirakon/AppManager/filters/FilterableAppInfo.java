@@ -552,6 +552,24 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     }
 
     @Override
+    @NonNull
+    public AppUsageStatsManager.DataUsage getMobileDataUsage() {
+        if (mPackageUsageInfo != null && mPackageUsageInfo.mobileData != null) {
+            return mPackageUsageInfo.mobileData;
+        }
+        return AppUsageStatsManager.DataUsage.EMPTY;
+    }
+
+    @Override
+    @NonNull
+    public AppUsageStatsManager.DataUsage getWifiDataUsage() {
+        if (mPackageUsageInfo != null && mPackageUsageInfo.wifiData != null) {
+            return mPackageUsageInfo.wifiData;
+        }
+        return AppUsageStatsManager.DataUsage.EMPTY;
+    }
+
+    @Override
     public int getTimesOpened() {
         return mPackageUsageInfo != null ? mPackageUsageInfo.timesOpened : 0;
     }

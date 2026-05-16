@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
+import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 
 public class DataUsageOption extends FilterOption {
@@ -20,7 +21,12 @@ public class DataUsageOption extends FilterOption {
         put("eq", TYPE_SIZE_BYTES);
         put("le", TYPE_SIZE_BYTES);
         put("ge", TYPE_SIZE_BYTES);
-        // TODO: 11/19/24 Add more curated options, e.g., mobile and wifi
+        // Mobile-only predicates — closes the "Filter: Data Usage Split" row.
+        put("mobile_le", TYPE_SIZE_BYTES);
+        put("mobile_ge", TYPE_SIZE_BYTES);
+        // Wi-Fi-only predicates.
+        put("wifi_le", TYPE_SIZE_BYTES);
+        put("wifi_ge", TYPE_SIZE_BYTES);
     }};
 
     public DataUsageOption() {
@@ -45,9 +51,21 @@ public class DataUsageOption extends FilterOption {
                 return result.setMatched(info.getDataUsage().getTotal() <= longValue);
             case "ge":
                 return result.setMatched(info.getDataUsage().getTotal() >= longValue);
+            case "mobile_le":
+                return result.setMatched(totalOf(info.getMobileDataUsage()) <= longValue);
+            case "mobile_ge":
+                return result.setMatched(totalOf(info.getMobileDataUsage()) >= longValue);
+            case "wifi_le":
+                return result.setMatched(totalOf(info.getWifiDataUsage()) <= longValue);
+            case "wifi_ge":
+                return result.setMatched(totalOf(info.getWifiDataUsage()) >= longValue);
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
+    }
+
+    private static long totalOf(@NonNull AppUsageStatsManager.DataUsage usage) {
+        return usage.getTotal();
     }
 
     @NonNull
@@ -63,6 +81,14 @@ public class DataUsageOption extends FilterOption {
                 return sb.append(" ≤ ").append(Formatter.formatFileSize(context, longValue));
             case "ge":
                 return sb.append(" ≥ ").append(Formatter.formatFileSize(context, longValue));
+            case "mobile_le":
+                return sb.append(" (mobile) ≤ ").append(Formatter.formatFileSize(context, longValue));
+            case "mobile_ge":
+                return sb.append(" (mobile) ≥ ").append(Formatter.formatFileSize(context, longValue));
+            case "wifi_le":
+                return sb.append(" (Wi-Fi) ≤ ").append(Formatter.formatFileSize(context, longValue));
+            case "wifi_ge":
+                return sb.append(" (Wi-Fi) ≥ ").append(Formatter.formatFileSize(context, longValue));
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
