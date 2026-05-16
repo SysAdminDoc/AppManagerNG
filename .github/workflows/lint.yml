@@ -3,6 +3,7 @@ name: Lint
 on:
   push:
     branches:
+      - 'main'
       - 'master'
       - 'AppManager-*'
     paths-ignore:
@@ -11,6 +12,7 @@ on:
       - '*.md'
   pull_request:
     branches:
+      - 'main'
       - 'master'
       - 'AppManager-*'
     paths-ignore:

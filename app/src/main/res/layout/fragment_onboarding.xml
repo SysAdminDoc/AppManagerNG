@@ -29,6 +29,23 @@
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/warning_adb_patch_level"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_medium"
+            android:background="@drawable/onboarding_warning_background"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:minHeight="@dimen/premium_chip_touch_target"
+            android:paddingHorizontal="@dimen/padding_medium"
+            android:paddingVertical="@dimen/padding_small"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+            android:textColor="@color/premium_warning_content"
+            android:visibility="gone"
+            tools:text="Security patch 2026-04-01 is older than the recommended patch level for ADB workflows."
+            tools:visibility="visible" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/card_mode_auto"
             style="@style/Widget.AppTheme.CardView.OnboardingMode"

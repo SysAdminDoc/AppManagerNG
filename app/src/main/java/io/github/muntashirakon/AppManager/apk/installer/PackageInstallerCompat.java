@@ -90,6 +90,12 @@ public final class PackageInstallerCompat {
     // For rootless installer to prevent PackageInstallerService from hanging
     public static final String ACTION_INSTALL_INTERACTION_BEGIN = BuildConfig.APPLICATION_ID + ".action.INSTALL_INTERACTION_BEGIN";
     public static final String ACTION_INSTALL_INTERACTION_END = BuildConfig.APPLICATION_ID + ".action.INSTALL_INTERACTION_END";
+    private static final long USER_INTERACTION_TIMEOUT_MINUTES = 5;
+    private static final long INSTALL_RESULT_TIMEOUT_MINUTES = 1;
+    private static final String STATUS_MESSAGE_INSTALLER_TIMEOUT =
+            "STATUS_FAILURE_ABORTED: Timed out waiting for PackageInstaller result.";
+    private static final String STATUS_MESSAGE_INSTALLER_INTERRUPTED =
+            "STATUS_FAILURE_ABORTED: Interrupted while waiting for PackageInstaller result.";
 
     @IntDef({
             STATUS_SUCCESS,
@@ -789,24 +795,21 @@ public final class PackageInstallerCompat {
         }
         if (intentReceiver == null) {
             Log.d(TAG, "Commit: Waiting for user interaction...");
-            // Wait for user interaction (if needed)
-            try {
-                // Wait for user interaction
-                mInteractionWatcher.await();
-                // Wait for the installation to complete
-                mInstallWatcher.await(1, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Installation interrupted.", e);
-            }
+            waitForPackageInstallerBroadcasts("Commit");
         } else {
-            Intent resultIntent = intentReceiver.getResult();
-            mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, 0);
-            mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+            Intent resultIntent = intentReceiver.getResult(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            if (resultIntent != null) {
+                mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+                mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+            } else {
+                markPackageInstallerWaitFailed("Commit", STATUS_MESSAGE_INSTALLER_TIMEOUT);
+            }
         }
         Log.d(TAG, "Commit: Finishing...");
         // We might want to use {@code callFinish(finalStatus);} here, but it doesn't always work
         // since the object is garbage collected almost immediately.
         if (!mInstallCompleted) {
+            mInstallCompleted = true;
             installCompleted(mSessionId, mFinalStatus, null, mStatusMessage);
         }
         if (mFinalStatus == PackageInstaller.STATUS_SUCCESS && userId != UserHandleHidden.myUserId()) {
@@ -1151,6 +1154,30 @@ public final class PackageInstallerCompat {
         }
     }
 
+    private void waitForPackageInstallerBroadcasts(@NonNull String operation) {
+        try {
+            boolean interactionFinished = mInteractionWatcher.await(USER_INTERACTION_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            if (!interactionFinished && !mInstallCompleted) {
+                markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_TIMEOUT);
+                return;
+            }
+            boolean installFinished = mInstallWatcher.await(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            if (!installFinished && !mInstallCompleted) {
+                markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_TIMEOUT);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_INTERRUPTED);
+            Log.e(TAG, "%s: PackageInstaller wait interrupted.", e, operation);
+        }
+    }
+
+    private void markPackageInstallerWaitFailed(@NonNull String operation, @NonNull String statusMessage) {
+        mFinalStatus = STATUS_FAILURE_ABORTED;
+        mStatusMessage = statusMessage;
+        Log.e(TAG, "%s: %s", operation, statusMessage);
+    }
+
     @SuppressWarnings("deprecation")
     public boolean uninstall(String packageName, @UserIdInt int userId, boolean keepData) {
         ThreadUtils.ensureWorkerThread();
@@ -1223,22 +1250,19 @@ public final class PackageInstallerCompat {
             }
             if (intentReceiver == null) {
                 Log.d(TAG, "Uninstall: Waiting for user interaction...");
-                // Wait for user interaction (if needed)
-                try {
-                    // Wait for user interaction
-                    mInteractionWatcher.await();
-                    // Wait for the installation to complete
-                    mInstallWatcher.await(1, TimeUnit.MINUTES);
-                } catch (InterruptedException e) {
-                    Log.e(TAG, "Installation interrupted.", e);
-                }
+                waitForPackageInstallerBroadcasts("Uninstall");
             } else {
-                Intent resultIntent = intentReceiver.getResult();
-                mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
-                mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                Intent resultIntent = intentReceiver.getResult(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+                if (resultIntent != null) {
+                    mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+                    mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                } else {
+                    markPackageInstallerWaitFailed("Uninstall", STATUS_MESSAGE_INSTALLER_TIMEOUT);
+                }
             }
             Log.d(TAG, "Uninstall: Finished with status %d", mFinalStatus);
             if (!mInstallCompleted) {
+                mInstallCompleted = true;
                 installCompleted(mSessionId, mFinalStatus, null, mStatusMessage);
             }
             if (mFinalStatus == PackageInstaller.STATUS_SUCCESS && userId != UserHandleHidden.myUserId()) {
@@ -1345,11 +1369,18 @@ public final class PackageInstallerCompat {
                 send(intent);
             }
 
-            public void send(Intent intent) {
+            public void send(@Nullable Intent intent) {
+                if (intent == null) {
+                    Log.e(TAG, "PackageInstaller returned a null result intent.");
+                    return;
+                }
                 try {
-                    mResult.offer(intent, 5, TimeUnit.SECONDS);
+                    if (!mResult.offer(intent, 5, TimeUnit.SECONDS)) {
+                        Log.e(TAG, "PackageInstaller result queue did not accept a result intent.");
+                    }
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    Thread.currentThread().interrupt();
+                    Log.e(TAG, "Interrupted while queuing PackageInstaller result.", e);
                 }
             }
         };
@@ -1360,11 +1391,14 @@ public final class PackageInstallerCompat {
                     .newInstance(mLocalSender.asBinder());
         }
 
-        public Intent getResult() {
+        @Nullable
+        public Intent getResult(long timeout, @NonNull TimeUnit unit) {
             try {
-                return mResult.take();
+                return mResult.poll(timeout, unit);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
+                Log.e(TAG, "Interrupted while waiting for PackageInstaller result.", e);
+                return null;
             }
         }
     }

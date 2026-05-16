@@ -57,29 +57,20 @@ public class BackupCryptSetupHelper {
             case CryptoUtils.MODE_AES: {
                 iv = generateIv();
                 AESCrypto aesCrypto = new AESCrypto(iv);
-                if (version < 4) {
-                    // Old backups use 32 bit MAC
-                    aesCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                }
+                configureAesCrypto(aesCrypto, version);
                 return aesCrypto;
             }
             case CryptoUtils.MODE_RSA: {
                 iv = generateIv();
                 RSACrypto rsaCrypto = new RSACrypto(iv, null);
-                if (version < 4) {
-                    // Old backups use 32 bit MAC
-                    rsaCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                }
+                configureAesCrypto(rsaCrypto, version);
                 aes = rsaCrypto.getEncryptedAesKey();
                 return rsaCrypto;
             }
             case CryptoUtils.MODE_ECC: {
                 iv = generateIv();
                 ECCCrypto eccCrypto = new ECCCrypto(iv, null);
-                if (version < 4) {
-                    // Old backups use 32 bit MAC
-                    eccCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                }
+                configureAesCrypto(eccCrypto, version);
                 aes = eccCrypto.getEncryptedAesKey();
                 return eccCrypto;
             }
@@ -87,6 +78,14 @@ public class BackupCryptSetupHelper {
             default:
                 return new DummyCrypto();
         }
+    }
+
+    private static void configureAesCrypto(@NonNull AESCrypto crypto, int version) {
+        if (version < 4) {
+            // Old backups use 32 bit MAC
+            crypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
+        }
+        crypto.setFileIvDerivationEnabled(version >= AESCrypto.FILE_IV_DERIVATION_VERSION);
     }
 
     @NonNull

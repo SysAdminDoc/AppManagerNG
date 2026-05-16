@@ -39,7 +39,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/premium_space_8"
         android:gravity="center"
-        android:maxWidth="360dp"
+        android:maxWidth="@dimen/main_empty_summary_max_width"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         tools:text="@string/app_details_empty_message_no_items" />
