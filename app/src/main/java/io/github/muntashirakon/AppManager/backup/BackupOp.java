@@ -283,7 +283,7 @@ class BackupOp implements Closeable {
                 }
             }
         } catch (ApkFile.ApkFileException e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not inspect split APK metadata for %s.", e, mPackageName);
         }
         metadata.splitConfigs = ArrayUtils.defeatNullable(metadata.splitConfigs);
         metadata.hasRules = false;
@@ -353,7 +353,7 @@ class BackupOp implements Closeable {
             try {
                 dataFiles = mBackupItem.encrypt(dataFiles);
             } catch (IOException e) {
-                throw new BackupException("Failed to encrypt " + Arrays.toString(dataFiles));
+                throw new BackupException("Failed to encrypt " + Arrays.toString(dataFiles), e);
             }
             for (Path file : dataFiles) {
                 mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
@@ -525,7 +525,7 @@ class BackupOp implements Closeable {
                     rules.setNotificationListener(component, true);
                 }
             } catch (RemoteException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not back up notification listener grants for %s.", e, mPackageName);
             }
         }
         // Backup battery optimization

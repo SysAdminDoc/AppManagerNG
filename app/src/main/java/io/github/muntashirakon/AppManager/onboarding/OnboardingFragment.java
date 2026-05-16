@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.onboarding;
 
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,7 +15,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -48,6 +51,9 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
  */
 public class OnboardingFragment extends BottomSheetDialogFragment {
     public static final String TAG = "OnboardingFragment";
+    private static final String MIN_RECOMMENDED_ADB_SECURITY_PATCH = "2026-05-01";
+    private static final int STATUS_BADGE_BACKGROUND_ALPHA = 0x22;
+    private static final int STATUS_BADGE_STROKE_ALPHA = 0x66;
 
     /** True when this fragment has not yet been dismissed for this user. */
     public static boolean shouldShow() {
@@ -93,6 +99,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        bindAdbPatchLevelWarning(view);
         refreshCapabilityStatuses(view);
         bindCardActions(view, R.id.card_mode_auto, R.id.info_mode_auto, View.NO_ID, Ops.MODE_AUTO,
                 R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_summary,
@@ -136,6 +143,60 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                         com.google.android.material.snackbar.Snackbar.LENGTH_SHORT).show();
             });
         }
+    }
+
+    private void bindAdbPatchLevelWarning(@NonNull View view) {
+        TextView warning = view.findViewById(R.id.warning_adb_patch_level);
+        if (warning == null) return;
+        String securityPatch = getSecurityPatchLevel();
+        if (!isSecurityPatchBefore(securityPatch, MIN_RECOMMENDED_ADB_SECURITY_PATCH)) {
+            warning.setVisibility(View.GONE);
+            return;
+        }
+        warning.setText(getString(R.string.onboarding_adb_patch_level_warning, securityPatch));
+        int warningColor = ContextCompat.getColor(requireContext(), R.color.premium_warning_content);
+        warning.setTextColor(warningColor);
+        warning.setCompoundDrawablePadding(getResources().getDimensionPixelSize(R.dimen.premium_space_8));
+        Drawable icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_security_network);
+        if (icon != null) {
+            icon = DrawableCompat.wrap(icon.mutate());
+            DrawableCompat.setTint(icon, warningColor);
+        }
+        warning.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
+        warning.setContentDescription(warning.getText());
+        warning.setVisibility(View.VISIBLE);
+    }
+
+    @Nullable
+    private static String getSecurityPatchLevel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return null;
+        }
+        return Build.VERSION.SECURITY_PATCH;
+    }
+
+    @VisibleForTesting
+    static boolean isSecurityPatchBefore(@Nullable String securityPatch, @NonNull String minimumPatch) {
+        if (!isIsoDate(securityPatch) || !isIsoDate(minimumPatch)) {
+            return false;
+        }
+        return securityPatch.compareTo(minimumPatch) < 0;
+    }
+
+    private static boolean isIsoDate(@Nullable String value) {
+        if (value == null || value.length() != 10) {
+            return false;
+        }
+        return Character.isDigit(value.charAt(0))
+                && Character.isDigit(value.charAt(1))
+                && Character.isDigit(value.charAt(2))
+                && Character.isDigit(value.charAt(3))
+                && value.charAt(4) == '-'
+                && Character.isDigit(value.charAt(5))
+                && Character.isDigit(value.charAt(6))
+                && value.charAt(7) == '-'
+                && Character.isDigit(value.charAt(8))
+                && Character.isDigit(value.charAt(9));
     }
 
     /**
@@ -213,18 +274,28 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         int activeCardId = cardIdFor(activeMode);
         int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_shizuku, R.id.card_mode_adb_wifi,
                 R.id.card_mode_adb_tcp, R.id.card_mode_no_root};
-        int active = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary);
-        int strokeWidthActive = (int) (2 * getResources().getDisplayMetrics().density);
+        int active = MaterialColors.getColor(root, com.google.android.material.R.attr.colorPrimary);
+        int inactive = MaterialColors.getColor(root, com.google.android.material.R.attr.colorOutlineVariant);
+        int strokeWidthActive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_focus);
+        int strokeWidthInactive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline);
         for (int id : allCards) {
             View v = root.findViewById(id);
             if (!(v instanceof com.google.android.material.card.MaterialCardView)) continue;
             com.google.android.material.card.MaterialCardView card =
                     (com.google.android.material.card.MaterialCardView) v;
+            Object tag = card.getTag();
+            CharSequence baseDescription = tag instanceof CharSequence
+                    ? (CharSequence) tag
+                    : card.getContentDescription();
             if (id == activeCardId) {
                 card.setStrokeColor(active);
                 card.setStrokeWidth(strokeWidthActive);
                 card.setContentDescription(getString(R.string.onboarding_mode_card_active_a11y,
-                        card.getContentDescription() != null ? card.getContentDescription() : ""));
+                        baseDescription != null ? baseDescription : ""));
+            } else {
+                card.setStrokeColor(inactive);
+                card.setStrokeWidth(strokeWidthInactive);
+                card.setContentDescription(baseDescription);
             }
         }
     }
@@ -256,6 +327,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         int textRes = available ? availableTextRes : unavailableTextRes;
         statusView.setText(formatArgs != null ? getString(textRes, formatArgs) : getString(textRes));
         statusView.setTextColor(color);
+        applyStatusBadgeStyle(statusView, color);
         statusView.setCompoundDrawablePadding(getResources()
                 .getDimensionPixelSize(io.github.muntashirakon.ui.R.dimen.padding_very_small));
         Drawable icon = ContextCompat.getDrawable(requireContext(), available
@@ -266,6 +338,17 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             DrawableCompat.setTint(icon, color);
         }
         statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
+    }
+
+    private void applyStatusBadgeStyle(@NonNull TextView statusView, int contentColor) {
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.RECTANGLE);
+        background.setColor(ColorUtils.setAlphaComponent(contentColor, STATUS_BADGE_BACKGROUND_ALPHA));
+        background.setStroke(
+                getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline),
+                ColorUtils.setAlphaComponent(contentColor, STATUS_BADGE_STROKE_ALPHA));
+        background.setCornerRadius(getResources().getDimensionPixelSize(R.dimen.premium_radius_pill));
+        statusView.setBackground(background);
     }
 
     private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint) {
@@ -339,6 +422,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         card.setContentDescription(statusText != null && statusText.length() > 0
                 ? getString(R.string.onboarding_mode_card_status_a11y, title, summary, statusText)
                 : getString(R.string.onboarding_mode_card_a11y, title, summary));
+        card.setTag(card.getContentDescription());
         card.setOnClickListener(v -> pick(mode));
         card.setOnLongClickListener(v -> {
             showModeExplainer(mode, titleRes, explainerRes);

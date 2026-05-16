@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Premium UX polish (2026-05-16)
+
+- Refined onboarding warning and capability status treatments with semantic color, icon, and accessible state handling.
+- Stabilized onboarding mode-card highlighting so replayed capability checks reset inactive cards and do not stack active-state accessibility text.
+- Normalized dual-pane Settings toolbars to the V2 shell height and surface treatment for better large-screen consistency.
+- Tightened main-list badge typography and empty/status copy for clearer scanning in high-density app lists.
+
+### Changed — Release hardening and backup crypto (2026-05-16)
+
+- New encrypted backup metadata now uses backup metadata version 6, enabling per-file AES-GCM IV derivation while keeping older encrypted backups readable with their legacy IV behavior.
+- Package install and uninstall waits now fail with a bounded timeout and diagnostic status instead of hanging indefinitely when PackageInstaller callbacks are lost.
+- Onboarding now warns when the device security patch is older than the recommended patch level for ADB workflows.
+- Backup and Wireless ADB setup diagnostics now log structured warnings instead of dumping stack traces to stderr.
+- Gradle build-time derivation now falls back cleanly when the git timestamp command returns an empty value.
+- Reproducible-release verification now tracks every generated release APK and checksum sidecar instead of assuming a single universal APK output.
+- CI tests/lint now run on the `main` branch, matching the repository's active default branch.
+
 ### Changed — Capability onboarding (2026-05-14)
 
 - Added a Shizuku manager version check to the onboarding capability wizard so v13.6.0+ guidance is visible before users rely on Shizuku for Android 16 QPR1-era rootless flows.
@@ -150,7 +167,7 @@ Fix: new [`AppearanceUtils.reconcileLocalePreference()`](app/src/main/java/io/gi
 - New [`.github/workflows/dependency-scan.yml`](.github/workflows/dependency-scan.yml) ships two layers:
     - **PR Dependency Review** (`actions/dependency-review-action@v4`) on every pull request: fails the PR on HIGH/CRITICAL CVEs introduced by a dependency change. Also denies CC-BY-NC* / CC-BY-ND* / AGPL-1.0 license bumps up-front (GPL-3.0-or-later redistribution compatibility — see ROADMAP iter-19 DDG Tracker Radar reject [S69]).
     - **Weekly OWASP Dependency Check** (Sunday 04:13 UTC, staggered off the existing CodeQL Thursday 14:43 cadence) plus `workflow_dispatch`: runs `./gradlew dependencyCheckAggregate` and uploads HTML + SARIF reports as artifacts (30-day retention). Catches CVEs disclosed *after* a dependency landed.
-- `org.owasp:dependency-check-gradle:13.1.1` plugin wired into [`build.gradle`](build.gradle) at the root; `dependency_check_version = '13.1.1'` declared in [`versions.gradle`](versions.gradle).
+- `org.owasp:dependency-check-gradle:10.0.3` plugin wired into [`build.gradle`](build.gradle) at the root; `dependency_check_version = '10.0.3'` declared in [`versions.gradle`](versions.gradle).
 - Local runs default to `failBuildOnCVSS = 11.0` (effectively never fail) so the report is purely informational on developer machines; CI uses `continue-on-error: true` and surfaces the report as an artifact rather than killing the weekly cadence on a single new CVE. NVD API rate limit honored via optional `NVD_API_KEY` secret with anonymous fallback.
 - Suppression file path is wired but optional (`config/owasp-suppressions.xml`) — populate on first weekly audit to silence vendored-AAR false positives without losing the failing-on-real-CVE behavior.
 - Closes ROADMAP iter-22 row "CI Dependency CVE Scan" — T4 Now (Effort 2/5). Reference: [S274].
