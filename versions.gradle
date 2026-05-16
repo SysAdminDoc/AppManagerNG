@@ -2,6 +2,9 @@
 
 ext {
     compile_sdk = 36
+    // Bumping min_sdk past 21 is a one-way door for users on API 21-22 devices and must follow
+    // docs/policy/minsdk-21-ceiling.md. Dependencies that have already dropped API 21-22 support
+    // are pinned to their last compatible release; see the ledger before raising any of them.
     min_sdk = 21
     target_sdk = 36
     build_tools = '36.1.0'

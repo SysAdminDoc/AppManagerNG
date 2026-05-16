@@ -8,6 +8,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added — Distribution-channel posture (2026-05-16)
 
 - New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md) — canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
+- New [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) — running ledger of every dependency that has already dropped (or imminently drops) API 21-22 support, plus the decision tree for raising the minSdk floor vs. raising a single dependency. `versions.gradle` now carries an inline pointer above `min_sdk = 21` so contributors hit the ledger before bumping.
 
 ### Changed — Premium UX polish (2026-05-16)
 
