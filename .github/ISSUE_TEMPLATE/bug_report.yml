@@ -1,73 +1,98 @@
 name: Bug report
-description: Create a report to help us improve App Manager
+description: Report a bug so AppManagerNG triage has the support context it needs on day one
 labels: [Bug]
 
 body:
   - type: checkboxes
     attributes:
        label: Please check before submitting an issue
-       description: Checking the <a href="https://muntashir.dev/AppManager/">docs</a> before submitting an issue may solve your problem.
+       description: A few checks that make triage much faster.
        options:
-          - label: I know what my device, OS and App Manager versions are
+          - label: I have read [`CONTRIBUTING.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/CONTRIBUTING.md) and the relevant sections of the [`ROADMAP.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/ROADMAP.md).
             required: true
-          - label: I know how to take logs
+          - label: I am running the latest AppManagerNG release from GitHub Releases, IzzyOnDroid, or Obtainium (not an upstream App Manager build).
             required: true
-          - label: I know that generating a report, in whole part or in part, using AI/LLM is prohibited
+          - label: I have searched [open and closed issues](https://github.com/SysAdminDoc/AppManagerNG/issues?q=is%3Aissue) and could not find an existing report.
             required: true
-          - label: I know how to reproduce the issue which may not be specific to my device
+          - label: I can reproduce the issue and have collected the support-bundle fields below, or have noted what is missing.
             required: false
-
 
   - type: textarea
     attributes:
         label: Describe the bug
-        description: A clear and concise description of what the bug is
+        description: A clear and concise description of what is broken and what behavior you expected instead.
     validations:
         required: true
-      
 
   - type: textarea
     attributes:
-        label: To Reproduce
-        description: Steps to reproduce the behaviour
+        label: Steps to reproduce
+        description: Numbered steps a maintainer can follow on their own device.
         placeholder: |
-          - 1. Go to '...'
-          - 2. Click on '....'
-          - 3. Scroll down to '....'
-          - 4. See error
-          
+          1. Go to '...'
+          2. Tap '...'
+          3. Observe '...'
+    validations:
+        required: true
 
   - type: textarea
     attributes:
         label: Expected behavior
-        description: A clear and concise description of what you expected to happen.
-    
-    
+        description: What did you expect to happen, and where in the UI did the divergence appear?
+
   - type: textarea
     attributes:
-        label: Screenshots
-        description: If applicable, add screenshots to help explain your problem.
-        
-        
+        label: Screenshots or screen recording
+        description: Drag-and-drop attachments are preferred over external links. Redact any package names or paths you'd rather not share.
+
   - type: textarea
     attributes:
-        label: Logs
-        description: If applicable, add crash or any other logs to help us figure out the problem.
-        
-        
+        label: Logcat or crash log
+        description: |
+          Paste the smallest log slice that includes the failure. From a workstation, run:
+
+          ```
+          adb logcat -d -b all 'AppManager:V *:E' > appmanagerng-logs.txt
+          ```
+
+          Attach the file or paste the relevant lines. If the app crashed, the system crash dialog's "Copy" output is fine.
+
   - type: textarea
     attributes:
-        label: Device info
+        label: AppManagerNG + mode
+        description: Fill in the version line from About, your active mode, and what privilege provider you use.
         value: |
-          - Device:
-          - OS Version:
-          - App Manager Version:
-          - Mode: Root/ADB/NonRoot
+          - AppManagerNG version (Settings → About):
+          - Active mode: Auto / Root / Shizuku / ADB-WiFi / ADB-USB / No-root
+          - Privilege provider: Magisk / KernelSU / APatch / Shizuku / Sui / ZygiskNext / None
+          - LocalServer bootstrap signature (Settings → Mode of operation, if shown):
+          - Install source: GitHub Releases / IzzyOnDroid / Obtainium / F-Droid / sideload
     validations:
         required: true
 
+  - type: textarea
+    attributes:
+        label: Device + Android
+        description: The fields that change behavior most for AppManagerNG. Pull these from Settings → About phone.
+        value: |
+          - Manufacturer + model:
+          - Android version + API level:
+          - Build / ROM:
+          - Security patch level (YYYY-MM-DD):
+          - Architecture (arm64-v8a / armeabi-v7a / x86_64):
+    validations:
+        required: true
+
+  - type: textarea
+    attributes:
+        label: Affected operation (if applicable)
+        description: AppManagerNG covers many surfaces. Pick the closest match if the bug came from one of them.
+        placeholder: |
+          Install / Uninstall / Freeze / Unfreeze / Backup / Restore /
+          Component toggle / Permission grant / Debloater / Profile run /
+          Scanner / Logcat / Onboarding / Other (specify)
 
   - type: textarea
     attributes:
         label: Additional context
-        description: Add any other context about the problem here.
+        description: Anything else maintainers should know — links to related issues, recent ROM updates, Shizuku version, etc.

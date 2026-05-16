@@ -1,43 +1,44 @@
 name: Feature request
-description: Suggest an idea for this project
+description: Suggest a feature, capability, or workflow for AppManagerNG
 labels: [Feature]
 
 body:
   - type: checkboxes
     attributes:
-       label: Please check before submitting an issue
-       description: Checking the <a href="https://muntashir.dev/AppManager/">docs</a> before submitting an issue may solve your problem.
+       label: Please check before submitting
+       description: A few checks that keep the roadmap conversation focused.
        options:
-          - label: I am using the latest version of App Manager
+          - label: I have read [`CONTRIBUTING.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/CONTRIBUTING.md) and the relevant sections of the [`ROADMAP.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/ROADMAP.md).
             required: true
-          - label: I have searched the issues and haven't found anything relevant
+          - label: I have searched [open and closed issues](https://github.com/SysAdminDoc/AppManagerNG/issues?q=is%3Aissue) and the roadmap for an existing request covering this idea.
             required: true
-          - label: I have read the docs
+          - label: I am running the latest AppManagerNG release and this feature is not already shipped under another name.
             required: true
-          - label: I know that generating a report, in whole part or in part, using AI/LLM is prohibited
-            required: true
-
 
   - type: textarea
     attributes:
-        label: Describe the new feature
-        description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+        label: Describe the problem the feature solves
+        description: What user pain point or workflow gap is this trying to address? Concrete user stories help more than abstract capability lists.
     validations:
         required: true
-      
 
   - type: textarea
     attributes:
         label: Describe the solution you'd like
-        description: A clear and concise description of what you want to happen.
-
+        description: A clear and concise description of the proposed feature. Surface areas (which screen, which menu, which intent), inputs, and outputs.
 
   - type: textarea
     attributes:
         label: Describe alternatives you've considered
-        description: A clear and concise description of any alternative solutions or features you've considered
-        
+        description: Existing AppManagerNG features that come close, other apps that solve this differently, or workarounds you currently use.
+
+  - type: textarea
+    attributes:
+        label: Fit with AppManagerNG constraints
+        description: |
+          AppManagerNG keeps the product offline-by-default, root/Shizuku/ADB-first, and minSdk 21. Briefly note how this feature aligns with those constraints, or where it would push against them (network calls, cloud services, minSdk bump, telemetry).
+
   - type: textarea
     attributes:
         label: Additional context
-        description: Add any other context or screenshots about the feature request here.
+        description: Screenshots, mockups, or links to related issues / external references.

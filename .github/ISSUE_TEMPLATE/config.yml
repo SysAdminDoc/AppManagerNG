@@ -1,11 +1,17 @@
 blank_issues_enabled: false
 contact_links:
-  - name: android-libraries Repo
-    url: https://github.com/MuntashirAkon/android-libraries
-    about: Please send requests for new trackers and libraries to this repository
-  - name: ADL Repo
-    url: https://github.com/MuntashirAkon/android-debloat-list
-    about: Please open issues related to bloatware in this repository
-  - name: App Manager Docs
+  - name: AppManagerNG ROADMAP
+    url: https://github.com/SysAdminDoc/AppManagerNG/blob/main/ROADMAP.md
+    about: Check whether the feature, bug, or follow-up is already tracked before opening a new issue.
+  - name: AppManagerNG Discussions
+    url: https://github.com/SysAdminDoc/AppManagerNG/discussions
+    about: For open-ended questions or design feedback that does not fit one of the issue templates.
+  - name: Upstream App Manager Documentation
     url: https://muntashir.dev/AppManager/
-    about: Please read documentation carefully before submitting an issue
+    about: AppManagerNG inherits most user-facing surfaces from upstream App Manager. The upstream user guide still applies to anything NG has not explicitly changed.
+  - name: Android Debloat List (ADL)
+    url: https://github.com/MuntashirAkon/android-debloat-list
+    about: For new bloatware entries or category-correction PRs; AppManagerNG consumes this dataset for its debloater.
+  - name: Android Libraries / Trackers Dataset
+    url: https://github.com/MuntashirAkon/android-libraries
+    about: For new library / tracker definitions used by the scanner; this dataset is shared with upstream App Manager.

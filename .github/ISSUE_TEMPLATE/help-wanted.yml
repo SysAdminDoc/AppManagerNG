@@ -1,33 +1,42 @@
 name: Help wanted
-description: Ask for help regarding a feature
+description: Ask for help understanding an existing AppManagerNG feature or workflow
 labels: [Help Wanted]
 
 body:
   - type: checkboxes
     attributes:
-      label: Please check before submitting an issue
-      description: Checking the <a href="https://muntashir.dev/AppManager/">docs</a> before submitting an issue may solve your problem.
+      label: Please check before submitting
+      description: Help-wanted issues are for clarifying an existing feature. Use the Bug report template if the feature is malfunctioning, or the Feature request template if you want something new.
       options:
-        - label: I have searched the issues and haven't found anything relevant
+        - label: I have searched [open and closed issues](https://github.com/SysAdminDoc/AppManagerNG/issues?q=is%3Aissue) and could not find a relevant answer.
           required: true
-        - label: I have read the docs
-          required: true
-        - label: I know that generating a report, in whole part or in part, using AI/LLM is prohibited
+        - label: I have read the relevant section of [`README.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/README.md), [`CONTRIBUTING.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/CONTRIBUTING.md), or any linked doc under `docs/`.
           required: true
 
   - type: textarea
     attributes:
-        label: Describe the existing feature/documentation
-        description: A short and concise description of the already existing feature or documentation, e.g. uninstall in batch operations. The purpose of this template is to improve your knowledge regarding the feature.  For new features, use the feature request template. Use the bug report template if the feature is not working as expected.
-      
+        label: Which feature or workflow
+        description: A short description of the AppManagerNG feature you're trying to use — e.g., "encrypted backup with AES", "freezing a system app via Shizuku".
+    validations:
+        required: true
 
   - type: textarea
     attributes:
-        label: Describe your problem(s)
-        description: Describe the problem(s) you've faced while using the feature or reading the documentation.
-        
-        
+        label: What did you try, and what happened
+        description: The sequence of steps, the result you got, and the result you expected. If a privilege mode is involved, include which one.
+
+  - type: textarea
+    attributes:
+        label: Device + mode (optional)
+        description: Only fill in if the question depends on device or mode behavior.
+        value: |
+          - AppManagerNG version:
+          - Active mode: Auto / Root / Shizuku / ADB-WiFi / ADB-USB / No-root
+          - Privilege provider: Magisk / KernelSU / APatch / Shizuku / Sui / ZygiskNext / None
+          - Manufacturer + model:
+          - Android version + API level:
+
   - type: textarea
     attributes:
         label: Additional context
-        description: Add any other context or screenshots about the feature/documentation here.
+        description: Screenshots, recordings, or links to related discussions.
