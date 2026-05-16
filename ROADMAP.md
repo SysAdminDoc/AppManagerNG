@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-16 — Iter-23 repo-reconciliation pass reopened broken local contracts: missing NG governance docs, `main`-branch CI coverage, release artifact mismatch, dependency-version drift, minSdk ceilings, and security/onboarding follow-through.
+**Last updated:** 2026-05-16 — Iter-23 "Now" tier fully shipped: NG governance docs (CONTRIBUTING.md, AGENTS.md), `main`-branch CI coverage, release artifact matrix, dependency-scan version reconciliation, ADB CVE patch-level banner, package-visibility dossier, minSdk-21 ceiling ledger, and NG-rebranded issue/PR templates with support-bundle intake.
 **Next revision due:** v0.6.0 release.
 
 **Related research:**
