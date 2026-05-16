@@ -65,6 +65,7 @@ public class BackupMetadataV5 implements LocalizedString {
          *     <li>{@code 3} - From v2.6.x to v3.0.2 and v3.1.0-alpha01, permissions are preserved, AES GCM MAC size is 32 bits</li>
          *     <li>{@code 4} - Since v3.0.3 and v3.1.0-alpha02, AES GCM MAC size is 128 bits</li>
          *     <li>{@code 5} - Since v4.0.6, meta.json, info.json, privacy-friendly backup</li>
+         *     <li>{@code 6} - AppManagerNG: AES-GCM derives a unique IV for each backup file</li>
          * </ul>
          */
         public final int version;  // version
@@ -189,30 +190,21 @@ public class BackupMetadataV5 implements LocalizedString {
                 case CryptoUtils.MODE_AES: {
                     Objects.requireNonNull(iv);
                     AESCrypto aesCrypto = new AESCrypto(iv);
-                    if (version < 4) {
-                        // Old backups use 32 bit MAC
-                        aesCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                    }
+                    configureAesCrypto(aesCrypto);
                     return aesCrypto;
                 }
                 case CryptoUtils.MODE_RSA: {
                     Objects.requireNonNull(iv);
                     Objects.requireNonNull(aes);
                     RSACrypto rsaCrypto = new RSACrypto(iv, aes);
-                    if (version < 4) {
-                        // Old backups use 32 bit MAC
-                        rsaCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                    }
+                    configureAesCrypto(rsaCrypto);
                     return rsaCrypto;
                 }
                 case CryptoUtils.MODE_ECC: {
                     Objects.requireNonNull(iv);
                     Objects.requireNonNull(aes);
                     ECCCrypto eccCrypto = new ECCCrypto(iv, aes);
-                    if (version < 4) {
-                        // Old backups use 32 bit MAC
-                        eccCrypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
-                    }
+                    configureAesCrypto(eccCrypto);
                     return eccCrypto;
                 }
                 case CryptoUtils.MODE_NO_ENCRYPTION:
@@ -220,6 +212,14 @@ public class BackupMetadataV5 implements LocalizedString {
                     // Dummy crypto to generalise and return nonNull
                     return new DummyCrypto();
             }
+        }
+
+        private void configureAesCrypto(@NonNull AESCrypto crypto) {
+            if (version < 4) {
+                // Old backups use 32 bit MAC
+                crypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
+            }
+            crypto.setFileIvDerivationEnabled(version >= AESCrypto.FILE_IV_DERIVATION_VERSION);
         }
 
         @NonNull

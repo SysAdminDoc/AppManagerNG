@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.crypto;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -18,6 +19,10 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
@@ -37,6 +42,10 @@ public class AESCrypto implements Crypto {
     public static final int GCM_IV_SIZE_BYTES = 12;
     public static final int MAC_SIZE_BITS_OLD = 32;
     public static final int MAC_SIZE_BITS = 128;
+    public static final int FILE_IV_DERIVATION_VERSION = 6;
+
+    private static final byte[] FILE_IV_DERIVATION_DOMAIN =
+            "AppManagerNG AES-GCM file IV v1".getBytes(StandardCharsets.UTF_8);
 
     private final SecretKey mSecretKey;
     private final byte[] mIv;
@@ -44,6 +53,7 @@ public class AESCrypto implements Crypto {
     private final String mParentMode;
 
     private int mMacSizeBits = MAC_SIZE_BITS;
+    private boolean mDeriveIvPerFile;
 
     public AESCrypto(@NonNull byte[] iv) throws CryptoException {
         this(iv, CryptoUtils.MODE_AES, null);
@@ -102,10 +112,19 @@ public class AESCrypto implements Crypto {
         }
     }
 
+    public void setFileIvDerivationEnabled(boolean enabled) {
+        mDeriveIvPerFile = enabled;
+    }
+
     @NonNull
     private AEADParameters getParams() {
+        return getParams(mIv);
+    }
+
+    @NonNull
+    private AEADParameters getParams(@NonNull byte[] iv) {
         // We need to generate it dynamically due to MAC size issues
-        return new AEADParameters(new KeyParameter(mSecretKey.getEncoded()), mMacSizeBits, mIv);
+        return new AEADParameters(new KeyParameter(mSecretKey.getEncoded()), mMacSizeBits, iv);
     }
 
     @CallSuper
@@ -167,14 +186,15 @@ public class AESCrypto implements Crypto {
         if (inputFiles.length != outputFiles.length) {
             throw new IOException("The number of input and output files are not the same.");
         }
-        // Init cipher
-        GCMModeCipher cipher = GCMBlockCipher.newInstance(AESEngine.newInstance());
-        cipher.init(forEncryption, getParams());
         // Encrypt/decrypt files
         for (int i = 0; i < inputFiles.length; i++) {
             Path inputPath = inputFiles[i];
             Path outputPath = outputFiles[i];
             Log.i(TAG, "Input: %s\nOutput: %s", inputPath, outputPath);
+            String canonicalFileName = getCanonicalFileNameForIv(forEncryption, inputPath.getName(), outputPath.getName(),
+                    CryptoUtils.getExtension(mParentMode));
+            GCMModeCipher cipher = GCMBlockCipher.newInstance(AESEngine.newInstance());
+            cipher.init(forEncryption, getParams(getIvForFile(canonicalFileName)));
             try (InputStream is = inputPath.openInputStream();
                  OutputStream os = outputPath.openOutputStream()) {
                 if (forEncryption) {
@@ -191,12 +211,47 @@ public class AESCrypto implements Crypto {
         // Total success
     }
 
+    @NonNull
+    private byte[] getIvForFile(@NonNull String canonicalFileName) {
+        if (!mDeriveIvPerFile) {
+            return mIv;
+        }
+        return deriveIvForFile(mIv, canonicalFileName);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getCanonicalFileNameForIv(boolean forEncryption, @NonNull String inputName,
+                                            @NonNull String outputName, @NonNull String cryptoExtension) {
+        String candidate = forEncryption ? outputName : inputName;
+        if (!cryptoExtension.isEmpty() && candidate.endsWith(cryptoExtension)) {
+            return candidate.substring(0, candidate.length() - cryptoExtension.length());
+        }
+        return candidate;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static byte[] deriveIvForFile(@NonNull byte[] baseIv, @NonNull String canonicalFileName) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(FILE_IV_DERIVATION_DOMAIN);
+            digest.update((byte) 0);
+            digest.update(baseIv);
+            digest.update((byte) 0);
+            digest.update(canonicalFileName.getBytes(StandardCharsets.UTF_8));
+            return Arrays.copyOf(digest.digest(), GCM_IV_SIZE_BYTES);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable.", e);
+        }
+    }
+
     @Override
     public void close() {
         try {
             SecretKeyCompat.destroy(mSecretKey);
         } catch (DestroyFailedException e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not destroy AES secret key.", e);
         }
     }
 }

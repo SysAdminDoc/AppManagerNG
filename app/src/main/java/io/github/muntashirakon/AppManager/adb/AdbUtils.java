@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
@@ -113,7 +114,7 @@ public class AdbUtils {
                 SystemClock.sleep(500);
             }
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.w("AdbUtils", "Could not enable wireless debugging.", th);
         }
         return false;
     }

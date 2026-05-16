@@ -8,46 +8,88 @@ cd "$ROOT_DIR"
 
 GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
 OUT_DIR="${REPRO_OUT_DIR:-build/reproducible-release}"
-APK_PATH="app/build/outputs/apk/release/app-release.apk"
-FIRST_APK="$OUT_DIR/app-release-first.apk"
-SECOND_APK="$OUT_DIR/app-release-second.apk"
-PUBLISH_APK="$OUT_DIR/AppManagerNG-reproducible-release.apk"
+APK_DIR="app/build/outputs/apk/release"
+FIRST_DIR="$OUT_DIR/first"
+SECOND_DIR="$OUT_DIR/second"
+PUBLISH_DIR="$OUT_DIR/publish"
+ASSET_LIST="$OUT_DIR/release-assets.txt"
 
 rm -rf "$OUT_DIR"
-mkdir -p "$OUT_DIR"
+mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
+
+list_apk_names() {
+    local dir="$1"
+    find "$dir" -maxdepth 1 -type f -name '*.apk' -exec basename {} \; | sort
+}
+
+publish_name_for() {
+    local base="$1"
+    local variant="${base#app-}"
+    variant="${variant%.apk}"
+    printf 'AppManagerNG-reproducible-%s.apk' "$variant"
+}
 
 build_once() {
     local label="$1"
-    local destination="$2"
+    local destination_dir="$2"
 
     echo "::group::Clean build ${label}"
     "$GRADLE_CMD" --no-daemon --stacktrace clean :app:assembleRelease
     echo "::endgroup::"
 
-    if [[ ! -f "$APK_PATH" ]]; then
-        echo "::error::Expected release APK was not produced at $APK_PATH" >&2
+    shopt -s nullglob
+    local apks=("$APK_DIR"/*.apk)
+    shopt -u nullglob
+    if (( ${#apks[@]} == 0 )); then
+        echo "::error::No release APKs were produced in $APK_DIR" >&2
         exit 1
     fi
 
-    cp "$APK_PATH" "$destination"
-    sha256sum "$destination" | tee "$OUT_DIR/${label}.sha256"
+    local apk
+    for apk in "${apks[@]}"; do
+        cp "$apk" "$destination_dir/$(basename "$apk")"
+    done
+    (
+        cd "$destination_dir"
+        list_apk_names "." | while IFS= read -r name; do
+            sha256sum "$name"
+        done
+    ) | tee "$OUT_DIR/${label}.sha256"
 }
 
-build_once "first" "$FIRST_APK"
-build_once "second" "$SECOND_APK"
+build_once "first" "$FIRST_DIR"
+build_once "second" "$SECOND_DIR"
 
-FIRST_HASH="$(sha256sum "$FIRST_APK" | awk '{print $1}')"
-SECOND_HASH="$(sha256sum "$SECOND_APK" | awk '{print $1}')"
+FIRST_APKS="$(list_apk_names "$FIRST_DIR")"
+SECOND_APKS="$(list_apk_names "$SECOND_DIR")"
 
-if [[ "$FIRST_HASH" != "$SECOND_HASH" ]]; then
-    echo "::error::Release APK is not reproducible across two clean builds." >&2
-    echo "::error::first=$FIRST_HASH second=$SECOND_HASH" >&2
-    set +o pipefail
-    cmp -l "$FIRST_APK" "$SECOND_APK" | head -20 > "$OUT_DIR/differing-bytes.txt"
-    set -o pipefail
+if [[ "$FIRST_APKS" != "$SECOND_APKS" ]]; then
+    echo "::error::Release APK set changed across two clean builds." >&2
+    diff -u <(printf '%s\n' "$FIRST_APKS") <(printf '%s\n' "$SECOND_APKS") > "$OUT_DIR/apk-list.diff" || true
     exit 1
 fi
 
-cp "$FIRST_APK" "$PUBLISH_APK"
-printf '%s  %s\n' "$FIRST_HASH" "$(basename "$PUBLISH_APK")" > "$OUT_DIR/sha256.txt"
-echo "Reproducible release APK verified: $FIRST_HASH"
+: > "$ASSET_LIST"
+: > "$OUT_DIR/sha256.txt"
+
+while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    first_apk="$FIRST_DIR/$name"
+    second_apk="$SECOND_DIR/$name"
+    first_hash="$(sha256sum "$first_apk" | awk '{print $1}')"
+    second_hash="$(sha256sum "$second_apk" | awk '{print $1}')"
+    if [[ "$first_hash" != "$second_hash" ]]; then
+        echo "::error::Release APK $name is not reproducible across two clean builds." >&2
+        echo "::error::first=$first_hash second=$second_hash" >&2
+        set +o pipefail
+        cmp -l "$first_apk" "$second_apk" | head -20 > "$OUT_DIR/${name}.differing-bytes.txt"
+        set -o pipefail
+        exit 1
+    fi
+
+    publish_apk="$PUBLISH_DIR/$(publish_name_for "$name")"
+    cp "$first_apk" "$publish_apk"
+    printf '%s  %s\n' "$first_hash" "$(basename "$publish_apk")" | tee "$publish_apk.sha256" >> "$OUT_DIR/sha256.txt"
+    printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
+    echo "Reproducible release APK verified: $name $first_hash"
+done <<< "$FIRST_APKS"

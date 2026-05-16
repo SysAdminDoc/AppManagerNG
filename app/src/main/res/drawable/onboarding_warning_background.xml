@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/premium_warning_bg" />
+    <stroke
+        android:width="@dimen/premium_stroke_hairline"
+        android:color="?attr/colorOutlineVariant" />
+    <corners android:radius="@dimen/premium_radius_card" />
+</shape>
