@@ -10,6 +10,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md) — canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
 - New [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) — running ledger of every dependency that has already dropped (or imminently drops) API 21-22 support, plus the decision tree for raising the minSdk floor vs. raising a single dependency. `versions.gradle` now carries an inline pointer above `min_sdk = 21` so contributors hit the ledger before bumping.
 
+### Changed — Triage intake (2026-05-16)
+
+- All five `.github/ISSUE_TEMPLATE/*` files now point at the NG repo, `CONTRIBUTING.md`, and `ROADMAP.md` instead of upstream `muntashir.dev` / `MuntashirAkon/AppManager`.
+- The bug-report template now collects NG-specific support-bundle fields: active mode (Auto/Root/Shizuku/ADB-WiFi/ADB-USB/No-root), privilege provider (Magisk/KernelSU/APatch/Shizuku/Sui/ZygiskNext/None), LocalServer bootstrap signature, install source, security patch level, ROM/build, architecture, and the affected operation — meshes with the upcoming Support Info Bundle Composer.
+- The PR template now references the NG `CONTRIBUTING.md` and replaces the upstream blanket AI/LLM ban with the tool-assisted-but-reviewed contract from `CONTRIBUTING.md`; the assignment-required checkbox is dropped.
+- The issue-template contact links point first at the AppManagerNG roadmap and Discussions, with upstream user-guide / ADL / android-libraries listed as supporting datasets rather than primary routing.
+
 ### Changed — Premium UX polish (2026-05-16)
 
 - Refined onboarding warning and capability status treatments with semantic color, icon, and accessible state handling.

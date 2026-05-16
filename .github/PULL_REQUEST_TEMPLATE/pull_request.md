@@ -1,30 +1,34 @@
 ### Please check before submitting a PR
 
-- [ ] I have read and understood [CONTRIBUTING](https://github.com/MuntashirAkon/AppManager?tab=contributing-ov-file).
-- [ ] I am developing against the latest version of App Manager's source code.
-- [ ] I have been assigned to work on this feature/issue.
-- [ ] I know that generating a PR or its code, in whole or in part, using AI/LLM is prohibited.
+- [ ] I have read and understood [`CONTRIBUTING.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/CONTRIBUTING.md).
+- [ ] I am working against the latest `main` of AppManagerNG (not upstream App Manager).
+- [ ] I have linked the related issue or roadmap row, or filed one alongside this PR.
+- [ ] I have run `./gradlew test` and `./gradlew :app:lint`, or noted why one or both could not run locally.
+- [ ] If this touches backup / restore / package install / shell execution / signature verification / permission state, I have added or updated focused tests as required by `CONTRIBUTING.md`.
 
 ---
 
-### Describe the feature or issue
+### Summary
 
-_Briefly describe the feature you have tried to implement or issue you have tried to fix_
+_Briefly describe the user-visible behavior change and the failure mode it fixes._
 
-### Related Issues
+### Related issue or roadmap row
 
-_Include all the related issues (including feature requests). If no issues present, first create a new issue_
+_Link the GitHub issue (`#NN`) or the row in [`ROADMAP.md`](https://github.com/SysAdminDoc/AppManagerNG/blob/main/ROADMAP.md) this PR closes. If neither exists, paste the rationale here so it is reviewable on its own._
 
-### Describe the solution you've implemented
+### Implementation notes
 
-_Briefly explain what you have done, and justify you modifications. If you have modified or introduced unnecessary files, please clean up before finalizing your PR._
+_Briefly explain what you did and any non-obvious trade-offs. Call out new dependencies, manifest changes, or new network / disk surfaces._
 
-### Describe alternatives you've considered
-
-_None._
-<!-- If there were other ways to implement/fix the issues, please briefly describe them here, or leave it empty if there were none. -->
-
-### Additional context
+### Alternatives considered
 
 _None._
-<!-- Add any additional context (screenshots, external links, unrelated issues) here or leave it empty. -->
+<!-- If there were other ways to implement / fix the issue, list them here, or leave "None." -->
+
+### Test plan
+
+_What you tested and how. Include device + Android version for UI changes. Screenshots or screen recordings welcome._
+
+### Tool-assisted work
+
+_If any part of this PR was drafted with AI / LLM assistance, note which files and confirm you reviewed every line. Per `CONTRIBUTING.md`, tool-assisted contributions are allowed but the contributor is responsible for licensing, correctness, and maintainability._
