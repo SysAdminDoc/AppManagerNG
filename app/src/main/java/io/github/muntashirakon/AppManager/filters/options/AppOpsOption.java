@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.filters.options;
 
+import android.app.AppOpsManager;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 
@@ -31,6 +32,14 @@ import io.github.muntashirakon.AppManager.utils.LangUtils;
  * <p>Shipped under the v0.x roadmap row "Finder: AppOps".
  */
 public class AppOpsOption extends FilterOption {
+    /** Mode-flag bits (used with the {@code with_mode} key). The bit position equals the
+     *  {@code AppOpsManager.MODE_*} value, so a flag is just {@code 1 << mode}. */
+    public static final int MODE_FLAG_ALLOWED = 1 << AppOpsManager.MODE_ALLOWED;
+    public static final int MODE_FLAG_IGNORED = 1 << AppOpsManager.MODE_IGNORED;
+    public static final int MODE_FLAG_ERRORED = 1 << AppOpsManager.MODE_ERRORED;
+    public static final int MODE_FLAG_DEFAULT = 1 << AppOpsManager.MODE_DEFAULT;
+    public static final int MODE_FLAG_FOREGROUND = 1 << AppOpsManager.MODE_FOREGROUND;
+
     private final Map<String, Integer> mKeysWithType = new LinkedHashMap<String, Integer>() {{
         put(KEY_ALL, TYPE_NONE);
         put("eq", TYPE_STR_SINGLE);
@@ -38,9 +47,9 @@ public class AppOpsOption extends FilterOption {
         put("starts_with", TYPE_STR_SINGLE);
         put("ends_with", TYPE_STR_SINGLE);
         put("regex", TYPE_REGEX);
-        // TODO: mode-based filtering (allowed / ignored / errored / default / foreground)
-        //       and "name + mode" composition. Op mode is already on AppOpsManagerCompat.OpEntry
-        //       via getMode(); wiring a TYPE_INT_FLAGS key is the open follow-up.
+        // Match apps that hold at least one op in any of the selected modes. The intValue is an
+        // OR of MODE_FLAG_* constants (bit position = AppOpsManager.MODE_*).
+        put("with_mode", TYPE_INT_FLAGS);
     }};
 
     public AppOpsOption() {
@@ -80,6 +89,16 @@ public class AppOpsOption extends FilterOption {
                 Objects.requireNonNull(value);
                 return result.setMatched(matchesAny(ops, name -> regexValue.matcher(name).matches()));
             }
+            case "with_mode": {
+                for (AppOpsManagerCompat.OpEntry op : ops) {
+                    int mode = op.getMode();
+                    if (mode < 0) continue;
+                    if ((intValue & (1 << mode)) != 0) {
+                        return result.setMatched(true);
+                    }
+                }
+                return result.setMatched(false);
+            }
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
@@ -118,9 +137,29 @@ public class AppOpsOption extends FilterOption {
                 return sb.append(" ends with '").append(value).append("'");
             case "regex":
                 return sb.append(" matches '").append(value).append("'");
+            case "with_mode":
+                return sb.append(" mode ∈ {").append(describeModeFlags(intValue)).append("}");
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
+    }
+
+    /** Build a comma-separated label for the selected mode flags, e.g. "allowed, foreground". */
+    @NonNull
+    private static String describeModeFlags(int intValue) {
+        StringBuilder sb = new StringBuilder();
+        appendIfSet(sb, intValue, MODE_FLAG_ALLOWED, "allowed");
+        appendIfSet(sb, intValue, MODE_FLAG_IGNORED, "ignored");
+        appendIfSet(sb, intValue, MODE_FLAG_ERRORED, "errored");
+        appendIfSet(sb, intValue, MODE_FLAG_DEFAULT, "default");
+        appendIfSet(sb, intValue, MODE_FLAG_FOREGROUND, "foreground");
+        return sb.length() == 0 ? "(none)" : sb.toString();
+    }
+
+    private static void appendIfSet(@NonNull StringBuilder sb, int value, int flag, @NonNull String label) {
+        if ((value & flag) == 0) return;
+        if (sb.length() > 0) sb.append(", ");
+        sb.append(label);
     }
 
     private interface NamePredicate {
