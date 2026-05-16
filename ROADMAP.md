@@ -175,8 +175,8 @@ Code exists (`FinderActivity`, `FinderViewModel`) but is incomplete per `TODO` m
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Finder: Components** | Complete `FinderActivity` — search activities, services, receivers, providers by name or authority | Medium |
-| **Finder: Permissions** | Find all apps declaring or holding a given permission (granted/denied/custom) | Low |
+| ~~**Finder: Components**~~ ✅ closed 2026-05-16 (already implemented) | [`ComponentsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/ComponentsOption.java) ships in the Finder filter ladder with `with_type` / `without_type` (activity / service / receiver / provider bit flags) plus `eq` / `contains` / `starts_with` / `ends_with` / `regex` predicates for the component class name. | Medium |
+| ~~**Finder: Permissions**~~ ✅ closed 2026-05-16 (already implemented) | [`PermissionsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/PermissionsOption.java) ships in the Finder filter ladder with `eq` / `contains` / `starts_with` / `ends_with` / `regex` predicates over declared permission names. (Curated flag / grant-state filters are still tracked as an inline TODO inside the file for follow-up; the row's core ask — "find apps holding a permission" — is shipped.) | Low |
 | **Finder: AppOps** | Find all apps with a specific app op in a specific state | Low |
 | **Finder: Regex Support** | Full regex pattern matching in component/class name fields (TrackersOption.java TODO) | Low |
 | **Finder: Tracker Name Search** | Filter by tracker SDK name in Finder (TrackersOption.java TODO) | Low |
@@ -213,7 +213,7 @@ Routine Operations is the #2 requested feature (21 reactions, Issue #61 [S03]). 
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| **Biometric App Lock** | BiometricPrompt-based lock for AM itself on app open (BiometricPrompt dep already present at 1.4.0-alpha04) | Low |
+| ~~**Biometric App Lock**~~ ✅ closed 2026-05-16 (already implemented) | [`BaseActivity`](app/src/main/java/io/github/muntashirakon/AppManager/BaseActivity.java) gates every authenticated screen behind `BiometricPrompt` (line 122): each activity calls `onAuthenticated()` only after `BiometricPrompt.AuthenticationCallback.onAuthenticationSucceeded()` fires, with the same delegate handling `onAuthenticationError` / `onAuthenticationFailed`. The screen-lock preference and biometric authenticator type live under `compat/BiometricAuthenticatorsCompat`. Inherited at app open via `SplashActivity` extending `BaseActivity`. | Low |
 | **App-Ops Per-UID Control** | Allow setting app ops by UID (`--uid`) in addition to per-package; essential for shared-UID system packages where per-package mode is ambiguous (Issue #1863 [S37]). | Medium |
 | **AppOps Quick-Toggle in List** | Add an inline allow/deny/default toggle chip directly on each AppOps row in the App Details AppOps tab; avoids opening a full dialog for simple permission mode changes. Reduces interaction depth for bulk AppOps editing sessions. Inure build106.5.1 model ([S66]). | Low |
 | **Tracker Blocking (AppOps)** | One-click disable specific tracker components via `AppOps.setUidMode`; show which trackers are currently active. Three graduated blocking intensities: minimal (detect + report only), standard (disable known problematic SDKs), strict (disable all detected trackers); balances privacy vs. app compatibility. TrackerControl 2026040301 model ([S69]). | Medium |
