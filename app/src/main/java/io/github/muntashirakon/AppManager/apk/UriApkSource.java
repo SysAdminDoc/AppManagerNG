@@ -49,6 +49,12 @@ public class UriApkSource extends ApkSource {
         return new CachedApkSource(mUri, mMimeType);
     }
 
+    @Nullable
+    @Override
+    public Uri getUri() {
+        return mUri;
+    }
+
     protected UriApkSource(@NonNull Parcel in) {
         mUri = Objects.requireNonNull(ParcelCompat.readParcelable(in, Uri.class.getClassLoader(), Uri.class));
         mMimeType = in.readString();

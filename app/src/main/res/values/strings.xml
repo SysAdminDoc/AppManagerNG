@@ -1368,6 +1368,8 @@
     <string name="background">Background</string>
     <string name="staging_apk_files">Preparing APK files…</string>
     <string name="installer_app_installed">App installed successfully.</string>
+    <string name="installer_copy_diagnostic_info">Copy diagnostic info</string>
+    <string name="installer_diagnostic_info_copied">Diagnostic info copied. Source paths are redacted before paste.</string>
     <string name="next">Next</string>
     <string name="pref_block_trackers_msg">Block tracking components after installing an app using App Manager.</string>
     <string name="pref_always_on_background">Install in the background</string>

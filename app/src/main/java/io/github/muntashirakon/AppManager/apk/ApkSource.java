@@ -40,6 +40,17 @@ public abstract class ApkSource implements Parcelable, IJsonSerializer {
     @NonNull
     public abstract ApkSource toCachedSource();
 
+    /**
+     * The raw URI backing this source, if any. Used for diagnostic / install-transcript surfaces.
+     * Default is {@code null} for sources that have no URI representation (e.g.
+     * {@link ApplicationInfoApkSource}).
+     */
+    @AnyThread
+    @Nullable
+    public Uri getUri() {
+        return null;
+    }
+
     public static final JsonDeserializer.Creator<ApkSource> DESERIALIZER = jsonObject -> {
         String tag = JSONUtils.getString(jsonObject, "tag");
         if (ApplicationInfoApkSource.TAG.equals(tag)) {

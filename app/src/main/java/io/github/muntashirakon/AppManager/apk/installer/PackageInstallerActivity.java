@@ -27,6 +27,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.UserHandleHidden;
@@ -45,9 +46,13 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.TimeZone;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -63,8 +68,10 @@ import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
@@ -228,8 +235,11 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             if (success) {
                 install();
             } else {
+                // Uninstall failures live on the same dialog but have no PackageInstaller status
+                // code; pass STATUS_SUCCESS so the install-specific "Copy diagnostic info" button
+                // stays hidden (App Info is also hidden because displayOpenAndAppInfo = false).
                 showInstallationFinishedDialog(mModel.getPackageName(), getString(R.string.failed_to_uninstall_app),
-                        null, false);
+                        null, false, STATUS_SUCCESS);
             }
         });
         // Init fragment
@@ -539,16 +549,46 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     public void showInstallationFinishedDialog(String packageName, int result, @Nullable String blockingPackage,
                                                @Nullable String statusMessage) {
         showInstallationFinishedDialog(packageName, getStringFromStatus(result, blockingPackage), statusMessage,
-                result == STATUS_SUCCESS);
+                result == STATUS_SUCCESS, result);
     }
 
     public void showInstallationFinishedDialog(String packageName, CharSequence message,
-                                               @Nullable String statusMessage, boolean displayOpenAndAppInfo) {
+                                               @Nullable String statusMessage, boolean displayOpenAndAppInfo,
+                                               int statusCode) {
         SpannableStringBuilder ssb = new SpannableStringBuilder(message);
         if (statusMessage != null) {
             ssb.append("\n\n").append(UIUtils.getItalicString(statusMessage));
         }
         Intent intent = PackageManagerCompat.getLaunchIntentForPackage(packageName, UserHandleHidden.myUserId());
+        boolean isFailure = statusCode != STATUS_SUCCESS;
+        View.OnClickListener neutralListener;
+        int neutralLabelRes;
+        if (displayOpenAndAppInfo) {
+            // Success: keep the historical "App info" affordance.
+            neutralListener = v -> {
+                try {
+                    Intent appDetailsIntent = AppDetailsActivity.getIntent(this, packageName, mLastUserId, true);
+                    appDetailsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(appDetailsIntent);
+                } finally {
+                    goToNext();
+                }
+            };
+            neutralLabelRes = R.string.app_info;
+        } else if (isFailure) {
+            // Failure: surface a copyable install transcript so users can paste the relevant
+            // diagnostic context into a support request without re-typing the install path.
+            InstallTranscript transcript = buildInstallTranscript(packageName, statusCode, statusMessage);
+            neutralListener = v -> {
+                ClipboardUtils.copyToClipboard(this, getString(R.string.installer_copy_diagnostic_info),
+                        transcript.toShareableText());
+                UIUtils.displayShortToast(R.string.installer_diagnostic_info_copied);
+            };
+            neutralLabelRes = R.string.installer_copy_diagnostic_info;
+        } else {
+            neutralListener = null;
+            neutralLabelRes = 0;
+        }
         mDialogHelper.showInstallFinishedDialog(ssb, hasNext() ? R.string.next : R.string.close, v -> goToNext(),
                 displayOpenAndAppInfo && intent != null ? v -> {
                     try {
@@ -558,15 +598,31 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                     } finally {
                         goToNext();
                     }
-                } : null, displayOpenAndAppInfo ? v -> {
-                    try {
-                        Intent appDetailsIntent = AppDetailsActivity.getIntent(this, packageName, mLastUserId, true);
-                        appDetailsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(appDetailsIntent);
-                    } finally {
-                        goToNext();
-                    }
-                } : null);
+                } : null, neutralListener, neutralLabelRes);
+    }
+
+    @NonNull
+    private InstallTranscript buildInstallTranscript(@NonNull String packageName, int statusCode,
+                                                     @Nullable String statusMessage) {
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String timestamp = fmt.format(new Date());
+        String version = String.format(Locale.ROOT, "%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
+        String device = String.format(Locale.ROOT, "%s %s (%s)", Build.MANUFACTURER, Build.MODEL, Build.DEVICE);
+        String patch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? Build.VERSION.SECURITY_PATCH : "";
+        String abi = Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "";
+        String mode = Ops.getMode();
+        String sourceUri = null;
+        ApkQueueItem currentItem = mCurrentItem;
+        if (currentItem != null && currentItem.getApkSource() != null) {
+            Uri rawUri = currentItem.getApkSource().getUri();
+            if (rawUri != null) {
+                sourceUri = rawUri.toString();
+            }
+        }
+        return new InstallTranscript(timestamp, version, device, Build.VERSION.RELEASE, Build.VERSION.SDK_INT,
+                patch, abi, mode, packageName, statusCode, InstallTranscript.statusName(statusCode), statusMessage,
+                sourceUri, true);
     }
 
     @NonNull

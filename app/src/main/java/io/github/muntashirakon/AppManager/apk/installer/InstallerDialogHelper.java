@@ -253,12 +253,13 @@ public final class InstallerDialogHelper {
     public void showInstallFinishedDialog(CharSequence msg, @StringRes int cancelOrNextRes,
                                           @NonNull View.OnClickListener cancelClickListener,
                                           @Nullable View.OnClickListener openButtonClickListener,
-                                          @Nullable View.OnClickListener appInfoButtonClickListener) {
+                                          @Nullable View.OnClickListener neutralButtonClickListener,
+                                          @StringRes int neutralButtonLabelRes) {
         // Buttons
-        if (appInfoButtonClickListener != null) {
+        if (neutralButtonClickListener != null && neutralButtonLabelRes != 0) {
             mNeutralBtn.setVisibility(View.VISIBLE);
-            mNeutralBtn.setText(R.string.app_info);
-            mNeutralBtn.setOnClickListener(appInfoButtonClickListener);
+            mNeutralBtn.setText(neutralButtonLabelRes);
+            mNeutralBtn.setOnClickListener(neutralButtonClickListener);
         } else mNeutralBtn.setVisibility(View.GONE);
         if (openButtonClickListener != null) {
             mPositiveBtn.setVisibility(View.VISIBLE);
