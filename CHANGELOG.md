@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Distribution-channel posture (2026-05-16)
+
+- New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md) — canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
+
 ### Changed — Premium UX polish (2026-05-16)
 
 - Refined onboarding warning and capability status treatments with semantic color, icon, and accessible state handling.
