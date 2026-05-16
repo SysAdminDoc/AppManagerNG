@@ -79,6 +79,12 @@ public class CachedApkSource extends ApkSource {
         return new CachedApkSource(uri, mMimeType);
     }
 
+    @Nullable
+    @Override
+    public Uri getUri() {
+        return mUri;
+    }
+
     public void cleanup() {
         FileUtils.deleteSilently(mCachedFile);
         mCachedFile = null;
