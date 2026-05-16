@@ -9,9 +9,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Closed eight long-standing roadmap rows that turned out to already be implemented in the codebase or shipped under a different name: Backup Tag Autocomplete (covered by iter-21 "Existing-Tag Suggestions"), Force Stop via Shizuku Rootless (already in `AppInfoFragment` via `SelfPermissions.checkSelfOrRemotePermission(FORCE_STOP_PACKAGES)`), Backup Integrity Verification (`BackupOp` + `RestoreOp` + `BackupItems.Checksum`), AES-256 Backup Encryption (`AESCrypto` with Android Keystore-backed keys, metadata v6 per-file IV), PGP Backup Encryption (`OpenPGPCrypto` via OpenIntents OpenPGP API), Finder: Components (`ComponentsOption` with class-name + type-flag predicates), Finder: Permissions (`PermissionsOption` with declared-permission-name predicates), and Biometric App Lock (`BaseActivity.BiometricPrompt` gates `onAuthenticated()` for every authenticated screen). Each row now documents the existing implementation surface for future contributors.
 
-### Added — Finder: AppOps filter (2026-05-16)
+### Added — Finder filter extensions (2026-05-16)
 
-- New [`AppOpsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) registered under the `app_ops` filter key. v1 mirrors `PermissionsOption` shape — `eq` / `contains` / `starts_with` / `ends_with` / `regex` predicates over the op name (`OpEntry.getName()`). Mode-based filtering (only-allowed / only-ignored / only-foreground) is captured as an inline TODO for the follow-up.
+- New [`AppOpsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) under the `app_ops` filter key with both name predicates (`eq` / `contains` / `starts_with` / `ends_with` / `regex` over the op name) and a `with_mode` bitfield (`MODE_FLAG_ALLOWED` / `_IGNORED` / `_ERRORED` / `_DEFAULT` / `_FOREGROUND`) so users can filter by op state.
+- [`TrackersOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) gains class-name predicates (`name_eq` / `name_contains` / `name_starts_with` / `name_ends_with` / `name_regex`) alongside the existing count predicates. Matched tracker subsets are threaded through `TestResult.setMatchedTrackers` so downstream filters can compose with the narrowed set. Closes the "Finder: Tracker Name Search" and "Finder: Regex Support" rows from the early roadmap.
 
 ### Added — Backup sharing (2026-05-16)
 
