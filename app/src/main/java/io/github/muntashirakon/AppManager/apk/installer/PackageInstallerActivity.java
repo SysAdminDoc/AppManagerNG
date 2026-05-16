@@ -610,7 +610,27 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (applicationInfo != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             apkMinSdk = applicationInfo.minSdkVersion;
         }
-        return InstallDependencyChecker.check(apkMinSdk, Build.VERSION.SDK_INT);
+        List<String> requiredLibraries = null;
+        if (newPackageInfo.reqFeatures != null || newPackageInfo.applicationInfo != null) {
+            // <uses-library> declarations from the APK manifest; only available when the apk
+            // was parsed with PackageManager.GET_SHARED_LIBRARY_FILES (or via NG's ApkFile).
+            if (newPackageInfo.applicationInfo != null
+                    && newPackageInfo.applicationInfo.sharedLibraryFiles != null) {
+                requiredLibraries = new ArrayList<>(java.util.Arrays.asList(
+                        newPackageInfo.applicationInfo.sharedLibraryFiles));
+            }
+        }
+        List<String> installedLibraries = null;
+        try {
+            String[] systemLibs = getPackageManager().getSystemSharedLibraryNames();
+            if (systemLibs != null) {
+                installedLibraries = new ArrayList<>(java.util.Arrays.asList(systemLibs));
+            }
+        } catch (Throwable th) {
+            Log.w(TAG, "Could not fetch system shared library names.", th);
+        }
+        return InstallDependencyChecker.check(apkMinSdk, Build.VERSION.SDK_INT,
+                requiredLibraries, installedLibraries);
     }
 
     @Nullable
@@ -646,6 +666,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             case MIN_SDK_TOO_HIGH:
                 return getString(R.string.installer_dependency_min_sdk_too_high,
                         issue.requiredVersion, issue.actualVersion);
+            case MISSING_SHARED_LIBRARY:
+                return getString(R.string.installer_dependency_missing_shared_library,
+                        InstallDependencyChecker.joinMissingNames(issue.missingNames));
             default:
                 return null;
         }

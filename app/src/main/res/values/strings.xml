@@ -1371,6 +1371,7 @@
     <string name="installer_copy_diagnostic_info">Copy diagnostic info</string>
     <string name="installer_diagnostic_info_copied">Diagnostic info copied. Source paths are redacted before paste.</string>
     <string name="installer_dependency_min_sdk_too_high">Requires Android API %1$d — this device is on API %2$d. The system installer will refuse to install this APK.</string>
+    <string name="installer_dependency_missing_shared_library">Required shared libraries are not installed on this device: %1$s. The system installer may refuse to install this APK.</string>
     <string name="share_backup">Share backup</string>
     <string name="share_backup_empty">No files to share in the selected backup.</string>
     <string name="share_backup_no_handler">No app is registered to receive backup files.</string>
