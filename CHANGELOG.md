@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Roadmap hygiene (2026-05-16)
+
+- Closed five long-standing roadmap rows that turned out to already be implemented in the codebase or shipped under a different name: Backup Tag Autocomplete (covered by iter-21 "Existing-Tag Suggestions"), Force Stop via Shizuku Rootless (already in `AppInfoFragment` via `SelfPermissions.checkSelfOrRemotePermission(FORCE_STOP_PACKAGES)`), Backup Integrity Verification (`BackupOp` + `RestoreOp` + `BackupItems.Checksum`), AES-256 Backup Encryption (`AESCrypto` with Android Keystore-backed keys, metadata v6 per-file IV), and PGP Backup Encryption (`OpenPGPCrypto` via OpenIntents OpenPGP API). Each row now documents the existing implementation surface for future contributors.
+
 ### Added — Backup sharing (2026-05-16)
 
 - Restore-Single → popup menu now carries a "Share backup" action when exactly one backup is selected. The chooser opens with every file under the backup directory as an `ACTION_SEND_MULTIPLE` payload via `FmProvider`, so users can pipe a backup into another file manager, messaging app, or cloud SAF provider without first zipping it. Encrypted backups stay encrypted on the way out — recipients still need the user's AppManagerNG key to restore. Closes the iter-18, iter-21, and v0.x roadmap rows for "Backup Sharing Button" / "Neo-Backup-Style Backup Sharing Button" in one pass.
