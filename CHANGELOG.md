@@ -9,6 +9,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Install-failure dialog now exposes a "Copy diagnostic info" button that copies a paste-friendly install transcript (timestamp, AppManagerNG version, device, Android version + security patch, ABI, active mode, package, status code + name, status message, redacted source URI). Source URIs are redacted by default — `file:///` paths drop to `file://<redacted>`, `content://` and `http(s)://` keep scheme + authority but drop the path / document id — so the transcript can be pasted into a public issue safely.
 
+### Added — Backup destination guidance (2026-05-16)
+
+- New [`docs/distribution/backup-destinations.md`](docs/distribution/backup-destinations.md) — canonical inventory of supported backup destinations (native + indirect-via-SAF + rejected), reliability watch-outs per DocumentsProvider class, the FOSS rationale for not shipping direct Google Drive / Dropbox / OneDrive OAuth, and recommended user setups per use case (local, Syncthing, Nextcloud, NAS, removable, cold archive).
+
 ### Added — Distribution-channel posture (2026-05-16)
 
 - New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md) — canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
