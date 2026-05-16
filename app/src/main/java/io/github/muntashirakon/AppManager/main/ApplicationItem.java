@@ -857,6 +857,24 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     }
 
     @Override
+    @NonNull
+    public AppUsageStatsManager.DataUsage getMobileDataUsage() {
+        if (mPackageUsageInfo != null && mPackageUsageInfo.mobileData != null) {
+            return mPackageUsageInfo.mobileData;
+        }
+        return AppUsageStatsManager.DataUsage.EMPTY;
+    }
+
+    @Override
+    @NonNull
+    public AppUsageStatsManager.DataUsage getWifiDataUsage() {
+        if (mPackageUsageInfo != null && mPackageUsageInfo.wifiData != null) {
+            return mPackageUsageInfo.wifiData;
+        }
+        return AppUsageStatsManager.DataUsage.EMPTY;
+    }
+
+    @Override
     public int getTimesOpened() {
         fetchPackageInfo();
         return mPackageUsageInfo != null ? mPackageUsageInfo.timesOpened : openCount;

@@ -13,6 +13,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - New [`AppOpsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) under the `app_ops` filter key with both name predicates (`eq` / `contains` / `starts_with` / `ends_with` / `regex` over the op name) and a `with_mode` bitfield (`MODE_FLAG_ALLOWED` / `_IGNORED` / `_ERRORED` / `_DEFAULT` / `_FOREGROUND`) so users can filter by op state.
 - [`TrackersOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) gains class-name predicates (`name_eq` / `name_contains` / `name_starts_with` / `name_ends_with` / `name_regex`) alongside the existing count predicates. Matched tracker subsets are threaded through `TestResult.setMatchedTrackers` so downstream filters can compose with the narrowed set. Closes the "Finder: Tracker Name Search" and "Finder: Regex Support" rows from the early roadmap.
+- [`DataUsageOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/DataUsageOption.java) gains `mobile_le` / `mobile_ge` / `wifi_le` / `wifi_ge` predicates so users can filter by cellular-only or Wi-Fi-only consumption instead of just the combined total. `IFilterableAppInfo` gained `getMobileDataUsage()` and `getWifiDataUsage()` accessors (implemented in both `FilterableAppInfo` and `ApplicationItem` from the existing `PackageUsageInfo.mobileData` / `wifiData` fields).
 
 ### Added — Backup sharing (2026-05-16)
 
