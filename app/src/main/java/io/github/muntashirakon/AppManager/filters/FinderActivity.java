@@ -52,10 +52,9 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
         });
         mViewModel.getLastUpdateTimeLiveData().observe(this, time -> {
             CharSequence subtitle;
-            // TODO: 8/2/24 Set subtitle to "Loaded at: {time}" localised
             if (time < 0) {
                 subtitle = getString(R.string.loading);
-            } else subtitle = "Loaded at: " + DateUtils.formatDateTime(this, time);
+            } else subtitle = getString(R.string.finder_loaded_at, DateUtils.formatDateTime(this, time));
             Optional.ofNullable(getSupportActionBar()).ifPresent(actionBar -> actionBar.setSubtitle(subtitle));
         });
         mViewModel.loadFilteredAppList(true);
