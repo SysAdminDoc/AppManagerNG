@@ -8,6 +8,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added — Install diagnostics (2026-05-16)
 
 - Install-failure dialog now exposes a "Copy diagnostic info" button that copies a paste-friendly install transcript (timestamp, AppManagerNG version, device, Android version + security patch, ABI, active mode, package, status code + name, status message, redacted source URI). Source URIs are redacted by default — `file:///` paths drop to `file://<redacted>`, `content://` and `http(s)://` keep scheme + authority but drop the path / document id — so the transcript can be pasted into a public issue safely.
+- Install confirmation dialog now warns when the APK's `minSdkVersion` exceeds the device's API level, before the user taps Install. New [`InstallDependencyChecker`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallDependencyChecker.java) is structured so future versions can add ABI / `<uses-library>` / split-APK base-missing checks without changing the call site.
 
 ### Added — Backup destination guidance (2026-05-16)
 
