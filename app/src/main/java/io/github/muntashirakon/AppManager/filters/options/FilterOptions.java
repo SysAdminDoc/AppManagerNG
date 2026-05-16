@@ -10,6 +10,7 @@ public final class FilterOptions {
         switch (filterName) {
             case "apk_size": return new ApkSizeOption();
             case "app_label": return new AppLabelOption();
+            case "app_ops": return new AppOpsOption();
             case "app_type": return new AppTypeOption();
             case "backup": return new BackupOption();
             case "bloatware": return new BloatwareOption();
