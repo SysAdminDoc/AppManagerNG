@@ -33,10 +33,13 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.fm.SharableItems;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
+import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.util.AdapterUtils;
 
 public class RestoreSingleFragment extends Fragment {
@@ -97,9 +100,18 @@ public class RestoreSingleFragment extends Fragment {
             Menu menu = popupMenu.getMenu();
             MenuItem freezeMenuItem = menu.add(R.string.freeze);
             MenuItem unfreezeMenuItem = menu.add(R.string.unfreeze);
+            MenuItem shareMenuItem = menu.add(R.string.share_backup);
 
             freezeMenuItem.setEnabled((total - frozenCount) > 0);
             unfreezeMenuItem.setEnabled(frozenCount > 0);
+            // Sharing produces one file per backup file (apk + tar + metadata), so it only
+            // makes sense for a single selection — the chooser would otherwise receive a
+            // mixed bag of files from multiple backups with no way to distinguish them.
+            shareMenuItem.setEnabled(total == 1);
+            shareMenuItem.setOnMenuItemClickListener(item -> {
+                handleShare(adapter.getSelectedBackups().get(0));
+                return true;
+            });
 
             freezeMenuItem.setOnMenuItemClickListener(item -> {
                 List<BackupMetadataV5> selectedBackups = adapter.getSelectedBackups();
@@ -169,6 +181,38 @@ public class RestoreSingleFragment extends Fragment {
         } else {
             actionStatus.setText(getResources().getQuantityString(R.plurals.backup_restore_backup_selection_count,
                     selectionCount, selectionCount));
+        }
+    }
+
+    /**
+     * Share every file under a backup directory via {@code ACTION_SEND_MULTIPLE} so the user
+     * can pipe the backup into another file manager / messaging app / cloud SAF provider
+     * without first zipping the directory. Encrypted backups stay encrypted on the way out —
+     * recipients still need the user's AppManagerNG key to restore. Closes ROADMAP iter-22
+     * row "Backup Sharing Button"; companion to [`docs/distribution/backup-destinations.md`](../../../../../../../../../docs/distribution/backup-destinations.md).
+     */
+    private void handleShare(@NonNull BackupMetadataV5 selectedBackup) {
+        BackupItems.BackupItem backupItem = selectedBackup.info.getBackupItem();
+        Path backupPath = backupItem.getBackupPath();
+        Path[] children = backupPath.listFiles();
+        if (children.length == 0) {
+            UIUtils.displayShortToast(R.string.share_backup_empty);
+            return;
+        }
+        List<Path> shareablePaths = new ArrayList<>(children.length);
+        for (Path child : children) {
+            if (child.isFile()) {
+                shareablePaths.add(child);
+            }
+        }
+        if (shareablePaths.isEmpty()) {
+            UIUtils.displayShortToast(R.string.share_backup_empty);
+            return;
+        }
+        try {
+            startActivity(new SharableItems(shareablePaths).toSharableIntent());
+        } catch (android.content.ActivityNotFoundException e) {
+            UIUtils.displayShortToast(R.string.share_backup_no_handler);
         }
     }
 

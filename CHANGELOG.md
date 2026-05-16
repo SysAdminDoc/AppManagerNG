@@ -5,6 +5,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Backup sharing (2026-05-16)
+
+- Restore-Single → popup menu now carries a "Share backup" action when exactly one backup is selected. The chooser opens with every file under the backup directory as an `ACTION_SEND_MULTIPLE` payload via `FmProvider`, so users can pipe a backup into another file manager, messaging app, or cloud SAF provider without first zipping it. Encrypted backups stay encrypted on the way out — recipients still need the user's AppManagerNG key to restore. Closes the iter-18, iter-21, and v0.x roadmap rows for "Backup Sharing Button" / "Neo-Backup-Style Backup Sharing Button" in one pass.
+
 ### Added — Install diagnostics (2026-05-16)
 
 - Install-failure dialog now exposes a "Copy diagnostic info" button that copies a paste-friendly install transcript (timestamp, AppManagerNG version, device, Android version + security patch, ABI, active mode, package, status code + name, status message, redacted source URI). Source URIs are redacted by default — `file:///` paths drop to `file://<redacted>`, `content://` and `http(s)://` keep scheme + authority but drop the path / document id — so the transcript can be pasted into a public issue safely.
