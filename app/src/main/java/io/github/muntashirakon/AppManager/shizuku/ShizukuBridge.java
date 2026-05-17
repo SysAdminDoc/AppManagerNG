@@ -11,12 +11,17 @@ import android.os.Process;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import rikka.shizuku.Shizuku;
 
 public final class ShizukuBridge {
+    private static final int ANDROID_17_SDK_INT = 37;
+
     public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
     public static final String MIN_RECOMMENDED_MANAGER_VERSION = "13.6.0";
+    @Nullable
+    public static final String MIN_ANDROID_17_COMPATIBLE_VERSION = null;
     public static final int MIN_USER_SERVICE_VERSION = 10;
     public static final int REQUEST_PERMISSION_CODE = 0x5348;
 
@@ -94,7 +99,26 @@ public final class ShizukuBridge {
         return versionName != null && compareVersion(versionName, MIN_RECOMMENDED_MANAGER_VERSION) >= 0;
     }
 
-    private static int compareVersion(@NonNull String versionName, @NonNull String requiredVersionName) {
+    @AnyThread
+    public static boolean hasAndroid17CompatibilityRisk(@NonNull Context context) {
+        return hasAndroid17CompatibilityRisk(Build.VERSION.SDK_INT, getInstalledVersionName(context),
+                MIN_ANDROID_17_COMPATIBLE_VERSION);
+    }
+
+    @VisibleForTesting
+    static boolean hasAndroid17CompatibilityRisk(int sdkInt, @Nullable String versionName,
+                                                 @Nullable String compatibleVersionName) {
+        if (sdkInt < ANDROID_17_SDK_INT) {
+            return false;
+        }
+        if (compatibleVersionName == null) {
+            return true;
+        }
+        return versionName == null || compareVersion(versionName, compatibleVersionName) < 0;
+    }
+
+    @VisibleForTesting
+    static int compareVersion(@NonNull String versionName, @NonNull String requiredVersionName) {
         int[] version = parseVersionPrefix(versionName);
         int[] required = parseVersionPrefix(requiredVersionName);
         for (int i = 0; i < Math.max(version.length, required.length); ++i) {

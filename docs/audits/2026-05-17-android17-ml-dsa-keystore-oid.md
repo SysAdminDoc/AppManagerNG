@@ -64,8 +64,9 @@ NG's APK cert display is already forward-compatible with ML-DSA: the `getSigAlgO
 return value is shown verbatim, the `getSigAlgName()` value is shown but never branched
 on, and there are no string-shape assumptions in the parsing path.
 
-**Polish opportunity (not compliance-blocking)**: add a small OID→display-name map in
-`Utils.java` or a new `CertAlgorithmNames` helper:
+**Polish shipped 2026-05-17 pass 4**: a small OID→display-name map now lives in
+`Utils.getCertificateSignatureAlgorithmName(X509Certificate)` and is consumed by the
+Package Info dialog, Scanner certificate panel, and `Utils.getIssuerAndAlg()`:
 
 ```java
 public static String prettifyAlgorithmName(String oid, String fallback) {
@@ -78,8 +79,9 @@ public static String prettifyAlgorithmName(String oid, String fallback) {
 }
 ```
 
-Effort: ~30 minutes including a unit test. Tracked as ROADMAP T9 row "ML-DSA
-OID-to-display-name mapping" — Next-tier; ship alongside the targetSdk=37 bump.
+Regression coverage lives in
+[`UtilsCertificateAlgorithmTest`](../../app/src/test/java/io/github/muntashirakon/AppManager/utils/UtilsCertificateAlgorithmTest.java).
+The targetSdk=37 bump no longer needs a separate ML-DSA display-name follow-up.
 
 ## Follow-ups
 

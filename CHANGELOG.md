@@ -5,6 +5,43 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Shizuku Android-17 detection + onboarding fallback (2026-05-17)
+
+- [`ShizukuBridge`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java)
+  now exposes `hasAndroid17CompatibilityRisk(Context)`, combining
+  `Build.VERSION.SDK_INT >= 37` with an installed Shizuku version check against
+  `MIN_ANDROID_17_COMPATIBLE_VERSION`. The constant intentionally stays `null`
+  until Shizuku publishes a verified Android 17 fix, so Android 17 devices warn
+  conservatively.
+- [`OnboardingFragment`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java)
+  now shows an Android-17-only Shizuku compatibility warning inside the Shizuku
+  card and starts the existing Wireless ADB setup flow when the warning is tapped.
+  The copy is deliberately framed as a risk because Shizuku #1965 reports a blank
+  manager page while apps may still function, while #1967 reports broader failure.
+- New
+  [`ShizukuBridgeTest`](app/src/test/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridgeTest.java)
+  covers API-floor behavior, the unknown-fixed-version state, future fixed-version
+  comparison, and `v13.6.0.r...` suffix parsing.
+
+### Added — Shizuku release watcher CI workflow (2026-05-17)
+
+- New [`.github/workflows/shizuku-release-watch.yml`](.github/workflows/shizuku-release-watch.yml)
+  runs weekly Thursday 09:27 UTC plus `workflow_dispatch`. It scans recent official
+  `RikkaApps/Shizuku` releases and opens a maintainer issue when a 13.6.x / 13.7.x
+  release note mentions Android 17 or Shizuku #1965 / #1967, with a checklist to
+  verify the release and populate `MIN_ANDROID_17_COMPATIBLE_VERSION`.
+
+### Changed — ML-DSA certificate algorithm display names (2026-05-17)
+
+- `Utils.getCertificateSignatureAlgorithmName(X509Certificate)` now maps Android
+  17's ML-DSA OIDs (`1.3.6.1.4.1.2.267.12.6.5`, `1.3.6.1.4.1.2.267.12.8.7`) to
+  `ML-DSA-65 (Dilithium)` and `ML-DSA-87 (Dilithium)` instead of showing a raw OID
+  when the platform/JCA provider does not provide a friendly name.
+- The helper is used by the Package Info certificate dialog, Scanner certificate
+  panel, and `Utils.getIssuerAndAlg()`. New
+  [`UtilsCertificateAlgorithmTest`](app/src/test/java/io/github/muntashirakon/AppManager/utils/UtilsCertificateAlgorithmTest.java)
+  covers both mapped OIDs and fallback behavior for known/unknown algorithms.
+
 ### Compliance — Android 17 targetSdk=37 audit batch closed clean (2026-05-17)
 
 The five open sub-audits in the Engineering Debt Register's Android 17 targetSdk=37 compliance batch were executed during the iter-26 walk-away research follow-through. All five return clean — NG ships **zero source-side compliance work** for the targetSdk=37 bump.
@@ -17,13 +54,12 @@ The five open sub-audits in the Engineering Debt Register's Android 17 targetSdk
 
 Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **closed**. The remaining blockers to the `targetSdk = 37` bump are external: (a) the 1 deferred finding from the iter-20 static-final-reflection audit; (b) the Shizuku 13.6.0 / Android 17 regression (Shizuku #1965 / #1967) — see "Audit — Shizuku Android-17 compatibility" below. Android 17 stable lands June 2026 ([S324]).
 
-### Audit — Shizuku Android-17 compatibility (confirmed, needs-design) (2026-05-17)
+### Audit — Shizuku Android-17 compatibility (mitigated, needs device verification) (2026-05-17)
 
 - New [`docs/audits/2026-05-17-shizuku-android17-compat.md`](docs/audits/2026-05-17-shizuku-android17-compat.md) — verdict on NG's iter-23 Shizuku integration against the Android 17 Beta 3 regressions reported in Shizuku #1965 / #1967.
-- **Verdict: `confirmed, needs-design`**. NG's [`ShizukuBridge.java`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java) probes are all `Throwable`-caught and **will not crash** on Android 17 — the failure mode is silent op-failure rather than a hard crash, which is the worst-case stale-trust window (NG shows green on onboarding but privileged operations time out or no-op).
-- **Design captured** in the audit: a non-destructive `hasAndroid17CompatibilityRisk(Context)` probe added to `ShizukuBridge.java` (combines `Build.VERSION.SDK_INT >= 37` with the installed Shizuku version + a `MIN_ANDROID_17_COMPATIBLE_VERSION` constant kept `null` until a Shizuku fix ships), plus an onboarding banner in `OnboardingFragment.java` that recommends switching to Wireless ADB pairing when the probe returns true.
-- **Implementation gated** on (a) device verification against an Android 17 Beta image (Pixel 9 emulator or device per ROADMAP iter-19 [S148] matrix), and (b) a Shizuku release that ships the upstream fix so the constant can be populated. Tracked as iter-26 → iter-27 carryover in ROADMAP iter-25 §"Shizuku Android-17 Compatibility Watch".
-- Closes the *design* half of the iter-25 backlog F-NEW-25-01.
+- **Verdict updated after iter-27: `mitigated, needs device verification + fixed-version floor`**. NG's [`ShizukuBridge.java`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java) probes are all `Throwable`-caught and **will not crash** on Android 17. Mixed evidence from Shizuku #1965 / #1967 / #1988 means NG should warn and offer Wireless ADB fallback without disabling Shizuku outright.
+- **Design implemented** in iter-27: the non-destructive `hasAndroid17CompatibilityRisk(Context)` probe landed with `MIN_ANDROID_17_COMPATIBLE_VERSION = null`, and onboarding now shows a fallback banner that launches Wireless ADB setup.
+- Remaining work is (a) device verification against an Android 17 Beta/stable image, and (b) populating `MIN_ANDROID_17_COMPATIBLE_VERSION` after Shizuku or a vetted fork ships a confirmed fix.
 
 ### Added — minSdk-21 cascade analysis (2026-05-17)
 

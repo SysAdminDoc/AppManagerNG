@@ -154,6 +154,23 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             return;
         }
         warning.setText(getString(R.string.onboarding_adb_patch_level_warning, securityPatch));
+        applyWarningTextStyle(warning);
+        warning.setVisibility(View.VISIBLE);
+    }
+
+    private void bindShizukuAndroid17Warning(@Nullable TextView warning) {
+        if (warning == null) return;
+        if (!ShizukuBridge.hasAndroid17CompatibilityRisk(requireContext())) {
+            warning.setVisibility(View.GONE);
+            return;
+        }
+        warning.setText(R.string.onboarding_mode_shizuku_android17_warning);
+        applyWarningTextStyle(warning);
+        warning.setOnClickListener(v -> startWirelessAdbSetup());
+        warning.setVisibility(View.VISIBLE);
+    }
+
+    private void applyWarningTextStyle(@NonNull TextView warning) {
         int warningColor = ContextCompat.getColor(requireContext(), R.color.premium_warning_content);
         warning.setTextColor(warningColor);
         warning.setCompoundDrawablePadding(getResources().getDimensionPixelSize(R.dimen.premium_space_8));
@@ -164,7 +181,6 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
         warning.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
         warning.setContentDescription(warning.getText());
-        warning.setVisibility(View.VISIBLE);
     }
 
     @Nullable
@@ -213,6 +229,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
         TextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
         bindShizukuStatus(shizukuStatus, shizukuAutoStartHint);
+        TextView shizukuAndroid17Warning = view.findViewById(R.id.warning_shizuku_android17);
+        bindShizukuAndroid17Warning(shizukuAndroid17Warning);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
         bindAdbWifiStatus(adbWifiStatus);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);

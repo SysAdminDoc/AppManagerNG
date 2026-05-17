@@ -742,7 +742,8 @@ public final class PackageUtils {
         // Signature
         builder.append(getTitleText(ctx, ctx.getString(R.string.app_signing_signature)))
                 .append("\n")
-                .append(getStyledKeyValue(ctx, R.string.algorithm, certificate.getSigAlgName(), separator))
+                .append(getStyledKeyValue(ctx, R.string.algorithm,
+                        Utils.getCertificateSignatureAlgorithmName(certificate), separator))
                 .append("\n")
                 .append(getStyledKeyValue(ctx, "OID", certificate.getSigAlgOID(), separator))
                 .append("\n")
