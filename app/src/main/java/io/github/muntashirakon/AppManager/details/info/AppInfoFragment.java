@@ -115,6 +115,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
@@ -1231,6 +1232,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             tagItems.add(certTag);
             certTag.setText(getString(R.string.cert_fingerprint_chip_label, shortFingerprint(fp)))
                     .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp, subject, issuer));
+        }
+        if (tagCloud.developerVerificationStatus != DeveloperVerificationCompat.STATUS_UNAVAILABLE) {
+            TagItem verifierTag = new TagItem();
+            tagItems.add(verifierTag);
+            switch (tagCloud.developerVerificationStatus) {
+                case DeveloperVerificationCompat.STATUS_VERIFIED:
+                    verifierTag.setTextRes(R.string.developer_verification_verified)
+                            .setColor(ColorCodes.getSuccessColor(context));
+                    break;
+                case DeveloperVerificationCompat.STATUS_UNVERIFIED:
+                    verifierTag.setTextRes(R.string.developer_verification_unverified)
+                            .setColor(ColorCodes.getFailureColor(context));
+                    break;
+                case DeveloperVerificationCompat.STATUS_UNKNOWN:
+                default:
+                    verifierTag.setTextRes(R.string.developer_verification_unknown)
+                            .setColor(ColorCodes.getRemovalCautionIndicatorColor(context));
+                    break;
+            }
+            verifierTag.setOnClickListener(v -> new ScrollableDialogBuilder(mActivity)
+                    .setTitle(R.string.developer_verification)
+                    .setMessage(R.string.developer_verification_unknown_description)
+                    .setNegativeButton(R.string.close, null)
+                    .show());
         }
         if (tagCloud.hasKeyStoreItems) {
             TagItem keyStoreTag = new TagItem();

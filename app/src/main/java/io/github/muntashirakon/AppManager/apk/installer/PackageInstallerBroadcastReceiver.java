@@ -15,6 +15,7 @@ import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -109,7 +110,14 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 Intent broadcastError = new Intent(PackageInstallerCompat.ACTION_INSTALL_COMPLETED);
                 broadcastError.setPackage(context.getPackageName());
                 String statusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                int developerVerificationFailureReason = DeveloperVerificationCompat.getFailureReason(intent);
+                statusMessage = DeveloperVerificationCompat.appendFailureReason(context, statusMessage,
+                        developerVerificationFailureReason);
                 broadcastError.putExtra(PackageInstaller.EXTRA_STATUS_MESSAGE, statusMessage);
+                if (developerVerificationFailureReason != DeveloperVerificationCompat.FAILURE_REASON_NOT_PRESENT) {
+                    broadcastError.putExtra(DeveloperVerificationCompat.EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON,
+                            developerVerificationFailureReason);
+                }
                 broadcastError.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, mPackageName);
                 broadcastError.putExtra(PackageInstaller.EXTRA_OTHER_PACKAGE_NAME, intent.getStringExtra(PackageInstaller.EXTRA_OTHER_PACKAGE_NAME));
                 broadcastError.putExtra(PackageInstaller.EXTRA_STATUS, status);

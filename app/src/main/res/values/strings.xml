@@ -1397,6 +1397,11 @@
     <string name="installer_diagnostic_info_copied">Diagnostic info copied. Source paths are redacted before paste.</string>
     <string name="installer_dependency_min_sdk_too_high">Requires Android API %1$d — this device is on API %2$d. The system installer will refuse to install this APK.</string>
     <string name="installer_dependency_missing_shared_library">Required shared libraries are not installed on this device: %1$s. The system installer may refuse to install this APK.</string>
+    <string name="installer_developer_verification_warning">Android Developer Verification is active on this device. In Brazil, Indonesia, Singapore, and Thailand, Android may block installs or updates when the package name and signing key are not registered to a verified developer. If Android shows an advanced flow, continue only when you trust the source.</string>
+    <string name="installer_developer_verification_failure_reason">Developer verification: %1$s (%2$s)</string>
+    <string name="developer_verification_failure_unknown">unknown verifier failure</string>
+    <string name="developer_verification_failure_network">network unavailable during developer verification</string>
+    <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>
     <string name="installer_session_sha256_title">APK SHA-256</string>
     <string name="installer_session_sha256_message">These are the bytes AppManagerNG wrote into the install session. Compare this checksum with the publisher\'s posted SHA-256 before accepting Android\'s install prompt:\n\n%1$s</string>
     <string name="finder_loaded_at">Loaded at %1$s</string>
@@ -1462,6 +1467,11 @@
     <string name="pref_vt_apikey_summary">Scan APK files with VirusTotal after you add an API key.</string>
     <string name="uses_play_app_signing">Play app signing</string>
     <string name="uses_play_app_signing_description">This app contains certain markers that indicate that it <i>might</i> be using <a href="https://support.google.com/googleplay/android-developer/answer/9842756">Play App Signing</a>. With this scheme, the signing keys are stored in Google\'s servers, and Google is responsible for signing the app. Note that matching signing information is the only way to verify that the app has not been modified by any person other than the developer (and in this case, Google too).</string>
+    <string name="developer_verification">Developer verification</string>
+    <string name="developer_verification_verified">Verified developer</string>
+    <string name="developer_verification_unverified">Unverified developer</string>
+    <string name="developer_verification_unknown">Verifier unknown</string>
+    <string name="developer_verification_unknown_description">This device exposes Android\'s developer-verifier service, but Android does not expose a stable per-app preflight result to AppManagerNG on this API level. The final verified or unverified decision is returned by PackageInstaller during install or update.</string>
     <string name="scan_in_vt">Scan in VirusTotal</string>
     <string name="process_id">Process ID</string>
     <string name="parent_process_id">Parent process ID</string>
