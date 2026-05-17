@@ -46,6 +46,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -536,6 +539,8 @@ public final class PackageInstallerCompat {
     @Nullable
     private CharSequence mAppLabel;
     private int mSessionId = -1;
+    @Nullable
+    private String mSessionSha256;
     @Status
     private int mFinalStatus = STATUS_FAILURE_INVALID;
     @Nullable
@@ -606,6 +611,38 @@ public final class PackageInstallerCompat {
         mAppLabel = appLabel;
     }
 
+    @Nullable
+    private static MessageDigest newSha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "SHA-256 digest is unavailable.", e);
+            return null;
+        }
+    }
+
+    @NonNull
+    private static InputStream withDigest(@NonNull InputStream inputStream, @Nullable MessageDigest digest) {
+        return digest != null ? new DigestInputStream(inputStream, digest) : inputStream;
+    }
+
+    @Nullable
+    private static String finishDigest(@Nullable MessageDigest digest) {
+        return digest != null ? toHex(digest.digest()) : null;
+    }
+
+    @NonNull
+    static String toHex(@NonNull byte[] bytes) {
+        char[] out = new char[bytes.length * 2];
+        final char[] alphabet = "0123456789abcdef".toCharArray();
+        for (int i = 0; i < bytes.length; ++i) {
+            int value = bytes[i] & 0xff;
+            out[i * 2] = alphabet[value >>> 4];
+            out[i * 2 + 1] = alphabet[value & 0x0f];
+        }
+        return new String(out);
+    }
+
     @NonNull
     private static int[] getAllRequestedUsers(int userId) {
         switch (userId) {
@@ -673,12 +710,14 @@ public final class PackageInstallerCompat {
                 }
             }
             Log.d(TAG, "Install: selected entries: %s", selectedSplitIds);
+            MessageDigest sessionDigest = newSha256Digest();
             // Write apk files
             for (ApkFile.Entry entry : selectedEntries) {
                 long entrySize = entry.getFileSize(options.isSignApkFiles());
                 try (InputStream apkInputStream = entry.getInputStream(options.isSignApkFiles());
                      OutputStream apkOutputStream = mSession.openWrite(entry.getFileName(), 0, entrySize)) {
-                    FileUtils.copy(apkInputStream, apkOutputStream, totalSize, progressHandler);
+                    FileUtils.copy(withDigest(apkInputStream, sessionDigest), apkOutputStream, totalSize,
+                            progressHandler);
                     mSession.fsync(apkOutputStream);
                     Log.d(TAG, "Install: copied entry %s", entry.name);
                 } catch (IOException e) {
@@ -690,6 +729,10 @@ public final class PackageInstallerCompat {
                     Log.e(TAG, "Install: Cannot access apk files.", e);
                     return abandon();
                 }
+            }
+            mSessionSha256 = finishDigest(sessionDigest);
+            if (mPkgInstallerReceiver != null) {
+                mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
             }
             Log.d(TAG, "Install: Running installation...");
             // Commit
@@ -740,11 +783,13 @@ public final class PackageInstallerCompat {
             for (Path apkFile : apkFiles) {
                 totalSize += apkFile.length();
             }
+            MessageDigest sessionDigest = newSha256Digest();
             // Write apk files
             for (Path apkFile : apkFiles) {
                 try (InputStream apkInputStream = apkFile.openInputStream();
                      OutputStream apkOutputStream = mSession.openWrite(apkFile.getName(), 0, apkFile.length())) {
-                    FileUtils.copy(apkInputStream, apkOutputStream, totalSize, progressHandler);
+                    FileUtils.copy(withDigest(apkInputStream, sessionDigest), apkOutputStream, totalSize,
+                            progressHandler);
                     mSession.fsync(apkOutputStream);
                 } catch (IOException e) {
                     callFinish(STATUS_FAILURE_SESSION_WRITE);
@@ -755,6 +800,10 @@ public final class PackageInstallerCompat {
                     Log.e(TAG, "Install: Cannot access apk files.", e);
                     return abandon();
                 }
+            }
+            mSessionSha256 = finishDigest(sessionDigest);
+            if (mPkgInstallerReceiver != null) {
+                mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
             }
             // Commit
             return commit(userId);

@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — install-session SHA-256 confirmation (2026-05-17)
+
+- `PackageInstallerCompat` now computes SHA-256 over the exact bytes copied into
+  each `PackageInstaller.Session.openWrite()` stream, including split installs,
+  before calling `commit()`.
+- `PackageInstallerBroadcastReceiver` carries that digest through the pending
+  user-action handoff, and `PackageInstallerActivity` shows a checksum dialog
+  before launching Android's system install confirmation prompt.
+- New [`InstallChecksumDisplayTest`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallChecksumDisplayTest.java)
+  covers lowercase hex encoding and readable 8-character checksum grouping.
+
 ### Changed — USB debugging preflight for Wireless ADB / Shizuku setup (2026-05-17)
 
 - [`OnboardingFragment`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java)

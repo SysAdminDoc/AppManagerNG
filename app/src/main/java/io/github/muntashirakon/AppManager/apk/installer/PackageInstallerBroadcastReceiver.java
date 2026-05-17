@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageInstaller;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -23,9 +24,12 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
     public static final String TAG = PackageInstallerBroadcastReceiver.class.getSimpleName();
     public static final String ACTION_PI_RECEIVER = BuildConfig.APPLICATION_ID + ".action.PI_RECEIVER";
+    public static final String EXTRA_SESSION_SHA256 = BuildConfig.APPLICATION_ID + ".extra.SESSION_SHA256";
 
     private String mPackageName;
     private CharSequence mAppLabel;
+    @Nullable
+    private String mSessionSha256;
     private int mConfirmNotificationId = 0;
 
     public void setPackageName(String packageName) {
@@ -34,6 +38,10 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
 
     public void setAppLabel(CharSequence appLabel) {
         mAppLabel = appLabel;
+    }
+
+    public void setSessionSha256(@Nullable String sessionSha256) {
+        mSessionSha256 = sessionSha256;
     }
 
     @Override
@@ -50,6 +58,7 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 broadcastIntent2.setPackage(context.getPackageName());
                 broadcastIntent2.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, mPackageName);
                 broadcastIntent2.putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId);
+                broadcastIntent2.putExtra(EXTRA_SESSION_SHA256, mSessionSha256);
                 context.sendBroadcast(broadcastIntent2);
                 // Open confirmIntent using the PackageInstallerActivity.
                 // If the confirmIntent isn't open via an activity, it will fail for large apk files
@@ -59,6 +68,7 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 intent2.putExtra(Intent.EXTRA_INTENT, confirmIntent);
                 intent2.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, mPackageName);
                 intent2.putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId);
+                intent2.putExtra(EXTRA_SESSION_SHA256, mSessionSha256);
                 intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 boolean appInForeground = Utils.isAppInForeground();
                 if (appInForeground) {

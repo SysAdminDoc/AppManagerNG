@@ -7,10 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 5**. The 2026-05-17 walk-away sequence now has
-> five local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 6**. The 2026-05-17 walk-away sequence now has
+> six local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
-> preflight follow-through for Wireless ADB / Shizuku setup. Run `git status --short --branch`
+> preflight follow-through for Wireless ADB / Shizuku setup, plus installer checksum
+> confirmation. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -43,7 +44,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-27 research deltas inline. Cites **327 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-29 research deltas inline. Cites **329 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -59,8 +60,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/) | pass 3 | Android 17 targetSdk=37 audit batch + CI/docs hygiene follow-through. |
 | [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/) | pass 4 | Shizuku Android-17 runtime warning, release watcher, ML-DSA display-name map, and updated source register. |
 | [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/) | pass 5 | T5 USB-debugging preflight for Wireless ADB / Shizuku setup and next-run handoff. |
+| [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/) | pass 6 | Installer session SHA-256 confirmation and Dhizuku minSdk integration constraint. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S327).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -95,7 +97,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-5 state as of 2026-05-17
+## 4. Current pass-6 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -114,6 +116,14 @@ Wireless ADB setup flow now preflights the `adb_enabled` Developer Options flag
 and prompts users to enable both USB debugging and Wireless debugging before
 pairing. The Shizuku / Wireless ADB / pairing instructions now name both toggles
 so the silent `adb pair` / `adb connect` failure path is visible before setup.
+
+Pass 6 closed T5's installer checksum row: `PackageInstallerCompat` hashes bytes
+as they stream into `PackageInstaller.Session.openWrite()`, passes the digest
+through `PackageInstallerBroadcastReceiver`, and `PackageInstallerActivity`
+shows a pre-system-prompt checksum dialog. The same pass left Dhizuku open after
+checking primary sources: Dhizuku-API `2.5.4` is current, but its upstream module
+declares `MIN_SDK = 26`; NG is still API 21, so a reflection/optional-provider
+design or minSdk decision is needed before integration.
 
 Unit-test files from pass 4 were added for both helpers, but local Gradle execution is
 blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
@@ -166,7 +176,9 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
   `MIN_ANDROID_17_COMPATIBLE_VERSION` remains unknown.
 - **ADB** — wireless ADB pairing wizard shipped 2026-05-14.
 - **KernelSU / APatch / Magisk / ZygiskNext** — detected by `runner/RootManagerInfo`, surfaced as suffix on the onboarding sheet's Root status line.
-- **Dhizuku (DPM via Binder proxy)** — Under Consideration as a fourth tier (T5 row).
+- **Dhizuku (DPM via Binder proxy)** — open T5 row. Do not add `io.github.iamr0s:Dhizuku-API`
+  directly until the API-21 floor conflict is resolved; upstream Dhizuku-API `2.5.4`
+  currently declares `MIN_SDK = 26`.
 - **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
 
 ### Backup engine
@@ -205,5 +217,6 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 2026-05-17. The audit artifacts are split across [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/),
 [`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/),
 [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/),
-[`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/), and
-[`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/).
+[`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/),
+[`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/), and
+[`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/).

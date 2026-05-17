@@ -415,13 +415,20 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             mSessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1);
             mPackageName = intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME);
             Intent confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class);
+            String sessionSha256 = intent.getStringExtra(PackageInstallerBroadcastReceiver.EXTRA_SESSION_SHA256);
             try {
                 if (mPackageName == null || confirmIntent == null) throw new Exception("Empty confirmation intent.");
                 Log.d(TAG, "Requesting user confirmation for package %s", mPackageName);
-                mConfirmIntentLauncher.launch(confirmIntent);
+                if (sessionSha256 != null) {
+                    showInstallChecksumDialog(confirmIntent, sessionSha256);
+                } else {
+                    launchInstallConfirmation(confirmIntent);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
-                PackageInstallerCompat.sendCompletedBroadcast(this, mPackageName, PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, mSessionId);
+                String packageName = mPackageName != null ? mPackageName : "";
+                PackageInstallerCompat.sendCompletedBroadcast(this, packageName,
+                        PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, mSessionId);
                 if (!hasNext() && !mIsDealingWithApk) {
                     // No APKs left, this maybe a solo call
                     finish();
@@ -434,6 +441,41 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             mApkQueue.addAll(ApkQueueItem.fromIntent(intent, Utils.getRealReferrer(this)));
         }
         UIUtils.displayShortToast(R.string.added_to_queue);
+    }
+
+    private void showInstallChecksumDialog(@NonNull Intent confirmIntent, @NonNull String sessionSha256) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.installer_session_sha256_title)
+                .setMessage(getString(R.string.installer_session_sha256_message,
+                        formatSha256ForDisplay(sessionSha256)))
+                .setCancelable(false)
+                .setPositiveButton(R.string.action_continue, (dialog, which) -> launchInstallConfirmation(confirmIntent))
+                .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                    String packageName = mPackageName != null ? mPackageName : "";
+                    PackageInstallerCompat.sendCompletedBroadcast(this, packageName,
+                            PackageInstallerCompat.STATUS_FAILURE_ABORTED, mSessionId);
+                    if (!hasNext() && !mIsDealingWithApk) {
+                        finish();
+                    }
+                })
+                .show();
+    }
+
+    private void launchInstallConfirmation(@NonNull Intent confirmIntent) {
+        mConfirmIntentLauncher.launch(confirmIntent);
+    }
+
+    @NonNull
+    static String formatSha256ForDisplay(@NonNull String sha256) {
+        String compact = sha256.replace(" ", "");
+        StringBuilder out = new StringBuilder(compact.length() + compact.length() / 8);
+        for (int i = 0; i < compact.length(); ++i) {
+            if (i > 0 && i % 8 == 0) {
+                out.append(' ');
+            }
+            out.append(compact.charAt(i));
+        }
+        return out.toString();
     }
 
     @UiThread
