@@ -223,6 +223,13 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".shortcut.AppActionShortcutActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground" />
+        <activity
             android:name=".runningapps.RunningAppsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="true"

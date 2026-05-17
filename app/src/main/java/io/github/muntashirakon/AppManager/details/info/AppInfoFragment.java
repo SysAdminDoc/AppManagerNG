@@ -30,6 +30,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.system.Os;
@@ -53,6 +54,7 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
@@ -148,6 +150,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutInfo;
 import io.github.muntashirakon.AppManager.sharedpref.SharedPrefsActivity;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.ssaid.ChangeSsaidDialog;
@@ -1765,6 +1768,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                         refreshDetails();
                                     });
                         }
+                    }).setOnLongClickListener(v -> {
+                        createAppActionShortcut(AppActionShortcutInfo.ACTION_FORCE_STOP,
+                                R.string.shortcut_force_stop_app, R.drawable.ic_stop);
+                        return true;
                     });
                 }
             }
@@ -1828,6 +1835,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                     refreshDetails();
                                 });
                     }
+                }).setOnLongClickListener(v -> {
+                    createAppActionShortcut(AppActionShortcutInfo.ACTION_CLEAR_CACHE,
+                            R.string.shortcut_clear_cache_app, R.drawable.ic_clear_cache);
+                    return true;
                 });
             } else {
                 // Display Android settings button
@@ -2408,12 +2419,24 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }
                     Bitmap icon = getBitmapFromDrawable(mIconView.getDrawable());
                     FreezeUnfreezeShortcutInfo shortcutInfo = new FreezeUnfreezeShortcutInfo(mPackageName, mUserId, flags);
-                    shortcutInfo.setName(mAppLabel);
+                    shortcutInfo.setName(getString(isFrozen ? R.string.shortcut_unfreeze_app
+                            : R.string.shortcut_freeze_app, mAppLabel));
                     shortcutInfo.setIcon(isFrozen ? getDimmedBitmap(icon) : icon);
                     CreateShortcutDialogFragment dialog1 = CreateShortcutDialogFragment.getInstance(shortcutInfo);
                     dialog1.show(getChildFragmentManager(), CreateShortcutDialogFragment.TAG);
                 })
                 .show();
+    }
+
+    private void createAppActionShortcut(@NonNull @AppActionShortcutInfo.ShortcutAction String action,
+                                         @StringRes int labelRes,
+                                         @DrawableRes int iconRes) {
+        AppActionShortcutInfo shortcutInfo = new AppActionShortcutInfo(mPackageName, mUserId, action);
+        shortcutInfo.setName(getString(labelRes, mAppLabel));
+        Drawable icon = ContextCompat.getDrawable(requireContext(), iconRes);
+        shortcutInfo.setIcon(icon != null ? getBitmapFromDrawable(icon) : getBitmapFromDrawable(mIconView.getDrawable()));
+        CreateShortcutDialogFragment dialog = CreateShortcutDialogFragment.getInstance(shortcutInfo);
+        dialog.show(getChildFragmentManager(), CreateShortcutDialogFragment.TAG);
     }
 
     private void displayInstallerDialog(@NonNull InstallSourceInfoCompat installSource) {

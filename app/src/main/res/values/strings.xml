@@ -2486,4 +2486,8 @@
     <string name="shortcut_running_apps_long">Show running apps</string>
     <string name="shortcut_finder_short">Finder</string>
     <string name="shortcut_finder_long">Cross-app search</string>
+    <string name="shortcut_freeze_app">Freeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
+    <string name="shortcut_unfreeze_app">Unfreeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
+    <string name="shortcut_force_stop_app">Force-stop <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
+    <string name="shortcut_clear_cache_app">Clear cache <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
 </resources>
