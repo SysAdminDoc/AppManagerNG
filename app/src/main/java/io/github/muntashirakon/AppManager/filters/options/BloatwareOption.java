@@ -16,9 +16,14 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
@@ -29,6 +34,11 @@ public class BloatwareOption extends FilterOption {
         put(KEY_ALL, TYPE_NONE);
         put("type", TYPE_INT_FLAGS);
         put("removal", TYPE_INT_FLAGS);
+        put("description_eq", TYPE_STR_SINGLE);
+        put("description_contains", TYPE_STR_SINGLE);
+        put("description_starts_with", TYPE_STR_SINGLE);
+        put("description_ends_with", TYPE_STR_SINGLE);
+        put("description_regex", TYPE_REGEX);
     }};
 
     private final Map<Integer, CharSequence> mBloatwareTypeFlags = new LinkedHashMap<Integer, CharSequence>() {{
@@ -81,6 +91,12 @@ public class BloatwareOption extends FilterOption {
                 return result.setMatched((typeToFlag(object.type) & intValue) != 0);
             case "removal":
                 return result.setMatched((object.getRemoval() & intValue) != 0);
+            case "description_eq":
+            case "description_contains":
+            case "description_starts_with":
+            case "description_ends_with":
+            case "description_regex":
+                return result.setMatched(matchesDescription(object.getDescription(), key, value, regexValue));
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
@@ -114,6 +130,44 @@ public class BloatwareOption extends FilterOption {
                 return sb.append(" with type: ").append(flagsToString("type", intValue));
             case "removal":
                 return sb.append(" with removal: ").append(flagsToString("removal", intValue));
+            case "description_eq":
+                return sb.append(" description = '").append(value).append("'");
+            case "description_contains":
+                return sb.append(" description contains '").append(value).append("'");
+            case "description_starts_with":
+                return sb.append(" description starts with '").append(value).append("'");
+            case "description_ends_with":
+                return sb.append(" description ends with '").append(value).append("'");
+            case "description_regex":
+                return sb.append(" description matches '").append(value).append("'");
+            default:
+                throw new UnsupportedOperationException("Invalid key " + key);
+        }
+    }
+
+    @VisibleForTesting
+    static boolean matchesDescription(@Nullable String description, @NonNull String key,
+                                      @Nullable String value, @Nullable Pattern regexValue) {
+        if (description == null) {
+            return false;
+        }
+        switch (key) {
+            case "description_eq":
+                return description.trim().equalsIgnoreCase(Objects.requireNonNull(value).trim());
+            case "description_contains": {
+                String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                return description.toLowerCase(Locale.ROOT).contains(needle);
+            }
+            case "description_starts_with": {
+                String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                return description.trim().toLowerCase(Locale.ROOT).startsWith(needle);
+            }
+            case "description_ends_with": {
+                String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                return description.trim().toLowerCase(Locale.ROOT).endsWith(needle);
+            }
+            case "description_regex":
+                return Objects.requireNonNull(regexValue).matcher(description).matches();
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
