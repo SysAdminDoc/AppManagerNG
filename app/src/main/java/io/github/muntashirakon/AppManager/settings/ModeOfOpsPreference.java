@@ -284,7 +284,7 @@ public class ModeOfOpsPreference extends Fragment {
         com.google.android.material.textview.MaterialTextView shizukuRow = view.findViewById(R.id.capability_shizuku);
         com.google.android.material.textview.MaterialTextView adbWifiRow = view.findViewById(R.id.capability_adb_wifi);
         com.google.android.material.textview.MaterialTextView adbUsbRow = view.findViewById(R.id.capability_adb_usb);
-        View shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
+        MaterialTextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
         MaterialButton shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
         if (rootRow != null) {
             rootRow.setText(getString(R.string.mode_of_op_capability_root,
@@ -313,13 +313,29 @@ public class ModeOfOpsPreference extends Fragment {
         }
     }
 
-    private void bindShizukuAutoStartControls(@Nullable View hint, @Nullable MaterialButton action) {
+    private void bindShizukuAutoStartControls(@Nullable MaterialTextView hint, @Nullable MaterialButton action) {
+        ShizukuBridge.OemCompatibilityWarning oemWarning =
+                ShizukuBridge.getOemCompatibilityWarning(requireContext());
+        if (oemWarning != null) {
+            if (hint != null) {
+                hint.setVisibility(View.VISIBLE);
+                hint.setText(getString(oemWarning.bannerTextRes, oemWarning.fallbackVersion));
+            }
+            if (action != null) {
+                action.setVisibility(View.VISIBLE);
+                action.setText(R.string.shizuku_oem_downgrade_action);
+                action.setOnClickListener(v -> openShizukuPinnedArchive());
+            }
+            return;
+        }
         boolean show = ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
         if (hint != null) {
             hint.setVisibility(show ? View.VISIBLE : View.GONE);
+            hint.setText(R.string.mode_of_op_shizuku_autostart_hint);
         }
         if (action != null) {
             action.setVisibility(show ? View.VISIBLE : View.GONE);
+            action.setText(R.string.shizuku_autostart_configure);
             action.setOnClickListener(v -> openShizukuAutoStartSettings());
         }
     }
@@ -330,6 +346,14 @@ public class ModeOfOpsPreference extends Fragment {
             startActivity(intent);
         } catch (ActivityNotFoundException | SecurityException e) {
             UIUtils.displayShortToast(R.string.shizuku_autostart_open_failed);
+        }
+    }
+
+    private void openShizukuPinnedArchive() {
+        try {
+            startActivity(ShizukuBridge.getPinnedSafeManagerArchiveIntent());
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayShortToast(R.string.shizuku_oem_archive_open_failed);
         }
     }
 

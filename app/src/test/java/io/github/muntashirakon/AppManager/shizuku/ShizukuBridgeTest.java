@@ -4,6 +4,8 @@ package io.github.muntashirakon.AppManager.shizuku;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -51,6 +53,57 @@ public class ShizukuBridgeTest {
         assertTrue(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", false));
         assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", true));
         assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.5.4", false));
+    }
+
+    @Test
+    public void oemCompatibilityWarningRequiresShizuku136Runtime() {
+        assertNull(ShizukuBridge.getOemCompatibilityWarning("Infinix", "GT 20 Pro", "x6871",
+                "x6871", 35, "13.5.4", 13, "XOS", "mt6895",
+                "", "", "", ""));
+        assertNull(ShizukuBridge.getOemCompatibilityWarning("Infinix", "GT 20 Pro", "x6871",
+                "x6871", 35, null, ShizukuBridge.MIN_USER_SERVICE_VERSION, "XOS", "mt6895",
+                "", "", "", ""));
+    }
+
+    @Test
+    public void oemCompatibilityWarningDetectsTranssionAndroid15() {
+        ShizukuBridge.OemCompatibilityWarning warning = ShizukuBridge.getOemCompatibilityWarning("Infinix",
+                "GT 20 Pro", "x6871", "x6871", 35, "13.6.0", 13,
+                "XOS-15", "mt6895", "", "", "", "");
+        assertNotNull(warning);
+        assertEquals("transsion", warning.reasonCode);
+        assertEquals(R.string.shizuku_oem_compat_banner_transsion, warning.bannerTextRes);
+        assertEquals(ShizukuBridge.PINNED_SAFE_MANAGER_VERSION, warning.fallbackVersion);
+    }
+
+    @Test
+    public void oemCompatibilityWarningDetectsMediatekAndroid15() {
+        ShizukuBridge.OemCompatibilityWarning warning = ShizukuBridge.getOemCompatibilityWarning("Xiaomi",
+                "Example", "device", "product", 35, "v13.6.0.r1086", 13,
+                "", "mt6789", "", "", "", "Dimensity 1080");
+        assertNotNull(warning);
+        assertEquals("mediatek", warning.reasonCode);
+        assertEquals(R.string.shizuku_oem_compat_banner_mediatek, warning.bannerTextRes);
+    }
+
+    @Test
+    public void oemCompatibilityWarningDetectsPixel9Android16() {
+        ShizukuBridge.OemCompatibilityWarning warning = ShizukuBridge.getOemCompatibilityWarning("Google",
+                "Pixel 9 Pro", "caiman", "caiman", 36, null, 13,
+                "", "zuma", "", "", "", "");
+        assertNotNull(warning);
+        assertEquals("pixel9", warning.reasonCode);
+        assertEquals(R.string.shizuku_oem_compat_banner_pixel9, warning.bannerTextRes);
+    }
+
+    @Test
+    public void oemCompatibilityWarningIgnoresOldPlatforms() {
+        assertNull(ShizukuBridge.getOemCompatibilityWarning("Infinix", "GT 20 Pro", "x6871",
+                "x6871", 34, "13.6.0", 13, "XOS", "mt6895",
+                "", "", "", ""));
+        assertNull(ShizukuBridge.getOemCompatibilityWarning("Google", "Pixel 9 Pro", "caiman",
+                "caiman", 35, "13.6.0", 13, "", "zuma",
+                "", "", "", ""));
     }
 
     @Test

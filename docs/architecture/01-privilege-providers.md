@@ -65,6 +65,14 @@ The compile-time pin is `shizuku_version = 13.1.5` in
 checks for Shizuku Manager **≥ 13.6.0** because of Android 16 QPR1 compatibility ([S121]
 / [S22]).
 
+**Known-bad runtime warning (iter-57)**: Shizuku Manager 13.6.0 is treated as a
+warning-only compatibility risk on Transsion/Infinix/Tecno/Itel Android 15 ROMs,
+Mediatek platform tags, and Pixel 9 / Android 16 QPR1-class builds. The canonical
+detector is
+[`ShizukuBridge.getOemCompatibilityWarning(Context)`](../../app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java);
+onboarding, Settings -> Operating Mode, Settings -> Privileges, and Mode Doctor
+surface the "pin Shizuku 13.5.4" guidance without disabling Shizuku outright.
+
 **Open issue (iter-25)**: Shizuku 13.6.0 has reported regressions on Android 17 Beta 3 —
 [Shizuku #1965](https://github.com/RikkaApps/Shizuku/issues/1965) ("Application
 Management page blank") and [Shizuku #1967](https://github.com/RikkaApps/Shizuku/issues/1967)

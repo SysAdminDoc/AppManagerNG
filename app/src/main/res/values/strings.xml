@@ -1641,6 +1641,14 @@
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_shizuku">• Shizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
     <string name="mode_of_op_shizuku_autostart_hint">Shizuku v13.6.0+ can restart rootless mode after reboot when the device joins a trusted WLAN. Configure the trusted network in Shizuku.</string>
+    <string name="shizuku_oem_compat_banner_transsion">This Transsion/Infinix/Tecno/Itel Android 15 ROM is known to kill Shizuku 13.6.0 UserService. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build. Tap to open the F-Droid archive.</string>
+    <string name="shizuku_oem_compat_summary_transsion">This Transsion/Infinix/Tecno/Itel Android 15 ROM is known to kill Shizuku 13.6.0 UserService. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build.</string>
+    <string name="shizuku_oem_compat_banner_mediatek">This Mediatek/MTK device is known to require Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> instead of 13.6.0 for stable UserService binding. Tap to open the F-Droid archive.</string>
+    <string name="shizuku_oem_compat_summary_mediatek">This Mediatek/MTK device is known to require Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> instead of 13.6.0 for stable UserService binding.</string>
+    <string name="shizuku_oem_compat_banner_pixel9">Pixel 9 devices on Android 16 QPR1-class builds have reported Shizuku 13.6.0 stopping after a few minutes. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build. Tap to open the F-Droid archive.</string>
+    <string name="shizuku_oem_compat_summary_pixel9">Pixel 9 devices on Android 16 QPR1-class builds have reported Shizuku 13.6.0 stopping after a few minutes. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build.</string>
+    <string name="shizuku_oem_downgrade_action">Open Shizuku 13.5.4 archive</string>
+    <string name="shizuku_oem_archive_open_failed">Could not open the Shizuku 13.5.4 archive.</string>
     <string name="mode_of_op_capability_adb_wifi">• Wireless debugging: <xliff:g id="status" example="active">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_adb_usb">• USB debugging: <xliff:g id="status" example="enabled">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_status_detected">detected</string>
