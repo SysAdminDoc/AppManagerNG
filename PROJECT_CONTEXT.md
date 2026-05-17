@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 36**. The 2026-05-17 walk-away sequence now has
-> thirty-six local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 37**. The 2026-05-17 walk-away sequence now has
+> thirty-seven local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -37,8 +37,9 @@
 > reason diagnostics, Shizuku 13.6.0 OEM compatibility warnings for the
 > Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes,
 > root-backed Shizuku avoidance / ADB-mode escape hatches for the banking-app
-> compatibility class, and generic OS-revert detection for Doze, freeze,
-> component-state, and AppOps writes.
+> compatibility class, generic OS-revert detection for Doze, freeze,
+> component-state, and AppOps writes, and Doze-specific allowlist revert
+> diagnostics with `device_idle_constants` / `DeviceConfig device_idle` diffs.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -72,7 +73,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-59 follow-through context inline. Cites **338 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-60 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -119,6 +120,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-34/`](.ai/research/2026-05-17-pass-34/) | pass 34 | Shizuku 13.6.0 OEM compatibility warning: Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 known-bad detection with a Shizuku 13.5.4 archive link. |
 | [`.ai/research/2026-05-17-pass-35/`](.ai/research/2026-05-17-pass-35/) | pass 35 | Shizuku root-backed avoidance: Auto mode skips root-backed Shizuku when ADB is available, and Settings / onboarding / Privileges / Mode Doctor surface the banking-app side-effect warning. |
 | [`.ai/research/2026-05-17-pass-36/`](.ai/research/2026-05-17-pass-36/) | pass 36 | OS-revert detection: 30-second post-write checks for Doze, freeze, component state, and AppOps mutations with a BaseActivity Snackbar/details surface. |
+| [`.ai/research/2026-05-17-pass-37/`](.ai/research/2026-05-17-pass-37/) | pass 37 | Backup-aware Doze allowlist diagnostics: 60-second Doze re-polls with `device_idle_constants` / `DeviceConfig device_idle` one-line diffs and OEM-policy hints. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S338).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -422,11 +424,16 @@ schedules 30-second expected-vs-current probes after Doze allowlist mutations,
 freeze/unfreeze, component enabled-state writes, and AppOps mode writes. The
 event surface lives in `BaseActivity` as an "OS reverted your change - see why"
 Snackbar that opens a detail dialog with target, operation, expected state,
-current state, and a short context hint. The narrower Backup-Aware Doze
-Allowlist Diff Banner row remains open for a deeper `device_idle_constants` /
-OEM-policy explanation.
+current state, and a short context hint.
 
-Unit-test files from passes 4-36 cover the new helpers, but local Gradle execution is
+Pass 37 closed the T5 Backup-Aware Doze Allowlist Diff Banner row.
+`DozeAllowlistDiagnostics` now enriches the Doze branch of `OsRevertMonitor`:
+it waits 60 seconds after a battery-optimization allowlist write, snapshots
+legacy `device_idle_constants` plus `DeviceConfig device_idle`, and adds a
+one-line config diff plus user-app / Samsung-Knox / system-app / unknown-policy
+hint to the Doze revert detail dialog.
+
+Unit-test files from passes 4-37 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -488,6 +495,10 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **Battery optimization auto-fix** — `self/SelfBatteryOptimization.java` is the canonical
   helper for AppManagerNG's own Doze exemption state. Use it instead of adding new
   direct `PowerManager` / `DeviceIdleManagerCompat` checks for NG's package.
+- **Doze allowlist revert diagnostics** — `revert/DozeAllowlistDiagnostics.java`
+  is the Doze-specific companion to `OsRevertMonitor`. It owns
+  `device_idle_constants` / `DeviceConfig device_idle` snapshotting and policy
+  hints; keep future OEM allowlist-revert explanations there.
 - **Privilege health diagnostics** — `settings/PrivilegeHealthPreferences.java` is now the
   persistent Settings surface for mode/provider diagnostics. `runner/RootCapabilityDiagnostics.java`
   is the canonical active-shell capability probe. Add future VPN plugin flag checks
