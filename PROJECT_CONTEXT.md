@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 33**. The 2026-05-17 walk-away sequence now has
-> thirty-three local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 34**. The 2026-05-17 walk-away sequence now has
+> thirty-four local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -32,9 +32,10 @@
 > baseline/generator/instrumented probe, Shizuku clear-data revoke warnings
 > with post-action re-auth routing, operation-history recovery UX closure, and
 > Android 17 / 16 KB native page-size remediation with ELF alignment parsing and
-> reproducible-release native alignment gating, and Android Developer Verification
+> reproducible-release native alignment gating, Android Developer Verification
 > guardrails for App Details, installer warnings, and `PackageInstaller` failure
-> reason diagnostics.
+> reason diagnostics, and Shizuku 13.6.0 OEM compatibility warnings for the
+> Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -68,7 +69,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-33 research deltas inline. Cites **337 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-34 research deltas inline. Cites **338 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -112,8 +113,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-31/`](.ai/research/2026-05-17-pass-31/) | pass 31 | Freeze / operation audit-log row closed by existing op-history UI plus Settings entry and per-row recovery guidance. |
 | [`.ai/research/2026-05-17-pass-32/`](.ai/research/2026-05-17-pass-32/) | pass 32 | Android 17 / 16 KB native page-size remediation: CMake linker flags, ELF `PT_LOAD.p_align` parsing, release APK alignment gate, and audit doc. |
 | [`.ai/research/2026-05-17-pass-33/`](.ai/research/2026-05-17-pass-33/) | pass 33 | Android Developer Verification guardrails: verifier service detection, App Details unknown-status chip, installer warning gate, and `PackageInstaller` failure-reason diagnostics. |
+| [`.ai/research/2026-05-17-pass-34/`](.ai/research/2026-05-17-pass-34/) | pass 34 | Shizuku 13.6.0 OEM compatibility warning: Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 known-bad detection with a Shizuku 13.5.4 archive link. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S337).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S338).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -148,7 +150,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-32 state as of 2026-05-17
+## 4. Current pass-34 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -389,7 +391,21 @@ the reproducible-release scripts run `scripts/verify-native-page-alignment.py`
 against every publish APK. The audit lives at
 [`docs/audits/2026-05-17-android17-16kb-native-page-size.md`](docs/audits/2026-05-17-android17-16kb-native-page-size.md).
 
-Unit-test files from passes 4-32 cover the new helpers, but local Gradle execution is
+Pass 33 closed the T1 Android Developer Verification guardrails row. The
+installer now warns when Android exposes the `developer_verifier` service and
+propagates `PackageInstaller` developer-verification failure reasons into result
+diagnostics. App Details surfaces verifier status as unknown rather than
+overclaiming a public preflight verdict that Android does not expose.
+
+Pass 34 closed the T5 Shizuku 13.6.0 OEM Allowlist row. `ShizukuBridge` now
+returns a typed OEM compatibility warning for Shizuku 13.6.0-era runtimes on
+Transsion Android 15 ROMs, Mediatek platform tags, and Pixel 9 / Android 16
+QPR1-class builds. Onboarding and Settings -> Operating Mode expose tappable /
+button deep links to the Shizuku 13.5.4 IzzyOnDroid/F-Droid archive, while
+Settings -> Privileges and Mode Doctor include the same downgrade guidance in
+their diagnostics.
+
+Unit-test files from passes 4-34 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -436,6 +452,10 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 ### Privilege provider matrix (per-user mode)
 - **Root** — historical default. libsu 6.0.0 backed.
 - **Shizuku / Sui** — first-class as of 2026-05-14 (`feat: add Shizuku privilege provider`). Compile-time pinned at `shizuku_version = 13.1.5`; onboarding wizard checks for manager version ≥13.6.0 (Android 16 QPR1 guidance).
+- Shizuku 13.6.0 is now treated as known-bad on Transsion/Infinix/Tecno/Itel
+  Android 15 ROMs, Mediatek platform tags, and Pixel 9 / Android 16 QPR1-class
+  builds. `ShizukuBridge.getOemCompatibilityWarning(Context)` is the canonical
+  detector and links affected users to the Shizuku 13.5.4 archive.
 - On Android 17+, onboarding now warns that Shizuku has unresolved compatibility reports
   (#1965 / #1967 / #1988) and offers Wireless ADB setup while
   `MIN_ANDROID_17_COMPATIBLE_VERSION` remains unknown.

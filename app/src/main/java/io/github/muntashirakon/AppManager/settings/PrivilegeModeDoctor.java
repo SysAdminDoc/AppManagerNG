@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
@@ -108,6 +109,12 @@ public final class PrivilegeModeDoctor {
                 + ", binder=" + binderAlive
                 + ", userService=" + supportsUserService
                 + ", permission=" + hasPermission;
+        ShizukuBridge.OemCompatibilityWarning oemWarning = ShizukuBridge.getOemCompatibilityWarning(context);
+        if (oemWarning != null) {
+            return Probe.warn("Shizuku OEM compatibility", details + ", oemRisk=" + oemWarning.reasonCode,
+                    context.getString(oemWarning.summaryTextRes, oemWarning.fallbackVersion)
+                            + " Archive: " + oemWarning.archiveUrl);
+        }
         if (binderAlive && supportsUserService && hasPermission) {
             return Probe.pass("Shizuku binder", details, "No action needed.");
         }
