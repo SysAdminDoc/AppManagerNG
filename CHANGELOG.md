@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Quick Settings freeze profile tile (2026-05-17)
+
+- Added `QuickFreezeTileService`, a platform Quick Settings tile that runs the
+  selected freeze-enabled profile through the existing `ProfileApplierService`.
+- Profiles with the Freeze action enabled now expose "Use for Quick Settings
+  freeze tile" from the profile-list popup; selected profiles can be cleared
+  from the same menu.
+- The tile is unavailable until configured, requires device unlock when tapped
+  from the lock screen, and opens the Profiles screen when the selected profile
+  is missing or no longer freeze-capable.
+- Added JVM coverage for the freeze-profile eligibility gate.
+
 ### Changed — Apktool migration audit (2026-05-17)
 
 - Re-audited the Gradle graph and source tree and confirmed AppManagerNG has no
