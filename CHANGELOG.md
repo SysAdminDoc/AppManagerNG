@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — permission-state Finder filters (2026-05-17)
+
+- `PermissionsOption` now filters requested permissions by `granted`, `denied`,
+  `custom`, `fixed`, `with_flags`, and `without_flags`.
+- New `FilterablePermissionInfo` captures requested-permission grant state,
+  source package, declaration/protection metadata, and runtime permission flags
+  for both Finder/filter rows and main-list `ApplicationItem` consumers.
+
 ### Added — Finder backup-only app results (2026-05-17)
 
 - Finder now opts into validated backup-only rows for AppManagerNG backup
