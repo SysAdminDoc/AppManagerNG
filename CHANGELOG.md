@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — hidden-API compatibility harness (2026-05-17)
+
+- Added a checked-in androidTest hidden-API baseline at
+  `app/src/androidTest/assets/api/api-versions-appmanagerng-hiddenapi.json`
+  covering the current `hiddenapi/src/main/java` stub tree.
+- Added `scripts/generate-hidden-api-baseline.ps1` so future AOSP stub refreshes
+  can regenerate the baseline deterministically.
+- Added JVM coverage to ensure the baseline covers every hiddenapi source file,
+  plus an instrumented test that applies HiddenApiBypass exemptions, probes
+  hidden classes/methods/fields on the active SDK, emits a JSON diff report, and
+  fails on required missing APIs while treating deprecated removals as warnings.
+
 ### Added — Quick Settings freeze profile tile (2026-05-17)
 
 - Added `QuickFreezeTileService`, a platform Quick Settings tile that runs the
@@ -700,7 +712,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   - new "Pulling AOSP source for `hiddenapi/`" section in [`CONTRIBUTING.md`](CONTRIBUTING.md);
   - new [`hiddenapi/README.md`](hiddenapi/README.md) for in-module visibility.
 - Both forbid `master` / `main` / `android-mainline` / date-stamped tags and point version-specific backports at version-tagged branches (`android-15.0.0_r1`, `android-16.0.0_r1`, etc.).
-- The iter-19 Hidden-API Compatibility Harness will inherit this pinning from day 1; no script exists yet to retarget, so the work is documentation-only. Closes the iter-20 Now/Eng-Debt row.
+- The iter-52 Hidden-API Compatibility Harness now inherits this pinning through `scripts/generate-hidden-api-baseline.ps1`, which should be rerun after future `hiddenapi/` stub refreshes. Closes the iter-20 Now/Eng-Debt row.
 
 ### Build — Gson 2.13.2 → 2.14.0 (2026-05-08)
 - `gson_version` bumped 2.13.2 → 2.14.0 in [`versions.gradle:26`](versions.gradle).

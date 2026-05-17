@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 28**. The 2026-05-17 walk-away sequence now has
-> twenty-eight local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 29**. The 2026-05-17 walk-away sequence now has
+> twenty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -27,8 +27,9 @@
 > Privileges, Shizuku trusted-WLAN auto-start actions in Operating Mode /
 > onboarding, and the JobScheduler quota stop-reason dependency audit for the
 > not-yet-implemented Scheduled Auto-Backup surface, the stale Apktool
-> migration audit for the not-yet-implemented T12 Apktool backend, and the
-> Quick Settings freeze profile tile. Run `git status --short --branch`
+> migration audit for the not-yet-implemented T12 Apktool backend, the
+> Quick Settings freeze profile tile, and the hidden-API compatibility harness
+> baseline/generator/instrumented probe. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -100,6 +101,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-26/`](.ai/research/2026-05-17-pass-26/) | pass 26 | JobScheduler quota stop-reason row parked as a Scheduled Auto-Backup acceptance criterion after confirming no WorkManager/JobScheduler surface exists yet. |
 | [`.ai/research/2026-05-17-pass-27/`](.ai/research/2026-05-17-pass-27/) | pass 27 | Apktool 3.0.2 migration row parked after confirming NG has no Apktool dependency/call site to migrate and would need a future T12 backend first. |
 | [`.ai/research/2026-05-17-pass-28/`](.ai/research/2026-05-17-pass-28/) | pass 28 | Quick Settings freeze profile tile backed by selected freeze-enabled profiles and `ProfileApplierService`. |
+| [`.ai/research/2026-05-17-pass-29/`](.ai/research/2026-05-17-pass-29/) | pass 29 | Hidden-API compatibility harness baseline, generator, JVM baseline coverage test, and instrumented active-SDK runtime probe/report. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S335).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -136,7 +138,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-28 state as of 2026-05-17
+## 4. Current pass-29 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -344,6 +346,16 @@ tile unlocks first if necessary, then starts the existing `ProfileApplierService
 with that profile in `BaseProfile.STATE_ON` so existing progress/history/freeze
 logic stays centralized.
 
+Pass 29 closed the Eng-Debt Hidden-API Compatibility Harness row. The old roadmap
+claim that `app/src/main/assets/api/api-versions-*.json` already existed was stale;
+NG now checks in `app/src/androidTest/assets/api/api-versions-appmanagerng-hiddenapi.json`
+instead. `scripts/generate-hidden-api-baseline.ps1` regenerates that baseline from
+`hiddenapi/src/main/java`; `HiddenApiDescriptorBaselineTest` verifies source-file
+coverage; and `HiddenApiCompatibilityInstrumentedTest` loads the asset on-device,
+applies HiddenApiBypass exemptions, probes required hidden classes/methods/fields
+against the active SDK, and writes a JSON diff report before failing on missing
+required APIs.
+
 Unit-test files from passes 4-28 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
@@ -427,7 +439,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - **v0.5.0** — Settings reorganization by task; global in-app search; contextual help tooltips; **in-app changelog viewer** (replaces bundled upstream v4.0.5 changelog).
 - **v0.6.0** — Rootless Power: Shizuku integration polish + wireless ADB auto-pairing polish + rootless debloat. (Most of the engine work shipped 2026-05-14 — v0.6.0 is the user-visible roll-up.)
-- **Now / Eng-Debt** — Hidden-API Compatibility Harness (iter-19 [S137] — the highest-leverage eng-debt item; mitigates the "Android version migration takes 80 hours" cliff). Android 17 device verification for Shizuku's fixed-version floor. Freeze / Operation Audit Log ([S144]). Shizuku permission auto-revoke warning on data-clear ([S139]).
+- **Now / Eng-Debt** — Android 17 device verification for Shizuku's fixed-version floor. Freeze / Operation Audit Log ([S144]). Shizuku permission auto-revoke warning on data-clear ([S139]). Android 17 16-KB page-size compatibility remains open; the hidden-API harness itself shipped in pass 29.
 - **Distribution next** — IzzyOnDroid listing, F-Droid listing, Accrescent listing. All gated on the rename being public + reproducible builds (both done).
 
 ---
@@ -436,7 +448,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S331). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S335). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 
