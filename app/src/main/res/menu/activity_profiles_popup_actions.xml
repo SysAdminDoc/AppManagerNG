@@ -38,6 +38,11 @@
         android:title="@string/share_profile_json" />
 
     <item
+        android:id="@+id/action_quick_freeze_tile"
+        android:icon="@drawable/ic_snowflake"
+        android:title="@string/quick_freeze_tile_set_profile" />
+
+    <item
         android:id="@+id/action_shortcut"
         android:icon="@drawable/ic_image"
         android:title="@string/create_shortcut" />
