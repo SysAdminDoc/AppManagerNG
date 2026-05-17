@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — privileged battery-optimization auto-fix for routines (2026-05-17)
+
+- New
+  [`SelfBatteryOptimization`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfBatteryOptimization.java)
+  centralizes AppManagerNG's own Doze exemption state and privileged
+  `DEVICE_POWER` auto-fix path.
+- Profile routine execution and long-running backup/import/restore batch
+  operations now try to whitelist AppManagerNG through the existing root/ADB
+  `deviceidle` binder path before work begins, reducing schedule/routine misses
+  caused by Doze.
+- The Settings → Troubleshooting battery-optimization entry now reuses the same
+  helper while preserving the manual system-settings fallback for unprivileged
+  devices.
+
 ### Added — install-session SHA-256 confirmation (2026-05-17)
 
 - `PackageInstallerCompat` now computes SHA-256 over the exact bytes copied into
