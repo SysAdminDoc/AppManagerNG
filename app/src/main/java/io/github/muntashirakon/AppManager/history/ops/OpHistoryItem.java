@@ -151,6 +151,11 @@ public class OpHistoryItem {
         return metadata != null ? metadata.getFailedCount() : 0;
     }
 
+    @Nullable
+    public Integer getExitCode() {
+        return metadata != null ? metadata.getExitCode() : null;
+    }
+
     public boolean requiresRestart() {
         return metadata != null && metadata.requiresRestart();
     }
@@ -190,6 +195,11 @@ public class OpHistoryItem {
     }
 
     @Nullable
+    public String getBootstrapSignature() {
+        return metadata != null ? metadata.getBootstrapSignature() : null;
+    }
+
+    @Nullable
     public Intent getPrimaryTargetIntent(@NonNull Context context) {
         if (OpHistoryManager.HISTORY_TYPE_PROFILE.equals(getType())) {
             String profileId = JSONUtils.optString(jsonData, "profile_id");
@@ -225,6 +235,10 @@ public class OpHistoryItem {
         entry.put("risk_label", getLocalizedRisk(context));
         entry.put("target_count", getTargetCount());
         entry.put("failed_count", getFailedCount());
+        Integer exitCode = getExitCode();
+        if (exitCode != null) {
+            entry.put("exit_code", exitCode);
+        }
         entry.put("replayable", isReplayable());
         entry.put("reversible", isReversible());
         entry.put("requires_restart", requiresRestart());
@@ -237,6 +251,10 @@ public class OpHistoryItem {
         String failureMessage = getFailureMessage();
         if (failureMessage != null) {
             entry.put("failure_message", failureMessage);
+        }
+        String bootstrapSignature = getBootstrapSignature();
+        if (bootstrapSignature != null) {
+            entry.put("bootstrap_signature", bootstrapSignature);
         }
         return entry;
     }
@@ -259,6 +277,10 @@ public class OpHistoryItem {
                 DateUtils.formatLongDateTime(context, getTimestamp()));
         appendLine(context, detail, R.string.op_history_detail_mode,
                 nonEmptyOrUnknown(context, metadata.getModeLabel()));
+        String bootstrapSignature = metadata.getBootstrapSignature();
+        if (bootstrapSignature != null) {
+            appendLine(context, detail, R.string.op_history_detail_bootstrap_signature, bootstrapSignature);
+        }
         appendSection(context, detail, R.string.op_history_detail_section_targets);
         appendLine(context, detail, R.string.op_history_detail_targets,
                 context.getResources().getQuantityString(
@@ -270,6 +292,10 @@ public class OpHistoryItem {
                         R.plurals.op_history_failed_count,
                         metadata.getFailedCount(),
                         metadata.getFailedCount()));
+        Integer exitCode = metadata.getExitCode();
+        if (exitCode != null) {
+            appendLine(context, detail, R.string.op_history_detail_exit_code, Integer.toString(exitCode));
+        }
         List<String> targetPreview = metadata.getTargetPreview();
         if (!targetPreview.isEmpty()) {
             appendLine(context, detail, R.string.op_history_detail_target_preview,

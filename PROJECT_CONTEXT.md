@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 21**. The 2026-05-17 walk-away sequence now has
-> twenty-one local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 22**. The 2026-05-17 walk-away sequence now has
+> twenty-two local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -19,8 +19,10 @@
 > Finder relevance scoring, the signature-gated automation broadcast API, the
 > stale APK share-target receiver audit closure, per-app launcher action
 > shortcuts, the `floss` / `full` distribution flavor split, the
-> LocalServer bootstrap smoke test in Settings -> Privileges, and the
-> scrubbed support-info bundle composer in Settings -> Troubleshooting. Run `git status --short --branch`
+> LocalServer bootstrap smoke test in Settings -> Privileges, the
+> scrubbed support-info bundle composer in Settings -> Troubleshooting, and the
+> privileged operation audit-log closure with exit-code and bootstrap-signature
+> export metadata. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -85,6 +87,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-19/`](.ai/research/2026-05-17-pass-19/) | pass 19 | `floss` / `full` build flavors, optional-network feature gating, Obtainium full-build targeting, and release/test artifact path updates. |
 | [`.ai/research/2026-05-17-pass-20/`](.ai/research/2026-05-17-pass-20/) | pass 20 | LocalServer bootstrap smoke test in Settings -> Privileges plus shared success/failure bootstrap signature formatter. |
 | [`.ai/research/2026-05-17-pass-21/`](.ai/research/2026-05-17-pass-21/) | pass 21 | Support-info text bundle composer in Settings -> Troubleshooting with scrubbed logcat tail and LocalServer signature capture. |
+| [`.ai/research/2026-05-17-pass-22/`](.ai/research/2026-05-17-pass-22/) | pass 22 | Privileged operation audit-log closure: existing op-history surface audited, exit-code metadata, and LocalServer bootstrap-signature details/export. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -269,7 +272,18 @@ remembered LocalServer bootstrap signature, and a 120-line logcat tail scrubbed
 for package-like tokens, URIs, storage paths, emails, UIDs, and large numeric IDs.
 `LocalServer` now persists the latest bootstrap signature for this bundle.
 
-Unit-test files from passes 4-21 cover the new helpers, but local Gradle execution is
+Pass 22 closed the T9 Privileged Op Audit Log row. The row was partly stale:
+`op_history` already existed as a Room append-only log with viewer/search/filter,
+rerun/share/delete actions, JSON/CSV/text export, and Settings -> Privacy
+retention. The follow-through added the two explicit roadmap fields that were
+missing from exported metadata: normalized `exit_code` values for batch/profile
+success/failure and installer platform status codes, plus the remembered
+LocalServer bootstrap signature. Details and JSON/CSV exports now carry those
+fields so support reports can correlate privileged actions with the most recent
+bootstrap context. Per-command interrupted-shell replay remains the separate
+Privileged-Shell Journal row.
+
+Unit-test files from passes 4-22 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---

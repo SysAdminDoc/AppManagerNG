@@ -39,7 +39,8 @@ public final class OperationHistoryExporter {
     public static String toCsv(@NonNull Context context, @NonNull List<OpHistoryItem> histories) {
         StringBuilder csv = new StringBuilder();
         appendCsvLine(csv, "id", "time", "type", "label", "status", "operation", "mode", "risk",
-                "targets", "failures", "replayable", "reversible", "restart_required", "target_preview");
+                "targets", "failures", "exit_code", "replayable", "reversible", "restart_required",
+                "target_preview", "bootstrap_signature");
         for (OpHistoryItem history : histories) {
             appendCsvLine(csv,
                     Long.toString(history.getId()),
@@ -52,10 +53,12 @@ public final class OperationHistoryExporter {
                     history.getLocalizedRisk(context),
                     Integer.toString(history.getTargetCount()),
                     Integer.toString(history.getFailedCount()),
+                    emptyIfNull(history.getExitCode()),
                     context.getString(history.isReplayable() ? R.string.yes : R.string.no),
                     context.getString(history.isReversible() ? R.string.yes : R.string.no),
                     context.getString(history.requiresRestart() ? R.string.yes : R.string.no),
-                    android.text.TextUtils.join("; ", history.getTargetPreview()));
+                    android.text.TextUtils.join("; ", history.getTargetPreview()),
+                    emptyIfNull(history.getBootstrapSignature()));
         }
         return csv.toString();
     }
@@ -90,6 +93,16 @@ public final class OperationHistoryExporter {
             builder.append(escapeCsvField(values[i]));
             builder.append('"');
         }
+    }
+
+    @NonNull
+    private static String emptyIfNull(String value) {
+        return value != null ? value : "";
+    }
+
+    @NonNull
+    private static String emptyIfNull(Integer value) {
+        return value != null ? Integer.toString(value) : "";
     }
 
     /**
