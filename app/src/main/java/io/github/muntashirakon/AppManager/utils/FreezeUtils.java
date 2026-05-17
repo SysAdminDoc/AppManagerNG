@@ -23,6 +23,7 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
+import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
@@ -73,6 +74,17 @@ public final class FreezeUtils {
         return ApplicationInfoCompat.isHidden(applicationInfo);
     }
 
+    public static boolean isFrozen(@NonNull String packageName, @UserIdInt int userId) {
+        try {
+            ApplicationInfo applicationInfo = PackageManagerCompat.getApplicationInfo(packageName,
+                    PackageManagerCompat.MATCH_UNINSTALLED_PACKAGES
+                            | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
+            return isFrozen(applicationInfo);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     @Deprecated
     public static void freeze(@NonNull String packageName, @UserIdInt int userId) throws RemoteException {
         freeze(packageName, userId, Prefs.Blocking.getDefaultFreezingMethod());
@@ -86,6 +98,7 @@ public final class FreezeUtils {
         if (freezeType == FREEZE_HIDE) {
             if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS)) {
                 PackageManagerCompat.hidePackage(packageName, userId, true);
+                OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, true);
                 return;
             }
             // No permission, fall-through
@@ -99,18 +112,21 @@ public final class FreezeUtils {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.SUSPEND_APPS)) {
                     PackageManagerCompat.suspendPackages(new String[]{packageName}, userId, true);
+                    OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, true);
                     return;
                 }
                 // No permission, fall-through
             } else {
                 if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS)) {
                     PackageManagerCompat.suspendPackages(new String[]{packageName}, userId, true);
+                    OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, true);
                     return;
                 }
                 // No permission, fall-through
             }
         }
         PackageManagerCompat.setApplicationEnabledSetting(packageName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER, 0, userId);
+        OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, true);
     }
 
     public static void unfreeze(@NonNull String packageName, @UserIdInt int userId) throws RemoteException {
@@ -124,5 +140,6 @@ public final class FreezeUtils {
         if (PackageManagerCompat.getApplicationEnabledSetting(packageName, userId) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
             PackageManagerCompat.setApplicationEnabledSetting(packageName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0, userId);
         }
+        OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, false);
     }
 }

@@ -7,6 +7,7 @@ import android.app.KeyguardManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -19,6 +20,8 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.snackbar.Snackbar;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +31,7 @@ import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreActivity;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.filecache.InternalCacheCleanerService;
 import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
@@ -73,6 +77,7 @@ public abstract class BaseActivity extends PerProcessActivity {
     @Override
     protected final void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        OsRevertMonitor.getRevertEvents().observe(this, this::showOsRevertBanner);
         if (Ops.isAuthenticated()) {
             Log.d(TAG, "Already authenticated.");
             onAuthenticated(savedInstanceState);
@@ -255,5 +260,22 @@ public abstract class BaseActivity extends PerProcessActivity {
             return true;
         }
         return false;
+    }
+
+    private void showOsRevertBanner(@Nullable OsRevertMonitor.RevertEvent event) {
+        if (event == null) return;
+        View root = findViewById(android.R.id.content);
+        if (root == null) return;
+        Snackbar.make(root, event.getBannerMessage(), Snackbar.LENGTH_LONG)
+                .setAction(R.string.os_revert_see_why, v -> showOsRevertDetails(event))
+                .show();
+    }
+
+    private void showOsRevertDetails(@NonNull OsRevertMonitor.RevertEvent event) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(event.getTitle())
+                .setMessage(event.getDetailMessage())
+                .setPositiveButton(R.string.close, null)
+                .show();
     }
 }
