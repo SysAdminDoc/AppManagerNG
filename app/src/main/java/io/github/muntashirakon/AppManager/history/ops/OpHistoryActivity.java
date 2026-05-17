@@ -526,6 +526,10 @@ public class OpHistoryActivity extends BaseActivity {
             labels.add(getString(R.string.op_history_action_rerun));
             actions.add(() -> showRerunConfirmation(history));
         }
+        if (history.isReversible()) {
+            labels.add(getString(R.string.op_history_action_recovery_guidance));
+            actions.add(() -> showRecoveryGuidance(history));
+        }
         labels.add(getString(R.string.delete));
         actions.add(() -> showDeleteHistoryConfirmation(history));
         new MaterialAlertDialogBuilder(this)
@@ -564,6 +568,14 @@ public class OpHistoryActivity extends BaseActivity {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.action_run, (dialog, which) ->
                         mViewModel.getServiceLauncherIntent(history))
+                .show();
+    }
+
+    private void showRecoveryGuidance(@NonNull OpHistoryItem history) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.op_history_recovery_guidance_title)
+                .setMessage(history.getLocalizedRollbackHint(this))
+                .setPositiveButton(R.string.close, null)
                 .show();
     }
 
