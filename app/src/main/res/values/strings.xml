@@ -1423,6 +1423,10 @@
     <string name="search_type_regular_expressions">Regex</string>
     <string name="toggle_internet">Use the Internet</string>
     <string name="pref_toggle_internet_msg">Activate the Internet features in App Manager</string>
+    <string name="pref_auto_update_debloat_definitions">Update debloat definitions on launch</string>
+    <string name="pref_auto_update_debloat_definitions_msg">Opt in to fetching the latest debloat definitions from AppManagerNG\'s pinned GitHub raw manifest. Requires Internet access; cached files fall back to the bundled snapshot.</string>
+    <string name="pref_auto_update_debloat_definitions_msg_current">Current cached debloat definitions: <xliff:g id="version" example="2026-05-17">%1$s</xliff:g>. Standard HTTPS GET requests only; no package list or device identifier is sent.</string>
+    <string name="pref_auto_update_debloat_definitions_msg_no_internet">Enable "Use the Internet" before automatic debloat definition updates can run.</string>
     <string name="vt_checking">VirusTotal: Checking…</string>
     <string name="vt_uploading">VirusTotal: Uploading…</string>
     <string name="vt_queued">VirusTotal: Queued</string>

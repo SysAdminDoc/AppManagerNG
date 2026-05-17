@@ -80,6 +80,10 @@ public class AppPref {
         PREF_ONBOARDING_SHOWN_BOOL,
         PREF_MAIN_TOUR_SHOWN_BOOL,
 
+        PREF_DEBLOAT_DEFINITIONS_AUTO_UPDATE_BOOL,
+        PREF_DEBLOAT_DEFINITIONS_LAST_CHECK_LONG,
+        PREF_DEBLOAT_DEFINITIONS_VERSION_STR,
+        PREF_DEBLOAT_DEFINITIONS_SHA256_STR,
         PREF_DEBLOATER_FILTER_FLAGS_INT,
 
         PREF_ENABLE_KILL_FOR_SYSTEM_BOOL,
@@ -410,6 +414,7 @@ public class AppPref {
             case PREF_ENABLE_PERSISTENT_SESSION_BOOL:
             case PREF_USE_SYSTEM_FONT_BOOL:
             case PREF_PREMIUM_PREVIEW_BOOL:
+            case PREF_DEBLOAT_DEFINITIONS_AUTO_UPDATE_BOOL:
                 return false;
             case PREF_APP_OP_SHOW_DEFAULT_BOOL:
             case PREF_SHOW_DISCLAIMER_BOOL:
@@ -432,6 +437,7 @@ public class AppPref {
                 return 0;
             case PREF_LAST_VERSION_CODE_LONG:
             case PREF_DISPLAY_CHANGELOG_LAST_VERSION_LONG:
+            case PREF_DEBLOAT_DEFINITIONS_LAST_CHECK_LONG:
                 return 0L;
             case PREF_ENABLED_FEATURES_INT:
                 return 0xffff_ffff;  /* All features enabled */
@@ -460,6 +466,8 @@ public class AppPref {
             case PREF_MAIN_WINDOW_FILTER_PROFILE_STR:
             case PREF_SELECTED_USERS_STR:
             case PREF_VIRUS_TOTAL_API_KEY_STR:
+            case PREF_DEBLOAT_DEFINITIONS_VERSION_STR:
+            case PREF_DEBLOAT_DEFINITIONS_SHA256_STR:
                 return "";
             case PREF_MODE_OF_OPS_STR:
                 return Ops.MODE_AUTO;

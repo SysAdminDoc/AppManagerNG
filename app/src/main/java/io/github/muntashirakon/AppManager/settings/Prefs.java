@@ -669,6 +669,36 @@ public final class Prefs {
         public static void setOpHistorySortOrder(int sortOrder) {
             AppPref.set(AppPref.PrefKey.PREF_OP_HISTORY_SORT_ORDER_INT, sortOrder);
         }
+
+        public static boolean autoUpdateDebloatDefinitions() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_AUTO_UPDATE_BOOL);
+        }
+
+        public static long getLastDebloatDefinitionsCheckTime() {
+            return AppPref.getLong(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_LAST_CHECK_LONG);
+        }
+
+        public static void setLastDebloatDefinitionsCheckTime(long lastCheckTime) {
+            AppPref.set(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_LAST_CHECK_LONG, lastCheckTime);
+        }
+
+        @NonNull
+        public static String getDebloatDefinitionsVersion() {
+            return AppPref.getString(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_VERSION_STR);
+        }
+
+        public static void setDebloatDefinitionsVersion(@NonNull String version) {
+            AppPref.set(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_VERSION_STR, version);
+        }
+
+        @NonNull
+        public static String getDebloatDefinitionsSha256() {
+            return AppPref.getString(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_SHA256_STR);
+        }
+
+        public static void setDebloatDefinitionsSha256(@NonNull String sha256) {
+            AppPref.set(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_SHA256_STR, sha256);
+        }
     }
 
     public static final class Signing {
