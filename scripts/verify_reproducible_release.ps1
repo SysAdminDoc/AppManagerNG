@@ -12,7 +12,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = Resolve-Path (Join-Path $scriptDir "..")
 Set-Location $rootDir
 
-$apkDir = "app\build\outputs\apk\release"
+$apkRoot = "app\build\outputs\apk"
 $firstDir = Join-Path $OutDir "first"
 $secondDir = Join-Path $OutDir "second"
 $publishDir = Join-Path $OutDir "publish"
@@ -25,9 +25,18 @@ if (Test-Path $OutDir) {
 New-Item -ItemType Directory -Force -Path $firstDir, $secondDir, $publishDir | Out-Null
 
 function Get-ReleaseApks {
-    $apks = @(Get-ChildItem -LiteralPath $apkDir -Filter "*.apk" -File | Sort-Object Name)
+    $apks = @(Get-ChildItem -LiteralPath $apkRoot -Recurse -Filter "*.apk" -File |
+        Where-Object { $_.DirectoryName -match '[\\/]release$' } |
+        Sort-Object Name)
     if ($apks.Count -eq 0) {
-        throw "No release APKs were produced in $apkDir"
+        throw "No release APKs were produced under $apkRoot"
+    }
+    $duplicates = @($apks | Group-Object Name | Where-Object { $_.Count -gt 1 })
+    if ($duplicates.Count -gt 0) {
+        $details = $duplicates | ForEach-Object {
+            "$($_.Name): $((($_.Group | Select-Object -ExpandProperty FullName) -join ', '))"
+        }
+        throw "Release APK basenames are not unique: $($details -join '; ')"
     }
     return $apks
 }

@@ -78,12 +78,14 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           PUBLISH_DIR="build/reproducible-release/publish"
           ASSET_LIST="build/reproducible-release/github-release-assets.txt"
+          RELEASE_ASSET_DIR="app/build/outputs/apk/release"
           : > "$ASSET_LIST"
+          mkdir -p "$RELEASE_ASSET_DIR"
           shopt -s nullglob
           for SRC in "$PUBLISH_DIR"/*.apk; do
             FILE="$(basename "$SRC")"
             DEST_NAME="$(printf '%s' "$FILE" | sed "s/^AppManagerNG-reproducible/AppManagerNG-${VERSION}/")"
-            DEST="app/build/outputs/apk/release/$DEST_NAME"
+            DEST="$RELEASE_ASSET_DIR/$DEST_NAME"
             CHECKSUM="${DEST}.sha256"
             cp "$SRC" "$DEST"
             HASH="$(sha256sum "$DEST" | awk '{print $1}')"

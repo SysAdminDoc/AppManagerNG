@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 18**. The 2026-05-17 walk-away sequence now has
-> eighteen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 19**. The 2026-05-17 walk-away sequence now has
+> nineteen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -17,8 +17,8 @@
 > capability-dropping diagnostics follow-through, and Finder debloat-description
 > search follow-through, Finder backup-only app results, permission-state filters,
 > Finder relevance scoring, the signature-gated automation broadcast API, the
-> stale APK share-target receiver audit closure, and per-app launcher action
-> shortcuts. Run `git status --short --branch`
+> stale APK share-target receiver audit closure, per-app launcher action
+> shortcuts, and the `floss` / `full` distribution flavor split. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -57,7 +57,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
 | [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
 | [`design/`](design/) | 7 files | Premium-facelift design system (`spec/1-design-system.md`, `impl/values/*-v2.xml`, `impl/layout/*_v2.xml`, `plan/3-rollout.md`, `audit/0-recon.md`, `audit/4-painpoints.md`). Driven by [`codexprompt.md`](codexprompt.md) at repo root. |
-| [`docs/distribution/`](docs/distribution/) | 5 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier. |
+| [`docs/distribution/`](docs/distribution/) | 6 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier, build-flavor contract. |
 | [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) | — | Running ledger of every dep that has dropped (or imminently drops) API 21-22 support. Read this **before** bumping `min_sdk` in [`versions.gradle`](versions.gradle). |
 | [`docs/security-advisories/`](docs/security-advisories/) | 1 file | CVE-2026-0073 ADB-mode advisory. |
 | [`docs/intent-api.md`](docs/intent-api.md) | — | `app-manager://` + `am://` deep-link contract. |
@@ -80,6 +80,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-16/`](.ai/research/2026-05-17-pass-16/) | pass 16 | Signature-gated automation broadcast API for existing batch/profile/installer/tracker operations. |
 | [`.ai/research/2026-05-17-pass-17/`](.ai/research/2026-05-17-pass-17/) | pass 17 | Stale APK share-target roadmap row closed by manifest/installer audit. |
 | [`.ai/research/2026-05-17-pass-18/`](.ai/research/2026-05-17-pass-18/) | pass 18 | Dynamic and pinned per-app launcher shortcuts for freeze, force-stop, and clear-cache actions. |
+| [`.ai/research/2026-05-17-pass-19/`](.ai/research/2026-05-17-pass-19/) | pass 19 | `floss` / `full` build flavors, optional-network feature gating, Obtainium full-build targeting, and release/test artifact path updates. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -116,7 +117,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-18 state as of 2026-05-17
+## 4. Current pass-19 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -235,7 +236,18 @@ and authenticated through `BaseActivity` before it dispatches to `FreezeUtils` o
 clear-cache shortcuts, and freeze/unfreeze shortcuts use explicit action labels by
 default.
 
-Unit-test files from passes 4-18 cover the new helpers, but local Gradle execution is
+Pass 19 closed the T1 `floss` vs `full` Build Flavors row. `app/build.gradle`
+now defines a `distribution` flavor dimension with default `floss` and optional
+`full`; `BuildConfig.ALLOW_OPTIONAL_NETWORK_FEATURES` gates the optional online
+surfaces through `FeatureController`. `floss` keeps ADB / localhost networking
+available but disables the user-facing Internet feature switch, VirusTotal,
+Pithus lookups, and debloat-definition auto-updates. `full` keeps the existing
+opt-in behavior. Release scripts now collect recursive flavor APK outputs, CI
+artifact globs handle flavored reports, and Obtainium targets `full` assets.
+F-Droid metadata should build `flossRelease`; see
+[`docs/distribution/build-flavors.md`](docs/distribution/build-flavors.md).
+
+Unit-test files from passes 4-19 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---

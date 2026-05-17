@@ -95,10 +95,16 @@ public class PrivacyPreferences extends PreferenceFragment {
         });
         // Toggle Internet
         SwitchPreferenceCompat toggleInternet = requirePreference("toggle_internet");
-        toggleInternet.setEnabled(SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET));
+        boolean optionalNetworkFeaturesAvailable = FeatureController.areOptionalNetworkFeaturesAvailable();
+        toggleInternet.setEnabled(optionalNetworkFeaturesAvailable
+                && SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET));
         toggleInternet.setChecked(FeatureController.isInternetEnabled());
+        toggleInternet.setSummary(optionalNetworkFeaturesAvailable
+                ? getString(R.string.pref_toggle_internet_msg)
+                : getString(R.string.pref_toggle_internet_msg_floss_disabled));
         SwitchPreferenceCompat autoUpdateDebloatDefinitions = requirePreference("debloat_definitions_auto_update");
-        autoUpdateDebloatDefinitions.setChecked(Prefs.Privacy.autoUpdateDebloatDefinitions());
+        autoUpdateDebloatDefinitions.setChecked(optionalNetworkFeaturesAvailable
+                && Prefs.Privacy.autoUpdateDebloatDefinitions());
         updateDebloatDefinitionsPreference(autoUpdateDebloatDefinitions, FeatureController.isInternetEnabled());
         toggleInternet.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean isEnabled = (boolean) newValue;
@@ -152,6 +158,11 @@ public class PrivacyPreferences extends PreferenceFragment {
     }
 
     private void updateDebloatDefinitionsPreference(@NonNull SwitchPreferenceCompat preference, boolean internetEnabled) {
+        if (!FeatureController.areOptionalNetworkFeaturesAvailable()) {
+            preference.setEnabled(false);
+            preference.setSummary(R.string.pref_auto_update_debloat_definitions_msg_floss_disabled);
+            return;
+        }
         preference.setEnabled(internetEnabled);
         if (!internetEnabled) {
             preference.setSummary(R.string.pref_auto_update_debloat_definitions_msg_no_internet);
