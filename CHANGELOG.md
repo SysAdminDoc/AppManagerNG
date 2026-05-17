@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — support-info bundle composer (2026-05-17)
+
+- Settings -> Troubleshooting now has a "Share support info" action that writes
+  a zero-network `support-info-<device>-<timestamp>.txt` file and shares it via
+  the system chooser.
+- The support file captures app/build version, Android/ROM details,
+  Root/Shizuku/Sui/provider status, configured/inferred AppManagerNG mode,
+  feature flags, and the last recorded LocalServer bootstrap signature.
+- The logcat tail is limited to the latest 120 lines and scrubbed for package-like
+  tokens, file/content/http URIs, storage paths, email addresses, UIDs, and large
+  numeric identifiers before sharing.
+
 ### Added — LocalServer bootstrap smoke test (2026-05-17)
 
 - Settings -> Privileges now includes a "LocalServer bootstrap smoke test" row

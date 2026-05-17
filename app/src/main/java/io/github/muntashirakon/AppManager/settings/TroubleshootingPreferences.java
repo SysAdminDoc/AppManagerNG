@@ -20,13 +20,16 @@ import com.google.android.material.transition.MaterialSharedAxis;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.io.Path;
 
 public class TroubleshootingPreferences extends PreferenceFragment {
     private Preference mBatteryOptPref;
+    private Preference mSupportInfoPref;
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -63,6 +66,11 @@ public class TroubleshootingPreferences extends PreferenceFragment {
                             Toast.LENGTH_LONG).show();
                     return true;
                 });
+        mSupportInfoPref = requirePreference("support_info_bundle");
+        mSupportInfoPref.setOnPreferenceClickListener(preference -> {
+            composeSupportInfoBundle();
+            return true;
+        });
         // Battery optimization — surfaces current exemption state, prefers the
         // privileged deviceidle binder path when available, and otherwise routes
         // to the OS-owned per-app request prompt/settings list. Pre-M devices
@@ -149,6 +157,39 @@ public class TroubleshootingPreferences extends PreferenceFragment {
             return;
         }
         launchBatteryOptimizationSystemFlow(ctx, exempt);
+    }
+
+    private void composeSupportInfoBundle() {
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Context appContext = ctx.getApplicationContext();
+        mSupportInfoPref.setEnabled(false);
+        mSupportInfoPref.setSummary(R.string.support_info_bundle_preparing);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Path bundlePath = null;
+            try {
+                bundlePath = SupportInfoBundle.writeTextBundle(appContext);
+            } catch (Throwable ignored) {
+            }
+            Path finalBundlePath = bundlePath;
+            ThreadUtils.postOnMainThread(() -> {
+                Context currentContext = getContext();
+                if (currentContext == null) return;
+                mSupportInfoPref.setEnabled(true);
+                mSupportInfoPref.setSummary(R.string.pref_support_info_bundle_msg);
+                if (finalBundlePath == null) {
+                    Toast.makeText(currentContext, R.string.support_info_bundle_failed, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                Intent shareIntent = SupportInfoBundle.buildShareIntent(currentContext, finalBundlePath);
+                try {
+                    startActivity(Intent.createChooser(shareIntent,
+                            getString(R.string.pref_support_info_bundle)));
+                } catch (ActivityNotFoundException | SecurityException e) {
+                    Toast.makeText(currentContext, R.string.support_info_bundle_failed, Toast.LENGTH_LONG).show();
+                }
+            });
+        });
     }
 
     private void launchBatteryOptimizationSystemFlow(@NonNull Context ctx, boolean exempt) {
