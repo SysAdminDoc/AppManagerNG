@@ -36,6 +36,9 @@ public class OperationHistoryExporterTest {
         assertEquals("Example App", entry.getString("label"));
         assertEquals("success", entry.getString("status"));
         assertEquals(1, entry.getJSONArray("target_preview").length());
+        assertEquals(0, entry.getInt("exit_code"));
+        assertEquals("LocalServer bootstrap succeeded: Google/oriole/oriole (sdk=36, id=BP2A, mode=adb_wifi, uid=2000, appUid=10345) \u2014 OK",
+                entry.getString("bootstrap_signature"));
         assertFalse(exported.contains("serializedData"));
         assertFalse(exported.contains("apk_source"));
     }
@@ -50,6 +53,9 @@ public class OperationHistoryExporterTest {
         assertTrue(exported.startsWith("\"id\",\"time\",\"type\""));
         assertTrue(exported.contains("\"Example App\""));
         assertTrue(exported.contains("\"com.example.app\""));
+        assertTrue(exported.contains("\"exit_code\""));
+        assertTrue(exported.contains("\"bootstrap_signature\""));
+        assertTrue(exported.contains("\"LocalServer bootstrap succeeded: Google/oriole/oriole"));
     }
 
     @Test
@@ -90,12 +96,15 @@ public class OperationHistoryExporterTest {
                 .put("operation_label", "Install")
                 .put("target_count", 1)
                 .put("failed_count", 0)
+                .put("exit_code", 0)
                 .put("requires_restart", false)
                 .put("replayable", true)
                 .put("reversible", false)
                 .put("risk", OperationJournalMetadata.RISK_MEDIUM)
                 .put("rollback_hint", "reinstall")
                 .put("target_preview", new JSONArray().put("com.example.app"))
+                .put("bootstrap_signature",
+                        "LocalServer bootstrap succeeded: Google/oriole/oriole (sdk=36, id=BP2A, mode=adb_wifi, uid=2000, appUid=10345) \u2014 OK")
                 .toString();
         return new OpHistoryItem(opHistory);
     }
