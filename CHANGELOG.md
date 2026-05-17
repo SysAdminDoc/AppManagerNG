@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Shizuku 13.6.0 OEM compatibility warning (2026-05-17)
+
+- Added Shizuku 13.6.0 known-bad device detection for Transsion/Infinix/Tecno/Itel
+  Android 15 ROMs, Mediatek platform tags, and Pixel 9 Android 16 QPR1-class
+  builds.
+- The detector compares installed Shizuku Manager version first, then falls back
+  to the live Shizuku API version when package metadata is unavailable.
+- Onboarding, Settings -> Operating Mode, Settings -> Privileges, and Mode Doctor
+  now tell affected users to pin Shizuku 13.5.4 and link to the archived F-Droid
+  repo APK.
+- Added unit coverage for the version gate and each known-bad OEM/SoC family.
+
 ### Compliance — Android Developer Verification guardrails (2026-05-17)
 
 - Added `DeveloperVerificationCompat` for `developer_verifier` service detection

@@ -215,7 +215,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         }
         String version = versionName != null ? versionName : getString(R.string.state_unknown);
         String warning = "";
-        if (ShizukuBridge.hasAndroid17CompatibilityRisk(context)) {
+        ShizukuBridge.OemCompatibilityWarning oemWarning = ShizukuBridge.getOemCompatibilityWarning(context);
+        if (oemWarning != null) {
+            warning = "\n" + getString(oemWarning.summaryTextRes, oemWarning.fallbackVersion);
+        } else if (ShizukuBridge.hasAndroid17CompatibilityRisk(context)) {
             warning = "\n" + getString(R.string.privilege_health_shizuku_android17_warning);
         } else if (versionName != null && !ShizukuBridge.isRecommendedManagerVersion(context)) {
             warning = "\n" + getString(R.string.privilege_health_shizuku_update_recommended,

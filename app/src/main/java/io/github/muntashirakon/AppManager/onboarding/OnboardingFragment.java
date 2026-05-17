@@ -160,9 +160,19 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         warning.setVisibility(View.VISIBLE);
     }
 
-    private void bindShizukuAndroid17Warning(@Nullable TextView warning) {
+    private void bindShizukuWarning(@Nullable TextView warning) {
         if (warning == null) return;
+        ShizukuBridge.OemCompatibilityWarning oemWarning =
+                ShizukuBridge.getOemCompatibilityWarning(requireContext());
+        if (oemWarning != null) {
+            warning.setText(getString(oemWarning.bannerTextRes, oemWarning.fallbackVersion));
+            applyWarningTextStyle(warning);
+            warning.setOnClickListener(v -> openShizukuPinnedArchive());
+            warning.setVisibility(View.VISIBLE);
+            return;
+        }
         if (!ShizukuBridge.hasAndroid17CompatibilityRisk(requireContext())) {
+            warning.setOnClickListener(null);
             warning.setVisibility(View.GONE);
             return;
         }
@@ -233,7 +243,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         View shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
         bindShizukuStatus(shizukuStatus, shizukuAutoStartHint, shizukuAutoStartAction);
         TextView shizukuAndroid17Warning = view.findViewById(R.id.warning_shizuku_android17);
-        bindShizukuAndroid17Warning(shizukuAndroid17Warning);
+        bindShizukuWarning(shizukuAndroid17Warning);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
         bindAdbWifiStatus(adbWifiStatus);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
@@ -433,6 +443,14 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             startActivity(intent);
         } catch (ActivityNotFoundException | SecurityException e) {
             UIUtils.displayShortToast(R.string.shizuku_autostart_open_failed);
+        }
+    }
+
+    private void openShizukuPinnedArchive() {
+        try {
+            startActivity(ShizukuBridge.getPinnedSafeManagerArchiveIntent());
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayShortToast(R.string.shizuku_oem_archive_open_failed);
         }
     }
 
