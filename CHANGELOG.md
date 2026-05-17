@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — JobScheduler quota stop-reason audit (2026-05-17)
+
+- Re-audited the source and Gradle configuration and confirmed AppManagerNG still
+  has no `androidx.work`, WorkManager, JobScheduler, JobService, or Schedules
+  screen implementation to instrument.
+- Parked the Android 16 JobScheduler quota stop-reason row as a Scheduled
+  Auto-Backup acceptance criterion instead of a standalone code item.
+- Expanded the Scheduled Auto-Backup roadmap row to require WorkManager /
+  JobScheduler stop and pending-reason output in schedule history and result
+  notifications when the scheduler is implemented.
+
 ### Added — Shizuku trusted-WLAN auto-start action (2026-05-17)
 
 - Operating Mode and the replayable onboarding Shizuku card now show a
