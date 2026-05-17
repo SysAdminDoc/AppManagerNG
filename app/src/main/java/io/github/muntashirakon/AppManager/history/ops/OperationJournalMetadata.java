@@ -26,6 +26,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
+import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
@@ -38,6 +39,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String KEY_OPERATION_LABEL = "operation_label";
     private static final String KEY_TARGET_COUNT = "target_count";
     private static final String KEY_FAILED_COUNT = "failed_count";
+    private static final String KEY_EXIT_CODE = "exit_code";
     private static final String KEY_REQUIRES_RESTART = "requires_restart";
     private static final String KEY_REPLAYABLE = "replayable";
     private static final String KEY_REVERSIBLE = "reversible";
@@ -45,6 +47,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String KEY_ROLLBACK_HINT = "rollback_hint";
     private static final String KEY_TARGET_PREVIEW = "target_preview";
     private static final String KEY_FAILURE_MESSAGE = "failure_message";
+    private static final String KEY_BOOTSTRAP_SIGNATURE = "bootstrap_signature";
 
     public static final int RISK_LOW = 0;
     public static final int RISK_MEDIUM = 1;
@@ -90,6 +93,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setOperationLabel(BatchOpsService.getDesiredOpTitle(context, op))
                 .setTargetCount(item.getPackages().size())
                 .setFailedCount(result.getFailedPackages().size())
+                .setExitCode(result.isSuccessful() ? 0 : 1)
                 .setRequiresRestart(result.requiresRestart())
                 .setReplayable(true)
                 .setReversible(isReversibleBatchOp(op))
@@ -114,6 +118,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setOperationLabel(context.getString(R.string.package_installer))
                 .setTargetCount(1)
                 .setFailedCount(success ? 0 : 1)
+                .setExitCode(status)
                 .setRequiresRestart(false)
                 .setReplayable(true)
                 .setReversible(false)
@@ -140,6 +145,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setOperationLabel(context.getString(R.string.profiles))
                 .setTargetCount(1)
                 .setFailedCount(success ? 0 : 1)
+                .setExitCode(success ? 0 : 1)
                 .setRequiresRestart(requiresRestart)
                 .setReplayable(true)
                 .setReversible(false)
@@ -154,9 +160,23 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
     @NonNull
     private static Builder builder(@NonNull Context context) {
-        return new Builder()
+        Builder builder = new Builder()
                 .setModeLabel(Ops.getInferredMode(context).toString())
                 .setSchemaVersion(SCHEMA_VERSION);
+        String bootstrapSignature = getLastBootstrapSignatureSafely();
+        if (!bootstrapSignature.isEmpty()) {
+            builder.setBootstrapSignature(bootstrapSignature);
+        }
+        return builder;
+    }
+
+    @NonNull
+    private static String getLastBootstrapSignatureSafely() {
+        try {
+            return LocalServer.getLastBootstrapSignature();
+        } catch (Throwable ignore) {
+            return "";
+        }
     }
 
     @Risk
@@ -243,6 +263,11 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         return mJsonObject.optInt(KEY_FAILED_COUNT, 0);
     }
 
+    @Nullable
+    public Integer getExitCode() {
+        return JSONUtils.getIntOrNull(mJsonObject, KEY_EXIT_CODE);
+    }
+
     public boolean requiresRestart() {
         return mJsonObject.optBoolean(KEY_REQUIRES_RESTART, false);
     }
@@ -267,6 +292,11 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     @Nullable
     public String getFailureMessage() {
         return JSONUtils.optString(mJsonObject, KEY_FAILURE_MESSAGE);
+    }
+
+    @Nullable
+    public String getBootstrapSignature() {
+        return JSONUtils.optString(mJsonObject, KEY_BOOTSTRAP_SIGNATURE);
     }
 
     @NonNull
@@ -366,6 +396,12 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         }
 
         @NonNull
+        Builder setExitCode(int exitCode) {
+            put(KEY_EXIT_CODE, exitCode);
+            return this;
+        }
+
+        @NonNull
         Builder setRequiresRestart(boolean requiresRestart) {
             put(KEY_REQUIRES_RESTART, requiresRestart);
             return this;
@@ -421,6 +457,12 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         @NonNull
         Builder setFailureMessage(@NonNull String failureMessage) {
             put(KEY_FAILURE_MESSAGE, failureMessage);
+            return this;
+        }
+
+        @NonNull
+        Builder setBootstrapSignature(@NonNull String bootstrapSignature) {
+            put(KEY_BOOTSTRAP_SIGNATURE, bootstrapSignature);
             return this;
         }
 
