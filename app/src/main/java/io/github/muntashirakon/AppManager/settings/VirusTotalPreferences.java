@@ -32,6 +32,7 @@ public class VirusTotalPreferences extends PreferenceFragment {
         setPreferencesFromResource(R.xml.preferences_virus_total, rootKey);
         getPreferenceManager().setPreferenceDataStore(new SettingsDataStore());
         mModel = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
+        boolean optionalNetworkFeaturesAvailable = FeatureController.areOptionalNetworkFeaturesAvailable();
         boolean hasInternet = FeatureController.isInternetEnabled();
         boolean isVtEnabled = FeatureController.isVirusTotalEnabled();
         String apiKey = Prefs.VirusTotal.getApiKey();
@@ -50,6 +51,9 @@ public class VirusTotalPreferences extends PreferenceFragment {
             return true;
         });
         infoNoInternetPref.setVisible(!hasInternet);
+        infoNoInternetPref.setSummary(optionalNetworkFeaturesAvailable
+                ? getString(R.string.pref_use_vt_no_internet)
+                : getString(R.string.pref_use_vt_floss_disabled));
         enablePrefs(isVtEnabled, vtApiKeyPref, promptBeforeUploadPref);
         if (apiKey != null) {
             vtApiKeyPref.setSummary(apiKey);

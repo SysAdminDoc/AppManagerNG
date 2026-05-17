@@ -81,6 +81,22 @@ android {
             pseudoLocalesEnabled true
         }
     }
+    flavorDimensions "distribution"
+    productFlavors {
+        // Default distribution channel for F-Droid / IzzyOnDroid style builds:
+        // keep local networking needed by ADB/localhost plumbing, but compile
+        // out optional third-party network features such as VirusTotal, Pithus,
+        // MOTD/update-check style calls, and debloat-definition auto-fetches.
+        floss {
+            dimension "distribution"
+            isDefault = true
+            buildConfigField "boolean", "ALLOW_OPTIONAL_NETWORK_FEATURES", "false"
+        }
+        full {
+            dimension "distribution"
+            buildConfigField "boolean", "ALLOW_OPTIONAL_NETWORK_FEATURES", "true"
+        }
+    }
     lint {
         checkReleaseBuilds false
         abortOnError false

@@ -94,8 +94,10 @@ public class FeatureController {
             put(FEAT_TERMINAL, R.string.title_terminal_emulator);
             featureFlags.add(FEAT_USAGE_ACCESS);
             put(FEAT_USAGE_ACCESS, R.string.usage_access);
-            featureFlags.add(FEAT_VIRUS_TOTAL);
-            put(FEAT_VIRUS_TOTAL, R.string.virus_total);
+            if (areOptionalNetworkFeaturesAvailable()) {
+                featureFlags.add(FEAT_VIRUS_TOTAL);
+                put(FEAT_VIRUS_TOTAL, R.string.virus_total);
+            }
         }
     };
 
@@ -151,6 +153,10 @@ public class FeatureController {
         return getInstance().isEnabled(FEAT_INTERNET);
     }
 
+    public static boolean areOptionalNetworkFeaturesAvailable() {
+        return BuildConfig.ALLOW_OPTIONAL_NETWORK_FEATURES;
+    }
+
     public static boolean isVirusTotalEnabled() {
         return getInstance().isEnabled(FEAT_VIRUS_TOTAL);
     }
@@ -182,9 +188,11 @@ public class FeatureController {
                 // Only depends on flag
                 return (mFlags & key) != 0;
             case FEAT_VIRUS_TOTAL:
-                return (mFlags & key) != 0 && isEnabled(FEAT_INTERNET);
+                return areOptionalNetworkFeaturesAvailable() && (mFlags & key) != 0 && isEnabled(FEAT_INTERNET);
             case FEAT_INTERNET:
-                return (mFlags & key) != 0 && SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET);
+                return areOptionalNetworkFeaturesAvailable()
+                        && (mFlags & key) != 0
+                        && SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET);
             case FEAT_LOG_VIEWER:
                 cn = getComponentName(key, LogViewerActivity.class);
                 break;
@@ -221,9 +229,14 @@ public class FeatureController {
                 modifyState(key, ScannerActivity.class, enabled);
                 break;
             case FEAT_USAGE_ACCESS:
+                // Only depends on flag
+                break;
             case FEAT_INTERNET:
             case FEAT_VIRUS_TOTAL:
                 // Only depends on flag
+                if (enabled && !areOptionalNetworkFeaturesAvailable()) {
+                    enabled = false;
+                }
                 break;
             case FEAT_LOG_VIEWER:
                 modifyState(key, LogViewerActivity.class, enabled);
