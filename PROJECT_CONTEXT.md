@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 26**. The 2026-05-17 walk-away sequence now has
-> twenty-six local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 27**. The 2026-05-17 walk-away sequence now has
+> twenty-seven local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -26,7 +26,8 @@
 > binder-death marking, the active Mode Doctor probe report in Settings ->
 > Privileges, Shizuku trusted-WLAN auto-start actions in Operating Mode /
 > onboarding, and the JobScheduler quota stop-reason dependency audit for the
-> not-yet-implemented Scheduled Auto-Backup surface. Run `git status --short --branch`
+> not-yet-implemented Scheduled Auto-Backup surface, and the stale Apktool
+> migration audit for the not-yet-implemented T12 Apktool backend. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -59,7 +60,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-31 research deltas inline. Cites **331 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-31 research deltas inline. Cites **333 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -96,8 +97,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-24/`](.ai/research/2026-05-17-pass-24/) | pass 24 | Mode Doctor active probe report in Settings -> Privileges. |
 | [`.ai/research/2026-05-17-pass-25/`](.ai/research/2026-05-17-pass-25/) | pass 25 | Shizuku trusted-WLAN auto-start affordance in Operating Mode and onboarding, with launcher/app-info fallback. |
 | [`.ai/research/2026-05-17-pass-26/`](.ai/research/2026-05-17-pass-26/) | pass 26 | JobScheduler quota stop-reason row parked as a Scheduled Auto-Backup acceptance criterion after confirming no WorkManager/JobScheduler surface exists yet. |
+| [`.ai/research/2026-05-17-pass-27/`](.ai/research/2026-05-17-pass-27/) | pass 27 | Apktool 3.0.2 migration row parked after confirming NG has no Apktool dependency/call site to migrate and would need a future T12 backend first. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S331).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S333).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -132,7 +134,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-26 state as of 2026-05-17
+## 4. Current pass-27 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -324,6 +326,13 @@ JobService, JobParameters, or Schedules-screen implementation in current NG
 source. The requirement now lives on the T6 Scheduled Auto-Backup row: when the
 scheduler is implemented, it must capture WorkManager / JobScheduler stop and
 pending reasons in schedule history/result notifications from the start.
+
+Pass 27 parked the Eng-Debt Apktool 3.0.2 migration row as stale for current
+source. AppManagerNG has no `org.apktool` / `brut.apktool` dependency or call
+site to migrate; APK editing currently uses ARSCLib, apksig, Google
+smali/baksmali, and JADX. If T12 later adds an Apktool-backed decode/rebuild
+backend, target `org.apktool:apktool-lib:3.0.2+` only after duplicate-class
+testing against the existing Google smali/baksmali classpath.
 
 Unit-test files from passes 4-25 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
