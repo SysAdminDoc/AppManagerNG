@@ -183,6 +183,11 @@ public class FilterItem implements IJsonSerializer, Parcelable {
         return mFilterOptions.valueAt(i);
     }
 
+    @NonNull
+    List<FilterOption> getFilterOptionsSnapshot() {
+        return new ArrayList<>(mFilterOptions.values());
+    }
+
     @Nullable
     public FilterOption getFilterOptionForId(int id) {
         return mFilterOptions.get(id);

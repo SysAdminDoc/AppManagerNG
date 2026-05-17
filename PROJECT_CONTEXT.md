@@ -7,15 +7,16 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 12**. The 2026-05-17 walk-away sequence now has
-> twelve local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 15**. The 2026-05-17 walk-away sequence now has
+> fifteen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
 > cross-user package-state/Finder follow-through, and opt-in debloat-definition
 > auto-update follow-through, Privileges health-check follow-through,
 > capability-dropping diagnostics follow-through, and Finder debloat-description
-> search follow-through. Run `git status --short --branch`
+> search follow-through, Finder backup-only app results, permission-state filters,
+> and Finder relevance scoring. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -71,6 +72,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/) | pass 10 | Settings → Privileges health-check screen for mode, root/Shizuku/ADB, remote services, and battery optimization. |
 | [`.ai/research/2026-05-17-pass-11/`](.ai/research/2026-05-17-pass-11/) | pass 11 | Android 16 capability-dropping diagnostic in Settings -> Privileges, backed by active-shell UID + `CapEff` parsing. |
 | [`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/) | pass 12 | VPN plugin flag blocker audit and Finder debloat-description search predicates. |
+| [`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/) | pass 13 | Finder backup-only result rows for validated uninstalled app backups. |
+| [`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/) | pass 14 | Permission-state filter predicates backed by `FilterablePermissionInfo`. |
+| [`.ai/research/2026-05-17-pass-15/`](.ai/research/2026-05-17-pass-15/) | pass 15 | Finder relevance scoring for literal package/component/tracker search filters. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -107,7 +111,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-12 state as of 2026-05-17
+## 4. Current pass-15 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -193,7 +197,15 @@ them, and custom-source/fixed-state helpers feed `PermissionsOption`. Both
 `FilterableAppInfo` and `ApplicationItem` now expose this model through
 `IFilterableAppInfo.getAllPermissionDetails()`.
 
-Unit-test files from passes 4-14 cover the new helpers, but local Gradle execution is
+Pass 15 closed T7's Finder relevance-scoring row. `FinderViewModel` still uses the
+existing `FilterItem` evaluator for inclusion, then sends results through
+`FinderRelevanceScorer` when literal package-name, component-name, or tracker-name
+search predicates are present. The scorer ranks by Levenshtein distance against
+full package names, simple package names, tokens, sliding windows, and matched
+component/tracker class names; regex/negative predicates are skipped and unrelated
+filter matches keep their original scan order.
+
+Unit-test files from passes 4-15 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -302,5 +314,6 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/),
 [`.ai/research/2026-05-17-pass-11/`](.ai/research/2026-05-17-pass-11/),
 [`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/),
-[`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/), and
-[`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/).
+[`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/),
+[`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/), and
+[`.ai/research/2026-05-17-pass-15/`](.ai/research/2026-05-17-pass-15/).
