@@ -118,16 +118,21 @@ Every new Android release potentially:
 - Changes the reflection-blocklist enforcement (Android 17's static-final-field reflection ban — see [`docs/audits/2026-05-08-android17-static-final-reflection.md`](../audits/2026-05-08-android17-static-final-reflection.md)).
 
 The existing audit doctrine catches some of this (a per-version audit file lands when
-NG bumps `targetSdk`), but the audit is **manual**. The proposed **Hidden-API
-Compatibility Harness** (ROADMAP iter-19 Eng-Debt Now [S137]) is the structural fix:
+NG bumps `targetSdk`), but the audit was **manual** until the pass-29 Hidden-API
+Compatibility Harness shipped:
 
-- Loads `app/src/main/assets/api/api-versions-*.json` at instrumented-test time (already bundled — see the audits dir).
-- Reflectively probes every hidden-API call-site at runtime against the active SDK.
-- Emits a diff report so NG catches removals/renames before users do.
+- `scripts/generate-hidden-api-baseline.ps1` parses `hiddenapi/src/main/java` and
+  regenerates `app/src/androidTest/assets/api/api-versions-appmanagerng-hiddenapi.json`.
+- `HiddenApiDescriptorBaselineTest` verifies the checked-in baseline still covers every
+  hiddenapi source file after a stub refresh.
+- `HiddenApiCompatibilityInstrumentedTest` loads that baseline at instrumented-test time,
+  applies HiddenApiBypass exemptions, reflectively probes active-SDK hidden
+  classes/methods/fields, writes `hidden-api-compat-sdk<api>.json`, and fails on
+  required missing APIs while reporting deprecated removals as warnings.
 
-**This is the highest-leverage future engineering investment in the project** because it
-amortises the ~80-hour-per-Android-version cliff across every future Android release.
-The harness has not been built yet; tracked at ROADMAP iter-19.
+Run the generator whenever a hiddenapi stub file is added, removed, or refreshed from
+AOSP. The runtime test is device/SDK-specific by design; keep reports from preview and
+new-stable Android images with the associated audit notes.
 
 ---
 
