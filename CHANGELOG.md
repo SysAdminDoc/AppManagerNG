@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — operation history access and recovery guidance (2026-05-17)
+
+- Added Settings -> Privacy -> History as a direct entry point into the existing
+  operation-history screen.
+- Reversible history rows now expose "Recovery guidance" from the row actions
+  menu, using the saved rollback guidance already recorded in operation metadata.
+- Confirmed the freeze/audit-log roadmap row is covered by the existing
+  Room-backed history UI, filters, export/share, rerun preflight, and
+  batch/profile/installer journals; automatic inverse replay remains tracked by
+  the separate Per-App Rollback row.
+
 ### Added — Shizuku clear-data revoke warnings (2026-05-17)
 
 - App Info clear-data confirmations now warn when clearing AppManagerNG,

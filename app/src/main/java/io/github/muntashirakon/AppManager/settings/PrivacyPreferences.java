@@ -18,6 +18,7 @@ import com.google.android.material.transition.MaterialSharedAxis;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 
@@ -91,6 +92,11 @@ public class PrivacyPreferences extends PreferenceFragment {
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
+            return true;
+        });
+        // Operation history
+        requirePreference("op_history").setOnPreferenceClickListener(preference -> {
+            startActivity(OpHistoryManager.getHistoryActivityIntent(requireContext()));
             return true;
         });
         // Toggle Internet
