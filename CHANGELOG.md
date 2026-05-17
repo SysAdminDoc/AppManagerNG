@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Apktool migration audit (2026-05-17)
+
+- Re-audited the Gradle graph and source tree and confirmed AppManagerNG has no
+  Apktool 2.x dependency, `org.apktool` dependency, or `brut.apktool` call site
+  to migrate.
+- Parked the Apktool 3.0.2 roadmap row behind a future T12 Apktool-backed
+  decode/rebuild backend instead of adding an unused app dependency.
+- Recorded the Maven Central risk: `org.apktool:apktool-lib:3.0.2` brings a
+  second smali fork plus runtime dependencies that must be classpath-tested
+  against NG's current Google smali/baksmali dependency before adoption.
+
 ### Changed — JobScheduler quota stop-reason audit (2026-05-17)
 
 - Re-audited the source and Gradle configuration and confirmed AppManagerNG still
