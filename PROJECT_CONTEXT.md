@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 19**. The 2026-05-17 walk-away sequence now has
-> nineteen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 20**. The 2026-05-17 walk-away sequence now has
+> twenty local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -18,7 +18,8 @@
 > search follow-through, Finder backup-only app results, permission-state filters,
 > Finder relevance scoring, the signature-gated automation broadcast API, the
 > stale APK share-target receiver audit closure, per-app launcher action
-> shortcuts, and the `floss` / `full` distribution flavor split. Run `git status --short --branch`
+> shortcuts, the `floss` / `full` distribution flavor split, and the
+> LocalServer bootstrap smoke test in Settings -> Privileges. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -81,6 +82,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-17/`](.ai/research/2026-05-17-pass-17/) | pass 17 | Stale APK share-target roadmap row closed by manifest/installer audit. |
 | [`.ai/research/2026-05-17-pass-18/`](.ai/research/2026-05-17-pass-18/) | pass 18 | Dynamic and pinned per-app launcher shortcuts for freeze, force-stop, and clear-cache actions. |
 | [`.ai/research/2026-05-17-pass-19/`](.ai/research/2026-05-17-pass-19/) | pass 19 | `floss` / `full` build flavors, optional-network feature gating, Obtainium full-build targeting, and release/test artifact path updates. |
+| [`.ai/research/2026-05-17-pass-20/`](.ai/research/2026-05-17-pass-20/) | pass 20 | LocalServer bootstrap smoke test in Settings -> Privileges plus shared success/failure bootstrap signature formatter. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -247,7 +249,16 @@ artifact globs handle flavored reports, and Obtainium targets `full` assets.
 F-Droid metadata should build `flossRelease`; see
 [`docs/distribution/build-flavors.md`](docs/distribution/build-flavors.md).
 
-Unit-test files from passes 4-19 cover the new helpers, but local Gradle execution is
+Pass 20 closed the T4 LocalServer Bootstrap Smoke Test row. `LocalServer` now has
+a shared `buildBootstrapSignature(...)` formatter used by the existing failure log
+and by the success-path smoke test. Settings -> Privileges adds a "LocalServer
+bootstrap smoke test" row that runs the privileged-shell handshake plus `id -u`,
+then shows the device/build/mode/UID/LineageOS/probe/exception signature in a
+copyable dialog. This intentionally lands in the existing Privileges diagnostics
+screen rather than a new Developer page because pass 10 made that screen the
+project's mode and remote-service health-check home.
+
+Unit-test files from passes 4-20 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---

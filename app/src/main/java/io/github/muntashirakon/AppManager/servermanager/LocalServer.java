@@ -4,11 +4,14 @@ package io.github.muntashirakon.AppManager.servermanager;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
+import android.os.Process;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.IOException;
@@ -18,10 +21,13 @@ import java.net.SocketTimeoutException;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
+import io.github.muntashirakon.AppManager.misc.SystemProperties;
 import io.github.muntashirakon.AppManager.server.common.Caller;
 import io.github.muntashirakon.AppManager.server.common.CallerResult;
 import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.server.common.ShellCaller;
+import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.adb.AdbPairingRequiredException;
 
@@ -131,35 +137,107 @@ public class LocalServer {
      */
     private static void logBootstrapFailureSignature(@NonNull Exception e) {
         try {
-            String lineage = io.github.muntashirakon.AppManager.misc.SystemProperties
-                    .get("ro.lineage.version", "");
-            StringBuilder sig = new StringBuilder("LocalServer bootstrap failed: ")
-                    .append(android.os.Build.MANUFACTURER).append('/')
-                    .append(android.os.Build.PRODUCT).append('/')
-                    .append(android.os.Build.DEVICE)
-                    .append(" (sdk=").append(android.os.Build.VERSION.SDK_INT)
-                    .append(", id=").append(android.os.Build.ID).append(')');
-            if (!lineage.isEmpty()) {
-                sig.append(" [LineageOS ").append(lineage).append(']');
+            Log.e("IPC", buildBootstrapSignature("failed", e, -1, null));
+        } catch (Throwable ignored) {
+            // Diagnostic logging must never mask the original failure.
+        }
+    }
+
+    @NonNull
+    public static String buildBootstrapSignature(@NonNull String outcome,
+                                                 @Nullable Throwable throwable,
+                                                 long elapsedMillis,
+                                                 @Nullable Shell.Result probeResult) {
+        try {
+            Integer probeStatusCode = null;
+            String probeMessage = null;
+            if (probeResult != null) {
+                probeStatusCode = probeResult.getStatusCode();
+                probeMessage = probeResult.getMessage();
             }
-            sig.append(" — ").append(e.getClass().getSimpleName());
-            String msg = e.getMessage();
+            return buildBootstrapSignature(outcome, throwable, elapsedMillis, probeStatusCode, probeMessage,
+                    Build.MANUFACTURER, Build.PRODUCT, Build.DEVICE, Build.VERSION.SDK_INT, Build.ID,
+                    SystemProperties.get("ro.lineage.version", ""), Ops.getMode(), Users.getSelfOrRemoteUid(),
+                    Process.myUid());
+        } catch (Throwable diagnosticFailure) {
+            Throwable reported = throwable != null ? throwable : diagnosticFailure;
+            return buildBootstrapSignature(outcome, reported, elapsedMillis, null, null,
+                    "unknown", "unknown", "unknown", -1, "unknown", null, "unknown", -1, -1);
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String buildBootstrapSignature(@NonNull String outcome,
+                                          @Nullable Throwable throwable,
+                                          long elapsedMillis,
+                                          @Nullable Integer probeStatusCode,
+                                          @Nullable String probeMessage,
+                                          @NonNull String manufacturer,
+                                          @NonNull String product,
+                                          @NonNull String device,
+                                          int sdk,
+                                          @NonNull String buildId,
+                                          @Nullable String lineage,
+                                          @NonNull String mode,
+                                          int remoteUid,
+                                          int appUid) {
+        StringBuilder sig = new StringBuilder("LocalServer bootstrap ")
+                .append(outcome)
+                .append(": ")
+                .append(manufacturer).append('/')
+                .append(product).append('/')
+                .append(device)
+                .append(" (sdk=").append(sdk)
+                .append(", id=").append(buildId)
+                .append(", mode=").append(mode)
+                .append(", uid=").append(remoteUid)
+                .append(", appUid=").append(appUid)
+                .append(')');
+        if (lineage != null && !lineage.isEmpty()) {
+            sig.append(" [LineageOS ").append(lineage).append(']');
+        }
+        if (throwable != null) {
+            sig.append(" — ").append(throwable.getClass().getSimpleName());
+            String msg = singleLine(throwable.getMessage());
             if (msg != null && !msg.isEmpty()) {
                 sig.append(": ").append(msg);
             }
-            Throwable cause = e.getCause();
-            if (cause != null && cause != e) {
+            Throwable cause = throwable.getCause();
+            if (cause != null && cause != throwable) {
                 sig.append(" (caused by ").append(cause.getClass().getSimpleName());
-                String causeMsg = cause.getMessage();
+                String causeMsg = singleLine(cause.getMessage());
                 if (causeMsg != null && !causeMsg.isEmpty()) {
                     sig.append(": ").append(causeMsg);
                 }
                 sig.append(')');
             }
-            Log.e("IPC", sig.toString());
-        } catch (Throwable ignored) {
-            // Diagnostic logging must never mask the original failure.
+        } else {
+            sig.append(" — OK");
         }
+        if (elapsedMillis >= 0) {
+            sig.append(" elapsed=").append(elapsedMillis).append("ms");
+        }
+        if (probeStatusCode != null) {
+            sig.append(" probeExit=").append(probeStatusCode);
+        }
+        String probe = singleLine(probeMessage);
+        if (probe != null && !probe.isEmpty()) {
+            sig.append(" probeOutput=").append(probe);
+        }
+        return sig.toString();
+    }
+
+    @Nullable
+    private static String singleLine(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String compact = value.trim().replaceAll("\\s+", " ");
+        if (compact.length() > 180) {
+            return compact.substring(0, 177) + "...";
+        }
+        return compact;
     }
 
     public Shell.Result runCommand(String command) throws IOException {
