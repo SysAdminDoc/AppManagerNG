@@ -347,6 +347,12 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             PopupMenu popupMenu = new PopupMenu(mActivity, anchor);
             popupMenu.setForceShowIcon(true);
             popupMenu.inflate(R.menu.activity_profiles_popup_actions);
+            boolean quickFreezeSelected = QuickFreezeTileController.isSelectedProfile(profile.profileId);
+            MenuItem quickFreezeItem = popupMenu.getMenu().findItem(R.id.action_quick_freeze_tile);
+            quickFreezeItem.setVisible(quickFreezeSelected || QuickFreezeTileController.isProfileEligible(profile));
+            quickFreezeItem.setTitle(quickFreezeSelected
+                    ? R.string.quick_freeze_tile_clear_profile
+                    : R.string.quick_freeze_tile_set_profile);
             popupMenu.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.action_apply) {
@@ -388,6 +394,18 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     mActivity.shareProfileAsJson(profile);
                 } else if (id == R.id.action_copy) {
                     Utils.copyToClipboard(mActivity, profile.name, profile.profileId);
+                } else if (id == R.id.action_quick_freeze_tile) {
+                    if (QuickFreezeTileController.isSelectedProfile(profile.profileId)) {
+                        QuickFreezeTileController.clearSelectedProfile();
+                        QuickFreezeTileService.requestTileStateUpdate(mActivity);
+                        UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_cleared);
+                    } else if (!QuickFreezeTileController.isProfileEligible(profile)) {
+                        UIUtils.displayShortToast(R.string.quick_freeze_tile_requires_freeze);
+                    } else {
+                        QuickFreezeTileController.setSelectedProfile(profile.profileId);
+                        QuickFreezeTileService.requestTileStateUpdate(mActivity);
+                        UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_set, profile.name);
+                    }
                 } else if (id == R.id.action_shortcut) {
                     final String[] shortcutTypesL = new String[]{
                             mActivity.getString(R.string.simple),

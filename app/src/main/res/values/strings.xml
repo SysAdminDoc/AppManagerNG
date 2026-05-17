@@ -852,6 +852,15 @@
     <string name="profile_apply_review_filters_summary">Runs this profile against apps matching its saved filters. Choose the state to apply before continuing.</string>
     <string name="profile_apply_review_meta">%1$s profile - default state %2$s</string>
     <string name="profile_apply_review_id">ID: %1$s</string>
+    <string name="quick_freeze_tile_label">Freeze profile</string>
+    <string name="quick_freeze_tile_set_profile">Use for Quick Settings freeze tile</string>
+    <string name="quick_freeze_tile_clear_profile">Remove from Quick Settings freeze tile</string>
+    <string name="quick_freeze_tile_profile_set">Quick Settings freeze tile will run %1$s.</string>
+    <string name="quick_freeze_tile_profile_cleared">Quick Settings freeze tile profile cleared.</string>
+    <string name="quick_freeze_tile_requires_freeze">Enable Freeze in this profile before using it for the Quick Settings tile.</string>
+    <string name="quick_freeze_tile_no_profile">Choose a freeze profile before using this tile.</string>
+    <string name="quick_freeze_tile_profile_missing">The selected freeze profile is missing. Choose another profile.</string>
+    <string name="quick_freeze_tile_started">Started freeze profile: %1$s</string>
     <string name="profile_apply_load_failed">Could not load this profile. It may have been moved or deleted.</string>
     <string name="profile_apply_invalid_shortcut">This profile shortcut is no longer valid.</string>
     <string name="keystore">KeyStore</string>
