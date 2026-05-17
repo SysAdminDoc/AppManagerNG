@@ -65,7 +65,6 @@ public class FinderViewModel extends AndroidViewModel {
 
     @WorkerThread
     private void loadAppList() {
-        // TODO: 8/2/24 Include backups for uninstalled apps
-        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(Users.getUsersIds());
+        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(Users.getUsersIds(), true);
     }
 }

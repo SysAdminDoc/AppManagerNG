@@ -175,7 +175,17 @@ control. The same pass closed T7's Finder description-field search row by extend
 so Finder can match plain-language debloat prose from the bundled or cached
 definition set.
 
-Unit-test files from passes 4-12 cover the new helpers, but local Gradle execution is
+Pass 13 closed T7's Finder uninstalled-app-backups row. `FinderViewModel` now opts
+into backup-only rows after its PackageManager pass by reading the AppManagerNG
+backup metadata DB, validating each archive's presence, selecting the newest backup
+per package/user pair, and skipping pairs already returned by
+`MATCH_UNINSTALLED_PACKAGES`.
+`BackupFilterableAppInfo` is the synthetic row adapter for archived uninstalled apps;
+it preserves label/version/system/has-code/keystore/rule signals while reporting
+`isInstalled() == false` so Finder's visible user/state line and existing filters
+continue to behave like normal package rows.
+
+Unit-test files from passes 4-13 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -282,5 +292,6 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/),
 [`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/),
 [`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/),
-[`.ai/research/2026-05-17-pass-11/`](.ai/research/2026-05-17-pass-11/), and
-[`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/).
+[`.ai/research/2026-05-17-pass-11/`](.ai/research/2026-05-17-pass-11/),
+[`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/), and
+[`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/).
