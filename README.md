@@ -87,10 +87,11 @@ A new main-menu entry that flips the standard "app -> permissions" view on its h
 
 See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
 
-- **v0.2.0** — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
-- **v0.3.0** — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance)
-- **v0.4.0** — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action)
-- **v0.5.0** — Onboarding flow, settings reorganization, global in-app search, contextual help
+- **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
+- **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
+- **v0.4.0** ✅ — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action) + Onboarding capability wizard
+- **v0.5.0** — Settings reorganization by task, global in-app search, contextual help tooltips, in-app changelog viewer
+- **v0.6.0** — Rootless Power: Shizuku integration polish, wireless ADB auto-pairing, rootless debloat
 
 ## Install
 

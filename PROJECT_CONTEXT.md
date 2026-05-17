@@ -1,0 +1,192 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
+
+# PROJECT_CONTEXT — AppManagerNG canonical project memory
+
+> **Read me first.** This file is the canonical "where do I look?" index for AppManagerNG.
+> It links to the load-bearing artifacts rather than duplicating them, because the
+> primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
+> the source of truth and they update faster than this index does.
+>
+> Last consolidated: **2026-05-17**. Sweep performed against repo at `97a339a` (16 commits
+> ahead of `origin/main`, with six uncommitted in-progress files — see "In-progress work"
+> below).
+
+---
+
+## 1. What this project is, in one paragraph
+
+AppManagerNG is a **continuation/fork of [MuntashirAkon/AppManager](https://github.com/MuntashirAkon/AppManager)**
+— a full-featured root/ADB/Shizuku-aware Android package manager — bootstrapped on
+2026-04-30 from upstream commit
+[`3d11bcb`](https://github.com/MuntashirAkon/AppManager/commit/3d11bcbc399d3a4f995b544e26d86bd80487fd32)
+(post-v4.0.5). The NG fork's product thesis is **"all the power, half the friction"**:
+keep every power-user capability (component blocking, tracker scanning, backup/restore,
+app-ops editing, hidden-API reach), but rebrand under `io.github.sysadmindoc.AppManagerNG`,
+ship a Material 3 + onboarding-led UX, and treat **Shizuku as a first-class privilege
+path** alongside root and ADB.
+
+Current release: **v0.4.2** (2026-05-13). Code 6.
+
+License: **GPL-3.0-or-later**, REUSE-compliant per-file SPDX headers; vendored deps keep
+their own licenses (Apache-2.0, BSD-2/3, CC-BY-SA-4.0, GPL-2.0, ISC, MIT, WTFPL).
+
+---
+
+## 2. Where things live — entry points for a new AI session
+
+Read these in order. Do **not** rewrite them as a drive-by; they are mature.
+
+| Document | Lines | What it gives you |
+|----------|------:|-------------------|
+| [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
+| [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
+| [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
+| [`ROADMAP.md`](ROADMAP.md) | **1135** | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and Iter-18 → Iter-23 research deltas inline. Cites **315 numbered external sources** in a Source Appendix at the bottom. |
+| [`CHANGELOG.md`](CHANGELOG.md) | 880 | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-16 shipped work. |
+| [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
+| [`docs/audits/`](docs/audits/) | 14 files | Per-audit verdicts for elegantTextHeight (clean), adaptive layout (clean), Android-17 MessageQueue (clean), Android-17 keystore key cap (clean), Android-18 implicit URI grant (remediated), GCM cipher reuse (confirmed→fixed metadata-v6), zip-slip (clean), libsu 6.0.0 migration (clean), Gson 2.14, BouncyCastle 1.84, predictive-back WebView (clean), Play contacts/location policy (n/a), Android-17 System.load read-only (clean), Android-17 static-final reflection (1 fix). |
+| [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
+| [`design/`](design/) | 7 files | Premium-facelift design system (`spec/1-design-system.md`, `impl/values/*-v2.xml`, `impl/layout/*_v2.xml`, `plan/3-rollout.md`, `audit/0-recon.md`, `audit/4-painpoints.md`). Driven by [`codexprompt.md`](codexprompt.md) at repo root. |
+| [`docs/distribution/`](docs/distribution/) | 5 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier. |
+| [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) | — | Running ledger of every dep that has dropped (or imminently drops) API 21-22 support. Read this **before** bumping `min_sdk` in [`versions.gradle`](versions.gradle). |
+| [`docs/security-advisories/`](docs/security-advisories/) | 1 file | CVE-2026-0073 ADB-mode advisory. |
+| [`docs/intent-api.md`](docs/intent-api.md) | — | `app-manager://` + `am://` deep-link contract. |
+| [`docs/sideload-verification.md`](docs/sideload-verification.md) | — | Position document for Google's 2026-09-30 Brazil/Indonesia/Singapore/Thailand developer-verification enforcement. |
+| [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/) | this run | Today's research-run audit; STATE_OF_REPO, MEMORY_CONSOLIDATION, SOURCE_REGISTER, FEATURE_BACKLOG, etc. |
+
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S315).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+
+---
+
+## 3. Stack, build, code stats
+
+- **Language**: Java + Kotlin (Java in core, Kotlin in newer additions). **629 `.java` files** under `app/src/main/java/io/github/muntashirakon/AppManager/`. Kotlin file count is lower.
+- **UI**: Android Views + Material Components **1.13.0**. Compose is **out of scope** — see `codexprompt.md` ("DO NOT propose Jetpack Compose. Compose migration is a multi-year project").
+- **Build**: Gradle 8.x, AGP `8.13.2`, Java 8 source/target with desugaring, NDK + CMake for native.
+- **min/target SDK**: **21 / 36**.
+- **Modules** (top-level): `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/`, `libs/`, `scripts/`, `docs/`, `fastlane/`, `LICENSES/`.
+- **app package tree** (excerpt — what each folder does is mostly inferrable from the name): `accessibility`, `adb`, `apk`, `app`, `backup`, `batchops`, `changelog`, `compat`, `crypto`, `db`, `debloat`, `details`, `dex`, `editor`, `filters`, `fm` (file manager), `history`, `intercept`, `ipc`, `logcat`, `logs`, `magisk`, `main`, `misc`, `miui`, `onboarding`, `oneclickops`, `permission`, `permissions`, `profiles`, `progress`, `rules`, `runner`, `runningapps`, `scanner`, `self`, `servermanager`, `session`, `settings`, `sharedpref`, `shizuku`, `shortcut`, `ssaid`, `sysconfig`, `terminal`, `types`, `uri`, `usage`, `users`, `utils`, `viewer`.
+- **CI workflows** ([`.github/workflows/`](.github/workflows/)): `codeql.yml`, `dependency-scan.yml`, `lint.yml`, `release.yml`, `tests.yml`, `upstream-rename-watch.yml`.
+
+### Key dependency pins (from [`versions.gradle`](versions.gradle))
+| Dep | Pinned | Notes |
+|-----|--------|-------|
+| `compile_sdk` | 36 | Android 16 |
+| `agp_version` | `8.13.2` | AGP 9.x cliff acknowledged in roadmap |
+| `material_version` | `1.13.0` | **Ceiling** — `1.14.0-rc01` requires minSdk 23 |
+| `bouncycastle_version` | `1.84` | CVE-2026-3505 / 5588 / 5598 closed |
+| `gson_version` | `2.14.0` | Built-in `java.time` adapters, strict duplicate-JSON-key handling |
+| `libsu_version` | `6.0.0` | `Shell.cmd` migration audit clean |
+| `shizuku_version` | `13.1.5` | Shizuku-API floor for compile-time; runtime tested against Shizuku Manager 13.6.0+ |
+| `jadx_version` | `1.4.7` | **7 releases behind** 1.5.5. Upgrade before T12 APK editing work. |
+| `min_sdk` | 21 | Bump gated by [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md). |
+| `activity_version` | `1.11.0` | API 21-22 dropped in 1.12.x |
+| `biometric_version` | `1.4.0-alpha04` | API 21-22 dropped in 1.4.0-alpha05 |
+| `room_version` | `2.7.2` | API 21-22 dropped in 2.8.x |
+| `webkit_version` | `1.14.0` | API 21-22 dropped in 1.15.x |
+
+The minSdk-21 floor is a load-bearing decision; the ledger documents which deps it freezes.
+
+---
+
+## 4. In-progress work as of 2026-05-17 (uncommitted on `main`)
+
+`git status` shows the branch is **16 commits ahead of `origin/main`** with the following local-only changes that have not yet been committed:
+
+| File | Type | Diff highlight |
+|------|------|----------------|
+| [`app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscript.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscript.java) | hardening | Source-URI redactor now strips userinfo (`user:pass@`), query, and fragment — closes the path-bypass via `https://host?token=…`. |
+| [`app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java) | test | Adds coverage for the new redactor edges. |
+| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java) | bug fix | Removes `Pattern.quote(value)` around user-supplied regex — every regex predicate in the Finder filter ladder was being silently neutered into a literal-string match. Adds missing `break` between `TYPE_REGEX` and `TYPE_STR_MULTIPLE` switch cases. |
+| `app/src/test/java/io/github/muntashirakon/AppManager/filters/options/FilterOptionTest.java` (new) | test | Regression coverage for the regex-quote fix + switch fall-through fix. |
+| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) | minor | Small cleanups in the 2026-05-16 AppOps filter row. |
+| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) | minor | Small cleanups in the 2026-05-16 tracker name-predicate row. |
+| [`app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) | bug fix | Captures `Application` context on the main thread before posting to background, so a detached fragment can't `IllegalStateException` out of `requireContext()` on a worker pool. |
+
+**Net behaviour change**: the regex fix in `FilterOption.java` is the load-bearing item — without it, the iter-23 "tracker name regex" work shipped 2026-05-16 doesn't actually do regex matching. The other items are defense-in-depth.
+
+When these commit, CHANGELOG `Unreleased` should gain entries under **Fixed — Finder regex predicates** and **Security — Install transcript URI redactor**.
+
+---
+
+## 5. Hard project facts (don't relearn these)
+
+These are decisions, gotchas, and non-obvious facts already documented elsewhere in the
+repo. Reading them here saves a fresh AI session a re-discovery pass.
+
+### License & redistribution
+- **GPL-3.0-or-later** throughout. New files must carry `// SPDX-License-Identifier: GPL-3.0-or-later` (or `<!-- … -->` for XML/HTML).
+- **`COPYING` and `LICENSES/` directory are load-bearing** — never delete or "tidy". F-Droid / IzzyOnDroid review fails without REUSE compliance.
+- Vendored dep licenses (Apache-2.0, BSD-2/3, CC-BY-SA-4.0, GPL-2.0, ISC, MIT, WTFPL) live under `LICENSES/`. Each must remain.
+
+### Identity vs source namespace
+- **applicationId** = `io.github.sysadmindoc.AppManagerNG` (Android install identity → installs side-by-side with upstream AppManager).
+- **Java/Kotlin package namespace** stays `io.github.muntashirakon.AppManager` — do **not** rename as a drive-by; it'd be a high-risk churn commit for no behavior win.
+- `app_name` resolves to "AppManagerNG"; many internal dialogs still say "App Manager" (copy debt scheduled for v0.3.0+ sweep).
+
+### Debug keystore is intentionally checked in
+- `app/dev_keystore.jks` + plaintext password in `app/build.gradle` is upstream's deliberate shared debug-signing config so devs can install debug builds over each other. **Not a leak.** Do not "fix".
+- Release signing uses a separate keystore — released APK SHA-256 fingerprint is `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`. Published at the stable URL [`docs/fingerprints.txt`](docs/fingerprints.txt) for programmatic verification (AppVerifier, etc.).
+
+### Submodules required at build time
+- `scripts/android-libraries` and `scripts/android-debloat-list` — fetched from upstream-maintained repos via `git submodule update --init --recursive`. Tracker scanner won't ship its database without them.
+- `.gitmodules` currently points at upstream MuntashirAkon repos for these — that is a build-dependency pointer, not a fork relationship.
+- A SysAdminDoc fork of `android-debloat-list` (`+112 entries` from S22 Ultra US scrape, then `+562` UAD-NG delta sync) is referenced from commit `c3fb75b` onward.
+
+### Pull policy vs upstream (`MuntashirAkon/AppManager`)
+- **Security fixes from upstream**: pull immediately regardless of conflict cost.
+- **Bug fixes**: cherry-pick within one upstream release cycle.
+- **Upstream "Upcoming Features"** (Finder, APK editing, Routine Ops, Crash Monitor, Database Viewer, Terminal): pull when upstream ships; NG reimplements only if upstream stalls for >12 months.
+- A weekly CI workflow [`upstream-rename-watch.yml`](.github/workflows/upstream-rename-watch.yml) opens an auto-issue if `MuntashirAkon/AppManager` changes slug.
+
+### "Pro Mode" / Premium facelift
+- The design facelift in [`design/`](design/) ships behind **`PREF_PREMIUM_PREVIEW_BOOL`** (Settings → Appearance → "Preview new design (BETA)", default OFF as of v0.4.x). The v0.5.x phase is in progress — `activity_main_v2.xml` and `item_main_v2.xml` are wired behind the toggle. v0.6.x flips default to ON; v0.7.x removes the toggle and retires classic themes.
+
+### Hardware verification context
+- Primary on-device test target: **Samsung S25 Ultra (SM-S938B)** — One UI 8.x / Android 16.
+- Landscape rotation triggers the `values-w600dp/dimens.xml` adaptive overrides (833dp).
+- Test matrix that bugs are reported against: Pixel 9a (Android 17, 16-KB page size), Poco F3 (Infinity-X 3.9, Android 16 QPR2, Root), LineageOS 23.2 / Android 16, Moto g22 (Unisoc T606 / Android 12, pre-A13 activity-alias bug), Galaxy A57 (One UI 8.5), Redmi Note 13 Pro 5G (crDroid 12.9 + KernelSU). All sourced from upstream issues mined in iter-18 → iter-23.
+
+### Privilege provider matrix (per-user mode)
+- **Root** — historical default. libsu 6.0.0 backed.
+- **Shizuku / Sui** — first-class as of 2026-05-14 (`feat: add Shizuku privilege provider`). Compile-time pinned at `shizuku_version = 13.1.5`; onboarding wizard checks for manager version ≥13.6.0 (Android 16 QPR1 guidance).
+- **ADB** — wireless ADB pairing wizard shipped 2026-05-14.
+- **KernelSU / APatch / Magisk / ZygiskNext** — detected by `runner/RootManagerInfo`, surfaced as suffix on the onboarding sheet's Root status line.
+- **Dhizuku (DPM via Binder proxy)** — Under Consideration as a fourth tier (T5 row).
+- **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
+
+### Backup engine
+- Crypto modes: AES / RSA / ECC / OpenPGP. AES is Android Keystore-backed (hardware-isolated where TEE available) — **not** the original roadmap's PBKDF2 sketch.
+- Metadata v6 (2026-05-16) introduces per-file AES-GCM IV derivation while keeping v5-and-older backups restorable.
+- Integrity verification (`BackupItems.Checksum` + per-file SHA-256) was already shipped — closed as "pre-existing" in 2026-05-16 hygiene pass.
+- Multi-format ingest: APK / APKS / APKM / XAPK with OBB support.
+
+### Don'ts
+- Don't add code via blanket AI generation that bypasses review — NG's `CONTRIBUTING.md` replaces upstream's flat AI ban with a tool-assisted-but-reviewed contract; the rule still constrains how AI work lands.
+- Don't bundle CC-BY-NC-SA datasets (e.g. DuckDuckGo Tracker Radar) — incompatible with GPL-3.0 redistribution. Roadmap UC row documents this.
+- Don't introduce a new third-party dep without checking F-Droid Anti-Features rules (`Tracking` / `NonFreeNet` / `NonFreeAdd` / `NonFreeAssets`) — see ROADMAP source [S244].
+
+---
+
+## 6. The next things on the runway
+
+(See [`ROADMAP.md`](ROADMAP.md) for the full picture — these are just the headline targets.)
+
+- **v0.5.0** — Settings reorganization by task; global in-app search; contextual help tooltips; **in-app changelog viewer** (replaces bundled upstream v4.0.5 changelog).
+- **v0.6.0** — Rootless Power: Shizuku integration polish + wireless ADB auto-pairing polish + rootless debloat. (Most of the engine work shipped 2026-05-14 — v0.6.0 is the user-visible roll-up.)
+- **Now / Eng-Debt** — Hidden-API Compatibility Harness (iter-19 [S137] — the highest-leverage eng-debt item; mitigates the "Android version migration takes 80 hours" cliff). Android 17 16-KB page-size compliance ([S148]). Freeze / Operation Audit Log ([S144]). Shizuku permission auto-revoke warning on data-clear ([S139]).
+- **Distribution next** — IzzyOnDroid listing, F-Droid listing, Accrescent listing. All gated on the rename being public + reproducible builds (both done).
+
+---
+
+## 7. How to keep this file useful
+
+- This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
+- Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S315). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+
+---
+
+**Maintainer note**: this file was reconciled by an autonomous deep-research session on
+2026-05-17 against repo state `97a339a` + uncommitted changes. The full session audit
+artifacts are at [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/).
