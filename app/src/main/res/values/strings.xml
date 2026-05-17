@@ -1615,6 +1615,38 @@
     <string name="mode_of_op_capability_status_inactive">not active</string>
     <string name="mode_of_op_capability_status_enabled">enabled</string>
     <string name="mode_of_op_capability_status_disabled">disabled</string>
+    <string name="privilege_health_title">Privileges</string>
+    <string name="privilege_health_summary">Root, Shizuku, ADB, remote service, and battery health checks.</string>
+    <string name="privilege_health_status_category">Current status</string>
+    <string name="privilege_health_providers_category">Privilege providers</string>
+    <string name="privilege_health_reliability_category">Reliability</string>
+    <string name="privilege_health_mode_title">Active mode</string>
+    <string name="privilege_health_mode_summary">Configured: <xliff:g id="configured" example="Auto">%1$s</xliff:g>. Inferred: <xliff:g id="inferred" example="ADB">%2$s</xliff:g>. Working UID: <xliff:g id="uid" example="2000">%3$d</xliff:g>.</string>
+    <string name="privilege_health_self_test_title">Mode self-test</string>
+    <string name="privilege_health_self_test_pass">The configured mode is consistent with the current working UID.</string>
+    <string name="privilege_health_self_test_fail">Configured mode <xliff:g id="mode" example="Root">%1$s</xliff:g> does not match working UID <xliff:g id="uid" example="10234">%2$d</xliff:g>. Reconnect from Mode of operation.</string>
+    <string name="privilege_health_root_manager_title">Root manager</string>
+    <string name="privilege_health_root_manager_missing">No root manager detected.</string>
+    <string name="privilege_health_root_manager_summary"><xliff:g id="manager" example="Magisk">%1$s</xliff:g> detected via <xliff:g id="source" example="marker directory">%2$s</xliff:g><xliff:g id="extras" example=" + ZygiskNext">%3$s</xliff:g>.</string>
+    <string name="privilege_health_root_source_marker">marker directory</string>
+    <string name="privilege_health_root_source_package">installed package</string>
+    <string name="privilege_health_root_source_none">no signal</string>
+    <string name="privilege_health_root_extra_zygisk_next"> + ZygiskNext</string>
+    <string name="privilege_health_root_extra_sui"> + Sui</string>
+    <string name="privilege_health_shizuku_title">Shizuku</string>
+    <string name="privilege_health_shizuku_summary"><xliff:g id="status" example="authorized">%1$s</xliff:g>. Manager: <xliff:g id="version" example="13.6.0">%2$s</xliff:g>. API: <xliff:g id="api" example="13">%3$d</xliff:g> (requires <xliff:g id="required" example="10">%4$d</xliff:g>). Service UID: <xliff:g id="uid" example="2000">%5$d</xliff:g>.</string>
+    <string name="privilege_health_shizuku_not_running">not running</string>
+    <string name="privilege_health_shizuku_user_service_unavailable">running, UserService unavailable</string>
+    <string name="privilege_health_shizuku_authorized">authorized</string>
+    <string name="privilege_health_shizuku_permission_required">permission required</string>
+    <string name="privilege_health_shizuku_android17_warning">Android 17 compatibility risk is still open; use Wireless ADB if Shizuku actions fail.</string>
+    <string name="privilege_health_shizuku_update_recommended">Update Shizuku to <xliff:g id="version" example="13.6.0">%1$s</xliff:g> or newer for Android 16 QPR1 and trusted-WLAN auto-start support.</string>
+    <string name="privilege_health_adb_title">ADB and wireless debugging</string>
+    <string name="privilege_health_adb_summary">USB debugging: <xliff:g id="usb" example="enabled">%1$s</xliff:g>. Wireless debugging: <xliff:g id="wireless" example="active">%2$s</xliff:g>. Last paired port: <xliff:g id="port" example="37123">%3$s</xliff:g>.</string>
+    <string name="privilege_health_remote_services_title">Remote server and services</string>
+    <string name="privilege_health_remote_services_summary"><xliff:g id="server" example="Remote server is active">%1$s</xliff:g>. <xliff:g id="services" example="Remote services are active">%2$s</xliff:g>. Working UID: <xliff:g id="working_uid" example="2000">%3$d</xliff:g>; app UID: <xliff:g id="app_uid" example="10345">%4$d</xliff:g>.</string>
+    <string name="privilege_health_battery_can_auto_fix">Optimized - tap to whitelist AppManagerNG through the active root/ADB privilege path.</string>
+    <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>
     <string name="tracker_category_crash">Crash</string>

@@ -42,6 +42,13 @@
         app:title="@string/pref_mode_of_operations"
         tools:summary="Auto" />
 
+    <Preference
+        android:fragment="io.github.muntashirakon.AppManager.settings.PrivilegeHealthPreferences"
+        app:icon="@drawable/ic_security_network"
+        app:key="privilege_health"
+        app:summary="@string/privilege_health_summary"
+        app:title="@string/privilege_health_title" />
+
     <SwitchPreferenceCompat
         app:icon="@drawable/ic_information_circle"
         app:key="guided_mode"
