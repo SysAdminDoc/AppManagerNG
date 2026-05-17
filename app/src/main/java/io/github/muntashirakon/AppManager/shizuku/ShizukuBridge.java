@@ -50,6 +50,15 @@ public final class ShizukuBridge {
     }
 
     @AnyThread
+    public static int getVersionOrZero() {
+        try {
+            return isBinderAlive() ? Shizuku.getVersion() : 0;
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
+
+    @AnyThread
     public static boolean hasPermission() {
         try {
             return supportsUserService()

@@ -7,13 +7,13 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 9**. The 2026-05-17 walk-away sequence now has
-> nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 10**. The 2026-05-17 walk-away sequence now has
+> ten local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
 > cross-user package-state/Finder follow-through, and opt-in debloat-definition
-> auto-update follow-through. Run `git status --short --branch`
+> auto-update follow-through, and Privileges health-check follow-through. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -66,6 +66,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/) | pass 7 | Root/ADB battery-optimization auto-fix helper wired into profile routines and long-running backup batch operations. |
 | [`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/) | pass 8 | Cross-user package-state buckets in the main list and Finder multi-user scope. |
 | [`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/) | pass 9 | Opt-in debloat-definition auto-update cache, manifest/checksum verifier, and app-private fallback path. |
+| [`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/) | pass 10 | Settings → Privileges health-check screen for mode, root/Shizuku/ADB, remote services, and battery optimization. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -150,6 +151,12 @@ pinned AppManagerNG raw-GitHub manifest, verifies `debloat.json` and
 writes them atomically to app-private storage, and `StaticDataset` falls back to
 bundled assets when no valid cache exists.
 
+Pass 10 closed T5's Privilege Health-Check Screen row: Settings now has a
+`PrivilegeHealthPreferences` page titled **Privileges** with current-mode diagnostics,
+root manager detection, Shizuku API/min-version status, USB/Wireless ADB status,
+remote server/service status, a mode self-test row, and the same
+`SelfBatteryOptimization` one-tap battery whitelist path used by Troubleshooting.
+
 Unit-test files from passes 4-9 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
@@ -208,6 +215,10 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **Battery optimization auto-fix** — `self/SelfBatteryOptimization.java` is the canonical
   helper for AppManagerNG's own Doze exemption state. Use it instead of adding new
   direct `PowerManager` / `DeviceIdleManagerCompat` checks for NG's package.
+- **Privilege health diagnostics** — `settings/PrivilegeHealthPreferences.java` is now the
+  persistent Settings surface for mode/provider diagnostics. Add future Android 16
+  capability-dropping and VPN plugin flag checks there rather than rebuilding a new
+  diagnostics page.
 - **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
 
 ### Backup engine
@@ -249,6 +260,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/),
 [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/),
 [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/),
-[`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/), and
-[`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/), and
-[`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/).
+[`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/),
+[`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/),
+[`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/), and
+[`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/).
