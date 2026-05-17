@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.filters;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,15 +48,29 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
             itemInfo = mAdapterList.get(position);
         }
         FilterableAppInfo appInfo = itemInfo.info;
+        Context context = holder.itemView.getContext();
         ImageLoader.getInstance().displayImage(appInfo.getPackageName(), appInfo.getApplicationInfo(), holder.icon);
         holder.label.setText(appInfo.getAppLabel());
         holder.pkg.setText(appInfo.getPackageName());
         // TODO: 8/2/24 Add highlighted extras
-        holder.item1.setVisibility(View.GONE);
+        holder.item1.setVisibility(View.VISIBLE);
+        holder.item1.setText(context.getString(R.string.finder_user_state,
+                appInfo.getUserId(), getPackageStateLabel(context, appInfo)));
         holder.item2.setVisibility(View.GONE);
         holder.item3.setVisibility(View.GONE);
         holder.toggleBtn.setVisibility(View.GONE);
         holder.itemView.setStrokeColor(Color.TRANSPARENT);
+    }
+
+    @NonNull
+    private static String getPackageStateLabel(@NonNull Context context, @NonNull FilterableAppInfo appInfo) {
+        if (!appInfo.isInstalled()) {
+            return context.getString(R.string.package_state_not_installed);
+        }
+        if (appInfo.isFrozen()) {
+            return context.getString(R.string.package_state_disabled);
+        }
+        return context.getString(R.string.package_state_enabled);
     }
 
     @Override

@@ -7,12 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 7**. The 2026-05-17 walk-away sequence now has
-> seven local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 8**. The 2026-05-17 walk-away sequence now has
+> eight local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
-> confirmation, and privileged battery-optimization auto-fix for routines/backups.
-> Run `git status --short --branch`
+> confirmation, privileged battery-optimization auto-fix for routines/backups,
+> and cross-user package-state/Finder follow-through. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -45,7 +45,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-29 research deltas inline. Cites **329 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-31 research deltas inline. Cites **329 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -63,6 +63,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/) | pass 5 | T5 USB-debugging preflight for Wireless ADB / Shizuku setup and next-run handoff. |
 | [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/) | pass 6 | Installer session SHA-256 confirmation and Dhizuku minSdk integration constraint. |
 | [`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/) | pass 7 | Root/ADB battery-optimization auto-fix helper wired into profile routines and long-running backup batch operations. |
+| [`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/) | pass 8 | Cross-user package-state buckets in the main list and Finder multi-user scope. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -133,6 +134,11 @@ Pass 7 closed T5's root/ADB battery-optimization auto-fix row: new
 execution, `BatchOpsService` calls it for long-running backup/import/restore
 operations, and `TroubleshootingPreferences` reuses the same helper for the
 manual UI path.
+
+Pass 8 closed cross-user package state and Finder multi-user scope: `ApplicationItem`
+now keeps per-user enabled/disabled/uninstalled buckets, the main list and
+multi-user picker show explicit user-state labels, and Finder loads all selected
+users through `Users.getUsersIds()` while labeling each result with user/state.
 
 Unit-test files from pass 4 were added for both helpers, but local Gradle execution is
 blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
@@ -230,6 +236,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/),
 [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/),
 [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/),
-[`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/), and
-[`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/), and
-[`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/).
+[`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/),
+[`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/),
+[`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/), and
+[`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/).
