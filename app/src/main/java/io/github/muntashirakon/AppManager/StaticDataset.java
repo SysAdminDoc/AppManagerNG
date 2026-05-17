@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
+import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.debloat.SuggestionObject;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
@@ -118,6 +119,10 @@ public class StaticDataset {
         return sDebloatObjects;
     }
 
+    public static void clearDebloatObjectsCache() {
+        sDebloatObjects = null;
+    }
+
     @WorkerThread
     public static List<DebloatObject> getDebloatObjectsWithInstalledInfo(@NonNull Context context) {
         AppDb appDb = new AppDb();
@@ -134,7 +139,7 @@ public class StaticDataset {
     @WorkerThread
     private static List<DebloatObject> loadDebloatObjects(@NonNull Context context, @NonNull Gson gson) {
         HashMap<String, List<SuggestionObject>> idSuggestionObjectsMap = loadSuggestions(context, gson);
-        String jsonContent = FileUtils.getContentFromAssets(context, "debloat.json");
+        String jsonContent = getDefinitionJson(context, "debloat.json");
         try {
             List<DebloatObject> debloatObjects = Arrays.asList(gson.fromJson(jsonContent, DebloatObject[].class));
             int id = 0;
@@ -153,7 +158,7 @@ public class StaticDataset {
     @NonNull
     @WorkerThread
     private static HashMap<String, List<SuggestionObject>> loadSuggestions(@NonNull Context context, @NonNull Gson gson) {
-        String jsonContent = FileUtils.getContentFromAssets(context, "suggestions.json");
+        String jsonContent = getDefinitionJson(context, "suggestions.json");
         HashMap<String, List<SuggestionObject>> idSuggestionObjectsMap = new HashMap<>();
         try {
             SuggestionObject[] suggestionObjects = gson.fromJson(jsonContent, SuggestionObject[].class);
@@ -171,5 +176,15 @@ public class StaticDataset {
             th.printStackTrace();
         }
         return idSuggestionObjectsMap;
+    }
+
+    @NonNull
+    @WorkerThread
+    private static String getDefinitionJson(@NonNull Context context, @NonNull String fileName) {
+        String cachedDefinition = DebloatDefinitionsUpdater.readCachedDefinition(context, fileName);
+        if (cachedDefinition != null) {
+            return cachedDefinition;
+        }
+        return FileUtils.getContentFromAssets(context, fileName);
     }
 }

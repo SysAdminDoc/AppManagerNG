@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.settings;
 import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -96,9 +97,13 @@ public class PrivacyPreferences extends PreferenceFragment {
         SwitchPreferenceCompat toggleInternet = requirePreference("toggle_internet");
         toggleInternet.setEnabled(SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET));
         toggleInternet.setChecked(FeatureController.isInternetEnabled());
+        SwitchPreferenceCompat autoUpdateDebloatDefinitions = requirePreference("debloat_definitions_auto_update");
+        autoUpdateDebloatDefinitions.setChecked(Prefs.Privacy.autoUpdateDebloatDefinitions());
+        updateDebloatDefinitionsPreference(autoUpdateDebloatDefinitions, FeatureController.isInternetEnabled());
         toggleInternet.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean isEnabled = (boolean) newValue;
             FeatureController.getInstance().modifyState(FeatureController.FEAT_INTERNET, isEnabled);
+            updateDebloatDefinitionsPreference(autoUpdateDebloatDefinitions, FeatureController.isInternetEnabled());
             return true;
         });
         // Authorization Management
@@ -143,6 +148,20 @@ public class PrivacyPreferences extends PreferenceFragment {
                 return getString(R.string.op_history_retention_365d);
             default:
                 return getString(R.string.op_history_retention_never);
+        }
+    }
+
+    private void updateDebloatDefinitionsPreference(@NonNull SwitchPreferenceCompat preference, boolean internetEnabled) {
+        preference.setEnabled(internetEnabled);
+        if (!internetEnabled) {
+            preference.setSummary(R.string.pref_auto_update_debloat_definitions_msg_no_internet);
+            return;
+        }
+        String version = Prefs.Privacy.getDebloatDefinitionsVersion();
+        if (TextUtils.isEmpty(version)) {
+            preference.setSummary(R.string.pref_auto_update_debloat_definitions_msg);
+        } else {
+            preference.setSummary(getString(R.string.pref_auto_update_debloat_definitions_msg_current, version));
         }
     }
 
