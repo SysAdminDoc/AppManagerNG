@@ -1570,6 +1570,8 @@
     <string name="onboarding_mode_shizuku_status_missing">Not running — start Shizuku first</string>
     <string name="onboarding_mode_shizuku_autostart_tip">Tip: In Shizuku v13.6.0+, enable trusted-WLAN auto-start so rootless mode can come back after reboot without a PC.</string>
     <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku v13.6.0+ is recommended for Android 16 QPR1 support and trusted-WLAN auto-start on Android 13+.</string>
+    <string name="shizuku_autostart_configure">Configure auto-start in Shizuku</string>
+    <string name="shizuku_autostart_open_failed">Could not open Shizuku auto-start settings.</string>
     <string name="onboarding_mode_shizuku_android17_warning">Shizuku has reported compatibility issues on Android 17. If privileged actions fail or the app list is blank, use Wireless ADB pairing until Shizuku ships a fixed release. Tap here to start Wireless ADB setup.</string>
     <string name="onboarding_mode_adb_wifi_title">Wireless ADB (Android 11+)</string>
     <string name="onboarding_mode_adb_wifi_summary">Connect via Wireless debugging. Most features unlocked, no PC needed after pairing.</string>
@@ -1610,6 +1612,7 @@
     <string name="mode_of_op_capabilities_title">Available on this device</string>
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_shizuku">• Shizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
+    <string name="mode_of_op_shizuku_autostart_hint">Shizuku v13.6.0+ can restart rootless mode after reboot when the device joins a trusted WLAN. Configure the trusted network in Shizuku.</string>
     <string name="mode_of_op_capability_adb_wifi">• Wireless debugging: <xliff:g id="status" example="active">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_adb_usb">• USB debugging: <xliff:g id="status" example="enabled">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_status_detected">detected</string>
