@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Achno Samsung debloat cross-check audit (2026-05-17)
+
+- Added [`docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md`](docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md).
+- Compared 82 package-like tokens from `Achno/debloat-samsung-ADB-shizuku`
+  against the combined local debloat lists; 76 were already covered.
+- Rejected the six exact misses as apparent typos, non-package activity names,
+  or uncorroborated single-source IDs, so no debloat dataset mutation shipped.
+
 ### Changed — Doze allowlist revert diagnostics (2026-05-17)
 
 - Doze allowlist revert checks now wait 60 seconds and include a one-line
