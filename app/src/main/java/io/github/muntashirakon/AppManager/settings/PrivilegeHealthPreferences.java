@@ -288,6 +288,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
 
     private void showBootstrapSmokeTestResult(@NonNull String signature) {
         if (!isAdded()) return;
+        LocalServer.rememberBootstrapSignature(signature);
         mBootstrapSmokeTestPref.setEnabled(true);
         mBootstrapSmokeTestPref.setSummary(signature);
         Context context = getContext();
