@@ -3,6 +3,7 @@
 [CmdletBinding()]
 param(
     [string] $GradleCmd = ".\gradlew.bat",
+    [string] $PythonCmd = "python",
     [string] $OutDir = "build\reproducible-release"
 )
 
@@ -82,6 +83,19 @@ function Invoke-ReproducibleBuild {
     Set-Content -Path (Join-Path $OutDir "$Label.sha256") -Value $hashLines -Encoding ascii
 }
 
+function Invoke-NativePageAlignmentCheck {
+    param([string] $ApkPath)
+
+    $python = Get-Command $PythonCmd -ErrorAction SilentlyContinue
+    if ($null -eq $python) {
+        throw "Python command '$PythonCmd' was not found; cannot verify native 16 KB page alignment."
+    }
+    & $python.Source "scripts\verify-native-page-alignment.py" $ApkPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "Native 16 KB page-alignment verification failed for $ApkPath"
+    }
+}
+
 Invoke-ReproducibleBuild -Label "first" -DestinationDir $firstDir
 Invoke-ReproducibleBuild -Label "second" -DestinationDir $secondDir
 
@@ -106,6 +120,7 @@ foreach ($name in $firstNames) {
 
     $publishApk = Join-Path $publishDir (Get-PublishApkName -Name $name)
     Copy-Item -LiteralPath $firstApk -Destination $publishApk -Force
+    Invoke-NativePageAlignmentCheck -ApkPath $publishApk
     $shaLine = "$firstHash  $(Split-Path -Leaf $publishApk)"
     $publishSha = "$publishApk.sha256"
     Set-Content -Path $publishSha -Value $shaLine -Encoding ascii
