@@ -158,6 +158,10 @@
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
 
+    <permission
+        android:name="${applicationId}.permission.AUTOMATION"
+        android:protectionLevel="signature" />
+
     <application
         android:name=".AppManager"
         android:allowBackup="true"
@@ -1417,6 +1421,26 @@
             android:name=".servermanager.ServerStatusChangeReceiver"
             android:exported="true"
             android:permission="android.permission.UPDATE_APP_OPS_STATS" />
+        <receiver
+            android:name=".automation.AutomationReceiver"
+            android:exported="true"
+            android:permission="${applicationId}.permission.AUTOMATION">
+            <intent-filter>
+                <action android:name="${applicationId}.action.FREEZE" />
+                <action android:name="${applicationId}.action.UNFREEZE" />
+                <action android:name="${applicationId}.action.FORCE_STOP" />
+                <action android:name="${applicationId}.action.CLEAR_CACHE" />
+                <action android:name="${applicationId}.action.CLEAR_DATA" />
+                <action android:name="${applicationId}.action.UNINSTALL" />
+                <action android:name="${applicationId}.action.BACKUP" />
+                <action android:name="${applicationId}.action.RESTORE" />
+                <action android:name="${applicationId}.action.DISABLE_COMPONENT" />
+                <action android:name="${applicationId}.action.ENABLE_COMPONENT" />
+                <action android:name="${applicationId}.action.RUN_PROFILE" />
+                <action android:name="${applicationId}.action.INSTALL_FROM_URI" />
+                <action android:name="${applicationId}.action.SCAN_TRACKERS" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name=".usage.ScreenTimeAppWidget"
             android:exported="true"
