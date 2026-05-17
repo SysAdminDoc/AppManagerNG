@@ -1661,6 +1661,9 @@
     <string name="privilege_health_bootstrap_smoke_test_title">LocalServer bootstrap smoke test</string>
     <string name="privilege_health_bootstrap_smoke_test_summary">Run the privileged-shell handshake and copyable diagnostic signature for the current mode.</string>
     <string name="privilege_health_bootstrap_smoke_test_running">Running LocalServer bootstrap smoke test...</string>
+    <string name="privilege_health_mode_doctor_title">Mode doctor</string>
+    <string name="privilege_health_mode_doctor_summary">Run active root, Shizuku, ADB, LocalServer, SELinux, and ABI probes.</string>
+    <string name="privilege_health_mode_doctor_running">Running mode doctor...</string>
     <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>
