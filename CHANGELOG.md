@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — OS-revert detection banner (2026-05-17)
+
+- Added `OsRevertMonitor`, a generic 30-second post-write re-poll layer for
+  state mutations that Android or OEM policy may silently undo.
+- Doze allowlist changes, freeze/unfreeze, component enabled-state writes, and
+  AppOps mode writes now schedule expected-vs-current verification through their
+  central compat/helper paths.
+- Active AppManagerNG screens now show an "OS reverted your change - see why"
+  Snackbar when a re-poll finds a mismatch; the action opens target, operation,
+  expected state, current state, and context-hint details.
+- Added unit coverage for the monitor's state-match predicates.
+
 ### Changed — Shizuku root-backed avoidance (2026-05-17)
 
 - Auto mode now skips root-backed Shizuku when local ADB is available, avoiding a
