@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 37**. The 2026-05-17 walk-away sequence now has
-> thirty-seven local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 38**. The 2026-05-17 walk-away sequence now has
+> thirty-eight local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -38,8 +38,9 @@
 > Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes,
 > root-backed Shizuku avoidance / ADB-mode escape hatches for the banking-app
 > compatibility class, generic OS-revert detection for Doze, freeze,
-> component-state, and AppOps writes, and Doze-specific allowlist revert
-> diagnostics with `device_idle_constants` / `DeviceConfig device_idle` diffs.
+> component-state, and AppOps writes, Doze-specific allowlist revert
+> diagnostics with `device_idle_constants` / `DeviceConfig device_idle` diffs,
+> and an audit-clean Achno Samsung debloat-list cross-check.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -73,7 +74,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-60 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-61 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -121,6 +122,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-35/`](.ai/research/2026-05-17-pass-35/) | pass 35 | Shizuku root-backed avoidance: Auto mode skips root-backed Shizuku when ADB is available, and Settings / onboarding / Privileges / Mode Doctor surface the banking-app side-effect warning. |
 | [`.ai/research/2026-05-17-pass-36/`](.ai/research/2026-05-17-pass-36/) | pass 36 | OS-revert detection: 30-second post-write checks for Doze, freeze, component state, and AppOps mutations with a BaseActivity Snackbar/details surface. |
 | [`.ai/research/2026-05-17-pass-37/`](.ai/research/2026-05-17-pass-37/) | pass 37 | Backup-aware Doze allowlist diagnostics: 60-second Doze re-polls with `device_idle_constants` / `DeviceConfig device_idle` one-line diffs and OEM-policy hints. |
+| [`.ai/research/2026-05-17-pass-38/`](.ai/research/2026-05-17-pass-38/) | pass 38 | Achno Samsung debloat cross-check: audit-clean comparison against local debloat datasets; no data mutation because exact misses were typos/activity names/unverified single-source IDs. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S338).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -433,6 +435,11 @@ legacy `device_idle_constants` plus `DeviceConfig device_idle`, and adds a
 one-line config diff plus user-app / Samsung-Knox / system-app / unknown-policy
 hint to the Doze revert detail dialog.
 
+Pass 38 closed the T7 Achno Samsung Debloat List Cross-Check row as
+audit-clean. The audit extracted 82 package-like tokens from the Achno README,
+found 76 already covered by local debloat datasets, and documented why the six
+exact misses are not safe to add without stronger evidence.
+
 Unit-test files from passes 4-37 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
@@ -462,6 +469,11 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - `.gitmodules` currently points at upstream MuntashirAkon repos for these — that is a build-dependency pointer, not a fork relationship.
 - A SysAdminDoc fork of `android-debloat-list` (`+112 entries` from S22 Ultra US scrape, then `+562` UAD-NG delta sync) is referenced from commit `c3fb75b` onward.
 - Runtime debloat-definition updates are now decoupled from APK releases through [`docs/debloat-definitions/manifest.json`](docs/debloat-definitions/manifest.json). Future list-refresh-only work should regenerate `app/src/main/assets/debloat.json` / `suggestions.json`, update the manifest byte counts + SHA-256s, and let app clients fetch the verified snapshot when the user has opted in.
+- The Achno Samsung prose list was cross-checked in
+  [`docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md`](docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md);
+  do not add the six exact misses from that list without a second independent
+  package dump because they currently look like typos, activity names, or
+  uncorroborated single-source IDs.
 
 ### Pull policy vs upstream (`MuntashirAkon/AppManager`)
 - **Security fixes from upstream**: pull immediately regardless of conflict cost.
