@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
@@ -336,6 +337,8 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.hasKeyStoreItems = KeyStoreUtils.hasKeyStore(applicationInfo.uid);
             tagCloud.hasMasterKeyInKeyStore = KeyStoreUtils.hasMasterKey(applicationInfo.uid);
             tagCloud.usesPlayAppSigning = PackageUtils.usesPlayAppSigning(applicationInfo);
+            tagCloud.developerVerificationStatus = DeveloperVerificationCompat
+                    .getVerificationStatus(getApplication(), packageName);
             populateSigningCertInfo(tagCloud, packageInfo, isExternalApk);
             if (ThreadUtils.isInterrupted()) {
                 return;
@@ -570,6 +573,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;
         public boolean usesPlayAppSigning;
+        @DeveloperVerificationCompat.VerificationStatus
+        public int developerVerificationStatus = DeveloperVerificationCompat.STATUS_UNAVAILABLE;
         public List<Backup> backups;
         public boolean isBatteryOptimized;
         public int netPolicies;

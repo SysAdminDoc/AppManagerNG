@@ -63,6 +63,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkUtils;
+import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
@@ -578,6 +579,8 @@ public final class PackageInstallerCompat {
                     mFinalStatus = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, STATUS_FAILURE_INVALID);
                     String blockingPackage = intent.getStringExtra(PackageInstaller.EXTRA_OTHER_PACKAGE_NAME);
                     mStatusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                    mStatusMessage = DeveloperVerificationCompat.appendFailureReason(context, mStatusMessage,
+                            DeveloperVerificationCompat.getFailureReason(intent));
                     // Run install completed
                     mInstallCompleted = true;
                     ThreadUtils.postOnBackgroundThread(() ->
@@ -850,6 +853,8 @@ public final class PackageInstallerCompat {
             if (resultIntent != null) {
                 mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
                 mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                mStatusMessage = DeveloperVerificationCompat.appendFailureReason(mContext, mStatusMessage,
+                        DeveloperVerificationCompat.getFailureReason(resultIntent));
             } else {
                 markPackageInstallerWaitFailed("Commit", STATUS_MESSAGE_INSTALLER_TIMEOUT);
             }
