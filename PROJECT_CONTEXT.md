@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 16**. The 2026-05-17 walk-away sequence now has
-> sixteen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 17**. The 2026-05-17 walk-away sequence now has
+> seventeen local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -16,7 +16,8 @@
 > auto-update follow-through, Privileges health-check follow-through,
 > capability-dropping diagnostics follow-through, and Finder debloat-description
 > search follow-through, Finder backup-only app results, permission-state filters,
-> Finder relevance scoring, and the signature-gated automation broadcast API. Run `git status --short --branch`
+> Finder relevance scoring, the signature-gated automation broadcast API, and the
+> stale APK share-target receiver audit closure. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -76,6 +77,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/) | pass 14 | Permission-state filter predicates backed by `FilterablePermissionInfo`. |
 | [`.ai/research/2026-05-17-pass-15/`](.ai/research/2026-05-17-pass-15/) | pass 15 | Finder relevance scoring for literal package/component/tracker search filters. |
 | [`.ai/research/2026-05-17-pass-16/`](.ai/research/2026-05-17-pass-16/) | pass 16 | Signature-gated automation broadcast API for existing batch/profile/installer/tracker operations. |
+| [`.ai/research/2026-05-17-pass-17/`](.ai/research/2026-05-17-pass-17/) | pass 17 | Stale APK share-target roadmap row closed by manifest/installer audit. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -112,7 +114,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-16 state as of 2026-05-17
+## 4. Current pass-17 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -213,6 +215,14 @@ the stable `io.github.sysadmindoc.AppManagerNG.action.*` action/extra constants,
 reuses existing execution paths: `BatchOpsService` for package operations,
 `ProfileApplierService` for profiles, `PackageInstallerActivity` for install URI
 handoff, and `AppDetailsActivity.getIntentForTrackers()` for tracker review.
+
+Pass 17 closed the T11 APK Share-Target Receiver row as stale. The manifest already
+exports `PackageInstallerActivity` for shared APK/APKM/XAPK payloads via
+`ACTION_SEND`, `ACTION_SEND_MULTIPLE`, `ACTION_VIEW`, and `ACTION_INSTALL_PACKAGE`;
+`ApkQueueItem.fromIntent()` already maps those incoming URIs into installer queue
+items while preserving URI permission grants; and `PackageInstallerActivity` already
+surfaces tracker counts, dependency warnings, session SHA-256 confirmation, and
+signature-mismatch handling in the install flow.
 
 Unit-test files from passes 4-16 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.

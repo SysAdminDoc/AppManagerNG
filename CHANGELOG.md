@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — APK share-target roadmap audit (2026-05-17)
+
+- Closed the stale `APK Share-Target Receiver` roadmap row after verifying the
+  installer already accepts shared APK/APKM/XAPK payloads via `ACTION_SEND`,
+  `ACTION_SEND_MULTIPLE`, `ACTION_VIEW`, and `ACTION_INSTALL_PACKAGE`.
+- The existing installer queue and confirmation flow already preserve shared URI
+  access, parse the payload, and surface tracker, dependency, checksum, and
+  signature-mismatch context in the install path.
+
 ### Added — signature-gated automation broadcast API (2026-05-17)
 
 - Added `AutomationReceiver` behind the new signature permission
