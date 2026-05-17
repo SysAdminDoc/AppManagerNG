@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -133,6 +134,7 @@ public class BatchOpsService extends ForegroundService {
             sendResults(Activity.RESULT_CANCELED, item, null);
             return;
         }
+        autoFixBatteryOptimizationForLongRunningOps(item);
         sendStarted(item);
         // Update progress
         if (mProgressHandler != null) {
@@ -190,6 +192,17 @@ public class BatchOpsService extends ForegroundService {
             return null;
         }
         return IntentCompat.getUnwrappedParcelableExtra(intent, EXTRA_QUEUE_ITEM, BatchQueueItem.class);
+    }
+
+    private void autoFixBatteryOptimizationForLongRunningOps(@NonNull BatchQueueItem item) {
+        switch (item.getOp()) {
+            case BatchOpsManager.OP_BACKUP:
+            case BatchOpsManager.OP_BACKUP_APK:
+            case BatchOpsManager.OP_RESTORE_BACKUP:
+            case BatchOpsManager.OP_IMPORT_BACKUPS:
+                SelfBatteryOptimization.autoFixIfPossible(this);
+                break;
+        }
     }
 
     private void sendStarted(@NonNull BatchQueueItem queueItem) {

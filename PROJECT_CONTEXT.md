@@ -7,11 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 6**. The 2026-05-17 walk-away sequence now has
-> six local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 7**. The 2026-05-17 walk-away sequence now has
+> seven local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
-> preflight follow-through for Wireless ADB / Shizuku setup, plus installer checksum
-> confirmation. Run `git status --short --branch`
+> preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
+> confirmation, and privileged battery-optimization auto-fix for routines/backups.
+> Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -61,6 +62,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/) | pass 4 | Shizuku Android-17 runtime warning, release watcher, ML-DSA display-name map, and updated source register. |
 | [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/) | pass 5 | T5 USB-debugging preflight for Wireless ADB / Shizuku setup and next-run handoff. |
 | [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/) | pass 6 | Installer session SHA-256 confirmation and Dhizuku minSdk integration constraint. |
+| [`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/) | pass 7 | Root/ADB battery-optimization auto-fix helper wired into profile routines and long-running backup batch operations. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -125,6 +127,13 @@ checking primary sources: Dhizuku-API `2.5.4` is current, but its upstream modul
 declares `MIN_SDK = 26`; NG is still API 21, so a reflection/optional-provider
 design or minSdk decision is needed before integration.
 
+Pass 7 closed T5's root/ADB battery-optimization auto-fix row: new
+`SelfBatteryOptimization` centralizes NG's own Doze-exemption state and privileged
+`DEVICE_POWER` auto-fix, `ProfileApplierService` calls it for routine/profile
+execution, `BatchOpsService` calls it for long-running backup/import/restore
+operations, and `TroubleshootingPreferences` reuses the same helper for the
+manual UI path.
+
 Unit-test files from pass 4 were added for both helpers, but local Gradle execution is
 blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
@@ -179,6 +188,9 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **Dhizuku (DPM via Binder proxy)** — open T5 row. Do not add `io.github.iamr0s:Dhizuku-API`
   directly until the API-21 floor conflict is resolved; upstream Dhizuku-API `2.5.4`
   currently declares `MIN_SDK = 26`.
+- **Battery optimization auto-fix** — `self/SelfBatteryOptimization.java` is the canonical
+  helper for AppManagerNG's own Doze exemption state. Use it instead of adding new
+  direct `PowerManager` / `DeviceIdleManagerCompat` checks for NG's package.
 - **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
 
 ### Backup engine
@@ -209,7 +221,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S327). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S329). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 
@@ -219,4 +231,5 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/),
 [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/),
 [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/), and
-[`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/).
+[`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/), and
+[`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/).
