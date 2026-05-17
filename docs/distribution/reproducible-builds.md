@@ -35,4 +35,7 @@ Determinism controls currently in place:
   file ordering.
 - The server-side `am.jar` and `main.jar` D8 input lists are sorted before jar
   creation, so filesystem enumeration order cannot change APK bytes.
+- Every publish APK is passed through `scripts/verify-native-page-alignment.py`,
+  which fails the release if any native `.so` has an ELF `PT_LOAD.p_align` below
+  16 KB or if an uncompressed `.so` ZIP data offset is not 16 KB-aligned.
 - Release assets include a `.sha256` sidecar generated from the verified APK.

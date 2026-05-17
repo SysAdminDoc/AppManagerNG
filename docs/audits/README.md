@@ -123,4 +123,4 @@ The verdict line at the top of each audit is the artifact's most-quoted output. 
 
 Upstream `MuntashirAkon/AppManager` documented that **"a migration to a new version of Android roughly takes 80 hours alone as it is necessary to revise entire hidden API library"** ([ROADMAP S137]). The audit doctrine is the project's defence against that cliff: every behaviour-change page that affects NG ends with a dated, recorded verdict — so when the next Android version ships, the contributor's first move is `ls docs/audits/ | grep android17` rather than redoing 80 hours of sweep work.
 
-As of 2026-05-17 the directory holds 14 audits. The pattern scales: a new contributor can add an audit for an Android-18 behaviour change without reading the rest of the codebase, by cloning the structure of an existing audit doc.
+As of 2026-05-17 the directory holds 21 audits. The pattern scales: a new contributor can add an audit for an Android-18 behaviour change without reading the rest of the codebase, by cloning the structure of an existing audit doc.

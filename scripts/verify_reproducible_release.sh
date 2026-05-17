@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
+PYTHON_CMD="${PYTHON_CMD:-python3}"
 OUT_DIR="${REPRO_OUT_DIR:-build/reproducible-release}"
 APK_ROOT="app/build/outputs/apk"
 FIRST_DIR="$OUT_DIR/first"
@@ -95,6 +96,7 @@ while IFS= read -r name; do
 
     publish_apk="$PUBLISH_DIR/$(publish_name_for "$name")"
     cp "$first_apk" "$publish_apk"
+    "$PYTHON_CMD" scripts/verify-native-page-alignment.py "$publish_apk"
     printf '%s  %s\n' "$first_hash" "$(basename "$publish_apk")" | tee "$publish_apk.sha256" >> "$OUT_DIR/sha256.txt"
     printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
     echo "Reproducible release APK verified: $name $first_hash"
