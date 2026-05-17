@@ -150,6 +150,8 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.settings.SettingsActivity;
+import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutInfo;
 import io.github.muntashirakon.AppManager.sharedpref.SharedPrefsActivity;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
@@ -1782,16 +1784,22 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 actionItems.add(clearDataAction);
                 clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                         .setTitle(mAppLabel)
-                        .setMessage(R.string.clear_data_message)
+                        .setMessage(getClearDataConfirmationMessage())
                         .setPositiveButton(R.string.clear, (dialog, which) -> {
                             if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)) {
                                 ThreadUtils.postOnBackgroundThread(() -> {
+                                    boolean hadShizukuPermission = ShizukuBridge.hasPermission();
                                     boolean success = PackageManagerCompat
                                             .clearApplicationUserData(mPackageName, mUserId);
+                                    boolean shizukuPermissionRevoked = success
+                                            && ShizukuBridge.wasPermissionRevokedAfterClearData(hadShizukuPermission);
                                     ThreadUtils.postOnMainThread(() -> {
                                         if (success) {
                                             UIUtils.displayShortToast(R.string.done);
                                         } else UIUtils.displayShortToast(R.string.failed);
+                                        if (shizukuPermissionRevoked) {
+                                            showShizukuPermissionRevokedDialog();
+                                        }
                                     });
                                 });
                             } else {
@@ -2000,6 +2008,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } catch (PackageManager.NameNotFoundException ignored) {
         }
         return actionItems;
+    }
+
+    @NonNull
+    private String getClearDataConfirmationMessage() {
+        String message = getString(R.string.clear_data_message);
+        @StringRes int warning = ShizukuBridge.getClearDataAuthorizationWarning(requireContext(), mPackageName,
+                mPackageInfo);
+        if (warning == 0) {
+            return message;
+        }
+        return message + "\n\n" + getString(warning);
+    }
+
+    private void showShizukuPermissionRevokedDialog() {
+        if (isDetached()) {
+            return;
+        }
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.shizuku_permission_revoked_after_clear_data_title)
+                .setMessage(R.string.shizuku_permission_revoked_after_clear_data_message)
+                .setPositiveButton(R.string.pref_mode_of_operations, (dialog, which) ->
+                        startActivity(SettingsActivity.getSettingsIntent(mActivity, "mode_of_operations")))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     @UiThread

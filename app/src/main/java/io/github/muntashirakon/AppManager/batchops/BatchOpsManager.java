@@ -68,6 +68,7 @@ import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.compontents.ExternalComponentsImporter;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -564,12 +565,20 @@ public class BatchOpsManager {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         int max = info.size();
+        boolean hadShizukuPermission = ShizukuBridge.hasPermission();
+        boolean reportedShizukuPermissionRevoked = false;
         UserPackagePair pair;
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
             try {
                 PackageManagerCompat.clearApplicationUserData(pair);
+                if (!reportedShizukuPermissionRevoked
+                        && ShizukuBridge.wasPermissionRevokedAfterClearData(hadShizukuPermission)) {
+                    log("====> op=CLEAR_DATA, Shizuku permission was revoked after clearing data for " + pair
+                            + ". Open Settings > Mode of operation to re-authorize AppManagerNG.");
+                    reportedShizukuPermissionRevoked = true;
+                }
             } catch (Exception e) {
                 log("====> op=CLEAR_DATA, pkg=" + pair, e);
                 failedPackages.add(pair);
