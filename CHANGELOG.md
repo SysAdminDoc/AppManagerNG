@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — signature-gated automation broadcast API (2026-05-17)
+
+- Added `AutomationReceiver` behind the new signature permission
+  `io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION`.
+- Added documented broadcast actions for freeze, unfreeze, force-stop,
+  clear-cache, clear-data, uninstall, backup, restore, component enable/disable,
+  profile execution, install-from-URI handoff, and tracker-scan handoff.
+- Broadcast package operations route through the existing `BatchOpsService`;
+  profile execution routes through `ProfileApplierService`; install and tracker
+  actions reuse the existing installer and App Details tracker view.
+
 ### Added — Finder relevance scoring (2026-05-17)
 
 - Finder now sorts filtered package results through `FinderRelevanceScorer` when
@@ -437,8 +448,8 @@ Fix: new [`AppearanceUtils.reconcileLocalePreference()`](app/src/main/java/io/gi
 ### Added — `am://app/<pkg>` short-alias deep link + intent-API documentation (2026-05-09)
 - New `am://app/<pkg>?user=<uid>` URI scheme as a short alias for the canonical `app-manager://details?id=<pkg>&user=<uid>`. Parses through the existing [`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java) — both schemes share the code path so consumers downstream don't change.
 - Intent-filter `<data android:host="app" android:scheme="am"/>` added to the existing `details.AppInfoActivity` activity-alias in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Mirrors `hail://`'s shape.
-- New [`docs/intent-api.md`](docs/intent-api.md) documents the full URI / broadcast-intent surface: shipped App Info alias, reserved-but-not-yet-wired shapes (`am://freeze/<pkg>`, `am://profile/<id>/run`, `am://install?source=<url>`), and the roadmapped `com.sysadmindoc.appmanagerng.action.*` broadcast schema (signature-permission-gated). Tasker / MacroDroid integration notes spelled out.
-- The freeze / profile / install shapes are deliberately not wired yet — they need the broadcast-intent automation surface (iter-22 T8 [S247]) for the authorization model. Reserved here so a future implementation doesn't churn the schema.
+- New [`docs/intent-api.md`](docs/intent-api.md) documents the full URI / broadcast-intent surface: shipped App Info alias, reserved-but-not-yet-wired shapes (`am://freeze/<pkg>`, `am://profile/<id>/run`, `am://install?source=<url>`), and the then-roadmapped signature-permission-gated broadcast schema. The broadcast surface later shipped on 2026-05-17 under `io.github.sysadmindoc.AppManagerNG.action.*`; Tasker / MacroDroid integration still needs the planned plugin broker.
+- The freeze / profile / install URI shapes are deliberately not wired yet — they need user-confirmed dialogs on top of the broadcast-intent automation surface (iter-22 T8 [S247]) before becoming public URL actions. Reserved here so a future implementation doesn't churn the schema.
 - Closes ROADMAP iter-22 T8 row "`am://` URI Scheme — Concrete Schema" (Effort 1/5, [S246]) for the App Info alias slice; remaining shapes carried forward.
 
 ### Added — Static launcher shortcuts for power-user entry points (2026-05-09)

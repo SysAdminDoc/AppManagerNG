@@ -1,11 +1,11 @@
 # AppManagerNG Intent / URI Schema
 
-**Status:** v0.4.x — partial. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; broadcast-intent automation surface (`com.sysadmindoc.appmanagerng.action.*`) is roadmapped under iter-22 T8 [S246] and not yet implemented.
+**Status:** v0.4.x — partial. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17.
 
 This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive AppManagerNG. Two surfaces:
 
 1. **URI deep links** (`app-manager://`, `am://`) — public, dispatched via the launcher. Anyone with the link can fire them; treat them as user-initiated UI navigation.
-2. **Broadcast actions** (`com.sysadmindoc.appmanagerng.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate (or holders of the documented permission) can fire. Roadmapped, not yet wired.
+2. **Broadcast actions** (`io.github.sysadmindoc.AppManagerNG.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate, or an in-app broker such as the planned Tasker plugin, can fire them.
 
 ---
 
@@ -42,7 +42,7 @@ Parsed by [`SelfUriManager.getUserPackagePairFromUri()`](../app/src/main/java/io
 
 ### Roadmapped — additional `am://` actions *(iter-22 T8 [S246], not yet implemented)*
 
-These shapes are reserved by the schema below but **not wired** in v0.4.x. Implementations land alongside the broadcast-intent automation surface (next section), which provides the authorization model these need.
+These shapes are reserved by the schema below but **not wired** in v0.4.x. The broadcast-intent automation surface below is the shipped non-public execution layer; public URI actions still need user-confirmed dialogs before they should execute privileged work.
 
 | URI | Intended behaviour | Authorization gate |
 |-----|--------------------|--------------------|
@@ -54,38 +54,57 @@ Until these land, the canonical way to drive a freeze / profile-run from an exte
 
 ---
 
-## Broadcast intents *(roadmapped — not yet implemented)*
+## Broadcast intents *(shipped 2026-05-17)*
 
-ROADMAP iter-22 T8 row "Broadcast Intent API (`com.sysadmindoc.appmanagerng.action.*`)" [S247]. Intended schema mirrors Hail v1.10.0:
+ROADMAP iter-22 T8 row "Broadcast Intent API" [S247]. The receiver is [`AutomationReceiver`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/AutomationReceiver.java), constants live in [`AutomationIntents`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/AutomationIntents.java), and the manifest gates the receiver with:
+
+```xml
+<permission
+    android:name="io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION"
+    android:protectionLevel="signature" />
+```
+
+The schema mirrors Hail v1.10.0 while routing through AppManagerNG's existing service-backed operations:
 
 | Action | Required extras |
 |--------|-----------------|
-| `com.sysadmindoc.appmanagerng.action.FREEZE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
-| `com.sysadmindoc.appmanagerng.action.UNFREEZE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
-| `com.sysadmindoc.appmanagerng.action.FORCE_STOP` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
-| `com.sysadmindoc.appmanagerng.action.CLEAR_CACHE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
-| `com.sysadmindoc.appmanagerng.action.CLEAR_DATA` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
-| `com.sysadmindoc.appmanagerng.action.UNINSTALL` | `EXTRA_PACKAGE`, optional `EXTRA_USER`, optional `EXTRA_DRY_RUN` (boolean). |
-| `com.sysadmindoc.appmanagerng.action.BACKUP` | `EXTRA_PACKAGE` *or* `EXTRA_PROFILE_ID`. |
-| `com.sysadmindoc.appmanagerng.action.RESTORE` | `EXTRA_PACKAGE`, optional `EXTRA_BACKUP_NAME`. |
-| `com.sysadmindoc.appmanagerng.action.DISABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`. |
-| `com.sysadmindoc.appmanagerng.action.ENABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`. |
-| `com.sysadmindoc.appmanagerng.action.RUN_PROFILE` | `EXTRA_PROFILE_ID`. |
-| `com.sysadmindoc.appmanagerng.action.INSTALL_FROM_URI` | `EXTRA_URI` (HTTP(S) source). |
-| `com.sysadmindoc.appmanagerng.action.SCAN_TRACKERS` | `EXTRA_PACKAGE`. |
+| `io.github.sysadmindoc.AppManagerNG.action.FREEZE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.UNFREEZE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.FORCE_STOP` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.CLEAR_CACHE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.CLEAR_DATA` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.UNINSTALL` | `EXTRA_PACKAGE`, optional `EXTRA_USER`, optional `EXTRA_DRY_RUN` (boolean). |
+| `io.github.sysadmindoc.AppManagerNG.action.BACKUP` | `EXTRA_PACKAGE` *or* `EXTRA_PROFILE_ID`; optional `EXTRA_BACKUP_NAME`, `EXTRA_BACKUP_FLAGS`, `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.RESTORE` | `EXTRA_PACKAGE`, optional `EXTRA_BACKUP_NAME`, `EXTRA_BACKUP_FLAGS`, `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.DISABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`; optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.ENABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`; optional `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.RUN_PROFILE` | `EXTRA_PROFILE_ID`, optional `EXTRA_PROFILE_STATE`. |
+| `io.github.sysadmindoc.AppManagerNG.action.INSTALL_FROM_URI` | `EXTRA_URI` (file/content/HTTP(S) source accepted by the package installer). |
+| `io.github.sysadmindoc.AppManagerNG.action.SCAN_TRACKERS` | `EXTRA_PACKAGE`, optional `EXTRA_USER`; opens App Details with tracker sort. |
 
-Authorization: a `<permission android:name="com.sysadmindoc.appmanagerng.permission.AUTOMATION" android:protectionLevel="signature"/>` declared by the AppManagerNG release manifest. Only NG-signed callers receive the grant by default. A user-granted Tasker permission flow is part of the Tasker Plugin work (iter-22 T8 [S250]).
+Common extras:
+
+| Extra | Type | Notes |
+|-------|------|-------|
+| `EXTRA_PACKAGE` | `String` | Single package name; validated with `PackageUtils.validateName(...)`. |
+| `EXTRA_PACKAGES` | `String[]` or `ArrayList<String>` | Multi-package batch operations. |
+| `EXTRA_USER` | `int` | Single user id; defaults to current user. |
+| `EXTRA_USERS` | `int[]` or `ArrayList<Integer>` | Must match package count, or one id may fan out to all packages. |
+| `EXTRA_COMPONENT` | `String` | Fully-qualified, relative (`.Receiver`), short (`Receiver`), or flattened (`pkg/.Receiver`) component class. Component actions require exactly one package. |
+| `EXTRA_DRY_RUN` | `boolean` | Validates and exits without starting an operation. |
+
+Authorization: the manifest declares `io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION` with `protectionLevel="signature"` and the receiver requires that permission. Generic Tasker/MacroDroid `Send Intent` broadcasts cannot call this receiver directly unless they are signed with NG's key or routed through a future in-app broker. The planned Tasker Plugin work (iter-22 T8 [S250]) should broker these same actions from a user-configured plugin UI.
 
 ---
 
 ## Tasker / MacroDroid integration
 
-Until the broadcast surface lands, the simplest way to drive AppManagerNG from Tasker is:
+Until the Tasker plugin lands, the simplest way to drive AppManagerNG from Tasker is still:
 
 1. Use the in-app **Pinned shortcut** flow (`CreateShortcutDialogFragment` — long-press an app's row in App Info) to produce a launcher shortcut for the desired action (Freeze / Force-Stop / Clear Cache).
 2. Configure Tasker's "Launch Shortcut" action to fire the produced shortcut.
 
-Once the broadcast surface ships, Tasker will also be able to fire the actions directly through `Send Intent → Broadcast Receiver` with the `com.sysadmindoc.appmanagerng.action.*` action and the extras above. The Tasker Plugin work (`com.twofortyfouram` Locale-spec plugin) is the same surface, packaged for Tasker / Automate / MacroDroid auto-discovery.
+The broadcast surface is intentionally not directly callable by arbitrary automation apps. The Tasker Plugin work (`com.twofortyfouram` Locale-spec plugin) is the same operation surface packaged for Tasker / Automate / MacroDroid auto-discovery and user confirmation.
 
 ---
 
