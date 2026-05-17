@@ -8,6 +8,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import io.github.muntashirakon.AppManager.R;
+
 public class ShizukuBridgeTest {
     @Test
     public void android17RiskIsDisabledBelowApi37() {
@@ -49,5 +51,34 @@ public class ShizukuBridgeTest {
         assertTrue(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", false));
         assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", true));
         assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.5.4", false));
+    }
+
+    @Test
+    public void clearDataWarningClassifiesAuthorizationSensitivePackages() {
+        assertEquals(R.string.shizuku_clear_data_self_warning,
+                ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                        "io.github.sysadmindoc.AppManagerNG", false));
+        assertEquals(R.string.shizuku_clear_data_manager_warning,
+                ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                        ShizukuBridge.PACKAGE_NAME, false));
+        assertEquals(R.string.shizuku_clear_data_client_warning,
+                ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                        "com.example.shizuku.client", true));
+        assertEquals(0, ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                "com.example.regular", false));
+    }
+
+    @Test
+    public void shizukuProviderDetectionRequiresProviderClassName() {
+        assertTrue(ShizukuBridge.isShizukuProviderName(ShizukuBridge.PROVIDER_CLASS_NAME));
+        assertFalse(ShizukuBridge.isShizukuProviderName("com.example.Provider"));
+        assertFalse(ShizukuBridge.isShizukuProviderName(null));
+    }
+
+    @Test
+    public void permissionRevokedRequiresPreviousGrantAndMissingGrantAfterClearData() {
+        assertTrue(ShizukuBridge.wasPermissionRevokedAfterClearData(true, false));
+        assertFalse(ShizukuBridge.wasPermissionRevokedAfterClearData(true, true));
+        assertFalse(ShizukuBridge.wasPermissionRevokedAfterClearData(false, false));
     }
 }

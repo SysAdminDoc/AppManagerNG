@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Shizuku clear-data revoke warnings (2026-05-17)
+
+- App Info clear-data confirmations now warn when clearing AppManagerNG,
+  Shizuku Manager, or an installed app that declares the Shizuku provider.
+- Main-list batch clear-data confirmations add the same warning when any
+  selected package may lose or store Shizuku authorization state.
+- Direct privileged clear-data now captures AppManagerNG's Shizuku permission
+  before the operation, re-checks after success, and deep-links to Settings ->
+  Mode of operation if the grant was revoked.
+- Batch/profile clear-data logs the same post-action revocation signal for
+  result review when no foreground re-authorization dialog is available.
+
 ### Added — hidden-API compatibility harness (2026-05-17)
 
 - Added a checked-in androidTest hidden-API baseline at
