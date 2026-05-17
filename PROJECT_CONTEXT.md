@@ -7,12 +7,13 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 8**. The 2026-05-17 walk-away sequence now has
-> eight local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 9**. The 2026-05-17 walk-away sequence now has
+> nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
-> and cross-user package-state/Finder follow-through. Run `git status --short --branch`
+> cross-user package-state/Finder follow-through, and opt-in debloat-definition
+> auto-update follow-through. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -64,6 +65,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/) | pass 6 | Installer session SHA-256 confirmation and Dhizuku minSdk integration constraint. |
 | [`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/) | pass 7 | Root/ADB battery-optimization auto-fix helper wired into profile routines and long-running backup batch operations. |
 | [`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/) | pass 8 | Cross-user package-state buckets in the main list and Finder multi-user scope. |
+| [`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/) | pass 9 | Opt-in debloat-definition auto-update cache, manifest/checksum verifier, and app-private fallback path. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -140,8 +142,16 @@ now keeps per-user enabled/disabled/uninstalled buckets, the main list and
 multi-user picker show explicit user-state labels, and Finder loads all selected
 users through `Users.getUsersIds()` while labeling each result with user/state.
 
-Unit-test files from pass 4 were added for both helpers, but local Gradle execution is
-blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
+Pass 9 closed T5's auto-update debloat-definition row: Settings → Privacy now has a
+default-off "Update debloat definitions on launch" opt-in that only runs when the
+existing Internet feature gate is enabled. `DebloatDefinitionsUpdater` fetches the
+pinned AppManagerNG raw-GitHub manifest, verifies `debloat.json` and
+`suggestions.json` by byte length and SHA-256, schema-smoke-tests both payloads,
+writes them atomically to app-private storage, and `StaticDataset` falls back to
+bundled assets when no valid cache exists.
+
+Unit-test files from passes 4-9 cover the new helpers, but local Gradle execution is
+still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
 
@@ -168,6 +178,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - `scripts/android-libraries` and `scripts/android-debloat-list` — fetched from upstream-maintained repos via `git submodule update --init --recursive`. Tracker scanner won't ship its database without them.
 - `.gitmodules` currently points at upstream MuntashirAkon repos for these — that is a build-dependency pointer, not a fork relationship.
 - A SysAdminDoc fork of `android-debloat-list` (`+112 entries` from S22 Ultra US scrape, then `+562` UAD-NG delta sync) is referenced from commit `c3fb75b` onward.
+- Runtime debloat-definition updates are now decoupled from APK releases through [`docs/debloat-definitions/manifest.json`](docs/debloat-definitions/manifest.json). Future list-refresh-only work should regenerate `app/src/main/assets/debloat.json` / `suggestions.json`, update the manifest byte counts + SHA-256s, and let app clients fetch the verified snapshot when the user has opted in.
 
 ### Pull policy vs upstream (`MuntashirAkon/AppManager`)
 - **Security fixes from upstream**: pull immediately regardless of conflict cost.
@@ -239,4 +250,5 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/),
 [`.ai/research/2026-05-17-pass-6/`](.ai/research/2026-05-17-pass-6/),
 [`.ai/research/2026-05-17-pass-7/`](.ai/research/2026-05-17-pass-7/), and
-[`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/).
+[`.ai/research/2026-05-17-pass-8/`](.ai/research/2026-05-17-pass-8/), and
+[`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/).

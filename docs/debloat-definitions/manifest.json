@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "version": "2026-05-17",
+  "source": "app/src/main/assets generated from scripts/android-debloat-list",
+  "files": {
+    "debloat": {
+      "url": "https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/app/src/main/assets/debloat.json",
+      "sha256": "2006caa15d77d0c5b9c04e4cf5f57631f0e8f56b09edf6105abbc66e8b12194a",
+      "bytes": 1063205
+    },
+    "suggestions": {
+      "url": "https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/app/src/main/assets/suggestions.json",
+      "sha256": "d285a4ce6ea29e3efa47d79e4ef5a929fc1f8d02e54701382b6397cc96f5c96b",
+      "bytes": 7637
+    }
+  }
+}
