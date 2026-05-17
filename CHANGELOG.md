@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android Developer Verification guardrails (2026-05-17)
+
+- Added `DeveloperVerificationCompat` for `developer_verifier` service detection
+  and Android 36.1 `PackageInstaller` developer-verification failure reasons.
+- App Details now shows a verifier-status chip when Android exposes the verifier
+  service; current public APIs report this as unknown until install result time.
+- Installer confirmation warns before commit when the verifier service is active,
+  including split-APK chooser flows that do not use the stock confirmation body.
+- Install result dialogs and copied diagnostic transcripts now append Android's
+  developer-verification failure reason when `PackageInstaller` returns one.
+- Updated `docs/sideload-verification.md` to document the implemented behavior
+  and the public API limit around verified/unverified preflight checks.
+
 ### Compliance — Android 17 16 KB native page-size compatibility (2026-05-17)
 
 - Native `libam.so` builds now pass both `-Wl,-z,max-page-size=16384`

@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 32**. The 2026-05-17 walk-away sequence now has
-> thirty-two local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 33**. The 2026-05-17 walk-away sequence now has
+> thirty-three local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -32,7 +32,9 @@
 > baseline/generator/instrumented probe, Shizuku clear-data revoke warnings
 > with post-action re-auth routing, operation-history recovery UX closure, and
 > Android 17 / 16 KB native page-size remediation with ELF alignment parsing and
-> reproducible-release native alignment gating.
+> reproducible-release native alignment gating, and Android Developer Verification
+> guardrails for App Details, installer warnings, and `PackageInstaller` failure
+> reason diagnostics.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -66,7 +68,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-32 research deltas inline. Cites **337 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-33 research deltas inline. Cites **337 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -109,6 +111,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-30/`](.ai/research/2026-05-17-pass-30/) | pass 30 | Shizuku clear-data warning/re-probe path for direct and batch clear-data operations. |
 | [`.ai/research/2026-05-17-pass-31/`](.ai/research/2026-05-17-pass-31/) | pass 31 | Freeze / operation audit-log row closed by existing op-history UI plus Settings entry and per-row recovery guidance. |
 | [`.ai/research/2026-05-17-pass-32/`](.ai/research/2026-05-17-pass-32/) | pass 32 | Android 17 / 16 KB native page-size remediation: CMake linker flags, ELF `PT_LOAD.p_align` parsing, release APK alignment gate, and audit doc. |
+| [`.ai/research/2026-05-17-pass-33/`](.ai/research/2026-05-17-pass-33/) | pass 33 | Android Developer Verification guardrails: verifier service detection, App Details unknown-status chip, installer warning gate, and `PackageInstaller` failure-reason diagnostics. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S337).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
