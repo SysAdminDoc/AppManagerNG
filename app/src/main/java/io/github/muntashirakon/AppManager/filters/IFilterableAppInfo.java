@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +69,11 @@ public interface IFilterableAppInfo {
 
     @NonNull
     List<String> getAllPermissions();
+
+    @NonNull
+    default List<FilterablePermissionInfo> getAllPermissionDetails() {
+        return Collections.emptyList();
+    }
 
     @NonNull
     FeatureInfo[] getAllRequestedFeatures();

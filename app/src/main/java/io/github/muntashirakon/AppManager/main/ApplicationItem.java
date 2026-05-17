@@ -58,6 +58,7 @@ import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
 import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
+import io.github.muntashirakon.AppManager.filters.FilterablePermissionInfo;
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
 import io.github.muntashirakon.AppManager.filters.options.ComponentsOption;
 import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
@@ -221,6 +222,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     private Map<ComponentInfo, Integer> mAllComponents;
     private Map<ComponentInfo, Integer> mTrackerComponents;
     private List<String> mUsedPermissions;
+    private List<FilterablePermissionInfo> mPermissionDetails;
     private Backup[] mBackups;
     private List<AppOpsManagerCompat.OpEntry> mAppOpEntries;
     @Nullable
@@ -585,6 +587,20 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             mUsedPermissions = new ArrayList<>(usedPermissions);
         }
         return mUsedPermissions;
+    }
+
+    @NonNull
+    @Override
+    public List<FilterablePermissionInfo> getAllPermissionDetails() {
+        fetchPackageInfo();
+        if (mPackageInfo == null) {
+            return Collections.emptyList();
+        }
+        if (mPermissionDetails == null) {
+            boolean canReadPermissionFlags = isInstalled() && SelfPermissions.checkGetGrantRevokeRuntimePermissions();
+            mPermissionDetails = FilterablePermissionInfo.fromPackageInfo(mPackageInfo, getUserId(), canReadPermissionFlags);
+        }
+        return mPermissionDetails;
     }
 
     @NonNull
