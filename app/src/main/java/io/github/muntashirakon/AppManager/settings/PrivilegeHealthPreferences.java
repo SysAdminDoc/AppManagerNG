@@ -52,6 +52,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mAdbPref;
     private Preference mRemoteServicesPref;
     private Preference mBatteryOptimizationPref;
+    private Preference mModeDoctorPref;
     private Preference mBootstrapSmokeTestPref;
 
     @Override
@@ -66,6 +67,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mAdbPref = requirePreference("privilege_health_adb");
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
+        mModeDoctorPref = requirePreference("privilege_health_mode_doctor");
         mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
             bindCapabilityDroppingAsync();
@@ -77,6 +79,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         });
         mBatteryOptimizationPref.setOnPreferenceClickListener(preference -> {
             handleBatteryOptimization();
+            return true;
+        });
+        mModeDoctorPref.setOnPreferenceClickListener(preference -> {
+            runModeDoctor();
             return true;
         });
         requirePreference("privilege_health_refresh").setOnPreferenceClickListener(preference -> {
@@ -284,6 +290,28 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             }
             ThreadUtils.postOnMainThread(() -> showBootstrapSmokeTestResult(signature));
         });
+    }
+
+    private void runModeDoctor() {
+        Context context = getContext();
+        if (context == null) return;
+        mModeDoctorPref.setEnabled(false);
+        mModeDoctorPref.setSummary(R.string.privilege_health_mode_doctor_running);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            String report = PrivilegeModeDoctor.run(context);
+            ThreadUtils.postOnMainThread(() -> showModeDoctorResult(report));
+        });
+    }
+
+    private void showModeDoctorResult(@NonNull String report) {
+        if (!isAdded()) return;
+        mModeDoctorPref.setEnabled(true);
+        mModeDoctorPref.setSummary(R.string.privilege_health_mode_doctor_summary);
+        Context context = getContext();
+        if (context != null) {
+            UIUtils.displayCopyableErrorDialog(context,
+                    getString(R.string.privilege_health_mode_doctor_title), report);
+        }
     }
 
     private void showBootstrapSmokeTestResult(@NonNull String signature) {
