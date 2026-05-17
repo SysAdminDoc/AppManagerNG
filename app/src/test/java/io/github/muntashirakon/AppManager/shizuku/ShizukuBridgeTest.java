@@ -34,4 +34,20 @@ public class ShizukuBridgeTest {
         assertTrue(ShizukuBridge.compareVersion("13.6.1", "13.6.0") > 0);
         assertTrue(ShizukuBridge.compareVersion("13.5.4", "13.6.0") < 0);
     }
+
+    @Test
+    public void trustedWlanAutoStartRequiresAndroid13AndRecommendedManager() {
+        assertFalse(ShizukuBridge.supportsTrustedWlanAutoStart(32, "13.6.0"));
+        assertFalse(ShizukuBridge.supportsTrustedWlanAutoStart(33, null));
+        assertFalse(ShizukuBridge.supportsTrustedWlanAutoStart(33, "13.5.4"));
+        assertTrue(ShizukuBridge.supportsTrustedWlanAutoStart(33, "13.6.0"));
+        assertTrue(ShizukuBridge.supportsTrustedWlanAutoStart(37, "v13.6.1.r1200"));
+    }
+
+    @Test
+    public void trustedWlanAutoStartOfferIsOnlyForStoppedBinder() {
+        assertTrue(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", false));
+        assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.6.0", true));
+        assertFalse(ShizukuBridge.shouldOfferTrustedWlanAutoStart(33, "13.5.4", false));
+    }
 }

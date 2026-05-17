@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Shizuku trusted-WLAN auto-start action (2026-05-17)
+
+- Operating Mode and the replayable onboarding Shizuku card now show a
+  "Configure auto-start in Shizuku" action when Android 13+ has Shizuku Manager
+  13.6.0+ installed but the Shizuku binder is stopped.
+- `ShizukuBridge` centralizes the auto-start support/offer check and builds a
+  best-effort launch intent: roadmap component first, Shizuku launcher fallback,
+  Android app-info fallback.
+- Added unit coverage for the Android-version, Shizuku-version, and stopped-binder
+  gating rules.
+
 ### Added — mode doctor active probes (2026-05-17)
 
 - Settings -> Privileges now includes a "Mode doctor" action distinct from the
