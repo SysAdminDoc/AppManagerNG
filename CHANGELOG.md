@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — privilege health-check screen (2026-05-17)
+
+- New Settings -> Privileges page consolidates the mode diagnostics that were
+  split across onboarding, Mode of operation, and Troubleshooting.
+- The page shows configured/inferred mode, working UID, a mode self-test result,
+  root manager detection (Magisk / KernelSU / APatch with ZygiskNext and Sui
+  markers when visible), Shizuku binding status with API-version/minimum checks,
+  USB/Wireless ADB state, remote server/service state, and AppManagerNG battery
+  optimization state.
+- The battery row reuses `SelfBatteryOptimization`: if a privileged root/ADB
+  path can whitelist AppManagerNG, tapping the row attempts that fix before
+  falling back to the Android system exemption prompt.
+
 ### Added — opt-in debloat definition auto-updates (2026-05-17)
 
 - New
