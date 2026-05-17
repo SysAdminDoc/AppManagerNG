@@ -78,7 +78,11 @@ public class TrackersOption extends FilterOption {
         Map<ComponentInfo, Integer> trackers = info.getTrackerComponents();
         Map<ComponentInfo, Integer> filtered = new LinkedHashMap<>();
         for (Map.Entry<ComponentInfo, Integer> e : trackers.entrySet()) {
-            if (predicate.matches(e.getKey().name)) {
+            String name = e.getKey().name;
+            // ComponentInfo.name is non-null in practice but the field is not annotated, so a
+            // malformed APK that omits it shouldn't NPE the entire filter pass.
+            if (name == null) continue;
+            if (predicate.matches(name)) {
                 filtered.put(e.getKey(), e.getValue());
             }
         }
