@@ -214,19 +214,22 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             statusRes = R.string.privilege_health_shizuku_permission_required;
         }
         String version = versionName != null ? versionName : getString(R.string.state_unknown);
-        String warning = "";
+        StringBuilder warning = new StringBuilder();
+        if (ShizukuBridge.isRootBacked()) {
+            warning.append('\n').append(getString(R.string.privilege_health_shizuku_root_backed_warning));
+        }
         ShizukuBridge.OemCompatibilityWarning oemWarning = ShizukuBridge.getOemCompatibilityWarning(context);
         if (oemWarning != null) {
-            warning = "\n" + getString(oemWarning.summaryTextRes, oemWarning.fallbackVersion);
+            warning.append('\n').append(getString(oemWarning.summaryTextRes, oemWarning.fallbackVersion));
         } else if (ShizukuBridge.hasAndroid17CompatibilityRisk(context)) {
-            warning = "\n" + getString(R.string.privilege_health_shizuku_android17_warning);
+            warning.append('\n').append(getString(R.string.privilege_health_shizuku_android17_warning));
         } else if (versionName != null && !ShizukuBridge.isRecommendedManagerVersion(context)) {
-            warning = "\n" + getString(R.string.privilege_health_shizuku_update_recommended,
-                    ShizukuBridge.MIN_RECOMMENDED_MANAGER_VERSION);
+            warning.append('\n').append(getString(R.string.privilege_health_shizuku_update_recommended,
+                    ShizukuBridge.MIN_RECOMMENDED_MANAGER_VERSION));
         }
         mShizukuPref.setSummary(getString(R.string.privilege_health_shizuku_summary,
                 getString(statusRes), version, ShizukuBridge.getVersionOrZero(),
-                ShizukuBridge.MIN_USER_SERVICE_VERSION, ShizukuBridge.getUidOrSelf()) + warning);
+                ShizukuBridge.MIN_USER_SERVICE_VERSION, ShizukuBridge.getUidOrSelf()) + warning.toString());
     }
 
     private void bindAdb(@NonNull Context context) {

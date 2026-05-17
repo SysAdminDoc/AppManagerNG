@@ -293,11 +293,16 @@ public class ModeOfOpsPreference extends Fragment {
                             : R.string.mode_of_op_capability_status_missing)));
         }
         if (shizukuRow != null) {
-            int statusRes = ShizukuBridge.hasPermission()
-                    ? R.string.mode_of_op_capability_status_authorized
-                    : ShizukuBridge.supportsUserService()
-                    ? R.string.mode_of_op_capability_status_permission_required
-                    : R.string.mode_of_op_capability_status_missing;
+            int statusRes;
+            if (ShizukuBridge.hasPermission()) {
+                statusRes = ShizukuBridge.isRootBacked()
+                        ? R.string.mode_of_op_capability_status_root_backed
+                        : R.string.mode_of_op_capability_status_authorized;
+            } else if (ShizukuBridge.supportsUserService()) {
+                statusRes = R.string.mode_of_op_capability_status_permission_required;
+            } else {
+                statusRes = R.string.mode_of_op_capability_status_missing;
+            }
             shizukuRow.setText(getString(R.string.mode_of_op_capability_shizuku, getString(statusRes)));
         }
         bindShizukuAutoStartControls(shizukuAutoStartHint, shizukuAutoStartAction);
@@ -314,6 +319,21 @@ public class ModeOfOpsPreference extends Fragment {
     }
 
     private void bindShizukuAutoStartControls(@Nullable MaterialTextView hint, @Nullable MaterialButton action) {
+        if (ShizukuBridge.isRootBacked()) {
+            if (hint != null) {
+                hint.setVisibility(View.VISIBLE);
+                hint.setText(R.string.mode_of_op_shizuku_root_backed_hint);
+            }
+            if (action != null) {
+                action.setVisibility(View.VISIBLE);
+                action.setText(R.string.mode_of_op_shizuku_root_backed_action);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    action.setTooltipText(getString(R.string.mode_of_op_shizuku_root_backed_tooltip));
+                }
+                action.setOnClickListener(v -> switchShizukuToAdbMode());
+            }
+            return;
+        }
         ShizukuBridge.OemCompatibilityWarning oemWarning =
                 ShizukuBridge.getOemCompatibilityWarning(requireContext());
         if (oemWarning != null) {
@@ -324,6 +344,9 @@ public class ModeOfOpsPreference extends Fragment {
             if (action != null) {
                 action.setVisibility(View.VISIBLE);
                 action.setText(R.string.shizuku_oem_downgrade_action);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    action.setTooltipText(null);
+                }
                 action.setOnClickListener(v -> openShizukuPinnedArchive());
             }
             return;
@@ -336,8 +359,27 @@ public class ModeOfOpsPreference extends Fragment {
         if (action != null) {
             action.setVisibility(show ? View.VISIBLE : View.GONE);
             action.setText(R.string.shizuku_autostart_configure);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                action.setTooltipText(null);
+            }
             action.setOnClickListener(v -> openShizukuAutoStartSettings());
         }
+    }
+
+    private void switchShizukuToAdbMode() {
+        mCurrentMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                && !Utils.isTv(requireContext())
+                && Utils.isWifiActive(requireContext().getApplicationContext())
+                ? Ops.MODE_ADB_WIFI
+                : Ops.MODE_ADB_OVER_TCP;
+        if (Ops.MODE_ADB_OVER_TCP.equals(mCurrentMode)) {
+            ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
+        }
+        Ops.setMode(mCurrentMode);
+        mModeOfOpsAlertDialog.show();
+        mConnecting = true;
+        updateViews();
+        mModel.setModeOfOps();
     }
 
     private void openShizukuAutoStartSettings() {
