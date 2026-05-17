@@ -2,11 +2,15 @@
 
 package io.github.muntashirakon.AppManager.shizuku;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Process;
+import android.provider.Settings;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
@@ -19,6 +23,7 @@ public final class ShizukuBridge {
     private static final int ANDROID_17_SDK_INT = 37;
 
     public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
+    public static final String AUTO_START_ACTIVITY = PACKAGE_NAME + ".AUTO_START";
     public static final String MIN_RECOMMENDED_MANAGER_VERSION = "13.6.0";
     @Nullable
     public static final String MIN_ANDROID_17_COMPATIBLE_VERSION = null;
@@ -109,6 +114,37 @@ public final class ShizukuBridge {
     }
 
     @AnyThread
+    public static boolean supportsTrustedWlanAutoStart(@NonNull Context context) {
+        return supportsTrustedWlanAutoStart(Build.VERSION.SDK_INT, getInstalledVersionName(context));
+    }
+
+    @AnyThread
+    public static boolean shouldOfferTrustedWlanAutoStart(@NonNull Context context) {
+        return shouldOfferTrustedWlanAutoStart(Build.VERSION.SDK_INT, getInstalledVersionName(context), isBinderAlive());
+    }
+
+    @AnyThread
+    @NonNull
+    public static Intent getTrustedWlanAutoStartIntent(@NonNull Context context) {
+        PackageManager pm = context.getPackageManager();
+        // Roadmap tracks the explicit auto-start component; Shizuku v13.6.0
+        // source does not expose it in every build, so fall back gracefully.
+        Intent autoStartIntent = new Intent()
+                .setComponent(new ComponentName(PACKAGE_NAME, AUTO_START_ACTIVITY))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (autoStartIntent.resolveActivity(pm) != null) {
+            return autoStartIntent;
+        }
+        Intent launchIntent = pm.getLaunchIntentForPackage(PACKAGE_NAME);
+        if (launchIntent != null) {
+            return launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:" + PACKAGE_NAME))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    @AnyThread
     public static boolean hasAndroid17CompatibilityRisk(@NonNull Context context) {
         return hasAndroid17CompatibilityRisk(Build.VERSION.SDK_INT, getInstalledVersionName(context),
                 MIN_ANDROID_17_COMPATIBLE_VERSION);
@@ -124,6 +160,18 @@ public final class ShizukuBridge {
             return true;
         }
         return versionName == null || compareVersion(versionName, compatibleVersionName) < 0;
+    }
+
+    @VisibleForTesting
+    static boolean supportsTrustedWlanAutoStart(int sdkInt, @Nullable String versionName) {
+        return sdkInt >= Build.VERSION_CODES.TIRAMISU
+                && versionName != null
+                && compareVersion(versionName, MIN_RECOMMENDED_MANAGER_VERSION) >= 0;
+    }
+
+    @VisibleForTesting
+    static boolean shouldOfferTrustedWlanAutoStart(int sdkInt, @Nullable String versionName, boolean binderAlive) {
+        return !binderAlive && supportsTrustedWlanAutoStart(sdkInt, versionName);
     }
 
     @VisibleForTesting
