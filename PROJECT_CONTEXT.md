@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 22**. The 2026-05-17 walk-away sequence now has
-> twenty-two local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 23**. The 2026-05-17 walk-away sequence now has
+> twenty-three local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -22,7 +22,8 @@
 > LocalServer bootstrap smoke test in Settings -> Privileges, the
 > scrubbed support-info bundle composer in Settings -> Troubleshooting, and the
 > privileged operation audit-log closure with exit-code and bootstrap-signature
-> export metadata. Run `git status --short --branch`
+> export metadata, and the privileged batch journal/recovery dialog with Shizuku
+> binder-death marking. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -88,6 +89,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-20/`](.ai/research/2026-05-17-pass-20/) | pass 20 | LocalServer bootstrap smoke test in Settings -> Privileges plus shared success/failure bootstrap signature formatter. |
 | [`.ai/research/2026-05-17-pass-21/`](.ai/research/2026-05-17-pass-21/) | pass 21 | Support-info text bundle composer in Settings -> Troubleshooting with scrubbed logcat tail and LocalServer signature capture. |
 | [`.ai/research/2026-05-17-pass-22/`](.ai/research/2026-05-17-pass-22/) | pass 22 | Privileged operation audit-log closure: existing op-history surface audited, exit-code metadata, and LocalServer bootstrap-signature details/export. |
+| [`.ai/research/2026-05-17-pass-23/`](.ai/research/2026-05-17-pass-23/) | pass 23 | Privileged batch journal and reattach recovery dialog, including Shizuku/Sui binder-death journal marking. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -283,7 +285,18 @@ fields so support reports can correlate privileged actions with the most recent
 bootstrap context. Per-command interrupted-shell replay remains the separate
 Privileged-Shell Journal row.
 
-Unit-test files from passes 4-22 cover the new helpers, but local Gradle execution is
+Pass 23 closed the T5 Privileged-Shell Journal + DeathRecipient Replay row.
+`BatchOpsJournal` stores active `BatchQueueItem` intent/executing state in
+app-private preferences before batch execution and clears it only after
+`BatchOpsManager.performOp(...)` completes. `BatchOpsService` registers a
+Shizuku `OnBinderDeadListener` while Shizuku/Sui-backed batches run, marks the
+journal interrupted on binder death or uncaught batch exceptions, and leaves the
+entry behind if the process is killed mid-batch. `MainActivity` checks the
+journal on reattach when no batch service is active and offers retry/not-now/clear
+actions. Normal per-package failures still use the existing failed-app retry
+screen; the journal is for ambiguous interrupted batches.
+
+Unit-test files from passes 4-23 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
