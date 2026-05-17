@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — opt-in debloat definition auto-updates (2026-05-17)
+
+- New
+  [`DebloatDefinitionsUpdater`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatDefinitionsUpdater.java)
+  fetches AppManagerNG's pinned raw-GitHub debloat definition manifest at app
+  launch only when the user enables the new Settings -> Privacy opt-in and the
+  existing "Use the Internet" gate is enabled.
+- Downloaded `debloat.json` and `suggestions.json` snapshots are length-checked,
+  SHA-256 verified against
+  [`docs/debloat-definitions/manifest.json`](docs/debloat-definitions/manifest.json),
+  schema-smoke-tested, then cached in app-private storage. If the network fetch
+  fails or the cache is missing, `StaticDataset` continues using the bundled
+  assets.
+- The updater uses a generic User-Agent and standard HTTPS GET requests only; no
+  package list or device identifier is attached by AppManagerNG. New
+  [`DebloatDefinitionsUpdaterTest`](app/src/test/java/io/github/muntashirakon/AppManager/debloat/DebloatDefinitionsUpdaterTest.java)
+  covers SHA-256 formatting, approved raw-GitHub URL guardrails, and dataset
+  validation.
+
 ### Added — cross-user package state surfacing (2026-05-17)
 
 - Main-list `ApplicationItem` rows now preserve per-user package state buckets
