@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Shizuku root-backed avoidance (2026-05-17)
+
+- Auto mode now skips root-backed Shizuku when local ADB is available, avoiding a
+  KernelSU/root-backed Shizuku service becoming AppManagerNG's default privilege
+  path on devices where banking or Play Integrity-strict apps react to that root
+  surface.
+- Settings -> Mode of Operation now labels Shizuku as root-backed, explains the
+  banking-app side effect in the existing Shizuku hint row, and offers a one-tap
+  switch into Wireless ADB or ADB-over-TCP.
+- Onboarding, Settings -> Privileges, and Mode Doctor now surface the same
+  root-backed Shizuku warning so users do not mistake it for a fully rootless
+  Shizuku session.
+- Added unit coverage for Shizuku uid classification and the Auto-mode avoidance
+  gate.
+
 ### Added — Shizuku 13.6.0 OEM compatibility warning (2026-05-17)
 
 - Added Shizuku 13.6.0 known-bad device detection for Transsion/Infinix/Tecno/Itel

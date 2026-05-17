@@ -73,6 +73,15 @@ detector is
 onboarding, Settings -> Operating Mode, Settings -> Privileges, and Mode Doctor
 surface the "pin Shizuku 13.5.4" guidance without disabling Shizuku outright.
 
+**Root-backed avoidance (iter-58)**: Shizuku sessions started through `su` expose
+uid 0 to AppManagerNG and can still trip banking / Play Integrity-strict app
+heuristics on some devices even when those apps were never granted Shizuku
+permission ([S181]). The canonical detector is
+[`ShizukuBridge.isRootBacked()`](../../app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java).
+`Ops.autoDetectRootSystemOrAdbAndPersist()` now skips root-backed Shizuku when
+local ADB is already available, and the Settings -> Mode of Operation Shizuku
+hint row offers a one-tap switch into ADB mode with an explanatory tooltip.
+
 **Open issue (iter-25)**: Shizuku 13.6.0 has reported regressions on Android 17 Beta 3 —
 [Shizuku #1965](https://github.com/RikkaApps/Shizuku/issues/1965) ("Application
 Management page blank") and [Shizuku #1967](https://github.com/RikkaApps/Shizuku/issues/1967)

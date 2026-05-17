@@ -162,6 +162,13 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
 
     private void bindShizukuWarning(@Nullable TextView warning) {
         if (warning == null) return;
+        if (ShizukuBridge.isRootBacked()) {
+            warning.setText(R.string.onboarding_mode_shizuku_root_backed_warning);
+            applyWarningTextStyle(warning);
+            warning.setOnClickListener(v -> startWirelessAdbSetup());
+            warning.setVisibility(View.VISIBLE);
+            return;
+        }
         ShizukuBridge.OemCompatibilityWarning oemWarning =
                 ShizukuBridge.getOemCompatibilityWarning(requireContext());
         if (oemWarning != null) {
@@ -400,8 +407,13 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             args = new Object[]{versionName};
             available = false;
         } else if (ShizukuBridge.hasPermission()) {
-            statusRes = R.string.onboarding_mode_shizuku_status_ready;
-            available = true;
+            if (ShizukuBridge.isRootBacked()) {
+                statusRes = R.string.onboarding_mode_shizuku_status_root_backed;
+                available = false;
+            } else {
+                statusRes = R.string.onboarding_mode_shizuku_status_ready;
+                available = true;
+            }
         } else if (ShizukuBridge.supportsUserService()) {
             statusRes = R.string.onboarding_mode_shizuku_status_needs_permission;
             available = true;

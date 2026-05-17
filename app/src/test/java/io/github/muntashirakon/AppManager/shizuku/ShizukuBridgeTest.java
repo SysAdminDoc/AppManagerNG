@@ -56,6 +56,21 @@ public class ShizukuBridgeTest {
     }
 
     @Test
+    public void rootBackedDetectionOnlyTreatsUidZeroAsRoot() {
+        assertTrue(ShizukuBridge.isRootBackedUid(0));
+        assertFalse(ShizukuBridge.isRootBackedUid(2000));
+        assertFalse(ShizukuBridge.isRootBackedUid(1000));
+    }
+
+    @Test
+    public void autoModeAvoidsRootBackedShizukuOnlyWhenAdbIsAvailable() {
+        assertTrue(ShizukuBridge.shouldAvoidRootBackedShizukuInAuto(true, 0, true));
+        assertFalse(ShizukuBridge.shouldAvoidRootBackedShizukuInAuto(true, 0, false));
+        assertFalse(ShizukuBridge.shouldAvoidRootBackedShizukuInAuto(true, 2000, true));
+        assertFalse(ShizukuBridge.shouldAvoidRootBackedShizukuInAuto(false, 0, true));
+    }
+
+    @Test
     public void oemCompatibilityWarningRequiresShizuku136Runtime() {
         assertNull(ShizukuBridge.getOemCompatibilityWarning("Infinix", "GT 20 Pro", "x6871",
                 "x6871", 35, "13.5.4", 13, "XOS", "mt6895",

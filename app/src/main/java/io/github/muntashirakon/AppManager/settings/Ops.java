@@ -419,8 +419,14 @@ public class Ops {
             sIsRoot = false;
             // Fall-through, in case we can use other options
         }
+        boolean adbAvailableForAutoMode = isAdbAvailableForAutoMode();
+        boolean shizukuUsable = ShizukuBridge.isUsable();
+        boolean skipRootBackedShizuku = ShizukuBridge.shouldAvoidRootBackedShizukuInAuto(adbAvailableForAutoMode);
+        if (skipRootBackedShizuku) {
+            Log.i(TAG, "Skipping root-backed Shizuku in auto mode because ADB is available.");
+        }
         // Root was not working/granted; Shizuku/Sui is the next best rootless privileged path.
-        if (ShizukuBridge.isUsable()) {
+        if (shizukuUsable && !skipRootBackedShizuku) {
             setMode(MODE_SHIZUKU);
             sDirectRoot = false;
             sIsRoot = sIsSystem = sIsAdb = false;
@@ -472,7 +478,7 @@ public class Ops {
             return;
         }
         // Check for ADB
-        if (!AdbUtils.isAdbdRunning()) {
+        if (!adbAvailableForAutoMode) {
             // ADB not running. In auto mode, we do not attempt to enable it either
             setMode(MODE_NO_ROOT);
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
@@ -493,6 +499,10 @@ public class Ops {
             checkRootOrIncompleteUsbDebuggingInAdb();
         }
         setMode(getWorkingUid() != Process.myUid() ? MODE_ADB_OVER_TCP : MODE_NO_ROOT);
+    }
+
+    private static boolean isAdbAvailableForAutoMode() {
+        return SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET) && AdbUtils.isAdbdRunning();
     }
 
     @UiThread
