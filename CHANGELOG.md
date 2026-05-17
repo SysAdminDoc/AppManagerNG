@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — USB debugging preflight for Wireless ADB / Shizuku setup (2026-05-17)
+
+- [`OnboardingFragment`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java)
+  now checks the Developer Options `adb_enabled` flag before starting Wireless
+  ADB pairing from onboarding. If USB debugging is off, users get an explicit
+  prompt to enable both USB debugging and Wireless debugging before continuing,
+  with a deliberate "Continue" escape hatch for devices that pair anyway.
+- The Wireless ADB setup dialog, Shizuku explainer, Wireless ADB explainer, and
+  ADB pairing instruction now all name the two required Developer Options toggles.
+  This closes the T5 Canta-model follow-up where `adb pair` / `adb connect` could
+  fail silently because the user enabled only Wireless debugging.
+
 ### Compliance — Shizuku Android-17 detection + onboarding fallback (2026-05-17)
 
 - [`ShizukuBridge`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java)

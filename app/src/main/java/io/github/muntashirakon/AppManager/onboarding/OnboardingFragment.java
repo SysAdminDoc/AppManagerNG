@@ -468,11 +468,25 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void startWirelessAdbSetup() {
+        startWirelessAdbSetup(false);
+    }
+
+    private void startWirelessAdbSetup(boolean skipUsbDebuggingPreflight) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_mode_adb_wifi_title)
                     .setMessage(R.string.onboarding_mode_adb_wifi_requires_android_11)
                     .setPositiveButton(R.string.onboarding_mode_adb_tcp_title, (d, w) -> commit(Ops.MODE_ADB_OVER_TCP))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return;
+        }
+        if (!skipUsbDebuggingPreflight && !isUsbDebuggingEnabled()) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.onboarding_adb_wifi_enable_usb_debugging_title)
+                    .setMessage(R.string.onboarding_adb_wifi_enable_usb_debugging_message)
+                    .setPositiveButton(R.string.open, (d, w) -> openDeveloperOptions())
+                    .setNeutralButton(R.string.action_continue, (d, w) -> startWirelessAdbSetup(true))
                     .setNegativeButton(R.string.cancel, null)
                     .show();
             return;
@@ -568,6 +582,14 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                     requireContext().getContentResolver(), "adb_enabled", 0) != 0;
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    private void openDeveloperOptions() {
+        try {
+            startActivity(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Throwable ignore) {
         }
     }
 
