@@ -31,6 +31,8 @@ public final class ShizukuBridge {
     private static final int ANDROID_15_SDK_INT = 35;
     private static final int ANDROID_16_SDK_INT = 36;
     private static final int ANDROID_17_SDK_INT = 37;
+    private static final int ROOT_UID = 0;
+    private static final int SHELL_UID = 2000;
     private static final int SHIZUKU_13_6_API_VERSION = 13;
 
     public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
@@ -127,6 +129,29 @@ public final class ShizukuBridge {
         } catch (Throwable e) {
             return Process.myUid();
         }
+    }
+
+    @AnyThread
+    public static boolean isRootBacked() {
+        try {
+            return isBinderAlive() && isRootBackedUid(Shizuku.getUid());
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    @AnyThread
+    public static boolean isAdbBacked() {
+        try {
+            return isBinderAlive() && Shizuku.getUid() == SHELL_UID;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    @AnyThread
+    public static boolean shouldAvoidRootBackedShizukuInAuto(boolean adbAvailable) {
+        return shouldAvoidRootBackedShizukuInAuto(isUsable(), getUidOrSelf(), adbAvailable);
     }
 
     @AnyThread
@@ -254,6 +279,18 @@ public final class ShizukuBridge {
     @VisibleForTesting
     static boolean shouldOfferTrustedWlanAutoStart(int sdkInt, @Nullable String versionName, boolean binderAlive) {
         return !binderAlive && supportsTrustedWlanAutoStart(sdkInt, versionName);
+    }
+
+    @VisibleForTesting
+    static boolean shouldAvoidRootBackedShizukuInAuto(boolean shizukuUsable,
+                                                      int shizukuUid,
+                                                      boolean adbAvailable) {
+        return shizukuUsable && isRootBackedUid(shizukuUid) && adbAvailable;
+    }
+
+    @VisibleForTesting
+    static boolean isRootBackedUid(int uid) {
+        return uid == ROOT_UID;
     }
 
     @VisibleForTesting

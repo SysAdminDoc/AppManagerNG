@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 34**. The 2026-05-17 walk-away sequence now has
-> thirty-four local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 35**. The 2026-05-17 walk-away sequence now has
+> thirty-five local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -34,8 +34,10 @@
 > Android 17 / 16 KB native page-size remediation with ELF alignment parsing and
 > reproducible-release native alignment gating, Android Developer Verification
 > guardrails for App Details, installer warnings, and `PackageInstaller` failure
-> reason diagnostics, and Shizuku 13.6.0 OEM compatibility warnings for the
-> Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes.
+> reason diagnostics, Shizuku 13.6.0 OEM compatibility warnings for the
+> Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes,
+> and root-backed Shizuku avoidance / ADB-mode escape hatches for the banking-app
+> compatibility class.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -69,7 +71,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-34 research deltas inline. Cites **338 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-58 follow-through context inline. Cites **338 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -114,6 +116,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-32/`](.ai/research/2026-05-17-pass-32/) | pass 32 | Android 17 / 16 KB native page-size remediation: CMake linker flags, ELF `PT_LOAD.p_align` parsing, release APK alignment gate, and audit doc. |
 | [`.ai/research/2026-05-17-pass-33/`](.ai/research/2026-05-17-pass-33/) | pass 33 | Android Developer Verification guardrails: verifier service detection, App Details unknown-status chip, installer warning gate, and `PackageInstaller` failure-reason diagnostics. |
 | [`.ai/research/2026-05-17-pass-34/`](.ai/research/2026-05-17-pass-34/) | pass 34 | Shizuku 13.6.0 OEM compatibility warning: Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 known-bad detection with a Shizuku 13.5.4 archive link. |
+| [`.ai/research/2026-05-17-pass-35/`](.ai/research/2026-05-17-pass-35/) | pass 35 | Shizuku root-backed avoidance: Auto mode skips root-backed Shizuku when ADB is available, and Settings / onboarding / Privileges / Mode Doctor surface the banking-app side-effect warning. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S338).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -150,7 +153,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-34 state as of 2026-05-17
+## 4. Current pass-35 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -405,7 +408,14 @@ button deep links to the Shizuku 13.5.4 IzzyOnDroid/F-Droid archive, while
 Settings -> Privileges and Mode Doctor include the same downgrade guidance in
 their diagnostics.
 
-Unit-test files from passes 4-34 cover the new helpers, but local Gradle execution is
+Pass 35 closed the T5 Shizuku Root-Backed Avoidance for Banking Apps row.
+`ShizukuBridge` now classifies uid-0 Shizuku sessions as root-backed, Auto mode
+skips that provider when local ADB is available, and Settings -> Mode of
+Operation offers a one-tap switch to Wireless ADB or ADB-over-TCP with a tooltip
+explaining the banking / Play Integrity side effect. Onboarding, Settings ->
+Privileges, and Mode Doctor now surface matching root-backed warnings.
+
+Unit-test files from passes 4-35 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -501,7 +511,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S337). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S338). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 
@@ -522,4 +532,4 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/),
 [`.ai/research/2026-05-17-pass-15/`](.ai/research/2026-05-17-pass-15/), and
 pass-specific follow-through directories through
-[`.ai/research/2026-05-17-pass-32/`](.ai/research/2026-05-17-pass-32/).
+[`.ai/research/2026-05-17-pass-35/`](.ai/research/2026-05-17-pass-35/).
