@@ -16,6 +16,11 @@
         app:summary="@string/pref_replay_tour_msg"
         app:iconSpaceReserved="false" />
     <Preference
+        app:key="support_info_bundle"
+        app:title="@string/pref_support_info_bundle"
+        app:summary="@string/pref_support_info_bundle_msg"
+        app:iconSpaceReserved="false" />
+    <Preference
         app:key="battery_optimization"
         app:title="@string/pref_battery_optimization"
         app:summary="@string/pref_battery_optimization_msg"
