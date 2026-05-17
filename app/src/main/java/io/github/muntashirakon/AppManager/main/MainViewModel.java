@@ -64,6 +64,7 @@ import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisher;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
@@ -393,6 +394,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 sortApplicationList(mSortBy, mReverseSort);
                 filterItemsByFlags();
             }
+            AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
         });
     }
 
