@@ -49,6 +49,7 @@ import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsJournal;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
@@ -109,6 +110,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Nullable
     private String mListStatusActionHint;
     MainBatchOpsHandler mBatchOpsHandler;
+    private boolean mBatchOpsRecoveryShown;
 
     /** Async breakdown computation; cancelled when superseded by a new list. */
     @Nullable
@@ -321,6 +323,40 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 UIUtils.displayLongToast(R.string.failed);
             }
         });
+        maybeShowInterruptedBatchOpRecovery();
+    }
+
+    private void maybeShowInterruptedBatchOpRecovery() {
+        if (mBatchOpsRecoveryShown) {
+            return;
+        }
+        BatchOpsJournal.Entry entry = BatchOpsJournal.getInterruptedOperation(this, BatchOpsService.isServiceWorking());
+        if (entry == null) {
+            return;
+        }
+        mBatchOpsRecoveryShown = true;
+        BatchQueueItem queueItem = entry.getQueueItem();
+        String operation = BatchOpsService.getDesiredOpTitle(this, queueItem.getOp());
+        String targets = getResources().getQuantityString(
+                R.plurals.op_history_target_count, entry.getTargetCount(), entry.getTargetCount());
+        String startedAt = DateUtils.formatLongDateTime(this, entry.getCreatedAt());
+        String message = getString(R.string.batch_ops_journal_recovery_message,
+                operation, targets, entry.getModeLabel(), startedAt);
+        String reason = entry.getReason();
+        if (reason != null) {
+            message += "\n\n" + getString(R.string.batch_ops_journal_recovery_reason, reason);
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.batch_ops_journal_recovery_title)
+                .setMessage(message)
+                .setNegativeButton(R.string.not_now, null)
+                .setNeutralButton(R.string.clear, (dialog, which) -> BatchOpsJournal.dismissInterrupted(this))
+                .setPositiveButton(R.string.batch_ops_journal_retry, (dialog, which) -> {
+                    BatchOpsJournal.dismissInterrupted(this);
+                    ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, queueItem));
+                    UIUtils.displayShortToast(R.string.batch_results_retry_started);
+                })
+                .show();
     }
 
     @Override
