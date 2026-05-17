@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — cross-user package state surfacing (2026-05-17)
+
+- Main-list `ApplicationItem` rows now preserve per-user package state buckets
+  (`enabledUserIds`, `disabledUserIds`, `uninstalledUserIds`) instead of only
+  collapsing to a single installed/disabled flag.
+- The main app list shows compact per-user state text such as `u0 enabled,
+  u10 disabled`, and the multi-user selection dialog appends the state next to
+  each user.
+- Finder now loads packages for every selected user via `Users.getUsersIds()`
+  instead of only the current user, and each Finder result shows the user id and
+  enabled/disabled/not-installed state.
+
 ### Changed — privileged battery-optimization auto-fix for routines (2026-05-17)
 
 - New

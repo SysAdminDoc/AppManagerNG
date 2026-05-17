@@ -3,8 +3,6 @@
 package io.github.muntashirakon.AppManager.filters;
 
 import android.app.Application;
-import android.os.UserHandleHidden;
-
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
@@ -15,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class FinderViewModel extends AndroidViewModel {
@@ -66,9 +65,7 @@ public class FinderViewModel extends AndroidViewModel {
 
     @WorkerThread
     private void loadAppList() {
-        // TODO: 8/2/24 Allow multiple users
         // TODO: 8/2/24 Include backups for uninstalled apps
-        int[] userIds = new int[]{UserHandleHidden.myUserId()}; //Users.getUsersIds();
-        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(userIds);
+        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(Users.getUsersIds());
     }
 }

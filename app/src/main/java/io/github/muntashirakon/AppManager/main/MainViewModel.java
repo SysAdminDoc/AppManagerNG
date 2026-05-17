@@ -788,6 +788,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     item.packageName = app.packageName;
                 }
                 item.userIds = ArrayUtils.appendInt(item.userIds, app.userId);
+                if (app.isEnabled) {
+                    item.enabledUserIds = ArrayUtils.appendInt(item.enabledUserIds, app.userId);
+                } else {
+                    item.disabledUserIds = ArrayUtils.appendInt(item.disabledUserIds, app.userId);
+                }
                 item.isInstalled = true;
                 item.isOnlyDataInstalled = false;
                 item.openCount += app.openCount;
@@ -808,6 +813,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
             } else {
                 // App not installed but may be installed in other profiles
+                item.uninstalledUserIds = ArrayUtils.appendInt(item.uninstalledUserIds, app.userId);
                 if (item.packageName != null) {
                     // Item exists, use the previous status
                     continue;
