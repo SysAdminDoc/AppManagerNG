@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
@@ -131,9 +132,20 @@ public abstract class FilterOption implements LocalizedString, Parcelable {
                     this.longValue = Long.parseLong(value);
                     break;
                 case TYPE_REGEX:
-                    this.regexValue = Pattern.compile(Pattern.quote(value));
+                    // The editor validates the raw regex (see EditFilterOptionFragment); compile
+                    // it as a user-supplied pattern, not as a quoted literal. Pattern.quote here
+                    // would defeat the whole regex feature — a user typing ".*facebook.*" would
+                    // get a pattern that only matches the literal seven characters.
+                    try {
+                        this.regexValue = Pattern.compile(value);
+                    } catch (PatternSyntaxException e) {
+                        throw new IllegalArgumentException("Invalid regex for key '" + key
+                                + "' in type '" + type + "': " + e.getMessage(), e);
+                    }
+                    break;
                 case TYPE_STR_MULTIPLE:
                     this.stringValues = value.split("\\n");
+                    break;
             }
         }
     }
