@@ -1387,6 +1387,20 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|specialUse" />
         <service
+            android:name=".profiles.QuickFreezeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_snowflake"
+            android:label="@string/quick_freeze_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+        <service
             android:name=".logcat.LogcatRecordingService"
             android:exported="false"
             android:foregroundServiceType="dataSync|specialUse" />

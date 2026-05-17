@@ -701,6 +701,21 @@ public final class Prefs {
         }
     }
 
+    public static final class Profiles {
+        @Nullable
+        public static String getQuickFreezeProfileId() {
+            String profileId = AppPref.getString(AppPref.PrefKey.PREF_QUICK_FREEZE_PROFILE_ID_STR);
+            if (TextUtils.isEmpty(profileId)) {
+                return null;
+            }
+            return profileId;
+        }
+
+        public static void setQuickFreezeProfileId(@Nullable String profileId) {
+            AppPref.set(AppPref.PrefKey.PREF_QUICK_FREEZE_PROFILE_ID_STR, profileId == null ? "" : profileId);
+        }
+    }
+
     public static final class Signing {
         @NonNull
         public static SigSchemes getSigSchemes() {
