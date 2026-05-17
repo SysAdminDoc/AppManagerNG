@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — mode doctor active probes (2026-05-17)
+
+- Settings -> Privileges now includes a "Mode doctor" action distinct from the
+  passive health summary rows.
+- The doctor runs active probes for configured/inferred mode, root grant/root
+  manager/Sui, Shizuku binder/UserService/permission, ADB USB/wireless/pairing,
+  LocalServer `id -u`, SELinux domain, and ABI state.
+- Results are shown as a copyable PASS/WARN/FAIL/SKIP report with fix guidance
+  for the failing or incomplete provider path.
+
 ### Added — privileged batch journal and recovery (2026-05-17)
 
 - Added `BatchOpsJournal`, a persistent intent/executing journal around
