@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 24**. The 2026-05-17 walk-away sequence now has
-> twenty-four local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 25**. The 2026-05-17 walk-away sequence now has
+> twenty-five local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -22,9 +22,10 @@
 > LocalServer bootstrap smoke test in Settings -> Privileges, the
 > scrubbed support-info bundle composer in Settings -> Troubleshooting, and the
 > privileged operation audit-log closure with exit-code and bootstrap-signature
-> export metadata, and the privileged batch journal/recovery dialog with Shizuku
-> binder-death marking, and the active Mode Doctor probe report in Settings ->
-> Privileges. Run `git status --short --branch`
+> export metadata, the privileged batch journal/recovery dialog with Shizuku
+> binder-death marking, the active Mode Doctor probe report in Settings ->
+> Privileges, and Shizuku trusted-WLAN auto-start actions in Operating Mode /
+> onboarding. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -92,8 +93,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-22/`](.ai/research/2026-05-17-pass-22/) | pass 22 | Privileged operation audit-log closure: existing op-history surface audited, exit-code metadata, and LocalServer bootstrap-signature details/export. |
 | [`.ai/research/2026-05-17-pass-23/`](.ai/research/2026-05-17-pass-23/) | pass 23 | Privileged batch journal and reattach recovery dialog, including Shizuku/Sui binder-death journal marking. |
 | [`.ai/research/2026-05-17-pass-24/`](.ai/research/2026-05-17-pass-24/) | pass 24 | Mode Doctor active probe report in Settings -> Privileges. |
+| [`.ai/research/2026-05-17-pass-25/`](.ai/research/2026-05-17-pass-25/) | pass 25 | Shizuku trusted-WLAN auto-start affordance in Operating Mode and onboarding, with launcher/app-info fallback. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S329).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S331).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -305,6 +307,15 @@ grant/root manager/Sui, Shizuku binder/UserService/permission, ADB
 USB/wireless/pairing state, LocalServer `id -u`, SELinux domain, and ABIs as a
 copyable PASS/WARN/FAIL/SKIP report with fix hints for each provider path.
 
+Pass 25 closed the T5 Shizuku Trusted-WLAN Auto-Start Awareness row.
+`ShizukuBridge` now treats trusted-WLAN auto-start as supported only on Android
+13+ with Shizuku Manager `>=13.6.0`, and offers it only when the Shizuku binder
+is stopped. Settings -> Operating Mode and onboarding both show a "Configure
+auto-start in Shizuku" button in that state. The intent tries the roadmap
+`moe.shizuku.privileged.api/.AUTO_START` component first, then falls back to
+Shizuku's launcher or Android app-info screen because the v13.6.0 manifest does
+not expose that component universally.
+
 Unit-test files from passes 4-24 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
@@ -397,7 +408,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S329). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S331). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 

@@ -254,6 +254,18 @@
                         android:visibility="gone"
                         tools:visibility="visible" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/action_shizuku_autostart"
+                        style="@style/Widget.AppTheme.Button.TextButton.Icon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:minHeight="40dp"
+                        android:text="@string/shizuku_autostart_configure"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_settings"
+                        tools:visibility="visible" />
+
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/warning_shizuku_android17"
                         android:layout_width="match_parent"

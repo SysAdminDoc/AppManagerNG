@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
@@ -282,6 +284,8 @@ public class ModeOfOpsPreference extends Fragment {
         com.google.android.material.textview.MaterialTextView shizukuRow = view.findViewById(R.id.capability_shizuku);
         com.google.android.material.textview.MaterialTextView adbWifiRow = view.findViewById(R.id.capability_adb_wifi);
         com.google.android.material.textview.MaterialTextView adbUsbRow = view.findViewById(R.id.capability_adb_usb);
+        View shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
+        MaterialButton shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
         if (rootRow != null) {
             rootRow.setText(getString(R.string.mode_of_op_capability_root,
                     getString(Ops.hasRoot()
@@ -296,6 +300,7 @@ public class ModeOfOpsPreference extends Fragment {
                     : R.string.mode_of_op_capability_status_missing;
             shizukuRow.setText(getString(R.string.mode_of_op_capability_shizuku, getString(statusRes)));
         }
+        bindShizukuAutoStartControls(shizukuAutoStartHint, shizukuAutoStartAction);
         if (adbWifiRow != null) {
             adbWifiRow.setText(getString(R.string.mode_of_op_capability_adb_wifi,
                     getString(getWirelessDebuggingStatusText())));
@@ -305,6 +310,26 @@ public class ModeOfOpsPreference extends Fragment {
                     getString(isUsbDebuggingEnabled()
                             ? R.string.mode_of_op_capability_status_enabled
                             : R.string.mode_of_op_capability_status_disabled)));
+        }
+    }
+
+    private void bindShizukuAutoStartControls(@Nullable View hint, @Nullable MaterialButton action) {
+        boolean show = ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
+        if (hint != null) {
+            hint.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (action != null) {
+            action.setVisibility(show ? View.VISIBLE : View.GONE);
+            action.setOnClickListener(v -> openShizukuAutoStartSettings());
+        }
+    }
+
+    private void openShizukuAutoStartSettings() {
+        Intent intent = ShizukuBridge.getTrustedWlanAutoStartIntent(requireContext());
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayShortToast(R.string.shizuku_autostart_open_failed);
         }
     }
 

@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.onboarding;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -228,7 +230,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 R.string.onboarding_mode_root_status_missing);
         TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
         TextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
-        bindShizukuStatus(shizukuStatus, shizukuAutoStartHint);
+        View shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
+        bindShizukuStatus(shizukuStatus, shizukuAutoStartHint, shizukuAutoStartAction);
         TextView shizukuAndroid17Warning = view.findViewById(R.id.warning_shizuku_android17);
         bindShizukuAndroid17Warning(shizukuAndroid17Warning);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
@@ -374,7 +377,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         statusView.setBackground(background);
     }
 
-    private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint) {
+    private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint,
+                                   @Nullable View autoStartAction) {
         if (statusView == null) return;
         int statusRes;
         Object[] args = null;
@@ -396,19 +400,40 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             available = false;
         }
         bindCapabilityStatus(statusView, available, statusRes, statusRes, args);
-        bindShizukuAutoStartHint(autoStartHint, recommendedVersion);
+        bindShizukuAutoStartHint(autoStartHint, autoStartAction, recommendedVersion);
     }
 
-    private void bindShizukuAutoStartHint(@Nullable TextView autoStartHint, boolean recommendedVersion) {
-        if (autoStartHint == null) return;
+    private void bindShizukuAutoStartHint(@Nullable TextView autoStartHint, @Nullable View autoStartAction,
+                                          boolean recommendedVersion) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            autoStartHint.setVisibility(View.GONE);
+            if (autoStartHint != null) {
+                autoStartHint.setVisibility(View.GONE);
+            }
+            if (autoStartAction != null) {
+                autoStartAction.setVisibility(View.GONE);
+            }
             return;
         }
-        autoStartHint.setVisibility(View.VISIBLE);
-        autoStartHint.setText(recommendedVersion
-                ? R.string.onboarding_mode_shizuku_autostart_tip
-                : R.string.onboarding_mode_shizuku_update_for_autostart);
+        if (autoStartHint != null) {
+            autoStartHint.setVisibility(View.VISIBLE);
+            autoStartHint.setText(recommendedVersion
+                    ? R.string.onboarding_mode_shizuku_autostart_tip
+                    : R.string.onboarding_mode_shizuku_update_for_autostart);
+        }
+        if (autoStartAction != null) {
+            boolean showAction = ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
+            autoStartAction.setVisibility(showAction ? View.VISIBLE : View.GONE);
+            autoStartAction.setOnClickListener(v -> openShizukuAutoStartSettings());
+        }
+    }
+
+    private void openShizukuAutoStartSettings() {
+        Intent intent = ShizukuBridge.getTrustedWlanAutoStartIntent(requireContext());
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayShortToast(R.string.shizuku_autostart_open_failed);
+        }
     }
 
     private void bindAdbWifiStatus(@Nullable TextView statusView) {
