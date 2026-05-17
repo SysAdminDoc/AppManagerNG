@@ -8,7 +8,6 @@ import android.text.SpannableStringBuilder;
 
 import androidx.annotation.NonNull;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,13 +105,9 @@ public class AppOpsOption extends FilterOption {
 
     private static boolean matchesAny(@NonNull List<AppOpsManagerCompat.OpEntry> ops,
                                       @NonNull NamePredicate predicate) {
-        // ArrayList just to silence the unused-import lint if it ever fires; keeps the static
-        // surface small.
-        List<String> names = new ArrayList<>(ops.size());
         for (AppOpsManagerCompat.OpEntry op : ops) {
-            names.add(op.getName());
-        }
-        for (String name : names) {
+            String name = op.getName();
+            if (name == null) continue;
             if (predicate.matches(name)) {
                 return true;
             }
