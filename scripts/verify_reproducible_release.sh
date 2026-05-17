@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 
 GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
 OUT_DIR="${REPRO_OUT_DIR:-build/reproducible-release}"
-APK_DIR="app/build/outputs/apk/release"
+APK_ROOT="app/build/outputs/apk"
 FIRST_DIR="$OUT_DIR/first"
 SECOND_DIR="$OUT_DIR/second"
 PUBLISH_DIR="$OUT_DIR/publish"
@@ -37,17 +37,23 @@ build_once() {
     "$GRADLE_CMD" --no-daemon --stacktrace clean :app:assembleRelease
     echo "::endgroup::"
 
-    shopt -s nullglob
-    local apks=("$APK_DIR"/*.apk)
-    shopt -u nullglob
+    mapfile -t apks < <(find "$APK_ROOT" -path '*/release/*.apk' -type f | sort)
     if (( ${#apks[@]} == 0 )); then
-        echo "::error::No release APKs were produced in $APK_DIR" >&2
+        echo "::error::No release APKs were produced under $APK_ROOT" >&2
         exit 1
     fi
 
+    declare -A seen=()
     local apk
+    local name
     for apk in "${apks[@]}"; do
-        cp "$apk" "$destination_dir/$(basename "$apk")"
+        name="$(basename "$apk")"
+        if [[ -n "${seen[$name]:-}" ]]; then
+            echo "::error::Duplicate release APK basename '$name' from ${seen[$name]} and $apk" >&2
+            exit 1
+        fi
+        seen[$name]="$apk"
+        cp "$apk" "$destination_dir/$name"
     done
     (
         cd "$destination_dir"

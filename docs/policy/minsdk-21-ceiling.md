@@ -87,7 +87,7 @@ To raise a *dependency* without raising the floor:
 
 1. Confirm the dependency's `minSdkVersion` in its `AndroidManifest.xml` / `build.gradle` is `<= 21`. The "Next-version minSdk" column in the ledger is authoritative for the listed dependencies; for others, check the release notes.
 2. If the dependency is ceiling-bound (listed above), do **not** bump. If you have a strong reason, follow the "raise the floor" steps instead.
-3. If the dependency is not ceiling-bound, update [`versions.gradle`](../../versions.gradle), keep the existing comment style (link + reason), and run `./gradlew :app:assembleDebug` + `./gradlew test` + `./gradlew :app:lint` before opening the PR.
+3. If the dependency is not ceiling-bound, update [`versions.gradle`](../../versions.gradle), keep the existing comment style (link + reason), and run `./gradlew :app:assembleFlossDebug :app:assembleFullDebug` + `./gradlew test` + `./gradlew :app:lint` before opening the PR.
 
 ## How to discover a new ceiling
 

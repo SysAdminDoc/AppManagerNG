@@ -1423,10 +1423,12 @@
     <string name="search_type_regular_expressions">Regex</string>
     <string name="toggle_internet">Use the Internet</string>
     <string name="pref_toggle_internet_msg">Activate the Internet features in App Manager</string>
+    <string name="pref_toggle_internet_msg_floss_disabled">Optional Internet features are disabled in this FLOSS build. Install the full build from GitHub Releases to enable VirusTotal, Pithus, and debloat-definition auto-updates.</string>
     <string name="pref_auto_update_debloat_definitions">Update debloat definitions on launch</string>
     <string name="pref_auto_update_debloat_definitions_msg">Opt in to fetching the latest debloat definitions from AppManagerNG\'s pinned GitHub raw manifest. Requires Internet access; cached files fall back to the bundled snapshot.</string>
     <string name="pref_auto_update_debloat_definitions_msg_current">Current cached debloat definitions: <xliff:g id="version" example="2026-05-17">%1$s</xliff:g>. Standard HTTPS GET requests only; no package list or device identifier is sent.</string>
     <string name="pref_auto_update_debloat_definitions_msg_no_internet">Enable "Use the Internet" before automatic debloat definition updates can run.</string>
+    <string name="pref_auto_update_debloat_definitions_msg_floss_disabled">This FLOSS build uses bundled debloat definitions only.</string>
     <string name="vt_checking">VirusTotal: Checking…</string>
     <string name="vt_uploading">VirusTotal: Uploading…</string>
     <string name="vt_queued">VirusTotal: Queued</string>
@@ -2104,6 +2106,7 @@
     <string name="pref_use_vt">Use VirusTotal</string>
     <string name="virus_total">VirusTotal</string>
     <string name="pref_use_vt_no_internet">VirusTotal requires the Internet to operate which isn\'t enabled. Please enable <a href="app-manager://settings/privacy_prefs/toggle_internet">“Use the Internet”</a> first.</string>
+    <string name="pref_use_vt_floss_disabled">VirusTotal is disabled in this FLOSS build. Install the full build from GitHub Releases to enable optional online scan reports.</string>
     <string name="pref_use_log_viewer">Use log viewer</string>
     <string name="pref_installer">Use the installer</string>
     <string name="pref_cat_general">General</string>
