@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Finder relevance scoring (2026-05-17)
+
+- Finder now sorts filtered package results through `FinderRelevanceScorer` when
+  literal package-name, component-name, or tracker-name search predicates are
+  active.
+- Ranking uses Levenshtein distance with package/simple-name/token/window
+  scoring so close package-name and component-name hits surface before broader
+  substring matches, while unrelated filter results keep their original scan
+  order.
+- New `FinderRelevanceScorerTest` covers edit distance, exact-token preference,
+  longer-token demotion, and case-insensitive scoring.
+
 ### Added — permission-state Finder filters (2026-05-17)
 
 - `PermissionsOption` now filters requested permissions by `granted`, `denied`,

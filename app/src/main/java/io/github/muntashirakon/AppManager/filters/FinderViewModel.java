@@ -58,7 +58,10 @@ public class FinderViewModel extends AndroidViewModel {
                 loadAppList();
             }
             if (ThreadUtils.isInterrupted() || mFilterableAppInfoList == null) return;
-            mFilteredAppListLiveData.postValue(mFilterItem.getFilteredList(mFilterableAppInfoList));
+            List<FilterItem.FilteredItemInfo<FilterableAppInfo>> filteredAppList =
+                    mFilterItem.getFilteredList(mFilterableAppInfoList);
+            FinderRelevanceScorer.sort(filteredAppList, mFilterItem);
+            mFilteredAppListLiveData.postValue(filteredAppList);
             mLastUpdateTimeLiveData.postValue(System.currentTimeMillis());
         });
     }
