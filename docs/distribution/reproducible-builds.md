@@ -4,8 +4,8 @@
 
 AppManagerNG release publishing is guarded by a two-build reproducibility check.
 The release workflow performs two clean signed `:app:assembleRelease` builds from
-the same tag, compares the resulting APK SHA-256 hashes, and refuses to publish
-if the APK bytes differ.
+the same tag, compares every resulting flavor / ABI APK SHA-256 hash, and refuses
+to publish if any APK bytes differ.
 
 The Linux/CI equivalent is:
 
@@ -22,9 +22,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_reproducible_
 
 The script writes comparison artifacts to `build/reproducible-release/`:
 
-- `app-release-first.apk`
-- `app-release-second.apk`
-- `AppManagerNG-reproducible-release.apk`
+- `first/*.apk`
+- `second/*.apk`
+- `publish/AppManagerNG-reproducible-*.apk`
 - `sha256.txt`
 
 Determinism controls currently in place:

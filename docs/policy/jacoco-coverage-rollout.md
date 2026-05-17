@@ -60,7 +60,7 @@ android {
 }
 
 tasks.register('jacocoTestReport', JacocoReport) {
-    dependsOn 'testDebugUnitTest'
+    dependsOn 'testFlossDebugUnitTest'
     reports {
         html.required = true
         xml.required = true   // for Codecov / Coveralls / report parsers
@@ -80,13 +80,13 @@ tasks.register('jacocoTestReport', JacocoReport) {
         // The stubs live in the `hiddenapi` module; this filter covers any spillover.
         '**/HiddenUtil.*',
     ]
-    def debugTree = fileTree(dir: "${buildDir}/intermediates/javac/debug/classes", excludes: fileFilter)
+    def debugTree = fileTree(dir: "${buildDir}/intermediates/javac/flossDebug/classes", excludes: fileFilter)
     def mainSrc = "${project.projectDir}/src/main/java"
 
     sourceDirectories.setFrom(files([mainSrc]))
     classDirectories.setFrom(files([debugTree]))
     executionData.setFrom(fileTree(dir: project.buildDir, includes: [
-        'jacoco/testDebugUnitTest.exec',
+        'jacoco/testFlossDebugUnitTest.exec',
     ]))
 }
 ```
@@ -141,8 +141,8 @@ test-suite expansion lands.
 
 ## Verification before landing
 
-1. `./gradlew :app:assembleDebug` succeeds (Gradle plugin doesn't break the build).
-2. `./gradlew :app:testDebugUnitTest` runs the existing test suite to completion (Robolectric).
+1. `./gradlew :app:assembleFlossDebug :app:assembleFullDebug` succeeds (Gradle plugin doesn't break the build).
+2. `./gradlew :app:testFlossDebugUnitTest :app:testFullDebugUnitTest` runs the existing test suite to completion (Robolectric).
 3. `./gradlew :app:jacocoTestReport` produces `app/build/reports/jacoco/jacocoTestReport/html/index.html`.
 4. Open `index.html` locally; verify the coverage report renders and is non-empty (the existing tests at minimum exercise `AESCrypto`, `OperationHistoryExporter`, `InstallTranscript`, `FilterOption` — there will be some coverage).
 5. Push to a topic branch and verify the GitHub Actions run uploads the coverage artifact successfully.

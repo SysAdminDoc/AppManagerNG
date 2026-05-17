@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — distribution build flavors (2026-05-17)
+
+- Added default `floss` and optional `full` product flavors in the
+  `distribution` dimension. `floss` compiles optional online surfaces off while
+  preserving local ADB / localhost networking; `full` keeps the existing opt-in
+  network features available.
+- Wired the flavor flag through `FeatureController`, Settings -> Privacy,
+  VirusTotal settings, Pithus lookups, and debloat-definition auto-updates.
+- Updated release reproducibility scripts, CI artifact globs, Obtainium config,
+  README install guidance, and the new
+  [`docs/distribution/build-flavors.md`](docs/distribution/build-flavors.md)
+  contract so F-Droid metadata targets `flossRelease` and GitHub/Obtainium
+  users receive `full` assets.
+
 ### Added — per-app launcher action shortcuts (2026-05-17)
 
 - Added dynamic launcher shortcuts for recent installed apps, exposing freeze,

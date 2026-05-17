@@ -96,7 +96,7 @@ See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
 ## Install
 
 ### Direct download
-Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `AppManagerNG-<version>-arm64-v8a.apk` for modern devices or `AppManagerNG-<version>-universal.apk` for maximum compatibility (older 32-bit ARM and x86_64 emulators).
+Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick the `full` APK for optional online scan reports / debloat-definition updates, or the `floss` APK for the F-Droid-clean bundled-only build. Use `arm64-v8a` for modern devices or `universal` for maximum compatibility (older 32-bit ARM and x86_64 emulators). Details: [distribution build flavors](docs/distribution/build-flavors.md).
 
 ### Via Obtainium
 
