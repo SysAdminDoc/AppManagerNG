@@ -1633,6 +1633,12 @@
     <string name="privilege_health_root_source_none">no signal</string>
     <string name="privilege_health_root_extra_zygisk_next"> + ZygiskNext</string>
     <string name="privilege_health_root_extra_sui"> + Sui</string>
+    <string name="privilege_health_capability_dropping_title">Capability dropping (--drop-cap)</string>
+    <string name="privilege_health_capability_dropping_unavailable">No active privileged shell is available. Reconnect root, ADB, or Shizuku, then refresh to test the current shell.</string>
+    <string name="privilege_health_capability_dropping_root">Active shell is UID 0; root capabilities are expected (CapEff: <xliff:g id="cap_eff" example="0000003fffffffff">%1$s</xliff:g>). --drop-cap applies to non-root privileged UIDs.</string>
+    <string name="privilege_health_capability_dropping_dropped">Active UID <xliff:g id="uid" example="2000">%1$d</xliff:g> has no effective Linux capabilities (CapEff: <xliff:g id="cap_eff" example="0000000000000000">%2$s</xliff:g>).</string>
+    <string name="privilege_health_capability_dropping_present">Active UID <xliff:g id="uid" example="2000">%1$d</xliff:g> still has effective Linux capabilities (CapEff: <xliff:g id="cap_eff" example="0000000000003000">%2$s</xliff:g>). Review the root manager\'s --drop-cap policy if this should be reduced.</string>
+    <string name="privilege_health_capability_dropping_unknown">Capability probe failed: <xliff:g id="reason" example="missing UID or CapEff">%1$s</xliff:g>.</string>
     <string name="privilege_health_shizuku_title">Shizuku</string>
     <string name="privilege_health_shizuku_summary"><xliff:g id="status" example="authorized">%1$s</xliff:g>. Manager: <xliff:g id="version" example="13.6.0">%2$s</xliff:g>. API: <xliff:g id="api" example="13">%3$d</xliff:g> (requires <xliff:g id="required" example="10">%4$d</xliff:g>). Service UID: <xliff:g id="uid" example="2000">%5$d</xliff:g>.</string>
     <string name="privilege_health_shizuku_not_running">not running</string>

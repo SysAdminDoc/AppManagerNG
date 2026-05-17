@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — capability-dropping diagnostic (2026-05-17)
+
+- Settings -> Privileges now includes a "Capability dropping (--drop-cap)" row
+  that probes the active privileged shell with `id -u` plus `CapEff` from
+  `/proc/$$/status`.
+- The row reports whether the current shell is root, a non-root UID with an
+  empty effective-capability set, a non-root UID that still has capabilities, or
+  unavailable/unknown. Tapping the row reruns the probe.
+- New `RootCapabilityDiagnosticsTest` covers dropped, present, root, and malformed
+  probe-output parsing.
+
 ### Added — privilege health-check screen (2026-05-17)
 
 - New Settings -> Privileges page consolidates the mode diagnostics that were

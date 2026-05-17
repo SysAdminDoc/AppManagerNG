@@ -23,6 +23,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
+import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
@@ -43,6 +44,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mModePref;
     private Preference mSelfTestPref;
     private Preference mRootManagerPref;
+    private Preference mCapabilityDroppingPref;
     private Preference mShizukuPref;
     private Preference mAdbPref;
     private Preference mRemoteServicesPref;
@@ -55,10 +57,15 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mModePref = requirePreference("privilege_health_mode");
         mSelfTestPref = requirePreference("privilege_health_self_test");
         mRootManagerPref = requirePreference("privilege_health_root_manager");
+        mCapabilityDroppingPref = requirePreference("privilege_health_capability_dropping");
         mShizukuPref = requirePreference("privilege_health_shizuku");
         mAdbPref = requirePreference("privilege_health_adb");
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
+        mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
+            bindCapabilityDroppingAsync();
+            return true;
+        });
         mBatteryOptimizationPref.setOnPreferenceClickListener(preference -> {
             handleBatteryOptimization();
             return true;
@@ -96,6 +103,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindRemoteServices(context);
         bindBatteryOptimization(context);
         bindRootManagerAsync(context.getApplicationContext());
+        bindCapabilityDroppingAsync();
     }
 
     private void bindMode(@NonNull Context context) {
@@ -135,6 +143,44 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         }
         mRootManagerPref.setSummary(getString(R.string.privilege_health_root_manager_summary,
                 name, getRootManagerSourceLabel(info.source), extras));
+    }
+
+    private void bindCapabilityDroppingAsync() {
+        mCapabilityDroppingPref.setSummary(R.string.loading);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            RootCapabilityDiagnostics.Result result = RootCapabilityDiagnostics.probe();
+            ThreadUtils.postOnMainThread(() -> bindCapabilityDropping(result));
+        });
+    }
+
+    private void bindCapabilityDropping(@NonNull RootCapabilityDiagnostics.Result result) {
+        if (!isAdded()) return;
+        switch (result.state) {
+            case UNAVAILABLE:
+                mCapabilityDroppingPref.setSummary(R.string.privilege_health_capability_dropping_unavailable);
+                break;
+            case ROOT:
+                mCapabilityDroppingPref.setSummary(getString(
+                        R.string.privilege_health_capability_dropping_root,
+                        result.capEff != null ? result.capEff : getString(R.string.state_unknown)));
+                break;
+            case DROPPED:
+                mCapabilityDroppingPref.setSummary(getString(
+                        R.string.privilege_health_capability_dropping_dropped,
+                        result.uid, result.capEff));
+                break;
+            case PRESENT:
+                mCapabilityDroppingPref.setSummary(getString(
+                        R.string.privilege_health_capability_dropping_present,
+                        result.uid, result.capEff));
+                break;
+            case UNKNOWN:
+            default:
+                mCapabilityDroppingPref.setSummary(getString(
+                        R.string.privilege_health_capability_dropping_unknown,
+                        result.error != null ? result.error : getString(R.string.state_unknown)));
+                break;
+        }
     }
 
     private void bindShizuku(@NonNull Context context) {
