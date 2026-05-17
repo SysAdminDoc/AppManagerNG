@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Finder debloat-description predicates (2026-05-17)
+
+- Finder's `bloatware` filter now searches debloat-list human descriptions via
+  `description_eq`, `description_contains`, `description_starts_with`,
+  `description_ends_with`, and `description_regex`.
+- Plain contains/prefix/suffix description predicates are case-insensitive so a
+  query such as `nfc tags` can match prose from `debloat.json` without requiring
+  exact capitalization.
+
 ### Added — capability-dropping diagnostic (2026-05-17)
 
 - Settings -> Privileges now includes a "Capability dropping (--drop-cap)" row
