@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Doze allowlist revert diagnostics (2026-05-17)
+
+- Doze allowlist revert checks now wait 60 seconds and include a one-line
+  `device_idle_constants` diff in the "OS reverted your change" detail dialog.
+- The same Doze diagnostic also snapshots the newer `DeviceConfig device_idle`
+  namespace when available, so Android builds that moved device-idle tuning out
+  of the legacy global setting still get useful config context.
+- Added policy hints for user-app allowlist rejection, Samsung Knox / Device
+  Care / enterprise policy, system-app reverts, and unknown-package cases.
+- Added unit coverage for Doze config parsing and one-line diff generation.
+
 ### Added — OS-revert detection banner (2026-05-17)
 
 - Added `OsRevertMonitor`, a generic 30-second post-write re-poll layer for

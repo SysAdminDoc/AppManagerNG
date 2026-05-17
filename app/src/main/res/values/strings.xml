@@ -1720,6 +1720,11 @@
     <string name="os_revert_operation_component">Component enabled state</string>
     <string name="os_revert_operation_appop">AppOp <xliff:g id="op" example="RUN_IN_BACKGROUND">%1$s</xliff:g></string>
     <string name="os_revert_doze_detail">The package is no longer in the requested Doze allowlist state. OEM policy, system-app-only allowlists, or device-idle policy may have changed it after AppManagerNG wrote the state.</string>
+    <string name="os_revert_doze_detail_with_diff">The package is no longer in the requested Doze allowlist state. Doze config diff: <xliff:g id="diff" example="device_idle_constants unchanged (empty)">%1$s</xliff:g>. <xliff:g id="hint" example="An OEM policy may be reverting it.">%2$s</xliff:g></string>
+    <string name="os_revert_doze_policy_hint_samsung">Because this is a user app on Samsung firmware, Knox, Device Care, or an enterprise policy may be reverting the allowlist entry.</string>
+    <string name="os_revert_doze_policy_hint_user">Because this is a user app and the Doze config did not explain the change, an OEM hard-coded denylist, system-app-only allowlist, enterprise policy, or vendor power manager may be reverting it.</string>
+    <string name="os_revert_doze_policy_hint_system">Because this is a system app, the revert likely came from an OEM or device-idle policy rather than a user-app allowlist restriction.</string>
+    <string name="os_revert_doze_policy_hint_unknown">If the config did not change, an OEM or enterprise device policy may be rejecting the allowlist entry outside the public settings surface.</string>
     <string name="os_revert_freeze_detail">The package is no longer in the requested freeze state. The OS or an OEM policy may have restored the app after AppManagerNG applied the change.</string>
     <string name="os_revert_component_detail">The component setting no longer matches the value AppManagerNG wrote. The app, package manager, or OEM policy may have restored it.</string>
     <string name="os_revert_appop_detail">The AppOps mode no longer matches the value AppManagerNG wrote. Android may have resolved the op back to a policy/default mode.</string>

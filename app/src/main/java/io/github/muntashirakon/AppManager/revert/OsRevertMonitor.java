@@ -26,6 +26,7 @@ import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 public final class OsRevertMonitor {
     private static final String TAG = OsRevertMonitor.class.getSimpleName();
     private static final long DEFAULT_REPOLL_DELAY_MILLIS = 30_000L;
+    private static final long DOZE_REPOLL_DELAY_MILLIS = 60_000L;
 
     private static final SingleLiveEvent<RevertEvent> sRevertEvents = new SingleLiveEvent<>();
 
@@ -41,18 +42,22 @@ public final class OsRevertMonitor {
                                                 @NonNull String packageName,
                                                 boolean expectedExempt) {
         Context appContext = context.getApplicationContext();
+        DozeAllowlistDiagnostics.Snapshot beforeSnapshot =
+                DozeAllowlistDiagnostics.snapshot(appContext, packageName);
         schedule(() -> {
             boolean currentExempt = !DeviceIdleManagerCompat.isBatteryOptimizedApp(packageName);
             if (stateMatches(expectedExempt, currentExempt)) {
                 return null;
             }
+            DozeAllowlistDiagnostics.Snapshot afterSnapshot =
+                    DozeAllowlistDiagnostics.snapshot(appContext, packageName);
             return buildEvent(appContext,
                     appContext.getString(R.string.os_revert_operation_doze),
                     packageName,
                     batteryOptimizationLabel(appContext, expectedExempt),
                     batteryOptimizationLabel(appContext, currentExempt),
-                    appContext.getString(R.string.os_revert_doze_detail));
-        });
+                    DozeAllowlistDiagnostics.buildHint(appContext, beforeSnapshot, afterSnapshot));
+        }, DOZE_REPOLL_DELAY_MILLIS);
     }
 
     public static void watchFreeze(@NonNull Context context,
@@ -115,6 +120,10 @@ public final class OsRevertMonitor {
     }
 
     private static void schedule(@NonNull Probe probe) {
+        schedule(probe, DEFAULT_REPOLL_DELAY_MILLIS);
+    }
+
+    private static void schedule(@NonNull Probe probe, long delayMillis) {
         ThreadUtils.postOnMainThreadDelayed(() -> ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 RevertEvent event = probe.run();
@@ -125,7 +134,7 @@ public final class OsRevertMonitor {
             } catch (Throwable th) {
                 Log.w(TAG, "Could not verify post-operation state.", th);
             }
-        }), DEFAULT_REPOLL_DELAY_MILLIS);
+        }), delayMillis);
     }
 
     @NonNull
