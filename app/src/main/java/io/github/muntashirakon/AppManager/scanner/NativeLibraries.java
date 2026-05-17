@@ -37,6 +37,10 @@ public class NativeLibraries {
     public static final String TAG = NativeLibraries.class.getSimpleName();
 
     private static final int ELF_MAGIC = 0x7f454c46; // 0x7f ELF
+    private static final int ELF_HEADER_MAX_BYTES = 64;
+    private static final int ELF_PROGRAM_HEADER_MAX_BYTES = 1024 * 1024;
+    private static final int PT_LOAD = 1;
+    private static final long PAGE_SIZE_16_KB = 16L * 1024L;
 
     public static abstract class NativeLib implements LocalizedString {
         @NonNull
@@ -73,13 +77,20 @@ public class NativeLibraries {
 
         @NonNull
         public static NativeLib parse(@NonNull String path, long size, @NonNull InputStream is) throws IOException {
-            byte[] header = new byte[20]; // First 20 bytes is enough
-            is.read(header);
+            byte[] header = readPrefix(is, ELF_HEADER_MAX_BYTES);
+            if (header.length < 4) {
+                Log.w(TAG, "Invalid header size %d at path %s", header.length, path);
+                return new InvalidLib(path, size, header);
+            }
             ByteBuffer buffer = ByteBuffer.wrap(header);
             int magic = buffer.getInt();
             if (magic != ELF_MAGIC) {
                 // Invalid library
                 Log.w(TAG, "Invalid header magic 0x%x at path %s", magic, path);
+                return new InvalidLib(path, size, header);
+            }
+            if (header.length < 20) {
+                Log.w(TAG, "Incomplete ELF header size %d at path %s", header.length, path);
                 return new InvalidLib(path, size, header);
             }
             ElfLib elfLib = new ElfLib(path, size);
@@ -91,7 +102,51 @@ public class NativeLibraries {
             buffer.position(16);
             elfLib.mType = buffer.getChar(); // e_type
             elfLib.mIsa = buffer.getChar(); // e_machine
+            elfLib.readLoadSegmentAlignment(header, is);
             return elfLib;
+        }
+
+        @NonNull
+        private static byte[] readPrefix(@NonNull InputStream is, int length) throws IOException {
+            byte[] buffer = new byte[length];
+            int offset = 0;
+            while (offset < length) {
+                int read = is.read(buffer, offset, length - offset);
+                if (read == -1) {
+                    break;
+                }
+                offset += read;
+            }
+            if (offset == length) {
+                return buffer;
+            }
+            byte[] compact = new byte[offset];
+            System.arraycopy(buffer, 0, compact, 0, offset);
+            return compact;
+        }
+
+        @NonNull
+        private static byte[] readUntil(@NonNull byte[] prefix, @NonNull InputStream is, int length)
+                throws IOException {
+            if (length <= prefix.length) {
+                return prefix;
+            }
+            byte[] buffer = new byte[length];
+            System.arraycopy(prefix, 0, buffer, 0, prefix.length);
+            int offset = prefix.length;
+            while (offset < length) {
+                int read = is.read(buffer, offset, length - offset);
+                if (read == -1) {
+                    break;
+                }
+                offset += read;
+            }
+            if (offset == length) {
+                return buffer;
+            }
+            byte[] compact = new byte[offset];
+            System.arraycopy(buffer, 0, compact, 0, offset);
+            return compact;
         }
     }
 
@@ -162,6 +217,7 @@ public class NativeLibraries {
         @Type
         private int mType;
         private int mIsa;
+        private long mMinLoadSegmentAlignment = -1;
 
         private ElfLib(@NonNull String path, long size) {
             super(path, size, new byte[]{0x7f, 0x45, 0x4c, 0x46});
@@ -184,6 +240,18 @@ public class NativeLibraries {
 
         public int getIsa() {
             return mIsa;
+        }
+
+        public long getMinLoadSegmentAlignment() {
+            return mMinLoadSegmentAlignment;
+        }
+
+        public boolean hasKnownLoadSegmentAlignment() {
+            return mMinLoadSegmentAlignment >= 0;
+        }
+
+        public boolean has16KbLoadSegmentAlignment() {
+            return hasKnownLoadSegmentAlignment() && mMinLoadSegmentAlignment >= PAGE_SIZE_16_KB;
         }
 
         public String getIsaString() {
@@ -264,8 +332,82 @@ public class NativeLibraries {
                     sb.append(context.getString(R.string.so_type_executable)).append(", ");
                     break;
             }
+            if (hasKnownLoadSegmentAlignment()) {
+                sb.append(context.getString(has16KbLoadSegmentAlignment()
+                        ? R.string.native_lib_16kb_aligned
+                        : R.string.native_lib_16kb_not_aligned)).append(", ");
+            } else {
+                sb.append(context.getString(R.string.native_lib_16kb_alignment_unknown)).append(", ");
+            }
             sb.append(getIsaString()).append("\n").append(getPath());
             return sb;
+        }
+
+        private void readLoadSegmentAlignment(@NonNull byte[] header, @NonNull InputStream is) throws IOException {
+            if (mArch != ARCH_32BIT && mArch != ARCH_64BIT) {
+                return;
+            }
+            ByteBuffer buffer = ByteBuffer.wrap(header);
+            if (mEndianness == ENDIANNESS_LITTLE_ENDIAN) {
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+            }
+            long programHeaderOffset;
+            int programHeaderEntrySize;
+            int programHeaderCount;
+            if (mArch == ARCH_32BIT) {
+                if (header.length < 46) {
+                    return;
+                }
+                programHeaderOffset = Integer.toUnsignedLong(buffer.getInt(28));
+                programHeaderEntrySize = Short.toUnsignedInt(buffer.getShort(42));
+                programHeaderCount = Short.toUnsignedInt(buffer.getShort(44));
+            } else {
+                if (header.length < 58) {
+                    return;
+                }
+                programHeaderOffset = buffer.getLong(32);
+                programHeaderEntrySize = Short.toUnsignedInt(buffer.getShort(54));
+                programHeaderCount = Short.toUnsignedInt(buffer.getShort(56));
+            }
+            if (programHeaderOffset < 0 || programHeaderEntrySize <= 0 || programHeaderCount <= 0) {
+                return;
+            }
+            long bytesNeeded = programHeaderOffset + (long) programHeaderEntrySize * programHeaderCount;
+            if (bytesNeeded <= 0 || bytesNeeded > ELF_PROGRAM_HEADER_MAX_BYTES || bytesNeeded > Integer.MAX_VALUE) {
+                return;
+            }
+            byte[] programHeaders = NativeLib.readUntil(header, is, (int) bytesNeeded);
+            if (programHeaders.length < bytesNeeded) {
+                return;
+            }
+            ByteBuffer phBuffer = ByteBuffer.wrap(programHeaders);
+            if (mEndianness == ENDIANNESS_LITTLE_ENDIAN) {
+                phBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            }
+            long minLoadSegmentAlignment = Long.MAX_VALUE;
+            for (int i = 0; i < programHeaderCount; ++i) {
+                int offset = (int) programHeaderOffset + i * programHeaderEntrySize;
+                if (offset < 0 || offset + programHeaderEntrySize > programHeaders.length) {
+                    break;
+                }
+                int segmentType = phBuffer.getInt(offset);
+                if (segmentType != PT_LOAD) {
+                    continue;
+                }
+                if (mArch == ARCH_32BIT && offset + 32 > programHeaders.length) {
+                    break;
+                }
+                if (mArch == ARCH_64BIT && offset + 56 > programHeaders.length) {
+                    break;
+                }
+                long alignment = mArch == ARCH_32BIT
+                        ? Integer.toUnsignedLong(phBuffer.getInt(offset + 28))
+                        : phBuffer.getLong(offset + 48);
+                minLoadSegmentAlignment = Math.min(minLoadSegmentAlignment, alignment);
+            }
+            if (minLoadSegmentAlignment != Long.MAX_VALUE) {
+                mMinLoadSegmentAlignment = minLoadSegmentAlignment;
+            }
         }
     }
 
