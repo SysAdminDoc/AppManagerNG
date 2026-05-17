@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Finder backup-only app results (2026-05-17)
+
+- Finder now opts into validated backup-only rows for AppManagerNG backup
+  metadata whose package/user pair is not already returned by PackageManager,
+  making filters able to match archived apps that are no longer installed.
+- Backup-only rows use synthetic package metadata from the latest archive per
+  package/user while keeping existing backup filters wired to the validated
+  backup metadata DB.
+
 ### Added — Finder debloat-description predicates (2026-05-17)
 
 - Finder's `bloatware` filter now searches debloat-list human descriptions via
