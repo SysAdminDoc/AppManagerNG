@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Restricted Settings unlock walkthrough (2026-05-17)
+
+- Added a Settings -> Privileges row for Android 13+ Restricted Settings,
+  classifying AppManagerNG's install source as trusted-store, likely sideloaded,
+  unknown, or review-recommended.
+- The row opens a walkthrough with App info and Accessibility deep-links plus
+  copy for the Allow restricted settings / long-press disabled-toggle unlock
+  path when Android blocks sensitive service toggles.
+- Mode Doctor now includes the same install-source probe and support-ready fix
+  hint. The detector is phrased as likely/recommended because Android exposes
+  install-source metadata, not a public per-app restricted-settings-blocked bit.
+- Added unit coverage for the install-source classification rules.
+
 ### Added — Achno Samsung debloat cross-check audit (2026-05-17)
 
 - Added [`docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md`](docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md).
