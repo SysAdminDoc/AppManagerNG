@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Docs link check
+
+# Lychee-based Markdown link checker for the project's canonical doc surface.
+# Closes ROADMAP iter-24 backlog item F-NEW-13 (link-rot insurance for
+# PROJECT_CONTEXT.md and the docs/architecture/ tree).
+#
+# Scope: offline link validation against in-repo Markdown files plus a curated
+# allowlist of external URLs. Avoids hammering GitHub / vendor sites on every
+# push. The offline-by-default posture honors the project's "no telemetry, no
+# unnecessary network egress" FOSS Anti-Features posture for CI runs.
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'master'
+      - 'AppManager-*'
+    paths:
+      - '*.md'
+      - 'docs/**/*.md'
+      - '.ai/**/*.md'
+      - '.github/workflows/docs-link-check.yml'
+  pull_request:
+    branches:
+      - 'main'
+      - 'master'
+      - 'AppManager-*'
+    paths:
+      - '*.md'
+      - 'docs/**/*.md'
+      - '.ai/**/*.md'
+      - '.github/workflows/docs-link-check.yml'
+  workflow_dispatch:
+  schedule:
+    # Weekly Tuesday 11:11 UTC; staggered off the upstream-rename-watch
+    # (Wednesday 09:27) + CodeQL + dependency-scan slots.
+    - cron: '11 11 * * 2'
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Offline by default to avoid hammering external sites on every push.
+          # Run with --no-progress for cleaner CI output; --cache to share results
+          # across runs; --max-redirects 3 to catch redirect loops.
+          args: |
+            --no-progress
+            --cache
+            --max-cache-age 7d
+            --max-redirects 3
+            --exclude-mail
+            --exclude-loopback
+            './*.md'
+            './docs/**/*.md'
+            './.ai/**/*.md'
+            './ROADMAP.md'
+            './CHANGELOG.md'
+            './PROJECT_CONTEXT.md'
+          fail: true
+          output: ./lychee-out.md
+
+      - name: Upload lychee report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lychee-report
+          path: ./lychee-out.md
