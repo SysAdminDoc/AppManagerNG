@@ -19,6 +19,7 @@ import androidx.core.app.ServiceCompat;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -32,12 +33,15 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.N
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
+import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import rikka.shizuku.Shizuku;
 
 public class BatchOpsService extends ForegroundService {
     public static final String EXTRA_QUEUE_ITEM = "queue_item";
+    private static final AtomicBoolean sServiceWorking = new AtomicBoolean(false);
 
     /**
      * Name of the batch operation, {@link Integer} value. One of the {@link BatchOpsManager.OpType}.
@@ -91,9 +95,18 @@ public class BatchOpsService extends ForegroundService {
         return intent;
     }
 
+    public static boolean isServiceWorking() {
+        return sServiceWorking.get();
+    }
+
     private QueuedProgressHandler mProgressHandler;
     private NotificationProgressHandler.NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
+    private boolean mJournalPending;
+    private boolean mShizukuBinderDeadListenerRegistered;
+    private final Shizuku.OnBinderDeadListener mShizukuBinderDeadListener =
+            () -> BatchOpsJournal.markInterrupted(getApplicationContext(),
+                    new IllegalStateException("Shizuku binder died while batch operation was running"));
 
     public BatchOpsService() {
         super("BatchOpsService");
@@ -109,6 +122,7 @@ public class BatchOpsService extends ForegroundService {
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         if (isWorking()) return super.onStartCommand(intent, flags, startId);
+        sServiceWorking.set(true);
         BatchQueueItem item = getQueueItem(intent);
         NotificationManagerInfo notificationManagerInfo = new NotificationManagerInfo(CHANNEL_ID,
                 "Batch Ops Progress", NotificationManagerCompat.IMPORTANCE_LOW);
@@ -134,15 +148,32 @@ public class BatchOpsService extends ForegroundService {
             sendResults(Activity.RESULT_CANCELED, item, null);
             return;
         }
+        BatchOpsJournal.recordIntent(this, item);
+        mJournalPending = true;
+        registerPrivilegedDeathWatch();
         autoFixBatteryOptimizationForLongRunningOps(item);
         sendStarted(item);
+        BatchOpsJournal.recordExecuting(this, item);
         // Update progress
         if (mProgressHandler != null) {
             mProgressHandler.postUpdate(item.getPackages().size(), 0);
         }
         BatchOpsManager batchOpsManager = new BatchOpsManager();
-        BatchOpsManager.Result result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler);
+        BatchOpsManager.Result result;
+        try {
+            result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler);
+        } catch (Throwable th) {
+            BatchOpsJournal.markInterrupted(this, th);
+            BatchOpsManager.Result interruptedResult = new BatchOpsManager.Result(
+                    BatchOpsInfo.fromQueue(item).getPairList(), false);
+            batchOpsManager.conclude();
+            sendResults(Activity.RESULT_FIRST_USER, item, interruptedResult);
+            return;
+        }
         batchOpsManager.conclude();
+        BatchOpsJournal.markCompleted(this);
+        mJournalPending = false;
+        unregisterPrivilegedDeathWatch();
         OpHistoryManager.addHistoryItem(HISTORY_TYPE_BATCH_OPS, item, result.isSuccessful(),
                 OperationJournalMetadata.forBatchOperation(this, item, result));
         if (result.isSuccessful()) {
@@ -179,11 +210,38 @@ public class BatchOpsService extends ForegroundService {
     @Override
     public void onDestroy() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        if (mJournalPending) {
+            BatchOpsJournal.markInterrupted(this, null);
+        }
+        unregisterPrivilegedDeathWatch();
+        sServiceWorking.set(false);
         if (mProgressHandler != null) {
             mProgressHandler.onDetach(this);
         }
         CpuUtils.releaseWakeLock(mWakeLock);
         super.onDestroy();
+    }
+
+    private void registerPrivilegedDeathWatch() {
+        if (!Ops.isShizuku() || mShizukuBinderDeadListenerRegistered) {
+            return;
+        }
+        try {
+            Shizuku.addBinderDeadListener(mShizukuBinderDeadListener);
+            mShizukuBinderDeadListenerRegistered = true;
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private void unregisterPrivilegedDeathWatch() {
+        if (!mShizukuBinderDeadListenerRegistered) {
+            return;
+        }
+        try {
+            Shizuku.removeBinderDeadListener(mShizukuBinderDeadListener);
+        } catch (Throwable ignore) {
+        }
+        mShizukuBinderDeadListenerRegistered = false;
     }
 
     @Nullable

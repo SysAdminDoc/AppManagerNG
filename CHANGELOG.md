@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — privileged batch journal and recovery (2026-05-17)
+
+- Added `BatchOpsJournal`, a persistent intent/executing journal around
+  `BatchOpsService` so interrupted batch operations survive process death until
+  the app can reattach.
+- While a Shizuku/Sui-backed batch is active, AppManagerNG registers a Shizuku
+  binder-dead listener and marks the active journal interrupted if the binder
+  dies.
+- Main screen startup now checks for an unfinished batch journal when no batch
+  service is currently working and shows a recovery dialog with retry, not-now,
+  and clear actions.
+
 ### Added — privileged operation audit log closure (2026-05-17)
 
 - Audited the existing Room-backed operation history as AppManagerNG's
