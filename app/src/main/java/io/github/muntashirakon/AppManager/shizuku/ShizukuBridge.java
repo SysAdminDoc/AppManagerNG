@@ -19,23 +19,38 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.misc.SystemProperties;
 
 import rikka.shizuku.Shizuku;
 
 public final class ShizukuBridge {
+    private static final int ANDROID_15_SDK_INT = 35;
+    private static final int ANDROID_16_SDK_INT = 36;
     private static final int ANDROID_17_SDK_INT = 37;
+    private static final int SHIZUKU_13_6_API_VERSION = 13;
 
     public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
     public static final String AUTO_START_ACTIVITY = PACKAGE_NAME + ".AUTO_START";
     public static final String PROVIDER_CLASS_NAME = "rikka.shizuku.ShizukuProvider";
     public static final String MIN_RECOMMENDED_MANAGER_VERSION = "13.6.0";
+    public static final String PINNED_SAFE_MANAGER_VERSION = "13.5.4";
+    public static final String PINNED_SAFE_MANAGER_ARCHIVE_URL =
+            "https://apt.izzysoft.de/fdroid/repo/moe.shizuku.privileged.api_1049.apk";
     @Nullable
     public static final String MIN_ANDROID_17_COMPATIBLE_VERSION = null;
     public static final int MIN_USER_SERVICE_VERSION = 10;
     public static final int REQUEST_PERMISSION_CODE = 0x5348;
+
+    private static final String PROP_TRANSSION_VERSION = "ro.transsion.version";
+    private static final String PROP_PRODUCT_PLATFORM = "ro.product.platform";
+    private static final String PROP_BOARD_PLATFORM = "ro.board.platform";
+    private static final String PROP_HARDWARE = "ro.hardware";
+    private static final String PROP_SOC_MANUFACTURER = "ro.soc.manufacturer";
+    private static final String PROP_SOC_MODEL = "ro.soc.model";
 
     private ShizukuBridge() {
     }
@@ -171,6 +186,26 @@ public final class ShizukuBridge {
     }
 
     @AnyThread
+    @Nullable
+    public static OemCompatibilityWarning getOemCompatibilityWarning(@NonNull Context context) {
+        return getOemCompatibilityWarning(Build.MANUFACTURER, Build.MODEL, Build.DEVICE, Build.PRODUCT,
+                Build.VERSION.SDK_INT, getInstalledVersionName(context), getVersionOrZero(),
+                SystemProperties.get(PROP_TRANSSION_VERSION, ""),
+                SystemProperties.get(PROP_PRODUCT_PLATFORM, ""),
+                SystemProperties.get(PROP_BOARD_PLATFORM, ""),
+                SystemProperties.get(PROP_HARDWARE, ""),
+                SystemProperties.get(PROP_SOC_MANUFACTURER, ""),
+                SystemProperties.get(PROP_SOC_MODEL, ""));
+    }
+
+    @AnyThread
+    @NonNull
+    public static Intent getPinnedSafeManagerArchiveIntent() {
+        return new Intent(Intent.ACTION_VIEW, Uri.parse(PINNED_SAFE_MANAGER_ARCHIVE_URL))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    @AnyThread
     @NonNull
     public static Intent getTrustedWlanAutoStartIntent(@NonNull Context context) {
         PackageManager pm = context.getPackageManager();
@@ -222,6 +257,48 @@ public final class ShizukuBridge {
     }
 
     @VisibleForTesting
+    @Nullable
+    static OemCompatibilityWarning getOemCompatibilityWarning(@Nullable String manufacturer,
+                                                              @Nullable String model,
+                                                              @Nullable String device,
+                                                              @Nullable String product,
+                                                              int sdkInt,
+                                                              @Nullable String managerVersionName,
+                                                              int shizukuApiVersion,
+                                                              @Nullable String transsionVersion,
+                                                              @Nullable String productPlatform,
+                                                              @Nullable String boardPlatform,
+                                                              @Nullable String hardware,
+                                                              @Nullable String socManufacturer,
+                                                              @Nullable String socModel) {
+        if (!isShizuku13_6Runtime(managerVersionName, shizukuApiVersion)) {
+            return null;
+        }
+        String maker = lower(manufacturer);
+        if (sdkInt >= ANDROID_15_SDK_INT
+                && (isTranssionManufacturer(maker) || !lower(transsionVersion).isEmpty())) {
+            return new OemCompatibilityWarning("transsion",
+                    R.string.shizuku_oem_compat_banner_transsion,
+                    R.string.shizuku_oem_compat_summary_transsion);
+        }
+        if (sdkInt >= ANDROID_16_SDK_INT && "google".equals(maker)
+                && containsAny(lower(model) + " " + lower(device) + " " + lower(product),
+                "pixel 9", "pixel9")) {
+            return new OemCompatibilityWarning("pixel9",
+                    R.string.shizuku_oem_compat_banner_pixel9,
+                    R.string.shizuku_oem_compat_summary_pixel9);
+        }
+        String platform = lower(productPlatform) + " " + lower(boardPlatform) + " " + lower(hardware)
+                + " " + lower(socManufacturer) + " " + lower(socModel);
+        if (sdkInt >= ANDROID_15_SDK_INT && isMediatekPlatform(platform)) {
+            return new OemCompatibilityWarning("mediatek",
+                    R.string.shizuku_oem_compat_banner_mediatek,
+                    R.string.shizuku_oem_compat_summary_mediatek);
+        }
+        return null;
+    }
+
+    @VisibleForTesting
     @StringRes
     static int getClearDataAuthorizationWarning(@NonNull String appPackageName, @NonNull String targetPackageName,
                                                 boolean declaresShizukuProvider) {
@@ -265,6 +342,35 @@ public final class ShizukuBridge {
         return Objects.equals(PROVIDER_CLASS_NAME, providerName);
     }
 
+    private static boolean isShizuku13_6Runtime(@Nullable String managerVersionName, int shizukuApiVersion) {
+        if (managerVersionName != null) {
+            return compareVersion(managerVersionName, MIN_RECOMMENDED_MANAGER_VERSION) >= 0;
+        }
+        return shizukuApiVersion >= SHIZUKU_13_6_API_VERSION;
+    }
+
+    private static boolean isTranssionManufacturer(@NonNull String manufacturer) {
+        return containsAny(manufacturer, "transsion", "infinix", "tecno", "itel");
+    }
+
+    private static boolean isMediatekPlatform(@NonNull String platform) {
+        return containsAny(platform, "mediatek", "mtk", "mt6", "mt7", "mt8", "mt9", "dimensity", "helio");
+    }
+
+    private static boolean containsAny(@NonNull String haystack, @NonNull String... needles) {
+        for (String needle : needles) {
+            if (haystack.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NonNull
+    private static String lower(@Nullable String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
     @VisibleForTesting
     static int compareVersion(@NonNull String versionName, @NonNull String requiredVersionName) {
         int[] version = parseVersionPrefix(versionName);
@@ -300,5 +406,27 @@ public final class ShizukuBridge {
         int[] compact = new int[count];
         System.arraycopy(version, 0, compact, 0, count);
         return compact;
+    }
+
+    public static final class OemCompatibilityWarning {
+        @NonNull
+        public final String reasonCode;
+        @StringRes
+        public final int bannerTextRes;
+        @StringRes
+        public final int summaryTextRes;
+        @NonNull
+        public final String fallbackVersion;
+        @NonNull
+        public final String archiveUrl;
+
+        private OemCompatibilityWarning(@NonNull String reasonCode, @StringRes int bannerTextRes,
+                                        @StringRes int summaryTextRes) {
+            this.reasonCode = reasonCode;
+            this.bannerTextRes = bannerTextRes;
+            this.summaryTextRes = summaryTextRes;
+            this.fallbackVersion = PINNED_SAFE_MANAGER_VERSION;
+            this.archiveUrl = PINNED_SAFE_MANAGER_ARCHIVE_URL;
+        }
     }
 }
