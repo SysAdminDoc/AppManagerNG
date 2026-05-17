@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -88,6 +89,7 @@ public class ProfileApplierService extends ForegroundService {
         if (item == null) {
             return;
         }
+        SelfBatteryOptimization.autoFixIfPossible(this);
         boolean notify = intent.getBooleanExtra(EXTRA_NOTIFY, true);
         Path tempProfilePath = item.getTempProfilePath();
         try {

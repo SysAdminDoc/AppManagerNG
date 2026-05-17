@@ -6,9 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -22,10 +20,8 @@ import com.google.android.material.transition.MaterialSharedAxis;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
-import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
-import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
-import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
@@ -67,12 +63,11 @@ public class TroubleshootingPreferences extends PreferenceFragment {
                             Toast.LENGTH_LONG).show();
                     return true;
                 });
-        // Battery optimization — surfaces current exemption state and routes the
-        // user to either the per-app request prompt (if currently optimized) or
-        // the system-wide settings list (if already exempt, so they can revoke).
-        // No background work is performed here; the OS owns the toggle. Pre-M
-        // devices have no whitelist concept — we leave the entry visible but
-        // disabled with an explanatory summary.
+        // Battery optimization — surfaces current exemption state, prefers the
+        // privileged deviceidle binder path when available, and otherwise routes
+        // to the OS-owned per-app request prompt/settings list. Pre-M devices
+        // have no whitelist concept, so the entry is disabled with an
+        // explanatory summary.
         mBatteryOptPref = (Preference) Objects.requireNonNull(findPreference("battery_optimization"));
         mBatteryOptPref.setOnPreferenceClickListener(preference -> {
             launchBatteryOptimizationFlow();
@@ -105,13 +100,12 @@ public class TroubleshootingPreferences extends PreferenceFragment {
         if (mBatteryOptPref == null) return;
         Context ctx = getContext();
         if (ctx == null) return;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        if (!SelfBatteryOptimization.isSupported()) {
             mBatteryOptPref.setSummary(R.string.pref_battery_optimization_unsupported);
             mBatteryOptPref.setEnabled(false);
             return;
         }
-        PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
-        boolean exempt = pm != null && pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
+        boolean exempt = SelfBatteryOptimization.isExempt(ctx);
         mBatteryOptPref.setSummary(exempt
                 ? R.string.pref_battery_optimization_state_exempt
                 : R.string.pref_battery_optimization_state_optimized);
@@ -121,26 +115,26 @@ public class TroubleshootingPreferences extends PreferenceFragment {
     private void launchBatteryOptimizationFlow() {
         Context ctx = getContext();
         if (ctx == null) return;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        if (!SelfBatteryOptimization.isSupported()) {
             Toast.makeText(ctx, R.string.pref_battery_optimization_unsupported,
                     Toast.LENGTH_LONG).show();
             return;
         }
-        PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
-        boolean exempt = pm != null && pm.isIgnoringBatteryOptimizations(ctx.getPackageName());
+        boolean exempt = SelfBatteryOptimization.isExempt(ctx);
         // SD-Maid-style auto-fix: when running with root/ADB privileges we can
         // grant the whitelist exemption silently via the deviceidle binder
         // instead of bouncing the user through the system dialog. Only takes
         // the silent path when the user is *not* already exempt; if they are,
         // route them to the system list so they can revoke if desired.
-        if (!exempt && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.DEVICE_POWER)) {
-            String packageName = ctx.getPackageName();
+        if (!exempt && SelfBatteryOptimization.canAutoFix()) {
+            Context appContext = ctx.getApplicationContext();
             ThreadUtils.postOnBackgroundThread(() -> {
-                boolean ok = DeviceIdleManagerCompat.disableBatteryOptimization(packageName);
+                @SelfBatteryOptimization.AutoFixResult int result = SelfBatteryOptimization.autoFixIfPossible(appContext);
                 ThreadUtils.postOnMainThread(() -> {
                     Context c = getContext();
                     if (c == null) return;
-                    if (ok) {
+                    if (result == SelfBatteryOptimization.RESULT_FIXED
+                            || result == SelfBatteryOptimization.RESULT_ALREADY_EXEMPT) {
                         Toast.makeText(c, R.string.pref_battery_optimization_state_exempt,
                                 Toast.LENGTH_SHORT).show();
                         refreshBatteryOptimizationSummary();
