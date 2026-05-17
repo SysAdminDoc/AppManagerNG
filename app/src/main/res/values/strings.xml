@@ -1654,6 +1654,9 @@
     <string name="privilege_health_remote_services_title">Remote server and services</string>
     <string name="privilege_health_remote_services_summary"><xliff:g id="server" example="Remote server is active">%1$s</xliff:g>. <xliff:g id="services" example="Remote services are active">%2$s</xliff:g>. Working UID: <xliff:g id="working_uid" example="2000">%3$d</xliff:g>; app UID: <xliff:g id="app_uid" example="10345">%4$d</xliff:g>.</string>
     <string name="privilege_health_battery_can_auto_fix">Optimized - tap to whitelist AppManagerNG through the active root/ADB privilege path.</string>
+    <string name="privilege_health_bootstrap_smoke_test_title">LocalServer bootstrap smoke test</string>
+    <string name="privilege_health_bootstrap_smoke_test_summary">Run the privileged-shell handshake and copyable diagnostic signature for the current mode.</string>
+    <string name="privilege_health_bootstrap_smoke_test_running">Running LocalServer bootstrap smoke test...</string>
     <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>

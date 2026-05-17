@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — LocalServer bootstrap smoke test (2026-05-17)
+
+- Settings -> Privileges now includes a "LocalServer bootstrap smoke test" row
+  that runs the LocalServer privileged-shell handshake plus an `id -u` probe for
+  the current Root/Shizuku/ADB mode.
+- The result is shown as a copyable single-line diagnostic signature containing
+  device/build/mode/UID/LineageOS/probe fields; failures include the exception
+  class, message, and direct cause.
+- The existing LocalServer bootstrap-failure log now uses the same
+  `LocalServer.buildBootstrapSignature(...)` formatter as the success-path smoke
+  test, keeping issue reports consistent.
+
 ### Added — distribution build flavors (2026-05-17)
 
 - Added default `floss` and optional `full` product flavors in the

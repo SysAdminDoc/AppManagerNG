@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -26,11 +27,13 @@ import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
+import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class PrivilegeHealthPreferences extends PreferenceFragment {
     private static final List<String> MODE_NAMES = Arrays.asList(
@@ -49,6 +52,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mAdbPref;
     private Preference mRemoteServicesPref;
     private Preference mBatteryOptimizationPref;
+    private Preference mBootstrapSmokeTestPref;
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -62,8 +66,13 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mAdbPref = requirePreference("privilege_health_adb");
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
+        mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
             bindCapabilityDroppingAsync();
+            return true;
+        });
+        mBootstrapSmokeTestPref.setOnPreferenceClickListener(preference -> {
+            runBootstrapSmokeTest();
             return true;
         });
         mBatteryOptimizationPref.setOnPreferenceClickListener(preference -> {
@@ -253,6 +262,38 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             mBatteryOptimizationPref.setSummary(R.string.privilege_health_battery_can_auto_fix);
         } else {
             mBatteryOptimizationPref.setSummary(R.string.pref_battery_optimization_state_optimized);
+        }
+    }
+
+    private void runBootstrapSmokeTest() {
+        Context context = getContext();
+        if (context == null) return;
+        mBootstrapSmokeTestPref.setEnabled(false);
+        mBootstrapSmokeTestPref.setSummary(R.string.privilege_health_bootstrap_smoke_test_running);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            long started = SystemClock.elapsedRealtime();
+            String signature;
+            try {
+                LocalServer server = LocalServer.getInstance();
+                Shell.Result result = server.runCommand("id -u");
+                signature = LocalServer.buildBootstrapSignature("succeeded", null,
+                        SystemClock.elapsedRealtime() - started, result);
+            } catch (Throwable th) {
+                signature = LocalServer.buildBootstrapSignature("failed", th,
+                        SystemClock.elapsedRealtime() - started, null);
+            }
+            ThreadUtils.postOnMainThread(() -> showBootstrapSmokeTestResult(signature));
+        });
+    }
+
+    private void showBootstrapSmokeTestResult(@NonNull String signature) {
+        if (!isAdded()) return;
+        mBootstrapSmokeTestPref.setEnabled(true);
+        mBootstrapSmokeTestPref.setSummary(signature);
+        Context context = getContext();
+        if (context != null) {
+            UIUtils.displayCopyableErrorDialog(context,
+                    getString(R.string.privilege_health_bootstrap_smoke_test_title), signature);
         }
     }
 
