@@ -2231,8 +2231,10 @@
     <string name="op_history_detail_full_details">Details</string>
     <string name="op_history_detail_operation">Operation</string>
     <string name="op_history_detail_mode">Mode</string>
+    <string name="op_history_detail_bootstrap_signature">LocalServer bootstrap signature</string>
     <string name="op_history_detail_targets">Targets</string>
     <string name="op_history_detail_failed">Failed</string>
+    <string name="op_history_detail_exit_code">Exit code</string>
     <string name="op_history_detail_risk">Risk</string>
     <string name="op_history_detail_replayable">Replayable</string>
     <string name="op_history_detail_reversible">Reversible</string>

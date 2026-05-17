@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — privileged operation audit log closure (2026-05-17)
+
+- Audited the existing Room-backed operation history as AppManagerNG's
+  privileged operation audit log: it already has a viewer, search/filter/sort,
+  rerun/share/delete flows, JSON/CSV/text export, and privacy retention controls.
+- New operation-history metadata now records normalized `exit_code` values and
+  the remembered LocalServer bootstrap signature when available.
+- Operation details and JSON/CSV exports now include those fields so support
+  reports can correlate a privileged action with the most recent LocalServer
+  bootstrap context.
+
 ### Added — support-info bundle composer (2026-05-17)
 
 - Settings -> Troubleshooting now has a "Share support info" action that writes
