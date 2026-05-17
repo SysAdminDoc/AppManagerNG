@@ -1704,6 +1704,18 @@
     <string name="privilege_health_remote_services_title">Remote server and services</string>
     <string name="privilege_health_remote_services_summary"><xliff:g id="server" example="Remote server is active">%1$s</xliff:g>. <xliff:g id="services" example="Remote services are active">%2$s</xliff:g>. Working UID: <xliff:g id="working_uid" example="2000">%3$d</xliff:g>; app UID: <xliff:g id="app_uid" example="10345">%4$d</xliff:g>.</string>
     <string name="privilege_health_battery_can_auto_fix">Optimized - tap to whitelist AppManagerNG through the active root/ADB privilege path.</string>
+    <string name="privilege_health_restricted_settings_title">Restricted Settings unlock</string>
+    <string name="privilege_health_restricted_settings_not_applicable">Android 13 Restricted Settings does not apply on this device.</string>
+    <string name="privilege_health_restricted_settings_trusted">Installer source: <xliff:g id="source" example="com.android.vending">%1$s</xliff:g>. Restricted Settings is not expected, but the walkthrough is available if a sensitive toggle is disabled.</string>
+    <string name="privilege_health_restricted_settings_likely">Installer source: <xliff:g id="source" example="com.android.packageinstaller">%1$s</xliff:g>. Android may block Accessibility, notification listener, or device-admin toggles until you allow restricted settings.</string>
+    <string name="privilege_health_restricted_settings_review">Installer source: <xliff:g id="source" example="org.fdroid.fdroid">%1$s</xliff:g>. Android 13+ may require the manual restricted-settings unlock if a sensitive toggle is disabled.</string>
+    <string name="privilege_health_restricted_settings_unknown">Installer source is unknown. Android 13+ may treat this install as sideloaded and block sensitive toggles until you allow restricted settings.</string>
+    <string name="privilege_health_restricted_settings_dialog_title">Restricted Settings unlock</string>
+    <string name="privilege_health_restricted_settings_dialog_message">Android 13+ can block sideloaded apps from enabling Accessibility, notification listener, and device-admin style services.\n\nInstaller source: <xliff:g id="source" example="com.android.packageinstaller">%1$s</xliff:g>\n\nOpen App info for AppManagerNG, use the top-right menu to choose Allow restricted settings, then return to the disabled service toggle. On ROMs that expose the unlock from the blocked toggle itself, long-press the disabled toggle and follow the warning.</string>
+    <string name="privilege_health_restricted_settings_open_app_info">Open App info</string>
+    <string name="privilege_health_restricted_settings_open_accessibility">Open Accessibility</string>
+    <string name="privilege_health_restricted_settings_settings_unavailable">Could not open this Settings screen.</string>
+    <string name="privilege_health_restricted_settings_mode_doctor_fix">Open Settings -> App info for AppManagerNG, choose Allow restricted settings from the menu, then return to Accessibility / notification listener / device-admin settings. If your ROM exposes it from the blocked toggle, long-press that disabled toggle.</string>
     <string name="privilege_health_bootstrap_smoke_test_title">LocalServer bootstrap smoke test</string>
     <string name="privilege_health_bootstrap_smoke_test_summary">Run the privileged-shell handshake and copyable diagnostic signature for the current mode.</string>
     <string name="privilege_health_bootstrap_smoke_test_running">Running LocalServer bootstrap smoke test...</string>

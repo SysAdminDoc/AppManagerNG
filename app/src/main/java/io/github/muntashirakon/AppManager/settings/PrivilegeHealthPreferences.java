@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.preference.Preference;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 import java.util.Arrays;
@@ -52,6 +53,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mAdbPref;
     private Preference mRemoteServicesPref;
     private Preference mBatteryOptimizationPref;
+    private Preference mRestrictedSettingsPref;
     private Preference mModeDoctorPref;
     private Preference mBootstrapSmokeTestPref;
 
@@ -67,6 +69,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mAdbPref = requirePreference("privilege_health_adb");
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
+        mRestrictedSettingsPref = requirePreference("privilege_health_restricted_settings");
         mModeDoctorPref = requirePreference("privilege_health_mode_doctor");
         mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
@@ -79,6 +82,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         });
         mBatteryOptimizationPref.setOnPreferenceClickListener(preference -> {
             handleBatteryOptimization();
+            return true;
+        });
+        mRestrictedSettingsPref.setOnPreferenceClickListener(preference -> {
+            showRestrictedSettingsWalkthrough();
             return true;
         });
         mModeDoctorPref.setOnPreferenceClickListener(preference -> {
@@ -117,6 +124,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindAdb(context);
         bindRemoteServices(context);
         bindBatteryOptimization(context);
+        bindRestrictedSettings(context);
         bindRootManagerAsync(context.getApplicationContext());
         bindCapabilityDroppingAsync();
     }
@@ -277,6 +285,37 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         }
     }
 
+    private void bindRestrictedSettings(@NonNull Context context) {
+        RestrictedSettingsDiagnostics.Result result = RestrictedSettingsDiagnostics.probe(context);
+        String source = getRestrictedSettingsSourceLabel(result);
+        switch (result.status) {
+            case RestrictedSettingsDiagnostics.STATUS_NOT_APPLICABLE:
+                mRestrictedSettingsPref.setEnabled(false);
+                mRestrictedSettingsPref.setSummary(R.string.privilege_health_restricted_settings_not_applicable);
+                break;
+            case RestrictedSettingsDiagnostics.STATUS_TRUSTED_STORE:
+                mRestrictedSettingsPref.setEnabled(true);
+                mRestrictedSettingsPref.setSummary(getString(
+                        R.string.privilege_health_restricted_settings_trusted, source));
+                break;
+            case RestrictedSettingsDiagnostics.STATUS_LIKELY_RESTRICTED:
+                mRestrictedSettingsPref.setEnabled(true);
+                mRestrictedSettingsPref.setSummary(getString(
+                        R.string.privilege_health_restricted_settings_likely, source));
+                break;
+            case RestrictedSettingsDiagnostics.STATUS_UNKNOWN_SOURCE:
+                mRestrictedSettingsPref.setEnabled(true);
+                mRestrictedSettingsPref.setSummary(R.string.privilege_health_restricted_settings_unknown);
+                break;
+            case RestrictedSettingsDiagnostics.STATUS_REVIEW_RECOMMENDED:
+            default:
+                mRestrictedSettingsPref.setEnabled(true);
+                mRestrictedSettingsPref.setSummary(getString(
+                        R.string.privilege_health_restricted_settings_review, source));
+                break;
+        }
+    }
+
     private void runBootstrapSmokeTest() {
         Context context = getContext();
         if (context == null) return;
@@ -358,6 +397,35 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         launchBatteryOptimizationSystemFlow(context, exempt);
     }
 
+    private void showRestrictedSettingsWalkthrough() {
+        Context context = getContext();
+        if (context == null) return;
+        RestrictedSettingsDiagnostics.Result result = RestrictedSettingsDiagnostics.probe(context);
+        String source = getRestrictedSettingsSourceLabel(result);
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.privilege_health_restricted_settings_dialog_title)
+                .setMessage(getString(R.string.privilege_health_restricted_settings_dialog_message, source))
+                .setPositiveButton(R.string.privilege_health_restricted_settings_open_app_info,
+                        (dialog, which) -> launchSettingsIntent(
+                                RestrictedSettingsDiagnostics.buildAppInfoIntent(context)))
+                .setNeutralButton(R.string.privilege_health_restricted_settings_open_accessibility,
+                        (dialog, which) -> launchSettingsIntent(
+                                RestrictedSettingsDiagnostics.buildAccessibilitySettingsIntent()))
+                .setNegativeButton(R.string.close, null)
+                .show();
+    }
+
+    private void launchSettingsIntent(@NonNull Intent intent) {
+        Context context = getContext();
+        if (context == null) return;
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            Toast.makeText(context, R.string.privilege_health_restricted_settings_settings_unavailable,
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void launchBatteryOptimizationSystemFlow(@NonNull Context context, boolean exempt) {
         Intent intent;
         if (exempt) {
@@ -373,6 +441,17 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             Toast.makeText(context, R.string.pref_battery_optimization_unsupported,
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    @NonNull
+    private String getRestrictedSettingsSourceLabel(@NonNull RestrictedSettingsDiagnostics.Result result) {
+        if (result.sourcePackageName != null) {
+            return result.sourcePackageName;
+        }
+        if (result.error != null) {
+            return getString(R.string.state_unknown) + " (" + result.error + ")";
+        }
+        return getString(R.string.state_unknown);
     }
 
     @NonNull
