@@ -109,6 +109,11 @@ public final class PrivilegeModeDoctor {
                 + ", binder=" + binderAlive
                 + ", userService=" + supportsUserService
                 + ", permission=" + hasPermission;
+        if (ShizukuBridge.isRootBacked()) {
+            return Probe.warn("Shizuku root-backed", details,
+                    context.getString(R.string.privilege_health_shizuku_root_backed_warning)
+                            + " " + context.getString(R.string.mode_of_op_shizuku_root_backed_tooltip));
+        }
         ShizukuBridge.OemCompatibilityWarning oemWarning = ShizukuBridge.getOemCompatibilityWarning(context);
         if (oemWarning != null) {
             return Probe.warn("Shizuku OEM compatibility", details + ", oemRisk=" + oemWarning.reasonCode,

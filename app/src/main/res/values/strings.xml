@@ -1593,6 +1593,7 @@
     <string name="onboarding_mode_shizuku_title">Shizuku</string>
     <string name="onboarding_mode_shizuku_summary">Rootless privileged mode. Uses Shizuku or Sui to run AppManagerNG services as shell or root without a local ADB daemon.</string>
     <string name="onboarding_mode_shizuku_status_ready">Shizuku is running and authorized</string>
+    <string name="onboarding_mode_shizuku_status_root_backed">Shizuku is root-backed — ADB mode preferred</string>
     <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku is running — authorization required</string>
     <string name="onboarding_mode_shizuku_status_update_recommended">Shizuku %1$s detected — update to v13.6.0+ for Android 16 QPR1 and trusted-WLAN auto-start</string>
     <string name="onboarding_mode_shizuku_status_missing">Not running — start Shizuku first</string>
@@ -1600,6 +1601,7 @@
     <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku v13.6.0+ is recommended for Android 16 QPR1 support and trusted-WLAN auto-start on Android 13+.</string>
     <string name="shizuku_autostart_configure">Configure auto-start in Shizuku</string>
     <string name="shizuku_autostart_open_failed">Could not open Shizuku auto-start settings.</string>
+    <string name="onboarding_mode_shizuku_root_backed_warning">Shizuku is currently started through root. Some banking and Play Integrity-strict apps can crash just because the root-backed Shizuku service is present. Tap here to switch AppManagerNG to ADB mode when possible.</string>
     <string name="onboarding_mode_shizuku_android17_warning">Shizuku has reported compatibility issues on Android 17. If privileged actions fail or the app list is blank, use Wireless ADB pairing until Shizuku ships a fixed release. Tap here to start Wireless ADB setup.</string>
     <string name="onboarding_mode_adb_wifi_title">Wireless ADB (Android 11+)</string>
     <string name="onboarding_mode_adb_wifi_summary">Connect via Wireless debugging. Most features unlocked, no PC needed after pairing.</string>
@@ -1641,6 +1643,9 @@
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_shizuku">• Shizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
     <string name="mode_of_op_shizuku_autostart_hint">Shizuku v13.6.0+ can restart rootless mode after reboot when the device joins a trusted WLAN. Configure the trusted network in Shizuku.</string>
+    <string name="mode_of_op_shizuku_root_backed_hint">Shizuku is running with root behind the scenes. Banking and Play Integrity-strict apps may still react to that root-backed service even when they were never granted Shizuku access.</string>
+    <string name="mode_of_op_shizuku_root_backed_action">Switch to ADB mode</string>
+    <string name="mode_of_op_shizuku_root_backed_tooltip">Use ADB-backed Shizuku or AppManagerNG ADB mode when available; keep root-backed Shizuku only when you explicitly need root-level Shizuku.</string>
     <string name="shizuku_oem_compat_banner_transsion">This Transsion/Infinix/Tecno/Itel Android 15 ROM is known to kill Shizuku 13.6.0 UserService. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build. Tap to open the F-Droid archive.</string>
     <string name="shizuku_oem_compat_summary_transsion">This Transsion/Infinix/Tecno/Itel Android 15 ROM is known to kill Shizuku 13.6.0 UserService. Pin Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> until upstream ships a fixed build.</string>
     <string name="shizuku_oem_compat_banner_mediatek">This Mediatek/MTK device is known to require Shizuku <xliff:g id="version" example="13.5.4">%1$s</xliff:g> instead of 13.6.0 for stable UserService binding. Tap to open the F-Droid archive.</string>
@@ -1654,6 +1659,7 @@
     <string name="mode_of_op_capability_status_detected">detected</string>
     <string name="mode_of_op_capability_status_missing">not detected</string>
     <string name="mode_of_op_capability_status_authorized">authorized</string>
+    <string name="mode_of_op_capability_status_root_backed">root-backed</string>
     <string name="mode_of_op_capability_status_permission_required">permission required</string>
     <string name="mode_of_op_capability_status_active">active</string>
     <string name="mode_of_op_capability_status_paired">paired, inactive</string>
@@ -1691,6 +1697,7 @@
     <string name="privilege_health_shizuku_authorized">authorized</string>
     <string name="privilege_health_shizuku_permission_required">permission required</string>
     <string name="privilege_health_shizuku_android17_warning">Android 17 compatibility risk is still open; use Wireless ADB if Shizuku actions fail.</string>
+    <string name="privilege_health_shizuku_root_backed_warning">Shizuku is root-backed. Prefer ADB-backed Shizuku or AppManagerNG ADB mode when available to avoid banking-app and Play Integrity side effects.</string>
     <string name="privilege_health_shizuku_update_recommended">Update Shizuku to <xliff:g id="version" example="13.6.0">%1$s</xliff:g> or newer for Android 16 QPR1 and trusted-WLAN auto-start support.</string>
     <string name="privilege_health_adb_title">ADB and wireless debugging</string>
     <string name="privilege_health_adb_summary">USB debugging: <xliff:g id="usb" example="enabled">%1$s</xliff:g>. Wireless debugging: <xliff:g id="wireless" example="active">%2$s</xliff:g>. Last paired port: <xliff:g id="port" example="37123">%3$s</xliff:g>.</string>
