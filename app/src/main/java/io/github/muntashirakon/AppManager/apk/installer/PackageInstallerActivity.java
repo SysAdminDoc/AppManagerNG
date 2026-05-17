@@ -66,6 +66,7 @@ import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 import io.github.muntashirakon.AppManager.apk.splitapk.SplitApkChooser;
 import io.github.muntashirakon.AppManager.apk.whatsnew.WhatsNewFragment;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
@@ -145,6 +146,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private boolean initiated = false;
     @NonNull
     private List<InstallDependencyChecker.Issue> mPendingDependencyIssues = Collections.emptyList();
+    private boolean mDeveloperVerificationWarningShown;
     private final View.OnClickListener mAppInfoClickListener = v -> {
         assert mCurrentItem != null;
         try {
@@ -481,6 +483,20 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @UiThread
     @Override
     public void triggerInstall() {
+        if (!mDeveloperVerificationWarningShown
+                && DeveloperVerificationCompat.isVerifierServiceAvailable(this)) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.developer_verification)
+                    .setMessage(R.string.installer_developer_verification_warning)
+                    .setCancelable(false)
+                    .setNegativeButton(R.string.cancel, (dialog, which) -> triggerCancel())
+                    .setPositiveButton(R.string.action_continue, (dialog, which) -> {
+                        mDeveloperVerificationWarningShown = true;
+                        triggerInstall();
+                    })
+                    .show();
+            return;
+        }
         // Calls install(), reinstall() (which in terms called install()) and triggerCancel()
         if (mModel.getInstalledPackageInfo() == null) {
             // App not installed
@@ -559,6 +575,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         mMultiplexer.enableUninstall(false);
         if (hasNext()) {
             mIsDealingWithApk = true;
+            mDeveloperVerificationWarningShown = false;
             mDialogHelper.initProgress(v -> goToNext());
             synchronized (mApkQueue) {
                 mCurrentItem = Objects.requireNonNull(mApkQueue.poll());
@@ -678,7 +695,11 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @Nullable
     private CharSequence composeInstallCallout(int trackers,
                                                @NonNull List<InstallDependencyChecker.Issue> issues) {
-        List<CharSequence> lines = new ArrayList<>(issues.size() + 1);
+        List<CharSequence> lines = new ArrayList<>(issues.size() + 2);
+        if (DeveloperVerificationCompat.isVerifierServiceAvailable(this)) {
+            lines.add(getText(R.string.installer_developer_verification_warning));
+            mDeveloperVerificationWarningShown = true;
+        }
         if (trackers > 0) {
             lines.add(getResources().getQuantityString(
                     R.plurals.installer_tracker_callout, trackers, trackers));
