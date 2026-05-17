@@ -71,6 +71,7 @@ import io.github.muntashirakon.AppManager.runningapps.RunningAppsActivity;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
+import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.usage.AppUsageActivity;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
@@ -970,7 +971,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         new MaterialAlertDialogBuilder(this)
                 .setIcon(R.drawable.ic_brush)
                 .setTitle(R.string.batch_clear_dialog_title)
-                .setMessage(getString(R.string.batch_clear_dialog_message, getSelectedAppCountLabel()))
+                .setMessage(getBatchClearDataCacheMessage())
                 .setPositiveButton(R.string.clear_cache, (dialog, which) ->
                         handleBatchOp(BatchOpsManager.OP_CLEAR_CACHE))
                 .setNegativeButton(R.string.cancel, null)
@@ -1017,6 +1018,16 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private String getSelectedAppCountLabel() {
         int count = viewModel == null ? 0 : viewModel.getSelectedPackages().size();
         return getResources().getQuantityString(R.plurals.batch_selected_app_count, count, count);
+    }
+
+    @NonNull
+    private String getBatchClearDataCacheMessage() {
+        String message = getString(R.string.batch_clear_dialog_message, getSelectedAppCountLabel());
+        if (viewModel != null && ShizukuBridge.hasClearDataAuthorizationWarning(this,
+                viewModel.getSelectedPackages().keySet())) {
+            message += "\n\n" + getString(R.string.shizuku_clear_data_batch_warning);
+        }
+        return message;
     }
 
     private void handleBatchOp(@BatchOpsManager.OpType int op) {
