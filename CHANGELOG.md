@@ -5,6 +5,41 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 targetSdk=37 audit batch closed clean (2026-05-17)
+
+The five open sub-audits in the Engineering Debt Register's Android 17 targetSdk=37 compliance batch were executed during the iter-26 walk-away research follow-through. All five return clean — NG ships **zero source-side compliance work** for the targetSdk=37 bump.
+
+- **`usesCleartextTraffic` enforcement** ✅ clean — `network_security_config.xml` declares `base-config cleartextTrafficPermitted="false"`; manifest has no `usesCleartextTraffic` attribute; pinned domains (VirusTotal, Pithus) are HTTPS-only with cert-pin sets; loopback (`127.0.0.1` / `localhost`) is explicitly opted in for libadb-android pairing. [`docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md`](docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md).
+- **`ACCESS_LOCAL_NETWORK` runtime permission** ✅ clean — zero `NsdManager` / `MulticastSocket` / mDNS / `NetworkInterface.getNetworkInterfaces()` in production. Wireless ADB pairing is input-driven (user types host+port from device Wireless Debugging panel); no LAN discovery surface. [`docs/audits/2026-05-17-android17-access-local-network.md`](docs/audits/2026-05-17-android17-access-local-network.md).
+- **BAL hardening + `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` migration** ✅ clean — zero matches across `app/src/main/java/` for the deprecated BAL flag or `setPendingIntentBackgroundActivityStartMode()`. NG launches activities from foreground UI contexts; the `am://` URI scheme and the planned Tasker-parameterized broadcast API are receiver-driven and unaffected. [`docs/audits/2026-05-17-android17-bal-intentsender.md`](docs/audits/2026-05-17-android17-bal-intentsender.md).
+- **ECH default-on for TLS** ✅ clean — NG's three network destinations all handle ECH default-on without renegotiation. No `<domainEncryption>` opt-out needed in `network_security_config.xml`. [`docs/audits/2026-05-17-android17-ech-default-on.md`](docs/audits/2026-05-17-android17-ech-default-on.md).
+- **ML-DSA Keystore OID recognition** ✅ clean (audit) — NG's APK cert display surfaces both `getSigAlgName()` AND `getSigAlgOID()`; no algorithm-name string-comparison branches downstream; forward-compatible with Android 17's new `1.3.6.1.4.1.2.267.12.6.5` (ML-DSA-65) and `.8.7` (ML-DSA-87) OIDs. Polish opportunity (not compliance-blocking): a small OID→display-name map. [`docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md`](docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md).
+
+Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **closed**. The remaining blockers to the `targetSdk = 37` bump are external: (a) the 1 deferred finding from the iter-20 static-final-reflection audit; (b) the Shizuku 13.6.0 / Android 17 regression (Shizuku #1965 / #1967) — see "Audit — Shizuku Android-17 compatibility" below. Android 17 stable lands June 2026 ([S324]).
+
+### Audit — Shizuku Android-17 compatibility (confirmed, needs-design) (2026-05-17)
+
+- New [`docs/audits/2026-05-17-shizuku-android17-compat.md`](docs/audits/2026-05-17-shizuku-android17-compat.md) — verdict on NG's iter-23 Shizuku integration against the Android 17 Beta 3 regressions reported in Shizuku #1965 / #1967.
+- **Verdict: `confirmed, needs-design`**. NG's [`ShizukuBridge.java`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java) probes are all `Throwable`-caught and **will not crash** on Android 17 — the failure mode is silent op-failure rather than a hard crash, which is the worst-case stale-trust window (NG shows green on onboarding but privileged operations time out or no-op).
+- **Design captured** in the audit: a non-destructive `hasAndroid17CompatibilityRisk(Context)` probe added to `ShizukuBridge.java` (combines `Build.VERSION.SDK_INT >= 37` with the installed Shizuku version + a `MIN_ANDROID_17_COMPATIBLE_VERSION` constant kept `null` until a Shizuku fix ships), plus an onboarding banner in `OnboardingFragment.java` that recommends switching to Wireless ADB pairing when the probe returns true.
+- **Implementation gated** on (a) device verification against an Android 17 Beta image (Pixel 9 emulator or device per ROADMAP iter-19 [S148] matrix), and (b) a Shizuku release that ships the upstream fix so the constant can be populated. Tracked as iter-26 → iter-27 carryover in ROADMAP iter-25 §"Shizuku Android-17 Compatibility Watch".
+- Closes the *design* half of the iter-25 backlog F-NEW-25-01.
+
+### Added — minSdk-21 cascade analysis (2026-05-17)
+
+- [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) gained a new "Cascade analysis: what `minSdk = 23` would unlock" sub-section. Maps the Material Components 1.14 ceiling pressure to the four other pinned-cluster lines (`activity` 1.11 → 1.12, `biometric` 1.4.0-alpha04 → alpha05+, `room` 2.7.2 → 2.8, `webkit` 1.14 → 1.15) and documents the decision pressure: Material 1.14.0 is still alpha (alpha06/07/08 — [S325]), so the floor decision can stay deferred. Bumping the cluster one-at-a-time is explicitly discouraged — the floor lift lands as a single `min_sdk = 23` PR that also bumps the five pinned-cluster deps in lockstep when the decision is forced.
+- Closes iter-24 backlog row F-NEW-09.
+
+### Added — Docs Markdown link checker CI workflow (2026-05-17)
+
+- New [`.github/workflows/docs-link-check.yml`](.github/workflows/docs-link-check.yml) — `lycheeverse/lychee-action@v2` runs on push, PR, and weekly Tuesday 11:11 UTC (staggered off existing CI cadences). Scope: all `*.md` at repo root, `docs/**/*.md`, `.ai/**/*.md`, plus `ROADMAP.md` / `CHANGELOG.md` / `PROJECT_CONTEXT.md`. Cache-backed (7-day TTL) to avoid hammering external URLs on every push; uploads a `lychee-out.md` report as a CI artifact for inspection.
+- Closes iter-24 backlog row F-NEW-13 — link-rot insurance for the new `PROJECT_CONTEXT.md` + `docs/architecture/` tree.
+
+### Added — JaCoCo coverage rollout plan (2026-05-17)
+
+- New [`docs/policy/jacoco-coverage-rollout.md`](docs/policy/jacoco-coverage-rollout.md) — implementation plan for JaCoCo coverage reporting (ROADMAP iter-24 backlog F-NEW-11; T11 row "Unit Test Coverage Expansion"). Five concrete steps: (1) apply the `jacoco` Gradle plugin in `app/build.gradle`, (2) pin `jacoco_version = "0.8.13"` in `versions.gradle`, (3) wire the `jacoco` block + `jacocoTestReport` task with the standard Android exclusion set, (4) update `.github/workflows/tests.yml` to generate the report and upload the HTML artifact (optional Codecov step), (5) optional README badge.
+- The autonomous-research session that drafted this plan deliberately did **not** modify `app/build.gradle` — JaCoCo wire-in benefits from local-build verification on a Windows / macOS / Linux build host (which the session does not have). The doc is detailed enough that the maintainer can land it as a single copy-paste-and-verify commit.
+
 ### Fixed — Finder regex predicates compiled as regex, not literals (2026-05-17)
 
 - [`FilterOption.setKeyValue()`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java) was wrapping every user-supplied regex value in `Pattern.quote()` before `Pattern.compile()`, so a pattern like `".*facebook.*"` only matched the literal 9-character string and never anything *containing* "facebook". The iter-23 work that added `name_regex` to [`TrackersOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) and `regex` to `ComponentsOption` would have failed silently in production. The fix drops `Pattern.quote()`, wraps the compile in `try/catch (PatternSyntaxException)` so an invalid pattern surfaces with the key/type/message instead of crashing the filter pass, and adds the missing `break` between the `TYPE_REGEX` and `TYPE_STR_MULTIPLE` switch cases (the fall-through was overwriting `stringValues` after a regex predicate compile).

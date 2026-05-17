@@ -40,6 +40,37 @@ Other AndroidX / Jetpack dependencies (`appcompat 1.7.x`, `androidx.core 1.17.x`
 
 Third-party libraries we vendor under MuntashirAkon forks (`apksig`, `arsclib`, `duration_picker`, `jadx`, `libadb`, `sora_editor`, `sun-security`, `unapkm`) are bound to upstream `min_sdk = 21` in their build files; bumps land alongside the upstream PR that raises their floor.
 
+## Cascade analysis: what `minSdk = 23` would unlock
+
+If `min_sdk` is ever taken to **23** (Android 6.0 Marshmallow), the following dep
+lines can move in lockstep — the same single decision unblocks the entire pinned
+cluster, which is why the Material Components 1.14 row is the natural pressure
+point for the floor change (not e.g. Activity 1.12 alone).
+
+| Pinned now | Unblocks line | Notes |
+|---|---|---|
+| `activity` 1.11.0 | → 1.12.x and beyond | Activity Embedding API surface cleaned up; predictive-back lifecycle additions land |
+| `biometric` 1.4.0-alpha04 | → 1.4.0-alpha05+ / 1.4.0 stable | Newer biometric prompt APIs + decoupled crypto-object lifecycle |
+| `room` 2.7.2 | → 2.8.x | KSP-only paths, KMP support, new auto-migration coverage |
+| `webkit` 1.14.0 | → 1.15.x | WebView API additions for the in-app HelpActivity surface |
+| `material` 1.13.0 | → 1.14.0+ | M3 Expressive component variants, `FocusRingDrawable`, `SplitButton` RTL |
+
+**Decision pressure (as of 2026-05-17)**: Material Components 1.14.0 is **still
+alpha** (alpha06 / alpha07 / alpha08 — see [S325]). The 1.14.0 line has not
+progressed to stable; the ceiling can stay deferred until either:
+
+1. Material 1.14 ships stable (estimated Q3-Q4 2026 based on M3 alpha → stable cadence), **and** the maintainer judges that the M3 Expressive component surface is worth the floor lift;
+2. A different pinned dep cuts a release that drops API 21-22 support and forces a decision (e.g. Room 2.8.x for a security fix; AndroidX core for a CVE);
+3. Google Play minSdk policy forces an industry-wide floor lift (unlikely for the NG distribution channels: F-Droid, IzzyOnDroid, Obtainium, Accrescent — none impose a Play minSdk policy).
+
+When the decision is forced, the floor lift lands as a single `min_sdk = 23` PR that
+also bumps the five pinned-cluster deps in lockstep. **Don't bump one pinned dep at a
+time** — each individual bump would force `minSdk = 23` for one feature while
+leaving the others frozen, fragmenting the post-floor codebase.
+
+If the floor lift goes further (e.g. to API 24 or 26), the pinned cluster expands; a
+follow-on cascade analysis should be added here at that time.
+
 ## How to change the floor
 
 Do **not** raise `min_sdk` as part of an unrelated PR. The change is irreversible from the user's point of view (devices on the old floor lose updates the next release).
