@@ -53,6 +53,30 @@ public class InstallTranscriptTest {
     }
 
     @Test
+    public void redactSourceUriStripsUserInfoFromAuthority() {
+        // Credentials in the URI userinfo (user[:password]@host) must never make it into the
+        // shareable transcript, even though they sit inside the authority component the redactor
+        // otherwise keeps verbatim.
+        assertEquals("https://example.com/<redacted>",
+                InstallTranscript.redactSourceUri("https://user:secret@example.com/path"));
+        assertEquals("https://example.com",
+                InstallTranscript.redactSourceUri("https://user@example.com"));
+    }
+
+    @Test
+    public void redactSourceUriStripsQueryAndFragment() {
+        // Download providers append signed tokens / document IDs to the query string; an APK
+        // saved with a path-less URL like "https://host?token=…" would previously leak the token
+        // verbatim into the issue transcript.
+        assertEquals("https://example.com/<redacted>",
+                InstallTranscript.redactSourceUri("https://example.com?token=abc123"));
+        assertEquals("https://example.com/<redacted>",
+                InstallTranscript.redactSourceUri("https://example.com#secret"));
+        assertEquals("https://example.com/<redacted>",
+                InstallTranscript.redactSourceUri("https://example.com/path?token=abc&doc=42#frag"));
+    }
+
+    @Test
     public void toShareableTextRendersStableLineOrderWithRedaction() {
         InstallTranscript transcript = new InstallTranscript(
                 "2026-05-16T12:00:00Z",

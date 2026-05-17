@@ -125,6 +125,12 @@ public final class InstallTranscript {
      * download, etc.) without learning the local path or content-provider document IDs. The
      * redaction is conservative — anything that doesn't parse as a URI is replaced wholesale with
      * {@value REDACTED}.
+     *
+     * <p>Beyond the path, the following components are also stripped because they routinely carry
+     * sensitive data: any {@code userinfo} (user[:password]@) prefix in the authority — sometimes
+     * present when an APK is fetched from an authenticated mirror; the query string after {@code ?}
+     * — download providers append document IDs and signed tokens there; the fragment after
+     * {@code #}.
      */
     @VisibleForTesting
     @NonNull
@@ -151,12 +157,26 @@ public final class InstallTranscript {
         if (sourceUri.length() > schemeEnd + 3
                 && sourceUri.charAt(schemeEnd + 1) == '/'
                 && sourceUri.charAt(schemeEnd + 2) == '/') {
-            int authorityEnd = sourceUri.indexOf('/', schemeEnd + 3);
-            if (authorityEnd < 0) {
-                // No path component at all — safe to return verbatim.
-                return sourceUri;
+            int authorityStart = schemeEnd + 3;
+            // Authority ends at the first '/', '?', or '#' (RFC 3986 §3.2). Treat all three so a
+            // URL like "https://host?token=…" can't bypass the path-redactor by having no path.
+            int authorityEnd = sourceUri.length();
+            for (int i = authorityStart; i < sourceUri.length(); i++) {
+                char c = sourceUri.charAt(i);
+                if (c == '/' || c == '?' || c == '#') {
+                    authorityEnd = i;
+                    break;
+                }
             }
-            return sourceUri.substring(0, authorityEnd) + "/" + REDACTED;
+            String authority = sourceUri.substring(authorityStart, authorityEnd);
+            int userInfoEnd = authority.lastIndexOf('@');
+            String host = userInfoEnd >= 0 ? authority.substring(userInfoEnd + 1) : authority;
+            String prefix = scheme + "://" + host;
+            if (authorityEnd == sourceUri.length()) {
+                // Authority only, no path / query / fragment — nothing to redact past the host.
+                return prefix;
+            }
+            return prefix + "/" + REDACTED;
         }
         return scheme + ":" + REDACTED;
     }
