@@ -84,6 +84,7 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     private Map<ComponentInfo, Integer> mAllComponents;
     private Map<ComponentInfo, Integer> mTrackerComponents;
     private List<String> mUsedPermissions;
+    private List<FilterablePermissionInfo> mPermissionDetails;
     private Backup[] mBackups;
     private List<AppOpsManagerCompat.OpEntry> mAppOpEntries;
     @Nullable
@@ -299,6 +300,16 @@ public class FilterableAppInfo implements IFilterableAppInfo {
             mUsedPermissions = new ArrayList<>(usedPermissions);
         }
         return mUsedPermissions;
+    }
+
+    @Override
+    @NonNull
+    public List<FilterablePermissionInfo> getAllPermissionDetails() {
+        if (mPermissionDetails == null) {
+            boolean canReadPermissionFlags = isInstalled() && SelfPermissions.checkGetGrantRevokeRuntimePermissions();
+            mPermissionDetails = FilterablePermissionInfo.fromPackageInfo(mPackageInfo, getUserId(), canReadPermissionFlags);
+        }
+        return mPermissionDetails;
     }
 
     @Override

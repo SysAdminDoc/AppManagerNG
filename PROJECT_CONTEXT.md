@@ -185,7 +185,15 @@ it preserves label/version/system/has-code/keystore/rule signals while reporting
 `isInstalled() == false` so Finder's visible user/state line and existing filters
 continue to behave like normal package rows.
 
-Unit-test files from passes 4-13 cover the new helpers, but local Gradle execution is
+Pass 14 closed T7's Filter: Permission Flags row. `FilterablePermissionInfo` is the
+shared permission-state model for requested permissions: grant state comes from
+`PackageInfo.requestedPermissionsFlags`, runtime permission flags come from
+`PermissionCompat.getPermissionFlags()` when the active privilege path can read
+them, and custom-source/fixed-state helpers feed `PermissionsOption`. Both
+`FilterableAppInfo` and `ApplicationItem` now expose this model through
+`IFilterableAppInfo.getAllPermissionDetails()`.
+
+Unit-test files from passes 4-14 cover the new helpers, but local Gradle execution is
 still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
@@ -293,5 +301,6 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-9/`](.ai/research/2026-05-17-pass-9/),
 [`.ai/research/2026-05-17-pass-10/`](.ai/research/2026-05-17-pass-10/),
 [`.ai/research/2026-05-17-pass-11/`](.ai/research/2026-05-17-pass-11/),
-[`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/), and
-[`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/).
+[`.ai/research/2026-05-17-pass-12/`](.ai/research/2026-05-17-pass-12/),
+[`.ai/research/2026-05-17-pass-13/`](.ai/research/2026-05-17-pass-13/), and
+[`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/).
