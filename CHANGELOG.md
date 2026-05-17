@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — per-app launcher action shortcuts (2026-05-17)
+
+- Added dynamic launcher shortcuts for recent installed apps, exposing freeze,
+  force-stop, and clear-cache actions only when the current Root/Shizuku/ADB
+  privilege path supports the underlying operation.
+- Added `AppActionShortcutActivity`, a non-exported authenticated shortcut
+  handler that dispatches through the existing `FreezeUtils` and
+  `PackageManagerCompat` operation helpers.
+- App Details action chips can now pin force-stop and clear-cache shortcuts by
+  long-pressing those actions; freeze/unfreeze shortcut defaults now use explicit
+  `Freeze <app>` / `Unfreeze <app>` labels.
+
 ### Changed — APK share-target roadmap audit (2026-05-17)
 
 - Closed the stale `APK Share-Target Receiver` roadmap row after verifying the
