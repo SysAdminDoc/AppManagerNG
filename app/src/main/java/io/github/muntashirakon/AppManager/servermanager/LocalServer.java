@@ -28,6 +28,7 @@ import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.server.common.ShellCaller;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.adb.AdbPairingRequiredException;
 
@@ -137,10 +138,21 @@ public class LocalServer {
      */
     private static void logBootstrapFailureSignature(@NonNull Exception e) {
         try {
-            Log.e("IPC", buildBootstrapSignature("failed", e, -1, null));
+            String signature = buildBootstrapSignature("failed", e, -1, null);
+            rememberBootstrapSignature(signature);
+            Log.e("IPC", signature);
         } catch (Throwable ignored) {
             // Diagnostic logging must never mask the original failure.
         }
+    }
+
+    public static void rememberBootstrapSignature(@NonNull String signature) {
+        AppPref.set(AppPref.PrefKey.PREF_LAST_LOCAL_SERVER_BOOTSTRAP_SIGNATURE_STR, signature);
+    }
+
+    @NonNull
+    public static String getLastBootstrapSignature() {
+        return AppPref.getString(AppPref.PrefKey.PREF_LAST_LOCAL_SERVER_BOOTSTRAP_SIGNATURE_STR);
     }
 
     @NonNull

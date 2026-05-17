@@ -119,6 +119,7 @@ public class AppPref {
         PREF_INSTALLER_UPDATE_OWNERSHIP_BOOL,
 
         PREF_LAST_VERSION_CODE_LONG,
+        PREF_LAST_LOCAL_SERVER_BOOTSTRAP_SIGNATURE_STR,
         PREF_LAYOUT_ORIENTATION_INT,
 
         PREF_LOG_VIEWER_BUFFER_INT,
@@ -468,6 +469,7 @@ public class AppPref {
             case PREF_VIRUS_TOTAL_API_KEY_STR:
             case PREF_DEBLOAT_DEFINITIONS_VERSION_STR:
             case PREF_DEBLOAT_DEFINITIONS_SHA256_STR:
+            case PREF_LAST_LOCAL_SERVER_BOOTSTRAP_SIGNATURE_STR:
                 return "";
             case PREF_MODE_OF_OPS_STR:
                 return Ops.MODE_AUTO;
