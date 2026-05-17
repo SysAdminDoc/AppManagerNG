@@ -36,6 +36,8 @@ import aosp.libcore.util.EmptyArray;
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.MiuiUtils;
 
@@ -712,6 +714,7 @@ public class AppOpsManagerCompat {
             // Set UID mode
             mAppOpsService.setUidMode(op, uid, mode);
         }
+        OsRevertMonitor.watchAppOp(ContextUtils.getContext(), packageName, uid, op, mode);
     }
 
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")

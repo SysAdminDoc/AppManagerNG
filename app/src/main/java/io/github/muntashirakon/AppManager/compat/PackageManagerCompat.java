@@ -59,6 +59,7 @@ import java.util.Set;
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -410,6 +411,7 @@ public final class PackageManagerCompat {
             String callingPackage = SelfPermissions.getCallingPackage(Users.getSelfOrRemoteUid());
             pm.setComponentEnabledSetting(componentName, newState, flags, userId, callingPackage);
         } else pm.setComponentEnabledSetting(componentName, newState, flags, userId);
+        OsRevertMonitor.watchComponent(ContextUtils.getContext(), componentName, userId, newState);
         if (userId != UserHandleHidden.myUserId()) {
             BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{componentName.getPackageName()});
         }
