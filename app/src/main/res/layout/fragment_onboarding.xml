@@ -254,6 +254,23 @@
                         android:visibility="gone"
                         tools:visibility="visible" />
 
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/warning_shizuku_android17"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:background="@drawable/onboarding_warning_background"
+                        android:gravity="center_vertical"
+                        android:includeFontPadding="false"
+                        android:minHeight="@dimen/premium_chip_touch_target"
+                        android:paddingHorizontal="@dimen/padding_medium"
+                        android:paddingVertical="@dimen/padding_small"
+                        android:text="@string/onboarding_mode_shizuku_android17_warning"
+                        android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+                        android:textColor="@color/premium_warning_content"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
                 <androidx.appcompat.widget.AppCompatImageButton

@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
+import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.util.UiUtils;
@@ -436,7 +437,7 @@ public class ScannerFragment extends Fragment {
                 builder.append(getPrimaryText(context, context.getString(R.string.issuer) + LangUtils.getSeparatorString()))
                         .append(cert.getIssuerX500Principal().getName()).append("\n")
                         .append(getPrimaryText(context, context.getString(R.string.algorithm) + LangUtils.getSeparatorString()))
-                        .append(cert.getSigAlgName()).append("\n");
+                        .append(Utils.getCertificateSignatureAlgorithmName(cert)).append("\n");
                 // Checksums
                 builder.append(getPrimaryText(context, context.getString(R.string.checksums)));
                 Pair<String, String>[] digests = DigestUtils.getDigests(cert.getEncoded());

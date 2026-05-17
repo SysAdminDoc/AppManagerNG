@@ -32,6 +32,7 @@ import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.pm.PermissionInfoCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -55,6 +56,9 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 
 public class Utils {
+    private static final String ML_DSA_65_OID = "1.3.6.1.4.1.2.267.12.6.5";
+    private static final String ML_DSA_87_OID = "1.3.6.1.4.1.2.267.12.8.7";
+
     public static final String TERMUX_LOGIN_PATH = OsEnvironment.getDataDirectoryRaw() + "/data/com.termux/files/usr/bin/login";
 
     @NonNull
@@ -525,10 +529,27 @@ public class Utils {
             X509Certificate[] certs = signerInfo.getCurrentSignerCerts();
             if (certs != null && certs.length > 0) {
                 X509Certificate c = certs[0];
-                return new Pair<>(c.getIssuerX500Principal().getName(), c.getSigAlgName());
+                return new Pair<>(c.getIssuerX500Principal().getName(), getCertificateSignatureAlgorithmName(c));
             }
         }
         return new Pair<>("", "");
+    }
+
+    @NonNull
+    public static String getCertificateSignatureAlgorithmName(@NonNull X509Certificate certificate) {
+        return prettifySignatureAlgorithmName(certificate.getSigAlgOID(), certificate.getSigAlgName());
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String prettifySignatureAlgorithmName(@Nullable String oid, @Nullable String fallback) {
+        if (ML_DSA_65_OID.equals(oid)) {
+            return "ML-DSA-65 (Dilithium)";
+        }
+        if (ML_DSA_87_OID.equals(oid)) {
+            return "ML-DSA-87 (Dilithium)";
+        }
+        return fallback != null ? fallback : "";
     }
 
     /**

@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Shizuku release watcher.
+#
+# AppManagerNG ships a first-class Shizuku privilege provider. Android 17 Beta 3 reports against
+# Shizuku 13.6.0 (#1965 / #1967) created a narrow platform-compatibility watch window: NG should
+# warn Android 17 users until Shizuku publishes a release note that appears to address the issue,
+# then a maintainer should verify and populate ShizukuBridge.MIN_ANDROID_17_COMPATIBLE_VERSION.
+#
+# This workflow scans recent official Shizuku releases and opens a maintainer issue when a 13.6.x /
+# 13.7.x release note mentions Android 17 or the tracked issue IDs.
+name: "Shizuku Release Watch"
+
+on:
+  schedule:
+    # Weekly Thursday 09:27 UTC — staggered off CodeQL, dependency scan, docs-link-check, and
+    # upstream-rename-watch.
+    - cron: '27 9 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    name: Watch Shizuku Android 17 fix candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe Shizuku releases and open issue on candidate fix
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const upstream = { owner: 'RikkaApps', repo: 'Shizuku' };
+            const response = await github.rest.repos.listReleases({
+              owner: upstream.owner,
+              repo: upstream.repo,
+              per_page: 10
+            });
+            const candidate = response.data.find((release) => {
+              const tag = release.tag_name || '';
+              const text = `${release.name || ''}\n${release.body || ''}`;
+              return /^v?13\.(6|7)\./.test(tag)
+                && /(android\s*17|#1965|#1967)/i.test(text);
+            });
+            if (!candidate) {
+              core.info('No Shizuku 13.6.x / 13.7.x release notes mention Android 17 or #1965/#1967.');
+              return;
+            }
+
+            const title = `Review Shizuku Android 17 fix candidate: ${candidate.tag_name}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const dup = existing.data.find((issue) => issue.title === title);
+            if (dup) {
+              core.info(`Existing issue #${dup.number} already tracks ${candidate.tag_name}.`);
+              return;
+            }
+
+            const notes = (candidate.body || '').trim();
+            const excerpt = notes.length > 3500 ? `${notes.slice(0, 3500)}\n\n...` : notes;
+            const body = [
+              `The Shizuku release watcher found a possible Android 17 compatibility fix candidate.`,
+              ``,
+              `- **Release**: ${candidate.tag_name}`,
+              `- **URL**: ${candidate.html_url}`,
+              `- **Reason**: release tag is in the 13.6.x / 13.7.x watch band and notes mention Android 17 or Shizuku #1965/#1967.`,
+              ``,
+              `### Maintainer checklist`,
+              ``,
+              `- [ ] Install this Shizuku release on an Android 17 Pixel image/device.`,
+              `- [ ] Verify AppManagerNG Shizuku mode can authorize and execute a privileged no-op operation.`,
+              `- [ ] If fixed, set \`ShizukuBridge.MIN_ANDROID_17_COMPATIBLE_VERSION\` to \`${candidate.tag_name.replace(/^v/, '')}\`.`,
+              `- [ ] Re-run ShizukuBridge / onboarding tests and a manual onboarding replay.`,
+              `- [ ] Update ROADMAP, CHANGELOG, and \`docs/audits/2026-05-17-shizuku-android17-compat.md\`.`,
+              ``,
+              `### Release-note excerpt`,
+              ``,
+              excerpt || '_No release notes supplied._',
+              ``,
+              `Triggered by the AppManagerNG Shizuku Android 17 compatibility watch.`,
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body
+            });
+            core.warning(`Opened issue: ${title}`);
