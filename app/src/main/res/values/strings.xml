@@ -727,6 +727,10 @@
     <string name="batch_results_retry_confirm_title">Retry failed apps?</string>
     <string name="batch_results_retry_confirm_body">Retries %1$s for %2$s. Apps that already completed are not included.</string>
     <string name="batch_results_retry_started">Retry started for failed apps.</string>
+    <string name="batch_ops_journal_recovery_title">Interrupted batch operation</string>
+    <string name="batch_ops_journal_recovery_message">AppManagerNG found an unfinished %1$s batch for %2$s in %3$s mode. It started at %4$s and did not record completion. Retry only if you are ready for the same targets to run again.</string>
+    <string name="batch_ops_journal_recovery_reason">Last failure: %1$s</string>
+    <string name="batch_ops_journal_retry">Retry batch</string>
     <string name="batch_results_no_failed_apps_title">No failed apps listed</string>
     <string name="batch_results_no_failed_apps_message">No failed apps were reported. Review the log for the reason this result was shown.</string>
     <string name="batch_results_logs_title">Execution log</string>
