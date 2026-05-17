@@ -33,7 +33,7 @@ ext {
     jb_annotation_version = "26.1.0" // https://github.com/JetBrains/java-annotations (Compile-only)
     libadb_version = "3.1.1" // https://github.com/MuntashirAkon/libadb-android
     libsu_version = "6.0.0" // https://github.com/topjohnwu/libsu
-    material_version = "1.13.0" // https://github.com/material-components/material-components-android
+    material_version = "1.13.0" // https://github.com/material-components/material-components-android — 1.14.0-rc01+ raises minSdkVersion to 23; the ceiling dep that, if unblocked, lets activity/biometric/room/webkit lines move in lockstep. See docs/policy/minsdk-21-ceiling.md
     preferences_version = "1.2.1"
     refine_version = "4.0.0" // https://github.com/RikkaApps/HiddenApiRefinePlugin
     room_version = "2.7.2" // API 21-22 support dropped in 2.8.x

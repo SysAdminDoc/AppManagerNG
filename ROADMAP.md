@@ -4,6 +4,7 @@
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
 **Last updated:** 2026-05-16 — Iter-23 "Now" tier fully shipped: NG governance docs (CONTRIBUTING.md, AGENTS.md), `main`-branch CI coverage, release artifact matrix, dependency-scan version reconciliation, ADB CVE patch-level banner, package-visibility dossier, minSdk-21 ceiling ledger, and NG-rebranded issue/PR templates with support-bundle intake.
 **Next revision due:** v0.6.0 release.
+**Project context index:** [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) is the canonical entry-point for new contributors / AI sessions. The 2026-05-17 research consolidation pass (artifacts in [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/)) queued an iter-24 backlog of three commit-ready fixes (Finder regex predicate fix, install transcript URI redactor, onboarding fragment-detach race) plus governance items — see [`.ai/research/2026-05-17/FEATURE_BACKLOG.md`](.ai/research/2026-05-17/FEATURE_BACKLOG.md).
 
 **Related research:**
 - [Android power-tool competitive research](docs/research/2026-05-02-android-power-tools.md) (2026-05-02)
@@ -1133,3 +1134,8 @@ All external sources cited above.
 | S313 | https://github.com/SysAdminDoc/AppManagerNG/blob/main/app/src/main/java/io/github/muntashirakon/AppManager/misc/DeviceInfo2.java | AppManagerNG device-info source exposing `Build.VERSION.SECURITY_PATCH` for local patch-level checks |
 | S314 | https://github.com/SysAdminDoc/AppManagerNG/blob/main/app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerActivity.java | AppManagerNG installer source TODO for dependency resolution before install/commit |
 | S315 | https://github.com/SysAdminDoc/AppManagerNG/blob/main/app/build.gradle | AppManagerNG Android app Gradle config; debug `pseudoLocalesEnabled true`, minSdk/targetSdk, ABI splits, applicationId |
+| S316 | https://f-droid.org/en/news/ | F-Droid 2.0-alpha9 release (2026-05-08); successor to [S168] alpha8 (2026-04-24); no breaking change since alpha8 — protobuf index v2 work continues. Independently verified via WebSearch during 2026-05-17 research-run consolidation. |
+| S317 | https://f-droid.org/2026/01/24/fdroid-basic-2.0-alpha.html | F-Droid Basic 2.0 alpha announcement (2026-01-24); context for the 2.0-alphaN cadence consumed by T11 row "F-Droid 2.0 Index v2 Protobuf". |
+| S318 | https://www.apkmirror.com/apk/xingchen-rikka/shizuku-manager/shizuku-13-6-0-r1086-2650830c-release/ | Shizuku Manager 13.6.0 APK metadata (target SDK 36 / Android 16); independent confirmation of iter-18 [S121] / [S22] Android-16 QPR1 support claim during 2026-05-17 research-run consolidation. |
+| S319 | https://github.com/SysAdminDoc/AppManagerNG/blob/main/.ai/research/2026-05-17/ | 2026-05-17 autonomous research-run audit trail (`PROJECT_CONTEXT.md` + 11 artifacts under `.ai/research/2026-05-17/`); the consolidation pass that produced this register-extension and the iter-24 backlog. |
+| S320 | https://source.android.com/docs/whatsnew/android-16-release | AOSP Android 16 / Android 16 QPR1 / Android 16 QPR2 release-notes hub; primary reference cross-validating roadmap S124 / S44 / S45 platform-doc citations. |
