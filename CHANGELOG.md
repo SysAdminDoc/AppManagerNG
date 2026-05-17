@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 16 KB native page-size compatibility (2026-05-17)
+
+- Native `libam.so` builds now pass both `-Wl,-z,max-page-size=16384`
+  and `-Wl,-z,common-page-size=16384` through CMake.
+- App Details / scanner native-library rows now parse ELF program headers and
+  show whether each `.so` has 16 KB-compatible `PT_LOAD.p_align` values.
+- Reproducible release verification now runs
+  `scripts/verify-native-page-alignment.py` against every publish APK and fails
+  on misaligned ELF load segments, unverifiable `.so` entries, or uncompressed
+  native ZIP entries that are not 16 KB data-offset aligned.
+- Recorded the remediation and remaining device-test gap in
+  `docs/audits/2026-05-17-android17-16kb-native-page-size.md`.
+
 ### Changed — operation history access and recovery guidance (2026-05-17)
 
 - Added Settings -> Privacy -> History as a direct entry point into the existing
