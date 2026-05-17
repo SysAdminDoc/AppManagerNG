@@ -1711,6 +1711,28 @@
     <string name="privilege_health_mode_doctor_summary">Run active root, Shizuku, ADB, LocalServer, SELinux, and ABI probes.</string>
     <string name="privilege_health_mode_doctor_running">Running mode doctor...</string>
     <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
+    <string name="os_revert_snackbar_message">OS reverted your change - see why</string>
+    <string name="os_revert_see_why">See why</string>
+    <string name="os_revert_details_title">OS reverted your change</string>
+    <string name="os_revert_details_message">Target: <xliff:g id="target" example="com.example.app">%1$s</xliff:g>\nOperation: <xliff:g id="operation" example="Freeze">%2$s</xliff:g>\nExpected: <xliff:g id="expected" example="frozen">%3$s</xliff:g>\nCurrent: <xliff:g id="current" example="unfrozen">%4$s</xliff:g>\n\n<xliff:g id="hint" example="The package is no longer in the requested state.">%5$s</xliff:g></string>
+    <string name="os_revert_operation_doze">Battery optimization allowlist</string>
+    <string name="os_revert_operation_freeze">Freeze state</string>
+    <string name="os_revert_operation_component">Component enabled state</string>
+    <string name="os_revert_operation_appop">AppOp <xliff:g id="op" example="RUN_IN_BACKGROUND">%1$s</xliff:g></string>
+    <string name="os_revert_doze_detail">The package is no longer in the requested Doze allowlist state. OEM policy, system-app-only allowlists, or device-idle policy may have changed it after AppManagerNG wrote the state.</string>
+    <string name="os_revert_freeze_detail">The package is no longer in the requested freeze state. The OS or an OEM policy may have restored the app after AppManagerNG applied the change.</string>
+    <string name="os_revert_component_detail">The component setting no longer matches the value AppManagerNG wrote. The app, package manager, or OEM policy may have restored it.</string>
+    <string name="os_revert_appop_detail">The AppOps mode no longer matches the value AppManagerNG wrote. Android may have resolved the op back to a policy/default mode.</string>
+    <string name="os_revert_state_doze_exempt">exempt from battery optimization</string>
+    <string name="os_revert_state_doze_optimized">battery optimized</string>
+    <string name="os_revert_state_frozen">frozen</string>
+    <string name="os_revert_state_unfrozen">unfrozen</string>
+    <string name="os_revert_state_component_default">default</string>
+    <string name="os_revert_state_component_enabled">enabled</string>
+    <string name="os_revert_state_component_disabled">disabled</string>
+    <string name="os_revert_state_component_disabled_user">disabled for user</string>
+    <string name="os_revert_state_component_disabled_until_used">disabled until used</string>
+    <string name="os_revert_state_unknown">unknown (<xliff:g id="state" example="7">%1$d</xliff:g>)</string>
     <string name="tracker_category_ad">Ad</string>
     <string name="tracker_category_analytics">Analytics</string>
     <string name="tracker_category_crash">Crash</string>

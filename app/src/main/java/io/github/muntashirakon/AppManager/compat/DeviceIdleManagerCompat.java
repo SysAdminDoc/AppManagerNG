@@ -11,6 +11,8 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
+import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 
 public final class DeviceIdleManagerCompat {
@@ -19,6 +21,7 @@ public final class DeviceIdleManagerCompat {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 getDeviceIdleController().addPowerSaveWhitelistApp(packageName);
+                OsRevertMonitor.watchBatteryOptimization(ContextUtils.getContext(), packageName, true);
                 return true; // returns true when the package isn't installed
             } catch (RemoteException e) {
                 ExUtils.rethrowFromSystemServer(e);
@@ -32,6 +35,7 @@ public final class DeviceIdleManagerCompat {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 getDeviceIdleController().removePowerSaveWhitelistApp(packageName);
+                OsRevertMonitor.watchBatteryOptimization(ContextUtils.getContext(), packageName, false);
                 return true;
             } catch (RemoteException e) {
                 ExUtils.rethrowFromSystemServer(e);
