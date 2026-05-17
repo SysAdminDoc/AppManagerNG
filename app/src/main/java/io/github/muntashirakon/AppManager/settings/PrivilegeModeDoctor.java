@@ -45,6 +45,7 @@ public final class PrivilegeModeDoctor {
         probes.add(probeSui(rootManagerInfo));
         probes.add(probeShizuku(appContext));
         probes.add(probeAdb(appContext));
+        probes.add(probeRestrictedSettings(appContext));
         probes.add(probeLocalServer());
         probes.add(probeSelinux());
         probes.add(probeAbi());
@@ -152,6 +153,36 @@ public final class PrivilegeModeDoctor {
     }
 
     @NonNull
+    private static Probe probeRestrictedSettings(@NonNull Context context) {
+        RestrictedSettingsDiagnostics.Result result = RestrictedSettingsDiagnostics.probe(context);
+        String source = result.sourcePackageName != null ? result.sourcePackageName : "unknown";
+        String details = "sdk=" + Build.VERSION.SDK_INT
+                + ", source=" + source
+                + ", installer=" + valueOrUnknown(result.installerPackageName)
+                + ", initiating=" + valueOrUnknown(result.initiatingPackageName)
+                + ", originating=" + valueOrUnknown(result.originatingPackageName)
+                + (result.error != null ? ", error=" + singleLine(result.error) : "");
+        switch (result.status) {
+            case RestrictedSettingsDiagnostics.STATUS_NOT_APPLICABLE:
+                return Probe.skip("Restricted Settings", details,
+                        "Android 13 Restricted Settings does not apply on this device.");
+            case RestrictedSettingsDiagnostics.STATUS_TRUSTED_STORE:
+                return Probe.pass("Restricted Settings", details,
+                        "No action needed unless Accessibility, notification listener, or device-admin toggles are disabled.");
+            case RestrictedSettingsDiagnostics.STATUS_LIKELY_RESTRICTED:
+                return Probe.warn("Restricted Settings", details,
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+            case RestrictedSettingsDiagnostics.STATUS_UNKNOWN_SOURCE:
+                return Probe.warn("Restricted Settings", details,
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+            case RestrictedSettingsDiagnostics.STATUS_REVIEW_RECOMMENDED:
+            default:
+                return Probe.warn("Restricted Settings", details,
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+        }
+    }
+
+    @NonNull
     private static Probe probeLocalServer() {
         long started = android.os.SystemClock.elapsedRealtime();
         try {
@@ -245,6 +276,11 @@ public final class PrivilegeModeDoctor {
             return compact.substring(0, 177) + "...";
         }
         return compact;
+    }
+
+    @NonNull
+    private static String valueOrUnknown(@Nullable String value) {
+        return value != null ? value : "unknown";
     }
 
     private static boolean isGlobalSettingEnabled(@NonNull Context context, @NonNull String key) {

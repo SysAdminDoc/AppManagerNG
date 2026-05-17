@@ -7,8 +7,8 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 38**. The 2026-05-17 walk-away sequence now has
-> thirty-eight local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> Last consolidated: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
+> thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
 > confirmation, privileged battery-optimization auto-fix for routines/backups,
@@ -40,7 +40,8 @@
 > compatibility class, generic OS-revert detection for Doze, freeze,
 > component-state, and AppOps writes, Doze-specific allowlist revert
 > diagnostics with `device_idle_constants` / `DeviceConfig device_idle` diffs,
-> and an audit-clean Achno Samsung debloat-list cross-check.
+> an audit-clean Achno Samsung debloat-list cross-check, and the Android 13+
+> Restricted Settings unlock walkthrough in Settings -> Privileges / Mode Doctor.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -74,7 +75,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-61 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-62 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -123,8 +124,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-36/`](.ai/research/2026-05-17-pass-36/) | pass 36 | OS-revert detection: 30-second post-write checks for Doze, freeze, component state, and AppOps mutations with a BaseActivity Snackbar/details surface. |
 | [`.ai/research/2026-05-17-pass-37/`](.ai/research/2026-05-17-pass-37/) | pass 37 | Backup-aware Doze allowlist diagnostics: 60-second Doze re-polls with `device_idle_constants` / `DeviceConfig device_idle` one-line diffs and OEM-policy hints. |
 | [`.ai/research/2026-05-17-pass-38/`](.ai/research/2026-05-17-pass-38/) | pass 38 | Achno Samsung debloat cross-check: audit-clean comparison against local debloat datasets; no data mutation because exact misses were typos/activity names/unverified single-source IDs. |
+| [`.ai/research/2026-05-17-pass-39/`](.ai/research/2026-05-17-pass-39/) | pass 39 | Restricted Settings unlock walkthrough: install-source-aware Privileges row, Mode Doctor probe, App info / Accessibility deep-links, and classification tests. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S338).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -159,7 +161,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-36 state as of 2026-05-17
+## 4. Current pass-39 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -440,8 +442,17 @@ audit-clean. The audit extracted 82 package-like tokens from the Achno README,
 found 76 already covered by local debloat datasets, and documented why the six
 exact misses are not safe to add without stronger evidence.
 
-Unit-test files from passes 4-37 cover the new helpers, but local Gradle execution is
-still blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
+Pass 39 closed the T5 Restricted Settings Unlock Walkthrough row.
+`RestrictedSettingsDiagnostics` now reads AppManagerNG's install-source metadata
+and classifies Android 13+ installs as trusted-store, likely sideloaded, unknown,
+or review-recommended. Settings -> Privileges exposes the walkthrough with App
+info and Accessibility deep-links, while Mode Doctor includes the same
+install-source details and fix hint. The wording stays "likely/recommended"
+because Android does not expose a public per-app restricted-settings-blocked bit.
+
+Unit-test files from passes 4-39 cover the new helpers where runtime code
+changed, but local Gradle execution is still blocked on this Windows shell
+because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
 
@@ -515,6 +526,10 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
   persistent Settings surface for mode/provider diagnostics. `runner/RootCapabilityDiagnostics.java`
   is the canonical active-shell capability probe. Add future VPN plugin flag checks
   and provider health probes there rather than rebuilding a new diagnostics page.
+- **Restricted Settings diagnostics** — `settings/RestrictedSettingsDiagnostics.java`
+  owns Android 13+ install-source classification for the manual "Allow restricted
+  settings" walkthrough. Keep the wording probabilistic: Android exposes install
+  source metadata, not a public per-app restricted-settings-blocked bit.
 - **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
 
 ### Backup engine
@@ -545,7 +560,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S338). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S340). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 
@@ -566,4 +581,4 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 [`.ai/research/2026-05-17-pass-14/`](.ai/research/2026-05-17-pass-14/),
 [`.ai/research/2026-05-17-pass-15/`](.ai/research/2026-05-17-pass-15/), and
 pass-specific follow-through directories through
-[`.ai/research/2026-05-17-pass-36/`](.ai/research/2026-05-17-pass-36/).
+[`.ai/research/2026-05-17-pass-39/`](.ai/research/2026-05-17-pass-39/).
