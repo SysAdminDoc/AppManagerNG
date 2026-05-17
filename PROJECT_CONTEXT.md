@@ -7,9 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17**. Sweep performed against repo at `97a339a` (16 commits
-> ahead of `origin/main`, with six uncommitted in-progress files — see "In-progress work"
-> below).
+> Last consolidated: **2026-05-17 pass 4**. The 2026-05-17 walk-away sequence now has
+> four local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> follow-through, and Shizuku/ML-DSA implementation follow-through. Run `git status --short --branch`
+> for the exact current branch/ahead state before starting new code work.
 
 ---
 
@@ -41,10 +42,10 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | **1135** | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and Iter-18 → Iter-23 research deltas inline. Cites **315 numbered external sources** in a Source Appendix at the bottom. |
-| [`CHANGELOG.md`](CHANGELOG.md) | 880 | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-16 shipped work. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 → iter-27 research deltas inline. Cites **327 numbered external sources** in a Source Appendix at the bottom. |
+| [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
-| [`docs/audits/`](docs/audits/) | 14 files | Per-audit verdicts for elegantTextHeight (clean), adaptive layout (clean), Android-17 MessageQueue (clean), Android-17 keystore key cap (clean), Android-18 implicit URI grant (remediated), GCM cipher reuse (confirmed→fixed metadata-v6), zip-slip (clean), libsu 6.0.0 migration (clean), Gson 2.14, BouncyCastle 1.84, predictive-back WebView (clean), Play contacts/location policy (n/a), Android-17 System.load read-only (clean), Android-17 static-final reflection (1 fix). |
+| [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
 | [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
 | [`design/`](design/) | 7 files | Premium-facelift design system (`spec/1-design-system.md`, `impl/values/*-v2.xml`, `impl/layout/*_v2.xml`, `plan/3-rollout.md`, `audit/0-recon.md`, `audit/4-painpoints.md`). Driven by [`codexprompt.md`](codexprompt.md) at repo root. |
 | [`docs/distribution/`](docs/distribution/) | 5 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier. |
@@ -52,9 +53,12 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`docs/security-advisories/`](docs/security-advisories/) | 1 file | CVE-2026-0073 ADB-mode advisory. |
 | [`docs/intent-api.md`](docs/intent-api.md) | — | `app-manager://` + `am://` deep-link contract. |
 | [`docs/sideload-verification.md`](docs/sideload-verification.md) | — | Position document for Google's 2026-09-30 Brazil/Indonesia/Singapore/Thailand developer-verification enforcement. |
-| [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/) | this run | Today's research-run audit; STATE_OF_REPO, MEMORY_CONSOLIDATION, SOURCE_REGISTER, FEATURE_BACKLOG, etc. |
+| [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/) | pass 1 | Foundation research-run audit; STATE_OF_REPO, MEMORY_CONSOLIDATION, SOURCE_REGISTER, FEATURE_BACKLOG, etc. |
+| [`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/) | pass 2 | Source fixes + architecture docs follow-through. |
+| [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/) | pass 3 | Android 17 targetSdk=37 audit batch + CI/docs hygiene follow-through. |
+| [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/) | pass 4 | Shizuku Android-17 runtime warning, release watcher, ML-DSA display-name map, and updated source register. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S315).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S327).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -89,23 +93,22 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. In-progress work as of 2026-05-17 (uncommitted on `main`)
+## 4. Current pass-4 state as of 2026-05-17
 
-`git status` shows the branch is **16 commits ahead of `origin/main`** with the following local-only changes that have not yet been committed:
+The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
+redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
+`25c629a`) and are documented in `CHANGELOG.md`.
 
-| File | Type | Diff highlight |
-|------|------|----------------|
-| [`app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscript.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscript.java) | hardening | Source-URI redactor now strips userinfo (`user:pass@`), query, and fragment — closes the path-bypass via `https://host?token=…`. |
-| [`app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java) | test | Adds coverage for the new redactor edges. |
-| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java) | bug fix | Removes `Pattern.quote(value)` around user-supplied regex — every regex predicate in the Finder filter ladder was being silently neutered into a literal-string match. Adds missing `break` between `TYPE_REGEX` and `TYPE_STR_MULTIPLE` switch cases. |
-| `app/src/test/java/io/github/muntashirakon/AppManager/filters/options/FilterOptionTest.java` (new) | test | Regression coverage for the regex-quote fix + switch fall-through fix. |
-| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) | minor | Small cleanups in the 2026-05-16 AppOps filter row. |
-| [`app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) | minor | Small cleanups in the 2026-05-16 tracker name-predicate row. |
-| [`app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) | bug fix | Captures `Application` context on the main thread before posting to background, so a detached fragment can't `IllegalStateException` out of `requireContext()` on a worker pool. |
+Pass 4 added three small implementation follow-ups:
 
-**Net behaviour change**: the regex fix in `FilterOption.java` is the load-bearing item — without it, the iter-23 "tracker name regex" work shipped 2026-05-16 doesn't actually do regex matching. The other items are defense-in-depth.
+| File / area | Type | Diff highlight |
+|-------------|------|----------------|
+| [`ShizukuBridge.java`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java) + [`OnboardingFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) | platform-risk mitigation | Android-17-only `hasAndroid17CompatibilityRisk(Context)` warning while Shizuku's fixed-version floor is unknown; warning launches the existing Wireless ADB setup flow. |
+| [`.github/workflows/shizuku-release-watch.yml`](.github/workflows/shizuku-release-watch.yml) | process automation | Weekly official Shizuku release watcher opens a maintainer issue when 13.6.x / 13.7.x release notes mention Android 17 or #1965 / #1967. |
+| [`Utils.java`](app/src/main/java/io/github/muntashirakon/AppManager/utils/Utils.java), [`PackageUtils.java`](app/src/main/java/io/github/muntashirakon/AppManager/utils/PackageUtils.java), [`ScannerFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/scanner/ScannerFragment.java) | Android 17 polish | ML-DSA-65 / ML-DSA-87 certificate OIDs render as readable Dilithium algorithm names instead of raw OIDs where the platform provider lacks a friendly name. |
 
-When these commit, CHANGELOG `Unreleased` should gain entries under **Fixed — Finder regex predicates** and **Security — Install transcript URI redactor**.
+Unit-test files were added for both helpers, but local Gradle execution is blocked on this
+Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
 
@@ -150,6 +153,9 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 ### Privilege provider matrix (per-user mode)
 - **Root** — historical default. libsu 6.0.0 backed.
 - **Shizuku / Sui** — first-class as of 2026-05-14 (`feat: add Shizuku privilege provider`). Compile-time pinned at `shizuku_version = 13.1.5`; onboarding wizard checks for manager version ≥13.6.0 (Android 16 QPR1 guidance).
+- On Android 17+, onboarding now warns that Shizuku has unresolved compatibility reports
+  (#1965 / #1967 / #1988) and offers Wireless ADB setup while
+  `MIN_ANDROID_17_COMPATIBLE_VERSION` remains unknown.
 - **ADB** — wireless ADB pairing wizard shipped 2026-05-14.
 - **KernelSU / APatch / Magisk / ZygiskNext** — detected by `runner/RootManagerInfo`, surfaced as suffix on the onboarding sheet's Root status line.
 - **Dhizuku (DPM via Binder proxy)** — Under Consideration as a fourth tier (T5 row).
@@ -174,7 +180,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - **v0.5.0** — Settings reorganization by task; global in-app search; contextual help tooltips; **in-app changelog viewer** (replaces bundled upstream v4.0.5 changelog).
 - **v0.6.0** — Rootless Power: Shizuku integration polish + wireless ADB auto-pairing polish + rootless debloat. (Most of the engine work shipped 2026-05-14 — v0.6.0 is the user-visible roll-up.)
-- **Now / Eng-Debt** — Hidden-API Compatibility Harness (iter-19 [S137] — the highest-leverage eng-debt item; mitigates the "Android version migration takes 80 hours" cliff). Android 17 16-KB page-size compliance ([S148]). Freeze / Operation Audit Log ([S144]). Shizuku permission auto-revoke warning on data-clear ([S139]).
+- **Now / Eng-Debt** — Hidden-API Compatibility Harness (iter-19 [S137] — the highest-leverage eng-debt item; mitigates the "Android version migration takes 80 hours" cliff). Android 17 device verification for Shizuku's fixed-version floor. Freeze / Operation Audit Log ([S144]). Shizuku permission auto-revoke warning on data-clear ([S139]).
 - **Distribution next** — IzzyOnDroid listing, F-Droid listing, Accrescent listing. All gated on the rename being public + reproducible builds (both done).
 
 ---
@@ -183,10 +189,12 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S315). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations live in the `ROADMAP.md` Source Appendix (S01–S327). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
 
 ---
 
-**Maintainer note**: this file was reconciled by an autonomous deep-research session on
-2026-05-17 against repo state `97a339a` + uncommitted changes. The full session audit
-artifacts are at [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/).
+**Maintainer note**: this file was reconciled by autonomous deep-research passes on
+2026-05-17. The audit artifacts are split across [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/),
+[`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/),
+[`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/), and
+[`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/).
