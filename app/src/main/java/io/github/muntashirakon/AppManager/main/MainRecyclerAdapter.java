@@ -323,11 +323,17 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.date.setTextColor(item.canReadLogs ? mColorOrange : mColorSecondary);
         if (item.isInstalled) {
             // Set UID
-            if (item.uidOrAppIds != null) {
+            String userStateSummary = buildUserStateSummary(context, item);
+            if (!TextUtils.isEmpty(userStateSummary)) {
+                holder.userId.setText(userStateSummary);
+            } else if (item.uidOrAppIds != null) {
                 holder.userId.setText(item.uidOrAppIds);
             }
             // Set UID text color to orange if the package is shared
-            holder.userId.setTextColor(item.sharedUserId != null ? mColorOrange : mColorSecondary);
+            holder.userId.setTextColor(item.sharedUserId != null
+                    || item.disabledUserIds.length > 0
+                    || item.uninstalledUserIds.length > 0
+                    ? mColorOrange : mColorSecondary);
         } else holder.userId.setText("");
         if (item.sha != null) {
             // Set issuer
@@ -762,8 +768,17 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         for (UserInfo info : users) {
             for (int i = 0; i < item.userIds.length; ++i) {
                 if (info.id == item.userIds[i]) {
-                    userNames[i] = info.toLocalizedString(mActivity);
+                    userNames[i] = mActivity.getString(R.string.package_user_state_dialog_label,
+                            info.toLocalizedString(mActivity),
+                            getPackageStateLabel(mActivity, item, item.userIds[i]));
                 }
+            }
+        }
+        for (int i = 0; i < userNames.length; ++i) {
+            if (userNames[i] == null) {
+                userNames[i] = mActivity.getString(R.string.package_user_state_dialog_label,
+                        mActivity.getString(R.string.user_with_id, item.userIds[i]),
+                        getPackageStateLabel(mActivity, item, item.userIds[i]));
             }
         }
         new SearchableItemsDialogBuilder<>(mActivity, userNames)
@@ -790,6 +805,41 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         fragment.setOnActionBeginListener(mode -> mActivity.showProgressIndicator(true));
         fragment.setOnActionCompleteListener((mode, failedPackages) -> mActivity.showProgressIndicator(false));
         fragment.show(mActivity.getSupportFragmentManager(), BackupRestoreDialogFragment.TAG);
+    }
+
+    @NonNull
+    private static String buildUserStateSummary(@NonNull Context context, @NonNull ApplicationItem item) {
+        if (!item.hasPerUserPackageState()) {
+            return "";
+        }
+        List<String> userStates = new ArrayList<>(item.userIds.length + item.uninstalledUserIds.length);
+        appendUserStates(context, userStates, item.enabledUserIds, R.string.package_state_enabled);
+        appendUserStates(context, userStates, item.disabledUserIds, R.string.package_state_disabled);
+        appendUserStates(context, userStates, item.uninstalledUserIds, R.string.package_state_not_installed);
+        return TextUtils.join(", ", userStates).toString();
+    }
+
+    private static void appendUserStates(@NonNull Context context, @NonNull List<String> userStates,
+                                         @NonNull int[] userIds, int stateRes) {
+        String state = context.getString(stateRes);
+        for (int userId : userIds) {
+            userStates.add(context.getString(R.string.package_user_state_short, userId, state));
+        }
+    }
+
+    @NonNull
+    private static String getPackageStateLabel(@NonNull Context context, @NonNull ApplicationItem item,
+                                               int userId) {
+        if (ArrayUtils.contains(item.disabledUserIds, userId)) {
+            return context.getString(R.string.package_state_disabled);
+        }
+        if (ArrayUtils.contains(item.enabledUserIds, userId)) {
+            return context.getString(R.string.package_state_enabled);
+        }
+        if (ArrayUtils.contains(item.uninstalledUserIds, userId)) {
+            return context.getString(R.string.package_state_not_installed);
+        }
+        return context.getString(R.string.state_unknown);
     }
 
     public static class ViewHolder extends MultiSelectionView.ViewHolder {

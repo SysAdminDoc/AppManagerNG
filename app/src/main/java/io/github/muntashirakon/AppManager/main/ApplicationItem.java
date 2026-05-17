@@ -182,6 +182,12 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
 
     @NonNull
     public int[] userIds = EmptyArray.INT;
+    @NonNull
+    public int[] enabledUserIds = EmptyArray.INT;
+    @NonNull
+    public int[] disabledUserIds = EmptyArray.INT;
+    @NonNull
+    public int[] uninstalledUserIds = EmptyArray.INT;
 
     // Other info
     public boolean isStopped;
@@ -370,6 +376,10 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     public int getUid() {
         int uid = mApplicationInfo != null ? mApplicationInfo.uid : this.uid;
         return UserHandleHidden.getAppId(uid);
+    }
+
+    public boolean hasPerUserPackageState() {
+        return userIds.length > 1 || disabledUserIds.length > 0 || uninstalledUserIds.length > 0;
     }
 
     public void setPackageUsageInfo(@Nullable PackageUsageInfo packageUsageInfo) {
