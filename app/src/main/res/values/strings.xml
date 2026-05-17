@@ -1372,6 +1372,8 @@
     <string name="installer_diagnostic_info_copied">Diagnostic info copied. Source paths are redacted before paste.</string>
     <string name="installer_dependency_min_sdk_too_high">Requires Android API %1$d — this device is on API %2$d. The system installer will refuse to install this APK.</string>
     <string name="installer_dependency_missing_shared_library">Required shared libraries are not installed on this device: %1$s. The system installer may refuse to install this APK.</string>
+    <string name="installer_session_sha256_title">APK SHA-256</string>
+    <string name="installer_session_sha256_message">These are the bytes AppManagerNG wrote into the install session. Compare this checksum with the publisher\'s posted SHA-256 before accepting Android\'s install prompt:\n\n%1$s</string>
     <string name="finder_loaded_at">Loaded at %1$s</string>
     <string name="share_backup">Share backup</string>
     <string name="share_backup_empty">No files to share in the selected backup.</string>
