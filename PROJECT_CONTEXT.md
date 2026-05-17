@@ -7,9 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 4**. The 2026-05-17 walk-away sequence now has
-> four local passes: foundation, source-fix/architecture follow-through, Android-17 audit
-> follow-through, and Shizuku/ML-DSA implementation follow-through. Run `git status --short --branch`
+> Last consolidated: **2026-05-17 pass 5**. The 2026-05-17 walk-away sequence now has
+> five local passes: foundation, source-fix/architecture follow-through, Android-17 audit
+> follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
+> preflight follow-through for Wireless ADB / Shizuku setup. Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
 ---
@@ -57,6 +58,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/) | pass 2 | Source fixes + architecture docs follow-through. |
 | [`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/) | pass 3 | Android 17 targetSdk=37 audit batch + CI/docs hygiene follow-through. |
 | [`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/) | pass 4 | Shizuku Android-17 runtime warning, release watcher, ML-DSA display-name map, and updated source register. |
+| [`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/) | pass 5 | T5 USB-debugging preflight for Wireless ADB / Shizuku setup and next-run handoff. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` → "Source Appendix" (S01–S327).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -93,7 +95,7 @@ The minSdk-21 floor is a load-bearing decision; the ledger documents which deps 
 
 ---
 
-## 4. Current pass-4 state as of 2026-05-17
+## 4. Current pass-5 state as of 2026-05-17
 
 The stale pass-1 "uncommitted work" list is resolved. The Finder regex fix, install-transcript
 redactor, and onboarding detach fix all landed in local commits (`73387cd`, `bcb2874`,
@@ -107,8 +109,14 @@ Pass 4 added three small implementation follow-ups:
 | [`.github/workflows/shizuku-release-watch.yml`](.github/workflows/shizuku-release-watch.yml) | process automation | Weekly official Shizuku release watcher opens a maintainer issue when 13.6.x / 13.7.x release notes mention Android 17 or #1965 / #1967. |
 | [`Utils.java`](app/src/main/java/io/github/muntashirakon/AppManager/utils/Utils.java), [`PackageUtils.java`](app/src/main/java/io/github/muntashirakon/AppManager/utils/PackageUtils.java), [`ScannerFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/scanner/ScannerFragment.java) | Android 17 polish | ML-DSA-65 / ML-DSA-87 certificate OIDs render as readable Dilithium algorithm names instead of raw OIDs where the platform provider lacks a friendly name. |
 
-Unit-test files were added for both helpers, but local Gradle execution is blocked on this
-Windows shell because no JDK is installed / `JAVA_HOME` is unset.
+Pass 5 closed the T5 "USB Debugging Prompt in Shizuku Setup" row: onboarding's
+Wireless ADB setup flow now preflights the `adb_enabled` Developer Options flag
+and prompts users to enable both USB debugging and Wireless debugging before
+pairing. The Shizuku / Wireless ADB / pairing instructions now name both toggles
+so the silent `adb pair` / `adb connect` failure path is visible before setup.
+
+Unit-test files from pass 4 were added for both helpers, but local Gradle execution is
+blocked on this Windows shell because no JDK is installed / `JAVA_HOME` is unset.
 
 ---
 
@@ -196,5 +204,6 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 **Maintainer note**: this file was reconciled by autonomous deep-research passes on
 2026-05-17. The audit artifacts are split across [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/),
 [`.ai/research/2026-05-17-pass-2/`](.ai/research/2026-05-17-pass-2/),
-[`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/), and
-[`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/).
+[`.ai/research/2026-05-17-pass-3/`](.ai/research/2026-05-17-pass-3/),
+[`.ai/research/2026-05-17-pass-4/`](.ai/research/2026-05-17-pass-4/), and
+[`.ai/research/2026-05-17-pass-5/`](.ai/research/2026-05-17-pass-5/).
