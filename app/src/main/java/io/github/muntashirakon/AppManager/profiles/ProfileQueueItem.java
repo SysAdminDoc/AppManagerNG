@@ -36,6 +36,11 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     }
 
     @NonNull
+    public static ProfileQueueItem fromProfile(@NonNull BaseProfile profile, @Nullable String state) {
+        return new ProfileQueueItem(profile, state);
+    }
+
+    @NonNull
     private final String mProfileId;
     @BaseProfile.ProfileType
     private final int mProfileType;
