@@ -234,10 +234,15 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
      */
     private void refreshRootManagerStatus(@Nullable TextView rootStatus) {
         if (rootStatus == null) return;
+        // Capture the Application context now, on the main thread, so a fragment that's been
+        // detached by the time the background task starts can't trigger an
+        // IllegalStateException out of requireContext() — the runnable lives on a worker thread
+        // pool and any throw there is uncaught.
+        final android.content.Context appContext = requireContext().getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
-            RootManagerInfo info = RootManagerInfo.detect(requireContext().getApplicationContext());
+            RootManagerInfo info = RootManagerInfo.detect(appContext);
             ThreadUtils.postOnMainThread(() -> {
-                if (!isAdded() || rootStatus.getContext() == null) return;
+                if (!isAdded()) return;
                 CharSequence base = rootStatus.getText();
                 if (base == null) return;
                 String suffix = buildRootManagerSuffix(info);
