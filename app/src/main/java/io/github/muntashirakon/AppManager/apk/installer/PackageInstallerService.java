@@ -120,88 +120,91 @@ public class PackageInstallerService extends ForegroundService {
                 ? apkQueueItem.getInstallerOptions()
                 : InstallerOptions.getDefault();
         List<String> selectedSplitIds = Objects.requireNonNull(apkQueueItem.getSelectedSplits());
-        // Install package
-        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-        installer.setAppLabel(apkQueueItem.getAppLabel());
-        installer.setOnInstallListener(new PackageInstallerCompat.OnInstallListener() {
-            @Override
-            public void onStartInstall(int sessionId, String packageName) {
-            }
-
-            // MIUI-begin: MIUI 12.5+ workaround
-            @Override
-            public void onAnotherAttemptInMiui(@Nullable ApkFile apkFile) {
-                if (apkFile != null) {
-                    installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
+        try (InstallerPrivilegeCascade.Activation ignored =
+                     InstallerPrivilegeCascade.activateBestAvailable(this, mProgressHandler)) {
+            // Install package
+            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+            installer.setAppLabel(apkQueueItem.getAppLabel());
+            installer.setOnInstallListener(new PackageInstallerCompat.OnInstallListener() {
+                @Override
+                public void onStartInstall(int sessionId, String packageName) {
                 }
-            }
-            // MIUI-end
 
-            // HyperOS-begin: HyperOS 2.0+ workaround
-            @Override
-            public void onSecondAttemptInHyperOsWithoutInstaller(@Nullable ApkFile apkFile) {
-                if (apkFile != null) {
-                    options.setInstallerName("com.android.shell");
-                    installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
-                }
-            }
-            // HyerOS-end
-
-            @Override
-            public void onFinishedInstall(int sessionId, String packageName, int result,
-                                          @Nullable String blockingPackage, @Nullable String statusMessage) {
-                boolean success = result == STATUS_SUCCESS;
-                OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, success,
-                        OperationJournalMetadata.forInstaller(PackageInstallerService.this, apkQueueItem,
-                                result, blockingPackage, statusMessage));
-                if (success) {
-                    // Block trackers if requested
-                    if (options.isBlockTrackers()) {
-                        ComponentUtils.blockTrackingComponents(new UserPackagePair(packageName, options.getUserId()));
-                    }
-                    // Perform force dex optimization if requested
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && options.isForceDexOpt()) {
-                        // Ignore the result because it's irrelevant
-                        new DexOptimizer(PackageManagerCompat.getPackageManager(), packageName).forceDexOpt();
+                // MIUI-begin: MIUI 12.5+ workaround
+                @Override
+                public void onAnotherAttemptInMiui(@Nullable ApkFile apkFile) {
+                    if (apkFile != null) {
+                        installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
                     }
                 }
-                finishInstallation(packageName, result, apkQueueItem.getAppLabel(), blockingPackage, statusMessage);
-            }
-        });
-        // Two possibilities: 1. Install-existing, 2. ApkFile/Uri
-        if (apkQueueItem.isInstallExisting()) {
-            // Install existing (need no progress)
-            String packageName = apkQueueItem.getPackageName();
-            if (packageName == null) {
-                // No package name supplied, abort
-                return;
-            }
-            installer.installExisting(packageName, options.getUserId());
-        } else {
-            // ApkFile/Uri
-            ApkSource apkSource = apkQueueItem.getApkSource();
-            if (apkSource == null) {
-                // No apk file, abort
-                return;
-            }
-            ApkFile apkFile;
-            try {
-                try {
-                    apkFile = apkSource.resolve();
-                } catch (Throwable th) {
-                    Log.w(TAG, "Could not get ApkFile", th);
-                    OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
-                            OperationJournalMetadata.forInstaller(this, apkQueueItem,
-                                    STATUS_FAILURE_INVALID, null, th.getMessage()));
-                    String packageName = apkQueueItem.getPackageName();
-                    finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID, apkQueueItem.getAppLabel(), null, null);
+                // MIUI-end
+
+                // HyperOS-begin: HyperOS 2.0+ workaround
+                @Override
+                public void onSecondAttemptInHyperOsWithoutInstaller(@Nullable ApkFile apkFile) {
+                    if (apkFile != null) {
+                        options.setInstallerName("com.android.shell");
+                        installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
+                    }
+                }
+                // HyerOS-end
+
+                @Override
+                public void onFinishedInstall(int sessionId, String packageName, int result,
+                                              @Nullable String blockingPackage, @Nullable String statusMessage) {
+                    boolean success = result == STATUS_SUCCESS;
+                    OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, success,
+                            OperationJournalMetadata.forInstaller(PackageInstallerService.this, apkQueueItem,
+                                    result, blockingPackage, statusMessage));
+                    if (success) {
+                        // Block trackers if requested
+                        if (options.isBlockTrackers()) {
+                            ComponentUtils.blockTrackingComponents(new UserPackagePair(packageName, options.getUserId()));
+                        }
+                        // Perform force dex optimization if requested
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && options.isForceDexOpt()) {
+                            // Ignore the result because it's irrelevant
+                            new DexOptimizer(PackageManagerCompat.getPackageManager(), packageName).forceDexOpt();
+                        }
+                    }
+                    finishInstallation(packageName, result, apkQueueItem.getAppLabel(), blockingPackage, statusMessage);
+                }
+            });
+            // Two possibilities: 1. Install-existing, 2. ApkFile/Uri
+            if (apkQueueItem.isInstallExisting()) {
+                // Install existing (need no progress)
+                String packageName = apkQueueItem.getPackageName();
+                if (packageName == null) {
+                    // No package name supplied, abort
                     return;
                 }
-                installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
-            } finally {
-                // Delete the cached file
-                if (apkSource instanceof CachedApkSource) {
-                    ((CachedApkSource) apkSource).cleanup();
+                installer.installExisting(packageName, options.getUserId());
+            } else {
+                // ApkFile/Uri
+                ApkSource apkSource = apkQueueItem.getApkSource();
+                if (apkSource == null) {
+                    // No apk file, abort
+                    return;
+                }
+                ApkFile apkFile;
+                try {
+                    try {
+                        apkFile = apkSource.resolve();
+                    } catch (Throwable th) {
+                        Log.w(TAG, "Could not get ApkFile", th);
+                        OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
+                                OperationJournalMetadata.forInstaller(this, apkQueueItem,
+                                        STATUS_FAILURE_INVALID, null, th.getMessage()));
+                        String packageName = apkQueueItem.getPackageName();
+                        finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID, apkQueueItem.getAppLabel(), null, null);
+                        return;
+                    }
+                    installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
+                } finally {
+                    // Delete the cached file
+                    if (apkSource instanceof CachedApkSource) {
+                        ((CachedApkSource) apkSource).cleanup();
+                    }
                 }
             }
         }

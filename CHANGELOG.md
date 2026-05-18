@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Installer privilege cascade (2026-05-18)
+
+- The installer confirmation dialog now previews the detected install route with
+  chips for the primary path, fallback providers, Dhizuku detection, and MIUI /
+  HyperOS optimization checks.
+- Install attempts temporarily try ADB, then Shizuku, then root package-session
+  privileges when the active mode cannot install directly, then restore the
+  user's configured mode after the attempt.
+- Installer progress notifications now report the provider being tried before
+  falling back to Android's normal confirmation, with focused route-order tests.
+
 ### Added — Audio-volume AppOps preset (2026-05-18)
 
 - AppOps now exposes the Android audio-volume op family as named constants,
