@@ -1800,6 +1800,20 @@
     <string name="privilege_health_capability_dropping_magisk_policy_no_match">readable, no matching Magisk capability rule printed</string>
     <string name="privilege_health_capability_dropping_magisk_policy_unavailable">magiskpolicy live dump unavailable</string>
     <string name="privilege_health_capability_dropping_magisk_policy_not_magisk">not detected</string>
+    <string name="privilege_health_kernelsu_title">KernelSU status</string>
+    <string name="privilege_health_kernelsu_not_detected">KernelSU is not the active root provider.</string>
+    <string name="privilege_health_kernelsu_unavailable">KernelSU was detected via <xliff:g id="source" example="installed package">%1$s</xliff:g>, but root-marker access is not available. Grant root and refresh to read sulog and seccomp status.</string>
+    <string name="privilege_health_kernelsu_summary">Seccomp: <xliff:g id="seccomp" example="filter (2)">%1$s</xliff:g>. Sulog: <xliff:g id="sulog" example="2 recent denial(s)">%2$s</xliff:g>.</string>
+    <string name="privilege_health_kernelsu_unknown">KernelSU probe failed: <xliff:g id="reason" example="missing Seccomp">%1$s</xliff:g>.</string>
+    <string name="privilege_health_kernelsu_sulog_no_denials">readable, no recent denials</string>
+    <string name="privilege_health_kernelsu_sulog_denials"><xliff:g id="count" example="2">%1$d</xliff:g> recent denial(s)</string>
+    <string name="privilege_health_kernelsu_sulog_missing">sulog not readable</string>
+    <string name="privilege_health_kernelsu_sulog_unavailable">unavailable</string>
+    <string name="privilege_health_kernelsu_details_state">State: <xliff:g id="state" example="ACTIVE">%1$s</xliff:g> via <xliff:g id="source" example="marker directory">%2$s</xliff:g></string>
+    <string name="privilege_health_kernelsu_details_seccomp">Seccomp: <xliff:g id="seccomp" example="filter (2)">%1$s</xliff:g></string>
+    <string name="privilege_health_kernelsu_details_sulog">Sulog: <xliff:g id="sulog" example="readable, no recent denials">%1$s</xliff:g></string>
+    <string name="privilege_health_kernelsu_details_error">Error: <xliff:g id="error" example="missing Seccomp">%1$s</xliff:g></string>
+    <string name="privilege_health_kernelsu_details_recent_denials">Recent sulog denials:</string>
     <string name="privilege_health_shizuku_title">Shizuku</string>
     <string name="privilege_health_shizuku_summary"><xliff:g id="status" example="authorized">%1$s</xliff:g>. Manager: <xliff:g id="version" example="13.6.0">%2$s</xliff:g>. API: <xliff:g id="api" example="13">%3$d</xliff:g> (requires <xliff:g id="required" example="10">%4$d</xliff:g>). Service UID: <xliff:g id="uid" example="2000">%5$d</xliff:g>.</string>
     <string name="privilege_health_shizuku_not_running">not running</string>
