@@ -20,6 +20,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchAppOpsOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
@@ -40,6 +41,8 @@ public abstract class AppsBaseProfile extends BaseProfile {
         public String name;
         @BackupFlags.BackupFlag
         public int flags = Prefs.BackupRestore.getBackupFlags();
+        @Nullable
+        public String[] exclusionGlobs;
 
         public BackupInfo() {
         }
@@ -47,6 +50,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
         public BackupInfo(@NonNull BackupInfo backupInfo) {
             name = backupInfo.name;
             flags = backupInfo.flags;
+            exclusionGlobs = backupInfo.exclusionGlobs != null ? backupInfo.exclusionGlobs.clone() : null;
         }
     }
 
@@ -269,7 +273,8 @@ public abstract class AppsBaseProfile extends BaseProfile {
             } else backupNames = null;
             // Always add backup custom users
             backupFlags.addFlag(BackupFlags.BACKUP_CUSTOM_USERS);
-            BatchBackupOptions options = new BatchBackupOptions(backupFlags.getFlags(), backupNames, null);
+            BatchBackupOptions options = new BatchBackupOptions(backupFlags.getFlags(), backupNames, null,
+                    backupInfo.exclusionGlobs);
             int op;
             switch (state) {
                 case BaseProfile.STATE_ON:  // Take backup
@@ -366,6 +371,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             JSONObject backupInfo = new JSONObject();
             backupInfo.put("name", backupData.name);
             backupInfo.put("flags", backupData.flags);
+            backupInfo.put("exclusion_globs", JSONUtils.getJSONArray(backupData.exclusionGlobs));
             profileObj.put("backup_data", backupInfo);
         }
         profileObj.put("export_rules", exportRules);
@@ -408,6 +414,8 @@ public abstract class AppsBaseProfile extends BaseProfile {
             backupData = new AppsBaseProfile.BackupInfo();
             backupData.name = JSONUtils.getString(backupInfo, "name", null);
             backupData.flags = backupInfo.getInt("flags");
+            backupData.exclusionGlobs = BackupPathExclusionPatterns.sanitize(
+                    JSONUtils.getArray(String.class, backupInfo.optJSONArray("exclusion_globs")));
         } catch (JSONException ignore) {
         }
         exportRules = JSONUtils.getIntOrNull(profileObj, "export_rules");

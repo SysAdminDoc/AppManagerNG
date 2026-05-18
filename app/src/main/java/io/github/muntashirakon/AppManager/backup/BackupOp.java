@@ -107,14 +107,24 @@ class BackupOp implements Closeable {
     // We don't need privileged package manager here
     @NonNull
     private final PackageManager mPm;
+    @Nullable
+    private final String[] mExclusionGlobs;
 
     BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
              @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId)
+            throws BackupException {
+        this(packageName, backupFlags, backupItem, userId, null);
+    }
+
+    BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
+             @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId,
+             @Nullable String[] exclusionGlobs)
             throws BackupException {
         mPackageName = packageName;
         mBackupItem = backupItem;
         mUserId = userId;
         mBackupFlags = backupFlags;
+        mExclusionGlobs = BackupPathExclusionPatterns.sanitize(exclusionGlobs);
         mPm = ContextUtils.getContext().getPackageManager();
         try {
             mPackageInfo = PackageManagerCompat.getPackageInfo(mPackageName,
@@ -365,10 +375,13 @@ class BackupOp implements Closeable {
     private Path[] backupDirectory(@NonNull String dir, int index) throws BackupException {
         String filePrefix = BackupUtils.getDataFilePrefix(index, getExt(mMetadata.info.tarType));
         try {
+            String[] userExclusions = BackupPathExclusionPatterns.getTarExclusionRegexes(
+                    mBackupFlags.backupCache(), Prefs.BackupRestore.getBackupExclusionPatterns(),
+                    mExclusionGlobs);
             return TarUtils.create(mMetadata.info.tarType, Paths.get(dir),
                             mBackupItem.getUnencryptedBackupPath(),
                             filePrefix, null, null,
-                            BackupUtils.getExcludeDirs(!mBackupFlags.backupCache()), false)
+                            BackupUtils.getExcludeDirs(!mBackupFlags.backupCache(), userExclusions), false)
                     .toArray(new Path[0]);
         } catch (Throwable th) {
             throw new BackupException("Failed to backup data directory at " + dir, th);

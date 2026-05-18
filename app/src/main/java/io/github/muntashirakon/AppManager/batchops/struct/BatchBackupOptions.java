@@ -31,13 +31,23 @@ public class BatchBackupOptions implements IBatchOpOptions {
     private final String[] mBackupNames;
     @Nullable
     private final String[] mRelativeDirs;
+    @Nullable
+    private final String[] mExclusionGlobs;
 
     public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
                               @Nullable String[] backupNames,
                               @Nullable String[] relativeDirs) {
+        this(flags, backupNames, relativeDirs, null);
+    }
+
+    public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
+                              @Nullable String[] backupNames,
+                              @Nullable String[] relativeDirs,
+                              @Nullable String[] exclusionGlobs) {
         mFlags = flags;
         mBackupNames = backupNames;
         mRelativeDirs = relativeDirs;
+        mExclusionGlobs = exclusionGlobs;
     }
 
     public BackupOpOptions getBackupOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -48,7 +58,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         } else {
             backupName = customBackup ? DateUtils.formatMediumDateTime(ContextUtils.getContext(), System.currentTimeMillis()) : null;
         }
-        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup);
+        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup, mExclusionGlobs);
     }
 
     public RestoreOpOptions getRestoreOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -102,6 +112,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mFlags = in.readInt();
         mBackupNames = in.createStringArray();
         mRelativeDirs = in.createStringArray();
+        mExclusionGlobs = in.createStringArray();
     }
 
     public static final Creator<BatchBackupOptions> CREATOR = new Creator<BatchBackupOptions>() {
@@ -128,6 +139,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         dest.writeInt(mFlags);
         dest.writeStringArray(mBackupNames);
         dest.writeStringArray(mRelativeDirs);
+        dest.writeStringArray(mExclusionGlobs);
     }
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -135,6 +147,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mFlags = jsonObject.getInt("flags");
         mBackupNames = JSONUtils.getArray(String.class, jsonObject.optJSONArray("backup_names"));
         mRelativeDirs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("relative_dirs"));
+        mExclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
     }
 
     public static final JsonDeserializer.Creator<BatchBackupOptions> DESERIALIZER
@@ -148,6 +161,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         jsonObject.put("flags", mFlags);
         jsonObject.put("backup_names", JSONUtils.getJSONArray(mBackupNames));
         jsonObject.put("relative_dirs", JSONUtils.getJSONArray(mRelativeDirs));
+        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(mExclusionGlobs));
         return jsonObject;
     }
 }
