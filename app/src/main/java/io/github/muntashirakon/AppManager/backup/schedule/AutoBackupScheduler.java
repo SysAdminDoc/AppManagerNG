@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -143,6 +144,22 @@ public final class AutoBackupScheduler {
     public static void recordRunResult(@NonNull String result) {
         Prefs.BackupRestore.setScheduledBackupLastRun(System.currentTimeMillis());
         Prefs.BackupRestore.setScheduledBackupLastResult(result);
+    }
+
+    @NonNull
+    public static String refreshDiagnostics(@NonNull Context context) {
+        try {
+            String diagnostics = AutoBackupDiagnostics.collect(context);
+            Prefs.BackupRestore.setScheduledBackupLastDiagnostics(diagnostics);
+            return diagnostics;
+        } catch (Throwable th) {
+            if (th instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            String diagnostics = context.getString(R.string.auto_backup_diagnostics_unavailable);
+            Prefs.BackupRestore.setScheduledBackupLastDiagnostics(diagnostics);
+            return diagnostics;
+        }
     }
 
     @NonNull
