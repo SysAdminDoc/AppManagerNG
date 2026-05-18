@@ -1,11 +1,12 @@
 # AppManagerNG Intent / URI Schema
 
-**Status:** v0.4.x — partial. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17.
+**Status:** v0.4.x. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17; public user-confirmed `am://` automation actions and Tasker-style activity intents shipped 2026-05-18.
 
-This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive AppManagerNG. Two surfaces:
+This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive AppManagerNG. Three surfaces:
 
 1. **URI deep links** (`app-manager://`, `am://`) — public, dispatched via the launcher. Anyone with the link can fire them; treat them as user-initiated UI navigation.
-2. **Broadcast actions** (`io.github.sysadmindoc.AppManagerNG.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate, or an in-app broker such as the planned Tasker plugin, can fire them.
+2. **Public automation activity** ([`AutomationUriActivity`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/AutomationUriActivity.java)) — accepts `am://` operation URIs and `startActivity` intents using the same action constants as the broadcast API. It requires AppManagerNG authentication and a confirmation dialog before privileged work starts.
+3. **Broadcast actions** (`io.github.sysadmindoc.AppManagerNG.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate, or an in-app broker, can fire them without the public confirmation UI.
 
 ---
 
@@ -40,17 +41,49 @@ am://app/com.android.chrome?user=10
 
 Parsed by [`SelfUriManager.getUserPackagePairFromUri()`](../app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java); both schemes share the same code path. Adding a new alias scheme without touching the rest of the deep-link machinery is by design — schema changes here should never require updating consumers of `getUserPackagePairFromUri`.
 
-### Roadmapped — additional `am://` actions *(iter-22 T8 [S246], not yet implemented)*
+### Public `am://` automation actions *(shipped 2026-05-18)*
 
-These shapes are reserved by the schema below but **not wired** in v0.4.x. The broadcast-intent automation surface below is the shipped non-public execution layer; public URI actions still need user-confirmed dialogs before they should execute privileged work.
+These URIs are public and route through `AutomationUriActivity`, not the signature-only receiver. AppManagerNG authenticates the user, shows a confirmation dialog summarizing the action, target, and user id, then starts the existing batch/profile/installer flow. `dry_run=1` validates the request and exits without starting work.
 
-| URI | Intended behaviour | Authorization gate |
-|-----|--------------------|--------------------|
-| `am://freeze/<pkg>` | Freeze the named package. | Signature permission *or* user-confirmed dialog. |
-| `am://profile/<id>/run` | Run the named profile (`id` matches the profile JSON file). | Signature permission *or* user-confirmed dialog. |
-| `am://install?source=<url>` | Download an APK from the given URL and offer install. | Same Android `REQUEST_INSTALL_PACKAGES` flow as a manual share. |
+| URI | Behaviour |
+|-----|-----------|
+| `am://freeze/<pkg>?user=<uid>` | Freeze package. |
+| `am://unfreeze/<pkg>?user=<uid>` | Unfreeze package. |
+| `am://force-stop/<pkg>?user=<uid>` | Force-stop package. |
+| `am://clear-cache/<pkg>?user=<uid>` | Clear package cache. |
+| `am://clear-data/<pkg>?user=<uid>` | Clear package data. |
+| `am://uninstall/<pkg>?user=<uid>` | Queue uninstall. |
+| `am://backup/<pkg>?backup_name=<name>&backup_flags=<int>` | Queue backup using optional backup override parameters. |
+| `am://restore/<pkg>?backup_name=<name>&backup_flags=<int>` | Queue restore using optional backup override parameters. |
+| `am://disable-component/<pkg>?component=.Receiver` | Disable/block a component for one package. |
+| `am://enable-component/<pkg>?component=.Receiver` | Enable/unblock a component for one package. |
+| `am://scan-trackers/<pkg>?user=<uid>` | Open App Details tracker view. |
+| `am://profile/<id>/run?state=on` | Run profile id/name with optional state (`on`/`off`). |
+| `am://run-profile/<id>?state=off` | Compatibility alias for profile run. |
+| `appmanager://run-profile/<id>?state=on` | Legacy compatibility alias for profile run. |
+| `am://install?source=<url>` | Open the installer for `file:`, `content:`, HTTP, or HTTPS sources accepted by the installer. |
 
-Until these land, the canonical way to drive a freeze / profile-run from an external app is to share a profile JSON or use the in-app pinned shortcut produced by `CreateShortcutDialogFragment`.
+Common URI query parameters:
+
+| Query param | Applies to | Notes |
+|-------------|------------|-------|
+| `package`, `pkg`, `packages` | Package and profile actions | Adds package targets. `packages` accepts comma/newline-separated values. For `am://profile/...`, package targets are merged into the profile as a temporary `packages` override. |
+| `user`, `users` | Package actions | `users` accepts comma/newline-separated ids. A single user fans out to all packages. |
+| `dry_run`, `dry-run`, `dryRun` | All public actions | Boolean (`1`, `true`, `yes`, `on`, or false equivalents). |
+| `component`, `cmp` | Component actions | Relative, short, flattened, or fully-qualified component class. |
+| `backup_name`, `backup-name` | Backup/restore/profile actions | For profile actions, merged into temporary `backup_data.name`. |
+| `backup_flags`, `backup-flags` | Backup/restore/profile actions | Integer `BackupFlags` bitmask. For profile actions, merged into temporary `backup_data.flags`. |
+| `state`, `profile_state`, `profile-state` | Profile actions | `on` or `off`. |
+| `profile_overrides`, `profile-overrides`, `overrides` | Profile actions | URL-encoded JSON object merged into the saved profile for this run only. `id`, `name`, and `type` are preserved from the saved profile. |
+| `source`, `uri` | Install action | Installer source URI. |
+
+---
+
+## Public activity intents *(shipped 2026-05-18)*
+
+Tasker/MacroDroid can also use "Send Intent" / "Start Activity" with the same action constants and extras listed in the broadcast table below. Target the AppManagerNG package and start an Activity, not a broadcast. This public path is handled by `AutomationUriActivity`, accepts string forms for common extras (`EXTRA_BACKUP_FLAGS="7"`, `EXTRA_DRY_RUN="true"`, comma-separated `EXTRA_PACKAGES` / `EXTRA_USERS`), and requires the same user confirmation as public URIs.
+
+For profile runs, either use `ACTION_RUN_PROFILE` + `EXTRA_PROFILE_ID`, or use `ACTION_BACKUP` with `EXTRA_PROFILE_ID` and no package target for compatibility with the signature receiver.
 
 ---
 
@@ -74,11 +107,11 @@ The schema mirrors Hail v1.10.0 while routing through AppManagerNG's existing se
 | `io.github.sysadmindoc.AppManagerNG.action.CLEAR_CACHE` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
 | `io.github.sysadmindoc.AppManagerNG.action.CLEAR_DATA` | `EXTRA_PACKAGE`, optional `EXTRA_USER`. |
 | `io.github.sysadmindoc.AppManagerNG.action.UNINSTALL` | `EXTRA_PACKAGE`, optional `EXTRA_USER`, optional `EXTRA_DRY_RUN` (boolean). |
-| `io.github.sysadmindoc.AppManagerNG.action.BACKUP` | `EXTRA_PACKAGE` *or* `EXTRA_PROFILE_ID`; optional `EXTRA_BACKUP_NAME`, `EXTRA_BACKUP_FLAGS`, `EXTRA_USER`. |
+| `io.github.sysadmindoc.AppManagerNG.action.BACKUP` | `EXTRA_PACKAGE` *or* `EXTRA_PROFILE_ID`; optional `EXTRA_BACKUP_NAME`, `EXTRA_BACKUP_FLAGS`, `EXTRA_USER`, `EXTRA_PROFILE_OVERRIDES`. |
 | `io.github.sysadmindoc.AppManagerNG.action.RESTORE` | `EXTRA_PACKAGE`, optional `EXTRA_BACKUP_NAME`, `EXTRA_BACKUP_FLAGS`, `EXTRA_USER`. |
 | `io.github.sysadmindoc.AppManagerNG.action.DISABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`; optional `EXTRA_USER`. |
 | `io.github.sysadmindoc.AppManagerNG.action.ENABLE_COMPONENT` | `EXTRA_PACKAGE`, `EXTRA_COMPONENT`; optional `EXTRA_USER`. |
-| `io.github.sysadmindoc.AppManagerNG.action.RUN_PROFILE` | `EXTRA_PROFILE_ID`, optional `EXTRA_PROFILE_STATE`. |
+| `io.github.sysadmindoc.AppManagerNG.action.RUN_PROFILE` | `EXTRA_PROFILE_ID`, optional `EXTRA_PROFILE_STATE`, `EXTRA_PROFILE_OVERRIDES`. |
 | `io.github.sysadmindoc.AppManagerNG.action.INSTALL_FROM_URI` | `EXTRA_URI` (file/content/HTTP(S) source accepted by the package installer). |
 | `io.github.sysadmindoc.AppManagerNG.action.SCAN_TRACKERS` | `EXTRA_PACKAGE`, optional `EXTRA_USER`; opens App Details with tracker sort. |
 
@@ -92,19 +125,21 @@ Common extras:
 | `EXTRA_USERS` | `int[]` or `ArrayList<Integer>` | Must match package count, or one id may fan out to all packages. |
 | `EXTRA_COMPONENT` | `String` | Fully-qualified, relative (`.Receiver`), short (`Receiver`), or flattened (`pkg/.Receiver`) component class. Component actions require exactly one package. |
 | `EXTRA_DRY_RUN` | `boolean` | Validates and exits without starting an operation. |
+| `EXTRA_PROFILE_OVERRIDES` | `String` JSON object | Merged into the saved profile for this run only. Nested objects merge recursively; `id`, `name`, and `type` are preserved from the saved profile. |
 
-Authorization: the manifest declares `io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION` with `protectionLevel="signature"` and the receiver requires that permission. Generic Tasker/MacroDroid `Send Intent` broadcasts cannot call this receiver directly unless they are signed with NG's key or routed through a future in-app broker. The planned Tasker Plugin work (iter-22 T8 [S250]) should broker these same actions from a user-configured plugin UI.
+Authorization: the manifest declares `io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION` with `protectionLevel="signature"` and the receiver requires that permission. Generic Tasker/MacroDroid `Send Intent` broadcasts cannot call this receiver directly unless they are signed with NG's key or routed through an in-app broker. Use the public activity intent surface above for untrusted automation apps.
 
 ---
 
 ## Tasker / MacroDroid integration
 
-Until the Tasker plugin lands, the simplest way to drive AppManagerNG from Tasker is still:
+Use either:
 
-1. Use the in-app **Pinned shortcut** flow (`CreateShortcutDialogFragment` — long-press an app's row in App Info) to produce a launcher shortcut for the desired action (Freeze / Force-Stop / Clear Cache).
-2. Configure Tasker's "Launch Shortcut" action to fire the produced shortcut.
+1. A public URI, for example `am://freeze/com.example.app?user=0`.
+2. A Tasker/MacroDroid **Start Activity** intent with action `io.github.sysadmindoc.AppManagerNG.action.FREEZE` and extra `EXTRA_PACKAGE=com.example.app`.
+3. The in-app pinned-shortcut flow for launcher-native shortcuts.
 
-The broadcast surface is intentionally not directly callable by arbitrary automation apps. The Tasker Plugin work (`com.twofortyfouram` Locale-spec plugin) is the same operation surface packaged for Tasker / Automate / MacroDroid auto-discovery and user confirmation.
+The public Activity path is intentionally confirmation-gated. The signature broadcast receiver remains reserved for NG-signed companions or future plugin/broker components that provide their own trusted setup UI.
 
 ---
 
