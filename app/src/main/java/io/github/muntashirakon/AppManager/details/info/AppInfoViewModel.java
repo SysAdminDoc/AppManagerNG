@@ -18,6 +18,7 @@ import android.text.TextUtils;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
@@ -335,6 +336,9 @@ public class AppInfoViewModel extends AndroidViewModel {
             }
             tagCloud.canWriteAndExecute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                     && applicationInfo.targetSdkVersion < Build.VERSION_CODES.Q;
+            tagCloud.warnsCleartextDeprecation = shouldWarnCleartextDeprecation(
+                    (applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0,
+                    ApplicationInfoCompat.getNetworkSecurityConfigRes(applicationInfo));
             tagCloud.hasKeyStoreItems = KeyStoreUtils.hasKeyStore(applicationInfo.uid);
             tagCloud.hasMasterKeyInKeyStore = KeyStoreUtils.hasMasterKey(applicationInfo.uid);
             tagCloud.usesPlayAppSigning = PackageUtils.usesPlayAppSigning(applicationInfo);
@@ -410,6 +414,11 @@ public class AppInfoViewModel extends AndroidViewModel {
                 throw new RuntimeException(th);
             });
         }
+    }
+
+    @VisibleForTesting
+    static boolean shouldWarnCleartextDeprecation(boolean usesCleartextTraffic, int networkSecurityConfigRes) {
+        return usesCleartextTraffic && networkSecurityConfigRes == 0;
     }
 
     @AnyThread
@@ -580,6 +589,7 @@ public class AppInfoViewModel extends AndroidViewModel {
         @Nullable
         public XposedModuleInfo xposedModuleInfo;
         public boolean canWriteAndExecute;
+        public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;
         public boolean usesPlayAppSigning;

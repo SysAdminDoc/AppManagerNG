@@ -1295,6 +1295,17 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                     .setNegativeButton(R.string.close, null)
                                     .show());
         }
+        if (tagCloud.warnsCleartextDeprecation) {
+            TagItem cleartextTag = new TagItem();
+            tagItems.add(cleartextTag);
+            cleartextTag.setTextRes(R.string.app_info_tag_cleartext_deprecated)
+                    .setColor(ColorCodes.getRemovalCautionIndicatorColor(context))
+                    .setOnClickListener(v -> new ScrollableDialogBuilder(v.getContext())
+                            .setTitle(R.string.cleartext_deprecation_android18_title)
+                            .setMessage(R.string.cleartext_deprecation_android18_message)
+                            .setNegativeButton(R.string.close, null)
+                            .show());
+        }
         if (tagCloud.bloatwareRemovalType != 0) {
             TagItem bloatwareTag = new TagItem();
             tagItems.add(bloatwareTag);
