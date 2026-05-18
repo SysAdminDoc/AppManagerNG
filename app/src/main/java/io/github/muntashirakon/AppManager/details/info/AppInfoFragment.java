@@ -2310,9 +2310,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 mListItems.add(ListItem.newRegularItem(getString(R.string.hidden_api_enforcement_policy),
                         getHiddenApiEnforcementPolicy(appInfo.hiddenApiEnforcementPolicy)));
             }
-            if (appInfo.seInfo != null) {
-                mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.selinux), appInfo.seInfo));
-            }
+            addSelinuxInfo(appInfo);
             // Main activity
             if (appInfo.mainActivity != null) {
                 final ComponentName launchComponentName = appInfo.mainActivity.getComponent();
@@ -2325,6 +2323,66 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
             }
         }
+    }
+
+    @GuardedBy("mListItems")
+    private void addSelinuxInfo(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (appInfo.seInfo != null) {
+            mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.selinux_policy_info),
+                    appInfo.seInfo));
+        }
+        CharSequence fileContexts = getSelinuxFileContexts(appInfo);
+        if (fileContexts != null) {
+            ListItem fileContextsItem = ListItem.newSelectableRegularItem(getString(R.string.selinux_file_contexts),
+                    fileContexts);
+            fileContextsItem.setMonospace(true);
+            mListItems.add(fileContextsItem);
+        }
+        CharSequence processContexts = getSelinuxProcessContexts(appInfo);
+        if (processContexts != null) {
+            ListItem processContextsItem = ListItem.newSelectableRegularItem(getString(R.string.selinux_process_contexts),
+                    processContexts);
+            processContextsItem.setMonospace(true);
+            mListItems.add(processContextsItem);
+        }
+    }
+
+    @Nullable
+    private CharSequence getSelinuxFileContexts(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        StringBuilder fileContexts = new StringBuilder();
+        appendSelinuxContext(fileContexts, getString(R.string.data_dir), appInfo.dataDirSelinuxContext);
+        appendSelinuxContext(fileContexts, getString(R.string.source_dir), appInfo.sourceFileSelinuxContext);
+        return fileContexts.length() == 0 ? null : fileContexts;
+    }
+
+    @Nullable
+    private CharSequence getSelinuxProcessContexts(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (appInfo.processSelinuxContexts.isEmpty()) {
+            return null;
+        }
+        StringBuilder processContexts = new StringBuilder();
+        for (AppSelinuxContexts.ProcessContext processContext : appInfo.processSelinuxContexts) {
+            if (processContexts.length() > 0) {
+                processContexts.append('\n');
+            }
+            processContexts.append(processContext.processName)
+                    .append(" (")
+                    .append(processContext.pid)
+                    .append("): ")
+                    .append(processContext.context);
+        }
+        return processContexts;
+    }
+
+    private static void appendSelinuxContext(@NonNull StringBuilder builder, @NonNull CharSequence label,
+                                             @Nullable String context) {
+        if (context == null) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append('\n');
+        }
+        builder.append(label).append(": ").append(context);
     }
 
     @NonNull
