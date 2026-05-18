@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.ParcelCompat;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -41,6 +42,24 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     }
 
     @NonNull
+    public static ProfileQueueItem fromProfile(@NonNull BaseProfile profile, @Nullable String state,
+                                               @Nullable JSONObject profileOverrides)
+            throws JSONException, IOException {
+        if (profileOverrides == null || profileOverrides.length() == 0) {
+            return fromProfile(profile, state);
+        }
+        JSONObject profileObj = profile.serializeToJson();
+        mergeProfileOverrides(profileObj, profileOverrides);
+        profileObj.put("id", profile.profileId);
+        profileObj.put("name", profile.name);
+        profileObj.put("type", profile.type);
+        BaseProfile overriddenProfile = BaseProfile.DESERIALIZER.deserialize(profileObj);
+        File tempProfileFile = FileCache.getGlobalFileCache().getCachedFile(
+                profileObj.toString().getBytes(StandardCharsets.UTF_8), ProfileManager.PROFILE_EXT);
+        return new ProfileQueueItem(overriddenProfile, state, Paths.get(tempProfileFile));
+    }
+
+    @NonNull
     private final String mProfileId;
     @BaseProfile.ProfileType
     private final int mProfileType;
@@ -52,11 +71,16 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     private final Path mTempProfilePath;
 
     private ProfileQueueItem(@NonNull BaseProfile profile, @Nullable String state) {
+        this(profile, state, null);
+    }
+
+    private ProfileQueueItem(@NonNull BaseProfile profile, @Nullable String state,
+                             @Nullable Path tempProfilePath) {
         mProfileId = profile.profileId;
         mProfileType = profile.type;
         mProfileName = profile.name;
         mState = state;
-        mTempProfilePath = null;
+        mTempProfilePath = tempProfilePath;
     }
 
     protected ProfileQueueItem(@NonNull Parcel in) {
@@ -135,13 +159,34 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
         jsonObject.put("state", mState);
         // A profile can be altered any time. So, we need to store a snapshot of the profile
         try {
-            BaseProfile profile = BaseProfile.fromPath(ProfileManager.findProfilePathById(mProfileId));
+            BaseProfile profile = BaseProfile.fromPath(mTempProfilePath != null
+                    ? mTempProfilePath : ProfileManager.findProfilePathById(mProfileId));
             jsonObject.put("profile", profile.serializeToJson());
         } catch (IOException e) {
             //noinspection UnnecessaryInitCause
             throw (JSONException) new JSONException(e.getMessage()).initCause(e);
         }
         return jsonObject;
+    }
+
+    private static void mergeProfileOverrides(@NonNull JSONObject base, @NonNull JSONObject overrides)
+            throws JSONException {
+        JSONArray keys = overrides.names();
+        if (keys == null) {
+            return;
+        }
+        for (int i = 0; i < keys.length(); ++i) {
+            String key = keys.getString(i);
+            Object overrideValue = overrides.get(key);
+            if (overrideValue instanceof JSONObject) {
+                JSONObject baseValue = base.optJSONObject(key);
+                if (baseValue != null) {
+                    mergeProfileOverrides(baseValue, (JSONObject) overrideValue);
+                    continue;
+                }
+            }
+            base.put(key, overrideValue);
+        }
     }
 
     public static final JsonDeserializer.Creator<ProfileQueueItem> DESERIALIZER = ProfileQueueItem::new;
