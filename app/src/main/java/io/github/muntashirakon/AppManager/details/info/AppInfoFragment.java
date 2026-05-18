@@ -2509,11 +2509,22 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             packageNames.add(installSource.getInstallingPackageName());
         }
         if (installSource.getInitiatingPackageLabel() != null) {
-            CharSequence info = new SpannableStringBuilder(getSmallerText(getString(R.string.actual_installer)))
+            SpannableStringBuilder info = new SpannableStringBuilder(getSmallerText(getString(R.string.actual_installer)))
                     .append("\n")
                     .append(getTitleText(requireContext(), installSource.getInitiatingPackageLabel()))
                     .append("\n")
                     .append(installSource.getInitiatingPackageName());
+            // Append the initiating-package signing-cert SHA-256 (API 30+) so the
+            // user can match it against a known-good installer fingerprint without
+            // navigating to App Details for the installer itself. Defends the
+            // case where a malicious installer spoofs the label/name of a real
+            // store but signs with its own key.
+            String certDigest = computeInitiatingCertSha256(installSource);
+            if (certDigest != null) {
+                info.append("\n")
+                        .append(getSmallerText(getString(R.string.install_source_initiator_cert_sha256,
+                                certDigest)));
+            }
             installerInfoList.add(info);
             packageNames.add(installSource.getInitiatingPackageName());
         }
@@ -2535,6 +2546,39 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 })
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    /**
+     * Compute a colon-separated SHA-256 hex digest of the initiating installer's
+     * first signing certificate, when available. Returns {@code null} when the
+     * signing info is absent (pre-API 30, side-loaded with no install session,
+     * or runtime failure) so the caller can omit the line entirely.
+     *
+     * <p>Match against a publisher's known-good fingerprint to detect a spoofed
+     * installer that wears a real store's label but signs with a different key.
+     */
+    @Nullable
+    private static String computeInitiatingCertSha256(@NonNull InstallSourceInfoCompat installSource) {
+        android.content.pm.SigningInfo signingInfo = installSource.getInitiatingPackageSigningInfo();
+        if (signingInfo == null) return null;
+        try {
+            android.content.pm.Signature[] sigs = signingInfo.hasMultipleSigners()
+                    ? signingInfo.getApkContentsSigners()
+                    : signingInfo.getSigningCertificateHistory();
+            if (sigs == null || sigs.length == 0) return null;
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(sigs[0].toByteArray());
+            StringBuilder sb = new StringBuilder(digest.length * 3);
+            for (int i = 0; i < digest.length; ++i) {
+                if (i > 0) sb.append(':');
+                int v = digest[i] & 0xff;
+                sb.append(Character.forDigit(v >>> 4, 16));
+                sb.append(Character.forDigit(v & 0x0f, 16));
+            }
+            return sb.toString().toUpperCase(java.util.Locale.ROOT);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /**
