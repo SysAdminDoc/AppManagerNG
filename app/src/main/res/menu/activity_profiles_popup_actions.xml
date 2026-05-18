@@ -33,6 +33,11 @@
         android:title="@string/pref_export" />
 
     <item
+        android:id="@+id/action_export_upstream_compat"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/pref_export_upstream_compat" />
+
+    <item
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
         android:title="@string/share_profile_json" />

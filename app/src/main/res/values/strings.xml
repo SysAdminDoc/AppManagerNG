@@ -2278,6 +2278,9 @@
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
     <string name="profiles_external_import_done">Imported %2$d packages (%1$s)</string>
     <string name="profiles_external_import_failed">External profile import failed · %1$s</string>
+    <!-- Export-to-Upstream-AM Compat Profile (Next/T11) -->
+    <string name="pref_export_upstream_compat">Export for upstream App Manager</string>
+    <string name="profile_export_upstream_compat_done">Exported in upstream-AM-compatible form</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
