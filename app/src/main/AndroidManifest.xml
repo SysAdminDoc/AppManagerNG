@@ -857,6 +857,13 @@
             android:launchMode="singleInstance"
             android:taskAffinity="" />
         <activity
+            android:name=".backup.DefaultAppRoleRestoreActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity="" />
+        <activity
             android:name=".history.ops.OpHistoryActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="true"

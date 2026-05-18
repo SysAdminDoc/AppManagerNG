@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Default-app role restore rebinds (2026-05-18)
+
+- Backup metadata now records whether a package held the Phone, SMS, Home, or
+  Browser default-app role at backup time.
+- Restore now attempts to rebind those roles to the restored package/user via
+  Android's privileged `cmd role add-role-holder` path after package restore.
+- Batch restore completion now exposes a **Review defaults** notification action
+  when Android rejects an automatic rebind, opening the system Default apps
+  settings with the affected apps and roles listed.
+
 ### Changed — Material You widget theming (2026-05-18)
 
 - Existing home-screen widgets now resolve a shared dynamic AppWidget palette
