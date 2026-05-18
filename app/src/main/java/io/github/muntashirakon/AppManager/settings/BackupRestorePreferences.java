@@ -7,9 +7,12 @@ import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
 import android.app.Activity;
 import android.app.TimePickerDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.SpannableStringBuilder;
 import android.view.View;
 
@@ -47,10 +50,13 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupImportOptions;
 import io.github.muntashirakon.AppManager.crypto.RSACrypto;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.settings.crypto.AESCryptoSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.ECCCryptoSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.OpenPgpKeySelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.RSACryptoSelectionDialogFragment;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
@@ -352,9 +358,13 @@ public class BackupRestorePreferences extends PreferenceFragment {
         scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
         scheduleRequireCharging.setChecked(Prefs.BackupRestore.isScheduledBackupChargingRequired());
         scheduleEnabled.setOnPreferenceChangeListener((preference, newValue) -> {
-            Prefs.BackupRestore.setScheduledAutoBackupEnabled((Boolean) newValue);
+            boolean enabled = (Boolean) newValue;
+            Prefs.BackupRestore.setScheduledAutoBackupEnabled(enabled);
             AutoBackupScheduler.scheduleOrCancel(requireContext());
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            if (enabled) {
+                ensureScheduledBackupBatteryExemption();
+            }
             return true;
         });
         scheduleTime.setOnPreferenceClickListener(preference -> {
@@ -404,6 +414,63 @@ public class BackupRestorePreferences extends PreferenceFragment {
         });
     }
 
+    private void ensureScheduledBackupBatteryExemption() {
+        Context context = getContext();
+        if (context == null || !SelfBatteryOptimization.isSupported()
+                || SelfBatteryOptimization.isExempt(context)) {
+            return;
+        }
+        if (SelfBatteryOptimization.canAutoFix()) {
+            Context appContext = context.getApplicationContext();
+            ThreadUtils.postOnBackgroundThread(() -> {
+                @SelfBatteryOptimization.AutoFixResult int result = SelfBatteryOptimization.autoFixIfPossible(appContext);
+                ThreadUtils.postOnMainThread(() -> {
+                    Context currentContext = getContext();
+                    if (currentContext == null || !isAdded()) return;
+                    if (result == SelfBatteryOptimization.RESULT_FIXED
+                            || result == SelfBatteryOptimization.RESULT_ALREADY_EXEMPT) {
+                        UIUtils.displayShortToast(R.string.pref_backup_schedule_battery_auto_fixed);
+                        refreshScheduledBackupSummaries();
+                    } else {
+                        showScheduledBackupBatteryOptimizationPrompt(currentContext);
+                    }
+                });
+            });
+            return;
+        }
+        showScheduledBackupBatteryOptimizationPrompt(context);
+    }
+
+    private void refreshScheduledBackupSummaries() {
+        Preference scheduleTime = findPreference("backup_schedule_time");
+        Preference scheduleNetwork = findPreference("backup_schedule_network");
+        Preference scheduleStatus = findPreference("backup_schedule_status");
+        if (scheduleTime != null && scheduleNetwork != null && scheduleStatus != null) {
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+        }
+    }
+
+    private void showScheduledBackupBatteryOptimizationPrompt(@NonNull Context context) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.pref_backup_schedule_battery_optimization_title)
+                .setMessage(R.string.pref_backup_schedule_battery_optimization_msg)
+                .setPositiveButton(R.string.pref_backup_schedule_battery_optimization_open,
+                        (dialog, which) -> launchScheduledBackupBatteryOptimizationSystemFlow(context))
+                .setNegativeButton(R.string.not_now, null)
+                .show();
+    }
+
+    private void launchScheduledBackupBatteryOptimizationSystemFlow(@NonNull Context context) {
+        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+        intent.setData(Uri.parse("package:" + context.getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayLongToast(getString(R.string.pref_battery_optimization_unsupported));
+        }
+    }
+
     private void updateScheduledBackupSummaries(@NonNull Preference scheduleTime,
                                                 @NonNull Preference scheduleNetwork,
                                                 @NonNull Preference scheduleStatus) {
@@ -412,6 +479,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
         String charging = getString(Prefs.BackupRestore.isScheduledBackupChargingRequired()
                 ? R.string.pref_backup_schedule_charging_required
                 : R.string.pref_backup_schedule_charging_not_required);
+        String battery = getScheduledBackupBatteryOptimizationLabel();
         scheduleTime.setSummary(time);
         scheduleNetwork.setSummary(network);
         long lastRun = Prefs.BackupRestore.getScheduledBackupLastRun();
@@ -429,7 +497,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
                         ? R.string.pref_backup_schedule_state_enabled
                         : R.string.pref_backup_schedule_state_disabled),
-                time, charging, network, lastRunSummary));
+                time, charging, network, battery, lastRunSummary));
     }
 
     @NonNull
@@ -452,6 +520,17 @@ public class BackupRestorePreferences extends PreferenceFragment {
             default:
                 return getString(R.string.pref_backup_schedule_network_not_required);
         }
+    }
+
+    @NonNull
+    private String getScheduledBackupBatteryOptimizationLabel() {
+        Context context = getContext();
+        if (context == null || !SelfBatteryOptimization.isSupported()) {
+            return getString(R.string.pref_backup_schedule_battery_unsupported);
+        }
+        return getString(SelfBatteryOptimization.isExempt(context)
+                ? R.string.pref_backup_schedule_battery_exempt
+                : R.string.pref_backup_schedule_battery_optimized);
     }
 
     private static int indexOf(int[] values, int target) {
@@ -488,6 +567,12 @@ public class BackupRestorePreferences extends PreferenceFragment {
     @Override
     public int getTitle() {
         return R.string.backup_restore;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshScheduledBackupSummaries();
     }
 
     @UiThread

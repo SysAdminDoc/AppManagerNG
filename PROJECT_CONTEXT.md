@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 92**. Iter-92 closed the T6 Scheduled
-> Auto-Backup core by adding a WorkManager-backed daily scheduler, Settings ->
-> Backup controls for time/charging/network/run-now/status, and a worker that
-> runs the existing backup engine over installed packages with multi-backup
-> naming. API 36/37 quota and JobDebugInfo diagnostics remain an open tail.
+> Last consolidated: **2026-05-18 iter 93**. Iter-93 closed the T6 scheduler
+> battery-optimization row: enabling Scheduled Auto-Backup now checks
+> `SelfBatteryOptimization`, silently applies the privileged auto-fix when
+> available, otherwise opens a schedule-specific Android exemption prompt, and
+> shows the battery state in the schedule status row.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -133,6 +133,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-39/`](.ai/research/2026-05-17-pass-39/) | pass 39 | Restricted Settings unlock walkthrough: install-source-aware Privileges row, Mode Doctor probe, App info / Accessibility deep-links, and classification tests. |
 | [`.ai/research/2026-05-18-iter-91/`](.ai/research/2026-05-18-iter-91/) | iter 91 | Dhizuku provider detection slice: no direct API AAR, Settings -> Privileges row, Mode Doctor probe, onboarding status, and minSdk-blocked DPM carryover. |
 | [`.ai/research/2026-05-18-iter-92/`](.ai/research/2026-05-18-iter-92/) | iter 92 | Scheduled Auto-Backup core: WorkManager 2.10.5 scheduler/worker, Backup settings controls, run-now/status history, and API 36/37 diagnostics carryover. |
+| [`.ai/research/2026-05-18-iter-93/`](.ai/research/2026-05-18-iter-93/) | iter 93 | Scheduler battery-optimization guardrail: privileged auto-fix on schedule enable, no-privilege Android exemption prompt, and status-row battery state. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -204,7 +205,8 @@ Pass 7 closed T5's root/ADB battery-optimization auto-fix row: new
 `DEVICE_POWER` auto-fix, `ProfileApplierService` calls it for routine/profile
 execution, `BatchOpsService` calls it for long-running backup/import/restore
 operations, and `TroubleshootingPreferences` reuses the same helper for the
-manual UI path.
+manual UI path. Iter-93 wired the same helper into Scheduled Auto-Backup enablement
+and added the no-privilege Android exemption prompt from Settings -> Backup.
 
 Pass 8 closed cross-user package state and Finder multi-user scope: `ApplicationItem`
 now keeps per-user enabled/disabled/uninstalled buckets, the main list and
@@ -531,6 +533,8 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **Battery optimization auto-fix** — `self/SelfBatteryOptimization.java` is the canonical
   helper for AppManagerNG's own Doze exemption state. Use it instead of adding new
   direct `PowerManager` / `DeviceIdleManagerCompat` checks for NG's package.
+  Scheduled Auto-Backup enablement now calls it before falling back to Android's
+  `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` prompt.
 - **Doze allowlist revert diagnostics** — `revert/DozeAllowlistDiagnostics.java`
   is the Doze-specific companion to `OsRevertMonitor`. It owns
   `device_idle_constants` / `DeviceConfig device_idle` snapshotting and policy
