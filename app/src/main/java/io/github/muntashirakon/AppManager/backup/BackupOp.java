@@ -255,6 +255,7 @@ class BackupOp implements Closeable {
         metadata.versionName = mPackageInfo.versionName;
         metadata.versionCode = PackageInfoCompat.getLongVersionCode(mPackageInfo);
         metadata.apkName = new File(mApplicationInfo.sourceDir).getName();
+        metadata.defaultRoles = DefaultAppRoleBackupHelper.getHeldDefaultRoles(mPackageName, mUserId);
         String[] dataDirs = null;
         if (mBackupFlags.backupAdbData()) {
             if (BackupCompat.isAppEligibleForBackupForUser(mUserId, mPackageName)) {

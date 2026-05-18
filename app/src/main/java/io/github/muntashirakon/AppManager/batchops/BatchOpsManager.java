@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.apk.dexopt.DexOptOptions;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptimizer;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.backup.BackupException;
+import io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelper;
 import io.github.muntashirakon.AppManager.backup.BackupManager;
 import io.github.muntashirakon.AppManager.backup.convert.ConvertUtils;
 import io.github.muntashirakon.AppManager.backup.convert.Converter;
@@ -377,12 +378,13 @@ public class BatchOpsManager {
         CharSequence operationName = context.getString(R.string.backup_restore);
         MultithreadedExecutor executor = MultithreadedExecutor.getNewInstance();
         AtomicBoolean requiresRestart = new AtomicBoolean();
+        List<DefaultAppRoleBackupHelper.RoleRebindRequest> pendingDefaultRoleRebindRequests =
+                Collections.synchronizedList(new ArrayList<>());
         AtomicInteger count = new AtomicInteger(0);
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         try {
             BatchBackupOptions options = Objects.requireNonNull((BatchBackupOptions) info.options);
             int max = info.size();
-            BackupManager backupManager = new BackupManager();
             for (int i = 0; i < max; ++i) {
                 UserPackagePair pair = info.getPair(i);
                 executor.submit(() -> {
@@ -394,8 +396,10 @@ public class BatchOpsManager {
                     CharSequence title = context.getString(R.string.restoring_app, appLabel);
                     ProgressHandler subProgressHandler = newSubProgress(operationName, title);
                     try {
+                        BackupManager backupManager = new BackupManager();
                         backupManager.restore(options.getRestoreOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
                         requiresRestart.set(requiresRestart.get() | backupManager.requiresRestart());
+                        pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
                     } catch (Throwable e) {
                         log("====> op=BACKUP_RESTORE, mode=RESTORE pkg=" + pair, e);
                         failedPackages.add(pair);
@@ -411,6 +415,7 @@ public class BatchOpsManager {
         executor.awaitCompletion();
         Result result = new Result(failedPackages);
         result.setRequiresRestart(requiresRestart.get());
+        result.addPendingDefaultRoleRebindRequests(pendingDefaultRoleRebindRequests);
         return result;
     }
 
@@ -1006,6 +1011,8 @@ public class BatchOpsManager {
         private final boolean mIsSuccessful;
 
         private boolean mRequiresRestart;
+        @NonNull
+        private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
 
         public Result(@NonNull List<UserPackagePair> failedUserPackagePairs) {
             this(failedUserPackagePairs, failedUserPackagePairs.isEmpty());
@@ -1027,6 +1034,20 @@ public class BatchOpsManager {
 
         public void setRequiresRestart(boolean requiresRestart) {
             mRequiresRestart = requiresRestart;
+        }
+
+        public boolean hasPendingDefaultRoleRebindRequests() {
+            return !mPendingDefaultRoleRebindRequests.isEmpty();
+        }
+
+        public void addPendingDefaultRoleRebindRequests(
+                @NonNull List<DefaultAppRoleBackupHelper.RoleRebindRequest> requests) {
+            mPendingDefaultRoleRebindRequests.addAll(requests);
+        }
+
+        @NonNull
+        public ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> getPendingDefaultRoleRebindRequests() {
+            return new ArrayList<>(mPendingDefaultRoleRebindRequests);
         }
 
         public boolean isSuccessful() {

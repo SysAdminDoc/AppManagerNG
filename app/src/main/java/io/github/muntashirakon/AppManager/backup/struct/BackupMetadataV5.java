@@ -19,6 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Locale;
@@ -40,6 +41,7 @@ import io.github.muntashirakon.AppManager.crypto.RSACrypto;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -261,6 +263,8 @@ public class BackupMetadataV5 implements LocalizedString {
         public boolean keyStore;  // key_store
         @Nullable
         public String installer;  // installer
+        @NonNull
+        public String[] defaultRoles = new String[0];  // default_roles
 
         public Metadata(@Nullable String backupName) {
             this.version = MetadataManager.getCurrentBackupMetaVersion();
@@ -287,6 +291,7 @@ public class BackupMetadataV5 implements LocalizedString {
             instructionSet = metadata.instructionSet;
             keyStore = metadata.keyStore;
             installer = metadata.installer;
+            defaultRoles = metadata.defaultRoles.clone();
         }
 
         public Metadata(@NonNull JSONObject rootObject) throws JSONException {
@@ -305,6 +310,10 @@ public class BackupMetadataV5 implements LocalizedString {
             instructionSet = rootObject.getString("instruction_set");
             keyStore = rootObject.getBoolean("key_store");
             installer = JSONUtils.optString(rootObject, "installer");
+            JSONArray defaultRolesArray = rootObject.optJSONArray("default_roles");
+            defaultRoles = defaultRolesArray != null
+                    ? JSONUtils.getArray(String.class, defaultRolesArray)
+                    : ArrayUtils.emptyArray(String.class);
         }
 
         @NonNull
@@ -326,6 +335,7 @@ public class BackupMetadataV5 implements LocalizedString {
             rootObject.put("instruction_set", instructionSet);
             rootObject.put("key_store", keyStore);
             rootObject.put("installer", installer);
+            rootObject.put("default_roles", JSONUtils.getJSONArray(defaultRoles));
             return rootObject;
         }
     }

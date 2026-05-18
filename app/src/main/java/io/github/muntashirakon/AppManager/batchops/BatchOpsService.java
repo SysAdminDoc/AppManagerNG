@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.DefaultAppRoleRestoreActivity;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.BatchOpsInfo;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
@@ -327,6 +328,12 @@ public class BatchOpsService extends ForegroundService {
             PendingIntent pendingIntent = PendingIntentCompat.getActivity(this, 0, intent,
                     PendingIntent.FLAG_ONE_SHOT, false);
             notificationInfo.addAction(0, getString(R.string.restart_device), pendingIntent);
+        }
+        if (opResult != null && opResult.hasPendingDefaultRoleRebindRequests()) {
+            Intent intent = DefaultAppRoleRestoreActivity.getIntent(this, opResult.getPendingDefaultRoleRebindRequests());
+            PendingIntent pendingIntent = PendingIntentCompat.getActivity(this, 2, intent,
+                    PendingIntent.FLAG_ONE_SHOT, false);
+            notificationInfo.addAction(0, getString(R.string.restore_default_apps_review), pendingIntent);
         }
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
                 OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
