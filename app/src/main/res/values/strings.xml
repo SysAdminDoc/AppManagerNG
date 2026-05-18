@@ -506,6 +506,7 @@
     <string name="sort_by_component_name">Component name</string>
     <string name="reset_to_default">Reset to default</string>
     <string name="deny_dangerous_app_ops">Deny dangerous app ops</string>
+    <string name="set_audio_volume_app_ops">Set audio volume app ops</string>
     <string name="sort_by_app_ops_names">App ops name</string>
     <string name="sort_by_denied_app_ops">Denied first</string>
     <string name="sort_by_app_ops_values">App ops value</string>
@@ -585,12 +586,13 @@
     <string name="input_signatures_description">Input signatures with spaces, e.g., <tt>com.facebook org.app2 com.app3</tt> etc.</string>
     <string name="filtered_packages">Filtered packages</string>
     <string name="input_app_ops">Input app ops</string>
-    <string name="input_app_ops_description">Input app op names and/or constants with spaces, e.g., <tt>WAKE_LOCK 63 72 CAMERA</tt> etc.</string>
+    <string name="input_app_ops_description">Input app op names and/or constants with spaces, e.g., <tt>WAKE_LOCK AUDIO_MEDIA_VOLUME 63 72 CAMERA</tt> etc.</string>
     <string name="input_app_ops_description_profile">Input app op names and/or constants with spaces, e.g., <tt>WAKE_LOCK 63 72 CAMERA</tt> etc. Use <tt>*</tt> to apply for all configured app ops.</string>
     <string name="only_works_in_root_or_adb_mode">Only works in root or ADB mode</string>
     <string name="root_or_adb_required">Root or ADB required</string>
     <string name="trim_caches_permission_required_message">Cache trimming needs root or ADB access because Android restricts cache cleanup across apps.</string>
     <string name="app_ops_permission_required_message">Changing app ops needs root, ADB, or system-level access.</string>
+    <string name="no_audio_volume_app_ops">This Android build does not expose audio-volume app ops.</string>
     <string name="failed_to_parse_some_numbers">Could not parse some numbers</string>
     <plurals name="no_of_splits">
         <item quantity="one">%1$d split</item>

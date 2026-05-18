@@ -784,6 +784,36 @@ public class AppDetailsViewModel extends AndroidViewModel {
 
     @WorkerThread
     @GuardedBy("blockerLocker")
+    public boolean setAppOps(@NonNull int[] ops, int mode) {
+        if (mExternalApk || ops.length == 0) return false;
+        PackageInfo packageInfo = getPackageInfoInternal();
+        if (packageInfo == null) return false;
+        boolean isSuccessful = true;
+        for (int op : ops) {
+            try {
+                PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
+            } catch (PermissionException e) {
+                e.printStackTrace();
+                isSuccessful = false;
+            }
+        }
+        mExecutor.submit(() -> {
+            synchronized (mBlockerLocker) {
+                waitForBlockerOrExit();
+                mBlocker.setMutable();
+                for (int op : ops) {
+                    mBlocker.setAppOp(op, mode);
+                }
+                mBlocker.commit();
+                mBlocker.setReadOnly();
+                mBlockerLocker.notifyAll();
+            }
+        });
+        return isSuccessful;
+    }
+
+    @WorkerThread
+    @GuardedBy("blockerLocker")
     public boolean setAppOpMode(AppDetailsAppOpItem appOpItem) {
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();

@@ -6,6 +6,7 @@ import static io.github.muntashirakon.AppManager.utils.PackageUtils.getAppOpMode
 import static io.github.muntashirakon.AppManager.utils.PackageUtils.getAppOpNames;
 
 import android.annotation.SuppressLint;
+import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.PermissionInfo;
 import android.graphics.Color;
@@ -251,6 +252,33 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         });
                     })
                     .setNegativeButton(R.string.cancel, null)
+                    .show();
+        } else if (id == R.id.action_audio_volume_app_ops) {
+            int[] audioVolumeOps = AppOpsManagerCompat.getAudioVolumeOps();
+            if (audioVolumeOps.length == 0) {
+                UIUtils.displayShortToast(R.string.no_audio_volume_app_ops);
+                return true;
+            }
+            List<Integer> modes = AppOpsManagerCompat.getModeConstants();
+            new SearchableSingleChoiceDialogBuilder<>(activity, modes, getAppOpModeNames(modes))
+                    .setTitle(R.string.set_audio_volume_app_ops)
+                    .setSelection(AppOpsManager.MODE_ALLOWED)
+                    .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
+                        int opMode = modes.get(which);
+                        ThreadUtils.postOnBackgroundThread(() -> {
+                            if (viewModel != null && viewModel.setAppOps(audioVolumeOps, opMode)) {
+                                ThreadUtils.postOnMainThread(() -> {
+                                    if (!isDetached()) {
+                                        refreshDetails();
+                                    }
+                                });
+                            } else {
+                                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
+                                        R.string.failed_to_change_app_op_mode));
+                            }
+                        });
+                        dialog.dismiss();
+                    })
                     .show();
         } else if (id == R.id.action_deny_dangerous_permissions) {  // permissions
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
