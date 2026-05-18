@@ -244,6 +244,16 @@
                         tools:text="Shizuku is running and authorized" />
 
                     <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/status_dhizuku"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:visibility="gone"
+                        tools:text="Dhizuku active as device owner"
+                        tools:visibility="visible" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/hint_shizuku_autostart"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

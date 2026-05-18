@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
@@ -35,6 +36,7 @@ import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 public class PrivilegeHealthPreferences extends PreferenceFragment {
     private static final List<String> MODE_NAMES = Arrays.asList(
@@ -50,6 +52,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mRootManagerPref;
     private Preference mCapabilityDroppingPref;
     private Preference mShizukuPref;
+    private Preference mDhizukuPref;
     private Preference mAdbPref;
     private Preference mRemoteServicesPref;
     private Preference mBatteryOptimizationPref;
@@ -66,6 +69,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mRootManagerPref = requirePreference("privilege_health_root_manager");
         mCapabilityDroppingPref = requirePreference("privilege_health_capability_dropping");
         mShizukuPref = requirePreference("privilege_health_shizuku");
+        mDhizukuPref = requirePreference("privilege_health_dhizuku");
         mAdbPref = requirePreference("privilege_health_adb");
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
@@ -82,6 +86,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         });
         mBatteryOptimizationPref.setOnPreferenceClickListener(preference -> {
             handleBatteryOptimization();
+            return true;
+        });
+        mDhizukuPref.setOnPreferenceClickListener(preference -> {
+            showDhizukuDetails();
             return true;
         });
         mRestrictedSettingsPref.setOnPreferenceClickListener(preference -> {
@@ -121,6 +129,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         if (context == null) return;
         bindMode(context);
         bindShizuku(context);
+        bindDhizuku(context);
         bindAdb(context);
         bindRemoteServices(context);
         bindBatteryOptimization(context);
@@ -241,6 +250,40 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mShizukuPref.setSummary(getString(R.string.privilege_health_shizuku_summary,
                 getString(statusRes), version, ShizukuBridge.getVersionOrZero(),
                 ShizukuBridge.MIN_USER_SERVICE_VERSION, ShizukuBridge.getUidOrSelf()) + warning.toString());
+    }
+
+    private void bindDhizuku(@NonNull Context context) {
+        DhizukuBridge.Result result = DhizukuBridge.probe(context);
+        if (DhizukuBridge.isBelowMinimumSupportedAndroidVersion(result.sdk)) {
+            mDhizukuPref.setSummary(R.string.privilege_health_dhizuku_unsupported);
+            return;
+        }
+        String version = result.installedVersionName != null
+                ? result.installedVersionName
+                : getString(R.string.state_unknown);
+        String compatibilityWarning = DhizukuBridge.isAboveDeclaredSupportedAndroidVersion(result.sdk)
+                ? "\n" + getString(R.string.privilege_health_dhizuku_android_newer_warning,
+                        DhizukuBridge.MAX_DECLARED_SUPPORTED_SDK)
+                : "";
+        if (result.isOfficialOwner()) {
+            mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_active_summary,
+                    version,
+                    getString(result.providerVisible
+                            ? R.string.mode_of_op_capability_status_active
+                            : R.string.mode_of_op_capability_status_inactive),
+                    getString(result.apiPermissionGranted
+                            ? R.string.mode_of_op_capability_status_authorized
+                            : R.string.mode_of_op_capability_status_permission_required),
+                    result.ownerLabel()) + compatibilityWarning);
+            return;
+        }
+        if (result.isInstalled()) {
+            mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_installed_summary,
+                    version, DhizukuBridge.ACTIVATION_COMMAND) + compatibilityWarning);
+            return;
+        }
+        mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_missing_summary,
+                DhizukuBridge.ACTIVATION_COMMAND) + compatibilityWarning);
     }
 
     private void bindAdb(@NonNull Context context) {
@@ -417,6 +460,38 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                                 RestrictedSettingsDiagnostics.buildAccessibilitySettingsIntent()))
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    private void showDhizukuDetails() {
+        Context context = getContext();
+        if (context == null) return;
+        DhizukuBridge.Result result = DhizukuBridge.probe(context);
+        String version = result.installedVersionName != null
+                ? result.installedVersionName
+                : getString(R.string.state_unknown);
+        String message = getString(R.string.privilege_health_dhizuku_dialog_message,
+                version,
+                result.ownerLabel(),
+                result.providerVisible
+                        ? getString(R.string.mode_of_op_capability_status_active)
+                        : getString(R.string.mode_of_op_capability_status_inactive),
+                result.apiPermissionGranted
+                        ? getString(R.string.mode_of_op_capability_status_authorized)
+                        : getString(R.string.mode_of_op_capability_status_permission_required),
+                DhizukuBridge.ACTIVATION_COMMAND);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.privilege_health_dhizuku_title)
+                .setMessage(message)
+                .setNeutralButton(R.string.copy, (dialog, which) ->
+                        Utils.copyToClipboard(context, "Dhizuku activation", DhizukuBridge.ACTIVATION_COMMAND));
+        if (result.isInstalled()) {
+            builder.setPositiveButton(R.string.open,
+                    (dialog, which) -> launchSettingsIntent(DhizukuBridge.getSettingsIntent(context)))
+                    .setNegativeButton(R.string.close, null);
+        } else {
+            builder.setPositiveButton(R.string.close, null);
+        }
+        builder.show();
     }
 
     private void launchSettingsIntent(@NonNull Intent intent) {

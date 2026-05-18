@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
@@ -44,6 +45,7 @@ public final class PrivilegeModeDoctor {
         probes.add(probeRootManager(rootManagerInfo));
         probes.add(probeSui(rootManagerInfo));
         probes.add(probeShizuku(appContext));
+        probes.add(probeDhizuku(appContext));
         probes.add(probeAdb(appContext));
         probes.add(probeRestrictedSettings(appContext));
         probes.add(probeLocalServer());
@@ -131,6 +133,40 @@ public final class PrivilegeModeDoctor {
             return Probe.fail("Shizuku UserService", details, "Update Shizuku to a version with UserService support.");
         }
         return Probe.warn("Shizuku permission", details, "Authorize AppManagerNG in Shizuku, then rerun the doctor.");
+    }
+
+    @NonNull
+    private static Probe probeDhizuku(@NonNull Context context) {
+        DhizukuBridge.Result result = DhizukuBridge.probe(context);
+        String details = "sdk=" + result.sdk
+                + ", installed=" + valueOrUnknown(result.installedVersionName)
+                + ", owner=" + result.ownerLabel()
+                + ", officialOwner=" + result.isOfficialOwner()
+                + ", provider=" + result.providerVisible
+                + ", permission=" + result.apiPermissionGranted;
+        if (DhizukuBridge.isBelowMinimumSupportedAndroidVersion(result.sdk)) {
+            return Probe.skip("Dhizuku", details,
+                    "Dhizuku supports Android 8.0 through 16; use Shizuku, ADB, or root on this device.");
+        }
+        if (!result.isInstalled() && !result.isOfficialOwner()) {
+            return Probe.skip("Dhizuku", details,
+                    "Install and activate Dhizuku only if DeviceOwner/DPM operations are expected.");
+        }
+        if (!result.isOfficialOwner()) {
+            return Probe.warn("Dhizuku", details,
+                    "Dhizuku is installed but is not the device/profile owner. Activation command: "
+                            + DhizukuBridge.ACTIVATION_COMMAND);
+        }
+        if (!result.providerVisible) {
+            return Probe.warn("Dhizuku", details,
+                    "Dhizuku is owner, but its API provider is not visible to AppManagerNG.");
+        }
+        if (!result.apiPermissionGranted) {
+            return Probe.warn("Dhizuku", details,
+                    "Grant AppManagerNG Dhizuku API permission before DPM operations are enabled.");
+        }
+        return Probe.pass("Dhizuku", details,
+                "Provider detected. AppManagerNG still needs the separate DPM operation integration slice.");
     }
 
     @NonNull
