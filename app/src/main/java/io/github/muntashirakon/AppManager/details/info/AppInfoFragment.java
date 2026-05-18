@@ -136,6 +136,7 @@ import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
+import io.github.muntashirakon.AppManager.history.ops.PerAppRollbackManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.magisk.MagiskDenyList;
 import io.github.muntashirakon.AppManager.magisk.MagiskHide;
@@ -487,6 +488,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 mMainModel.getTagsAlteredLiveData().setValue(true);
             });
             fragment.show(getParentFragmentManager(), BackupRestoreDialogFragment.TAG);
+        } else if (itemId == R.id.action_per_app_rollback) {
+            showPerAppRollbackConfirmation();
         } else if (itemId == R.id.action_view_settings) {
             try {
                 ActivityManagerCompat.startActivity(IntentUtils.getAppDetailsSettings(mPackageName), mUserId);
@@ -679,6 +682,69 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
         } else return false;
         return true;
+    }
+
+    private void showPerAppRollbackConfirmation() {
+        if (mPackageName == null) {
+            return;
+        }
+        String packageName = mPackageName;
+        int userId = mUserId;
+        CharSequence label = mAppLabel != null ? mAppLabel : packageName;
+        showProgressIndicator(true);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            PerAppRollbackManager.RollbackPlan plan = PerAppRollbackManager.buildPlan(packageName, userId);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                showProgressIndicator(false);
+                if (!plan.hasRunnableActions()) {
+                    UIUtils.displayLongToast(R.string.per_app_rollback_none);
+                    return;
+                }
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.per_app_rollback_confirm_title)
+                        .setMessage(buildPerAppRollbackMessage(plan, label))
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.per_app_rollback, (dialog, which) -> startPerAppRollback(plan))
+                        .show();
+            });
+        });
+    }
+
+    @NonNull
+    private String buildPerAppRollbackMessage(@NonNull PerAppRollbackManager.RollbackPlan plan,
+                                              @NonNull CharSequence label) {
+        String inverseCount = getResources().getQuantityString(
+                R.plurals.per_app_rollback_inverse_count,
+                plan.getRunnableCount(),
+                plan.getRunnableCount());
+        String manualSuffix = "";
+        if (plan.getManualReviewCount() > 0) {
+            String manualCount = getResources().getQuantityString(
+                    R.plurals.per_app_rollback_manual_count,
+                    plan.getManualReviewCount(),
+                    plan.getManualReviewCount());
+            manualSuffix = getString(R.string.per_app_rollback_manual_suffix, manualCount);
+        }
+        return getString(R.string.per_app_rollback_confirm_message, inverseCount, label, manualSuffix);
+    }
+
+    private void startPerAppRollback(@NonNull PerAppRollbackManager.RollbackPlan plan) {
+        int queuedCount = PerAppRollbackManager.start(requireContext(), plan);
+        if (queuedCount == 0) {
+            UIUtils.displayLongToast(R.string.per_app_rollback_none);
+            return;
+        }
+        String queued = getResources().getQuantityString(
+                R.plurals.per_app_rollback_inverse_count,
+                queuedCount,
+                queuedCount);
+        UIUtils.displayShortToast(getString(R.string.per_app_rollback_queued, queued));
+        if (mMainModel != null) {
+            mMainModel.getTagsAlteredLiveData().setValue(true);
+        }
     }
 
     @Override

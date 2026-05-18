@@ -2384,6 +2384,20 @@
     <string name="op_history_filter_last_24h">24 hours</string>
     <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_settings_summary">Review, filter, export, rerun, and clean up saved operation history.</string>
+    <string name="per_app_rollback">Revert AppManager changes</string>
+    <string name="per_app_rollback_confirm_title">Revert AppManager changes?</string>
+    <string name="per_app_rollback_confirm_message">This queues %1$s for %2$s from saved operation history. It does not restore app data, reinstall removed apps, or delete backup files.%3$s</string>
+    <string name="per_app_rollback_manual_suffix">\n\nManual review is still required for %1$s because the saved history does not include enough previous-state data for an automatic inverse.</string>
+    <string name="per_app_rollback_none">No reversible AppManagerNG changes were found for this app.</string>
+    <string name="per_app_rollback_queued">Queued %1$s.</string>
+    <plurals name="per_app_rollback_inverse_count">
+        <item quantity="one">%d inverse operation</item>
+        <item quantity="other">%d inverse operations</item>
+    </plurals>
+    <plurals name="per_app_rollback_manual_count">
+        <item quantity="one">%d operation</item>
+        <item quantity="other">%d operations</item>
+    </plurals>
     <!-- Snapshot Bundle Export/Import (Now/T11) -->
     <string name="pref_snapshot_category">Snapshot bundle</string>
     <string name="pref_snapshot_export">Export AppManagerNG snapshot</string>
