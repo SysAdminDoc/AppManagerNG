@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — app-list import/export workflow (2026-05-18)
+
+- Main-list overflow can export the current visible/filtered app list through
+  the existing CSV, JSON, XML, and Markdown exporters.
+- Selection mode continues to export only the selected apps, using the same
+  format picker and SAF document flow.
+- JSON app-list imports accept AppManagerNG export arrays plus wrapped
+  `packages` / `apps` arrays, de-dupe valid package names, select matching
+  installed apps, and surface the existing batch-operation toolbar.
+
 ### Added — scheduled backup diagnostics (2026-05-18)
 
 - Settings -> Backup now shows WorkManager diagnostics for scheduled and manual

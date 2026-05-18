@@ -2033,9 +2033,18 @@
     <string name="option_display_dot_files">Dot files</string>
     <string name="option_display_folders_on_top">Folders on top</string>
     <string name="export_app_list">Export app list</string>
+    <string name="export_visible_app_list">Export visible app list</string>
+    <string name="import_app_list">Import app list</string>
     <string name="export_app_list_select_format">Select format for exporting app list</string>
+    <plurals name="import_app_list_selected_count">
+        <item quantity="one">Selected %1$d imported app.</item>
+        <item quantity="other">Selected %1$d imported apps.</item>
+    </plurals>
+    <string name="import_app_list_no_matches">No matching installed apps found in this list.</string>
+    <string name="import_app_list_failed">Could not import app list.</string>
     <string name="export_option_xml">XML</string>
-    <string name="export_option_markdown">Markdown</string>    <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
+    <string name="export_option_markdown">Markdown</string>
+    <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
     <string name="adb_incomplete_usb_debugging_message">It looks like USB debugging is not configured properly. Please read <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">the documentation</a> for additional steps. If you already know the steps, please click “Open” to open the developer options, or click “Close” to continue to use no-root mode.</string>
     <string name="sort_by_data_usage">Data usage</string>
     <string name="filter_apps_with_keystore">With KeyStore</string>
