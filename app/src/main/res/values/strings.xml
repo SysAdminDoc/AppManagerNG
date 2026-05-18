@@ -1791,6 +1791,15 @@
     <string name="privilege_health_capability_dropping_dropped">Active UID <xliff:g id="uid" example="2000">%1$d</xliff:g> has no effective Linux capabilities (CapEff: <xliff:g id="cap_eff" example="0000000000000000">%2$s</xliff:g>).</string>
     <string name="privilege_health_capability_dropping_present">Active UID <xliff:g id="uid" example="2000">%1$d</xliff:g> still has effective Linux capabilities (CapEff: <xliff:g id="cap_eff" example="0000000000003000">%2$s</xliff:g>). Review the root manager\'s --drop-cap policy if this should be reduced.</string>
     <string name="privilege_health_capability_dropping_unknown">Capability probe failed: <xliff:g id="reason" example="missing UID or CapEff">%1$s</xliff:g>.</string>
+    <string name="privilege_health_capability_dropping_magisk_context">Magisk: <xliff:g id="version" example="v30.7 (30007)">%1$s</xliff:g>. <xliff:g id="drop_cap" example="v30.7+ keeps capabilities unless su is launched with --drop-cap.">%2$s</xliff:g> Live policy: <xliff:g id="policy" example="matched 2 relevant rules">%3$s</xliff:g>.</string>
+    <string name="privilege_health_capability_dropping_magisk_version"><xliff:g id="version" example="v30.7">%1$s</xliff:g> (<xliff:g id="version_code" example="30007">%2$s</xliff:g>)</string>
+    <string name="privilege_health_capability_dropping_magisk_drop_cap_opt_in">v30.7+ keeps Linux capabilities unless su is launched with --drop-cap.</string>
+    <string name="privilege_health_capability_dropping_magisk_drop_cap_legacy">This Magisk version predates the v30.7 opt-in --drop-cap change.</string>
+    <string name="privilege_health_capability_dropping_magisk_drop_cap_unknown">Unable to determine this Magisk build\'s --drop-cap default.</string>
+    <string name="privilege_health_capability_dropping_magisk_policy_matched">matched <xliff:g id="count" example="2">%1$d</xliff:g> relevant rule(s)</string>
+    <string name="privilege_health_capability_dropping_magisk_policy_no_match">readable, no matching Magisk capability rule printed</string>
+    <string name="privilege_health_capability_dropping_magisk_policy_unavailable">magiskpolicy live dump unavailable</string>
+    <string name="privilege_health_capability_dropping_magisk_policy_not_magisk">not detected</string>
     <string name="privilege_health_shizuku_title">Shizuku</string>
     <string name="privilege_health_shizuku_summary"><xliff:g id="status" example="authorized">%1$s</xliff:g>. Manager: <xliff:g id="version" example="13.6.0">%2$s</xliff:g>. API: <xliff:g id="api" example="13">%3$d</xliff:g> (requires <xliff:g id="required" example="10">%4$d</xliff:g>). Service UID: <xliff:g id="uid" example="2000">%5$d</xliff:g>.</string>
     <string name="privilege_health_shizuku_not_running">not running</string>
