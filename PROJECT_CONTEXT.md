@@ -7,15 +7,16 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 140**. Iter-140 shipped AES backup
-> metadata v7: new AES-mode backups derive a per-archive content key from the
-> single file-backed `am_keystore.bks` AES master key and archive IV through
-> HKDF-SHA256, while v6-and-older restores keep the historical key path.
+> Last consolidated: **2026-05-18 iter 141**. Iter-141 shipped persistent
+> `adb tcpip 5555` awareness in onboarding: the wizard probes
+> `127.0.0.1:5555`, shows a detected fixed-TCP session, and connects through
+> the existing ADB-over-TCP LocalServer path without forcing Wireless-debugging
+> pairing first.
 >
-> Previous consolidated baseline: **2026-05-18 iter 139**. Iter-139 shipped
-> Android 17 ML-DSA Keystore `KeyPairGenerator` recognition by mapping `ML-DSA`,
-> `ML-DSA-65`, and `ML-DSA-87` key algorithm strings in Package Info public-key
-> rows and signer verification logs.
+> Previous consolidated baseline: **2026-05-18 iter 140**. Iter-140 shipped AES
+> backup metadata v7: new AES-mode backups derive a per-archive content key from
+> the single file-backed `am_keystore.bks` AES master key and archive IV through
+> HKDF-SHA256, while v6-and-older restores keep the historical key path.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -149,6 +150,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-138/`](.ai/research/2026-05-18-iter-138/) | iter 138 | Material Components 1.14 stable-check parked: 1.14.0 is published but still blocked by the `min_sdk = 21` contract because it requires API 23. |
 | [`.ai/research/2026-05-18-iter-139/`](.ai/research/2026-05-18-iter-139/) | iter 139 | Android 17 ML-DSA key algorithm display: Package Info and signer logs now prettify `ML-DSA*` KeyProperties strings while preserving compile SDK 36. |
 | [`.ai/research/2026-05-18-iter-140/`](.ai/research/2026-05-18-iter-140/) | iter 140 | AES backup archive-key derivation: metadata v7 HKDF-SHA256 derives per-archive AES keys from the single BKS master key while preserving old restore paths. |
+| [`.ai/research/2026-05-18-iter-141/`](.ai/research/2026-05-18-iter-141/) | iter 141 | Persistent ADB tcpip setup path: onboarding probes `127.0.0.1:5555`, surfaces **Use tcpip 5555**, and reuses the ADB-over-TCP LocalServer connection path. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -398,6 +400,13 @@ from the package declaring `moe.shizuku.manager.permission.API_V23`, falls back
 to the roadmap's legacy service permission owner, and only then uses the
 canonical package. The trusted-WLAN auto-start/app-info fallback, manager version
 checks, and clear-data manager warning all read through the resolver.
+
+Iter 141 added the fixed-TCP fallback requested by Shizuku #2044. Onboarding
+uses `AdbTcpipProbe` to run a short loopback socket check against
+`127.0.0.1:5555`; when reachable, the ADB-over-TCP card shows **Use tcpip 5555**
+and the Wireless ADB setup branch offers that existing session before QR-pairing
+or manual Wireless-debugging setup. The action switches to `Ops.MODE_ADB_OVER_TCP`,
+pins port 5555, and reuses the existing LocalServer ADB connection flow.
 
 Pass 26 parked the T6 JobScheduler Quota Stop-Reason Surfacing row after a fresh
 source and Gradle audit found no `androidx.work`, WorkManager, JobScheduler,
