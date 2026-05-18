@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — File Manager whole-volume scan warning (2026-05-18)
+
+- File Manager now warns before a recursive search starts from a storage-volume
+  root such as `/storage/emulated/0`, removable `/storage/XXXX-XXXX`, or
+  `/mnt/media_rw/*`.
+- The warning estimates scan duration from platform-reported volume size when
+  available and requires explicit confirmation before the whole-volume walk
+  begins.
+
 ### Added — File Manager recursive search (2026-05-18)
 
 - File Manager now has a toolbar search action for filtering the current
