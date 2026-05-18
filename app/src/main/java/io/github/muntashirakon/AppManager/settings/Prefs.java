@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
+import io.github.muntashirakon.AppManager.dex.SmaliDecodeOptions;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
@@ -518,6 +519,21 @@ public final class Prefs {
 
         public static void setReverseSort(boolean reverseSort) {
             AppPref.set(AppPref.PrefKey.PREF_FM_SORT_REVERSE_BOOL, reverseSort);
+        }
+
+        @NonNull
+        public static String getSmaliCommentLevel() {
+            return SmaliDecodeOptions.normalizeCommentLevel(
+                    AppPref.getString(AppPref.PrefKey.PREF_FM_SMALI_COMMENT_LEVEL_STR));
+        }
+
+        public static boolean isSmaliRemoveAnnotations() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_FM_SMALI_REMOVE_ANNOTATIONS_BOOL);
+        }
+
+        @NonNull
+        public static SmaliDecodeOptions getSmaliDecodeOptions() {
+            return new SmaliDecodeOptions(getSmaliCommentLevel(), isSmaliRemoveAnnotations());
         }
     }
 
