@@ -125,6 +125,7 @@ import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.debloat.BloatwareDetailsDialog;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
@@ -1811,14 +1812,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             uninstallAction.setOnClickListener(v -> {
                 if (mUserId != UserHandleHidden.myUserId() && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
                     // Could be for work profile
-                    try {
-                        Intent uninstallIntent = new Intent(Intent.ACTION_DELETE);
-                        uninstallIntent.setData(Uri.parse("package:" + mPackageName));
-                        ActivityManagerCompat.startActivity(uninstallIntent, mUserId);
-                        // TODO: 19/8/24 Watch for uninstallation
-                    } catch (Throwable th) {
-                        UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
-                    }
+                    ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall, () -> {
+                        try {
+                            Intent uninstallIntent = new Intent(Intent.ACTION_DELETE);
+                            uninstallIntent.setData(Uri.parse("package:" + mPackageName));
+                            ActivityManagerCompat.startActivity(uninstallIntent, mUserId);
+                            // TODO: 19/8/24 Watch for uninstallation
+                        } catch (Throwable th) {
+                            UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
+                        }
+                    });
                     return;
                 }
                 final boolean isSystemApp = (mApplicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
@@ -1827,34 +1830,37 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         .setTitle(mAppLabel)
                         // FIXME: 16/6/23 Does it even work without INSTALL_PACKAGES?
                         .setCheckboxLabel(R.string.keep_data_and_app_signing_signatures)
-                        .setPositiveButton(R.string.uninstall, (dialog, which, keepData) -> ThreadUtils.postOnBackgroundThread(() -> {
-                            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                            installer.setAppLabel(mAppLabel);
-                            boolean uninstalled = installer.uninstall(mPackageName, mUserId, keepData);
-                            ThreadUtils.postOnMainThread(() -> {
-                                if (uninstalled) {
-                                    displayLongToast(R.string.uninstalled_successfully, mAppLabel);
-                                    mActivity.finish();
-                                } else {
-                                    displayLongToast(R.string.failed_to_uninstall, mAppLabel);
-                                }
-                            });
-                        }))
+                        .setPositiveButton(R.string.uninstall, (dialog, which, keepData) ->
+                                ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall,
+                                        () -> ThreadUtils.postOnBackgroundThread(() -> {
+                                            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                                            installer.setAppLabel(mAppLabel);
+                                            boolean uninstalled = installer.uninstall(mPackageName, mUserId, keepData);
+                                            ThreadUtils.postOnMainThread(() -> {
+                                                if (uninstalled) {
+                                                    displayLongToast(R.string.uninstalled_successfully, mAppLabel);
+                                                    mActivity.finish();
+                                                } else {
+                                                    displayLongToast(R.string.failed_to_uninstall, mAppLabel);
+                                                }
+                                            });
+                                        })))
                         .setNegativeButton(R.string.cancel, (dialog, which, keepData) -> {
                             if (dialog != null) dialog.cancel();
                         });
                 if ((mApplicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0) {
                     builder.setNeutralButton(R.string.uninstall_updates, (dialog, which, keepData) ->
-                            ThreadUtils.postOnBackgroundThread(() -> {
-                                PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                                installer.setAppLabel(mAppLabel);
-                                boolean isSuccessful = installer.uninstall(mPackageName, UserHandleHidden.USER_ALL, keepData);
-                                if (isSuccessful) {
-                                    ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.update_uninstalled_successfully, mAppLabel));
-                                } else {
-                                    ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_uninstall_updates, mAppLabel));
-                                }
-                            }));
+                            ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall,
+                                    () -> ThreadUtils.postOnBackgroundThread(() -> {
+                                        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                                        installer.setAppLabel(mAppLabel);
+                                        boolean isSuccessful = installer.uninstall(mPackageName, UserHandleHidden.USER_ALL, keepData);
+                                        if (isSuccessful) {
+                                            ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.update_uninstalled_successfully, mAppLabel));
+                                        } else {
+                                            ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_uninstall_updates, mAppLabel));
+                                        }
+                                    })));
                 }
                 builder.show();
             });
@@ -1913,7 +1919,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                         .setTitle(mAppLabel)
                         .setMessage(getClearDataConfirmationMessage())
-                        .setPositiveButton(R.string.clear, (dialog, which) -> {
+                        .setPositiveButton(R.string.clear, (dialog, which) -> ActionAuthGate.authenticate(mActivity,
+                                R.string.authenticate_to_clear_data, () -> {
                             if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)) {
                                 ThreadUtils.postOnBackgroundThread(() -> {
                                     boolean hadShizukuPermission = ShizukuBridge.hasPermission();
@@ -1941,7 +1948,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                             refreshDetails();
                                         });
                             }
-                        })
+                        }))
                         .setNegativeButton(R.string.cancel, null)
                         .show());
             }

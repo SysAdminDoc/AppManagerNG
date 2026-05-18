@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -102,6 +103,17 @@ public class PrivacyPreferences extends PreferenceFragment {
                 autoLock.setVisible(Prefs.Privacy.isScreenLockEnabled());
             } else autoLock.setVisible(false);
             restartServiceIfNeeded(null, null, enabled);
+            return true;
+        });
+        // Per-action authentication gate
+        SwitchPreferenceCompat actionAuthGate = requirePreference("enable_action_auth_gate");
+        actionAuthGate.setChecked(Prefs.Privacy.isActionAuthGateEnabled());
+        actionAuthGate.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            if (enabled && !ActionAuthGate.canAuthenticate(requireContext())) {
+                Toast.makeText(requireContext(), R.string.screen_lock_not_enabled, Toast.LENGTH_LONG).show();
+                return false;
+            }
             return true;
         });
         // Operation history retention
