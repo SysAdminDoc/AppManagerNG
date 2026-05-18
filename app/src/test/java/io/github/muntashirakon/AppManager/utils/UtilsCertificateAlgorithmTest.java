@@ -21,4 +21,17 @@ public class UtilsCertificateAlgorithmTest {
                 "1.2.840.113549.1.1.11", "SHA256withRSA"));
         assertEquals("", Utils.prettifySignatureAlgorithmName("1.2.3.4", null));
     }
+
+    @Test
+    public void prettifyKeyAlgorithmNameMapsAndroid17MlDsaAlgorithms() {
+        assertEquals("ML-DSA (Dilithium)", Utils.prettifyKeyAlgorithmName("ML-DSA"));
+        assertEquals("ML-DSA-65 (Dilithium)", Utils.prettifyKeyAlgorithmName("ML-DSA-65"));
+        assertEquals("ML-DSA-87 (Dilithium)", Utils.prettifyKeyAlgorithmName("ML-DSA-87"));
+    }
+
+    @Test
+    public void prettifyKeyAlgorithmNamePreservesUnknownFallback() {
+        assertEquals("RSA", Utils.prettifyKeyAlgorithmName("RSA"));
+        assertEquals("", Utils.prettifyKeyAlgorithmName(null));
+    }
 }
