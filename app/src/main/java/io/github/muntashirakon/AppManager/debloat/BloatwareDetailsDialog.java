@@ -142,6 +142,9 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         // Build.MANUFACTURER, vendor-OS-version) and reflect verified field
         // reports of system-surface crash loops on specific OEM/version combos.
         CharSequence oemWarning = OemBloatRiskTable.getKnownBadWarning(requireContext(), debloatObject.packageName);
+        if (oemWarning == null) {
+            oemWarning = OemBloatRiskTable.getUninstallFallbackWarning(requireContext(), debloatObject.packageName);
+        }
         String upstreamWarning = debloatObject.getWarning();
         CharSequence composedWarning = composeWarning(oemWarning, upstreamWarning);
         if (composedWarning != null) {
