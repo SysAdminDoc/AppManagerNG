@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — scheduled backup freshness gate (2026-05-18)
+
+- Scheduled Auto-Backup now skips only packages whose newest valid backup is
+  still inside the configured freshness window, rather than treating backup
+  existence as enough.
+- Settings -> Backup now exposes a "Skip if backup is newer than" control with
+  a one-day default and an "Always back up" opt-out.
+- Scheduled-backup result notifications now report how many recent backups were
+  skipped alongside normal success or partial-failure counts.
+
 ### Added — Default-app role restore rebinds (2026-05-18)
 
 - Backup metadata now records whether a package held the Phone, SMS, Home, or
