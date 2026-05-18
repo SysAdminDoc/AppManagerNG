@@ -7,17 +7,16 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 137**. Iter-137 migrated the build to
-> AGP 9.2.0 and Gradle 9.4.1, pinned NDK 28.2.13676358, converted build scripts
-> to Gradle-10-safe assignment syntax, moved server packaging to
+> Last consolidated: **2026-05-18 iter 138**. Iter-138 parked the Material
+> Components 1.14 row after verifying 1.14.0 stable is published but remains
+> blocked by the explicit `min_sdk = 21` contract; the minSdk ceiling ledger and
+> `versions.gradle` comment now treat it as a floor-decision pressure point.
+>
+> Previous consolidated baseline: **2026-05-18 iter 137**. Iter-137 migrated the
+> build to AGP 9.2.0 and Gradle 9.4.1, pinned NDK 28.2.13676358, converted build
+> scripts to Gradle-10-safe assignment syntax, moved server packaging to
 > `androidComponents` / `sdkComponents`, and restored green floss/full/unit-test
 > verification on the new toolchain.
->
-> Previous consolidated baseline: **2026-05-18 iter 136**. Iter-136 shipped the
-> split APK cert-mismatch dialog: selected split APKs are checked against the
-> base APK's current signing certs before the install session starts, and
-> mismatches are shown in a Material dialog with per-split name, version, cert
-> SHA-256, and reason rows plus optional-split removal.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -148,6 +147,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-135/`](.ai/research/2026-05-18-iter-135/) | iter 135 | Installer privilege cascade: dialog route chips, temporary ADB -> Shizuku -> root install-provider activation, configured-mode restore, Dhizuku/MIUI diagnostics, and focused route-order coverage. |
 | [`.ai/research/2026-05-18-iter-136/`](.ai/research/2026-05-18-iter-136/) | iter 136 | Split APK cert-mismatch dialog: selected split APK signing certs are compared against the base APK before session writes, with optional bad-split removal and required-split blocking. |
 | [`.ai/research/2026-05-18-iter-137/`](.ai/research/2026-05-18-iter-137/) | iter 137 | AGP 9.2.0 / Gradle 9.4.1 migration: Gradle-10-safe build scripts, `androidComponents` server packaging, explicit test classpath hardening, and floss/full/unit-test verification. |
+| [`.ai/research/2026-05-18-iter-138/`](.ai/research/2026-05-18-iter-138/) | iter 138 | Material Components 1.14 stable-check parked: 1.14.0 is published but still blocked by the `min_sdk = 21` contract because it requires API 23. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -170,7 +170,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | `agp_version` | `9.2.0` | AGP 9.2 migration complete; wrapper pinned to Gradle 9.4.1 |
 | `ndk_version` | `28.2.13676358` | Pinned during AGP 9.2 migration so native debug builds do not float |
 | `json_version` | `20251224` | Host JVM `org.json` implementation for unit tests |
-| `material_version` | `1.13.0` | **Ceiling** — `1.14.0-rc01` requires minSdk 23 |
+| `material_version` | `1.13.0` | **Ceiling** — `1.14.0+` requires minSdk 23 |
 | `bouncycastle_version` | `1.84` | CVE-2026-3505 / 5588 / 5598 closed |
 | `gson_version` | `2.14.0` | Built-in `java.time` adapters, strict duplicate-JSON-key handling |
 | `libsu_version` | `6.0.0` | `Shell.cmd` migration audit clean |
