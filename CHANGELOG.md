@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Split APK signing mismatch dialog (2026-05-18)
+
+- Split bundle installs now preflight selected split signing certificates against
+  the base APK before the package installer session is launched.
+- A Material mismatch dialog lists each bad split's name, version, signing cert
+  SHA-256, and mismatch reason.
+- Users can remove checked optional bad splits, keep required splits blocked
+  from removal, or explicitly continue anyway for verification-disabled
+  workflows.
+
 ### Added — Installer privilege cascade (2026-05-18)
 
 - The installer confirmation dialog now previews the detected install route with
