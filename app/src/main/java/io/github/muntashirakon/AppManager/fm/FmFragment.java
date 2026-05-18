@@ -134,13 +134,16 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private SearchView mSearchView;
     @Nullable
     private MenuItem mSearchMenuItem;
+    @Nullable
+    private Uri mVolumeScanWarningAcceptedUri;
     @NonNull
     private String mPendingSearchQuery = "";
+    private boolean mVolumeScanWarningShowing;
 
     @Nullable
     private FolderShortInfo mFolderShortInfo;
 
-    private final Runnable mSearchDebounceRunnable = () -> applySearchQuery(mPendingSearchQuery);
+    private final Runnable mSearchDebounceRunnable = () -> applySearchQueryWithWarning(mPendingSearchQuery);
 
     private final ViewTreeObserver.OnGlobalLayoutListener mMultiSelectionViewChangeListener = () -> {
         if (mFabGroup != null && getActivity() != null) {
@@ -370,6 +373,9 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             mPathListAdapter.setCurrentUri(uri1);
             mPathListAdapter.setAlternativeRootName(alternativeRootName);
             mGoUpBackPressedCallback.setEnabled(mPathListAdapter.getCurrentPosition() > 0);
+            if (!Objects.equals(uri1, mVolumeScanWarningAcceptedUri)) {
+                mVolumeScanWarningAcceptedUri = null;
+            }
         });
         mModel.getFolderShortInfoLiveData().observe(getViewLifecycleOwner(), folderShortInfo -> {
             mFolderShortInfo = folderShortInfo;
@@ -640,7 +646,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     @Override
     public boolean onQueryTextSubmit(String query) {
         ThreadUtils.getUiThreadHandler().removeCallbacks(mSearchDebounceRunnable);
-        applySearchQuery(query);
+        applySearchQueryWithWarning(query);
         if (mSearchView != null) {
             mSearchView.clearFocus();
             UiUtils.hideKeyboard(mSearchView);
@@ -723,9 +729,37 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         mModel.loadFiles(b.build());
     }
 
-    private void applySearchQuery(@Nullable String query) {
+    private void applySearchQueryWithWarning(@Nullable String query) {
+        Uri currentUri = mModel.getCurrentUri();
+        if (!TextUtils.isEmpty(query)
+                && !Objects.equals(currentUri, mVolumeScanWarningAcceptedUri)
+                && FmVolumeScanWarning.shouldWarnBeforeRecursiveSearch(currentUri, query)) {
+            showVolumeScanWarning(currentUri, query);
+            return;
+        }
+        applySearchQueryNow(query);
+    }
+
+    private void applySearchQueryNow(@Nullable String query) {
         mModel.setQueryString(query);
         updateSearchFilterChip();
+    }
+
+    private void showVolumeScanWarning(@NonNull Uri currentUri, @NonNull String query) {
+        if (mVolumeScanWarningShowing) {
+            return;
+        }
+        mVolumeScanWarningShowing = true;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.fm_volume_scan_warning_title)
+                .setMessage(FmVolumeScanWarning.buildWarningMessage(requireContext(), currentUri))
+                .setNegativeButton(R.string.cancel, (dialog, which) -> clearSearchQuery())
+                .setPositiveButton(R.string.search, (dialog, which) -> {
+                    mVolumeScanWarningAcceptedUri = currentUri;
+                    applySearchQueryNow(query);
+                })
+                .setOnDismissListener(dialog -> mVolumeScanWarningShowing = false)
+                .show();
     }
 
     private void clearSearchQuery() {
@@ -739,7 +773,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         if (mSearchMenuItem != null) {
             mSearchMenuItem.collapseActionView();
         }
-        applySearchQuery(null);
+        applySearchQueryNow(null);
     }
 
     private void updateSearchFilterChip() {
