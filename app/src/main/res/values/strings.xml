@@ -2292,6 +2292,12 @@
     <string name="backup_retention_prune_disabled">Retention policy is set to unlimited · nothing to prune</string>
     <string name="backup_retention_prune_now_confirm">This deletes the oldest backups beyond the configured count and any backup older than the configured age, for every package. The operation cannot be undone.</string>
     <string name="backup_retention_prune_done">Retention pruned %1$d backup(s)</string>
+    <!-- 1-Click Ops: delete old backups (T6/Next, Issue #387) -->
+    <string name="delete_old_backups">Delete old backups</string>
+    <string name="delete_old_backups_description">Batch-clean oldest backup revisions across all apps in one tap.</string>
+    <string name="delete_old_backups_keep_last_n">Keep last %1$d per app</string>
+    <string name="delete_old_backups_older_than_days">Delete anything older than %1$d days</string>
+    <string name="delete_old_backups_confirm">This deletes matching backup revisions across every installed and uninstalled package. The operation cannot be undone.</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
