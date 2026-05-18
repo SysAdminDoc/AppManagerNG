@@ -38,6 +38,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="privilege_health_dhizuku"
+        app:title="@string/privilege_health_dhizuku_title"
+        app:summary="@string/loading"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="privilege_health_adb"
         app:title="@string/privilege_health_adb_title"
         app:iconSpaceReserved="false" />

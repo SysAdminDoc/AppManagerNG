@@ -1659,6 +1659,10 @@
     <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku is running — authorization required</string>
     <string name="onboarding_mode_shizuku_status_update_recommended">Shizuku %1$s detected — update to v13.6.0+ for Android 16 QPR1 and trusted-WLAN auto-start</string>
     <string name="onboarding_mode_shizuku_status_missing">Not running — start Shizuku first</string>
+    <string name="onboarding_mode_dhizuku_status_ready">Dhizuku is active and API permission is granted</string>
+    <string name="onboarding_mode_dhizuku_status_needs_permission">Dhizuku is active - API permission required</string>
+    <string name="onboarding_mode_dhizuku_status_inactive">Dhizuku installed - activate DeviceOwner in Dhizuku</string>
+    <string name="onboarding_mode_dhizuku_status_unsupported">Dhizuku requires Android 8.0 through 16</string>
     <string name="onboarding_mode_shizuku_autostart_tip">Tip: In Shizuku v13.6.0+, enable trusted-WLAN auto-start so rootless mode can come back after reboot without a PC.</string>
     <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku v13.6.0+ is recommended for Android 16 QPR1 support and trusted-WLAN auto-start on Android 13+.</string>
     <string name="shizuku_autostart_configure">Configure auto-start in Shizuku</string>
@@ -1761,6 +1765,13 @@
     <string name="privilege_health_shizuku_android17_warning">Android 17 compatibility risk is still open; use Wireless ADB if Shizuku actions fail.</string>
     <string name="privilege_health_shizuku_root_backed_warning">Shizuku is root-backed. Prefer ADB-backed Shizuku or AppManagerNG ADB mode when available to avoid banking-app and Play Integrity side effects.</string>
     <string name="privilege_health_shizuku_update_recommended">Update Shizuku to <xliff:g id="version" example="13.6.0">%1$s</xliff:g> or newer for Android 16 QPR1 and trusted-WLAN auto-start support.</string>
+    <string name="privilege_health_dhizuku_title">Dhizuku</string>
+    <string name="privilege_health_dhizuku_unsupported">Dhizuku requires Android 8.0 through 16. This device is below that floor.</string>
+    <string name="privilege_health_dhizuku_active_summary">Active owner detected. Manager: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>. Provider: <xliff:g id="provider" example="active">%2$s</xliff:g>. API permission: <xliff:g id="permission" example="authorized">%3$s</xliff:g>. Owner: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%4$s</xliff:g>. DPM operations are not wired until the API/minSdk strategy is resolved.</string>
+    <string name="privilege_health_dhizuku_installed_summary">Installed: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>, but not active as device/profile owner. Activation command: <xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g></string>
+    <string name="privilege_health_dhizuku_missing_summary">Not installed or not visible. If you install Dhizuku, activate it with: <xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%1$s</xliff:g></string>
+    <string name="privilege_health_dhizuku_android_newer_warning">Dhizuku currently declares support through Android API <xliff:g id="sdk" example="36">%1$d</xliff:g>; verify compatibility before using it on this Android version.</string>
+    <string name="privilege_health_dhizuku_dialog_message">Installed version: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>\nOwner component: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g>\nProvider: <xliff:g id="provider" example="active">%3$s</xliff:g>\nAPI permission: <xliff:g id="permission" example="authorized">%4$s</xliff:g>\n\nActivation command:\n<xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%5$s</xliff:g>\n\nAppManagerNG detects Dhizuku without linking the Dhizuku-API AAR. Actual DPM operations stay disabled until the API-21 floor conflict is resolved.</string>
     <string name="privilege_health_adb_title">ADB and wireless debugging</string>
     <string name="privilege_health_adb_summary">USB debugging: <xliff:g id="usb" example="enabled">%1$s</xliff:g>. Wireless debugging: <xliff:g id="wireless" example="active">%2$s</xliff:g>. Last paired port: <xliff:g id="port" example="37123">%3$s</xliff:g>.</string>
     <string name="privilege_health_remote_services_title">Remote server and services</string>
