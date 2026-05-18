@@ -3,7 +3,12 @@
 
 **Date:** 2026-05-08
 **Roadmap reference:** [ROADMAP.md](../../ROADMAP.md) — Iter-20 / Eng-Debt / Now row "Android 17 Static-Final Reflection Audit (Severity Promotion)" ([S205], [S207]). Promoted from "future audit" to **Now** in iter-20 after two independent Android 17 docs confirmed the breakage threshold.
-**Outcome:** ⚠️ **2 candidate sites identified — 1 fixed (trivial), 1 documented for the targetSdk=37 bump.**
+**Outcome:** ✅ **2 candidate sites identified — both mitigated.**
+
+**2026-05-18 update:** Iter-124 closed the deferred server-side candidate by
+gating the legacy LG `Resources.mSystem` workaround to API levels below 37. The
+targetSdk=37 batch audit is recorded in
+[`2026-05-18-android17-targetsdk37-batch.md`](2026-05-18-android17-targetsdk37-batch.md).
 
 ## Background
 
@@ -83,25 +88,27 @@ Read paths are unaffected by the Android 17 change.
 
   **Mitigation applied:** the map *contents* are already mutated in place via `remove()` / `put()` on lines 59-62. The `field.set(null, allFontsForThisApp)` write-back is therefore redundant — the underlying static-final map reference does not change; only its contents do. Removed the `Field.set()` call; left a comment at the site documenting why. Behavior preserved.
 
-#### Static-final candidate — server-side, deferred
+#### Static-final candidate — server-side, gated for legacy devices
 
 - [`RootServiceMain.java:206`](../../server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java#L206) — `systemResField.set(null, wrapper)` against `Resources.mSystem`, which is declared `static final` in AOSP `android.content.res.Resources`. The intent is to swap the system-wide `Resources` instance in the privileged-server process for one that wraps the existing impl with a `ResourcesWrapper`.
 
-  **Why deferred:** the privileged server is forked from the app process via libsu shell and inherits the app's `targetSdk`. When NG bumps to `targetSdk=37`, this site will start throwing `IllegalAccessException`. The remediation requires replacing the reflective static-field swap with one of:
-
-  1. `MethodHandles.lookup().findStaticVarHandle(Resources.class, "mSystem", Resources.class).set(wrapper)` — the modern equivalent, but `VarHandle` requires API 26+ which the server process may pre-date depending on the launching device.
-  2. A `Resources` decorator at the call sites that consume `Resources.getSystem()` rather than at the static-field level — wider blast radius.
-  3. Leaving the reflection in place but registering a `static-final` exemption via `dalvik.system.VMRuntime.setHiddenApiExemptions()` — fragile across platform releases and itself caught by the same Android 17 ban.
-
-  **Currently `targetSdk = 36`**, so this site is not yet broken. The remediation is on the critical path for the targetSdk=37 bump and is referenced from ROADMAP Engineering Debt Register row "Android 17 targetSdk=37 compliance" as part of the hidden-API audit batch. Documenting here with a forward link rather than fixing speculatively, because rushing a `VarHandle` swap without a real Android 17 test device risks introducing a regression on the still-current targetSdk=36 path.
+  **Mitigation applied 2026-05-18:** the workaround exists only to avoid
+  `createPackageContext` crashes on old LG ROMs. Iter-124 now runs the reflective
+  static-field swap only when `Build.VERSION.SDK_INT < 37`, preserving the
+  legacy-device behavior while avoiding Android 17's targetSdk=37 static-final
+  write ban. The privileged server still takes the normal
+  `createPackageContextAsUser` path on Android 17+.
 
 ## Mitigations applied
 
 1. [`TypefaceUtil.java`](../../app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/TypefaceUtil.java) — removed the redundant `field.set(null, allFontsForThisApp)` call; left a comment at the site. Behavior preserved (the map's contents are mutated in place).
+2. [`RootServiceMain.java`](../../server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java) — gated the legacy LG `Resources.mSystem` swap to pre-API 37 runtimes.
 
 ## Forward work
 
-- [`RootServiceMain.java:206`](../../server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java#L206) — flagged for the targetSdk=37 bump task; listed in this audit so the implementer of that bump finds the site without re-running the audit.
+- No open static-final reflection follow-up remains for the targetSdk=37 bump.
+  Re-run this audit when adding new hidden-API or resource-workaround
+  reflection.
 
 ## Cross-references
 

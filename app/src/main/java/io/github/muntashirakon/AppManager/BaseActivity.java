@@ -171,6 +171,11 @@ public abstract class BaseActivity extends PerProcessActivity {
                     mDisplayLoader = false;
                     Ops.requestShizukuPermission(this, mViewModel);
                     return;
+                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                    Log.d(TAG, "Local network permission required for wireless debugging.");
+                    mDisplayLoader = false;
+                    Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
+                    return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     Log.d(TAG, "Display pairing dialog.");
                     mDisplayLoader = false;

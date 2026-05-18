@@ -6,6 +6,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Process;
 import android.os.RemoteException;
@@ -91,6 +92,7 @@ public class Ops {
             STATUS_ADB_CONNECT_REQUIRED,
             STATUS_FAILURE_ADB_NEED_MORE_PERMS,
             STATUS_SHIZUKU_PERMISSION_REQUIRED,
+            STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Status {
@@ -104,6 +106,8 @@ public class Ops {
     public static final int STATUS_ADB_CONNECT_REQUIRED = 5;
     public static final int STATUS_FAILURE_ADB_NEED_MORE_PERMS = 6;
     public static final int STATUS_SHIZUKU_PERMISSION_REQUIRED = 7;
+    public static final int STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED = 8;
+    private static final int SDK_ANDROID_17 = 37;
 
     public static int ROOT_UID = 0;
     public static int SHELL_UID = 2000;
@@ -334,6 +338,9 @@ public class Ops {
                     return initShizuku(context);
                 case MODE_ADB_WIFI:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        if (isLocalNetworkPermissionMissing(context)) {
+                            return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
+                        }
                         if (!Utils.isWifiActive(context.getApplicationContext())) {
                             throw new Exception("Wifi not enabled.");
                         }
@@ -510,6 +517,10 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     public static void connectWirelessDebugging(@NonNull FragmentActivity activity,
                                                 @NonNull AdbConnectionInterface callback) {
+        if (isLocalNetworkPermissionMissing(activity)) {
+            displayLocalNetworkPermissionMessage(activity, callback);
+            return;
+        }
         DialogTitleBuilder builder = new DialogTitleBuilder(activity)
                 .setTitle(R.string.wireless_debugging)
                 .setEndIcon(R.drawable.ic_open_in_new, v -> {
@@ -533,6 +544,9 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     @Status
     public static int autoConnectWirelessDebugging(@NonNull Context context) {
+        if (isLocalNetworkPermissionMissing(context)) {
+            return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
+        }
         boolean lastAdb = sIsAdb;
         boolean lastSystem = sIsSystem;
         boolean lastRoot = sIsRoot;
@@ -612,6 +626,10 @@ public class Ops {
     @NoOps
     public static void pairAdbInput(@NonNull FragmentActivity activity,
                                     @NonNull AdbConnectionInterface callback) {
+        if (isLocalNetworkPermissionMissing(activity)) {
+            displayLocalNetworkPermissionMessage(activity, callback);
+            return;
+        }
         Runnable startPairing = () -> {
             Intent adbPairingServiceIntent = new Intent(activity, AdbPairingService.class)
                     .setAction(AdbPairingService.ACTION_START_PAIRING);
@@ -647,6 +665,9 @@ public class Ops {
     @RequiresApi(Build.VERSION_CODES.R)
     @Status
     public static int pairAdb(@NonNull Context context) {
+        if (isLocalNetworkPermissionMissing(context)) {
+            return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
+        }
         try {
             AdbConnectionManager conn = AdbConnectionManager.getInstance();
             int status = pairAdbInternal(context, conn);
@@ -928,6 +949,9 @@ public class Ops {
     @NoOps
     private static int findAdbPort(@NonNull Context context, long timeoutInSeconds)
             throws IOException, InterruptedException {
+        if (isLocalNetworkPermissionMissing(context)) {
+            throw new IOException("Local network permission not granted.");
+        }
         return AdbUtils.getLatestAdbDaemon(context, timeoutInSeconds, TimeUnit.SECONDS).second;
     }
 
@@ -938,6 +962,9 @@ public class Ops {
         if (!AdbUtils.isAdbdRunning()) {
             throw new IOException("ADB daemon not running.");
         }
+        if (isLocalNetworkPermissionMissing(context)) {
+            return defaultPort;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Find ADB port only in Android 11 (R) or later
             try {
@@ -947,6 +974,32 @@ public class Ops {
             }
         }
         return defaultPort;
+    }
+
+    @AnyThread
+    public static boolean isLocalNetworkPermissionMissing(@NonNull Context context) {
+        return Build.VERSION.SDK_INT >= SDK_ANDROID_17
+                && context.getApplicationInfo().targetSdkVersion >= SDK_ANDROID_17
+                && !SelfPermissions.checkSelfPermission(ManifestCompat.permission.ACCESS_LOCAL_NETWORK);
+    }
+
+    @UiThread
+    public static void displayLocalNetworkPermissionMessage(@NonNull FragmentActivity activity,
+                                                           @NonNull AdbConnectionInterface callback) {
+        new MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.local_network_permission_required)
+                .setMessage(R.string.local_network_permission_required_message)
+                .setNegativeButton(R.string.close, (dialog, which) -> callback.onStatusReceived(STATUS_FAILURE))
+                .setPositiveButton(R.string.open, (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData(Uri.parse("package:" + activity.getPackageName()));
+                    try {
+                        activity.startActivity(intent);
+                    } catch (Throwable ignore) {
+                    }
+                    callback.onStatusReceived(STATUS_FAILURE);
+                })
+                .show();
     }
 
     @AnyThread
