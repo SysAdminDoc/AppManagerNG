@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.shizuku;
 
+import android.content.pm.PermissionInfo;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -134,6 +136,29 @@ public class ShizukuBridgeTest {
                         "com.example.shizuku.client", true));
         assertEquals(0, ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
                 "com.example.regular", false));
+    }
+
+    @Test
+    public void clearDataWarningUsesDetectedShizukuManagerPackage() {
+        assertEquals(R.string.shizuku_clear_data_manager_warning,
+                ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                        "dev.hidden.shizuku", "dev.hidden.shizuku", false));
+        assertEquals(R.string.shizuku_clear_data_manager_warning,
+                ShizukuBridge.getClearDataAuthorizationWarning("io.github.sysadmindoc.AppManagerNG",
+                        ShizukuBridge.PACKAGE_NAME, "dev.hidden.shizuku", false));
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void managerPackageDetectionPrefersPermissionOwner() {
+        PermissionInfo apiPermission = new PermissionInfo();
+        apiPermission.packageName = "dev.hidden.shizuku";
+        PermissionInfo legacyPermission = new PermissionInfo();
+        legacyPermission.packageName = "moe.legacy.shizuku";
+
+        assertEquals("dev.hidden.shizuku", ShizukuBridge.getManagerPackageName(apiPermission, legacyPermission));
+        assertEquals("moe.legacy.shizuku", ShizukuBridge.getManagerPackageName(null, legacyPermission));
+        assertEquals(ShizukuBridge.PACKAGE_NAME, ShizukuBridge.getManagerPackageName(null, null));
     }
 
     @Test
