@@ -25,7 +25,7 @@ import io.github.muntashirakon.io.Path;
 
 public final class MetadataManager {
     public static final String TAG = MetadataManager.class.getSimpleName();
-    private static int currentBackupMetaVersion = 6;
+    private static int currentBackupMetaVersion = 7;
 
     public static final String META_V2_FILE = "meta_v2.am.json";
     // New scheme
