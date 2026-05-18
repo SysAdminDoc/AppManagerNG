@@ -7,11 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 132**. Iter-132 shipped root-only
-> Android System data backups: root/system mode exposes a System data flag for
-> the Android System package, covers Wi-Fi, Bluetooth, and account database
-> roots through NG's encrypted/checksummed tar pipeline, and restores those
-> roots without clearing the framework package.
+> Last consolidated: **2026-05-18 iter 133**. Iter-133 parked the SquashFS
+> writer header-validation row after confirming NG has no SquashFS writer,
+> dependency, file-manager mount path, or backup format that emits `.sqfs`;
+> current backups are tar-family archives through `TarUtils`.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -173,6 +172,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-130/`](.ai/research/2026-05-18-iter-130/) | iter 130 | CIFS/SMB backup streaming hardening: durable tar creation, bounded 256 KiB SAF-provider writes, descriptor fsync when available, close-time byte-count verification, and split-stream boundary coverage. |
 | [`.ai/research/2026-05-18-iter-131/`](.ai/research/2026-05-18-iter-131/) | iter 131 | Profile blocklist backup-root enumeration: backup-only package choices in the Profiles picker, selected missing-package retention, fallback stale-row rendering, and focused merge coverage. |
 | [`.ai/research/2026-05-18-iter-132/`](.ai/research/2026-05-18-iter-132/) | iter 132 | Root-only Android System data backups: System data flag gated to root/system mode, Android-System-only backup/restore sanitization, Wi-Fi/Bluetooth/account root descriptors, and focused token/path coverage. |
+| [`.ai/research/2026-05-18-iter-133/`](.ai/research/2026-05-18-iter-133/) | iter 133 | SquashFS header-validation row parked: no SquashFS writer/dependency/mount path exists in current source; NG backup archives are tar-family outputs through `TarUtils`, so the header fixture belongs to a future backend. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S363).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
