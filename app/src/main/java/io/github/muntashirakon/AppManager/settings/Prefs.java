@@ -316,6 +316,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RESULT_STR, result);
         }
 
+        @NonNull
+        public static String getScheduledBackupLastDiagnostics() {
+            return AppPref.getString(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_DIAGNOSTICS_STR);
+        }
+
+        public static void setScheduledBackupLastDiagnostics(@NonNull String diagnostics) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_DIAGNOSTICS_STR, diagnostics);
+        }
+
         public static boolean backupDirectoryExists() {
             Uri uri = Storage.getVolumePath();
             Path path;

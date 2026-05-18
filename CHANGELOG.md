@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — scheduled backup diagnostics (2026-05-18)
+
+- Settings -> Backup now shows WorkManager diagnostics for scheduled and manual
+  auto-backup requests: state, run attempt, next run time, and stop reason.
+- Android 16+ devices also show JobScheduler pending reasons and the most
+  recent pending-reason history snapshot for the matching WorkManager job.
+- API 37 `JobDebugInfo` pending-reason stats remain parked until the project
+  raises compile SDK beyond 36.
+
 ### Changed — scheduled backup progress notifications (2026-05-18)
 
 - Scheduled and manual auto-backup runs now update their WorkManager foreground
