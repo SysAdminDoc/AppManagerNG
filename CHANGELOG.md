@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Material You widget theming (2026-05-18)
+
+- Existing home-screen widgets now resolve a shared dynamic AppWidget palette
+  from the themed Material context and apply RemoteViews tints at update time.
+- Screen-time usage bubbles now use primary, secondary, and tertiary container
+  roles instead of hard-coded colors.
+- Data Usage, Clear Cache, and Log Recording widgets now tint their surfaces,
+  icons, and text from the same widget palette, with Android 12+ XML preview
+  fallbacks backed by system Monet color resources.
+
 ### Added — App Info cleartext deprecation badge (2026-05-18)
 
 - App Info now shows a caution tag when a package opts into manifest-wide

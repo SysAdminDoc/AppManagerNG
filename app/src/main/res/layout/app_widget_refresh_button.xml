@@ -7,12 +7,13 @@
     android:background="@drawable/ripple_background_24">
 
     <ImageView
+        android:id="@+id/app_widget_refresh_icon"
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:layout_gravity="center"
         android:layout_margin="@dimen/app_widget_background_padding"
         android:contentDescription="@string/refresh"
         android:src="@drawable/ic_refresh"
-        android:tint="?android:attr/textColorSecondary"
+        android:tint="?attr/colorOnSurfaceVariant"
         tools:ignore="UseAppTint" />
 </FrameLayout>

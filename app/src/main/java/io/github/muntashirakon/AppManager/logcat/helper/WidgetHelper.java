@@ -17,6 +17,8 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logcat.LogcatRecordingService;
 import io.github.muntashirakon.AppManager.logcat.RecordingWidgetProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.appearance.AppWidgetThemeUtils;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 // Copyright 2012 Nolan Lawson
 public class WidgetHelper {
@@ -51,7 +53,11 @@ public class WidgetHelper {
     }
 
     private static void updateWidget(Context context, AppWidgetManager manager, int appWidgetId, boolean serviceRunning) {
+        context = AppearanceUtils.getThemedWidgetContext(context, false);
         RemoteViews updateViews = new RemoteViews(context.getPackageName(), R.layout.widget_recording);
+        AppWidgetThemeUtils.Palette palette = AppWidgetThemeUtils.getPalette(context);
+        AppWidgetThemeUtils.setImageTint(updateViews, palette.primary, R.id.record_badge_image_view);
+        AppWidgetThemeUtils.setTextColor(updateViews, palette.onSurfaceVariant, R.id.widget_subtext);
         // change the subtext depending on whether the service is running or not
         CharSequence subtext = context.getText(serviceRunning ? R.string.widget_recording_in_progress :
                 R.string.widget_start_recording);
