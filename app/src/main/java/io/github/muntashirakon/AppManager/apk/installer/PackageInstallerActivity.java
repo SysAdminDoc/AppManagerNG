@@ -62,6 +62,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
+import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 import io.github.muntashirakon.AppManager.apk.splitapk.SplitApkChooser;
@@ -81,6 +82,7 @@ import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
@@ -170,6 +172,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private List<InstallDependencyChecker.Issue> mPendingDependencyIssues = Collections.emptyList();
     private boolean mDeveloperVerificationWarningShown;
     private boolean mInstallActionAuthenticated;
+    private boolean mSplitCertMismatchDialogShown;
+    private boolean mSplitCertMismatchCheckInProgress;
     private final View.OnClickListener mAppInfoClickListener = v -> {
         assert mCurrentItem != null;
         try {
@@ -517,6 +521,145 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     @UiThread
+    private boolean maybeShowSplitCertMismatchDialog() {
+        if (mSplitCertMismatchDialogShown
+                || !mModel.getApkFile().isSplit()
+                || mInstallerOptions.isSignApkFiles()) {
+            return false;
+        }
+        if (mSplitCertMismatchCheckInProgress) {
+            return true;
+        }
+        ArrayList<String> selectedSplits;
+        try {
+            selectedSplits = mModel.getSelectedSplitsForInstallation();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Could not prepare selected splits for signature check.", e);
+            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            triggerCancel();
+            return true;
+        }
+        mSplitCertMismatchCheckInProgress = true;
+        mDialogHelper.initProgress(v -> triggerCancel());
+        ApkQueueItem checkedItem = mCurrentItem;
+        ApkFile apkFile = mModel.getApkFile();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<SplitApkSignatureMismatch.Mismatch> mismatches = SplitApkSignatureMismatch.find(
+                    getPackageManager(), apkFile, selectedSplits);
+            ThreadUtils.postOnMainThread(() -> {
+                mSplitCertMismatchCheckInProgress = false;
+                if (isFinishing() || checkedItem != mCurrentItem) {
+                    return;
+                }
+                if (mismatches.isEmpty()) {
+                    mSplitCertMismatchDialogShown = true;
+                    triggerInstall();
+                    return;
+                }
+                showSplitCertMismatchDialog(mismatches);
+            });
+        });
+        return true;
+    }
+
+    @UiThread
+    private void showSplitCertMismatchDialog(@NonNull List<SplitApkSignatureMismatch.Mismatch> mismatches) {
+        CharSequence[] labels = new CharSequence[mismatches.size()];
+        boolean[] checked = new boolean[mismatches.size()];
+        for (int i = 0; i < mismatches.size(); ++i) {
+            SplitApkSignatureMismatch.Mismatch mismatch = mismatches.get(i);
+            labels[i] = formatSplitCertMismatchLabel(mismatch);
+            checked[i] = mismatch.canRemove();
+        }
+        AlertDialog dialog = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.installer_split_cert_mismatch_title)
+                .setMessage(R.string.installer_split_cert_mismatch_message)
+                .setMultiChoiceItems(labels, checked, (dialogInterface, which, isChecked) -> {
+                    SplitApkSignatureMismatch.Mismatch mismatch = mismatches.get(which);
+                    if (!mismatch.canRemove() && isChecked) {
+                        checked[which] = false;
+                        AlertDialog alertDialog = (AlertDialog) dialogInterface;
+                        alertDialog.getListView().setItemChecked(which, false);
+                        UIUtils.displayShortToast(R.string.installer_split_cert_required_split);
+                        return;
+                    }
+                    checked[which] = isChecked;
+                })
+                .setPositiveButton(R.string.installer_split_cert_remove_checked, null)
+                .setNeutralButton(R.string.installer_split_cert_install_anyway, (dialogInterface, which) -> {
+                    mSplitCertMismatchDialogShown = true;
+                    triggerInstall();
+                })
+                .setNegativeButton(R.string.cancel, (dialogInterface, which) -> triggerCancel())
+                .setCancelable(false)
+                .create();
+        dialog.setOnShowListener(dialogInterface -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    List<String> removeIds = new ArrayList<>();
+                    for (int i = 0; i < mismatches.size(); ++i) {
+                        if (checked[i] && mismatches.get(i).canRemove()) {
+                            removeIds.add(mismatches.get(i).entry.id);
+                        }
+                    }
+                    if (removeIds.isEmpty()) {
+                        UIUtils.displayShortToast(R.string.installer_split_cert_no_removable_selection);
+                        return;
+                    }
+                    mModel.getSelectedSplits().removeAll(removeIds);
+                    mSplitCertMismatchDialogShown = false;
+                    UIUtils.displayShortToast(getResources().getQuantityString(
+                            R.plurals.installer_split_cert_removed, removeIds.size(), removeIds.size()));
+                    dialog.dismiss();
+                    triggerInstall();
+                }));
+        dialog.show();
+    }
+
+    @NonNull
+    private CharSequence formatSplitCertMismatchLabel(@NonNull SplitApkSignatureMismatch.Mismatch mismatch) {
+        return new StringBuilder()
+                .append(mismatch.entry.name)
+                .append('\n')
+                .append(getString(R.string.installer_split_cert_version, mismatch.entry.version))
+                .append('\n')
+                .append(getString(R.string.installer_split_cert_sha256,
+                        formatSplitCertSha256Display(mismatch.entry.certSha256)))
+                .append('\n')
+                .append(getString(R.string.installer_split_cert_reason,
+                        getSplitCertMismatchReason(mismatch.reason)));
+    }
+
+    @NonNull
+    private String formatSplitCertSha256Display(@NonNull List<String> certSha256) {
+        if (certSha256.isEmpty()) {
+            return getString(R.string._undefined);
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < certSha256.size(); ++i) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(formatSha256ForDisplay(certSha256.get(i)));
+        }
+        return builder.toString();
+    }
+
+    @NonNull
+    private String getSplitCertMismatchReason(@SplitApkSignatureMismatch.Reason int reason) {
+        switch (reason) {
+            case SplitApkSignatureMismatch.REASON_BASE_CERT_UNREADABLE:
+                return getString(R.string.installer_split_cert_reason_base_unreadable);
+            case SplitApkSignatureMismatch.REASON_SPLIT_CERT_UNREADABLE:
+                return getString(R.string.installer_split_cert_reason_split_unreadable);
+            case SplitApkSignatureMismatch.REASON_SIGNER_COUNT_DIFFERS:
+                return getString(R.string.installer_split_cert_reason_signer_count);
+            case SplitApkSignatureMismatch.REASON_CERT_DIFFERS:
+            default:
+                return getString(R.string.installer_split_cert_reason_cert_differs);
+        }
+    }
+
+    @UiThread
     @Override
     public void triggerInstall() {
         if (!mInstallActionAuthenticated) {
@@ -538,6 +681,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                         triggerInstall();
                     })
                     .show();
+            return;
+        }
+        if (maybeShowSplitCertMismatchDialog()) {
             return;
         }
         // Calls install(), reinstall() (which in terms called install()) and triggerCancel()
@@ -631,6 +777,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (hasNext()) {
             mIsDealingWithApk = true;
             mDeveloperVerificationWarningShown = false;
+            mSplitCertMismatchDialogShown = false;
+            mSplitCertMismatchCheckInProgress = false;
             mDialogHelper.initProgress(v -> goToNext());
             synchronized (mApkQueue) {
                 mCurrentItem = Objects.requireNonNull(mApkQueue.poll());
