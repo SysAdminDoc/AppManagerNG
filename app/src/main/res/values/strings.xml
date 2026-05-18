@@ -2188,6 +2188,9 @@
     <string name="action_optimize_app">Optimize</string>
     <string name="batch_ops_runtime_optimization">Runtime optimization</string>
     <string name="app_info_tag_open_links">Open links</string>
+    <string name="app_info_tag_cleartext_deprecated">Cleartext deprecated</string>
+    <string name="cleartext_deprecation_android18_title">Cleartext deprecation</string>
+    <string name="cleartext_deprecation_android18_message">This app sets android:usesCleartextTraffic=&quot;true&quot; without a network security config. Android 17 warns that manifest-wide cleartext traffic is deprecated for Android 18. A network security config should scope any required HTTP traffic to explicit domains.</string>
     <string name="title_domains_supported_by_the_app">Supported domains</string>
     <string name="pref_zip_align">Align APK files</string>
     <string name="pref_zip_align_msg">Aligning an APK file reduces its memory usage as the files in the APK can be accessed directly without copying the data to RAM. This step is required if <tt>extractNativeLibs</tt> is set to <tt>true</tt>.</string>

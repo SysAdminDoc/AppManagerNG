@@ -7,12 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 125**. Iter-125 closed the Android 17
-> ML-DSA certificate OID row as already implemented in live source:
-> `Utils.getCertificateSignatureAlgorithmName()` maps ML-DSA-65 and ML-DSA-87,
-> Package Info and Scanner consume the helper, and the focused regression test
-> now runs on the JVM after removing an unrelated `Utils` -> `OsEnvironment`
-> class-initializer dependency.
+> Last consolidated: **2026-05-18 iter 126**. Iter-126 shipped the Android 17
+> cleartext deprecation App Info badge: packages that set
+> `android:usesCleartextTraffic="true"` without a Network Security Config now
+> receive a caution tag, backed by hidden-API access to
+> `ApplicationInfo.networkSecurityConfigRes` and a focused predicate test.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -167,6 +166,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-123/`](.ai/research/2026-05-18-iter-123/) | iter 123 | F-Droid 2.0 ROM preseed docs: JSON and legacy XML repository templates, global/app-specific path guidance, README distribution link, and parser validation. |
 | [`.ai/research/2026-05-18-iter-124/`](.ai/research/2026-05-18-iter-124/) | iter 124 | Android 17 targetSdk=37 audit batch: Wireless ADB local-network permission preflight, legacy-gated static-final `Resources.mSystem` workaround, and clean Keystore/MemoryLimiter/native-DCL/IntentSender BAL findings. |
 | [`.ai/research/2026-05-18-iter-125/`](.ai/research/2026-05-18-iter-125/) | iter 125 | Android 17 ML-DSA certificate OID closure: verified existing OID display-name mapping in Package Info and Scanner, kept OID display, and fixed `UtilsCertificateAlgorithmTest` JVM class initialization. |
+| [`.ai/research/2026-05-18-iter-126/`](.ai/research/2026-05-18-iter-126/) | iter 126 | Android 17 cleartext deprecation badge: App Info warns when manifest-wide cleartext is enabled without a Network Security Config, with hidden `networkSecurityConfigRes` compat access and predicate coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
