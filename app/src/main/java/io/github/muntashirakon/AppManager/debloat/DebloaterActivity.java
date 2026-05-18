@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
@@ -402,13 +403,25 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         List<DebloatObject> selectedObjects = viewModel.getSelectedDebloatObjects();
         if (selectedObjects.isEmpty()) return;
         boolean usesPmUninstall = RootlessDebloat.canUsePmUninstall();
-        new MaterialAlertDialogBuilder(this)
+        boolean hasOemFallbacks = hasOemUninstallFallbacks(selectedObjects);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.rootless_debloat_uninstall_title)
                 .setMessage(buildDebloatUninstallMessage(selectedObjects, usesPmUninstall))
-                .setPositiveButton(usesPmUninstall ? R.string.remove_for_user : R.string.uninstall,
-                        (dialog, which) -> handleBatchOp(BatchOpsManager.OP_UNINSTALL))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                .setPositiveButton(hasOemFallbacks ? R.string.debloat_oem_safe_action
+                                : (usesPmUninstall ? R.string.remove_for_user : R.string.uninstall),
+                        (dialog, which) -> {
+                            if (hasOemFallbacks) {
+                                handleDebloatWithOemFallback(selectedObjects);
+                            } else {
+                                handleBatchOp(BatchOpsManager.OP_UNINSTALL);
+                            }
+                        })
+                .setNegativeButton(R.string.cancel, null);
+        if (hasOemFallbacks) {
+            builder.setNeutralButton(usesPmUninstall ? R.string.remove_for_user : R.string.uninstall,
+                    (dialog, which) -> handleBatchOp(BatchOpsManager.OP_UNINSTALL));
+        }
+        builder.show();
     }
 
     @NonNull
@@ -420,7 +433,9 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         int unsafe = 0;
         int dependencyWarnings = 0;
         int updatedSystemApps = 0;
+        int oemFallbacks = 0;
         List<String> reviewFirst = new ArrayList<>();
+        List<String> oemFallbackExamples = new ArrayList<>();
         for (DebloatObject debloatObject : selectedObjects) {
             switch (debloatObject.getRemoval()) {
                 case DebloatObject.REMOVAL_SAFE:
@@ -444,6 +459,12 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             }
             if (debloatObject.isUpdatedSystemApp()) {
                 ++updatedSystemApps;
+            }
+            if (OemBloatRiskTable.getUninstallFallback(debloatObject.packageName) != null) {
+                ++oemFallbacks;
+                if (oemFallbackExamples.size() < 5) {
+                    oemFallbackExamples.add(debloatObject.getLabelOrPackageName().toString());
+                }
             }
             if ((debloatObject.getRemoval() >= DebloatObject.REMOVAL_CAUTION || hasDependencyWarning)
                     && reviewFirst.size() < 5) {
@@ -472,13 +493,51 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                             R.plurals.rootless_debloat_factory_reset_updates,
                             updatedSystemApps, updatedSystemApps));
         }
+        if (oemFallbacks > 0) {
+            message.append("\n")
+                    .append(getResources().getQuantityString(
+                            R.plurals.rootless_debloat_oem_disable_fallbacks,
+                            oemFallbacks, oemFallbacks, TextUtils.join(", ", oemFallbackExamples)));
+        }
         if (!reviewFirst.isEmpty()) {
             message.append("\n")
                     .append(getString(R.string.rootless_debloat_confirmation_risky_examples,
                             TextUtils.join(", ", reviewFirst)));
         }
-        message.append("\n\n").append(getString(R.string.rootless_debloat_confirmation_footer));
+        message.append("\n\n").append(getString(oemFallbacks > 0
+                ? R.string.rootless_debloat_confirmation_oem_footer
+                : R.string.rootless_debloat_confirmation_footer));
         return message.toString();
+    }
+
+    private boolean hasOemUninstallFallbacks(@NonNull List<DebloatObject> selectedObjects) {
+        for (DebloatObject debloatObject : selectedObjects) {
+            if (OemBloatRiskTable.getUninstallFallback(debloatObject.packageName) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void handleDebloatWithOemFallback(@NonNull List<DebloatObject> selectedObjects) {
+        if (viewModel == null) return;
+        List<DebloatObject> uninstallObjects = new ArrayList<>();
+        List<DebloatObject> freezeObjects = new ArrayList<>();
+        for (DebloatObject debloatObject : selectedObjects) {
+            if (OemBloatRiskTable.getUninstallFallback(debloatObject.packageName) != null) {
+                freezeObjects.add(debloatObject);
+            } else {
+                uninstallObjects.add(debloatObject);
+            }
+        }
+        if (!uninstallObjects.isEmpty()) {
+            startBatchOp(BatchOpsManager.OP_UNINSTALL, viewModel.getPackagesWithUsers(uninstallObjects), null);
+        }
+        if (!freezeObjects.isEmpty()) {
+            BatchFreezeOptions options = new BatchFreezeOptions(Prefs.Blocking.getDefaultFreezingMethod(), false);
+            startBatchOp(BatchOpsManager.OP_ADVANCED_FREEZE, viewModel.getPackagesWithUsers(freezeObjects), options);
+        }
+        mMultiSelectionView.cancel();
     }
 
     private void handleBatchOp(@BatchOpsManager.OpType int op) {
@@ -487,12 +546,18 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
 
     private void handleBatchOp(@BatchOpsManager.OpType int op, @Nullable IBatchOpOptions options) {
         if (viewModel == null) return;
+        startBatchOp(op, viewModel.getSelectedPackagesWithUsers(), options);
+        mMultiSelectionView.cancel();
+    }
+
+    private void startBatchOp(@BatchOpsManager.OpType int op, @NonNull ArrayList<UserPackagePair> userPackagePairs,
+                              @Nullable IBatchOpOptions options) {
+        if (userPackagePairs.isEmpty()) return;
         if (mProgressIndicator != null) {
             mProgressIndicator.show();
         }
-        BatchOpsManager.Result input = new BatchOpsManager.Result(viewModel.getSelectedPackagesWithUsers());
+        BatchOpsManager.Result input = new BatchOpsManager.Result(userPackagePairs);
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(op, input.getFailedPackages(), input.getAssociatedUsers(), options);
         ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, item));
-        mMultiSelectionView.cancel();
     }
 }

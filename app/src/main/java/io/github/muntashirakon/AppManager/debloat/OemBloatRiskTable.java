@@ -8,6 +8,8 @@ import android.os.Build;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -57,6 +59,26 @@ import io.github.muntashirakon.AppManager.misc.SystemProperties;
 public final class OemBloatRiskTable {
     /** Wildcard token for the vendor-OS-version slot in {@link Rule#matches}. */
     private static final String ANY = "*";
+    private static final String PACKAGE_SAMSUNG_SMART_SUGGESTIONS = "com.samsung.android.smartsuggestions";
+    private static final String PACKAGE_MIUI_CORE = "com.miui.core";
+    private static final String[] MIUI_MANUFACTURERS = {"xiaomi", "redmi", "poco"};
+    private static final String[] OPLUS_MANUFACTURERS = {"oppo", "oneplus", "realme", "oplus"};
+    private static final String[] OPLUS_BUILD_TOKENS = {"oplus", "coloros", "oxygenos", "realme"};
+    private static final String[] OPLUS_UNINSTALL_GUARDED_PACKAGES = {
+            "com.coloros.safecenter",
+            "com.coloros.sau",
+            "com.coloros.sauhelper",
+            "com.coloros.securitypermission",
+            "com.oplus.appplatform",
+            "com.oplus.apprecover",
+            "com.oplus.customize.coreapp",
+            "com.oplus.ocs",
+            "com.oplus.oscenter",
+            "com.oplus.ota",
+            "com.oplus.romupdate",
+            "com.oplus.safecenter",
+            "com.oplus.securitypermission",
+    };
 
     /** Known-bad rule, keyed by (manufacturer-lc, packageName, vendorOsVersion). */
     private static final class Rule {
@@ -82,6 +104,15 @@ public final class OemBloatRiskTable {
 
     private static final Map<String, Rule[]> RULES = buildRules();
 
+    public static final class UninstallFallback {
+        @StringRes
+        public final int messageRes;
+
+        private UninstallFallback(@StringRes int messageRes) {
+            this.messageRes = messageRes;
+        }
+    }
+
     @NonNull
     private static Map<String, Rule[]> buildRules() {
         Map<String, Rule[]> out = new HashMap<>(2);
@@ -101,7 +132,7 @@ public final class OemBloatRiskTable {
     @AnyThread
     @Nullable
     public static CharSequence getKnownBadWarning(@NonNull Context ctx, @NonNull String packageName) {
-        String mfrLc = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase(Locale.ROOT);
+        String mfrLc = lower(Build.MANUFACTURER);
         Rule[] vendorRules = RULES.get(mfrLc);
         if (vendorRules == null) return null;
         String vendorVersion = getVendorOsVersion(mfrLc);
@@ -123,6 +154,45 @@ public final class OemBloatRiskTable {
     }
 
     @AnyThread
+    @Nullable
+    public static UninstallFallback getUninstallFallback(@NonNull String packageName) {
+        String manufacturer = Build.MANUFACTURER;
+        String buildIncremental = Build.VERSION.INCREMENTAL;
+        return getUninstallFallback(packageName, manufacturer, buildIncremental, getVendorOsVersion(lower(manufacturer)));
+    }
+
+    @AnyThread
+    @Nullable
+    public static CharSequence getUninstallFallbackWarning(@NonNull Context ctx, @NonNull String packageName) {
+        UninstallFallback fallback = getUninstallFallback(packageName);
+        return fallback != null ? ctx.getText(fallback.messageRes) : null;
+    }
+
+    @VisibleForTesting
+    @Nullable
+    static UninstallFallback getUninstallFallback(@NonNull String packageName,
+                                                  @Nullable String manufacturer,
+                                                  @Nullable String buildIncremental,
+                                                  @Nullable String vendorOsVersion) {
+        String mfrLc = lower(manufacturer);
+        String incrementalLc = lower(buildIncremental);
+        String version = vendorOsVersion != null ? vendorOsVersion : "";
+        if ("samsung".equals(mfrLc)
+                && PACKAGE_SAMSUNG_SMART_SUGGESTIONS.equals(packageName)
+                && "80500".equals(version)) {
+            return new UninstallFallback(R.string.oem_bloat_action_samsung_smartsuggestions_oneui85);
+        }
+        if (containsExact(MIUI_MANUFACTURERS, mfrLc) && PACKAGE_MIUI_CORE.equals(packageName)) {
+            return new UninstallFallback(R.string.oem_bloat_action_miui_core);
+        }
+        if (isOplusFirmware(mfrLc, incrementalLc)
+                && containsExact(OPLUS_UNINSTALL_GUARDED_PACKAGES, packageName)) {
+            return new UninstallFallback(R.string.oem_bloat_action_oplus_reinstall_guard);
+        }
+        return null;
+    }
+
+    @AnyThread
     @NonNull
     private static String getVendorOsVersion(@NonNull String manufacturerLc) {
         switch (manufacturerLc) {
@@ -134,6 +204,33 @@ public final class OemBloatRiskTable {
             default:
                 return "";
         }
+    }
+
+    private static boolean isOplusFirmware(@NonNull String manufacturerLc, @NonNull String buildIncrementalLc) {
+        return containsExact(OPLUS_MANUFACTURERS, manufacturerLc) || containsAny(buildIncrementalLc, OPLUS_BUILD_TOKENS);
+    }
+
+    private static boolean containsExact(@NonNull String[] haystack, @NonNull String needle) {
+        for (String value : haystack) {
+            if (value.equals(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsAny(@NonNull String haystack, @NonNull String[] needles) {
+        for (String needle : needles) {
+            if (haystack.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NonNull
+    private static String lower(@Nullable String value) {
+        return value != null ? value.toLowerCase(Locale.ROOT) : "";
     }
 
     private OemBloatRiskTable() {

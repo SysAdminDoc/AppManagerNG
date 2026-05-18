@@ -2190,6 +2190,7 @@
         <item quantity="other">Required by %d packages</item>
     </plurals>
     <string name="debloat_card_factory_reset_update">Updated system app; resets before removal</string>
+    <string name="debloat_card_oem_disable_fallback">OEM protected; freeze instead of remove</string>
     <string name="rootless_debloat_uninstall_title">Remove selected apps for this user?</string>
     <string name="rootless_debloat_confirmation_intro_pm">Selected apps will be removed for their selected Android user through %1$s using pm uninstall --user.</string>
     <string name="rootless_debloat_confirmation_intro_standard">Selected apps will be removed through the package installer path.</string>
@@ -2202,8 +2203,14 @@
         <item quantity="one">%d updated system app will be reset to the factory version before removal.</item>
         <item quantity="other">%d updated system apps will be reset to the factory version before removal.</item>
     </plurals>
+    <plurals name="rootless_debloat_oem_disable_fallbacks">
+        <item quantity="one">%1$d selected app matches an OEM uninstall blocker and will be frozen instead of removed: %2$s.</item>
+        <item quantity="other">%1$d selected apps match OEM uninstall blockers and will be frozen instead of removed: %2$s.</item>
+    </plurals>
     <string name="rootless_debloat_confirmation_risky_examples">Review first: %1$s.</string>
     <string name="rootless_debloat_confirmation_footer">This removes apps from the selected user profile. System packages can usually be restored later with Install existing if the base APK remains on the device.</string>
+    <string name="rootless_debloat_confirmation_oem_footer">OEM-safe actions remove eligible apps and freeze OEM-protected apps instead. Choose Remove for user only if you explicitly want to bypass the safer fallback.</string>
+    <string name="debloat_oem_safe_action">Apply OEM-safe actions</string>
     <string name="remove_for_user">Remove for user</string>
     <string name="system_app_put_back">Put back</string>
     <string name="debloater_title">Debloater</string>
@@ -2643,6 +2650,9 @@
     <string name="debloat_removal_unsafe">Unsafe</string>
     <!-- Debloater: OEM-specific known-bad warnings (BloatwareDetailsDialog). -->
     <string name="oem_bloat_risk_samsung_smartsuggestions_oneui85">Removing this on Samsung One UI 8.5 has been reported to crash-loop Settings → Mobile Networks (UAD-NG #1394). Disable / freeze it instead, or restore from a backup before retrying.</string>
+    <string name="oem_bloat_action_samsung_smartsuggestions_oneui85">Samsung One UI 8.5 reports link this package to Settings → Mobile Networks crash loops when removed. Freeze or disable it instead.</string>
+    <string name="oem_bloat_action_miui_core">MIUI protects this core package; pm uninstall can fail with a system security error. Freeze or disable it instead.</string>
+    <string name="oem_bloat_action_oplus_reinstall_guard">OPlus firmware may restore this protected system package after user removal. Freeze or disable it instead.</string>
     <string name="sort_by_cpu_time">CPU time</string>
     <string name="pref_request_update_ownership">Request \"update ownership\"</string>
     <string name="pref_default_package_source">Default package source</string>
