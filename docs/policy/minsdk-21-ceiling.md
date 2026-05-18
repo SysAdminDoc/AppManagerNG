@@ -2,8 +2,8 @@
 # AppManagerNG minSdk 21 Dependency Ceiling Ledger
 
 **Status:** Policy document — update with every dependency bump.
-**Last reviewed:** 2026-05-16
-**Roadmap reference:** [ROADMAP.md](../../ROADMAP.md) — Iter-23 / T4 / Now row "MinSdk-21 Dependency Ceiling Ledger"; closes the long-running Material 1.14 row from iter-19.
+**Last reviewed:** 2026-05-18
+**Roadmap reference:** [ROADMAP.md](../../ROADMAP.md) — Iter-23 / T4 / Now row "MinSdk-21 Dependency Ceiling Ledger"; iter-138 parked the Material 1.14 row behind the same minSdk-23 floor decision.
 **Audience:** AppManagerNG contributors changing `versions.gradle`; reviewers of upgrade PRs; future maintainers deciding whether to raise the minSdk floor.
 
 ---
@@ -55,13 +55,19 @@ point for the floor change (not e.g. Activity 1.12 alone).
 | `webkit` 1.14.0 | → 1.15.x | WebView API additions for the in-app HelpActivity surface |
 | `material` 1.13.0 | → 1.14.0+ | M3 Expressive component variants, `FocusRingDrawable`, `SplitButton` RTL |
 
-**Decision pressure (as of 2026-05-17)**: Material Components 1.14.0 is **still
-alpha** (alpha06 / alpha07 / alpha08 — see [S325]). The 1.14.0 line has not
-progressed to stable; the ceiling can stay deferred until either:
+**Decision pressure (as of 2026-05-18)**: Material Components 1.14.0 is now
+stable in Google Maven, so the old "wait for stable" gate is closed. The
+remaining gate is policy: Material 1.14.0 requires minSdk 23 while AppManagerNG
+still intentionally supports API 21-22. The ceiling can stay deferred until
+either:
 
-1. Material 1.14 ships stable (estimated Q3-Q4 2026 based on M3 alpha → stable cadence), **and** the maintainer judges that the M3 Expressive component surface is worth the floor lift;
-2. A different pinned dep cuts a release that drops API 21-22 support and forces a decision (e.g. Room 2.8.x for a security fix; AndroidX core for a CVE);
-3. Google Play minSdk policy forces an industry-wide floor lift (unlikely for the NG distribution channels: F-Droid, IzzyOnDroid, Obtainium, Accrescent — none impose a Play minSdk policy).
+1. Maintainers explicitly accept a `min_sdk = 23` floor lift and the API 21-22
+   user impact that comes with it;
+2. A different pinned dep cuts a release that drops API 21-22 support and forces
+   a decision (e.g. Room 2.8.x for a security fix; AndroidX core for a CVE);
+3. Google Play minSdk policy forces an industry-wide floor lift (unlikely for
+   the NG distribution channels: F-Droid, IzzyOnDroid, Obtainium, Accrescent —
+   none impose a Play minSdk policy).
 
 When the decision is forced, the floor lift lands as a single `min_sdk = 23` PR that
 also bumps the five pinned-cluster deps in lockstep. **Don't bump one pinned dep at a
