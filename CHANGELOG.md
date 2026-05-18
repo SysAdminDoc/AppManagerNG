@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — AES backup archive-key derivation (2026-05-18)
+
+- New AES-mode backups now use metadata version 7 and derive a per-archive
+  AES-GCM content key from the single `am_keystore.bks` AES master key plus the
+  archive IV.
+- Restores remain backward compatible: v6-and-older AES backups keep the
+  historical master-key path, while v7+ backups use HKDF-SHA256.
+- The HKDF helper preserves 128-bit vs 256-bit master-key length and leaves
+  RSA/ECC hybrid per-archive keys unchanged.
+
 ### Changed — Android 17 ML-DSA key algorithm display (2026-05-18)
 
 - Package Info public-key rows and signer verification logs now map Android 17
