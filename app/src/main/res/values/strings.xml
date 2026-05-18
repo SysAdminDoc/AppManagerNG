@@ -831,6 +831,14 @@
     <string name="batch_results_no_logs_button">No logs available</string>
     <string name="batch_results_no_logs_message">No logs were captured for this operation.</string>
     <string name="batch_results_failed_app_content_description">Failed app: %1$s</string>
+    <string name="restore_default_apps_title">Restore default apps</string>
+    <string name="restore_default_apps_message">AppManagerNG restored apps that used to hold default app roles, but Android did not accept every automatic role re-bind. Open Android\'s Default apps settings and choose these apps again.</string>
+    <string name="restore_default_apps_open_settings">Open default apps</string>
+    <string name="restore_default_apps_review">Review defaults</string>
+    <string name="default_app_role_phone">Phone</string>
+    <string name="default_app_role_sms">SMS</string>
+    <string name="default_app_role_home">Home</string>
+    <string name="default_app_role_browser">Browser</string>
     <string name="install_app_message">Review the APK details and installer options before continuing.</string>
     <string name="reinstall">Reinstall</string>
     <string name="unblock_trackers">Unblock trackers</string>

@@ -35,6 +35,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
+import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.io.FileSystemManager;
 import io.github.muntashirakon.io.Path;
 
@@ -72,6 +73,7 @@ public final class ConvertUtils {
         metadata.instructionSet = metadataV2.instructionSet;
         metadata.keyStore = metadataV2.keyStore;
         metadata.installer = metadataV2.installer;
+        metadata.defaultRoles = ArrayUtils.emptyArray(String.class);
         return new BackupMetadataV5(info, metadata);
     }
 
