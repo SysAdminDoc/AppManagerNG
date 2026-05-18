@@ -1160,6 +1160,11 @@
     <string name="pref_backup_restore_msg">Backup location, encryption, import, restore options, and retention.</string>
     <string name="backup_volume">Backup volume</string>
     <string name="pref_backup_volume_msg">Select the volume or disk where the backups will be stored.</string>
+    <string name="pref_backup_network_destination">Network backup destination</string>
+    <string name="pref_backup_network_destination_summary">Select an SMB, WebDAV, SFTP, or cloud folder exposed by a file provider app.</string>
+    <string name="pref_backup_network_destination_msg">Choose a folder from a DocumentsProvider app such as Material Files, DAVx5, FolderSync, or another provider that exposes your SMB or WebDAV share. AppManagerNG will store backups directly in that selected folder through Android Storage Access Framework permissions.</string>
+    <string name="backup_network_destination_selected">Network backup destination selected.</string>
+    <string name="backup_network_destination_failed">Could not use the selected network backup destination.</string>
     <string name="no_volumes_found">Could not find any volumes with write permission.</string>
     <string name="unencrypted">Unencrypted</string>
     <string name="encrypted">Encrypted</string>

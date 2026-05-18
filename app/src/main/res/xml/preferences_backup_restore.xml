@@ -34,6 +34,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="backup_network_destination"
+        app:title="@string/pref_backup_network_destination"
+        app:summary="@string/pref_backup_network_destination_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="import_backups"
         app:title="@string/pref_import_backups"
         app:summary="@string/pref_import_backups_msg"

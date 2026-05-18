@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — provider-backed network backup destination (2026-05-18)
+
+- Settings -> Backup/Restore now has a Network backup destination action for
+  SMB, WebDAV, SFTP, and cloud folders exposed by user-installed
+  DocumentsProvider apps.
+- The selected tree is persisted with read/write SAF permission, normalized,
+  and immediately stored as the active backup volume used by the existing
+  backup engine.
+- `StorageUtils.getFixedTreeUri` is now public and covered by focused JVM tests
+  so callers can safely store tree/document URIs selected by Android's folder
+  picker.
+
 ### Added — app-list import/export workflow (2026-05-18)
 
 - Main-list overflow can export the current visible/filtered app list through
