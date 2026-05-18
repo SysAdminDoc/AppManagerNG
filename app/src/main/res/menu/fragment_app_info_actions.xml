@@ -28,6 +28,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_per_app_rollback"
+        android:icon="@drawable/ic_undo"
+        android:title="@string/per_app_rollback"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_export_blocking_rules"
         android:icon="@drawable/ic_file_export"
         android:title="@string/export_blocking_rules"

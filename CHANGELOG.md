@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — per-app rollback from operation history (2026-05-18)
+
+- App Details now exposes "Revert AppManager changes" for the selected package
+  and user.
+- The rollback planner builds newest-first inverse batch operations from
+  successful operation-history rows for freeze, tracker/component toggles,
+  explicit permission changes, AppOps changes, background-disable app-ops, and
+  network-policy changes.
+- Confirmation copy states that app data restore, reinstalling removed apps,
+  backup deletion, and history rows without enough previous-state data remain
+  manual review items.
+
 ### Added — OEM debloat uninstall fallbacks (2026-05-18)
 
 - Debloater now detects OEM-protected removal targets for Samsung
