@@ -778,6 +778,20 @@
     <string name="batch_ops_notification_permission_title">Allow batch operation notifications?</string>
     <string name="batch_ops_notification_permission_message">Batch operations can keep working after you leave this screen. Allow notifications so AppManagerNG can show progress, completion, and failures.</string>
     <string name="operation_running">Operation running…</string>
+    <string name="automation_request_confirm_title">Run automation action?</string>
+    <string name="automation_request_confirm_message">Action: %1$s\nTarget: %2$s\nUser: %3$s</string>
+    <string name="automation_request_profile_overrides_present">Profile overrides: provided</string>
+    <string name="automation_request_invalid">Invalid automation request</string>
+    <string name="automation_request_dry_run_valid">Automation request is valid</string>
+    <string name="automation_request_queued">Automation request queued</string>
+    <string name="automation_request_profile_target">Profile: %1$s</string>
+    <string name="automation_request_install_target">Source: %1$s</string>
+    <string name="automation_request_component_target">%1$s / %2$s</string>
+    <string name="automation_request_user_current">Current user</string>
+    <plurals name="automation_request_package_count">
+        <item quantity="one">%1$d package</item>
+        <item quantity="other">%1$d packages</item>
+    </plurals>
     <string name="full_stop_tap_to_see_details">. Tap to see details.</string>
     <string name="try_again">Try again</string>
     <string name="batch_ops_results_title">Batch result</string>

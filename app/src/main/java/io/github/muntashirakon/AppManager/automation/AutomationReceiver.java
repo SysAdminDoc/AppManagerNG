@@ -16,6 +16,7 @@ import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EX
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_PACKAGES;
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_PACKAGE;
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_PROFILE_ID;
+import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_PROFILE_OVERRIDES;
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_PROFILE_STATE;
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_URI;
 import static io.github.muntashirakon.AppManager.automation.AutomationIntents.EXTRA_USER;
@@ -32,6 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -121,6 +123,7 @@ public class AutomationReceiver extends BroadcastReceiver {
         }
         String normalizedProfileId = ProfileManager.getProfileIdCompat(profileId.trim());
         String state = intent.getStringExtra(EXTRA_PROFILE_STATE);
+        JSONObject profileOverrides = getProfileOverrides(intent.getStringExtra(EXTRA_PROFILE_OVERRIDES));
         if (intent.getBooleanExtra(EXTRA_DRY_RUN, false)) {
             return;
         }
@@ -130,7 +133,7 @@ public class AutomationReceiver extends BroadcastReceiver {
                 Path profilePath = ProfileManager.findProfilePathById(normalizedProfileId);
                 BaseProfile profile = BaseProfile.fromPath(profilePath);
                 Intent serviceIntent = ProfileApplierService.getIntent(context,
-                        ProfileQueueItem.fromProfile(profile, state), true);
+                        ProfileQueueItem.fromProfile(profile, state, profileOverrides), true);
                 startForegroundService(context, serviceIntent);
             } catch (IOException | JSONException e) {
                 Log.w(TAG, "Could not dispatch profile automation for " + normalizedProfileId, e);
@@ -138,6 +141,14 @@ public class AutomationReceiver extends BroadcastReceiver {
                 pendingResult.finish();
             }
         });
+    }
+
+    @Nullable
+    private JSONObject getProfileOverrides(@Nullable String value) throws JSONException {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return new JSONObject(value.trim());
     }
 
     private void dispatchInstallFromUri(@NonNull Context context, @NonNull Intent intent) {

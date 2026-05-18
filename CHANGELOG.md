@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Tasker parameterized automation intents (2026-05-18)
+
+- Public `am://` operation URIs now cover freeze, unfreeze, force-stop,
+  clear-cache, clear-data, uninstall, backup, restore, component
+  enable/disable, tracker scan, profile run, and installer handoff.
+- Tasker/MacroDroid can start an AppManagerNG Activity with the existing
+  `io.github.sysadmindoc.AppManagerNG.action.*` action constants and extras;
+  the public path requires AppManagerNG authentication plus an explicit
+  confirmation dialog before work starts.
+- Profile automation supports one-run JSON overrides through
+  `EXTRA_PROFILE_OVERRIDES` / `profile_overrides`, including package targets
+  and backup flags, while preserving the saved profile identity.
+
 ### Added — backup path exclusions (2026-05-18)
 
 - Backup data archives now support glob-style path exclusions such as
