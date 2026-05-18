@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 119**. Iter-119 shipped the dedicated
-> Digital Assistant quick-action entry point: `ACTION_ASSIST` now lands in
-> `AssistActionActivity`, resolves the foreground package from assist extras or
-> recent usage events, and offers Force Stop, Freeze/Unfreeze, and App Details
-> actions with a Running Apps fallback.
+> Last consolidated: **2026-05-18 iter 120**. Iter-120 shipped the App Info
+> `pm hide` quick action: when the active privilege path has `MANAGE_USERS`, the
+> horizontal action strip now offers Hide/Unhide via `PackageManagerCompat` while
+> preserving the existing Hidden tag-cloud badge and saved freeze-method
+> semantics.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -160,6 +160,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-117/`](.ai/research/2026-05-18-iter-117/) | iter 117 | App Info SELinux context display: policy info, data/source file contexts, live process contexts, and focused package/process matching coverage. |
 | [`.ai/research/2026-05-18-iter-118/`](.ai/research/2026-05-18-iter-118/) | iter 118 | JADX 1.5.5 `.apks`/zoom and FlatLaf CJK rows parked as blocked by the absent T12 JADX viewer surface; acceptance criteria preserved for future viewer work. |
 | [`.ai/research/2026-05-18-iter-119/`](.ai/research/2026-05-18-iter-119/) | iter 119 | Digital Assistant quick actions: dedicated assist activity, foreground target resolver from assist extras or usage events, Force Stop / Freeze / App Details sheet, and Running Apps fallback. |
+| [`.ai/research/2026-05-18-iter-120/`](.ai/research/2026-05-18-iter-120/) | iter 120 | Amarok-style `pm hide` toggle: App Info Hide/Unhide quick action backed by `PackageManagerCompat.hidePackage()`, existing Hidden badge preserved, and freeze method state left untouched. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

@@ -1754,7 +1754,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (!mIsExternalApk) {
             boolean isStaticSharedLib = ApplicationInfoCompat.isStaticSharedLibrary(mApplicationInfo);
             boolean isFrozen = FreezeUtils.isFrozen(mApplicationInfo);
+            boolean isHidden = ApplicationInfoCompat.isHidden(mApplicationInfo);
             boolean canFreeze = !isStaticSharedLib && SelfPermissions.canFreezeUnfreezePackages();
+            boolean canHide = !isStaticSharedLib
+                    && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS);
             // Set open
             Intent launchIntent = PackageManagerCompat.getLaunchIntentForPackage(mPackageName, mUserId);
             if (launchIntent != null && !isFrozen) {
@@ -1785,6 +1788,21 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             createFreezeShortcut(false);
                             return true;
                         });
+            }
+            // Set hide/unhide using pm hide, independent of the saved freeze method.
+            if (canHide) {
+                ActionItem hideAction = new ActionItem(isHidden ? R.string.quick_unhide_app : R.string.quick_hide_app,
+                        isHidden ? R.drawable.ic_eye : R.drawable.ic_block);
+                actionItems.add(hideAction);
+                hideAction.setOnClickListener(v -> {
+                    if (!isHidden && BuildConfig.APPLICATION_ID.equals(mPackageName)) {
+                        new MaterialAlertDialogBuilder(mActivity)
+                                .setMessage(R.string.hide_app_confirmation)
+                                .setPositiveButton(R.string.yes, (d, w) -> hide(true))
+                                .setNegativeButton(R.string.no, null)
+                                .show();
+                    } else hide(!isHidden);
+                });
             }
             // Set uninstall
             ActionItem uninstallAction = new ActionItem(R.string.uninstall, R.drawable.ic_trash_can);
@@ -2600,6 +2618,27 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } catch (Throwable th) {
             Log.e(TAG, th);
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_unfreeze, mAppLabel));
+        }
+    }
+
+    @MainThread
+    private void hide(boolean hide) {
+        ThreadUtils.postOnBackgroundThread(() -> doHide(hide));
+    }
+
+    @WorkerThread
+    private void doHide(boolean hide) {
+        try {
+            PackageManagerCompat.hidePackage(mPackageName, mUserId, hide);
+            ThreadUtils.postOnMainThread(() -> {
+                UIUtils.displayShortToast(R.string.done);
+                refreshDetails();
+            });
+        } catch (Throwable th) {
+            Log.e(TAG, th);
+            ThreadUtils.postOnMainThread(() -> displayLongToast(hide
+                    ? R.string.failed_to_hide
+                    : R.string.failed_to_unhide, mAppLabel));
         }
     }
 

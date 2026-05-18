@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Info hide/unhide action (2026-05-18)
+
+- App Info now exposes a dedicated Hide/Unhide quick action for `pm hide`
+  semantics when the active privilege path has `MANAGE_USERS`.
+- The action calls AppManagerNG's existing hidden-package helper directly,
+  refreshes App Info after success, and confirms before hiding AppManagerNG
+  itself.
+- The existing Hidden status badge remains the state indicator, keeping hide
+  separate from disable, suspend, and saved freeze-method choices.
+
 ### Added — Quick assist action sheet (2026-05-18)
 
 - Registered a dedicated `android.intent.action.ASSIST` activity so the
