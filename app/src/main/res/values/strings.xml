@@ -1193,6 +1193,8 @@
     <string name="backup_extras">Extras</string>
     <string name="backup_extras_description">Back up app permissions, battery saving and data usage options, MagiskHide status, SSAID, etc. <font fgcolor="#ff0000">Depending on the permissions, not all extras can be restored.</font></string>
     <string name="backup_rules_description">Back up rules configured within App Manager. <font fgcolor="#ff0000">Depending on the permissions, not all rules can be reapplied during restore.</font></string>
+    <string name="backup_system_data">System data</string>
+    <string name="backup_system_data_description">Root-only backup for Android System: Wi-Fi networks, Bluetooth pairings, and account databases.</string>
     <string name="backup_multiple_description">Create a separate <i>named</i> backup instead of the base backup.</string>
     <string name="backup_skip_signature_checks_description">Restore backups that either fail checksum verification or have different APK signatures than their prior backups.</string>
     <string name="patch_level">Patch level</string>

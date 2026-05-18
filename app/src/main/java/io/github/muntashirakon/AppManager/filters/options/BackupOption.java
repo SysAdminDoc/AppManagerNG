@@ -10,6 +10,7 @@ import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_EXT_D
 import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_EXT_OBB_MEDIA;
 import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_INT_DATA;
 import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_RULES;
+import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_SYSTEM_DATA;
 
 import android.content.Context;
 import android.text.SpannableStringBuilder;
@@ -49,6 +50,7 @@ public class BackupOption extends FilterOption {
         put(BACKUP_CACHE, "Cache");
         put(BACKUP_EXTRAS, "Extras");
         put(BACKUP_RULES, "Rules");
+        put(BACKUP_SYSTEM_DATA, "System data");
     }};
 
     public BackupOption() {

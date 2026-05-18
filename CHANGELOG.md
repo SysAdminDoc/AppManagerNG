@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Root-only Android system data backups (2026-05-18)
+
+- Root/system mode now exposes a **System data** backup category for the
+  Android System package.
+- System-data backups include supported Wi-Fi, Bluetooth, and account database
+  roots while reusing the existing tar, encryption, checksum, metadata, and
+  retention pipeline.
+- System-data restores skip Android framework package data clearing and restore
+  only the captured system roots.
+
 ### Added — Profile blocklist backup-root enumeration (2026-05-18)
 
 - The Profiles app/blocklist picker now merges installed packages with validated

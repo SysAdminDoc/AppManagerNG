@@ -36,6 +36,7 @@ public class BackupManager {
     static final int KEYSTORE_PLACEHOLDER = -1000;
     static final String DATA_BACKUP_SPECIAL_PREFIX = "special:";
     static final String DATA_BACKUP_SPECIAL_ADB = DATA_BACKUP_SPECIAL_PREFIX + "adb";
+    static final String DATA_BACKUP_SPECIAL_SYSTEM_PREFIX = DATA_BACKUP_SPECIAL_PREFIX + "system:";
 
     public static final String CERT_PREFIX = "cert_";
     static final String MASTER_KEY = ".masterkey";
@@ -68,8 +69,16 @@ public class BackupManager {
 
     public void backup(@NonNull BackupOpOptions options, @Nullable ProgressHandler progressHandler)
             throws BackupException {
-        if (options.packageName.equals("android")) {
-            throw new BackupException("Android System (android) cannot be backed up.");
+        if (SystemDataBackup.ANDROID_PACKAGE_NAME.equals(options.packageName)) {
+            if (!options.flags.backupSystemData()) {
+                throw new BackupException("Android System (android) can only be backed up with System data.");
+            }
+            SystemDataBackup.retainOnlySystemData(options.flags);
+        } else {
+            options.flags.removeFlag(BackupFlags.BACKUP_SYSTEM_DATA);
+        }
+        if (options.flags.backupSystemData() && !SystemDataBackup.canBackUpSystemData()) {
+            throw new BackupException("System data backup requires root or system mode.");
         }
         if (options.flags.isEmpty()) {
             throw new BackupException("Backup is requested without any flags.");
@@ -115,8 +124,16 @@ public class BackupManager {
      */
     public void restore(@NonNull RestoreOpOptions options, @Nullable ProgressHandler progressHandler)
             throws BackupException {
-        if (options.packageName.equals("android")) {
-            throw new BackupException("Android System (android) cannot be restored.");
+        if (SystemDataBackup.ANDROID_PACKAGE_NAME.equals(options.packageName)) {
+            if (!options.flags.backupSystemData()) {
+                throw new BackupException("Android System (android) can only be restored with System data.");
+            }
+            SystemDataBackup.retainOnlySystemData(options.flags);
+        } else {
+            options.flags.removeFlag(BackupFlags.BACKUP_SYSTEM_DATA);
+        }
+        if (options.flags.backupSystemData() && !SystemDataBackup.canBackUpSystemData()) {
+            throw new BackupException("System data restore requires root or system mode.");
         }
         if (options.flags.isEmpty()) {
             throw new BackupException("Restore is requested without any flags.");
