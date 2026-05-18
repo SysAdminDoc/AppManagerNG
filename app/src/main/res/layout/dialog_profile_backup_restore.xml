@@ -18,7 +18,7 @@
             android:orientation="horizontal">
 
             <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/backup_options"
@@ -31,6 +31,30 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:text="@string/choose" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:labelFor="@id/dialog_exclusions_button"
+                android:text="@string/backup_exclusion_patterns"
+                android:textAllCaps="true" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/dialog_exclusions_button"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:text="@string/backup_exclusion_patterns_button"
+                app:icon="@drawable/ic_edit"
+                app:iconPadding="@dimen/padding_small" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

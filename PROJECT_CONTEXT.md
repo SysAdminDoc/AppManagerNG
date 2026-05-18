@@ -7,11 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 100**. Iter-100 closed the Material Files
-> self-signed WebDAV certificate-trust row as covered by the provider-backed
-> destination architecture: AppManagerNG delegates TLS trust to the selected
-> DocumentsProvider today, while native `KeyChain` handling stays attached to
-> future first-party WebDAV/provider work.
+> Last consolidated: **2026-05-18 iter 101**. Iter-101 shipped backup path
+> exclusion patterns: default throwaway-folder globs, global Settings custom
+> patterns, one-off backup-dialog extras, and profile `exclusion_globs` now feed
+> the data tar exclusion filter while preserving the Backup cache flag.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -141,6 +140,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-98/`](.ai/research/2026-05-18-iter-98/) | iter 98 | App-list import/export workflow: visible/filtered list export from the main menu, selected-list export preserved in selection mode, and JSON imports selecting matching installed apps for existing batch actions. |
 | [`.ai/research/2026-05-18-iter-99/`](.ai/research/2026-05-18-iter-99/) | iter 99 | Provider-backed network backup destination: Settings -> Backup/Restore Network backup destination action persists a selected DocumentsProvider tree as the active backup volume and test-covers tree URI normalization. |
 | [`.ai/research/2026-05-18-iter-100/`](.ai/research/2026-05-18-iter-100/) | iter 100 | WebDAV self-signed certificate trust closure: no native WebDAV/SMB client exists today, so provider-backed backups delegate TLS/user-CA trust to the selected DocumentsProvider; native `KeyChain` handling is reserved for future first-party protocol work. |
+| [`.ai/research/2026-05-18-iter-101/`](.ai/research/2026-05-18-iter-101/) | iter 101 | Backup path exclusion patterns: glob parser, default throwaway directory filters, global/per-run/profile custom globs, and focused JVM coverage for matching plus batch-option serialization. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -568,6 +568,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - Crypto modes: AES / RSA / ECC / OpenPGP. AES is Android Keystore-backed (hardware-isolated where TEE available) — **not** the original roadmap's PBKDF2 sketch.
 - Metadata v6 (2026-05-16) introduces per-file AES-GCM IV derivation while keeping v5-and-older backups restorable.
 - Integrity verification (`BackupItems.Checksum` + per-file SHA-256) was already shipped — closed as "pre-existing" in 2026-05-16 hygiene pass.
+- Data tar creation uses `BackupPathExclusionPatterns` to apply default throwaway-folder globs plus Settings, per-run, and profile-specific custom glob lists. Cache-like defaults are gated by the existing `BACKUP_CACHE` flag.
 - Multi-format ingest: APK / APKS / APKM / XAPK with OBB support.
 
 ### Don'ts

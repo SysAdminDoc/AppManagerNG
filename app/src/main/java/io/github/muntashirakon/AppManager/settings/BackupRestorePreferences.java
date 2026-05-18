@@ -10,10 +10,13 @@ import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -41,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.convert.ImportType;
@@ -63,6 +67,7 @@ import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Paths;
 
 public class BackupRestorePreferences extends PreferenceFragment {
@@ -186,6 +191,29 @@ public class BackupRestorePreferences extends PreferenceFragment {
                         }
                         flags.setFlags(flagsInt);
                         Prefs.BackupRestore.setBackupFlags(flags.getFlags());
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        Preference backupExclusions = requirePreference("backup_exclusion_patterns");
+        updateBackupExclusionSummary(backupExclusions);
+        backupExclusions.setOnPreferenceClickListener(preference -> {
+            new TextInputDialogBuilder(requireContext(), R.string.pref_backup_exclusion_patterns)
+                    .setTitle(R.string.pref_backup_exclusion_patterns)
+                    .setInputText(TextUtils.join("\n", Prefs.BackupRestore.getBackupExclusionPatterns()))
+                    .setInputTypeface(Typeface.MONOSPACE)
+                    .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                    .setHelperText(R.string.pref_backup_exclusion_patterns_helper)
+                    .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) -> {
+                        Prefs.BackupRestore.setBackupExclusionPatterns(
+                                BackupPathExclusionPatterns.parse(inputText));
+                        updateBackupExclusionSummary(backupExclusions);
+                    })
+                    .setNeutralButton(R.string.clear, (dialog, which, inputText, isChecked) -> {
+                        Prefs.BackupRestore.setBackupExclusionPatterns(null);
+                        updateBackupExclusionSummary(backupExclusions);
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
@@ -627,6 +655,14 @@ public class BackupRestorePreferences extends PreferenceFragment {
         agePref.setSummary(maxAge <= 0
                 ? getString(R.string.backup_retention_unlimited)
                 : getString(R.string.backup_retention_age_n, maxAge));
+    }
+
+    private void updateBackupExclusionSummary(@NonNull Preference preference) {
+        int customCount = BackupPathExclusionPatterns.getCustomGlobCount(
+                Prefs.BackupRestore.getBackupExclusionPatterns());
+        preference.setSummary(customCount == 0
+                ? getString(R.string.pref_backup_exclusion_patterns_default_summary)
+                : getString(R.string.pref_backup_exclusion_patterns_summary, customCount));
     }
 
     @Override
