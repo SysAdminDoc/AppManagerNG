@@ -59,6 +59,33 @@
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
+                <HorizontalScrollView
+                    android:id="@+id/fm_search_filter_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fadingEdgeLength="@dimen/padding_medium"
+                    android:fillViewport="true"
+                    android:paddingHorizontal="@dimen/padding_small"
+                    android:paddingTop="@dimen/padding_very_small"
+                    android:paddingBottom="@dimen/padding_very_small"
+                    android:requiresFadingEdge="horizontal"
+                    android:scrollbars="none"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/fm_search_filter_chip"
+                        style="@style/Widget.AppTheme.Chip.MainSuggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="false"
+                        android:text="@string/search"
+                        app:chipIcon="@drawable/ic_search"
+                        app:chipIconVisible="true"
+                        app:closeIconVisible="true" />
+
+                </HorizontalScrollView>
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">

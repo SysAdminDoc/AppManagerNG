@@ -39,7 +39,6 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.dex.DexUtils;
 import io.github.muntashirakon.AppManager.fm.icons.FmIconFetcher;
 import io.github.muntashirakon.AppManager.logs.Log;
-import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.ListOptions;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -84,6 +83,8 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     private String mScrollToFilename;
     @Nullable
     private Future<?> mFmFileLoaderResult;
+    @Nullable
+    private Future<?> mFmFilterResult;
     private Future<?> mFmFileSystemLoaderResult;
     private final Set<Integer> mVfsIdSet = new HashSet<>();
     private final FileCache mFileCache = new FileCache();
@@ -101,6 +102,9 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         if (mFmFileLoaderResult != null) {
             mFmFileLoaderResult.cancel(true);
         }
+        if (mFmFilterResult != null) {
+            mFmFilterResult.cancel(true);
+        }
         if (mFmFileSystemLoaderResult != null) {
             mFmFileSystemLoaderResult.cancel(true);
         }
@@ -116,7 +120,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     public void setSortBy(@FmListOptions.SortOrder int sortBy) {
         mSortBy = sortBy;
         Prefs.FileManager.setSortOrder(sortBy);
-        ThreadUtils.postOnBackgroundThread(this::filterAndSort);
+        filterAndSortAsync();
     }
 
     @FmListOptions.SortOrder
@@ -129,7 +133,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     public void setReverseSort(boolean reverseSort) {
         mReverseSort = reverseSort;
         Prefs.FileManager.setReverseSort(reverseSort);
-        ThreadUtils.postOnBackgroundThread(this::filterAndSort);
+        filterAndSortAsync();
     }
 
     @Override
@@ -147,18 +151,39 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         if (selected) mSelectedOptions |= option;
         else mSelectedOptions &= ~option;
         Prefs.FileManager.setOptions(mSelectedOptions);
-        ThreadUtils.postOnBackgroundThread(this::filterAndSort);
+        filterAndSortAsync();
     }
 
     public void setQueryString(@Nullable String queryString) {
+        if (queryString != null) {
+            queryString = queryString.trim();
+        }
+        if (TextUtils.isEmpty(queryString)) {
+            queryString = null;
+        }
+        if (Objects.equals(mQueryString, queryString)) {
+            return;
+        }
         mQueryString = queryString;
-        ThreadUtils.postOnBackgroundThread(this::filterAndSort);
+        filterAndSortAsync();
+    }
+
+    @Nullable
+    public String getQueryString() {
+        return mQueryString;
+    }
+
+    public boolean hasQueryString() {
+        return !TextUtils.isEmpty(mQueryString);
     }
 
     @MainThread
     public void setOptions(@NonNull FmActivity.Options options, @Nullable Uri defaultUri) {
         if (mFmFileLoaderResult != null) {
             mFmFileLoaderResult.cancel(true);
+        }
+        if (mFmFilterResult != null) {
+            mFmFilterResult.cancel(true);
         }
         if (mFmFileSystemLoaderResult != null) {
             mFmFileSystemLoaderResult.cancel(true);
@@ -278,6 +303,9 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     private void loadFiles(@NonNull Uri uri, @Nullable String scrollToFilename) {
         if (mFmFileLoaderResult != null) {
             mFmFileLoaderResult.cancel(true);
+        }
+        if (mFmFilterResult != null) {
+            mFmFilterResult.cancel(true);
         }
         mScrollToFilename = scrollToFilename;
         Uri lastUri = mCurrentUri;
@@ -497,16 +525,30 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         }
     }
 
+    private void filterAndSortAsync() {
+        if (mFmFilterResult != null) {
+            mFmFilterResult.cancel(true);
+        }
+        mFmFilterResult = ThreadUtils.postOnBackgroundThread(this::filterAndSort);
+    }
+
     private void filterAndSort() {
         boolean displayDotFiles = (mSelectedOptions & FmListOptions.OPTIONS_DISPLAY_DOT_FILES) != 0;
         boolean foldersOnTop = (mSelectedOptions & FmListOptions.OPTIONS_FOLDERS_FIRST) != 0;
+        String queryString = mQueryString;
 
         List<FmItem> filteredList;
-        synchronized (mFmItems) {
-            if (!TextUtils.isEmpty(mQueryString)) {
-                filteredList = AdvancedSearchView.matches(mQueryString, mFmItems, FmItem::getName,
-                        AdvancedSearchView.SEARCH_TYPE_CONTAINS);
-            } else filteredList = new ArrayList<>(mFmItems);
+        if (!TextUtils.isEmpty(queryString) && mCurrentUri != null) {
+            try {
+                filteredList = FmSearchUtils.searchRecursive(Paths.getStrict(mCurrentUri), queryString,
+                        displayDotFiles);
+            } catch (FileNotFoundException e) {
+                filteredList = new ArrayList<>();
+            }
+        } else {
+            synchronized (mFmItems) {
+                filteredList = new ArrayList<>(mFmItems);
+            }
         }
         if (ThreadUtils.isInterrupted()) {
             return;

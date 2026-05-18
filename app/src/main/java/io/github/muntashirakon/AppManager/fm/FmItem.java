@@ -31,6 +31,8 @@ public class FmItem implements Comparable<FmItem> {
     private PathAttributes mAttributes;
     @Nullable
     private String mName;
+    @Nullable
+    private String mSearchLocation;
     private int mChildCount = UNRESOLVED;
     private boolean mCached = false;
 
@@ -87,6 +89,15 @@ public class FmItem implements Comparable<FmItem> {
             mChildCount = path.listFiles().length;
         }
         return mChildCount;
+    }
+
+    @Nullable
+    public String getSearchLocation() {
+        return mSearchLocation;
+    }
+
+    void setSearchLocation(@Nullable String searchLocation) {
+        mSearchLocation = searchLocation;
     }
 
     @Nullable
