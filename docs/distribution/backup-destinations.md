@@ -13,6 +13,7 @@
 - AppManagerNG writes encrypted backups to a single configurable volume picked from Settings -> Backup/Restore. **Backup volume** handles discovered local/removable volumes; **Network backup destination** opens Android's folder picker for any provider-backed SMB, WebDAV, SFTP, or cloud folder. The selected volume is stored as a URI in `Prefs.Storage.PREF_BACKUP_VOLUME_STR` ([`Prefs.java:708`](../../app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java#L708)) and can be either a `file://` path on local storage or a `content://` Storage Access Framework (SAF) URI.
 - NG has **no native cloud-account integration** (no Google Drive / Dropbox / OneDrive / iCloud OAuth surface). FOSS posture + the no-telemetry / no-cloud contract in [`CONTRIBUTING.md`](../../CONTRIBUTING.md) make that incompatible with the current app posture.
 - First-class provider-backed support for WebDAV / SMB / FTP / SFTP / cloud is available **through any third-party DocumentsProvider** the user installs (Material Files, DAVx5, RCX, FolderSync, Resilio Sync, etc.). NG never sees the network; the OS routes reads/writes through the user's chosen provider.
+- WebDAV self-signed certificate and user-installed CA trust are handled by the selected provider app, not by AppManagerNG, until NG adds a native WebDAV/provider stack.
 - This document tracks what is supported, what is indirect, what is planned, and what is rejected — so future maintainer PRs and user questions have one place to look.
 
 ---
@@ -45,6 +46,17 @@ The destination type is half the story; the SAF provider implementation is the o
 | [FolderSync](https://www.tacit.dk/foldersync/) | Wide protocol support (WebDAV, SMB, FTP, S3, B2, Drive, OneDrive, Dropbox, etc.) via the FolderSync DocumentsProvider; commercial app, FOSS-friendly but not FOSS. Listed for completeness — recommend FOSS alternatives first. |
 | [RCX (rclone Android UI)](https://github.com/x0b/rcx) | rclone front-end; exposes cloud buckets via a DocumentsProvider. Works but unmaintained — flag in user-facing docs before recommending. |
 | [Resilio Sync](https://www.resilio.com/) | Peer-to-peer; provides a DocumentsProvider for the synced folder. Pairs naturally with NG's planned "Atomic-Write Profile Dir" work. Closed-source; user should weigh privacy posture. |
+
+### Certificate trust for WebDAV providers
+
+Provider-backed WebDAV destinations inherit the trust model of the selected app.
+For example, Material Files v1.7.2+ trusts user-installed certificates from the
+Android credential store for self-signed WebDAV servers. AppManagerNG does not
+run that TLS handshake, so it does not need a parallel certificate store or
+`KeyChain.getCertificateChain()` hook in the current backup engine.
+
+If NG later adds a native WebDAV destination, that native client must consume
+Android user-installed CA material instead of rolling a private trust store.
 
 ## Why no direct cloud-account API
 

@@ -7,10 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 99**. Iter-99 closed the T6 provider-backed
-> network backup destination slice: Settings -> Backup/Restore can now persist an
-> SMB/WebDAV/SFTP/cloud folder exposed by a user-installed DocumentsProvider app as
-> the active backup volume while keeping the existing Path-based backup engine.
+> Last consolidated: **2026-05-18 iter 100**. Iter-100 closed the Material Files
+> self-signed WebDAV certificate-trust row as covered by the provider-backed
+> destination architecture: AppManagerNG delegates TLS trust to the selected
+> DocumentsProvider today, while native `KeyChain` handling stays attached to
+> future first-party WebDAV/provider work.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -139,6 +140,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-97/`](.ai/research/2026-05-18-iter-97/) | iter 97 | Scheduled-backup diagnostics: Settings status row shows WorkManager state/attempt/stop details, next run time, and API-36 JobScheduler pending-reason snapshots; API-37 `JobDebugInfo` remains blocked by compile SDK 36. |
 | [`.ai/research/2026-05-18-iter-98/`](.ai/research/2026-05-18-iter-98/) | iter 98 | App-list import/export workflow: visible/filtered list export from the main menu, selected-list export preserved in selection mode, and JSON imports selecting matching installed apps for existing batch actions. |
 | [`.ai/research/2026-05-18-iter-99/`](.ai/research/2026-05-18-iter-99/) | iter 99 | Provider-backed network backup destination: Settings -> Backup/Restore Network backup destination action persists a selected DocumentsProvider tree as the active backup volume and test-covers tree URI normalization. |
+| [`.ai/research/2026-05-18-iter-100/`](.ai/research/2026-05-18-iter-100/) | iter 100 | WebDAV self-signed certificate trust closure: no native WebDAV/SMB client exists today, so provider-backed backups delegate TLS/user-CA trust to the selected DocumentsProvider; native `KeyChain` handling is reserved for future first-party protocol work. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
