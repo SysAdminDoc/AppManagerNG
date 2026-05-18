@@ -688,6 +688,14 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_PERMISSION_CHANGE_MONITOR_BOOL, enabled);
         }
 
+        public static boolean isSigningCertChangeMonitorEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_SIGNING_CERT_CHANGE_MONITOR_BOOL);
+        }
+
+        public static void setSigningCertChangeMonitorEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_SIGNING_CERT_CHANGE_MONITOR_BOOL, enabled);
+        }
+
         public static int getOpHistoryRetentionDays() {
             return AppPref.getInt(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT);
         }
