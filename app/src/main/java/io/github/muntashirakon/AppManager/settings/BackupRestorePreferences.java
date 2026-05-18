@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.settings.crypto.ECCCryptoSelectionDial
 import io.github.muntashirakon.AppManager.settings.crypto.OpenPgpKeySelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.RSACryptoSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.shortcut.AutoBackupShortcutActivity;
+import io.github.muntashirakon.AppManager.utils.StorageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -104,6 +105,30 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 } finally {
                     // Display backup volumes again
                     mModel.loadStorageVolumes();
+                }
+            });
+    private final ActivityResultLauncher<Intent> mSafSelectNetworkBackupDestination = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() != Activity.RESULT_OK) return;
+                Intent data = result.getData();
+                if (data == null) return;
+                Uri treeUri = data.getData();
+                if (treeUri == null) return;
+                int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                try {
+                    if ((takeFlags & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) == 0) {
+                        throw new SecurityException("Selected backup destination is not writable.");
+                    }
+                    requireContext().getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+                    mBackupVolume = StorageUtils.getFixedTreeUri(treeUri);
+                    Prefs.Storage.setVolumePath(mBackupVolume.toString());
+                    mModel.reloadApps();
+                    mModel.loadStorageVolumes();
+                    UIUtils.displayShortToast(R.string.backup_network_destination_selected);
+                } catch (IllegalArgumentException | SecurityException e) {
+                    UIUtils.displayLongToast(R.string.backup_network_destination_failed);
                 }
             });
     private final ActivityResultLauncher<Intent> mSafSelectImportDirectory = registerForActivityResult(
@@ -225,6 +250,17 @@ public class BackupRestorePreferences extends PreferenceFragment {
         ((Preference) Objects.requireNonNull(findPreference("backup_volume")))
                 .setOnPreferenceClickListener(preference -> {
                     mModel.loadStorageVolumes();
+                    return true;
+                });
+        ((Preference) Objects.requireNonNull(findPreference("backup_network_destination")))
+                .setOnPreferenceClickListener(preference -> {
+                    new MaterialAlertDialogBuilder(mActivity)
+                            .setTitle(R.string.pref_backup_network_destination)
+                            .setMessage(R.string.pref_backup_network_destination_msg)
+                            .setPositiveButton(R.string.go, (dialog, which) ->
+                                    mSafSelectNetworkBackupDestination.launch(getSafIntent("AppManager")))
+                            .setNegativeButton(R.string.cancel, null)
+                            .show();
                     return true;
                 });
         // Import backups
