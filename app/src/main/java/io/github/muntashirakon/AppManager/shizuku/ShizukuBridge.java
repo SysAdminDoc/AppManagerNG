@@ -165,6 +165,40 @@ public final class ShizukuBridge {
         }
     }
 
+    /**
+     * Best-effort version label for display. Falls back to the binder-reported
+     * API version when the Shizuku Manager package is hidden from
+     * {@code PackageManager} queries (the v13.6.0+ "Hide Shizuku" feature only
+     * removes the package from visibility — the binder remains reachable for
+     * authorized callers).
+     *
+     * <p>Output shapes:
+     * <ul>
+     *   <li>{@code "13.6.0"} — package query succeeded</li>
+     *   <li>{@code "api 14 (hidden)"} — package query failed, binder is alive</li>
+     *   <li>{@code null} — Shizuku is neither installed nor running</li>
+     * </ul>
+     */
+    @AnyThread
+    @Nullable
+    public static String getDisplayVersion(@NonNull Context context) {
+        return getDisplayVersion(getInstalledVersionName(context), getVersionOrZero(), isBinderAlive());
+    }
+
+    @VisibleForTesting
+    @Nullable
+    static String getDisplayVersion(@Nullable String installedVersionName,
+                                    int binderApiVersion,
+                                    boolean binderAlive) {
+        if (installedVersionName != null && !installedVersionName.isEmpty()) {
+            return installedVersionName;
+        }
+        if (binderAlive && binderApiVersion > 0) {
+            return "api " + binderApiVersion + " (hidden)";
+        }
+        return null;
+    }
+
     @AnyThread
     public static boolean isRecommendedManagerVersion(@NonNull Context context) {
         String versionName = getInstalledVersionName(context);
