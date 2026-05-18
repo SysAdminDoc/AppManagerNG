@@ -531,6 +531,11 @@
         <item quantity="one">%1$d tracker</item>
         <item quantity="other">%1$d trackers</item>
     </plurals>
+    <!-- Per-App Tracker Statistics Panel (T9/Low, iter-80) -->
+    <plurals name="tracker_breakdown_organizations">
+        <item quantity="one">%1$d organization</item>
+        <item quantity="other">%1$d organizations</item>
+    </plurals>
     <plurals name="no_of_components">
         <item quantity="one">%1$d component</item>
         <item quantity="other">%1$d components</item>
