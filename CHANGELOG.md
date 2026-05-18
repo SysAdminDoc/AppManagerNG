@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Hidden-Shizuku fork detection (2026-05-18)
+
+- Shizuku manager package discovery now resolves through the package declaring
+  `moe.shizuku.manager.permission.API_V23`, with a legacy service-permission
+  fallback before the canonical `moe.shizuku.privileged.api` package.
+- Version checks, trusted-WLAN auto-start/app-info fallbacks, and clear-data
+  authorization warnings now use the resolved manager package, so renamed
+  Hidden-Shizuku-style forks work without weakening the binder trust model.
+
 ### Added — Tasker parameterized automation intents (2026-05-18)
 
 - Public `am://` operation URIs now cover freeze, unfreeze, force-stop,

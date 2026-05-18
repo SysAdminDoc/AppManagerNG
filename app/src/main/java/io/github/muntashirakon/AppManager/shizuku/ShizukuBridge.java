@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
 import android.net.Uri;
 import android.os.Build;
@@ -36,7 +37,10 @@ public final class ShizukuBridge {
     private static final int SHIZUKU_13_6_API_VERSION = 13;
 
     public static final String PACKAGE_NAME = "moe.shizuku.privileged.api";
-    public static final String AUTO_START_ACTIVITY = PACKAGE_NAME + ".AUTO_START";
+    public static final String API_PERMISSION = "moe.shizuku.manager.permission.API_V23";
+    public static final String LEGACY_SERVICE_PERMISSION = "moe.shizuku.api.SHIZUKU_SERVICE";
+    private static final String AUTO_START_ACTIVITY_SUFFIX = ".AUTO_START";
+    public static final String AUTO_START_ACTIVITY = PACKAGE_NAME + AUTO_START_ACTIVITY_SUFFIX;
     public static final String PROVIDER_CLASS_NAME = "rikka.shizuku.ShizukuProvider";
     public static final String MIN_RECOMMENDED_MANAGER_VERSION = "13.6.0";
     public static final String PINNED_SAFE_MANAGER_VERSION = "13.5.4";
@@ -157,12 +161,59 @@ public final class ShizukuBridge {
     @AnyThread
     @Nullable
     public static String getInstalledVersionName(@NonNull Context context) {
+        String managerPackageName = getManagerPackageName(context);
+        String versionName = getInstalledVersionName(context, managerPackageName);
+        if (versionName != null || Objects.equals(PACKAGE_NAME, managerPackageName)) {
+            return versionName;
+        }
+        return getInstalledVersionName(context, PACKAGE_NAME);
+    }
+
+    @AnyThread
+    @NonNull
+    public static String getManagerPackageName(@NonNull Context context) {
+        PackageManager pm = context.getPackageManager();
+        return getManagerPackageName(getPermissionInfo(pm, API_PERMISSION),
+                getPermissionInfo(pm, LEGACY_SERVICE_PERMISSION));
+    }
+
+    @Nullable
+    private static String getInstalledVersionName(@NonNull Context context, @NonNull String packageName) {
         try {
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(PACKAGE_NAME, 0);
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(packageName, 0);
             return packageInfo.versionName;
         } catch (Throwable e) {
             return null;
         }
+    }
+
+    @Nullable
+    private static PermissionInfo getPermissionInfo(@NonNull PackageManager pm, @NonNull String permissionName) {
+        try {
+            return pm.getPermissionInfo(permissionName, 0);
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getManagerPackageName(@Nullable PermissionInfo apiPermission,
+                                        @Nullable PermissionInfo legacyServicePermission) {
+        String packageName = getPermissionOwnerPackageName(apiPermission);
+        if (packageName != null) {
+            return packageName;
+        }
+        packageName = getPermissionOwnerPackageName(legacyServicePermission);
+        return packageName != null ? packageName : PACKAGE_NAME;
+    }
+
+    @Nullable
+    private static String getPermissionOwnerPackageName(@Nullable PermissionInfo permissionInfo) {
+        if (permissionInfo == null || permissionInfo.packageName == null || permissionInfo.packageName.isEmpty()) {
+            return null;
+        }
+        return permissionInfo.packageName;
     }
 
     /**
@@ -215,11 +266,13 @@ public final class ShizukuBridge {
     @StringRes
     public static int getClearDataAuthorizationWarning(@NonNull Context context, @NonNull String packageName,
                                                        @Nullable PackageInfo packageInfo) {
-        int warning = getClearDataAuthorizationWarning(context.getPackageName(), packageName, false);
+        String managerPackageName = getManagerPackageName(context);
+        int warning = getClearDataAuthorizationWarning(context.getPackageName(), packageName,
+                managerPackageName, false);
         if (warning != 0) {
             return warning;
         }
-        return getClearDataAuthorizationWarning(context.getPackageName(), packageName,
+        return getClearDataAuthorizationWarning(context.getPackageName(), packageName, managerPackageName,
                 declaresShizukuProvider(packageInfo) || declaresShizukuProvider(context, packageName));
     }
 
@@ -268,20 +321,21 @@ public final class ShizukuBridge {
     @NonNull
     public static Intent getTrustedWlanAutoStartIntent(@NonNull Context context) {
         PackageManager pm = context.getPackageManager();
+        String managerPackageName = getManagerPackageName(context);
         // Roadmap tracks the explicit auto-start component; Shizuku v13.6.0
         // source does not expose it in every build, so fall back gracefully.
         Intent autoStartIntent = new Intent()
-                .setComponent(new ComponentName(PACKAGE_NAME, AUTO_START_ACTIVITY))
+                .setComponent(new ComponentName(managerPackageName, managerPackageName + AUTO_START_ACTIVITY_SUFFIX))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (autoStartIntent.resolveActivity(pm) != null) {
             return autoStartIntent;
         }
-        Intent launchIntent = pm.getLaunchIntentForPackage(PACKAGE_NAME);
+        Intent launchIntent = pm.getLaunchIntentForPackage(managerPackageName);
         if (launchIntent != null) {
             return launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
         return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                .setData(Uri.parse("package:" + PACKAGE_NAME))
+                .setData(Uri.parse("package:" + managerPackageName))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     }
 
@@ -373,10 +427,19 @@ public final class ShizukuBridge {
     @StringRes
     static int getClearDataAuthorizationWarning(@NonNull String appPackageName, @NonNull String targetPackageName,
                                                 boolean declaresShizukuProvider) {
+        return getClearDataAuthorizationWarning(appPackageName, targetPackageName, PACKAGE_NAME,
+                declaresShizukuProvider);
+    }
+
+    @VisibleForTesting
+    @StringRes
+    static int getClearDataAuthorizationWarning(@NonNull String appPackageName, @NonNull String targetPackageName,
+                                                @NonNull String managerPackageName,
+                                                boolean declaresShizukuProvider) {
         if (Objects.equals(appPackageName, targetPackageName)) {
             return R.string.shizuku_clear_data_self_warning;
         }
-        if (Objects.equals(PACKAGE_NAME, targetPackageName)) {
+        if (Objects.equals(PACKAGE_NAME, targetPackageName) || Objects.equals(managerPackageName, targetPackageName)) {
             return R.string.shizuku_clear_data_manager_warning;
         }
         if (declaresShizukuProvider) {
