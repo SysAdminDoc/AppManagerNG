@@ -7,10 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 122**. Iter-122 shipped the optional
-> sensitive-action authentication gate: Settings -> Privacy can now require
-> Android screen lock before final install, uninstall, and clear-data UI actions
-> while leaving the existing session lock as a separate setting.
+> Last consolidated: **2026-05-18 iter 123**. Iter-123 shipped the F-Droid 2.0
+> ROM repository preseed docs: downstream ROM builders now have JSON and legacy
+> XML templates, path guidance, and placeholder warnings for future production
+> AppManagerNG F-Droid repository metadata.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -162,6 +162,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-120/`](.ai/research/2026-05-18-iter-120/) | iter 120 | Amarok-style `pm hide` toggle: App Info Hide/Unhide quick action backed by `PackageManagerCompat.hidePackage()`, existing Hidden badge preserved, and freeze method state left untouched. |
 | [`.ai/research/2026-05-18-iter-121/`](.ai/research/2026-05-18-iter-121/) | iter 121 | Per-app language picker: App Info locale summary plus Android 13+ privileged `ILocaleManager` read/write for the selected package/user, searchable language options, and hidden API baseline coverage. |
 | [`.ai/research/2026-05-18-iter-122/`](.ai/research/2026-05-18-iter-122/) | iter 122 | Sensitive action authentication gate: optional Privacy toggle, shared `ActionAuthGate`, installer commit prompt, direct/batch uninstall prompt, and direct/batch clear-data prompt. |
+| [`.ai/research/2026-05-18-iter-123/`](.ai/research/2026-05-18-iter-123/) | iter 123 | F-Droid 2.0 ROM preseed docs: JSON and legacy XML repository templates, global/app-specific path guidance, README distribution link, and parser validation. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
