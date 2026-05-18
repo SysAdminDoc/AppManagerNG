@@ -240,6 +240,45 @@ public class OneClickOpsActivity extends BaseActivity {
                         mViewModel.listAppsInstalledByAmForDexOpt();
                     });
         }
+        // 1-click delete old backups (T6, Issue #387 [S33]). Three preset policies
+        // backed by the shared BackupRetentionPolicy engine so the same code path
+        // is exercised here and from Settings -> Backup -> "Apply retention now".
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.delete_old_backups),
+                        getString(R.string.delete_old_backups_description), R.drawable.ic_trash_can)
+                .setOnClickListener(v -> {
+                    final int[][] policies = {
+                            {1, 0},    // keep last 1 per bucket
+                            {3, 0},    // keep last 3 per bucket
+                            {0, 30},   // older than 30 days
+                            {0, 90},   // older than 90 days
+                    };
+                    CharSequence[] labels = {
+                            getString(R.string.delete_old_backups_keep_last_n, 1),
+                            getString(R.string.delete_old_backups_keep_last_n, 3),
+                            getString(R.string.delete_old_backups_older_than_days, 30),
+                            getString(R.string.delete_old_backups_older_than_days, 90),
+                    };
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.delete_old_backups)
+                            .setItems(labels, (dialog, which) -> {
+                                final int[] policy = policies[which];
+                                new MaterialAlertDialogBuilder(this)
+                                        .setTitle(R.string.delete_old_backups)
+                                        .setMessage(R.string.delete_old_backups_confirm)
+                                        .setPositiveButton(R.string.action_continue, (d, w) ->
+                                                io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
+                                                    int deleted = io.github.muntashirakon.AppManager.backup
+                                                            .BackupRetentionPolicy.pruneWithPolicy(policy[0], policy[1]);
+                                                    io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
+                                                            UIUtils.displayLongToast(getString(
+                                                                    R.string.backup_retention_prune_done, deleted)));
+                                                }))
+                                        .setNegativeButton(R.string.cancel, null)
+                                        .show();
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .show();
+                });
         setBusy(false);
     }
 
