@@ -797,6 +797,10 @@ public final class Prefs {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERSISTENT_SESSION_BOOL);
         }
 
+        public static boolean isActionAuthGateEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_ACTION_AUTH_GATE_BOOL);
+        }
+
         public static boolean isPermissionChangeMonitorEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_CHANGE_MONITOR_BOOL);
         }

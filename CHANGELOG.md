@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Sensitive action authentication gate (2026-05-18)
+
+- Settings -> Privacy now has an optional "Require authentication for app
+  changes" toggle for package/data-changing operations.
+- When enabled, installer commits, direct uninstall/update-removal, clear-data,
+  main-list batch uninstall/clear-data, quick uninstall, and one-click orphan
+  data cleanup require Android screen lock through `BiometricPrompt`.
+- The action gate is independent from the existing app/session lock, so users
+  can protect destructive operations without requiring authentication on every
+  AppManagerNG launch.
+
 ### Added — Per-app language picker (2026-05-18)
 
 - App Info now shows the selected package/user's Android 13+ per-app language,
