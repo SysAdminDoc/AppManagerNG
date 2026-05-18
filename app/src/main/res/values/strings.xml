@@ -2305,6 +2305,13 @@
     <string name="permission_change_monitor_body">%1$d new dangerous permission(s): %2$s</string>
     <!-- Install Source Attribution Detail (T9/shipped iter-77) -->
     <string name="install_source_initiator_cert_sha256">Cert SHA-256 · %1$s</string>
+    <!-- App Signing Key Change Alert (T9/Next, iter-78) -->
+    <string name="pref_signing_cert_change_monitor">Signing key change alert</string>
+    <string name="pref_signing_cert_change_monitor_msg">Notify when an installed app updates with a different signing certificate than the previously installed version. Opt-in; runs locally with no network use.</string>
+    <string name="signing_cert_change_replaced_title">%1$s replaced its signing key</string>
+    <string name="signing_cert_change_rotated_title">%1$s rotated its signing key</string>
+    <string name="signing_cert_change_replaced_body">New: %1$s. Removed: %2$s. Tap to review in App Details before trusting the update.</string>
+    <string name="signing_cert_change_rotated_body">Added signer: %1$s. Existing signers still trusted. (V3 key rotation.)</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>

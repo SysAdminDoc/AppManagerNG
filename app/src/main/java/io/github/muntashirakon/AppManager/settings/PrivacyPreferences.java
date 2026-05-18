@@ -180,6 +180,20 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
             return true;
         });
+        // Signing-cert change monitor (T9 sibling). Same toggle-then-prime pattern.
+        SwitchPreferenceCompat signingCertMonitor = requirePreference("signing_cert_change_monitor");
+        signingCertMonitor.setChecked(Prefs.Privacy.isSigningCertChangeMonitorEnabled());
+        signingCertMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            Prefs.Privacy.setSigningCertChangeMonitorEnabled(enabled);
+            if (enabled) {
+                Context appContext = requireContext().getApplicationContext();
+                ThreadUtils.postOnBackgroundThread(() ->
+                        io.github.muntashirakon.AppManager.permission.monitor.SigningCertChangeMonitor
+                                .primeSnapshotsForAllPackages(appContext));
+            }
+            return true;
+        });
         // Snapshot Bundle (export / import)
         requirePreference("snapshot_export").setOnPreferenceClickListener(preference -> {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
