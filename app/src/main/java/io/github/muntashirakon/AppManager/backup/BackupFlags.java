@@ -41,6 +41,7 @@ public final class BackupFlags {
             BACKUP_MULTIPLE,
             BACKUP_RULES,
             BACKUP_NO_SIGNATURE_CHECK,
+            BACKUP_SYSTEM_DATA,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface BackupFlag {
@@ -63,6 +64,7 @@ public final class BackupFlags {
     public static final int BACKUP_EXTRAS = 1 << 10;
     public static final int BACKUP_CACHE = 1 << 11;
     public static final int BACKUP_ADB_DATA = 1 << 12;
+    public static final int BACKUP_SYSTEM_DATA = 1 << 13;
 
     private static final LinkedHashMap<Integer, Pair<Integer, Integer>> sBackupFlagsMap = new LinkedHashMap<Integer, Pair<Integer, Integer>>() {{
         put(BACKUP_APK_FILES, new Pair<>(R.string.backup_apk_files, R.string.backup_apk_files_description));
@@ -73,6 +75,7 @@ public final class BackupFlags {
         put(BACKUP_CACHE, new Pair<>(R.string.backup_cache, R.string.backup_cache_description));
         put(BACKUP_EXTRAS, new Pair<>(R.string.backup_extras, R.string.backup_extras_description));
         put(BACKUP_RULES, new Pair<>(R.string.rules, R.string.backup_rules_description));
+        put(BACKUP_SYSTEM_DATA, new Pair<>(R.string.backup_system_data, R.string.backup_system_data_description));
         put(BACKUP_MULTIPLE, new Pair<>(R.string.backup_multiple, R.string.backup_multiple_description));
         put(BACKUP_CUSTOM_USERS, new Pair<>(R.string.backup_custom_users, R.string.backup_custom_users_description));
         put(BACKUP_NO_SIGNATURE_CHECK, new Pair<>(R.string.skip_signature_checks, R.string.backup_skip_signature_checks_description));
@@ -103,6 +106,9 @@ public final class BackupFlags {
         backupFlags.add(BACKUP_CACHE);
         backupFlags.add(BACKUP_EXTRAS);
         backupFlags.add(BACKUP_RULES);
+        if (SystemDataBackup.canBackUpSystemData()) {
+            backupFlags.add(BACKUP_SYSTEM_DATA);
+        }
         backupFlags.add(BACKUP_MULTIPLE);
         if (Users.getUsersIds().length > 1) {
             // Display custom users only if multiple users present
@@ -139,6 +145,9 @@ public final class BackupFlags {
         }
         if ((flags & BACKUP_RULES) != 0) {
             backupFlags.add(BACKUP_RULES);
+        }
+        if ((flags & BACKUP_SYSTEM_DATA) != 0) {
+            backupFlags.add(BACKUP_SYSTEM_DATA);
         }
         if ((flags & BACKUP_MULTIPLE) != 0) {
             backupFlags.add(BACKUP_MULTIPLE);
@@ -232,7 +241,8 @@ public final class BackupFlags {
     }
 
     public boolean backupData() {
-        return backupInternalData() || backupExternalData() || backupAdbData() || backupMediaObb();
+        return backupInternalData() || backupExternalData() || backupAdbData() || backupMediaObb()
+                || backupSystemData();
     }
 
     public boolean backupRules() {
@@ -245,6 +255,10 @@ public final class BackupFlags {
 
     public boolean backupCache() {
         return (mFlags & BACKUP_CACHE) != 0;
+    }
+
+    public boolean backupSystemData() {
+        return (mFlags & BACKUP_SYSTEM_DATA) != 0;
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -294,6 +308,10 @@ public final class BackupFlags {
         }
         if (backupCache()) {
             sb.append(append ? "+" : "").append("Caches");
+            append = true;
+        }
+        if (backupSystemData()) {
+            sb.append(append ? "+" : "").append("System");
         }
         return sb;
     }
@@ -307,6 +325,9 @@ public final class BackupFlags {
         }
         if (Users.getUsersIds().length == 1) {
             flags &= ~BACKUP_CUSTOM_USERS;
+        }
+        if (!SystemDataBackup.canBackUpSystemData()) {
+            flags &= ~BACKUP_SYSTEM_DATA;
         }
         return migrate(flags);
     }
