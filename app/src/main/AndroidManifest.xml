@@ -231,9 +231,17 @@
             <intent-filter>
                 <action android:name="io.github.muntashirakon.AppManager.shortcut.action.OPEN_ONE_CLICK_OPS" />
                 <action android:name="io.github.muntashirakon.AppManager.shortcut.action.OPEN_FINDER" />
+                <action android:name="io.github.muntashirakon.AppManager.shortcut.action.RUN_SCHEDULED_BACKUP" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".shortcut.AutoBackupShortcutActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground" />
         <activity
             android:name=".shortcut.AppActionShortcutActivity"
             android:excludeFromRecents="true"

@@ -60,4 +60,17 @@
             android:targetPackage="${applicationId}" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_backup_restore"
+        android:shortcutId="scheduled_auto_backup_run_now"
+        android:shortcutLongLabel="@string/shortcut_auto_backup_long"
+        android:shortcutShortLabel="@string/shortcut_auto_backup_short">
+        <intent
+            android:action="io.github.muntashirakon.AppManager.shortcut.action.RUN_SCHEDULED_BACKUP"
+            android:targetClass="io.github.muntashirakon.AppManager.shortcut.ShortcutDispatchActivity"
+            android:targetPackage="${applicationId}" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
 </shortcuts>
