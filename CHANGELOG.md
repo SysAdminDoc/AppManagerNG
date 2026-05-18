@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Persistent ADB tcpip setup path (2026-05-18)
+
+- Onboarding now probes `127.0.0.1:5555` for an existing fixed
+  `adb tcpip 5555` session.
+- When reachable, the ADB-over-TCP card shows a **Use tcpip 5555** action and
+  the Wireless ADB setup path offers the existing session before pairing.
+- The action switches to ADB-over-TCP, pins port 5555, and reuses the existing
+  LocalServer ADB connection flow.
+
 ### Changed — AES backup archive-key derivation (2026-05-18)
 
 - New AES-mode backups now use metadata version 7 and derive a per-archive

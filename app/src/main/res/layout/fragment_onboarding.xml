@@ -453,6 +453,18 @@
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="USB debugging enabled" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/action_use_adb_tcpip"
+                        style="@style/Widget.AppTheme.Button.TextButton.Icon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="@dimen/padding_very_small"
+                        android:minHeight="40dp"
+                        android:text="@string/onboarding_adb_tcpip_use_existing"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_link"
+                        tools:visibility="visible" />
+
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
                 <androidx.appcompat.widget.AppCompatImageButton
