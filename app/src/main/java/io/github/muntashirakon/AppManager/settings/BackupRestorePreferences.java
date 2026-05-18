@@ -417,10 +417,11 @@ public class BackupRestorePreferences extends PreferenceFragment {
         Preference scheduleTime = requirePreference("backup_schedule_time");
         SwitchPreferenceCompat scheduleRequireCharging = requirePreference("backup_schedule_require_charging");
         Preference scheduleNetwork = requirePreference("backup_schedule_network");
+        Preference scheduleMinimumAge = requirePreference("backup_schedule_minimum_age");
         Preference scheduleRunNow = requirePreference("backup_schedule_run_now");
         Preference scheduleShortcut = requirePreference("backup_schedule_shortcut");
         Preference scheduleStatus = requirePreference("backup_schedule_status");
-        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
         refreshScheduledBackupDiagnostics();
         scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
         scheduleRequireCharging.setChecked(Prefs.BackupRestore.isScheduledBackupChargingRequired());
@@ -428,7 +429,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             boolean enabled = (Boolean) newValue;
             Prefs.BackupRestore.setScheduledAutoBackupEnabled(enabled);
             AutoBackupScheduler.scheduleOrCancel(requireContext());
-            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
             refreshScheduledBackupDiagnostics();
             if (enabled) {
                 ensureScheduledBackupBatteryExemption();
@@ -442,7 +443,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 Prefs.BackupRestore.setScheduledBackupHour(selectedHour);
                 Prefs.BackupRestore.setScheduledBackupMinute(selectedMinute);
                 AutoBackupScheduler.scheduleOrCancel(requireContext());
-                updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+                updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
                 refreshScheduledBackupDiagnostics();
             }, hour, minute, android.text.format.DateFormat.is24HourFormat(requireContext())).show();
             return true;
@@ -450,7 +451,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
         scheduleRequireCharging.setOnPreferenceChangeListener((preference, newValue) -> {
             Prefs.BackupRestore.setScheduledBackupChargingRequired((Boolean) newValue);
             AutoBackupScheduler.scheduleOrCancel(requireContext());
-            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
             refreshScheduledBackupDiagnostics();
             return true;
         });
@@ -468,8 +469,25 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                         Prefs.BackupRestore.setScheduledBackupNetworkType(values[which]);
                         AutoBackupScheduler.scheduleOrCancel(requireContext());
-                        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+                        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
                         refreshScheduledBackupDiagnostics();
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        scheduleMinimumAge.setOnPreferenceClickListener(preference -> {
+            int[] values = {0, 1, 3, 7, 14, 30};
+            CharSequence[] labels = getScheduledBackupMinimumAgeLabels();
+            int current = Prefs.BackupRestore.getScheduledBackupMinimumAgeDays();
+            int checked = indexOf(values, current);
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_backup_schedule_minimum_age)
+                    .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                        Prefs.BackupRestore.setScheduledBackupMinimumAgeDays(values[which]);
+                        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge,
+                                scheduleStatus);
                         dialog.dismiss();
                     })
                     .setNegativeButton(R.string.cancel, null)
@@ -480,7 +498,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             AutoBackupScheduler.enqueueManualRun(requireContext());
             io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
                     R.string.pref_backup_schedule_run_now_queued);
-            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
             refreshScheduledBackupDiagnostics();
             return true;
         });
@@ -528,9 +546,10 @@ public class BackupRestorePreferences extends PreferenceFragment {
     private void refreshScheduledBackupSummaries() {
         Preference scheduleTime = findPreference("backup_schedule_time");
         Preference scheduleNetwork = findPreference("backup_schedule_network");
+        Preference scheduleMinimumAge = findPreference("backup_schedule_minimum_age");
         Preference scheduleStatus = findPreference("backup_schedule_status");
-        if (scheduleTime != null && scheduleNetwork != null && scheduleStatus != null) {
-            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+        if (scheduleTime != null && scheduleNetwork != null && scheduleMinimumAge != null && scheduleStatus != null) {
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
         }
     }
 
@@ -557,15 +576,18 @@ public class BackupRestorePreferences extends PreferenceFragment {
 
     private void updateScheduledBackupSummaries(@NonNull Preference scheduleTime,
                                                 @NonNull Preference scheduleNetwork,
+                                                @NonNull Preference scheduleMinimumAge,
                                                 @NonNull Preference scheduleStatus) {
         String time = AutoBackupScheduler.formatScheduleTime(requireContext());
         String network = getScheduledBackupNetworkLabel(Prefs.BackupRestore.getScheduledBackupNetworkType());
+        String minimumAge = getScheduledBackupMinimumAgeLabel(Prefs.BackupRestore.getScheduledBackupMinimumAgeDays());
         String charging = getString(Prefs.BackupRestore.isScheduledBackupChargingRequired()
                 ? R.string.pref_backup_schedule_charging_required
                 : R.string.pref_backup_schedule_charging_not_required);
         String battery = getScheduledBackupBatteryOptimizationLabel();
         scheduleTime.setSummary(time);
         scheduleNetwork.setSummary(network);
+        scheduleMinimumAge.setSummary(minimumAge);
         long lastRun = Prefs.BackupRestore.getScheduledBackupLastRun();
         String lastResult = Prefs.BackupRestore.getScheduledBackupLastResult();
         String lastRunSummary;
@@ -581,7 +603,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
                         ? R.string.pref_backup_schedule_state_enabled
                         : R.string.pref_backup_schedule_state_disabled),
-                time, charging, network, battery, getScheduledBackupDiagnosticsSummary(), lastRunSummary));
+                time, charging, network, minimumAge, battery, getScheduledBackupDiagnosticsSummary(), lastRunSummary));
     }
 
     @NonNull
@@ -604,6 +626,27 @@ public class BackupRestorePreferences extends PreferenceFragment {
             default:
                 return getString(R.string.pref_backup_schedule_network_not_required);
         }
+    }
+
+    @NonNull
+    private CharSequence[] getScheduledBackupMinimumAgeLabels() {
+        return new CharSequence[]{
+                getString(R.string.pref_backup_schedule_minimum_age_always),
+                getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days, 1, 1),
+                getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days, 3, 3),
+                getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days, 7, 7),
+                getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days, 14, 14),
+                getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days, 30, 30),
+        };
+    }
+
+    @NonNull
+    private String getScheduledBackupMinimumAgeLabel(int days) {
+        int sanitizedDays = AutoBackupScheduler.sanitizeMinimumAgeDays(days);
+        return sanitizedDays <= 0
+                ? getString(R.string.pref_backup_schedule_minimum_age_always)
+                : getResources().getQuantityString(R.plurals.pref_backup_schedule_minimum_age_days,
+                        sanitizedDays, sanitizedDays);
     }
 
     @NonNull

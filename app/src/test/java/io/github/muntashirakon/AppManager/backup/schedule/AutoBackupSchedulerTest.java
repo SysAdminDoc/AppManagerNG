@@ -8,12 +8,18 @@ import androidx.work.NetworkType;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.db.entity.Backup;
+import io.github.muntashirakon.AppManager.types.UserPackagePair;
+
 public class AutoBackupSchedulerTest {
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+    private static final long DAY = TimeUnit.DAYS.toMillis(1);
 
     @Test
     public void initialDelayUsesLaterTodayWhenTargetIsFuture() {
@@ -45,6 +51,9 @@ public class AutoBackupSchedulerTest {
         assertEquals(23, AutoBackupScheduler.sanitizeHour(90));
         assertEquals(0, AutoBackupScheduler.sanitizeMinute(-1));
         assertEquals(59, AutoBackupScheduler.sanitizeMinute(90));
+        assertEquals(0, AutoBackupScheduler.sanitizeMinimumAgeDays(-1));
+        assertEquals(AutoBackupScheduler.MAX_MINIMUM_AGE_DAYS,
+                AutoBackupScheduler.sanitizeMinimumAgeDays(AutoBackupScheduler.MAX_MINIMUM_AGE_DAYS + 1));
     }
 
     @Test
@@ -58,6 +67,52 @@ public class AutoBackupSchedulerTest {
         assertEquals(NetworkType.NOT_REQUIRED, AutoBackupScheduler.toWorkNetworkType(99));
     }
 
+    @Test
+    public void newestBackupWithinMinimumAgeIsSkipped() {
+        long now = 10 * DAY;
+        AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
+                Arrays.asList(pair("com.fresh", 0), pair("com.stale", 0), pair("com.unknown", 0)),
+                Arrays.asList(
+                        backup("com.fresh", 0, now - 2 * DAY),
+                        backup("com.fresh", 0, now - TimeUnit.HOURS.toMillis(6)),
+                        backup("com.stale", 0, now - 3 * DAY),
+                        backup("com.unknown", 0, 0)),
+                1,
+                now);
+
+        assertEquals(1, selection.getSkippedPackages());
+        assertEquals(2, selection.getDuePackages().size());
+        assertEquals("com.stale", selection.getDuePackages().get(0).getPackageName());
+        assertEquals("com.unknown", selection.getDuePackages().get(1).getPackageName());
+    }
+
+    @Test
+    public void ageGateIsPerUser() {
+        long now = 10 * DAY;
+        AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
+                Arrays.asList(pair("com.multi", 0), pair("com.multi", 10)),
+                Collections.singletonList(backup("com.multi", 0, now - TimeUnit.HOURS.toMillis(1))),
+                1,
+                now);
+
+        assertEquals(1, selection.getSkippedPackages());
+        assertEquals(1, selection.getDuePackages().size());
+        assertEquals(10, selection.getDuePackages().get(0).getUserId());
+    }
+
+    @Test
+    public void zeroMinimumAgeKeepsEveryPackageDue() {
+        long now = 10 * DAY;
+        AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
+                Collections.singletonList(pair("com.fresh", 0)),
+                Collections.singletonList(backup("com.fresh", 0, now - TimeUnit.HOURS.toMillis(1))),
+                0,
+                now);
+
+        assertEquals(0, selection.getSkippedPackages());
+        assertEquals(1, selection.getDuePackages().size());
+    }
+
     private static long millis(int year, int month, int day, int hour, int minute) {
         Calendar calendar = Calendar.getInstance(UTC);
         calendar.set(Calendar.YEAR, year);
@@ -68,5 +123,18 @@ public class AutoBackupSchedulerTest {
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTimeInMillis();
+    }
+
+    private static UserPackagePair pair(String packageName, int userId) {
+        return new UserPackagePair(packageName, userId);
+    }
+
+    private static Backup backup(String packageName, int userId, long backupTime) {
+        Backup backup = new Backup();
+        backup.packageName = packageName;
+        backup.userId = userId;
+        backup.backupName = "";
+        backup.backupTime = backupTime;
+        return backup;
     }
 }
