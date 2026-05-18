@@ -165,6 +165,21 @@ public class PrivacyPreferences extends PreferenceFragment {
             startActivity(new Intent(requireContext(), AuthManagerActivity.class));
             return true;
         });
+        // Permission change monitor (T9). Toggling ON primes the snapshot store so
+        // the very next package update has a known-good baseline to diff against.
+        SwitchPreferenceCompat permissionMonitor = requirePreference("permission_change_monitor");
+        permissionMonitor.setChecked(Prefs.Privacy.isPermissionChangeMonitorEnabled());
+        permissionMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            Prefs.Privacy.setPermissionChangeMonitorEnabled(enabled);
+            if (enabled) {
+                Context appContext = requireContext().getApplicationContext();
+                ThreadUtils.postOnBackgroundThread(() ->
+                        io.github.muntashirakon.AppManager.permission.monitor.PermissionChangeMonitor
+                                .primeSnapshotsForAllPackages(appContext));
+            }
+            return true;
+        });
         // Snapshot Bundle (export / import)
         requirePreference("snapshot_export").setOnPreferenceClickListener(preference -> {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
