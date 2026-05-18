@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Info cleartext deprecation badge (2026-05-18)
+
+- App Info now shows a caution tag when a package opts into manifest-wide
+  cleartext traffic without declaring a Network Security Config.
+- The tag explains Android 17's Android-18 deprecation warning and recommends
+  scoping any required HTTP traffic to explicit domains.
+- Added hidden-API access for `ApplicationInfo.networkSecurityConfigRes` and a
+  focused unit test for the cleartext/no-config warning predicate.
+
 ### Compliance — Android 17 ML-DSA certificate names (2026-05-18)
 
 - Closed the Android 17 ML-DSA certificate OID roadmap row as already

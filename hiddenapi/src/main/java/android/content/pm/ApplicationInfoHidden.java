@@ -60,6 +60,9 @@ public class ApplicationInfoHidden {
     @Nullable
     public String primaryCpuAbi;
 
+    @RequiresApi(Build.VERSION_CODES.N)
+    public int networkSecurityConfigRes;
+
     @RequiresApi(Build.VERSION_CODES.Q)
     @Nullable
     public String zygotePreloadName;
