@@ -6,13 +6,11 @@ import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.util.Pair;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
@@ -90,12 +88,12 @@ public class AppsProfileActivity extends AppsBaseProfileActivity {
         model.observeInstalledApps().observe(this, itemPairs -> {
             ArrayList<String> items = new ArrayList<>(itemPairs.size());
             ArrayList<CharSequence> itemNames = new ArrayList<>(itemPairs.size());
-            for (Pair<CharSequence, ApplicationInfo> itemPair : itemPairs) {
-                items.add(itemPair.second.packageName);
-                boolean isSystem = (itemPair.second.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-                itemNames.add(new SpannableStringBuilder(itemPair.first)
+            for (AppsProfileViewModel.SelectablePackageItem item : itemPairs) {
+                items.add(item.packageName);
+                int sourceLabel = item.backupOnly ? R.string.backup_only : (item.system ? R.string.system : R.string.user);
+                itemNames.add(new SpannableStringBuilder(item.label)
                         .append("\n")
-                        .append(getSmallerText(getString(isSystem ? R.string.system : R.string.user))));
+                        .append(getSmallerText(getString(sourceLabel))));
             }
             progressIndicator.hide();
             new SearchableMultiChoiceDialogBuilder<>(this, items, itemNames)
