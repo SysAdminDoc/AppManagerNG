@@ -2,7 +2,9 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-17 — Iter-83 closed the T12 **Per-Lib 16 KB Page-Alignment Indicator** row as already-implemented: the iter-32 commit `df236b6` shipped both the release-gate `verify-native-page-alignment.py` check AND the per-lib UI indicator in `NativeLibraries.ElfLib.toLocalizedString` (lines 335-338), which emits a localised "16 KB aligned" / "16 KB not aligned" badge per `.so` on the App Details libraries tab.
+**Last updated:** 2026-05-17 — Iter-84 closed the T13 **File Hash Display** row as already-implemented: `ChecksumsDialogFragment` already surfaces MD5 / SHA-1 / SHA-256 / SHA-512 / SHA3-256 / SHA3-512 for any file selected in the File Manager, with MD5 and SHA-1 labelled "unreliable" to nudge toward modern algorithms.
+
+**Prior (iter-83, 2026-05-17 earlier):** Closed the T12 **Per-Lib 16 KB Page-Alignment Indicator** row as already-implemented: the iter-32 commit `df236b6` shipped both the release-gate `verify-native-page-alignment.py` check AND the per-lib UI indicator in `NativeLibraries.ElfLib.toLocalizedString` (lines 335-338), which emits a localised "16 KB aligned" / "16 KB not aligned" badge per `.so` on the App Details libraries tab.
 
 **Prior (iter-82, 2026-05-17 earlier):** Closed the T13 **File MIME Type Recognition** row as already-implemented: `FilePropertiesDialogFragment` already renders `<content-type-name> (<mime-type>)` via `PathContentInfo.getMimeType()`, and `OpenWithDialogFragment` routes intents from the same MIME source. Row verified during iter-82 audit; no code change shipped.
 
@@ -410,7 +412,7 @@ Upstream lists "database viewer and editor" in Upcoming Features (Issue #14 [S11
 | **Database Editor** | Write capability after viewer is stable | High | DB Viewer |
 | **DocumentsProvider** | Implement proper `DocumentsProvider` for third-party file manager access (FmProvider.java TODO, Issue #516 [S06], 7 reactions) | High | — |
 | **File Manager Compression** | ZIP/tar archive creation and extraction in built-in file manager | Medium | — |
-| **File Hash Display** | SHA-256/MD5 display for files viewed in file manager | Low | — |
+| ~~**File Hash Display**~~ ✅ closed 2026-05-17 (iter-84, already implemented) | [`fm/dialogs/ChecksumsDialogFragment`](app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/ChecksumsDialogFragment.java) already exposes MD5, SHA-1, SHA-256, SHA-512, SHA3-256, and SHA3-512 for any file selected in the File Manager (marking MD5 and SHA-1 as "unreliable" to nudge users toward modern algorithms). Row covered in full; no code change shipped. | Low | — |
 | ~~**File MIME Type Recognition**~~ ✅ closed 2026-05-17 (iter-82, already implemented) | The File Manager already has full MIME-type infrastructure via `io.github.muntashirakon.io.PathContentInfo` (`getMimeType` / `getName` / `getMessage`). [`FilePropertiesDialogFragment` line 208](app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/FilePropertiesDialogFragment.java#L208) renders `<content-type-name> (<mime-type>)` in the type field (e.g. "Android Package archive (application/vnd.android.package-archive)" for APK files), and [`OpenWithDialogFragment`](app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/OpenWithDialogFragment.java) routes the right intent based on the same `PathContentInfo` MIME. Row verified during iter-82 audit; no code change shipped. Termux v0.118.3 model ([S91]). | Low | — |
 
 ### T14 — Terminal & Code Editor Polish
@@ -1007,6 +1009,12 @@ The external sweep deliberately re-checked the **Material Components 1.14.0** ce
 |------|--------|
 | **Embedded / Scoped Shizuku (Code-on-the-Go pattern)** | Some apps (e.g. the Code on the Go IDE highlighted on HN [S360]) ship a forked/scoped Shizuku embedded inside their own APK rather than depending on a user-installed Shizuku. **WONTFIX for NG.** The security model requires Shizuku to be a separate, user-authorized binder — embedding it inside a package manager creates a confused-deputy attack surface where any Shizuku-relayed call could be misattributed to NG's package identity, and the user loses the ability to revoke privilege at the Shizuku Manager level without uninstalling AppManagerNG. NG already detects "Hidden Shizuku" forks (iter-25 row) — that's the correct integration surface, not embedding. |
 | **ShizuWall-Pattern Native Per-App Firewall** | ShizuWall v4.5 (2026-05-06) [S361] now offers a composite Hybrid policy combinator and screen-lock-mode netblock. **WONTFIX for NG.** Firewall is explicitly out-of-scope per the existing T9 design — NG already cites ShizuWall and de1984 as the canonical complements ([S156], [S157]). Re-implementing a per-app firewall in NG would (a) duplicate maintenance of NetworkPolicy/`VpnService` paths that ShizuWall already handles, (b) compete with rather than complement the recommended Shizuku-ecosystem tools, and (c) violate the "complement, not replicate" rule applied to Aurora / F-Droid (see existing Rejected row "Full on-device app store"). |
+
+### Iter-84 Closures (2026-05-17)
+
+| Item | Result |
+|------|--------|
+| **File Hash Display** | Audited and closed as already-implemented: `ChecksumsDialogFragment` already exposes MD5 / SHA-1 / SHA-256 / SHA-512 / SHA3-256 / SHA3-512 from the File Manager file-selection surface. MD5 / SHA-1 are flagged as "unreliable" in the dropdown so users default to modern algorithms. No code change shipped. |
 
 ### Iter-83 Closures (2026-05-17)
 
