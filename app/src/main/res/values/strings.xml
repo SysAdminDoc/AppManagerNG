@@ -2274,6 +2274,10 @@
     <string name="snapshot_import_in_progress">Importing snapshot…</string>
     <string name="snapshot_import_done">Snapshot imported · prefs: %1$d · profiles: %2$d · history rows: %3$d</string>
     <string name="snapshot_import_failed">Could not import snapshot bundle: %1$s</string>
+    <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
+    <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
+    <string name="profiles_external_import_done">Imported %2$d packages (%1$s)</string>
+    <string name="profiles_external_import_failed">External profile import failed · %1$s</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
