@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Roadmap triage (2026-05-18)
+
+- Parked the two JADX 1.5.5 viewer-follow-up rows until NG has the planned
+  T12 JADX viewer or external JADX handoff surface to attach `.apks` ingestion,
+  UI zoom, and FlatLaf CJK-font behavior to.
+
 ### Added — App Info SELinux context display (2026-05-18)
 
 - App Info now surfaces SELinux policy info, file contexts for the app's data
