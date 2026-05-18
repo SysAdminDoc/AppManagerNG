@@ -2,11 +2,13 @@
 
 package io.github.muntashirakon.AppManager.miui;
 
-import android.util.SparseArray;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Human-readable display names for MIUI's extended AppOps integer codes
@@ -35,7 +37,7 @@ public final class MiuiAppOpsNames {
     static final int MIUI_OP_END = 10040;
 
     @NonNull
-    private static final SparseArray<String> NAMES = build();
+    private static final Map<Integer, String> NAMES = build();
 
     private MiuiAppOpsNames() {
     }
@@ -63,8 +65,8 @@ public final class MiuiAppOpsNames {
     }
 
     @NonNull
-    private static SparseArray<String> build() {
-        SparseArray<String> m = new SparseArray<>(40);
+    private static Map<Integer, String> build() {
+        Map<Integer, String> m = new HashMap<>(40);
         m.put(10001, "MIUI: Change Wi-Fi state");
         m.put(10002, "MIUI: Change Bluetooth state");
         m.put(10003, "MIUI: Change mobile data");
@@ -104,6 +106,6 @@ public final class MiuiAppOpsNames {
         m.put(10037, "MIUI: Read clipboard");
         m.put(10038, "MIUI: Post notification");
         m.put(10039, "MIUI: Device info");
-        return m;
+        return Collections.unmodifiableMap(m);
     }
 }

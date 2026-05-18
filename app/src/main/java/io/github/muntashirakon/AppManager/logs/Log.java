@@ -40,8 +40,8 @@ public class Log extends Logger {
         File logFile;
         try {
             logFile = new File(getLoggingDirectory(), "am.log");
-        } catch (SecurityException e) {
-            // Remote side doesn't have a logging directory
+        } catch (RuntimeException e) {
+            // Remote/test side doesn't always have an application context or logging directory.
             logFile = null;
         }
         LOG_FILE = logFile;
