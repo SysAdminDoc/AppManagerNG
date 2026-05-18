@@ -277,6 +277,14 @@ public class AppOpsManagerCompat {
 
     @NonNull
     public static String opToName(int op) {
+        // MIUI extended op codes (10001-10039) return only their raw constant
+        // token from the framework — substitute the user-facing label when one
+        // is in our lookup so the App Details AppOps tab on Xiaomi devices is
+        // readable without external reference.
+        String miuiName = io.github.muntashirakon.AppManager.miui.MiuiAppOpsNames.getNameOrNull(op);
+        if (miuiName != null) {
+            return miuiName;
+        }
         return AppOpsManagerHidden.opToName(op);
     }
 
