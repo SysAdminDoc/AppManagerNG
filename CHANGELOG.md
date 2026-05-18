@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — WebDAV certificate-trust posture (2026-05-18)
+
+- Closed the Material Files self-signed WebDAV certificate-trust roadmap row as
+  covered by the provider-backed network destination path.
+- SMB/WebDAV/SFTP/cloud backup destinations now rely on the selected
+  DocumentsProvider app for TLS handshakes and user-installed CA trust.
+- Native `KeyChain.getCertificateChain()` handling remains attached to future
+  first-party WebDAV/provider work rather than the current SAF-backed backup
+  engine.
+
 ### Added — provider-backed network backup destination (2026-05-18)
 
 - Settings -> Backup/Restore now has a Network backup destination action for
