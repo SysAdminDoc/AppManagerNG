@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — scheduled backup battery optimization guardrail (2026-05-18)
+
+- Enabling Scheduled Auto-Backup now checks whether AppManagerNG is exempt from
+  Android battery optimization.
+- If the active privilege path can grant `DEVICE_POWER`, the schedule setup
+  reuses `SelfBatteryOptimization.autoFixIfPossible()` to exempt the app
+  without opening Android settings.
+- If the privileged fix is unavailable or refused, Settings -> Backup shows a
+  scheduled-backup-specific prompt that opens Android's exemption request.
+- The schedule status row now shows the current battery state so users can see
+  whether Android may pause scheduled backups while idle.
+
 ### Added — Scheduled auto-backup core (2026-05-18)
 
 - Added a WorkManager-backed scheduled backup engine with a daily time-of-day
