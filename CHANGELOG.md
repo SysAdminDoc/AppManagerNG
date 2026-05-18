@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — settings snapshot portability (2026-05-18)
+
+- Snapshot exports now include blocking/freeze rule TSV files from
+  AppManagerNG's rule configuration directory.
+- Snapshot imports now merge SharedPreferences keys and rule rows into the
+  current install instead of blindly replacing those local stores.
+- Snapshot UI copy and completion toasts now account for rule files and clearly
+  distinguish merged preferences/rules from overwritten profile/tag files.
+
 ### Added — per-app rollback from operation history (2026-05-18)
 
 - App Details now exposes "Revert AppManager changes" for the selected package

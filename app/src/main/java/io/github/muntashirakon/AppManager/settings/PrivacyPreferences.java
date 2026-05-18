@@ -230,6 +230,7 @@ public class PrivacyPreferences extends PreferenceFragment {
                     getString(R.string.snapshot_export_done,
                             finalResult.prefsCount,
                             finalResult.profilesCount,
+                            finalResult.rulesCount,
                             finalResult.opHistoryCount),
                     Toast.LENGTH_LONG).show();
         });
@@ -265,6 +266,7 @@ public class PrivacyPreferences extends PreferenceFragment {
                     getString(R.string.snapshot_import_done,
                             finalResult.prefsRestored,
                             finalResult.profilesRestored,
+                            finalResult.rulesRestored,
                             finalResult.opHistoryRestored),
                     Toast.LENGTH_LONG).show();
         });
