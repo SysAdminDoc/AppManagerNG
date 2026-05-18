@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Quick assist action sheet (2026-05-18)
+
+- Registered a dedicated `android.intent.action.ASSIST` activity so the
+  Digital Assistant gesture can open AppManagerNG's foreground-app quick sheet.
+- The assist flow resolves the target package from platform assist extras first,
+  then falls back to recent usage events when Usage Access is available.
+- The quick sheet offers Force Stop, Freeze/Unfreeze, and Open app details
+  actions according to the active privilege path, with a Running Apps fallback
+  when no foreground target can be identified.
+
 ### Changed — Roadmap triage (2026-05-18)
 
 - Parked the two JADX 1.5.5 viewer-follow-up rows until NG has the planned

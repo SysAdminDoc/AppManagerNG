@@ -950,6 +950,11 @@
     <string name="quick_freeze_tile_no_profile">Choose a freeze profile before using this tile.</string>
     <string name="quick_freeze_tile_profile_missing">The selected freeze profile is missing. Choose another profile.</string>
     <string name="quick_freeze_tile_started">Started freeze profile: %1$s</string>
+    <string name="quick_assist_title">Quick assist</string>
+    <string name="quick_assist_title_for_app">Quick assist: <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
+    <string name="quick_assist_target_message">Target package: <xliff:g id="package_name" example="com.example.app">%1$s</xliff:g></string>
+    <string name="quick_assist_no_target_title">No foreground app detected</string>
+    <string name="quick_assist_no_target_message">AppManagerNG could not identify the app that was active before assist opened. Open Running apps to choose a process manually.</string>
     <string name="profile_apply_load_failed">Could not load this profile. It may have been moved or deleted.</string>
     <string name="profile_apply_invalid_shortcut">This profile shortcut is no longer valid.</string>
     <string name="keystore">KeyStore</string>
