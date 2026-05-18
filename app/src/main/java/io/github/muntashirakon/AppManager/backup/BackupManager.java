@@ -50,6 +50,8 @@ public class BackupManager {
     }
 
     private boolean mRequiresRestart;
+    @NonNull
+    private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
 
     public BackupManager() {
         ExUtils.exceptionAsIgnored(BackupItems::createNoMediaIfNotExists);
@@ -57,6 +59,11 @@ public class BackupManager {
 
     public boolean requiresRestart() {
         return mRequiresRestart;
+    }
+
+    @NonNull
+    public List<DefaultAppRoleBackupHelper.RoleRebindRequest> getPendingDefaultRoleRebindRequests() {
+        return new ArrayList<>(mPendingDefaultRoleRebindRequests);
     }
 
     public void backup(@NonNull BackupOpOptions options, @Nullable ProgressHandler progressHandler)
@@ -114,6 +121,7 @@ public class BackupManager {
         if (options.flags.isEmpty()) {
             throw new BackupException("Restore is requested without any flags.");
         }
+        mPendingDefaultRoleRebindRequests.clear();
         BackupItems.BackupItem backupItem;
         try {
             if (options.relativeDir != null) {
@@ -138,6 +146,7 @@ public class BackupManager {
         try (RestoreOp restoreOp = new RestoreOp(options.packageName, options.flags, backupItem, options.userId)) {
             restoreOp.runRestore(progressHandler);
             mRequiresRestart |= restoreOp.requiresRestart();
+            mPendingDefaultRoleRebindRequests.addAll(restoreOp.getPendingDefaultRoleRebindRequests());
         }
     }
 

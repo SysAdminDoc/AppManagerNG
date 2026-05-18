@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -102,6 +103,8 @@ class RestoreOp implements Closeable {
     private final int mUserId;
     private boolean mIsInstalled;
     private boolean mRequiresRestart;
+    @NonNull
+    private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
 
     RestoreOp(@NonNull String packageName, @NonNull BackupFlags requestedFlags,
               @NonNull BackupItems.BackupItem backupItem, int userId) throws BackupException {
@@ -197,6 +200,7 @@ class RestoreOp implements Closeable {
                 restoreRules();
                 incrementProgress(progressHandler);
             }
+            restoreDefaultAppRoles();
         } catch (BackupException e) {
             throw e;
         } catch (Throwable th) {
@@ -214,6 +218,20 @@ class RestoreOp implements Closeable {
 
     public boolean requiresRestart() {
         return mRequiresRestart;
+    }
+
+    @NonNull
+    public List<DefaultAppRoleBackupHelper.RoleRebindRequest> getPendingDefaultRoleRebindRequests() {
+        return new ArrayList<>(mPendingDefaultRoleRebindRequests);
+    }
+
+    private void restoreDefaultAppRoles() {
+        mPendingDefaultRoleRebindRequests.clear();
+        if (!mIsInstalled) {
+            return;
+        }
+        mPendingDefaultRoleRebindRequests.addAll(DefaultAppRoleBackupHelper.restoreHeldDefaultRoles(
+                mPackageName, mUserId, mBackupMetadata.defaultRoles));
     }
 
     private void verifyMetadata() throws BackupException {
