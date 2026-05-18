@@ -7,12 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 95**. Iter-95 closed the T6 scheduled
-> backup progress-notification row: `AutoBackupWorker` now feeds scheduled/manual
-> auto-backup runs through the existing batch/backup progress hooks and updates
-> the WorkManager foreground notification with app-count progress, current app
-> stage, ETA, and API 36+ `Notification.ProgressStyle` segments/point markers
-> with a standard progress fallback below API 36.
+> Last consolidated: **2026-05-18 iter 96**. Iter-96 parked the T6
+> Separated Active/Paused Schedule Lists row as blocked by future multiple-schedule
+> profiles. The current scheduler has one global Settings -> Backup configuration,
+> so active/paused list sections would be decorative until NG grows independently
+> named schedules.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -137,6 +136,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-93/`](.ai/research/2026-05-18-iter-93/) | iter 93 | Scheduler battery-optimization guardrail: privileged auto-fix on schedule enable, no-privilege Android exemption prompt, and status-row battery state. |
 | [`.ai/research/2026-05-18-iter-94/`](.ai/research/2026-05-18-iter-94/) | iter 94 | Scheduled backup launcher shortcuts: pinned Settings action, static launcher shortcut, authenticated no-UI dispatch, and manual WorkManager enqueue reuse. |
 | [`.ai/research/2026-05-18-iter-95/`](.ai/research/2026-05-18-iter-95/) | iter 95 | Scheduled backup progress notifications: foreground WorkManager progress, current app label/stage, ETA, API 36 ProgressStyle segments/point markers, and NotificationCompat fallback. |
+| [`.ai/research/2026-05-18-iter-96/`](.ai/research/2026-05-18-iter-96/) | iter 96 | Separated active/paused schedule lists parked as blocked by future multiple-schedule profiles; current scheduler is one global preference surface. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -216,6 +216,8 @@ WorkManager request as Settings -> Backup's "Run scheduled backup now" row.
 Iter-95 wired scheduled/manual auto-backup runs into the existing batch/backup
 progress hooks so the foreground notification reflects current app progress
 instead of a generic "running" message.
+Iter-96 parked the active/paused schedule-list row because the current scheduler
+has no list model; reopen only if NG adds multiple named schedule profiles.
 
 Pass 8 closed cross-user package state and Finder multi-user scope: `ApplicationItem`
 now keeps per-user enabled/disabled/uninstalled buckets, the main list and
