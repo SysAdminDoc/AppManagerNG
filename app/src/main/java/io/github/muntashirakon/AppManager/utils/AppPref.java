@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.debloat.DebloaterListOptions;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
+import io.github.muntashirakon.AppManager.dex.SmaliDecodeOptions;
 import io.github.muntashirakon.AppManager.fm.FmListOptions;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
 import io.github.muntashirakon.AppManager.main.MainListOptions;
@@ -113,6 +114,8 @@ public class AppPref {
         PREF_FM_LAST_PATH_STR,
         PREF_FM_OPTIONS_INT,
         PREF_FM_REMEMBER_LAST_PATH_BOOL,
+        PREF_FM_SMALI_COMMENT_LEVEL_STR,
+        PREF_FM_SMALI_REMOVE_ANNOTATIONS_BOOL,
         PREF_FM_SORT_ORDER_INT,
         PREF_FM_SORT_REVERSE_BOOL,
 
@@ -430,6 +433,7 @@ public class AppPref {
             case PREF_MAIN_TOUR_SHOWN_BOOL:
             case PREF_FM_DISPLAY_IN_LAUNCHER_BOOL:
             case PREF_FM_REMEMBER_LAST_PATH_BOOL:
+            case PREF_FM_SMALI_REMOVE_ANNOTATIONS_BOOL:
             case PREF_FM_SORT_REVERSE_BOOL:
             case PREF_ENABLE_PERSISTENT_SESSION_BOOL:
             case PREF_ENABLE_PERMISSION_CHANGE_MONITOR_BOOL:
@@ -506,6 +510,8 @@ public class AppPref {
             case PREF_BACKUP_SCHEDULE_LAST_RESULT_STR:
             case PREF_BACKUP_SCHEDULE_LAST_DIAGNOSTICS_STR:
                 return "";
+            case PREF_FM_SMALI_COMMENT_LEVEL_STR:
+                return SmaliDecodeOptions.DEFAULT_COMMENT_LEVEL;
             case PREF_MODE_OF_OPS_STR:
                 return Ops.MODE_AUTO;
             case PREF_INSTALLER_DEFAULT_PKG_SOURCE_INT:

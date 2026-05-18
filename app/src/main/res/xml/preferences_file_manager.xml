@@ -17,4 +17,18 @@
         app:title="@string/pref_set_home"
         app:iconSpaceReserved="false" />
 
+    <ListPreference
+        app:key="fm_smali_comment_level"
+        app:title="@string/pref_files_smali_comment_level"
+        app:summary="@string/pref_files_smali_comment_level_summary"
+        app:entries="@array/smali_comment_level_entries"
+        app:entryValues="@array/smali_comment_level_values"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
+        app:key="fm_smali_remove_annotations"
+        app:title="@string/pref_files_smali_remove_annotations"
+        app:summary="@string/pref_files_smali_remove_annotations_msg"
+        app:iconSpaceReserved="false" />
+
 </PreferenceScreen>
