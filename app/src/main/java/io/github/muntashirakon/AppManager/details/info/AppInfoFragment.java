@@ -926,9 +926,13 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         java.util.EnumMap<io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory, Integer> counts =
                 new java.util.EnumMap<>(io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.class);
+        java.util.Set<String> uniqueVendors = new java.util.HashSet<>();
         for (io.github.muntashirakon.AppManager.rules.struct.ComponentRule rule : tagCloud.trackerComponents) {
             String vendor = io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
                     .getTrackerLabel(rule.name);
+            if (vendor != null && !vendor.isEmpty()) {
+                uniqueVendors.add(vendor);
+            }
             io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
                     io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.categorize(vendor);
             counts.merge(cat, 1, Integer::sum);
@@ -951,6 +955,20 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             if (e.getKey() == io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.OTHER) continue;
             if (sb.length() > 0) sb.append(" · ");
             sb.append(e.getValue()).append(' ').append(getString(e.getKey().getLabelRes()).toLowerCase(java.util.Locale.ROOT));
+        }
+        // Append the unique-organization count when it tells the user something the
+        // category breakdown does not: many components but few organizations means
+        // the app's tracker payload is dominated by a single vendor stack (the
+        // εxodus dataset assigns multiple SDKs to one company — Google's
+        // AdMob/Analytics/Crashlytics/Firebase all roll up to "Google").
+        // Show the org count only when it differs from the component count so the
+        // line stays informative on small apps.
+        if (uniqueVendors.size() >= 2 && uniqueVendors.size() != tagCloud.trackerComponents.size()) {
+            sb.append(" · ")
+                    .append(getResources().getQuantityString(
+                            R.plurals.tracker_breakdown_organizations,
+                            uniqueVendors.size(),
+                            uniqueVendors.size()));
         }
         return sb.toString();
     }
