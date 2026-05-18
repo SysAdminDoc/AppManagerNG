@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.AppLocaleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
@@ -495,6 +496,11 @@ public class AppInfoViewModel extends AndroidViewModel {
                 appInfo.sourceFileSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.publicSourceDir);
                 appInfo.processSelinuxContexts = AppSelinuxContexts.collectProcessContexts(packageName,
                         ActivityManagerCompat.getRunningAppProcesses(), AppSelinuxContexts::readProcAttrCurrent);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                        && AppLocaleManagerCompat.canReadApplicationLocales()) {
+                    appInfo.applicationLocaleTags = ExUtils.exceptionAsNull(() ->
+                            AppLocaleManagerCompat.getApplicationLocaleTags(packageName, userId));
+                }
                 // Primary ABI
                 appInfo.primaryCpuAbi = ApplicationInfoCompat.getPrimaryCpuAbi(applicationInfo);
                 // zygotePreloadName
@@ -645,6 +651,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         public String sourceFileSelinuxContext;
         @NonNull
         public List<AppSelinuxContexts.ProcessContext> processSelinuxContexts = Collections.emptyList();
+        @Nullable
+        public String applicationLocaleTags;
         @Nullable
         public String primaryCpuAbi;
         @Nullable

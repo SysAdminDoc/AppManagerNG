@@ -7,11 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 120**. Iter-120 shipped the App Info
-> `pm hide` quick action: when the active privilege path has `MANAGE_USERS`, the
-> horizontal action strip now offers Hide/Unhide via `PackageManagerCompat` while
-> preserving the existing Hidden tag-cloud badge and saved freeze-method
-> semantics.
+> Last consolidated: **2026-05-18 iter 121**. Iter-121 shipped the App Info
+> per-app language picker: Android 13+ app locale read/write now goes through a
+> privileged `ILocaleManager` compat helper for the selected package/user, with a
+> searchable inline picker and System default reset. The previous roadmap note
+> claiming App Info already read app locales was stale; this pass added the read
+> row and the write action together.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -161,6 +162,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-118/`](.ai/research/2026-05-18-iter-118/) | iter 118 | JADX 1.5.5 `.apks`/zoom and FlatLaf CJK rows parked as blocked by the absent T12 JADX viewer surface; acceptance criteria preserved for future viewer work. |
 | [`.ai/research/2026-05-18-iter-119/`](.ai/research/2026-05-18-iter-119/) | iter 119 | Digital Assistant quick actions: dedicated assist activity, foreground target resolver from assist extras or usage events, Force Stop / Freeze / App Details sheet, and Running Apps fallback. |
 | [`.ai/research/2026-05-18-iter-120/`](.ai/research/2026-05-18-iter-120/) | iter 120 | Amarok-style `pm hide` toggle: App Info Hide/Unhide quick action backed by `PackageManagerCompat.hidePackage()`, existing Hidden badge preserved, and freeze method state left untouched. |
+| [`.ai/research/2026-05-18-iter-121/`](.ai/research/2026-05-18-iter-121/) | iter 121 | Per-app language picker: App Info locale summary plus Android 13+ privileged `ILocaleManager` read/write for the selected package/user, searchable language options, and hidden API baseline coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

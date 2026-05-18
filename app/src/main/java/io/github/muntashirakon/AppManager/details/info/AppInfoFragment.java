@@ -115,6 +115,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.AppLocaleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
@@ -2314,6 +2315,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     mApplicationInfo.uid)));
             if (mPackageInfo.sharedUserId != null)
                 mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.shared_user_id), mPackageInfo.sharedUserId));
+            addApplicationLocaleInfo(appInfo);
             if (appInfo.primaryCpuAbi != null) {
                 mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.primary_abi),
                         appInfo.primaryCpuAbi));
@@ -2341,6 +2343,72 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
             }
         }
+    }
+
+    @GuardedBy("mListItems")
+    private void addApplicationLocaleInfo(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || !AppLocaleManagerCompat.canReadApplicationLocales()) {
+            return;
+        }
+        CharSequence localeSummary = AppLocaleOptions.describeLanguageTags(appInfo.applicationLocaleTags,
+                getString(R.string.system_default), Locale.getDefault());
+        ListItem localeItem;
+        if (AppLocaleManagerCompat.canSetApplicationLocales()) {
+            localeItem = ListItem.newSelectableRegularItem(getString(R.string.app_language), localeSummary,
+                    v -> showAppLocalePicker(appInfo.applicationLocaleTags));
+            localeItem.setActionIcon(R.drawable.ic_translate);
+            localeItem.setActionContentDescription(R.string.change_app_language);
+        } else {
+            localeItem = ListItem.newSelectableRegularItem(getString(R.string.app_language), localeSummary);
+        }
+        mListItems.add(localeItem);
+    }
+
+    @MainThread
+    private void showAppLocalePicker(@Nullable String currentLocaleTags) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || !AppLocaleManagerCompat.canSetApplicationLocales()) {
+            UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
+            return;
+        }
+        List<AppLocaleOptions.Option> options = AppLocaleOptions.buildOptions(Locale.getAvailableLocales(),
+                Locale.getDefault(), getString(R.string.system_default));
+        CharSequence[] languageLabels = new CharSequence[options.size()];
+        for (int i = 0; i < options.size(); ++i) {
+            languageLabels[i] = options.get(i).label;
+        }
+        new SearchableItemsDialogBuilder<>(mActivity, languageLabels)
+                .setTitle(R.string.change_app_language)
+                .setOnItemClickListener((dialog, which, item) -> {
+                    dialog.dismiss();
+                    String languageTag = options.get(which).languageTag;
+                    String currentLanguageTags = currentLocaleTags != null ? currentLocaleTags.trim() : "";
+                    if (!languageTag.equals(currentLanguageTags)) {
+                        setAppLocale(languageTag);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @MainThread
+    private void setAppLocale(@Nullable String languageTags) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return;
+        }
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                AppLocaleManagerCompat.setApplicationLocaleTags(mPackageName, mUserId, languageTags);
+                ThreadUtils.postOnMainThread(() -> {
+                    UIUtils.displayShortToast(R.string.done);
+                    refreshDetails();
+                });
+            } catch (Throwable th) {
+                Log.e(TAG, th);
+                ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_set_app_language, mAppLabel));
+            }
+        });
     }
 
     @GuardedBy("mListItems")

@@ -850,8 +850,12 @@
     <string name="backup_multiple">Back up multiple</string>
     <string name="backup_all_users">All users</string>
     <string name="pref_app_language">Language</string>
+    <string name="app_language">App language</string>
     <string name="auto">Auto</string>
     <string name="choose_language">Change language</string>
+    <string name="change_app_language">Change app language</string>
+    <string name="system_default">System default</string>
+    <string name="failed_to_set_app_language">Could not set app language for %1$s.</string>
     <string name="base_apk">Base APK</string>
     <string name="split_feature_name">Feature: <xliff:g id="feature_name" example="Visualizer">%1$s</xliff:g></string>
     <string name="unknown_split_for_feature"><xliff:g id="split_name" example="some_split">%1$s</xliff:g> for feature <xliff:g id="feature_name" example="Visualizer">%2$s</xliff:g></string>
