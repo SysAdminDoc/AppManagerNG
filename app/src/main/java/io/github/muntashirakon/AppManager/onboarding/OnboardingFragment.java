@@ -317,7 +317,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         int activeCardId = cardIdFor(activeMode);
         int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_shizuku, R.id.card_mode_adb_wifi,
                 R.id.card_mode_adb_tcp, R.id.card_mode_no_root};
-        int active = MaterialColors.getColor(root, com.google.android.material.R.attr.colorPrimary);
+        int active = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary);
         int inactive = MaterialColors.getColor(root, com.google.android.material.R.attr.colorOutlineVariant);
         int strokeWidthActive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_focus);
         int strokeWidthInactive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline);

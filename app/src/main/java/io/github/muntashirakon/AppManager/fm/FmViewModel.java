@@ -67,6 +67,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     private final MutableLiveData<Uri> mDisplayPropertiesLiveData = new MutableLiveData<>();
     private final SingleLiveEvent<Pair<Path, Bitmap>> mShortcutCreatorLiveData = new SingleLiveEvent<>();
     private final SingleLiveEvent<SharableItems> mSharableItemsLiveData = new SingleLiveEvent<>();
+    private final SingleLiveEvent<Path> mExtractArchiveLiveData = new SingleLiveEvent<>();
     private final List<FmItem> mFmItems = new ArrayList<>();
     private final Set<Path> mSelectedItems = Collections.synchronizedSet(new LinkedHashSet<>());
     private final HashMap<Uri, Integer> mPathScrollPositionMap = new HashMap<>();
@@ -439,6 +440,10 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         });
     }
 
+    public void requestArchiveExtract(@NonNull Path archivePath) {
+        mExtractArchiveLiveData.setValue(archivePath);
+    }
+
     public void createShortcut(@NonNull Uri uri) {
         createShortcut(new FmItem(Paths.get(uri)));
     }
@@ -473,6 +478,10 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
 
     public LiveData<SharableItems> getSharableItemsLiveData() {
         return mSharableItemsLiveData;
+    }
+
+    public LiveData<Path> getExtractArchiveLiveData() {
+        return mExtractArchiveLiveData;
     }
 
     private void handleError(@NonNull Throwable th, @NonNull Uri currentUri) {
