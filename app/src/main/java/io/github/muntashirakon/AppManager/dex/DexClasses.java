@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.dex;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.tools.smali.baksmali.Adaptors.ClassDefinition;
 import com.android.tools.smali.baksmali.BaksmaliOptions;
@@ -36,21 +37,18 @@ public class DexClasses implements Closeable {
     // TODO: 18/10/21 Load frameworks.jar and add its dex files as options.classPath
     private final BaksmaliOptions mOptions;
     private final Opcodes mOpcodes;
+    @NonNull
+    private final SmaliDecodeOptions mDecodeOptions;
 
     public DexClasses(@NonNull File apkFile, @IntRange(from = -1) int apiLevel) throws IOException {
+        this(apkFile, apiLevel, null);
+    }
+
+    public DexClasses(@NonNull File apkFile, @IntRange(from = -1) int apiLevel,
+                      @Nullable SmaliDecodeOptions decodeOptions) throws IOException {
         mOpcodes = apiLevel < 0 ? Opcodes.getDefault() : Opcodes.forApi(apiLevel);
-        mOptions = new BaksmaliOptions();
-        // options
-        mOptions.deodex = false;
-        mOptions.implicitReferences = false;
-        mOptions.parameterRegisters = true;
-        mOptions.localsDirective = true;
-        mOptions.sequentialLabels = true;
-        mOptions.debugInfo = BuildConfig.DEBUG;
-        mOptions.codeOffsets = false;
-        mOptions.accessorComments = false;
-        mOptions.registerInfo = 0;
-        mOptions.inlineResolver = null;
+        mDecodeOptions = decodeOptions != null ? decodeOptions : SmaliDecodeOptions.defaults();
+        mOptions = createOptions(mDecodeOptions);
         BaksmaliFormatter formatter = new BaksmaliFormatter();
         MultiDexContainer<? extends DexBackedDexFile> container = DexUtils.loadApk(apkFile, apiLevel);
         List<String> dexEntryNames = container.getDexEntryNames();
@@ -85,19 +83,14 @@ public class DexClasses implements Closeable {
     }
 
     public DexClasses(@NonNull InputStream inputStream, @IntRange(from = -1) int apiLevel) throws IOException {
+        this(inputStream, apiLevel, null);
+    }
+
+    public DexClasses(@NonNull InputStream inputStream, @IntRange(from = -1) int apiLevel,
+                      @Nullable SmaliDecodeOptions decodeOptions) throws IOException {
         mOpcodes = apiLevel < 0 ? Opcodes.getDefault() : Opcodes.forApi(apiLevel);
-        mOptions = new BaksmaliOptions();
-        // options
-        mOptions.deodex = false;
-        mOptions.implicitReferences = false;
-        mOptions.parameterRegisters = true;
-        mOptions.localsDirective = true;
-        mOptions.sequentialLabels = true;
-        mOptions.debugInfo = BuildConfig.DEBUG;
-        mOptions.codeOffsets = false;
-        mOptions.accessorComments = false;
-        mOptions.registerInfo = 0;
-        mOptions.inlineResolver = null;
+        mDecodeOptions = decodeOptions != null ? decodeOptions : SmaliDecodeOptions.defaults();
+        mOptions = createOptions(mDecodeOptions);
         BaksmaliFormatter formatter = new BaksmaliFormatter();
         InputStream is = new BufferedInputStream(inputStream);
         DexBackedDexFile dexFile = DexUtils.loadDexContainer(is, apiLevel);
@@ -172,7 +165,7 @@ public class DexClasses implements Closeable {
         try (BaksmaliWriter baksmaliWriter = new BaksmaliWriter(stringWriter)) {
             ClassDefinition classDefinition = new ClassDefinition(mOptions, classdef);
             classDefinition.writeTo(baksmaliWriter);
-            return stringWriter.toString();
+            return mDecodeOptions.postProcess(stringWriter.toString());
         } catch (IOException e) {
             throw new ClassNotFoundException(e.getMessage(), e);
         }
@@ -180,5 +173,22 @@ public class DexClasses implements Closeable {
 
     @Override
     public void close() throws IOException {
+    }
+
+    @NonNull
+    private static BaksmaliOptions createOptions(@NonNull SmaliDecodeOptions decodeOptions) {
+        BaksmaliOptions options = new BaksmaliOptions();
+        options.deodex = false;
+        options.implicitReferences = false;
+        options.parameterRegisters = true;
+        options.localsDirective = true;
+        options.sequentialLabels = true;
+        options.debugInfo = BuildConfig.DEBUG;
+        options.codeOffsets = false;
+        options.accessorComments = false;
+        options.registerInfo = 0;
+        options.inlineResolver = null;
+        decodeOptions.applyTo(options);
+        return options;
     }
 }

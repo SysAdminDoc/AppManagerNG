@@ -13,6 +13,7 @@ import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.Nullable;
 import androidx.core.view.inputmethod.EditorInfoCompat;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
@@ -46,6 +47,13 @@ public class FileManagerPreferences extends PreferenceFragment {
         // Remember last opened path
         SwitchPreferenceCompat filesRememberLastPathPref = Objects.requireNonNull(findPreference("fm_remember_last_path"));
         filesRememberLastPathPref.setChecked(Prefs.FileManager.isRememberLastOpenedPath());
+        // Smali decode options
+        ListPreference smaliCommentLevelPref = Objects.requireNonNull(findPreference("fm_smali_comment_level"));
+        smaliCommentLevelPref.setValue(Prefs.FileManager.getSmaliCommentLevel());
+        smaliCommentLevelPref.setSummaryProvider(ListPreference.SimpleSummaryProvider.getInstance());
+        SwitchPreferenceCompat smaliRemoveAnnotationsPref = Objects.requireNonNull(
+                findPreference("fm_smali_remove_annotations"));
+        smaliRemoveAnnotationsPref.setChecked(Prefs.FileManager.isSmaliRemoveAnnotations());
         // Set home
         Preference setHomePrefs = Objects.requireNonNull(findPreference("fm_home"));
         setHomePrefs.setSummary(FmUtils.getDisplayablePath(Prefs.FileManager.getHome()));

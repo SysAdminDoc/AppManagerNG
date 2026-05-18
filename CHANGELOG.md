@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — smali decode options (2026-05-18)
+
+- Settings -> File Manager now exposes smali comment-level options for decoded
+  APK/dex classes: `none`, `basic`, and `verbose`.
+- The default `basic` level keeps casual smali output quieter while preserving
+  the repo's existing debug-build line-info behavior.
+- Added an opt-in smali post-processor that strips common `@Nullable`,
+  `@NotNull`, and `@RequiresApi` annotation blocks from decoded output.
+
 ### Added — Android full-SDK version helpers (2026-05-18)
 
 - Added `AndroidUtils.sdkAtLeast(int major, int minor)` plus full-SDK
