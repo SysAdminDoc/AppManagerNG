@@ -144,9 +144,11 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
             holder.icon.setTag(fragmentItem);
             if (fragmentItem.applicationInfo != null) {
                 ImageLoader.getInstance().displayImage(fragmentItem.packageName, fragmentItem.applicationInfo, holder.icon);
-            } else {
+            } else if (fragmentItem.filterableAppInfo != null) {
                 ImageLoader.getInstance().displayImage(fragmentItem.packageName, holder.icon, tag ->
                         new ImageLoader.ImageFetcherResult(tag, UIUtils.getBitmapFromDrawable(fragmentItem.filterableAppInfo.getAppIcon()), true, true, defaultImage));
+            } else {
+                holder.icon.setImageBitmap(defaultImage.getImage());
             }
             CharSequence label = fragmentItem.label;
             holder.title.setText(label != null ? label : fragmentItem.packageName);
@@ -156,21 +158,19 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
             } else {
                 holder.subtitle.setVisibility(View.GONE);
             }
-            if (fragmentItem.applicationInfo != null) {
-                holder.itemView.setOnClickListener(v -> {
-                });
-                holder.itemView.setOnLongClickListener(v -> {
-                    PopupMenu popupMenu = new PopupMenu(mActivity, holder.itemView);
-                    popupMenu.setForceShowIcon(true);
-                    popupMenu.getMenu().add(R.string.delete).setIcon(R.drawable.ic_trash_can)
-                            .setOnMenuItemClickListener(item -> {
-                                mModel.deletePackage(fragmentItem.packageName);
-                                return true;
-                            });
-                    popupMenu.show();
-                    return true;
-                });
-            }
+            holder.itemView.setOnClickListener(v -> {
+            });
+            holder.itemView.setOnLongClickListener(v -> {
+                PopupMenu popupMenu = new PopupMenu(mActivity, holder.itemView);
+                popupMenu.setForceShowIcon(true);
+                popupMenu.getMenu().add(R.string.delete).setIcon(R.drawable.ic_trash_can)
+                        .setOnMenuItemClickListener(item -> {
+                            mModel.deletePackage(fragmentItem.packageName);
+                            return true;
+                        });
+                popupMenu.show();
+                return true;
+            });
         }
 
         @Override

@@ -19,6 +19,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
@@ -35,13 +36,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.filters.FilterableAppInfo;
 import io.github.muntashirakon.AppManager.filters.FilteringUtils;
@@ -60,7 +64,7 @@ import io.github.muntashirakon.io.Path;
 public class AppsProfileViewModel extends AndroidViewModel {
     private final Object mProfileLock = new Object();
     private final MutableLiveData<Pair<Integer, Boolean>> mToast = new MutableLiveData<>();
-    private final MutableLiveData<ArrayList<Pair<CharSequence, ApplicationInfo>>> mInstalledApps = new MutableLiveData<>();
+    private final MutableLiveData<ArrayList<SelectablePackageItem>> mInstalledApps = new MutableLiveData<>();
     private final MutableLiveData<String> mProfileLoaded = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mProfileModifiedLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> mLogs = new MutableLiveData<>();
@@ -110,7 +114,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
         return mToast;
     }
 
-    public LiveData<ArrayList<Pair<CharSequence, ApplicationInfo>>> observeInstalledApps() {
+    public LiveData<ArrayList<SelectablePackageItem>> observeInstalledApps() {
         return mInstalledApps;
     }
 
@@ -152,11 +156,17 @@ public class AppsProfileViewModel extends AndroidViewModel {
                 }
                 List<String> selectedPackages = mProfile instanceof AppsProfile ?
                         Arrays.asList(((AppsProfile) mProfile).packages) : Collections.emptyList();
+                ArrayList<SelectablePackageItem> selectableItems = new ArrayList<>(itemPairs.size());
+                for (Pair<CharSequence, ApplicationInfo> itemPair : itemPairs) {
+                    selectableItems.add(SelectablePackageItem.fromApplicationInfo(itemPair.first, itemPair.second));
+                }
+                Map<String, Backup> latestBackups = BackupUtils.storeAllAndGetLatestBackupMetadata();
+                selectableItems = mergeSelectablePackages(selectableItems, latestBackups, selectedPackages);
                 Collator collator = Collator.getInstance();
-                Collections.sort(itemPairs, (o1, o2) -> collator.compare(o1.first.toString(), o2.first.toString()));
-                Collections.sort(itemPairs, (o1, o2) -> {
-                    boolean o1Selected = selectedPackages.contains(o1.second.packageName);
-                    boolean o2Selected = selectedPackages.contains(o2.second.packageName);
+                Collections.sort(selectableItems, (o1, o2) -> collator.compare(o1.label.toString(), o2.label.toString()));
+                Collections.sort(selectableItems, (o1, o2) -> {
+                    boolean o1Selected = selectedPackages.contains(o1.packageName);
+                    boolean o2Selected = selectedPackages.contains(o2.packageName);
                     if (o1Selected && o2Selected) {
                         return 0;
                     }
@@ -168,11 +178,38 @@ public class AppsProfileViewModel extends AndroidViewModel {
                     }
                     return 0;
                 });
-                mInstalledApps.postValue(itemPairs);
+                mInstalledApps.postValue(selectableItems);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static ArrayList<SelectablePackageItem> mergeSelectablePackages(
+            @NonNull List<SelectablePackageItem> installedItems,
+            @NonNull Map<String, Backup> latestBackups,
+            @NonNull List<String> selectedPackages) {
+        ArrayList<SelectablePackageItem> selectableItems = new ArrayList<>(installedItems.size() + latestBackups.size());
+        HashSet<String> packageNames = new HashSet<>(installedItems.size() + latestBackups.size());
+        for (SelectablePackageItem item : installedItems) {
+            selectableItems.add(item);
+            packageNames.add(item.packageName);
+        }
+        for (Backup backup : latestBackups.values()) {
+            if (!packageNames.add(backup.packageName)) {
+                continue;
+            }
+            selectableItems.add(SelectablePackageItem.fromBackup(backup));
+        }
+        for (String selectedPackage : selectedPackages) {
+            if (!packageNames.add(selectedPackage)) {
+                continue;
+            }
+            selectableItems.add(SelectablePackageItem.fromPackageName(selectedPackage));
+        }
+        return selectableItems;
     }
 
     public String getProfileName() {
@@ -448,6 +485,12 @@ public class AppsProfileViewModel extends AndroidViewModel {
                 if (item.applicationInfo != null) {
                     item.label = item.applicationInfo.loadLabel(pm);
                 }
+                if (item.applicationInfo == null) {
+                    Backup backup = BackupUtils.getLatestBackupMetadataFromDbNoLockValidate(packageName);
+                    if (backup != null) {
+                        item.label = backup.label;
+                    }
+                }
                 if (Objects.equals(item.label, packageName)) {
                     item.label = null;
                 }
@@ -455,6 +498,45 @@ public class AppsProfileViewModel extends AndroidViewModel {
             items.add(item);
         }
         return items;
+    }
+
+    public static class SelectablePackageItem {
+        @NonNull
+        public final String packageName;
+        @NonNull
+        public final CharSequence label;
+        @Nullable
+        public final ApplicationInfo applicationInfo;
+        public final boolean system;
+        public final boolean backupOnly;
+
+        private SelectablePackageItem(@NonNull String packageName, @NonNull CharSequence label,
+                                      @Nullable ApplicationInfo applicationInfo, boolean system,
+                                      boolean backupOnly) {
+            this.packageName = packageName;
+            this.label = label;
+            this.applicationInfo = applicationInfo;
+            this.system = system;
+            this.backupOnly = backupOnly;
+        }
+
+        @NonNull
+        public static SelectablePackageItem fromApplicationInfo(@NonNull CharSequence label,
+                                                               @NonNull ApplicationInfo applicationInfo) {
+            return new SelectablePackageItem(applicationInfo.packageName, label, applicationInfo,
+                    (applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0, false);
+        }
+
+        @NonNull
+        public static SelectablePackageItem fromBackup(@NonNull Backup backup) {
+            CharSequence label = backup.label != null ? backup.label : backup.packageName;
+            return new SelectablePackageItem(backup.packageName, label, null, backup.isSystem, true);
+        }
+
+        @NonNull
+        public static SelectablePackageItem fromPackageName(@NonNull String packageName) {
+            return new SelectablePackageItem(packageName, packageName, null, false, true);
+        }
     }
 
     List<FilterableAppInfo> mFilterableAppInfoList;
