@@ -945,6 +945,14 @@
     <string name="rules">Rules</string>
     <string name="pref_compression_method">Compression method</string>
     <string name="pref_backup_flags_msg">Adding a preset for backup options removes the burden of selecting flags every time you back up/restore.</string>
+    <string name="pref_backup_exclusion_patterns">Backup path exclusions</string>
+    <string name="pref_backup_exclusion_patterns_summary">Default temporary folders are skipped. %1$d custom pattern(s) configured.</string>
+    <string name="pref_backup_exclusion_patterns_default_summary">Default temporary folders are skipped. No custom patterns configured.</string>
+    <string name="pref_backup_exclusion_patterns_helper">One glob per line. Examples: **/cache/**, **/.thumbnails/**, databases/*.db-journal</string>
+    <string name="backup_exclusion_patterns">Path exclusions</string>
+    <string name="backup_exclusion_patterns_button">Edit exclusions</string>
+    <string name="backup_exclusion_patterns_profile_helper">Extra profile globs, one per line. Global backup exclusions and default temporary folders still apply.</string>
+    <string name="backup_exclusion_patterns_operation_helper">Extra globs for this backup, one per line. Global backup exclusions and default temporary folders still apply.</string>
     <string name="confirm_installation">Confirm installation</string>
     <string name="allow_open_pgp_operation">Tap to allow App Manager to use OpenPGP</string>
     <string name="uninstall_updates">Uninstall updates</string>

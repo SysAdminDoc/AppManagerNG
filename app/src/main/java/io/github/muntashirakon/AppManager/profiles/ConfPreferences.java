@@ -2,7 +2,9 @@
 
 package io.github.muntashirakon.AppManager.profiles;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -22,9 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
@@ -197,6 +201,9 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                 flags = new BackupFlags(mBackupInfo.flags);
             } else flags = BackupFlags.fromPref();
             final AtomicInteger backupFlags = new AtomicInteger(flags.getFlags());
+            final AtomicReference<String[]> exclusionGlobs = new AtomicReference<>(
+                    mBackupInfo != null ? BackupPathExclusionPatterns.sanitize(mBackupInfo.exclusionGlobs)
+                            : new String[0]);
             view.findViewById(R.id.dialog_button).setOnClickListener(v -> {
                 List<Integer> supportedBackupFlags = BackupFlags.getSupportedBackupFlagsAsArray();
                 new SearchableMultiChoiceDialogBuilder<>(requireActivity(), supportedBackupFlags,
@@ -216,6 +223,20 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                         .setNegativeButton(R.string.cancel, null)
                         .show();
             });
+            view.findViewById(R.id.dialog_exclusions_button).setOnClickListener(v ->
+                    new TextInputDialogBuilder(mActivity, R.string.backup_exclusion_patterns)
+                            .setTitle(R.string.backup_exclusion_patterns)
+                            .setInputText(TextUtils.join("\n", exclusionGlobs.get()))
+                            .setInputTypeface(Typeface.MONOSPACE)
+                            .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                                    | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                            .setHelperText(R.string.backup_exclusion_patterns_profile_helper)
+                            .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) ->
+                                    exclusionGlobs.set(BackupPathExclusionPatterns.parse(inputText)))
+                            .setNeutralButton(R.string.clear, (dialog, which, inputText, isChecked) ->
+                                    exclusionGlobs.set(new String[0]))
+                            .setNegativeButton(R.string.cancel, null)
+                            .show());
             final TextInputEditText editText = view.findViewById(android.R.id.input);
             if (mBackupInfo != null) {
                 editText.setText(mBackupInfo.name);
@@ -237,6 +258,7 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                             mBackupInfo.name = null;
                         }
                         mBackupInfo.flags = backupFlags1.getFlags();
+                        mBackupInfo.exclusionGlobs = exclusionGlobs.get();
                         mModel.setBackupInfo(mBackupInfo);
                         backupDataPref.setSummary(R.string.enabled);
                     })

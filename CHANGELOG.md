@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — backup path exclusions (2026-05-18)
+
+- Backup data archives now support glob-style path exclusions such as
+  `**/cache/**`, `**/.thumbnails/**`, and `databases/*.db-journal`.
+- Default throwaway-folder exclusions are applied during data tar creation;
+  nested cache defaults are active only when the existing Backup cache option is
+  off.
+- Settings -> Backup/Restore can store global custom exclusions, the manual
+  backup dialog can add one-off exclusions for the current run, and profile
+  backup configs persist `exclusion_globs` for routine/profile backups.
+
 ### Changed — WebDAV certificate-trust posture (2026-05-18)
 
 - Closed the Material Files self-signed WebDAV certificate-trust roadmap row as

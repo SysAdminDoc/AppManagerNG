@@ -50,6 +50,8 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
         @Nullable
         public String[] relativeDirs;
         @Nullable
+        public String[] exclusionGlobs;
+        @Nullable
         public int[] selectedUsers;
 
         // Others
