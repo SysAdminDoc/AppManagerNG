@@ -7,10 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 123**. Iter-123 shipped the F-Droid 2.0
-> ROM repository preseed docs: downstream ROM builders now have JSON and legacy
-> XML templates, path guidance, and placeholder warnings for future production
-> AppManagerNG F-Droid repository metadata.
+> Last consolidated: **2026-05-18 iter 124**. Iter-124 shipped the Android 17
+> targetSdk=37 compatibility batch: Wireless ADB now has a local-network
+> permission declaration plus targetSdk/runtime preflight for mDNS discovery, the
+> remaining static-final `Resources.mSystem` write is legacy-gated below API 37,
+> and the clean Keystore, MemoryLimiter, native DCL, and `IntentSender` BAL
+> sub-audits are recorded in `docs/audits/2026-05-18-android17-targetsdk37-batch.md`.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -163,6 +165,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-121/`](.ai/research/2026-05-18-iter-121/) | iter 121 | Per-app language picker: App Info locale summary plus Android 13+ privileged `ILocaleManager` read/write for the selected package/user, searchable language options, and hidden API baseline coverage. |
 | [`.ai/research/2026-05-18-iter-122/`](.ai/research/2026-05-18-iter-122/) | iter 122 | Sensitive action authentication gate: optional Privacy toggle, shared `ActionAuthGate`, installer commit prompt, direct/batch uninstall prompt, and direct/batch clear-data prompt. |
 | [`.ai/research/2026-05-18-iter-123/`](.ai/research/2026-05-18-iter-123/) | iter 123 | F-Droid 2.0 ROM preseed docs: JSON and legacy XML repository templates, global/app-specific path guidance, README distribution link, and parser validation. |
+| [`.ai/research/2026-05-18-iter-124/`](.ai/research/2026-05-18-iter-124/) | iter 124 | Android 17 targetSdk=37 audit batch: Wireless ADB local-network permission preflight, legacy-gated static-final `Resources.mSystem` workaround, and clean Keystore/MemoryLimiter/native-DCL/IntentSender BAL findings. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
