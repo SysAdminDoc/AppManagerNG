@@ -56,7 +56,7 @@ public class BackupCryptSetupHelper {
                 return new OpenPGPCrypto(ContextUtils.getContext(), keyIds);
             case CryptoUtils.MODE_AES: {
                 iv = generateIv();
-                AESCrypto aesCrypto = new AESCrypto(iv);
+                AESCrypto aesCrypto = new AESCrypto(iv, version >= AESCrypto.ARCHIVE_KEY_DERIVATION_VERSION);
                 configureAesCrypto(aesCrypto, version);
                 return aesCrypto;
             }
