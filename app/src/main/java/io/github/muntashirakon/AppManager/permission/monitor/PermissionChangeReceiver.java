@@ -32,7 +32,9 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         if (!Intent.ACTION_PACKAGE_REPLACED.equals(intent.getAction())) return;
         String packageName = extractPackageName(intent);
         if (packageName == null || packageName.isEmpty()) return;
-        if (!Prefs.Privacy.isPermissionChangeMonitorEnabled()) return;
+        boolean permMonitorOn = Prefs.Privacy.isPermissionChangeMonitorEnabled();
+        boolean certMonitorOn = Prefs.Privacy.isSigningCertChangeMonitorEnabled();
+        if (!permMonitorOn && !certMonitorOn) return;
         final Context appContext = context.getApplicationContext();
         final String pkg = packageName;
         // Use goAsync() so the broadcast result stays alive across the
@@ -40,9 +42,20 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         final PendingResult pending = goAsync();
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
-                PermissionChangeMonitor.onPackageReplaced(appContext, pkg);
-            } catch (Throwable t) {
-                Log.w(TAG, "Permission change monitor failed for " + pkg, t);
+                if (permMonitorOn) {
+                    try {
+                        PermissionChangeMonitor.onPackageReplaced(appContext, pkg);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Permission change monitor failed for " + pkg, t);
+                    }
+                }
+                if (certMonitorOn) {
+                    try {
+                        SigningCertChangeMonitor.onPackageReplaced(appContext, pkg);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Signing-cert change monitor failed for " + pkg, t);
+                    }
+                }
             } finally {
                 pending.finish();
             }
