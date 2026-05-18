@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 
 final class AutoBackupDiagnostics {
     private static final String EXTRA_WORK_SPEC_ID = "EXTRA_WORK_SPEC_ID";
@@ -83,7 +84,7 @@ final class AutoBackupDiagnostics {
                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                             .format(new java.util.Date(nextSchedule))));
         }
-        if (Build.VERSION.SDK_INT >= 36 && jobInfo != null) {
+        if (AndroidUtils.sdkAtLeast(Build.VERSION_CODES.BAKLAVA, 0) && jobInfo != null) {
             appendJobSchedulerDiagnostics(context, detail, jobInfo);
         }
         return detail.toString();

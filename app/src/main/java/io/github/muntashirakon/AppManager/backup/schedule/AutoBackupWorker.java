@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.main.MainActivity;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
+import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 public class AutoBackupWorker extends Worker {
@@ -134,7 +135,7 @@ public class AutoBackupWorker extends Worker {
                                                      int progressMax,
                                                      int progress,
                                                      boolean progressIndeterminate) {
-        if (Build.VERSION.SDK_INT >= 36) {
+        if (AndroidUtils.sdkAtLeast(Build.VERSION_CODES.BAKLAVA, 0)) {
             NotificationUtils.getNewNotificationManager(context, CHANNEL_ID,
                     context.getString(R.string.auto_backup_notification_channel),
                     NotificationManagerCompat.IMPORTANCE_LOW);

@@ -7,10 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 112**. Iter-112 added Settings ->
-> Privileges KernelSU diagnostics for active KernelSU roots: current-process
-> seccomp via `prctl(PR_GET_SECCOMP)`, `/data/adb/ksu/log/sulog` denial tails,
-> copyable details, and KernelSU Manager / KernelSU Next launch routing.
+> Last consolidated: **2026-05-18 iter 113**. Iter-113 added
+> `AndroidUtils.sdkAtLeast(int major, int minor)` / full-SDK helpers for Android
+> 16 minor-release gates and migrated the current raw API-36 scheduled-backup
+> ProgressStyle and JobScheduler diagnostics checks to that helper.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -152,6 +152,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-110/`](.ai/research/2026-05-18-iter-110/) | iter 110 | Whole-volume search warning: recursive File Manager search warns on storage-volume roots, estimates scan time from platform volume size, and records Storage Analysis as the future reuse point. |
 | [`.ai/research/2026-05-18-iter-111/`](.ai/research/2026-05-18-iter-111/) | iter 111 | Magisk drop-cap diagnostics: Privileges capability row now captures Magisk version/version-code, v30.7+ opt-in semantics, bounded live-policy context, and expanded parser tests. |
 | [`.ai/research/2026-05-18-iter-112/`](.ai/research/2026-05-18-iter-112/) | iter 112 | KernelSU sulog/seccomp diagnostics: Privileges KernelSU row reads current-process seccomp, tails recent sulog denials, exposes copyable details, and links to KernelSU Manager / KernelSU Next. |
+| [`.ai/research/2026-05-18-iter-113/`](.ai/research/2026-05-18-iter-113/) | iter 113 | Android 16 full-SDK plumbing: shared `AndroidUtils.sdkAtLeast(major, minor)` helper, API-36 scheduled-backup gate migration, and explicit audit boundary for older major-only guards. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
