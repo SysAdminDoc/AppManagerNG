@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 114**. Iter-114 added File Manager
-> controls for APK/dex smali decode noise: `none` / `basic` / `verbose`
-> comment levels backed by the current Google smali/baksmali path, plus an
-> opt-in post-processor that strips common Nullable / NotNull / RequiresApi
-> annotation blocks from decoded smali.
+> Last consolidated: **2026-05-18 iter 115**. Iter-115 extended Settings ->
+> Privileges KernelSU diagnostics with active App Profile visibility: UID, GID,
+> supplementary groups, SELinux context, raw `id`, CapEff, and missing expected
+> AppManagerNG root capabilities are now shown beside the existing seccomp and
+> sulog status.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -155,6 +155,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-112/`](.ai/research/2026-05-18-iter-112/) | iter 112 | KernelSU sulog/seccomp diagnostics: Privileges KernelSU row reads current-process seccomp, tails recent sulog denials, exposes copyable details, and links to KernelSU Manager / KernelSU Next. |
 | [`.ai/research/2026-05-18-iter-113/`](.ai/research/2026-05-18-iter-113/) | iter 113 | Android 16 full-SDK plumbing: shared `AndroidUtils.sdkAtLeast(major, minor)` helper, API-36 scheduled-backup gate migration, and explicit audit boundary for older major-only guards. |
 | [`.ai/research/2026-05-18-iter-114/`](.ai/research/2026-05-18-iter-114/) | iter 114 | Smali decode options: File Manager settings for `none` / `basic` / `verbose`, default `basic`, annotation stripping for common nullability/API annotations, and `DexFileSystem` propagation into `DexClasses`. |
+| [`.ai/research/2026-05-18-iter-115/`](.ai/research/2026-05-18-iter-115/) | iter 115 | KernelSU App Profile awareness: active `su` UID/GID/groups/SELinux/CapEff details in Privileges, missing expected root-capability warnings, and parser coverage for default vs restricted profiles. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

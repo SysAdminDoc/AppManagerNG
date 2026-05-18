@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -251,7 +252,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             case ACTIVE:
                 mKernelSuPref.setSummary(getString(R.string.privilege_health_kernelsu_summary,
                         KernelSuDiagnostics.formatSeccompMode(result.seccompMode),
-                        getKernelSuSulogSummary(result)));
+                        getKernelSuSulogSummary(result),
+                        getKernelSuAppProfileSummary(result)));
                 break;
             case UNKNOWN:
             default:
@@ -663,6 +665,9 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 KernelSuDiagnostics.formatSeccompMode(result.seccompMode)));
         message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_sulog,
                 getKernelSuSulogSummary(result)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_app_profile,
+                getKernelSuAppProfileSummary(result)));
+        appendKernelSuAppProfileDetails(message, result.appProfile);
         if (result.error != null) {
             message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_error,
                     result.error));
@@ -674,6 +679,64 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             }
         }
         return message.toString();
+    }
+
+    private void appendKernelSuAppProfileDetails(@NonNull StringBuilder message,
+                                                 @NonNull KernelSuDiagnostics.AppProfile profile) {
+        if (profile.state == KernelSuDiagnostics.AppProfileState.UNAVAILABLE) {
+            return;
+        }
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_uid_gid,
+                getKernelSuIdLabel(profile.uid), getKernelSuIdLabel(profile.gid)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_groups,
+                profile.groups.isEmpty()
+                        ? getString(R.string.state_unknown)
+                        : TextUtils.join(", ", profile.groups)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_selinux,
+                valueOrUnknown(profile.selinuxContext)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_cap_eff,
+                valueOrUnknown(profile.capEff)));
+        if (!profile.missingExpectedCapabilities.isEmpty()) {
+            message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_missing_caps,
+                    TextUtils.join(", ", profile.missingExpectedCapabilities)));
+        }
+        if (profile.rawId != null) {
+            message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_profile_raw_id,
+                    profile.rawId));
+        }
+    }
+
+    @NonNull
+    private String getKernelSuAppProfileSummary(@NonNull KernelSuDiagnostics.Result result) {
+        KernelSuDiagnostics.AppProfile profile = result.appProfile;
+        switch (profile.state) {
+            case DEFAULT_ROOT:
+                return getString(R.string.privilege_health_kernelsu_app_profile_default_root);
+            case RESTRICTED:
+                if (profile.missingExpectedCapabilities.isEmpty()) {
+                    return getString(R.string.privilege_health_kernelsu_app_profile_restricted_identity,
+                            getKernelSuIdLabel(profile.uid), getKernelSuIdLabel(profile.gid));
+                }
+                return getString(R.string.privilege_health_kernelsu_app_profile_restricted_caps,
+                        getKernelSuIdLabel(profile.uid),
+                        getKernelSuIdLabel(profile.gid),
+                        TextUtils.join(", ", profile.missingExpectedCapabilities));
+            case UNKNOWN:
+                return getString(R.string.privilege_health_kernelsu_app_profile_unknown);
+            case UNAVAILABLE:
+            default:
+                return getString(R.string.privilege_health_kernelsu_app_profile_unavailable);
+        }
+    }
+
+    @NonNull
+    private String getKernelSuIdLabel(int id) {
+        return id >= 0 ? String.valueOf(id) : getString(R.string.state_unknown);
+    }
+
+    @NonNull
+    private String valueOrUnknown(@Nullable String value) {
+        return value != null ? value : getString(R.string.state_unknown);
     }
 
     @NonNull
