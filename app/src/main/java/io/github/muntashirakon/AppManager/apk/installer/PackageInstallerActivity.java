@@ -18,6 +18,7 @@ import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerC
 
 import android.Manifest;
 import android.annotation.UserIdInt;
+import android.content.ClipData;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -126,7 +127,26 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     private static final String EXTRA_APK_FILE_LINK = "link";
+    static final String EXTRA_BATCH_INSTALL = BuildConfig.APPLICATION_ID + ".extra.BATCH_INSTALL";
     public static final String ACTION_PACKAGE_INSTALLED = BuildConfig.APPLICATION_ID + ".action.PACKAGE_INSTALLED";
+
+    @NonNull
+    public static Intent getBatchInstallInstance(@NonNull Context context, @NonNull ArrayList<Uri> uris) {
+        if (uris.isEmpty()) {
+            throw new IllegalArgumentException("At least one APK URI is required.");
+        }
+        Intent intent = new Intent(context, PackageInstallerActivity.class)
+                .setAction(Intent.ACTION_SEND_MULTIPLE)
+                .putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                .putExtra(EXTRA_BATCH_INSTALL, true)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        ClipData clipData = ClipData.newRawUri("", uris.get(0));
+        for (int i = 1; i < uris.size(); ++i) {
+            clipData.addItem(new ClipData.Item(uris.get(i)));
+        }
+        intent.setClipData(clipData);
+        return intent;
+    }
 
     private int mSessionId = -1;
     @Nullable
@@ -144,6 +164,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private PackageInstallerService mService;
     private InstallerDialogFragment mInstallerDialogFragment;
     private boolean initiated = false;
+    private boolean mBatchInstall;
     @NonNull
     private List<InstallDependencyChecker.Issue> mPendingDependencyIssues = Collections.emptyList();
     private boolean mDeveloperVerificationWarningShown;
@@ -209,6 +230,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             onNewIntent(intent);
             return;
         }
+        mBatchInstall = intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
         mModel = new ViewModelProvider(this).get(PackageInstallerViewModel.class);
         if (!bindService(
                 new Intent(this, PackageInstallerService.class), mServiceConnection, BIND_AUTO_CREATE)) {
@@ -226,6 +248,11 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
         mModel.packageInfoLiveData().observe(this, newPackageInfo -> {
             if (newPackageInfo == null) {
+                if (mBatchInstall) {
+                    UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+                    goToNext();
+                    return;
+                }
                 mDialogHelper.showParseFailedDialog(v -> triggerCancel());
                 return;
             }
@@ -236,6 +263,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                             mInstallerOptions.copy(options);
                         }
                     }));
+            if (mBatchInstall) {
+                triggerBatchInstall();
+                return;
+            }
             displayChangesOrInstallationPrompt();
         });
         mModel.packageUninstalledLiveData().observe(this, success -> {
@@ -439,6 +470,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             return;
         }
         // New APK files added
+        mBatchInstall = mBatchInstall || intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
         synchronized (mApkQueue) {
             mApkQueue.addAll(ApkQueueItem.fromIntent(intent, Utils.getRealReferrer(this)));
         }
@@ -548,6 +580,18 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         builder.append(getText(R.string.app_signing_install_without_data_loss));
         builder.setSpan(new RelativeSizeSpan(0.8f), start, builder.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
         mDialogHelper.showSignatureMismatchReinstallWarning(builder, reinstallListener, v -> install(), isSystem);
+    }
+
+    private void triggerBatchInstall() {
+        try {
+            mModel.selectDefaultSplitsForInstallation();
+            mDeveloperVerificationWarningShown = true;
+            triggerInstall();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Could not prepare batch install item.", e);
+            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            goToNext();
+        }
     }
 
     @Override
