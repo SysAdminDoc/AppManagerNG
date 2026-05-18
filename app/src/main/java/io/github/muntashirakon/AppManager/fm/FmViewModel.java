@@ -332,32 +332,39 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
                     Cursor c = null;
                     try {
                         c = resolver.query(childrenUri, null, null, null, null);
-                        String[] columns = c.getColumnNames();
-                        while (c.moveToNext()) {
-                            String documentId = null;
-                            for (int i = 0; i < columns.length; ++i) {
-                                if (DocumentsContract.Document.COLUMN_DOCUMENT_ID.equals(columns[i])) {
-                                    documentId = c.getString(i);
+                        if (c == null) {
+                            // ContentResolver#query can return null when the provider declines
+                            // or the URI no longer resolves; without this guard getColumnNames()
+                            // NPEs and the catch below logs an opaque "Failed query".
+                            Log.d(TAG, "SAF query returned null cursor for %s", childrenUri);
+                        } else {
+                            String[] columns = c.getColumnNames();
+                            while (c.moveToNext()) {
+                                String documentId = null;
+                                for (int i = 0; i < columns.length; ++i) {
+                                    if (DocumentsContract.Document.COLUMN_DOCUMENT_ID.equals(columns[i])) {
+                                        documentId = c.getString(i);
+                                    }
+                                }
+                                if (documentId == null) {
+                                    // Invalid document, probably loading still?
+                                    continue;
+                                }
+                                Uri documentUri = DocumentsContract.buildDocumentUriUsingTree(mCurrentUri, documentId);
+                                Path child = Paths.getTreeDocument(path, documentUri);
+                                PathAttributes attributes = Paths.getAttributesFromSafTreeCursor(documentUri, c);
+                                FmItem fmItem = new FmItem(child, attributes);
+                                mFmItems.add(fmItem);
+                                if (fmItem.isDirectory) {
+                                    ++folderCount;
+                                }
+                                if (ThreadUtils.isInterrupted()) {
+                                    return;
                                 }
                             }
-                            if (documentId == null) {
-                                // Invalid document, probably loading still?
-                                continue;
-                            }
-                            Uri documentUri = DocumentsContract.buildDocumentUriUsingTree(mCurrentUri, documentId);
-                            Path child = Paths.getTreeDocument(path, documentUri);
-                            PathAttributes attributes = Paths.getAttributesFromSafTreeCursor(documentUri, c);
-                            FmItem fmItem = new FmItem(child, attributes);
-                            mFmItems.add(fmItem);
-                            if (fmItem.isDirectory) {
-                                ++folderCount;
-                            }
-                            if (ThreadUtils.isInterrupted()) {
-                                return;
-                            }
+                            e = System.currentTimeMillis();
+                            Log.d(TAG, "Time to fetch files via SAF: %d ms", e - s);
                         }
-                        e = System.currentTimeMillis();
-                        Log.d(TAG, "Time to fetch files via SAF: %d ms", e - s);
                     } catch (Exception ex) {
                         Log.w(TAG, "Failed query: %s", ex);
                     } finally {

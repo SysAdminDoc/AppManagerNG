@@ -85,7 +85,7 @@ public class PackageInstallerService extends ForegroundService {
     public void onCreate() {
         super.onCreate();
         mWakeLock = CpuUtils.getPartialWakeLock("installer");
-        mWakeLock.acquire();
+        CpuUtils.acquireWakeLock(mWakeLock);
     }
 
     @Override
