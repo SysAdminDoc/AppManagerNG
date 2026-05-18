@@ -130,6 +130,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-37/`](.ai/research/2026-05-17-pass-37/) | pass 37 | Backup-aware Doze allowlist diagnostics: 60-second Doze re-polls with `device_idle_constants` / `DeviceConfig device_idle` one-line diffs and OEM-policy hints. |
 | [`.ai/research/2026-05-17-pass-38/`](.ai/research/2026-05-17-pass-38/) | pass 38 | Achno Samsung debloat cross-check: audit-clean comparison against local debloat datasets; no data mutation because exact misses were typos/activity names/unverified single-source IDs. |
 | [`.ai/research/2026-05-17-pass-39/`](.ai/research/2026-05-17-pass-39/) | pass 39 | Restricted Settings unlock walkthrough: install-source-aware Privileges row, Mode Doctor probe, App info / Accessibility deep-links, and classification tests. |
+| [`.ai/research/2026-05-18-iter-91/`](.ai/research/2026-05-18-iter-91/) | iter 91 | Dhizuku provider detection slice: no direct API AAR, Settings -> Privileges row, Mode Doctor probe, onboarding status, and minSdk-blocked DPM carryover. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -517,8 +518,11 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
   `MIN_ANDROID_17_COMPATIBLE_VERSION` remains unknown.
 - **ADB** — wireless ADB pairing wizard shipped 2026-05-14.
 - **KernelSU / APatch / Magisk / ZygiskNext** — detected by `runner/RootManagerInfo`, surfaced as suffix on the onboarding sheet's Root status line.
-- **Dhizuku (DPM via Binder proxy)** — open T5 row. Do not add `io.github.iamr0s:Dhizuku-API`
-  directly until the API-21 floor conflict is resolved; upstream Dhizuku-API `2.5.4`
+- **Dhizuku (DPM via Binder proxy)** — `dhizuku/DhizukuBridge` detects installed
+  Dhizuku, official DeviceOwner/ProfileOwner component, API provider visibility,
+  API permission, and Android 8-16 bounds in onboarding, Settings -> Privileges,
+  and Mode Doctor without linking the Dhizuku-API AAR. Full DPM operations remain
+  blocked until the API-21 floor conflict is resolved; upstream Dhizuku-API `2.5.4`
   currently declares `MIN_SDK = 26`.
 - **Battery optimization auto-fix** — `self/SelfBatteryOptimization.java` is the canonical
   helper for AppManagerNG's own Doze exemption state. Use it instead of adding new

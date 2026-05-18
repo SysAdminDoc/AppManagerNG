@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Dhizuku provider diagnostics (2026-05-18)
+
+- Added a no-dependency Dhizuku provider probe that detects the installed
+  manager version, official DeviceOwner/ProfileOwner component, API provider
+  visibility, and AppManagerNG's Dhizuku API permission state.
+- Settings -> Privileges and Mode Doctor now surface Dhizuku status without
+  linking the Dhizuku-API AAR, preserving AppManagerNG's API-21 floor while the
+  upstream API remains minSdk 26.
+- The onboarding capability sheet now shows a Dhizuku status signal when a
+  Dhizuku install or active owner is present.
+- Added focused JVM coverage for the Dhizuku package/provider/action constants
+  and Android version guardrails.
+
 ### Added — File Manager ZIP archive actions (2026-05-18)
 
 - Added File Manager actions to create a ZIP archive from the current selection

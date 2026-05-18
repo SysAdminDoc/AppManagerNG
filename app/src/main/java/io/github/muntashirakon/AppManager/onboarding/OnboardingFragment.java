@@ -27,6 +27,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -249,6 +250,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         TextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
         View shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
         bindShizukuStatus(shizukuStatus, shizukuAutoStartHint, shizukuAutoStartAction);
+        TextView dhizukuStatus = view.findViewById(R.id.status_dhizuku);
+        bindDhizukuStatus(dhizukuStatus);
         TextView shizukuAndroid17Warning = view.findViewById(R.id.warning_shizuku_android17);
         bindShizukuWarning(shizukuAndroid17Warning);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
@@ -423,6 +426,46 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
         bindCapabilityStatus(statusView, available, statusRes, statusRes, args);
         bindShizukuAutoStartHint(autoStartHint, autoStartAction, recommendedVersion);
+    }
+
+    private void bindDhizukuStatus(@Nullable TextView statusView) {
+        if (statusView == null) return;
+        DhizukuBridge.Result result = DhizukuBridge.probe(requireContext());
+        if (!result.isInstalled() && !result.isOfficialOwner()) {
+            statusView.setVisibility(View.GONE);
+            return;
+        }
+        statusView.setVisibility(View.VISIBLE);
+        int statusRes;
+        boolean available;
+        if (DhizukuBridge.isBelowMinimumSupportedAndroidVersion(result.sdk)) {
+            statusRes = R.string.onboarding_mode_dhizuku_status_unsupported;
+            available = false;
+        } else if (result.isOfficialOwner()) {
+            statusRes = result.apiPermissionGranted
+                    ? R.string.onboarding_mode_dhizuku_status_ready
+                    : R.string.onboarding_mode_dhizuku_status_needs_permission;
+            available = result.apiPermissionGranted;
+        } else {
+            statusRes = R.string.onboarding_mode_dhizuku_status_inactive;
+            available = false;
+        }
+        int color = MaterialColors.getColor(statusView, available
+                ? com.google.android.material.R.attr.colorOnPrimaryContainer
+                : com.google.android.material.R.attr.colorOnSurfaceVariant);
+        statusView.setText(statusRes);
+        statusView.setTextColor(color);
+        statusView.setBackground(null);
+        statusView.setCompoundDrawablePadding(getResources()
+                .getDimensionPixelSize(io.github.muntashirakon.ui.R.dimen.padding_very_small));
+        Drawable icon = ContextCompat.getDrawable(requireContext(), available
+                ? R.drawable.ic_check_circle
+                : io.github.muntashirakon.ui.R.drawable.ic_caution);
+        if (icon != null) {
+            icon = DrawableCompat.wrap(icon.mutate());
+            DrawableCompat.setTint(icon, color);
+        }
+        statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
     }
 
     private void bindShizukuAutoStartHint(@Nullable TextView autoStartHint, @Nullable View autoStartAction,
