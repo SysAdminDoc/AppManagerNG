@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Audio-volume AppOps preset (2026-05-18)
+
+- AppOps now exposes the Android audio-volume op family as named constants,
+  including media, ring, alarm, notification, Bluetooth, voice, master, and
+  accessibility volume.
+- App Details -> App ops has a dedicated action to apply one mode to all
+  supported audio-volume ops for the selected package, using the existing
+  UID-scoped `IAppOpsService` mode path.
+- Added focused coverage for supported audio-volume op enumeration, fallback
+  labels, and UID-mode routing.
+
 ### Added — Root-only Android system data backups (2026-05-18)
 
 - Root/system mode now exposes a **System data** backup category for the
