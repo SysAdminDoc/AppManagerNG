@@ -7,11 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 108**. Iter-108 closed the
-> File Manager Recursive In-Folder Search row: File Manager now exposes a
-> toolbar search action, debounces recursive folder matching by 250 ms, shows a
-> clearable active-search chip, and includes containing-folder context for
-> nested matches.
+> Last consolidated: **2026-05-18 iter 109**. Iter-109 closed the
+> Material Files Checksum Properties Tab row as already implemented:
+> `FilePropertiesDialogFragment` already exposes a per-file Checksums action
+> backed by `ChecksumsDialogFragment` for arbitrary File Manager paths.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -149,6 +148,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-106/`](.ai/research/2026-05-18-iter-106/) | iter 106 | Settings portability: snapshot schema v2 exports rule TSVs, merges imported preferences/rule rows, and updates Settings copy/counts for the full migration bundle. |
 | [`.ai/research/2026-05-18-iter-107/`](.ai/research/2026-05-18-iter-107/) | iter 107 | Install-date filtering: Finder `install_date` option, main-list persisted install-date range, and visible active-filter count chips with clear actions. |
 | [`.ai/research/2026-05-18-iter-108/`](.ai/research/2026-05-18-iter-108/) | iter 108 | File Manager recursive in-folder search: toolbar SearchView, 250 ms debounce, active-search clear chip, nested match location subtitles, and hidden dot-path option parity. |
+| [`.ai/research/2026-05-18-iter-109/`](.ai/research/2026-05-18-iter-109/) | iter 109 | Checksum properties audit: `FilePropertiesDialogFragment` already links arbitrary File Manager paths to `ChecksumsDialogFragment`, so the Material Files checksum properties row was stale. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
