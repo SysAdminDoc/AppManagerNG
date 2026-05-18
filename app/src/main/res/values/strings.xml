@@ -2377,11 +2377,18 @@
     <string name="pref_backup_schedule_run_now_msg">Queue one immediate run with the scheduled-backup engine.</string>
     <string name="pref_backup_schedule_run_now_queued">Scheduled backup queued</string>
     <string name="pref_backup_schedule_status">Schedule status</string>
-    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%5$s</xliff:g></string>
+    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%5$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%6$s</xliff:g></string>
     <string name="pref_backup_schedule_state_enabled">Enabled</string>
     <string name="pref_backup_schedule_state_disabled">Disabled</string>
     <string name="pref_backup_schedule_charging_required">Required</string>
     <string name="pref_backup_schedule_charging_not_required">Not required</string>
+    <string name="pref_backup_schedule_battery_exempt">Exempt</string>
+    <string name="pref_backup_schedule_battery_optimized">Optimized</string>
+    <string name="pref_backup_schedule_battery_unsupported">Not applicable</string>
+    <string name="pref_backup_schedule_battery_optimization_title">Battery optimization for scheduled backups</string>
+    <string name="pref_backup_schedule_battery_optimization_msg">Scheduled backups are more reliable when AppManagerNG is exempt from Android battery optimization. Open Android\'s exemption prompt now?</string>
+    <string name="pref_backup_schedule_battery_optimization_open">Request exemption</string>
+    <string name="pref_backup_schedule_battery_auto_fixed">Battery optimization exemption enabled for scheduled backups.</string>
     <string name="pref_backup_schedule_never_run">Last run: never</string>
     <string name="pref_backup_schedule_last_run">Last run: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g> - <xliff:g id="result" example="Backed up 3 apps">%2$s</xliff:g></string>
     <string name="auto_backup_notification_channel">Scheduled backup</string>
