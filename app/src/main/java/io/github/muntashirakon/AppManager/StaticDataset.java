@@ -90,21 +90,24 @@ public class StaticDataset {
         return ContextUtils.getContext().getResources().getStringArray(R.array.tracker_signatures);
     }
 
-    public static AhoCorasick getSearchableTrackerSignatures() {
+    public static synchronized AhoCorasick getSearchableTrackerSignatures() {
+        // Synchronized: AhoCorasick owns native memory released via cleanup(); a race
+        // between two first-callers (or a first-caller and cleanup()) could leak the
+        // unreferenced instance or close the one another thread is still scanning.
         if (sAhoCorasickTrackerCache == null) {
             sAhoCorasickTrackerCache = new AhoCorasick(getTrackerCodeSignatures());
         }
         return sAhoCorasickTrackerCache;
     }
 
-    public static void cleanup() {
+    public static synchronized void cleanup() {
         if (sAhoCorasickTrackerCache != null) {
             sAhoCorasickTrackerCache.close();
             sAhoCorasickTrackerCache = null;
         }
     }
 
-    public static String[] getTrackerNames() {
+    public static synchronized String[] getTrackerNames() {
         if (sTrackerNames == null) {
             sTrackerNames = ContextUtils.getContext().getResources().getStringArray(R.array.tracker_names);
         }
@@ -112,19 +115,19 @@ public class StaticDataset {
     }
 
     @WorkerThread
-    public static List<DebloatObject> getDebloatObjects() {
+    public static synchronized List<DebloatObject> getDebloatObjects() {
         if (sDebloatObjects == null) {
             sDebloatObjects = loadDebloatObjects(ContextUtils.getContext(), new Gson());
         }
         return sDebloatObjects;
     }
 
-    public static void clearDebloatObjectsCache() {
+    public static synchronized void clearDebloatObjectsCache() {
         sDebloatObjects = null;
     }
 
     @WorkerThread
-    public static List<DebloatObject> getDebloatObjectsWithInstalledInfo(@NonNull Context context) {
+    public static synchronized List<DebloatObject> getDebloatObjectsWithInstalledInfo(@NonNull Context context) {
         AppDb appDb = new AppDb();
         if (sDebloatObjects == null) {
             sDebloatObjects = loadDebloatObjects(context, new Gson());

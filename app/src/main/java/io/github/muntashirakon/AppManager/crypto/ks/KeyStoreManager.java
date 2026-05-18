@@ -87,14 +87,14 @@ public class KeyStoreManager {
     @SuppressLint("StaticFieldLeak")
     private static KeyStoreManager sInstance;
 
-    public static KeyStoreManager getInstance() throws Exception {
+    public static synchronized KeyStoreManager getInstance() throws Exception {
         if (sInstance == null) {
             sInstance = new KeyStoreManager();
         }
         return sInstance;
     }
 
-    public static void reloadKeyStore() throws Exception {
+    public static synchronized void reloadKeyStore() throws Exception {
         sInstance = new KeyStoreManager();
     }
 
