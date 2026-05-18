@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Android full-SDK version helpers (2026-05-18)
+
+- Added `AndroidUtils.sdkAtLeast(int major, int minor)` plus full-SDK
+  encoding helpers so Android 16.1+ gates can use `SDK_INT_FULL` semantics
+  from one call site.
+- Migrated the current Android 16 scheduled-backup ProgressStyle and
+  JobScheduler diagnostics gates from raw `SDK_INT >= 36` checks to the helper.
+- Existing older major-version guards remain unchanged because they do not
+  distinguish minor Android releases.
+
 ### Added — KernelSU sulog/seccomp diagnostics (2026-05-18)
 
 - Settings -> Privileges now shows a KernelSU status row when KernelSU is the
