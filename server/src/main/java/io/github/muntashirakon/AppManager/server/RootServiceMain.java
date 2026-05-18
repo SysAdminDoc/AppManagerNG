@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Process;
@@ -193,18 +194,21 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
                 System.exit(0);
         }
 
-        // Calling createPackageContext crashes on LG ROM
-        // Override the system resources object to prevent crashing
-        try {
-            // This class only exists on LG ROMs with broken implementations
-            Class.forName("com.lge.systemservice.core.integrity.IntegrityManager");
-            // If control flow goes here, we need the resource hack
-            Resources systemRes = Resources.getSystem();
-            Resources wrapper = new ResourcesWrapper(systemRes);
-            Field systemResField = Resources.class.getDeclaredField("mSystem");
-            systemResField.setAccessible(true);
-            systemResField.set(null, wrapper);
-        } catch (ReflectiveOperationException ignored) {}
+        if (Build.VERSION.SDK_INT < 37) {
+            // Calling createPackageContext crashes on some older LG ROMs. The workaround writes
+            // Resources.mSystem, which Android 17 rejects for targetSdk 37 because the field is
+            // static-final. Keep the legacy workaround only where the platform still permits it.
+            try {
+                // This class only exists on LG ROMs with broken implementations
+                Class.forName("com.lge.systemservice.core.integrity.IntegrityManager");
+                // If control flow goes here, we need the resource hack
+                Resources systemRes = Resources.getSystem();
+                Resources wrapper = new ResourcesWrapper(systemRes);
+                Field systemResField = Resources.class.getDeclaredField("mSystem");
+                systemResField.setAccessible(true);
+                systemResField.set(null, wrapper);
+            } catch (ReflectiveOperationException ignored) {}
+        }
         int userId = uid / 100_000;
         int flags = Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY;
         Context context = createPackageContextAsUser(name.getPackageName(), userId, flags);

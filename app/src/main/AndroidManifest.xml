@@ -13,6 +13,7 @@
     <uses-sdk tools:overrideLibrary="rikka.shizuku.aidl,rikka.shizuku.api,rikka.shizuku.provider,rikka.shizuku.shared" />
 
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission
         android:name="android.permission.ADJUST_RUNTIME_PERMISSIONS_POLICY"

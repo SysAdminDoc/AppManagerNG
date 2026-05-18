@@ -181,6 +181,11 @@ public class ModeOfOpsPreference extends Fragment {
                     updateViews();
                     Ops.requestShizukuPermission(requireActivity(), mModel);
                     return;
+                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                    mModeOfOpsAlertDialog.dismiss();
+                    updateViews();
+                    Ops.displayLocalNetworkPermissionMessage(requireActivity(), mModel);
+                    return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         mModeOfOpsAlertDialog.dismiss();

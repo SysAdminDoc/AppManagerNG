@@ -148,6 +148,10 @@ public class SplashActivity extends AppCompatActivity {
                     Log.d(TAG, "Request Shizuku permission.");
                     Ops.requestShizukuPermission(this, mViewModel);
                     return;
+                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                    Log.d(TAG, "Local network permission required for wireless debugging.");
+                    Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
+                    return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     Log.d(TAG, "Display pairing dialog.");
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

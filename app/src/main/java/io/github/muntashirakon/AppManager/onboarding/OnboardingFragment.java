@@ -661,6 +661,9 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                     Ops.pairAdbInput(activity, callback);
                 }
                 return;
+            case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                Ops.displayLocalNetworkPermissionMessage(activity, callback);
+                return;
             case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
                 Ops.displayIncompleteUsbDebuggingMessage(activity);
                 return;

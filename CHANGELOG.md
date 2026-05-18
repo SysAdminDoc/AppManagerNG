@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 targetSdk 37 audit batch (2026-05-18)
+
+- Declared the Android 17 `ACCESS_LOCAL_NETWORK` permission and added a
+  targetSdk/runtime gate before Wireless ADB mDNS discovery tries to locate
+  pairing or connect services.
+- Added a local-network permission blocker dialog for startup, Settings,
+  onboarding, and background Wireless ADB reconnect paths.
+- Legacy-gated the remaining `Resources.mSystem` static-final reflection
+  workaround to pre-API 37 devices, preserving the old LG ROM fix while avoiding
+  Android 17's static-final write ban.
+- Documented the targetSdk=37 audit batch for local-network access,
+  static-final reflection, Android Keystore entry caps, MemoryLimiter exit
+  reasons, native DCL, and `IntentSender` BAL hardening.
+
 ### Documentation — F-Droid ROM preseed templates (2026-05-18)
 
 - Added a ROM-builder guide for F-Droid 2.0 repository pre-seeding, including
