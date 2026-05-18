@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 public class Signer {
     public static final String TAG = "Signer";
@@ -219,7 +220,7 @@ public class Signer {
         }
         Log.i(TAG, "%s - key size: %s", charSequence, (bitLength != -1 ? String.valueOf(bitLength) : "Unknown"));
         String algorithm = publicKey.getAlgorithm();
-        Log.i(TAG, "%s - key algorithm: %s", charSequence, algorithm);
+        Log.i(TAG, "%s - key algorithm: %s", charSequence, Utils.prettifyKeyAlgorithmName(algorithm));
         logEncoded(charSequence, publicKey.getEncoded());
     }
 
