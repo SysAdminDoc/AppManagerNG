@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 126**. Iter-126 shipped the Android 17
-> cleartext deprecation App Info badge: packages that set
-> `android:usesCleartextTraffic="true"` without a Network Security Config now
-> receive a caution tag, backed by hidden-API access to
-> `ApplicationInfo.networkSecurityConfigRes` and a focused predicate test.
+> Last consolidated: **2026-05-18 iter 127**. Iter-127 shipped Material You /
+> Monet widget theming: existing home-screen widgets now resolve a shared
+> dynamic palette from the themed context, apply RemoteViews tints at runtime,
+> and use Android 12+ system dynamic color resources for widget XML previews and
+> fallbacks.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -167,6 +167,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-124/`](.ai/research/2026-05-18-iter-124/) | iter 124 | Android 17 targetSdk=37 audit batch: Wireless ADB local-network permission preflight, legacy-gated static-final `Resources.mSystem` workaround, and clean Keystore/MemoryLimiter/native-DCL/IntentSender BAL findings. |
 | [`.ai/research/2026-05-18-iter-125/`](.ai/research/2026-05-18-iter-125/) | iter 125 | Android 17 ML-DSA certificate OID closure: verified existing OID display-name mapping in Package Info and Scanner, kept OID display, and fixed `UtilsCertificateAlgorithmTest` JVM class initialization. |
 | [`.ai/research/2026-05-18-iter-126/`](.ai/research/2026-05-18-iter-126/) | iter 126 | Android 17 cleartext deprecation badge: App Info warns when manifest-wide cleartext is enabled without a Network Security Config, with hidden `networkSecurityConfigRes` compat access and predicate coverage. |
+| [`.ai/research/2026-05-18-iter-127/`](.ai/research/2026-05-18-iter-127/) | iter 127 | Material You widget theming: shared AppWidget palette helper, dynamic RemoteViews tints for usage / clear-cache / log widgets, and Android 12+ system color XML fallback mappings. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

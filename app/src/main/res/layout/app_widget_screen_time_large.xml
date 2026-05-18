@@ -61,7 +61,7 @@
                 android:layout_height="16dp"
                 android:layout_margin="4dp"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#d4e3ff" />
+                android:backgroundTint="?attr/colorTertiaryContainer" />
 
             <TextView
                 android:id="@+id/app3_label"
@@ -88,7 +88,7 @@
                 android:layout_height="16dp"
                 android:layout_margin="4dp"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#565e71" />
+                android:backgroundTint="?attr/colorSecondaryContainer" />
 
             <TextView
                 android:id="@+id/app2_label"
@@ -115,7 +115,7 @@
                 android:layout_height="16dp"
                 android:layout_margin="4dp"
                 android:background="@drawable/circle_background"
-                android:backgroundTint="#1b1b1b" />
+                android:backgroundTint="?attr/colorPrimaryContainer" />
 
             <TextView
                 android:id="@+id/app1_label"
@@ -167,10 +167,10 @@
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
                     android:background="@drawable/circle_background"
-                    android:backgroundTint="#1b1b1b"
+                    android:backgroundTint="?attr/colorPrimaryContainer"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:textColor="#f9f9f9"
+                    android:textColor="?attr/colorOnPrimaryContainer"
                     android:textSize="@dimen/font_size_large"
                     android:textStyle="bold"
                     tools:text="~1h" />
@@ -184,10 +184,10 @@
                     android:layout_marginEnd="25dp"
                     android:layout_marginBottom="95dp"
                     android:background="@drawable/circle_background"
-                    android:backgroundTint="#565e71"
+                    android:backgroundTint="?attr/colorSecondaryContainer"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:textColor="#f9f9f9"
+                    android:textColor="?attr/colorOnSecondaryContainer"
                     android:textSize="@dimen/font_size_large"
                     android:textStyle="bold"
                     tools:text="45m" />
@@ -201,10 +201,10 @@
                     android:layout_marginEnd="55dp"
                     android:layout_marginBottom="155dp"
                     android:background="@drawable/circle_background"
-                    android:backgroundTint="#d4e3ff"
+                    android:backgroundTint="?attr/colorTertiaryContainer"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:textColor="#1b1b1b"
+                    android:textColor="?attr/colorOnTertiaryContainer"
                     android:textSize="@dimen/font_size_large"
                     android:textStyle="bold"
                     tools:text="20m" />
