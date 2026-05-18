@@ -26,6 +26,7 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
+import io.github.muntashirakon.AppManager.runner.KernelSuDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
@@ -51,6 +52,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mSelfTestPref;
     private Preference mRootManagerPref;
     private Preference mCapabilityDroppingPref;
+    private Preference mKernelSuPref;
     private Preference mShizukuPref;
     private Preference mDhizukuPref;
     private Preference mAdbPref;
@@ -59,6 +61,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mRestrictedSettingsPref;
     private Preference mModeDoctorPref;
     private Preference mBootstrapSmokeTestPref;
+    @Nullable
+    private KernelSuDiagnostics.Result mKernelSuLastResult;
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -68,6 +72,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mSelfTestPref = requirePreference("privilege_health_self_test");
         mRootManagerPref = requirePreference("privilege_health_root_manager");
         mCapabilityDroppingPref = requirePreference("privilege_health_capability_dropping");
+        mKernelSuPref = requirePreference("privilege_health_kernelsu");
         mShizukuPref = requirePreference("privilege_health_shizuku");
         mDhizukuPref = requirePreference("privilege_health_dhizuku");
         mAdbPref = requirePreference("privilege_health_adb");
@@ -78,6 +83,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
             bindCapabilityDroppingAsync();
+            return true;
+        });
+        mKernelSuPref.setOnPreferenceClickListener(preference -> {
+            showKernelSuDetails();
             return true;
         });
         mBootstrapSmokeTestPref.setOnPreferenceClickListener(preference -> {
@@ -136,6 +145,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindRestrictedSettings(context);
         bindRootManagerAsync(context.getApplicationContext());
         bindCapabilityDroppingAsync();
+        bindKernelSuAsync(context.getApplicationContext());
     }
 
     private void bindMode(@NonNull Context context) {
@@ -215,6 +225,40 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 break;
         }
         mCapabilityDroppingPref.setSummary(appendMagiskCapabilityContext(summary, result));
+    }
+
+    private void bindKernelSuAsync(@NonNull Context appContext) {
+        mKernelSuPref.setSummary(R.string.loading);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            KernelSuDiagnostics.Result result = KernelSuDiagnostics.probe(appContext);
+            ThreadUtils.postOnMainThread(() -> bindKernelSu(result));
+        });
+    }
+
+    private void bindKernelSu(@NonNull KernelSuDiagnostics.Result result) {
+        if (!isAdded()) return;
+        mKernelSuLastResult = result;
+        mKernelSuPref.setEnabled(true);
+        switch (result.state) {
+            case NOT_KERNELSU:
+                mKernelSuPref.setEnabled(false);
+                mKernelSuPref.setSummary(R.string.privilege_health_kernelsu_not_detected);
+                break;
+            case UNAVAILABLE:
+                mKernelSuPref.setSummary(getString(R.string.privilege_health_kernelsu_unavailable,
+                        getRootManagerSourceLabel(result.source)));
+                break;
+            case ACTIVE:
+                mKernelSuPref.setSummary(getString(R.string.privilege_health_kernelsu_summary,
+                        KernelSuDiagnostics.formatSeccompMode(result.seccompMode),
+                        getKernelSuSulogSummary(result)));
+                break;
+            case UNKNOWN:
+            default:
+                mKernelSuPref.setSummary(getString(R.string.privilege_health_kernelsu_unknown,
+                        result.error != null ? result.error : getString(R.string.state_unknown)));
+                break;
+        }
     }
 
     private void bindShizuku(@NonNull Context context) {
@@ -496,6 +540,30 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         builder.show();
     }
 
+    private void showKernelSuDetails() {
+        Context context = getContext();
+        if (context == null) return;
+        KernelSuDiagnostics.Result result = mKernelSuLastResult;
+        if (result == null) {
+            bindKernelSuAsync(context.getApplicationContext());
+            return;
+        }
+        String message = buildKernelSuDetails(result);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.privilege_health_kernelsu_title)
+                .setMessage(message)
+                .setNeutralButton(R.string.copy, (dialog, which) ->
+                        Utils.copyToClipboard(context, "KernelSU diagnostics", message));
+        Intent managerIntent = getKernelSuManagerIntent(context);
+        if (managerIntent != null) {
+            builder.setPositiveButton(R.string.open, (dialog, which) -> launchSettingsIntent(managerIntent))
+                    .setNegativeButton(R.string.close, null);
+        } else {
+            builder.setPositiveButton(R.string.close, null);
+        }
+        builder.show();
+    }
+
     private void launchSettingsIntent(@NonNull Intent intent) {
         Context context = getContext();
         if (context == null) return;
@@ -505,6 +573,20 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             Toast.makeText(context, R.string.privilege_health_restricted_settings_settings_unavailable,
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Nullable
+    private Intent getKernelSuManagerIntent(@NonNull Context context) {
+        Intent launchIntent = context.getPackageManager()
+                .getLaunchIntentForPackage(KernelSuDiagnostics.KERNELSU_PACKAGE);
+        if (launchIntent == null) {
+            launchIntent = context.getPackageManager()
+                    .getLaunchIntentForPackage(KernelSuDiagnostics.KERNELSU_NEXT_PACKAGE);
+        }
+        if (launchIntent != null) {
+            return launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        return null;
     }
 
     private void launchBatteryOptimizationSystemFlow(@NonNull Context context, boolean exempt) {
@@ -553,6 +635,45 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             default:
                 return getString(R.string.privilege_health_root_source_none);
         }
+    }
+
+    @NonNull
+    private String getKernelSuSulogSummary(@NonNull KernelSuDiagnostics.Result result) {
+        switch (result.sulogState) {
+            case READABLE:
+                if (result.sulogDenials.isEmpty()) {
+                    return getString(R.string.privilege_health_kernelsu_sulog_no_denials);
+                }
+                return getString(R.string.privilege_health_kernelsu_sulog_denials,
+                        result.sulogDenials.size());
+            case MISSING:
+                return getString(R.string.privilege_health_kernelsu_sulog_missing);
+            case UNAVAILABLE:
+            default:
+                return getString(R.string.privilege_health_kernelsu_sulog_unavailable);
+        }
+    }
+
+    @NonNull
+    private String buildKernelSuDetails(@NonNull KernelSuDiagnostics.Result result) {
+        StringBuilder message = new StringBuilder();
+        message.append(getString(R.string.privilege_health_kernelsu_details_state,
+                result.state.name(), getRootManagerSourceLabel(result.source)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_seccomp,
+                KernelSuDiagnostics.formatSeccompMode(result.seccompMode)));
+        message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_sulog,
+                getKernelSuSulogSummary(result)));
+        if (result.error != null) {
+            message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_error,
+                    result.error));
+        }
+        if (!result.sulogDenials.isEmpty()) {
+            message.append("\n\n").append(getString(R.string.privilege_health_kernelsu_details_recent_denials));
+            for (String line : result.sulogDenials) {
+                message.append('\n').append(line);
+            }
+        }
+        return message.toString();
     }
 
     @NonNull
