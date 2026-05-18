@@ -114,6 +114,12 @@ Obtainium will then auto-track every signed release published to this repo and n
 > [!TIP]
 > Pair Obtainium with [AppVerifier](https://github.com/soupslurpr/AppVerifier) so every Obtainium-fetched APK is checked against the published certificate fingerprint below before install.
 
+### ROM images
+
+ROM builders who pre-seed F-Droid repositories should ship both the F-Droid 2.0
+JSON file and the legacy XML file during the migration window. Templates and
+placement notes live in [docs/distribution/rom-fdroid-preseed.md](docs/distribution/rom-fdroid-preseed.md).
+
 > [!IMPORTANT]
 > **Brazil / Indonesia / Singapore / Thailand users:** Google's [Android Developer Verification](https://developers.google.com/android/play-protect/developer-verification) program begins enforcement on certified devices in your region on **2026-09-30**. After that date, AppManagerNG (like every other on-device installer) is subject to the platform verifier gate. See [docs/sideload-verification.md](docs/sideload-verification.md) for what AppManagerNG does and does not do regarding developer verification.
 
