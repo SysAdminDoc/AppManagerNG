@@ -34,6 +34,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_audio_volume_app_ops"
+        android:icon="@drawable/ic_tune"
+        android:title="@string/set_audio_volume_app_ops"
+        app:showAsAction="never" />
+
+    <item
         android:icon="@drawable/ic_sort"
         android:title="@string/sort"
         app:showAsAction="never">
