@@ -29,8 +29,10 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.dex.DexClasses;
 import io.github.muntashirakon.AppManager.dex.DexUtils;
+import io.github.muntashirakon.AppManager.dex.SmaliDecodeOptions;
 import io.github.muntashirakon.AppManager.fm.ContentType2;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.io.ExtendedFile;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -83,17 +85,18 @@ public class DexFileSystem extends VirtualFileSystem {
 
     @Override
     protected Path onMount() throws IOException {
+        SmaliDecodeOptions decodeOptions = Prefs.FileManager.getSmaliDecodeOptions();
         if (".dex".equals(getFile().getExtension())) {
             try (InputStream is = getFile().openInputStream()) {
-                mDexClasses = new DexClasses(is, getApiLevel());
+                mDexClasses = new DexClasses(is, getApiLevel(), decodeOptions);
             }
         } else { // APK/Zip file, may need caching
             ExtendedFile file = getFile().getFile();
             if (file != null) {
-                mDexClasses = new DexClasses(file, getApiLevel());
+                mDexClasses = new DexClasses(file, getApiLevel(), decodeOptions);
             } else {
                 File cachedFile = FileCache.getGlobalFileCache().getCachedFile(getFile());
-                mDexClasses = new DexClasses(cachedFile, getApiLevel());
+                mDexClasses = new DexClasses(cachedFile, getApiLevel(), decodeOptions);
             }
         }
         mRootNode = buildTree(Objects.requireNonNull(mDexClasses));
