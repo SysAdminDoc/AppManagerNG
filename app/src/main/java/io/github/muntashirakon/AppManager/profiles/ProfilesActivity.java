@@ -95,6 +95,35 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     }
                 }
             });
+    /**
+     * Compat-export of a profile in the upstream-AppManager JSON shape. NG-only
+     * fields are dropped via {@link UpstreamCompatProfileExporter#UPSTREAM_KNOWN_KEYS}
+     * so the resulting file imports cleanly into upstream App Manager.
+     * Filter-based profiles are refused with an explanation rather than written
+     * as a half-broken file.
+     */
+    private final ActivityResultLauncher<String> mExportUpstreamCompat = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("application/json"),
+            uri -> {
+                if (uri == null || mProfileId == null) return;
+                try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                    if (os == null) return;
+                    Path profilePath = ProfileManager.findProfilePathById(mProfileId);
+                    BaseProfile profile = BaseProfile.fromPath(profilePath);
+                    String compatJson = io.github.muntashirakon.AppManager.profiles.importers
+                            .UpstreamCompatProfileExporter.toJsonString(profile);
+                    os.write(compatJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    UIUtils.displayShortToast(R.string.profile_export_upstream_compat_done);
+                } catch (io.github.muntashirakon.AppManager.profiles.importers
+                        .UpstreamCompatProfileExporter.UpstreamCompatExportException e) {
+                    // User-facing case: NG-only profile type. Show a long toast with the
+                    // reason instead of the generic "export failed" toast.
+                    UIUtils.displayLongToast(e.getMessage());
+                } catch (IOException | JSONException e) {
+                    Log.e(TAG, "Upstream-compat export failed", e);
+                    UIUtils.displayShortToast(R.string.export_failed);
+                }
+            });
     private final ActivityResultLauncher<String> mImportProfile = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
@@ -462,6 +491,9 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 } else if (id == R.id.action_export) {
                     mActivity.mProfileId = profile.profileId;
                     mActivity.mExportProfile.launch(profile.name + ".am.json");
+                } else if (id == R.id.action_export_upstream_compat) {
+                    mActivity.mProfileId = profile.profileId;
+                    mActivity.mExportUpstreamCompat.launch(profile.name + ".upstream-am.json");
                 } else if (id == R.id.action_share) {
                     mActivity.shareProfileAsJson(profile);
                 } else if (id == R.id.action_copy) {
