@@ -153,11 +153,17 @@ public class DebloaterViewModel extends AndroidViewModel {
 
     @NonNull
     public ArrayList<UserPackagePair> getSelectedPackagesWithUsers() {
+        return getPackagesWithUsers(getSelectedDebloatObjects());
+    }
+
+    @NonNull
+    public ArrayList<UserPackagePair> getPackagesWithUsers(@NonNull List<DebloatObject> debloatObjects) {
         ArrayList<UserPackagePair> userPackagePairs = new ArrayList<>();
         int myUserId = UserHandleHidden.myUserId();
         int[] userIds = Users.getUsersIds();
-        for (String packageName : mSelectedPackages.keySet()) {
-            int[] userHandles = mSelectedPackages.get(packageName);
+        for (DebloatObject debloatObject : debloatObjects) {
+            String packageName = debloatObject.packageName;
+            int[] userHandles = debloatObject.getUsers();
             if (userHandles == null || userHandles.length == 0) {
                 // Assign current user in it
                 userPackagePairs.add(new UserPackagePair(packageName, myUserId));
