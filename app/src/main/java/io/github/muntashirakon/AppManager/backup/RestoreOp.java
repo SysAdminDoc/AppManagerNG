@@ -520,6 +520,7 @@ class RestoreOp implements Closeable {
         if (mPackageInfo == null) {
             throw new BackupException("Data restore is requested but the app isn't installed.");
         }
+        boolean hasSystemData = SystemDataBackup.hasSystemDataToken(mBackupMetadata.dataDirs);
         if (!mRequestedFlags.skipSignatureCheck()) {
             // Verify integrity of the data backups
             String checksum;
@@ -539,18 +540,47 @@ class RestoreOp implements Closeable {
                 }
             }
         }
-        // Force-stop and clear app data
-        PackageManagerCompat.clearApplicationUserData(mPackageName, mUserId);
+        if (!hasSystemData) {
+            // Force-stop and clear app data. Global system-data restores must
+            // never clear the Android framework package.
+            PackageManagerCompat.clearApplicationUserData(mPackageName, mUserId);
+        }
         // Restore backups
         for (int i = 0; i < mBackupMetadata.dataDirs.length; ++i) {
             String backupDataDir = mBackupMetadata.dataDirs[i];
             if (backupDataDir.equals(BackupManager.DATA_BACKUP_SPECIAL_ADB)) {
                 // Adb backup restore
                 restoreAdb(i);
+            } else if (SystemDataBackup.isSystemDataToken(backupDataDir)) {
+                restoreSystemData(backupDataDir, i);
             } else {
                 // Regular directory restore
                 restoreDirectory(mBackupMetadata.dataDirs[i], i);
             }
+        }
+    }
+
+    private void restoreSystemData(@NonNull String token, int index) throws BackupException {
+        if (!mRequestedFlags.backupSystemData()) {
+            return;
+        }
+        Path[] dataFiles = mBackupItem.getDataFiles(index);
+        if (dataFiles.length == 0) {
+            throw new BackupException("System data restore is requested but there are no data files for index " + index + ".");
+        }
+        SystemDataBackup.Source source = SystemDataBackup.getSource(token, mUserId);
+        try {
+            dataFiles = mBackupItem.decrypt(dataFiles);
+        } catch (IOException e) {
+            throw new BackupException("Failed to decrypt " + Arrays.toString(dataFiles), e);
+        }
+        try {
+            TarUtils.extract(mBackupInfo.tarType, dataFiles, source.source, source.filters, source.exclusions, null);
+        } catch (Throwable th) {
+            throw new BackupException("Failed to restore system data for index " + index + ".", th);
+        }
+        if (!Utils.isRoboUnitTest()) {
+            Runner.runCommand(new String[]{"restorecon", "-R", source.source.getFilePath()});
         }
     }
 
