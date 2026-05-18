@@ -270,7 +270,9 @@ public final class ComponentUtils {
                         if (name.equals("component-filter")) {
                             String fullKey = parser.getAttributeValue(null, "name");
                             ComponentName cn = ComponentName.unflattenFromString(fullKey);
-                            if (cn.getPackageName().equals(packageName)) {
+                            // Skip malformed entries individually instead of letting the NPE
+                            // bubble to the outer catch and truncate the rest of the file.
+                            if (cn != null && packageName.equals(cn.getPackageName())) {
                                 rules.put(cn.getClassName(), componentType);
                             }
                         }
