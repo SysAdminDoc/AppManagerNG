@@ -7,10 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 90**. Iter-90 closed the T13 File Manager
-> Compression tail by adding explicit ZIP create/extract actions, progress/cancel
-> dialogs, extract conflict choices, zip-slip rejection, focused archive tests,
-> and the test-manifest Shizuku minSdk override needed for app JVM tests.
+> Last consolidated: **2026-05-18 iter 92**. Iter-92 closed the T6 Scheduled
+> Auto-Backup core by adding a WorkManager-backed daily scheduler, Settings ->
+> Backup controls for time/charging/network/run-now/status, and a worker that
+> runs the existing backup engine over installed packages with multi-backup
+> naming. API 36/37 quota and JobDebugInfo diagnostics remain an open tail.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -131,6 +132,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-17-pass-38/`](.ai/research/2026-05-17-pass-38/) | pass 38 | Achno Samsung debloat cross-check: audit-clean comparison against local debloat datasets; no data mutation because exact misses were typos/activity names/unverified single-source IDs. |
 | [`.ai/research/2026-05-17-pass-39/`](.ai/research/2026-05-17-pass-39/) | pass 39 | Restricted Settings unlock walkthrough: install-source-aware Privileges row, Mode Doctor probe, App info / Accessibility deep-links, and classification tests. |
 | [`.ai/research/2026-05-18-iter-91/`](.ai/research/2026-05-18-iter-91/) | iter 91 | Dhizuku provider detection slice: no direct API AAR, Settings -> Privileges row, Mode Doctor probe, onboarding status, and minSdk-blocked DPM carryover. |
+| [`.ai/research/2026-05-18-iter-92/`](.ai/research/2026-05-18-iter-92/) | iter 92 | Scheduled Auto-Backup core: WorkManager 2.10.5 scheduler/worker, Backup settings controls, run-now/status history, and API 36/37 diagnostics carryover. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -156,6 +158,8 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | `gson_version` | `2.14.0` | Built-in `java.time` adapters, strict duplicate-JSON-key handling |
 | `libsu_version` | `6.0.0` | `Shell.cmd` migration audit clean |
 | `shizuku_version` | `13.1.5` | Shizuku-API floor for compile-time; runtime tested against Shizuku Manager 13.6.0+ |
+| `work_version` | `2.10.5` | Scheduled Auto-Backup core uses this API-21-compatible WorkManager line; 2.11.x raises the Android floor. |
+| `guava_version` | `32.1.3-android` | Compile-only pin for WorkManager's exposed `ListenableFuture`; runtime already packages Guava via APK-editing/editor dependencies. |
 | `jadx_version` | `1.4.7` | **7 releases behind** 1.5.5. Upgrade before T12 APK editing work. |
 | `min_sdk` | 21 | Bump gated by [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md). |
 | `activity_version` | `1.11.0` | API 21-22 dropped in 1.12.x |

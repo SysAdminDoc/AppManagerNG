@@ -29,6 +29,7 @@ ext {
     fastscroll_version = "1.3.0" // https://github.com/zhanghai/AndroidFastScroll
     gson_version = "2.14.0" // https://github.com/google/gson — built-in java.time adapters (drops `--add-opens` requirement on JDK17), strict duplicate-JSON-key handling (malformed profile / debloat-list / backup manifest with `{"foo": null, "foo": …}` now throws instead of silently overwriting)
     hiddenapibypass_version = "6.1" // https://github.com/LSPosed/AndroidHiddenApiBypass
+    guava_version = "32.1.3-android" // WorkManager exposes ListenableFuture; compile against Guava because runtime already packages it via smali/editor deps
     jadx_version = "1.4.7" // https://github.com/MuntashirAkon/jadx-android
     jb_annotation_version = "26.1.0" // https://github.com/JetBrains/java-annotations (Compile-only)
     libadb_version = "3.1.1" // https://github.com/MuntashirAkon/libadb-android
@@ -47,6 +48,7 @@ ext {
     unapkm_version = "v1.4" // https://github.com/MuntashirAkon/unapkm-android
     webkit_version = "1.14.0" // API 21-22 support dropped in 1.15.x
     window_version = "1.4.0" // https://developer.android.com/jetpack/androidx/releases/window — latest Activity Embedding stable line compatible with minSdk 21
+    work_version = "2.10.5" // https://developer.android.com/jetpack/androidx/releases/work — 2.11.x raises minSdk to 23; keep 2.10.x for API 21-22
     zstd_version = "1.5.7-7" // https://github.com/luben/zstd-jni
 
     // Test dependencies
