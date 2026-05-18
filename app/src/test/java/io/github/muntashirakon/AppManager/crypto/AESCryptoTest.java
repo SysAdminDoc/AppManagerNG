@@ -42,6 +42,36 @@ public class AESCryptoTest {
     }
 
     @Test
+    public void deriveArchiveKeyReturnsStableDistinctKeyPerBackupIv() throws CryptoException {
+        byte[] masterKey = new byte[32];
+        byte[] baseIv = new byte[AESCrypto.GCM_IV_SIZE_BYTES];
+        byte[] otherBaseIv = new byte[AESCrypto.GCM_IV_SIZE_BYTES];
+        for (int i = 0; i < masterKey.length; ++i) {
+            masterKey[i] = (byte) (i + 1);
+        }
+        otherBaseIv[0] = 1;
+
+        byte[] first = AESCrypto.deriveArchiveKey(masterKey, baseIv, masterKey.length);
+        byte[] firstAgain = AESCrypto.deriveArchiveKey(masterKey, baseIv, masterKey.length);
+        byte[] second = AESCrypto.deriveArchiveKey(masterKey, otherBaseIv, masterKey.length);
+
+        assertEquals(masterKey.length, first.length);
+        assertArrayEquals(first, firstAgain);
+        assertFalse(Arrays.equals(first, second));
+        assertFalse(Arrays.equals(masterKey, first));
+    }
+
+    @Test
+    public void deriveArchiveKeyPreservesMasterKeyLength() throws CryptoException {
+        byte[] masterKey = new byte[16];
+        byte[] baseIv = new byte[AESCrypto.GCM_IV_SIZE_BYTES];
+
+        byte[] derived = AESCrypto.deriveArchiveKey(masterKey, baseIv, masterKey.length);
+
+        assertEquals(masterKey.length, derived.length);
+    }
+
+    @Test
     public void getCanonicalFileNameForIvUsesPlainBackupNameOnBothPaths() {
         assertEquals("data0.tar.gz.0", AESCrypto.getCanonicalFileNameForIv(true,
                 "data0.tar.gz.0", "data0.tar.gz.0.aes", AESCrypto.AES_EXT));

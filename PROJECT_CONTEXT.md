@@ -7,16 +7,15 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 139**. Iter-139 shipped Android 17
-> ML-DSA Keystore `KeyPairGenerator` recognition by mapping `ML-DSA`,
+> Last consolidated: **2026-05-18 iter 140**. Iter-140 shipped AES backup
+> metadata v7: new AES-mode backups derive a per-archive content key from the
+> single file-backed `am_keystore.bks` AES master key and archive IV through
+> HKDF-SHA256, while v6-and-older restores keep the historical key path.
+>
+> Previous consolidated baseline: **2026-05-18 iter 139**. Iter-139 shipped
+> Android 17 ML-DSA Keystore `KeyPairGenerator` recognition by mapping `ML-DSA`,
 > `ML-DSA-65`, and `ML-DSA-87` key algorithm strings in Package Info public-key
 > rows and signer verification logs.
->
-> Previous consolidated baseline: **2026-05-18 iter 138**. Iter-138 parked the
-> Material Components 1.14 row after verifying 1.14.0 stable is published but
-> remains blocked by the explicit `min_sdk = 21` contract; the minSdk ceiling
-> ledger and `versions.gradle` comment now treat it as a floor-decision pressure
-> point.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -149,6 +148,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-137/`](.ai/research/2026-05-18-iter-137/) | iter 137 | AGP 9.2.0 / Gradle 9.4.1 migration: Gradle-10-safe build scripts, `androidComponents` server packaging, explicit test classpath hardening, and floss/full/unit-test verification. |
 | [`.ai/research/2026-05-18-iter-138/`](.ai/research/2026-05-18-iter-138/) | iter 138 | Material Components 1.14 stable-check parked: 1.14.0 is published but still blocked by the `min_sdk = 21` contract because it requires API 23. |
 | [`.ai/research/2026-05-18-iter-139/`](.ai/research/2026-05-18-iter-139/) | iter 139 | Android 17 ML-DSA key algorithm display: Package Info and signer logs now prettify `ML-DSA*` KeyProperties strings while preserving compile SDK 36. |
+| [`.ai/research/2026-05-18-iter-140/`](.ai/research/2026-05-18-iter-140/) | iter 140 | AES backup archive-key derivation: metadata v7 HKDF-SHA256 derives per-archive AES keys from the single BKS master key while preserving old restore paths. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -599,8 +599,8 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **FireOS SYSTEM USER** — Under Consideration (T11 row; ~1M Fire devices have no AM-class power tool).
 
 ### Backup engine
-- Crypto modes: AES / RSA / ECC / OpenPGP. AES is Android Keystore-backed (hardware-isolated where TEE available) — **not** the original roadmap's PBKDF2 sketch.
-- Metadata v6 (2026-05-16) introduces per-file AES-GCM IV derivation while keeping v5-and-older backups restorable.
+- Crypto modes: AES / RSA / ECC / OpenPGP. AES stores one file-backed `am_keystore.bks` master key; the BKS password is locally protected by the platform `AndroidKeyStore`.
+- Metadata v7 (2026-05-18) derives per-archive AES-GCM content keys from the AES master key and archive IV through HKDF-SHA256; metadata v6 (2026-05-16) introduced per-file AES-GCM IV derivation. v6-and-older backups remain restorable through their historical key path.
 - Integrity verification (`BackupItems.Checksum` + per-file SHA-256) was already shipped — closed as "pre-existing" in 2026-05-16 hygiene pass.
 - Data tar creation uses `BackupPathExclusionPatterns` to apply default throwaway-folder globs plus Settings, per-run, and profile-specific custom glob lists. Cache-like defaults are gated by the existing `BACKUP_CACHE` flag.
 - Multi-format ingest: APK / APKS / APKM / XAPK with OBB support.

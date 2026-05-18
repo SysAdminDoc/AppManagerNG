@@ -53,6 +53,16 @@ AppManagerNG cannot exceed the Android 17 per-app `AndroidKeyStore` cap of 50,00
 
 No remediation required. The roadmap row and engineering-debt register row are closed.
 
+## 2026-05-18 addendum
+
+Iter-140 added metadata-v7 AES archive-key derivation for defense in depth:
+new AES-mode backups now derive a per-archive AES-GCM content key from the
+single file-backed `am_keystore.bks` AES master key and the archive IV via
+HKDF-SHA256. This does **not** add any new `AndroidKeyStore` aliases. The
+platform-managed alias inventory above remains bounded at the same static
+1-2 aliases used to protect the BKS password, and v6-and-older backups still
+restore through their historical key path.
+
 ## Verification commands
 
 ```bash

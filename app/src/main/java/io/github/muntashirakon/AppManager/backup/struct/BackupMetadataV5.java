@@ -68,6 +68,7 @@ public class BackupMetadataV5 implements LocalizedString {
          *     <li>{@code 4} - Since v3.0.3 and v3.1.0-alpha02, AES GCM MAC size is 128 bits</li>
          *     <li>{@code 5} - Since v4.0.6, meta.json, info.json, privacy-friendly backup</li>
          *     <li>{@code 6} - AppManagerNG: AES-GCM derives a unique IV for each backup file</li>
+         *     <li>{@code 7} - AppManagerNG: AES mode derives a per-archive key from the BKS master key</li>
          * </ul>
          */
         public final int version;  // version
@@ -191,7 +192,7 @@ public class BackupMetadataV5 implements LocalizedString {
                     return new OpenPGPCrypto(ContextUtils.getContext(), keyIds);
                 case CryptoUtils.MODE_AES: {
                     Objects.requireNonNull(iv);
-                    AESCrypto aesCrypto = new AESCrypto(iv);
+                    AESCrypto aesCrypto = new AESCrypto(iv, version >= AESCrypto.ARCHIVE_KEY_DERIVATION_VERSION);
                     configureAesCrypto(aesCrypto);
                     return aesCrypto;
                 }

@@ -24,13 +24,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.DestroyFailedException;
 
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.crypto.ks.SecretKeyCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 
@@ -43,9 +46,13 @@ public class AESCrypto implements Crypto {
     public static final int MAC_SIZE_BITS_OLD = 32;
     public static final int MAC_SIZE_BITS = 128;
     public static final int FILE_IV_DERIVATION_VERSION = 6;
+    public static final int ARCHIVE_KEY_DERIVATION_VERSION = 7;
 
     private static final byte[] FILE_IV_DERIVATION_DOMAIN =
             "AppManagerNG AES-GCM file IV v1".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] ARCHIVE_KEY_DERIVATION_DOMAIN =
+            "AppManagerNG AES-GCM archive key v1".getBytes(StandardCharsets.UTF_8);
+    private static final String HKDF_ALGORITHM = "HmacSHA256";
 
     private final SecretKey mSecretKey;
     private final byte[] mIv;
@@ -56,7 +63,11 @@ public class AESCrypto implements Crypto {
     private boolean mDeriveIvPerFile;
 
     public AESCrypto(@NonNull byte[] iv) throws CryptoException {
-        this(iv, CryptoUtils.MODE_AES, null);
+        this(iv, false);
+    }
+
+    public AESCrypto(@NonNull byte[] iv, boolean deriveArchiveKey) throws CryptoException {
+        this(iv, CryptoUtils.MODE_AES, null, deriveArchiveKey);
     }
 
     @NonNull
@@ -67,43 +78,57 @@ public class AESCrypto implements Crypto {
 
     protected AESCrypto(@NonNull byte[] iv, @NonNull @CryptoUtils.Mode String mode, @Nullable byte[] encryptedAesKey)
             throws CryptoException {
+        this(iv, mode, encryptedAesKey, false);
+    }
+
+    protected AESCrypto(@NonNull byte[] iv, @NonNull @CryptoUtils.Mode String mode, @Nullable byte[] encryptedAesKey,
+                        boolean deriveArchiveKey)
+            throws CryptoException {
         mIv = iv;
         mParentMode = mode;
+        SecretKey secretKey;
         switch (mParentMode) {
             case CryptoUtils.MODE_AES:
+                SecretKey masterSecretKey = null;
                 try {
                     KeyStoreManager keyStoreManager = KeyStoreManager.getInstance();
-                    mSecretKey = keyStoreManager.getSecretKey(AES_KEY_ALIAS);
-                    if (mSecretKey == null) {
+                    masterSecretKey = keyStoreManager.getSecretKey(AES_KEY_ALIAS);
+                    if (masterSecretKey == null) {
                         throw new CryptoException("No SecretKey with alias " + AES_KEY_ALIAS);
                     }
+                    secretKey = deriveArchiveKey ? getArchiveSecretKey(masterSecretKey, iv) : masterSecretKey;
                 } catch (Exception e) {
                     throw new CryptoException(e);
+                } finally {
+                    if (deriveArchiveKey && masterSecretKey != null) {
+                        destroyKey(masterSecretKey);
+                    }
                 }
                 break;
             case CryptoUtils.MODE_RSA:
                 // Hybrid encryption using RSA
                 if (encryptedAesKey == null) {
                     // No encryption key provided, generate one
-                    mSecretKey = RSACrypto.generateAesKey();
+                    secretKey = RSACrypto.generateAesKey();
                 } else {
                     // Encryption key provided
-                    mSecretKey = RSACrypto.decryptAesKey(encryptedAesKey);
+                    secretKey = RSACrypto.decryptAesKey(encryptedAesKey);
                 }
                 break;
             case CryptoUtils.MODE_ECC:
                 // Hybrid encryption using ECC
                 if (encryptedAesKey == null) {
                     // No encryption key provided, generate one
-                    mSecretKey = ECCCrypto.generateAesKey();
+                    secretKey = ECCCrypto.generateAesKey();
                 } else {
                     // Encryption key provided
-                    mSecretKey = ECCCrypto.decryptAesKey(encryptedAesKey);
+                    secretKey = ECCCrypto.decryptAesKey(encryptedAesKey);
                 }
                 break;
             default:
                 throw new CryptoException("Unsupported mode " + mParentMode);
         }
+        mSecretKey = secretKey;
     }
 
     public void setMacSizeBits(int macSizeBits) {
@@ -246,10 +271,79 @@ public class AESCrypto implements Crypto {
         }
     }
 
+    @NonNull
+    private static SecretKey getArchiveSecretKey(@NonNull SecretKey masterSecretKey, @NonNull byte[] archiveIv)
+            throws CryptoException {
+        byte[] masterKey = masterSecretKey.getEncoded();
+        if (masterKey == null || (masterKey.length != 16 && masterKey.length != 32)) {
+            throw new CryptoException("AES master key must be 128 or 256 bits.");
+        }
+        byte[] archiveKey = deriveArchiveKey(masterKey, archiveIv, masterKey.length);
+        try {
+            return new SecretKeySpec(archiveKey, "AES");
+        } finally {
+            Utils.clearBytes(masterKey);
+            Utils.clearBytes(archiveKey);
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static byte[] deriveArchiveKey(@NonNull byte[] masterKey, @NonNull byte[] archiveIv, int keyLengthBytes)
+            throws CryptoException {
+        if (keyLengthBytes <= 0 || keyLengthBytes > 32) {
+            throw new CryptoException("Invalid AES archive key length " + keyLengthBytes);
+        }
+        try {
+            byte[] prk = hmac(archiveIv, masterKey);
+            try {
+                return hkdfExpand(prk, ARCHIVE_KEY_DERIVATION_DOMAIN, keyLengthBytes);
+            } finally {
+                Utils.clearBytes(prk);
+            }
+        } catch (Exception e) {
+            throw new CryptoException(e);
+        }
+    }
+
+    @NonNull
+    private static byte[] hkdfExpand(@NonNull byte[] pseudoRandomKey, @NonNull byte[] info, int length)
+            throws Exception {
+        byte[] output = new byte[length];
+        byte[] previous = new byte[0];
+        int offset = 0;
+        int counter = 1;
+        while (offset < length) {
+            Mac mac = Mac.getInstance(HKDF_ALGORITHM);
+            mac.init(new SecretKeySpec(pseudoRandomKey, HKDF_ALGORITHM));
+            mac.update(previous);
+            mac.update(info);
+            mac.update((byte) counter);
+            previous = mac.doFinal();
+            int copyLength = Math.min(previous.length, length - offset);
+            System.arraycopy(previous, 0, output, offset, copyLength);
+            offset += copyLength;
+            ++counter;
+        }
+        Utils.clearBytes(previous);
+        return output;
+    }
+
+    @NonNull
+    private static byte[] hmac(@NonNull byte[] key, @NonNull byte[] data) throws Exception {
+        Mac mac = Mac.getInstance(HKDF_ALGORITHM);
+        mac.init(new SecretKeySpec(key, HKDF_ALGORITHM));
+        return mac.doFinal(data);
+    }
+
     @Override
     public void close() {
+        destroyKey(mSecretKey);
+    }
+
+    private static void destroyKey(@NonNull SecretKey secretKey) {
         try {
-            SecretKeyCompat.destroy(mSecretKey);
+            SecretKeyCompat.destroy(secretKey);
         } catch (DestroyFailedException e) {
             Log.w(TAG, "Could not destroy AES secret key.", e);
         }
