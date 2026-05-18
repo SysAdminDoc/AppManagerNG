@@ -149,4 +149,26 @@ public class ShizukuBridgeTest {
         assertFalse(ShizukuBridge.wasPermissionRevokedAfterClearData(true, true));
         assertFalse(ShizukuBridge.wasPermissionRevokedAfterClearData(false, false));
     }
+
+    @Test
+    public void displayVersionPrefersInstalledVersionWhenPresent() {
+        assertEquals("13.6.0", ShizukuBridge.getDisplayVersion("13.6.0", 14, true));
+    }
+
+    @Test
+    public void displayVersionFallsBackToBinderApiVersionWhenHidden() {
+        // "Hide Shizuku" mode: package query returned null but binder is alive
+        // and reports an API version. Display should surface the API version
+        // with a (hidden) suffix so the user knows the install is healthy and
+        // the missing package label isn't a real missing-install signal.
+        assertEquals("api 14 (hidden)", ShizukuBridge.getDisplayVersion(null, 14, true));
+        assertEquals("api 14 (hidden)", ShizukuBridge.getDisplayVersion("", 14, true));
+    }
+
+    @Test
+    public void displayVersionReturnsNullWhenNoPackageAndNoBinder() {
+        assertNull(ShizukuBridge.getDisplayVersion(null, 0, false));
+        assertNull(ShizukuBridge.getDisplayVersion(null, 14, false));
+        assertNull(ShizukuBridge.getDisplayVersion(null, 0, true));
+    }
 }

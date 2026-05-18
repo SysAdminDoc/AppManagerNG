@@ -207,7 +207,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     }
 
     private void bindShizuku(@NonNull Context context) {
-        String versionName = ShizukuBridge.getInstalledVersionName(context);
+        // Prefer the display-friendly version that falls back to the binder-reported
+        // API version when "Hide Shizuku" mode hides the manager package from
+        // PackageManager queries (binder still works for authorized callers).
+        String versionName = ShizukuBridge.getDisplayVersion(context);
         boolean binderAlive = ShizukuBridge.isBinderAlive();
         boolean supportsUserService = ShizukuBridge.supportsUserService();
         boolean hasPermission = ShizukuBridge.hasPermission();
