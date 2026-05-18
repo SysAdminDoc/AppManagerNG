@@ -28,6 +28,32 @@
             android:layout_height="wrap_content"
             android:indeterminate="true" />
 
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fadingEdgeLength="@dimen/padding_medium"
+            android:fillViewport="true"
+            android:paddingHorizontal="@dimen/padding_small"
+            android:paddingTop="@dimen/padding_very_small"
+            android:paddingBottom="@dimen/padding_very_small"
+            android:requiresFadingEdge="horizontal"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/finder_active_filters"
+                style="@style/Widget.AppTheme.Chip.MainSuggestion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="false"
+                android:text="@string/clear_filters"
+                android:visibility="gone"
+                app:chipIcon="@drawable/ic_filter_list"
+                app:chipIconVisible="true"
+                app:closeIconVisible="true"
+                tools:visibility="visible" />
+
+        </HorizontalScrollView>
+
     </io.github.muntashirakon.widget.AppBarLayout>
 
     <io.github.muntashirakon.widget.RecyclerView

@@ -112,6 +112,40 @@
             app:itemSpacing="@dimen/padding_very_small"
             app:lineSpacing="@dimen/padding_very_small" />
 
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/install_date_filter_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/install_date_filter"
+                style="@style/Widget.AppTheme.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_very_small"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:minHeight="40dp"
+                android:text="@string/main_filter_install_date"
+                app:icon="@drawable/ic_calendar_month" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/clear_install_date_filter"
+                style="@style/Widget.AppTheme.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:text="@string/clear"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/options_text"
             android:layout_width="match_parent"

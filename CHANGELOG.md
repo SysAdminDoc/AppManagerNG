@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — install-date filtering and active filter indicators (2026-05-18)
+
+- Finder now exposes an `install_date` filter with date-picker backed
+  `before` and `after` predicates.
+- Main list filters now support a persisted install-date range from the quick
+  filter strip and list-options sheet.
+- Main list and Finder now show a clearable active-filter count chip whenever
+  non-default filters are hiding apps.
+
 ### Changed — settings snapshot portability (2026-05-18)
 
 - Snapshot exports now include blocking/freeze rule TSV files from

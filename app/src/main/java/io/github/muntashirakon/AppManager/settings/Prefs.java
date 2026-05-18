@@ -672,6 +672,22 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_FLAGS_INT, filters);
         }
 
+        public static long getInstallDateStartMillis() {
+            return AppPref.getLong(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_INSTALL_DATE_START_LONG);
+        }
+
+        public static void setInstallDateStartMillis(long startMillis) {
+            AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_INSTALL_DATE_START_LONG, startMillis);
+        }
+
+        public static long getInstallDateEndMillis() {
+            return AppPref.getLong(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_INSTALL_DATE_END_LONG);
+        }
+
+        public static void setInstallDateEndMillis(long endMillis) {
+            AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_INSTALL_DATE_END_LONG, endMillis);
+        }
+
         @Nullable
         public static String getFilteredProfileName() {
             String profileName = AppPref.getString(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_STR);

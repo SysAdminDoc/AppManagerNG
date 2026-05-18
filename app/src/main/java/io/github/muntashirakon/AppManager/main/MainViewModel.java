@@ -96,6 +96,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     private int mFilterFlags;
     @Nullable
     private String mFilterProfileName;
+    private long mInstallDateStartMillis;
+    private long mInstallDateEndMillis;
     @Nullable
     private int[] mSelectedUsers;
     private String mSearchQuery;
@@ -114,6 +116,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         mReverseSort = Prefs.MainPage.isReverseSort();
         mFilterFlags = Prefs.MainPage.getFilters();
         mFilterProfileName = Prefs.MainPage.getFilteredProfileName();
+        mInstallDateStartMillis = Prefs.MainPage.getInstallDateStartMillis();
+        mInstallDateEndMillis = Prefs.MainPage.getInstallDateEndMillis();
         mSelectedUsers = null; // TODO: 5/6/23 Load from prefs?
         if ("".equals(mFilterProfileName)) mFilterProfileName = null;
     }
@@ -132,7 +136,22 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     public boolean hasActiveFilters() {
         return mFilterFlags != MainListOptions.FILTER_NO_FILTER
                 || mFilterProfileName != null
+                || hasInstallDateFilter()
                 || mSelectedUsers != null;
+    }
+
+    public int getActiveFilterCount() {
+        int count = Integer.bitCount(mFilterFlags);
+        if (mFilterProfileName != null) {
+            ++count;
+        }
+        if (hasInstallDateFilter()) {
+            ++count;
+        }
+        if (mSelectedUsers != null) {
+            ++count;
+        }
+        return count;
     }
 
     @NonNull
@@ -316,6 +335,51 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         return mFilterProfileName;
     }
 
+    public boolean hasInstallDateFilter() {
+        return mInstallDateStartMillis > 0 || mInstallDateEndMillis > 0;
+    }
+
+    public long getInstallDateStartMillis() {
+        return mInstallDateStartMillis;
+    }
+
+    public long getInstallDateEndMillis() {
+        return mInstallDateEndMillis;
+    }
+
+    public void setInstallDateRange(long startMillis, long endMillis) {
+        if (startMillis <= 0 && endMillis <= 0) {
+            clearInstallDateRange();
+            return;
+        }
+        if (startMillis > 0 && endMillis > 0 && startMillis > endMillis) {
+            long tmp = startMillis;
+            startMillis = endMillis;
+            endMillis = tmp;
+        }
+        if (mInstallDateStartMillis == startMillis && mInstallDateEndMillis == endMillis) {
+            return;
+        }
+        mInstallDateStartMillis = startMillis;
+        mInstallDateEndMillis = endMillis;
+        Prefs.MainPage.setInstallDateStartMillis(mInstallDateStartMillis);
+        Prefs.MainPage.setInstallDateEndMillis(mInstallDateEndMillis);
+        cancelIfRunning();
+        mFilterResult = executor.submit(this::filterItemsByFlags);
+    }
+
+    public void clearInstallDateRange() {
+        if (!hasInstallDateFilter()) {
+            return;
+        }
+        mInstallDateStartMillis = 0L;
+        mInstallDateEndMillis = 0L;
+        Prefs.MainPage.setInstallDateStartMillis(0L);
+        Prefs.MainPage.setInstallDateEndMillis(0L);
+        cancelIfRunning();
+        mFilterResult = executor.submit(this::filterItemsByFlags);
+    }
+
     public void setSelectedUsers(@Nullable int[] selectedUsers) {
         if (selectedUsers == null) {
             if (mSelectedUsers == null) {
@@ -349,9 +413,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
         mFilterFlags = MainListOptions.FILTER_NO_FILTER;
         mFilterProfileName = null;
+        mInstallDateStartMillis = 0L;
+        mInstallDateEndMillis = 0L;
         mSelectedUsers = null;
         Prefs.MainPage.setFilters(mFilterFlags);
         Prefs.MainPage.setFilteredProfileName(null);
+        Prefs.MainPage.setInstallDateStartMillis(0L);
+        Prefs.MainPage.setInstallDateEndMillis(0L);
         cancelIfRunning();
         mFilterResult = executor.submit(this::filterItemsByFlags);
     }
@@ -556,7 +624,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
             }
             // Other filters
-            if (profileFilterOptions.isEmpty() && mFilterFlags == MainListOptions.FILTER_NO_FILTER) {
+            if (profileFilterOptions.isEmpty()
+                    && mFilterFlags == MainListOptions.FILTER_NO_FILTER
+                    && !hasInstallDateFilter()) {
                 if (!TextUtils.isEmpty(mSearchQuery)) {
                     filterItemsByQuery(candidateApplicationItems);
                 } else {
@@ -612,6 +682,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
                 List<FilterItem.FilteredItemInfo<ApplicationItem>> result = filterItem.getFilteredList(candidateApplicationItems);
                 for (FilterItem.FilteredItemInfo<ApplicationItem> item : result) {
+                    if (!matchesInstallDateRange(item.info)) {
+                        continue;
+                    }
                     if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SPLITS) != 0 && !item.info.hasSplits) {
                         continue;
                     }
@@ -660,6 +733,20 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             }
         }
         return false;
+    }
+
+    private boolean matchesInstallDateRange(@NonNull ApplicationItem item) {
+        if (!hasInstallDateFilter()) {
+            return true;
+        }
+        if (!item.isInstalled) {
+            return false;
+        }
+        long firstInstallTime = item.firstInstallTime;
+        if (mInstallDateStartMillis > 0 && firstInstallTime < mInstallDateStartMillis) {
+            return false;
+        }
+        return mInstallDateEndMillis <= 0 || firstInstallTime <= mInstallDateEndMillis;
     }
 
     @GuardedBy("applicationItems")

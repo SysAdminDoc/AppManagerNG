@@ -21,6 +21,7 @@ public final class FilterOptions {
             case "data_usage": return new DataUsageOption();
             case "freeze_unfreeze": return new FreezeOption();
             case "installed": return new InstalledOption();
+            case "install_date": return new InstallDateOption();
             case "installer": return new InstallerOption();
             case "last_update": return new LastUpdateOption();
             case "min_sdk": return new MinSdkOption();
