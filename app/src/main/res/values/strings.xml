@@ -1242,8 +1242,13 @@
     <string name="external_storage">External storage</string>
     <string name="sd_card">SD card</string>
     <string name="unlock_app_manager">Unlock AppManagerNG</string>
+    <string name="authenticate_to_install">Authenticate to install</string>
+    <string name="authenticate_to_uninstall">Authenticate to uninstall</string>
+    <string name="authenticate_to_clear_data">Authenticate to clear data</string>
     <string name="screen_lock">Screen lock</string>
     <string name="screen_lock_msg">Lock AppManagerNG using Android screen lock</string>
+    <string name="pref_enable_action_auth_gate">Require authentication for app changes</string>
+    <string name="pref_enable_action_auth_gate_msg">Ask for Android screen lock before install, uninstall, and clear-data actions.</string>
     <string name="type_null">No value</string>
     <string name="type_component_name">Component name</string>
     <string name="type_int_array">Array of integers</string>

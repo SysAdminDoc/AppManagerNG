@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -658,14 +659,16 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 }
                 return true;
             } else if (id == R.id.action_quick_uninstall) {
-                Intent uninstall = new Intent(Intent.ACTION_DELETE);
-                uninstall.setData(android.net.Uri.parse("package:" + item.packageName));
-                uninstall.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                try {
-                    mActivity.startActivity(uninstall);
-                } catch (Throwable t) {
-                    UIUtils.displayLongToast(R.string.error);
-                }
+                ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall, () -> {
+                    Intent uninstall = new Intent(Intent.ACTION_DELETE);
+                    uninstall.setData(android.net.Uri.parse("package:" + item.packageName));
+                    uninstall.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        mActivity.startActivity(uninstall);
+                    } catch (Throwable t) {
+                        UIUtils.displayLongToast(R.string.error);
+                    }
+                });
                 return true;
             } else if (id == R.id.action_quick_block_trackers) {
                 io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
@@ -735,18 +738,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     .setTitle(mActivity.getString(R.string.uninstall_app, item.label))
                     .setMessage(R.string.uninstall_app_again_message)
                     .setNegativeButton(R.string.no, null)
-                    .setPositiveButton(R.string.yes, (dialog, which) -> ThreadUtils.postOnBackgroundThread(() -> {
-                        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                        installer.setAppLabel(item.label);
-                        boolean uninstalled = installer.uninstall(item.packageName, UserHandleHidden.myUserId(), false);
-                        ThreadUtils.postOnMainThread(() -> {
-                            if (uninstalled) {
-                                displayLongToast(R.string.uninstalled_successfully, item.label);
-                            } else {
-                                displayLongToast(R.string.failed_to_uninstall, item.label);
-                            }
-                        });
-                    }))
+                    .setPositiveButton(R.string.yes, (dialog, which) ->
+                            ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall,
+                                    () -> ThreadUtils.postOnBackgroundThread(() -> {
+                                        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                                        installer.setAppLabel(item.label);
+                                        boolean uninstalled = installer.uninstall(item.packageName, UserHandleHidden.myUserId(), false);
+                                        ThreadUtils.postOnMainThread(() -> {
+                                            if (uninstalled) {
+                                                displayLongToast(R.string.uninstalled_successfully, item.label);
+                                            } else {
+                                                displayLongToast(R.string.failed_to_uninstall, item.label);
+                                            }
+                                        });
+                                    })))
                     .show();
             return;
         }

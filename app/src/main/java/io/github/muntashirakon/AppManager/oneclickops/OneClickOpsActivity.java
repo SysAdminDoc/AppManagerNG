@@ -47,6 +47,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchAppOpsOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchComponentOptions;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -486,11 +487,12 @@ public class OneClickOpsActivity extends BaseActivity {
                 .setMessage(getResources().getQuantityString(R.plurals.clear_uninstalled_app_data_confirmation,
                         selectedItems.size(), selectedItems.size()))
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.clear_data, (dialog, which) -> {
-                    BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNINSTALL,
-                            new ArrayList<>(selectedItems), null, null);
-                    launchService(item);
-                })
+                .setPositiveButton(R.string.clear_data, (dialog, which) ->
+                        ActionAuthGate.authenticate(this, R.string.authenticate_to_clear_data, () -> {
+                            BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_UNINSTALL,
+                                    new ArrayList<>(selectedItems), null, null);
+                            launchService(item);
+                        }))
                 .show();
     }
 

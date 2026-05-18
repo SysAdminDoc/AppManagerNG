@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchNetPolicyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.debloat.DebloaterActivity;
 import io.github.muntashirakon.AppManager.filters.FinderActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryActivity;
@@ -1104,6 +1105,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void handleBatchOp(@BatchOpsManager.OpType int op, @Nullable IBatchOpOptions options) {
+        if (viewModel == null) return;
+        if (op == BatchOpsManager.OP_UNINSTALL || op == BatchOpsManager.OP_CLEAR_DATA) {
+            int titleRes = op == BatchOpsManager.OP_UNINSTALL
+                    ? R.string.authenticate_to_uninstall
+                    : R.string.authenticate_to_clear_data;
+            ActionAuthGate.authenticate(this, titleRes, () -> handleBatchOpAfterAuth(op, options));
+            return;
+        }
+        handleBatchOpAfterAuth(op, options);
+    }
+
+    private void handleBatchOpAfterAuth(@BatchOpsManager.OpType int op, @Nullable IBatchOpOptions options) {
         if (viewModel == null) return;
         BatchOpsManager.Result input = new BatchOpsManager.Result(viewModel.getSelectedPackagesWithUsers());
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(op, input.getFailedPackages(), input.getAssociatedUsers(), options);

@@ -69,6 +69,7 @@ import io.github.muntashirakon.AppManager.apk.whatsnew.WhatsNewFragment;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -168,6 +169,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @NonNull
     private List<InstallDependencyChecker.Issue> mPendingDependencyIssues = Collections.emptyList();
     private boolean mDeveloperVerificationWarningShown;
+    private boolean mInstallActionAuthenticated;
     private final View.OnClickListener mAppInfoClickListener = v -> {
         assert mCurrentItem != null;
         try {
@@ -515,6 +517,13 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @UiThread
     @Override
     public void triggerInstall() {
+        if (!mInstallActionAuthenticated) {
+            ActionAuthGate.authenticate(this, R.string.authenticate_to_install, () -> {
+                mInstallActionAuthenticated = true;
+                triggerInstall();
+            });
+            return;
+        }
         if (!mDeveloperVerificationWarningShown
                 && DeveloperVerificationCompat.isVerifierServiceAvailable(this)) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
