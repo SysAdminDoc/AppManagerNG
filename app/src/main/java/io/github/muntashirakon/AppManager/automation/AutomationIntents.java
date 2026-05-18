@@ -39,6 +39,7 @@ public final class AutomationIntents {
     public static final String EXTRA_COMPONENT = "EXTRA_COMPONENT";
     public static final String EXTRA_PROFILE_ID = "EXTRA_PROFILE_ID";
     public static final String EXTRA_PROFILE_STATE = "EXTRA_PROFILE_STATE";
+    public static final String EXTRA_PROFILE_OVERRIDES = "EXTRA_PROFILE_OVERRIDES";
     public static final String EXTRA_BACKUP_NAME = "EXTRA_BACKUP_NAME";
     public static final String EXTRA_BACKUP_FLAGS = "EXTRA_BACKUP_FLAGS";
     public static final String EXTRA_DRY_RUN = "EXTRA_DRY_RUN";
