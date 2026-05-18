@@ -13,4 +13,9 @@
         android:icon="@drawable/ic_file_import"
         android:title="@string/pref_import" />
 
+    <item
+        android:id="@+id/action_import_external"
+        android:icon="@drawable/ic_file_import"
+        android:title="@string/profiles_action_import_external" />
+
 </menu>

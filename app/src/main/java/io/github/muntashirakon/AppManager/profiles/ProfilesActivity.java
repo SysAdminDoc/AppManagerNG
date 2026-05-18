@@ -46,8 +46,11 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporter;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
+import io.github.muntashirakon.AppManager.utils.JSONUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
@@ -116,6 +119,45 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     Log.e(TAG, "Error: ", e);
                     UIUtils.displayShortToast(R.string.import_failed);
                 }
+            });
+
+    /**
+     * Import an external power-user-tool preset (Canta JSON / UAD-NG settings /
+     * Hail tag list) by reading its bytes, auto-detecting the format, harvesting
+     * package names, and constructing a fresh AppsProfile through the existing
+     * BaseProfile.newProfile factory so it lands in the same on-disk shape as a
+     * native NG profile.
+     */
+    private final ActivityResultLauncher<String[]> mImportExternalProfile = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri == null) return;
+                String lastSegment = uri.getLastPathSegment();
+                String displayName = lastSegment != null ? lastSegment : "";
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    String error = null;
+                    ExternalProfileImporter.Preview preview = null;
+                    try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+                        if (in == null) {
+                            error = "Cannot open " + uri;
+                        } else {
+                            preview = ExternalProfileImporter.importStream(in, displayName);
+                        }
+                    } catch (Throwable t) {
+                        error = t.getClass().getSimpleName()
+                                + (t.getMessage() != null ? ": " + t.getMessage() : "");
+                    }
+                    final ExternalProfileImporter.Preview finalPreview = preview;
+                    final String finalError = error;
+                    ThreadUtils.postOnMainThread(() -> {
+                        if (finalPreview == null || finalPreview.packages.length == 0) {
+                            UIUtils.displayLongToast(getString(R.string.profiles_external_import_failed,
+                                    finalError != null ? finalError : ""));
+                            return;
+                        }
+                        finishExternalImport(finalPreview);
+                    });
+                });
             });
 
     @Override
@@ -221,6 +263,8 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             finish();
         } else if (id == R.id.action_import) {
             mImportProfile.launch("application/json");
+        } else if (id == R.id.action_import_external) {
+            mImportExternalProfile.launch(new String[]{"application/json", "text/plain", "*/*"});
         } else if (id == R.id.action_refresh) {
             mProgressIndicator.show();
             showProfilesLoadingState();
@@ -233,6 +277,34 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     public void onCreateNewProfile(@NonNull String newProfileName, int type) {
         Intent intent = ProfileManager.getNewProfileIntent(this, type, newProfileName);
         startActivity(intent);
+    }
+
+    /**
+     * Build an AppsProfile JSON from the importer's harvested package list, hand
+     * it to {@link BaseProfile#newProfile} so it gets a fresh-ID copy, then
+     * persist via {@link ProfileManager#requireProfilePathById} and open the
+     * usual profile editor so the user can review / save / apply.
+     */
+    private void finishExternalImport(@NonNull ExternalProfileImporter.Preview preview) {
+        try {
+            org.json.JSONObject obj = new org.json.JSONObject();
+            obj.put("name", preview.suggestedName);
+            obj.put("type", BaseProfile.PROFILE_TYPE_APPS);
+            obj.put("state", BaseProfile.STATE_ON);
+            obj.put("packages", JSONUtils.getJSONArray(preview.packages));
+            BaseProfile parsed = BaseProfile.DESERIALIZER.deserialize(obj);
+            BaseProfile newProfile = BaseProfile.newProfile(parsed.name, parsed.type, parsed);
+            Path innerProfilePath = ProfileManager.requireProfilePathById(newProfile.profileId);
+            try (OutputStream os = innerProfilePath.openOutputStream()) {
+                newProfile.write(os);
+            }
+            UIUtils.displayShortToast(getString(R.string.profiles_external_import_done,
+                    preview.format.name(), preview.packages.length));
+            startActivity(ProfileManager.getProfileIntent(this, newProfile.type, newProfile.profileId));
+        } catch (IOException | JSONException e) {
+            Log.e(TAG, "External profile import failed", e);
+            UIUtils.displayShortToast(R.string.import_failed);
+        }
     }
 
     static class ProfilesAdapter extends RecyclerView.Adapter<ProfilesAdapter.ViewHolder> implements Filterable {
