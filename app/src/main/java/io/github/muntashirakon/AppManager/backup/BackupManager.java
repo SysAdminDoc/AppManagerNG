@@ -86,6 +86,10 @@ public class BackupManager {
             backupOp.runBackup(progressHandler);
             BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), backupOp.getMetadata());
         }
+        // Apply user-configured retention policy after a successful backup so the
+        // count / age caps are enforced incrementally rather than only on app launch.
+        // No-op when both caps are 0 (unlimited).
+        BackupRetentionPolicy.pruneForPackage(options.packageName);
     }
 
     /**
