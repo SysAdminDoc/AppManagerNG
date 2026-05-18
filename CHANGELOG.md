@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — KernelSU sulog/seccomp diagnostics (2026-05-18)
+
+- Settings -> Privileges now shows a KernelSU status row when KernelSU is the
+  active root provider.
+- The diagnostic reads AppManagerNG's current seccomp mode with
+  `prctl(PR_GET_SECCOMP)` and tails `/data/adb/ksu/log/sulog` for recent
+  denial-style entries.
+- The details dialog is copyable and offers an Open action for KernelSU Manager
+  or KernelSU Next when a manager launcher is visible.
+
 ### Added — Magisk drop-cap diagnostics (2026-05-18)
 
 - Settings -> Privileges -> Capability dropping now includes Magisk version and
