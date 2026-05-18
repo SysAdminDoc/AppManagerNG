@@ -1224,6 +1224,92 @@
             android:taskAffinity=".profiles.ProfileApplierActivity"
             android:theme="@style/AppTheme.TransparentBackground" />
         <activity
+            android:name=".automation.AutomationUriActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:taskAffinity=".automation.AutomationUriActivity"
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="freeze"
+                    android:scheme="am" />
+                <data
+                    android:host="unfreeze"
+                    android:scheme="am" />
+                <data
+                    android:host="force-stop"
+                    android:scheme="am" />
+                <data
+                    android:host="clear-cache"
+                    android:scheme="am" />
+                <data
+                    android:host="clear-data"
+                    android:scheme="am" />
+                <data
+                    android:host="uninstall"
+                    android:scheme="am" />
+                <data
+                    android:host="backup"
+                    android:scheme="am" />
+                <data
+                    android:host="restore"
+                    android:scheme="am" />
+                <data
+                    android:host="disable-component"
+                    android:scheme="am" />
+                <data
+                    android:host="enable-component"
+                    android:scheme="am" />
+                <data
+                    android:host="scan-trackers"
+                    android:scheme="am" />
+                <data
+                    android:host="profile"
+                    android:scheme="am" />
+                <data
+                    android:host="run-profile"
+                    android:scheme="am" />
+                <data
+                    android:host="install"
+                    android:scheme="am" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="run-profile"
+                    android:scheme="appmanager" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="${applicationId}.action.FREEZE" />
+                <action android:name="${applicationId}.action.UNFREEZE" />
+                <action android:name="${applicationId}.action.FORCE_STOP" />
+                <action android:name="${applicationId}.action.CLEAR_CACHE" />
+                <action android:name="${applicationId}.action.CLEAR_DATA" />
+                <action android:name="${applicationId}.action.UNINSTALL" />
+                <action android:name="${applicationId}.action.BACKUP" />
+                <action android:name="${applicationId}.action.RESTORE" />
+                <action android:name="${applicationId}.action.DISABLE_COMPONENT" />
+                <action android:name="${applicationId}.action.ENABLE_COMPONENT" />
+                <action android:name="${applicationId}.action.RUN_PROFILE" />
+                <action android:name="${applicationId}.action.INSTALL_FROM_URI" />
+                <action android:name="${applicationId}.action.SCAN_TRACKERS" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".main.SplashActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="true"

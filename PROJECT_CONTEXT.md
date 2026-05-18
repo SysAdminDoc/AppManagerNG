@@ -7,10 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 101**. Iter-101 shipped backup path
-> exclusion patterns: default throwaway-folder globs, global Settings custom
-> patterns, one-off backup-dialog extras, and profile `exclusion_globs` now feed
-> the data tar exclusion filter while preserving the Backup cache flag.
+> Last consolidated: **2026-05-18 iter 102**. Iter-102 shipped the public,
+> user-confirmed Tasker/MacroDroid automation surface: `am://` operation URIs
+> and start-activity intents now parse package/user/component/backup/profile
+> override parameters before dispatching through existing batch/profile services.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -141,6 +141,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-99/`](.ai/research/2026-05-18-iter-99/) | iter 99 | Provider-backed network backup destination: Settings -> Backup/Restore Network backup destination action persists a selected DocumentsProvider tree as the active backup volume and test-covers tree URI normalization. |
 | [`.ai/research/2026-05-18-iter-100/`](.ai/research/2026-05-18-iter-100/) | iter 100 | WebDAV self-signed certificate trust closure: no native WebDAV/SMB client exists today, so provider-backed backups delegate TLS/user-CA trust to the selected DocumentsProvider; native `KeyChain` handling is reserved for future first-party protocol work. |
 | [`.ai/research/2026-05-18-iter-101/`](.ai/research/2026-05-18-iter-101/) | iter 101 | Backup path exclusion patterns: glob parser, default throwaway directory filters, global/per-run/profile custom globs, and focused JVM coverage for matching plus batch-option serialization. |
+| [`.ai/research/2026-05-18-iter-102/`](.ai/research/2026-05-18-iter-102/) | iter 102 | Tasker parameterized intent API: public confirmation-gated `am://` operation URIs, Tasker/MacroDroid start-activity action constants, profile JSON overrides, and parser coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -289,6 +290,14 @@ the stable `io.github.sysadmindoc.AppManagerNG.action.*` action/extra constants,
 reuses existing execution paths: `BatchOpsService` for package operations,
 `ProfileApplierService` for profiles, `PackageInstallerActivity` for install URI
 handoff, and `AppDetailsActivity.getIntentForTrackers()` for tracker review.
+
+Iter-102 added the public side of that surface. `AutomationUriActivity` is exported
+for BROWSABLE `am://` operation hosts and for `startActivity` calls using the same
+automation action constants, but it stays behind `BaseActivity` authentication and
+an explicit confirmation dialog. `AutomationRequest` normalizes URI params plus
+Tasker-style string extras, and `ProfileQueueItem.fromProfile(..., overrides)`
+creates temporary one-run profile snapshots so `EXTRA_PROFILE_OVERRIDES` can alter
+packages/backup flags without mutating saved profile files.
 
 Pass 17 closed the T11 APK Share-Target Receiver row as stale. The manifest already
 exports `PackageInstallerActivity` for shared APK/APKM/XAPK payloads via
