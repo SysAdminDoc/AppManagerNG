@@ -112,6 +112,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private String mListStatusActionHint;
     MainBatchOpsHandler mBatchOpsHandler;
     private boolean mBatchOpsRecoveryShown;
+    private boolean mExportVisibleAppList;
 
     /** Async breakdown computation; cancelled when superseded by a new list. */
     @Nullable
@@ -162,7 +163,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_CSV, Paths.get(uri));
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_CSV, Paths.get(uri), mExportVisibleAppList);
             });
     private final ActivityResultLauncher<String> mExportAppListJson = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
@@ -172,7 +173,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_JSON, Paths.get(uri));
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_JSON, Paths.get(uri), mExportVisibleAppList);
             });
     private final ActivityResultLauncher<String> mExportAppListXml = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("text/xml"),
@@ -182,7 +183,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_XML, Paths.get(uri));
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_XML, Paths.get(uri), mExportVisibleAppList);
             });
     private final ActivityResultLauncher<String> mExportAppListMarkdown = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("text/markdown"),
@@ -192,7 +193,17 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_MARKDOWN, Paths.get(uri));
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_MARKDOWN, Paths.get(uri), mExportVisibleAppList);
+            });
+    private final ActivityResultLauncher<String[]> mImportAppListJson = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri == null) {
+                    // Back button pressed.
+                    return;
+                }
+                mProgressIndicator.show();
+                viewModel.importAppListSelection(Paths.get(uri));
             });
 
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
@@ -324,6 +335,27 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 UIUtils.displayLongToast(R.string.failed);
             }
         });
+        viewModel.getAppListImportStatus().observe(this, status -> {
+            mProgressIndicator.hide();
+            if (!status.success) {
+                UIUtils.displayLongToast(R.string.import_app_list_failed);
+                return;
+            }
+            if (mAdapter != null) {
+                mAdapter.notifyDataSetChanged();
+            }
+            if (mMultiSelectionView != null) {
+                mMultiSelectionView.updateCounter(status.selectedCount == 0);
+            }
+            if (status.selectedCount > 0) {
+                UIUtils.displayShortToast(getResources().getQuantityString(
+                        R.plurals.import_app_list_selected_count,
+                        status.selectedCount,
+                        status.selectedCount));
+            } else {
+                UIUtils.displayLongToast(R.string.import_app_list_no_matches);
+            }
+        });
         maybeShowInterruptedBatchOpRecovery();
     }
 
@@ -429,6 +461,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (id == R.id.action_profiles) {
             Intent profilesIntent = new Intent(this, ProfilesActivity.class);
             startActivity(profilesIntent);
+        } else if (id == R.id.action_export_visible_app_list) {
+            showAppListExportDialog(true);
+        } else if (id == R.id.action_import_app_list) {
+            mImportAppListJson.launch(new String[]{"application/json", "text/json", "text/plain", "application/octet-stream", "*/*"});
         } else if (id == R.id.action_op_history) {
             Intent opHistoryIntent = new Intent(this, OpHistoryActivity.class);
             startActivity(opHistoryIntent);
@@ -511,34 +547,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(this, System.currentTimeMillis()) + ".am.tsv";
             mBatchExportRules.launch(fileName);
         } else if (id == R.id.action_export_app_list) {
-            List<Integer> exportTypes = Arrays.asList(ListExporter.EXPORT_TYPE_CSV,
-                    ListExporter.EXPORT_TYPE_JSON,
-                    ListExporter.EXPORT_TYPE_XML,
-                    ListExporter.EXPORT_TYPE_MARKDOWN);
-            new SearchableSingleChoiceDialogBuilder<>(this, exportTypes, R.array.export_app_list_options)
-                    .setTitle(R.string.export_app_list_select_format)
-                    .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
-                        if (!isChecked) {
-                            return;
-                        }
-                        String filename = "app_manager_app_list-" + DateUtils.formatLongDateTime(this, System.currentTimeMillis()) + ".am";
-                        switch (item1) {
-                            case ListExporter.EXPORT_TYPE_CSV:
-                                mExportAppListCsv.launch(filename + ".csv");
-                                break;
-                            case ListExporter.EXPORT_TYPE_JSON:
-                                mExportAppListJson.launch(filename + ".json");
-                                break;
-                            case ListExporter.EXPORT_TYPE_XML:
-                                mExportAppListXml.launch(filename + ".xml");
-                                break;
-                            case ListExporter.EXPORT_TYPE_MARKDOWN:
-                                mExportAppListMarkdown.launch(filename + ".md");
-                                break;
-                        }
-                    })
-                    .setNegativeButton(R.string.close, null)
-                    .show();
+            showAppListExportDialog(false);
         } else if (id == R.id.action_force_stop) {
             showForceStopDialog();
         } else if (id == R.id.action_uninstall) {
@@ -551,6 +560,39 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             return false;
         }
         return true;
+    }
+
+    private void showAppListExportDialog(boolean visibleList) {
+        List<Integer> exportTypes = Arrays.asList(ListExporter.EXPORT_TYPE_CSV,
+                ListExporter.EXPORT_TYPE_JSON,
+                ListExporter.EXPORT_TYPE_XML,
+                ListExporter.EXPORT_TYPE_MARKDOWN);
+        new SearchableSingleChoiceDialogBuilder<>(this, exportTypes, R.array.export_app_list_options)
+                .setTitle(R.string.export_app_list_select_format)
+                .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
+                    if (!isChecked) {
+                        return;
+                    }
+                    mExportVisibleAppList = visibleList;
+                    String filename = "app_manager_app_list-"
+                            + DateUtils.formatLongDateTime(this, System.currentTimeMillis()) + ".am";
+                    switch (item1) {
+                        case ListExporter.EXPORT_TYPE_CSV:
+                            mExportAppListCsv.launch(filename + ".csv");
+                            break;
+                        case ListExporter.EXPORT_TYPE_JSON:
+                            mExportAppListJson.launch(filename + ".json");
+                            break;
+                        case ListExporter.EXPORT_TYPE_XML:
+                            mExportAppListXml.launch(filename + ".xml");
+                            break;
+                        case ListExporter.EXPORT_TYPE_MARKDOWN:
+                            mExportAppListMarkdown.launch(filename + ".md");
+                            break;
+                    }
+                })
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 
     @Override
