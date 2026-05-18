@@ -28,13 +28,21 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
     @Nullable
     public final String backupName;
     public final boolean override;
+    @Nullable
+    public final String[] exclusionGlobs;
 
     public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName, boolean override) {
+        this(packageName, userId, flags, backupName, override, null);
+    }
+
+    public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName,
+                           boolean override, @Nullable String[] exclusionGlobs) {
         this.packageName = packageName;
         this.userId = userId;
         this.flags = new BackupFlags(flags);
         this.backupName = backupName;
         this.override = override;
+        this.exclusionGlobs = exclusionGlobs;
     }
 
     protected BackupOpOptions(@NonNull Parcel in) {
@@ -43,6 +51,7 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         flags = new BackupFlags(in.readInt());
         backupName = in.readString();
         override = ParcelCompat.readBoolean(in);
+        exclusionGlobs = in.createStringArray();
     }
 
     public static final Creator<BackupOpOptions> CREATOR = new Creator<BackupOpOptions>() {
@@ -71,6 +80,7 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         dest.writeInt(this.flags.getFlags());
         dest.writeString(backupName);
         ParcelCompat.writeBoolean(dest, override);
+        dest.writeStringArray(exclusionGlobs);
     }
 
     public BackupOpOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -79,6 +89,7 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         flags = new BackupFlags(jsonObject.getInt("flags"));
         backupName = JSONUtils.optString(jsonObject, "backup_name");
         override = jsonObject.getBoolean("override");
+        exclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
     }
 
     @NonNull
@@ -90,6 +101,7 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         jsonObject.put("flags", flags.getFlags());
         jsonObject.put("backup_name", backupName);
         jsonObject.put("override", override);
+        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(exclusionGlobs));
         return jsonObject;
     }
 }

@@ -30,6 +30,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
@@ -225,6 +226,17 @@ public final class Prefs {
 
         public static void setBackupFlags(@BackupFlags.BackupFlag int flags) {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_FLAGS_INT, flags);
+        }
+
+        @NonNull
+        public static String[] getBackupExclusionPatterns() {
+            return BackupPathExclusionPatterns.parse(
+                    AppPref.getString(AppPref.PrefKey.PREF_BACKUP_EXCLUSION_PATTERNS_STR));
+        }
+
+        public static void setBackupExclusionPatterns(@Nullable String[] patterns) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_EXCLUSION_PATTERNS_STR,
+                    TextUtils.join("\n", BackupPathExclusionPatterns.sanitize(patterns)));
         }
 
         /**

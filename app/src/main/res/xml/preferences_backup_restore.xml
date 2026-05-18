@@ -15,6 +15,11 @@
         app:summary="@string/pref_backup_flags_msg"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="backup_exclusion_patterns"
+        app:title="@string/pref_backup_exclusion_patterns"
+        app:iconSpaceReserved="false" />
+
     <SwitchPreferenceCompat
         app:key="backup_android_keystore"
         app:title="@string/pref_backup_android_keystore"

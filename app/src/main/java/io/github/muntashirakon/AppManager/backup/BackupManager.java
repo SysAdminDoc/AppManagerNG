@@ -92,7 +92,8 @@ public class BackupManager {
                     + "estimated " + storageStatus.estimatedBytes + " bytes required, "
                     + storageStatus.freeBytes + " bytes free.");
         }
-        try (BackupOp backupOp = new BackupOp(options.packageName, options.flags, backupItem, options.userId)) {
+        try (BackupOp backupOp = new BackupOp(options.packageName, options.flags, backupItem, options.userId,
+                options.exclusionGlobs)) {
             backupOp.runBackup(progressHandler);
             BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), backupOp.getMetadata());
         }

@@ -3,7 +3,9 @@
 package io.github.muntashirakon.AppManager.backup.dialog;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -26,12 +28,15 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
 import io.github.muntashirakon.widget.MaterialAlertView;
 
@@ -68,7 +73,9 @@ public class BackupFragment extends Fragment {
         TextView summaryMeta = view.findViewById(R.id.backup_restore_summary_meta);
         TextView actionStatus = view.findViewById(R.id.action_status);
         MaterialButton backupButton = view.findViewById(R.id.action_backup);
+        MaterialButton exclusionsButton = view.findViewById(R.id.action_backup_exclusions);
         RecyclerView recyclerView = view.findViewById(android.R.id.list);
+        AtomicReference<String[]> exclusionGlobs = new AtomicReference<>(new String[0]);
         recyclerView.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
         int supportedFlags = BackupFlags.getSupportedBackupFlags();
         // Remove unsupported flags
@@ -97,15 +104,30 @@ public class BackupFragment extends Fragment {
         }
         backupButton.setOnClickListener(v -> {
             BackupFlags newFlags = new BackupFlags(adapter.getSelectedFlags());
-            handleBackup(newFlags);
+            handleBackup(newFlags, exclusionGlobs.get());
         });
+        exclusionsButton.setOnClickListener(v -> new TextInputDialogBuilder(requireContext(),
+                R.string.backup_exclusion_patterns)
+                .setTitle(R.string.backup_exclusion_patterns)
+                .setInputText(TextUtils.join("\n", exclusionGlobs.get()))
+                .setInputTypeface(Typeface.MONOSPACE)
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                        | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                .setHelperText(R.string.backup_exclusion_patterns_operation_helper)
+                .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) ->
+                        exclusionGlobs.set(BackupPathExclusionPatterns.parse(inputText)))
+                .setNeutralButton(R.string.clear, (dialog, which, inputText, isChecked) ->
+                        exclusionGlobs.set(new String[0]))
+                .setNegativeButton(R.string.cancel, null)
+                .show());
     }
 
-    private void handleBackup(@NonNull BackupFlags flags) {
+    private void handleBackup(@NonNull BackupFlags flags, @Nullable String[] exclusionGlobs) {
         BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
         operationInfo.mode = BackupRestoreDialogFragment.MODE_BACKUP;
         operationInfo.flags = flags.getFlags();
         operationInfo.op = BatchOpsManager.OP_BACKUP;
+        operationInfo.exclusionGlobs = BackupPathExclusionPatterns.sanitize(exclusionGlobs);
         if (flags.backupMultiple()) {
             // Multiple backup is requested, no need to warn users about backups since the
             // user has a choice between overwriting the existing backup or create a new one
