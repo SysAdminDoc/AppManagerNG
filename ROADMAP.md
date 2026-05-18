@@ -2,7 +2,9 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-17 — Iter-81 closed the T9 **MiUI-Specific AppOps Mapping** row. New `miui/MiuiAppOpsNames` static lookup maps MIUI's extended op-code range (10001-10039) to human-readable display labels (Autostart, Background launch activity, Display while screen locked, Query installed apps, Read clipboard, etc.). Plumbed through `AppOpsManagerCompat.opToName(int)` so every consumer gets the friendly label on MIUI without touching call sites. Pure-JVM coverage at `MiuiAppOpsNamesTest` including a table-size lock that forces a maintainer refresh if MIUI ever extends to 10040+.
+**Last updated:** 2026-05-17 — Iter-82 closed the T13 **File MIME Type Recognition** row as already-implemented: `FilePropertiesDialogFragment` already renders `<content-type-name> (<mime-type>)` via `PathContentInfo.getMimeType()`, and `OpenWithDialogFragment` routes intents from the same MIME source. Row verified during iter-82 audit; no code change shipped.
+
+**Prior (iter-81, 2026-05-17 earlier):** Closed the T9 **MiUI-Specific AppOps Mapping** row. New `miui/MiuiAppOpsNames` static lookup maps MIUI's extended op-code range (10001-10039) to human-readable display labels (Autostart, Background launch activity, Display while screen locked, Query installed apps, Read clipboard, etc.). Plumbed through `AppOpsManagerCompat.opToName(int)` so every consumer gets the friendly label on MIUI without touching call sites. Pure-JVM coverage at `MiuiAppOpsNamesTest` including a table-size lock that forces a maintainer refresh if MIUI ever extends to 10040+.
 
 **Prior (iter-80, 2026-05-17 earlier):** Closed the T9 **Per-App Tracker Statistics Panel** row by extending the existing `buildTrackerCategoryBreakdown` (iter-21-era) to also count unique εxodus vendors and append "N organizations" to the breakdown line when it differs from the component count. Surfaces cases where many SDKs roll up to one company (Google's AdMob + Analytics + Crashlytics + Firebase → 4 components, 1 organization). New `tracker_breakdown_organizations` plural.
 
@@ -407,7 +409,7 @@ Upstream lists "database viewer and editor" in Upcoming Features (Issue #14 [S11
 | **DocumentsProvider** | Implement proper `DocumentsProvider` for third-party file manager access (FmProvider.java TODO, Issue #516 [S06], 7 reactions) | High | — |
 | **File Manager Compression** | ZIP/tar archive creation and extraction in built-in file manager | Medium | — |
 | **File Hash Display** | SHA-256/MD5 display for files viewed in file manager | Low | — |
-| **File MIME Type Recognition** | Detect and display MIME types for files in the File Manager (e.g. `application/vnd.android.package-archive` for APK). Termux v0.118.3 added basic MIME type recognition in its ContentProvider ([S91]); NG can apply similar logic in file browsing contexts. | Low | — |
+| ~~**File MIME Type Recognition**~~ ✅ closed 2026-05-17 (iter-82, already implemented) | The File Manager already has full MIME-type infrastructure via `io.github.muntashirakon.io.PathContentInfo` (`getMimeType` / `getName` / `getMessage`). [`FilePropertiesDialogFragment` line 208](app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/FilePropertiesDialogFragment.java#L208) renders `<content-type-name> (<mime-type>)` in the type field (e.g. "Android Package archive (application/vnd.android.package-archive)" for APK files), and [`OpenWithDialogFragment`](app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/OpenWithDialogFragment.java) routes the right intent based on the same `PathContentInfo` MIME. Row verified during iter-82 audit; no code change shipped. Termux v0.118.3 model ([S91]). | Low | — |
 
 ### T14 — Terminal & Code Editor Polish
 
@@ -1003,6 +1005,12 @@ The external sweep deliberately re-checked the **Material Components 1.14.0** ce
 |------|--------|
 | **Embedded / Scoped Shizuku (Code-on-the-Go pattern)** | Some apps (e.g. the Code on the Go IDE highlighted on HN [S360]) ship a forked/scoped Shizuku embedded inside their own APK rather than depending on a user-installed Shizuku. **WONTFIX for NG.** The security model requires Shizuku to be a separate, user-authorized binder — embedding it inside a package manager creates a confused-deputy attack surface where any Shizuku-relayed call could be misattributed to NG's package identity, and the user loses the ability to revoke privilege at the Shizuku Manager level without uninstalling AppManagerNG. NG already detects "Hidden Shizuku" forks (iter-25 row) — that's the correct integration surface, not embedding. |
 | **ShizuWall-Pattern Native Per-App Firewall** | ShizuWall v4.5 (2026-05-06) [S361] now offers a composite Hybrid policy combinator and screen-lock-mode netblock. **WONTFIX for NG.** Firewall is explicitly out-of-scope per the existing T9 design — NG already cites ShizuWall and de1984 as the canonical complements ([S156], [S157]). Re-implementing a per-app firewall in NG would (a) duplicate maintenance of NetworkPolicy/`VpnService` paths that ShizuWall already handles, (b) compete with rather than complement the recommended Shizuku-ecosystem tools, and (c) violate the "complement, not replicate" rule applied to Aurora / F-Droid (see existing Rejected row "Full on-device app store"). |
+
+### Iter-82 Closures (2026-05-17)
+
+| Item | Result |
+|------|--------|
+| **File MIME Type Recognition** | Audited and closed as already-implemented: `PathContentInfo` exposes `getMimeType()`, `FilePropertiesDialogFragment.updateProperties` (line 208) renders `<name> (<mime>)` in the type field for every file, and `OpenWithDialogFragment` resolves the Open-With intent target from the same `PathContentInfo.getMimeType()`. The Termux v0.118.3 MIME-recognition pattern is shipped end-to-end. |
 
 ### Iter-81 Closures (2026-05-17)
 
