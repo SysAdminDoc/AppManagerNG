@@ -2401,17 +2401,17 @@
     <!-- Snapshot Bundle Export/Import (Now/T11) -->
     <string name="pref_snapshot_category">Snapshot bundle</string>
     <string name="pref_snapshot_export">Export AppManagerNG snapshot</string>
-    <string name="pref_snapshot_export_summary">Save preferences, profiles, tags, and operation-history audit log as a single ZIP for backup or migration. Keystore secrets are deliberately excluded.</string>
+    <string name="pref_snapshot_export_summary">Save preferences, profiles, blocking/freeze rules, tags, and operation-history audit log as a single ZIP for backup or migration. Keystore secrets are deliberately excluded.</string>
     <string name="pref_snapshot_import">Import AppManagerNG snapshot</string>
-    <string name="pref_snapshot_import_summary">Restore a previously exported snapshot. Operation history is appended; preferences and profiles are overwritten when present in the bundle.</string>
+    <string name="pref_snapshot_import_summary">Restore a previously exported snapshot. Operation history is appended; preferences and blocking/freeze rules are merged, and profiles are overwritten when present in the bundle.</string>
     <string name="snapshot_default_filename">AppManagerNG-snapshot-%1$s.zip</string>
     <string name="snapshot_export_preparing">Preparing snapshot bundle…</string>
-    <string name="snapshot_export_done">Snapshot saved · prefs: %1$d · profiles: %2$d · history rows: %3$d</string>
+    <string name="snapshot_export_done">Snapshot saved · prefs: %1$d · profiles: %2$d · rules: %3$d · history rows: %4$d</string>
     <string name="snapshot_export_failed">Could not write snapshot bundle</string>
     <string name="snapshot_import_confirm_title">Import snapshot bundle?</string>
-    <string name="snapshot_import_confirm_message">This will append the bundled operation history and overwrite preferences, profiles, and tags with the bundle\'s contents. Take a fresh snapshot first if you want a rollback path.</string>
+    <string name="snapshot_import_confirm_message">This will append the bundled operation history, merge preferences and blocking/freeze rules into the current install, and overwrite profiles and tags with the bundle\'s contents. Take a fresh snapshot first if you want a rollback path.</string>
     <string name="snapshot_import_in_progress">Importing snapshot…</string>
-    <string name="snapshot_import_done">Snapshot imported · prefs: %1$d · profiles: %2$d · history rows: %3$d</string>
+    <string name="snapshot_import_done">Snapshot imported · prefs: %1$d · profiles: %2$d · rules: %3$d · history rows: %4$d</string>
     <string name="snapshot_import_failed">Could not import snapshot bundle: %1$s</string>
     <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
