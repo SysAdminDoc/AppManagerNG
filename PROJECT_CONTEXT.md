@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 134**. Iter-134 shipped first-class
-> audio-volume AppOps handling: `AppOpsManagerCompat` now names and groups the
-> Android audio-volume op family, keeps normal Android ops on the UID-mode
-> writer path, and App Details -> App ops can apply the volume family as a
-> package-scoped preset.
+> Last consolidated: **2026-05-18 iter 135**. Iter-135 shipped the installer
+> privilege cascade: installer prompts now show route chips, the service
+> temporarily tries ADB -> Shizuku -> root package-session privileges when the
+> active mode cannot install directly, then restores the user's configured mode
+> and falls back to Android confirmation if no elevated provider succeeds.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -175,6 +175,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-132/`](.ai/research/2026-05-18-iter-132/) | iter 132 | Root-only Android System data backups: System data flag gated to root/system mode, Android-System-only backup/restore sanitization, Wi-Fi/Bluetooth/account root descriptors, and focused token/path coverage. |
 | [`.ai/research/2026-05-18-iter-133/`](.ai/research/2026-05-18-iter-133/) | iter 133 | SquashFS header-validation row parked: no SquashFS writer/dependency/mount path exists in current source; NG backup archives are tar-family outputs through `TarUtils`, so the header fixture belongs to a future backend. |
 | [`.ai/research/2026-05-18-iter-134/`](.ai/research/2026-05-18-iter-134/) | iter 134 | Per-app audio-volume AppOps: named audio-volume op family, UID-mode writer assertion, App Details group action, custom AppOps helper copy, and focused compat coverage. |
+| [`.ai/research/2026-05-18-iter-135/`](.ai/research/2026-05-18-iter-135/) | iter 135 | Installer privilege cascade: dialog route chips, temporary ADB -> Shizuku -> root install-provider activation, configured-mode restore, Dhizuku/MIUI diagnostics, and focused route-order coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

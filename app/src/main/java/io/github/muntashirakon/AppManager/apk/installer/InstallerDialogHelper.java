@@ -16,7 +16,12 @@ import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textview.MaterialTextView;
+
+import java.util.Collections;
+import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -143,6 +148,15 @@ public final class InstallerDialogHelper {
                                               @NonNull OnClickButtonsListener onClickButtonsListener,
                                               @NonNull View.OnClickListener appInfoButtonListener,
                                               @androidx.annotation.Nullable CharSequence trackerCallout) {
+        showInstallConfirmationDialog(installButtonRes, onClickButtonsListener, appInfoButtonListener,
+                trackerCallout, Collections.emptyList());
+    }
+
+    public void showInstallConfirmationDialog(@StringRes int installButtonRes,
+                                              @NonNull OnClickButtonsListener onClickButtonsListener,
+                                              @NonNull View.OnClickListener appInfoButtonListener,
+                                              @androidx.annotation.Nullable CharSequence trackerCallout,
+                                              @NonNull List<CharSequence> privilegeChips) {
         // Buttons
         mNeutralBtn.setVisibility(View.VISIBLE);
         mNeutralBtn.setText(R.string.app_info);
@@ -161,6 +175,33 @@ public final class InstallerDialogHelper {
             mMessage.setText(new StringBuilder(base).append("\n\n").append(trackerCallout));
         } else {
             mMessage.setText(R.string.install_app_message);
+        }
+        if (!privilegeChips.isEmpty()) {
+            CharSequence message = mMessage.getText();
+            mMessage.setVisibility(View.GONE);
+            mLayout.setVisibility(View.VISIBLE);
+            mLayout.removeAllViews();
+            MaterialTextView messageView = new MaterialTextView(mContext);
+            int hPadding = mContext.getResources().getDimensionPixelSize(R.dimen.premium_space_20);
+            int vPadding = mContext.getResources().getDimensionPixelSize(R.dimen.premium_space_16);
+            messageView.setPadding(hPadding, vPadding, hPadding, 0);
+            messageView.setLineSpacing(mMessage.getLineSpacingExtra(), mMessage.getLineSpacingMultiplier());
+            messageView.setTextColor(mMessage.getTextColors());
+            messageView.setTextSize(0, mMessage.getTextSize());
+            messageView.setText(message);
+            mLayout.addView(messageView);
+            ChipGroup chipGroup = new ChipGroup(mContext);
+            chipGroup.setSingleLine(false);
+            chipGroup.setPadding(hPadding, vPadding / 2, hPadding, vPadding);
+            for (CharSequence privilegeChip : privilegeChips) {
+                Chip chip = (Chip) View.inflate(mContext, R.layout.item_chip, null);
+                chip.setText(privilegeChip);
+                chip.setCheckable(false);
+                chip.setClickable(false);
+                chip.setFocusable(false);
+                chipGroup.addView(chip);
+            }
+            mLayout.addView(chipGroup);
         }
         mFragmentContainer.setVisibility(View.GONE);
     }
