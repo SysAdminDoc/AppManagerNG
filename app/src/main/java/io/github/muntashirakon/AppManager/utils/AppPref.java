@@ -32,6 +32,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.debloat.DebloaterListOptions;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
@@ -70,6 +71,13 @@ public class AppPref {
         PREF_BACKUP_FLAGS_INT,
         PREF_BACKUP_RETENTION_MAX_COUNT_INT,
         PREF_BACKUP_RETENTION_MAX_AGE_DAYS_INT,
+        PREF_BACKUP_SCHEDULE_ENABLED_BOOL,
+        PREF_BACKUP_SCHEDULE_HOUR_INT,
+        PREF_BACKUP_SCHEDULE_MINUTE_INT,
+        PREF_BACKUP_SCHEDULE_REQUIRE_CHARGING_BOOL,
+        PREF_BACKUP_SCHEDULE_NETWORK_INT,
+        PREF_BACKUP_SCHEDULE_LAST_RUN_LONG,
+        PREF_BACKUP_SCHEDULE_LAST_RESULT_STR,
         PREF_BACKUP_VOLUME_STR,
 
         PREF_COMPONENTS_SORT_ORDER_INT,
@@ -408,6 +416,7 @@ public class AppPref {
             case PREF_INSTALLER_FORCE_DEX_OPT_BOOL:
             case PREF_INSTALLER_SIGN_APK_BOOL:
             case PREF_BACKUP_ANDROID_KEYSTORE_BOOL:
+            case PREF_BACKUP_SCHEDULE_ENABLED_BOOL:
             case PREF_ENABLE_SCREEN_LOCK_BOOL:
             case PREF_MAIN_WINDOW_SORT_REVERSE_BOOL:
             case PREF_LOG_VIEWER_EXPAND_BY_DEFAULT_BOOL:
@@ -437,7 +446,10 @@ public class AppPref {
             case PREF_SEND_NOTIFICATIONS_TO_CONNECTED_DEVICES_BOOL:
             case PREF_ENABLE_AUTO_LOCK_BOOL:
             case PREF_GUIDED_MODE_BOOL:
+            case PREF_BACKUP_SCHEDULE_REQUIRE_CHARGING_BOOL:
                 return true;
+            case PREF_BACKUP_SCHEDULE_HOUR_INT:
+                return AutoBackupScheduler.DEFAULT_HOUR;
             case PREF_CONCURRENCY_THREAD_COUNT_INT:
             case PREF_APP_THEME_CUSTOM_INT:
             case PREF_OP_HISTORY_RETENTION_DAYS_INT:
@@ -445,10 +457,13 @@ public class AppPref {
             case PREF_TIPS_PREFS_INT:
             case PREF_BACKUP_RETENTION_MAX_COUNT_INT:
             case PREF_BACKUP_RETENTION_MAX_AGE_DAYS_INT:
+            case PREF_BACKUP_SCHEDULE_MINUTE_INT:
+            case PREF_BACKUP_SCHEDULE_NETWORK_INT:
                 return 0;
             case PREF_LAST_VERSION_CODE_LONG:
             case PREF_DISPLAY_CHANGELOG_LAST_VERSION_LONG:
             case PREF_DEBLOAT_DEFINITIONS_LAST_CHECK_LONG:
+            case PREF_BACKUP_SCHEDULE_LAST_RUN_LONG:
                 return 0L;
             case PREF_ENABLED_FEATURES_INT:
                 return 0xffff_ffff;  /* All features enabled */
@@ -481,6 +496,7 @@ public class AppPref {
             case PREF_DEBLOAT_DEFINITIONS_VERSION_STR:
             case PREF_DEBLOAT_DEFINITIONS_SHA256_STR:
             case PREF_LAST_LOCAL_SERVER_BOOTSTRAP_SIGNATURE_STR:
+            case PREF_BACKUP_SCHEDULE_LAST_RESULT_STR:
                 return "";
             case PREF_MODE_OF_OPS_STR:
                 return Ops.MODE_AUTO;
