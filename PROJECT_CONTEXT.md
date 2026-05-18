@@ -7,12 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 104**. Iter-104 closed the
-> OEM Debloat-Blocker Bypass row: Debloater now detects Samsung
-> SmartSuggestions / One UI 8.5, MIUI core, and exact OPlus uninstall-guarded
-> package IDs from manufacturer/build signals, warns in the list/details flow,
-> and defaults protected batch removals to the existing freeze path while
-> keeping explicit removal as an override.
+> Last consolidated: **2026-05-18 iter 105**. Iter-105 closed the
+> Per-App Rollback / "Revert All Changes" row: App Details can now queue a
+> confirmation-gated inverse replay from successful per-app operation history
+> for freeze, tracker/component toggles, explicit permissions, AppOps, and
+> network-policy changes, while keeping backup/data/uninstall recovery and
+> state-poor history rows in the manual-review bucket.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -146,6 +146,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-102/`](.ai/research/2026-05-18-iter-102/) | iter 102 | Tasker parameterized intent API: public confirmation-gated `am://` operation URIs, Tasker/MacroDroid start-activity action constants, profile JSON overrides, and parser coverage. |
 | [`.ai/research/2026-05-18-iter-103/`](.ai/research/2026-05-18-iter-103/) | iter 103 | Hidden-Shizuku fork detection: Shizuku manager package discovery through the owner of `moe.shizuku.manager.permission.API_V23`, with legacy service-permission and canonical package fallbacks. |
 | [`.ai/research/2026-05-18-iter-104/`](.ai/research/2026-05-18-iter-104/) | iter 104 | OEM debloat-blocker bypass: manufacturer/build keyed uninstall fallback policy for Samsung SmartSuggestions, MIUI core, and OPlus uninstall-guarded packages, wired into Debloater card/details warnings and safe freeze-by-default batch handling. |
+| [`.ai/research/2026-05-18-iter-105/`](.ai/research/2026-05-18-iter-105/) | iter 105 | Per-app rollback: App Details "Revert AppManager changes" action, newest-first inverse planner over operation history, manual-review accounting for non-invertible rows, and focused rollback planner tests. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
