@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.VisibleForTesting;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.ParcelCompat;
 
@@ -142,6 +143,27 @@ public class AppOpsManagerCompat {
     public static final int OP_RUN_ANY_IN_BACKGROUND;
     public static final int _NUM_OP = AppOpsManagerHidden._NUM_OP;
 
+    public static final String OPSTR_AUDIO_MASTER_VOLUME = "android:audio_master_volume";
+    public static final String OPSTR_AUDIO_VOICE_VOLUME = "android:audio_voice_volume";
+    public static final String OPSTR_AUDIO_RING_VOLUME = "android:audio_ring_volume";
+    public static final String OPSTR_AUDIO_MEDIA_VOLUME = "android:audio_media_volume";
+    public static final String OPSTR_AUDIO_ALARM_VOLUME = "android:audio_alarm_volume";
+    public static final String OPSTR_AUDIO_NOTIFICATION_VOLUME = "android:audio_notification_volume";
+    public static final String OPSTR_AUDIO_BLUETOOTH_VOLUME = "android:audio_bluetooth_volume";
+    public static final String OPSTR_AUDIO_ACCESSIBILITY_VOLUME = "android:audio_accessibility_volume";
+
+    public static final int OP_AUDIO_MASTER_VOLUME = resolveAppOp(OPSTR_AUDIO_MASTER_VOLUME, 33);
+    public static final int OP_AUDIO_VOICE_VOLUME = resolveAppOp(OPSTR_AUDIO_VOICE_VOLUME, 34);
+    public static final int OP_AUDIO_RING_VOLUME = resolveAppOp(OPSTR_AUDIO_RING_VOLUME, 35);
+    public static final int OP_AUDIO_MEDIA_VOLUME = resolveAppOp(OPSTR_AUDIO_MEDIA_VOLUME, 36);
+    public static final int OP_AUDIO_ALARM_VOLUME = resolveAppOp(OPSTR_AUDIO_ALARM_VOLUME, 37);
+    public static final int OP_AUDIO_NOTIFICATION_VOLUME = resolveAppOp(OPSTR_AUDIO_NOTIFICATION_VOLUME, 38);
+    public static final int OP_AUDIO_BLUETOOTH_VOLUME = resolveAppOp(OPSTR_AUDIO_BLUETOOTH_VOLUME, 39);
+    public static final int OP_AUDIO_ACCESSIBILITY_VOLUME = resolveAppOp(OPSTR_AUDIO_ACCESSIBILITY_VOLUME, 64);
+
+    private static final int[] AUDIO_VOLUME_OPS;
+    private static final SparseArrayCompat<String> sKnownOpNames = new SparseArrayCompat<>();
+
     static {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             OP_RUN_IN_BACKGROUND = AppOpsManagerHidden.OP_RUN_IN_BACKGROUND;
@@ -154,6 +176,27 @@ public class AppOpsManagerCompat {
         } else {
             //noinspection NewApi
             OP_RUN_ANY_IN_BACKGROUND = 0;
+        }
+        putKnownOpName(OP_AUDIO_MASTER_VOLUME, "AUDIO_MASTER_VOLUME");
+        putKnownOpName(OP_AUDIO_VOICE_VOLUME, "AUDIO_VOICE_VOLUME");
+        putKnownOpName(OP_AUDIO_RING_VOLUME, "AUDIO_RING_VOLUME");
+        putKnownOpName(OP_AUDIO_MEDIA_VOLUME, "AUDIO_MEDIA_VOLUME");
+        putKnownOpName(OP_AUDIO_ALARM_VOLUME, "AUDIO_ALARM_VOLUME");
+        putKnownOpName(OP_AUDIO_NOTIFICATION_VOLUME, "AUDIO_NOTIFICATION_VOLUME");
+        putKnownOpName(OP_AUDIO_BLUETOOTH_VOLUME, "AUDIO_BLUETOOTH_VOLUME");
+        putKnownOpName(OP_AUDIO_ACCESSIBILITY_VOLUME, "AUDIO_ACCESSIBILITY_VOLUME");
+        List<Integer> audioVolumeOps = new ArrayList<>(8);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_MASTER_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_VOICE_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_RING_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_MEDIA_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_ALARM_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_NOTIFICATION_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_BLUETOOTH_VOLUME);
+        addSupportedAppOp(audioVolumeOps, OP_AUDIO_ACCESSIBILITY_VOLUME);
+        AUDIO_VOLUME_OPS = new int[audioVolumeOps.size()];
+        for (int i = 0; i < audioVolumeOps.size(); ++i) {
+            AUDIO_VOLUME_OPS[i] = audioVolumeOps.get(i);
         }
     }
 
@@ -233,6 +276,25 @@ public class AppOpsManagerCompat {
     }
 
     @NonNull
+    public static int[] getAudioVolumeOps() {
+        return AUDIO_VOLUME_OPS.clone();
+    }
+
+    public static boolean isAudioVolumeOp(int op) {
+        for (int audioVolumeOp : AUDIO_VOLUME_OPS) {
+            if (audioVolumeOp == op) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Nullable
+    public static String getKnownOpName(int op) {
+        return sKnownOpNames.get(op);
+    }
+
+    @NonNull
     public static List<Integer> getOpsWithoutPermissions() {
         return sOpWithoutPerms;
     }
@@ -285,7 +347,17 @@ public class AppOpsManagerCompat {
         if (miuiName != null) {
             return miuiName;
         }
-        return AppOpsManagerHidden.opToName(op);
+        try {
+            String opName = AppOpsManagerHidden.opToName(op);
+            String knownOpName = getKnownOpName(op);
+            return String.valueOf(op).equals(opName) && knownOpName != null ? knownOpName : opName;
+        } catch (Throwable e) {
+            String knownOpName = getKnownOpName(op);
+            if (knownOpName != null) {
+                return knownOpName;
+            }
+            throw e;
+        }
     }
 
     /**
@@ -715,14 +787,48 @@ public class AppOpsManagerCompat {
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
     public void setMode(int op, int uid, String packageName, @AppOpsManagerCompat.Mode int mode)
             throws RemoteException {
-        if (AppOpsManagerCompat.isMiuiOp(op) || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        if (!usesUidModeForSetMode(op)) {
             // Only package mode works in MIUI-only app ops and before Android M
             mAppOpsService.setMode(op, uid, packageName, mode);
         } else {
-            // Set UID mode
+            // AOSP app-op providers, including audio-volume ops, are UID-scoped.
             mAppOpsService.setUidMode(op, uid, mode);
         }
         OsRevertMonitor.watchAppOp(ContextUtils.getContext(), packageName, uid, op, mode);
+    }
+
+    public static boolean usesUidModeForSetMode(int op) {
+        return usesUidModeForSetMode(op, Build.VERSION.SDK_INT, AppOpsManagerCompat.isMiuiOp(op));
+    }
+
+    @VisibleForTesting
+    static boolean usesUidModeForSetMode(int op, int sdkInt, boolean miuiOp) {
+        return !miuiOp && sdkInt >= Build.VERSION_CODES.M;
+    }
+
+    private static int resolveAppOp(@NonNull String opStr, int fallbackOp) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                int op = AppOpsManagerHidden.strOpToOp(opStr);
+                if (op > OP_NONE) {
+                    return op;
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+        return fallbackOp;
+    }
+
+    private static void addSupportedAppOp(@NonNull List<Integer> appOps, int op) {
+        if (op > OP_NONE && op < _NUM_OP && !appOps.contains(op)) {
+            appOps.add(op);
+        }
+    }
+
+    private static void putKnownOpName(int op, @NonNull String name) {
+        if (op > OP_NONE && op < _NUM_OP) {
+            sKnownOpNames.put(op, name);
+        }
     }
 
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
