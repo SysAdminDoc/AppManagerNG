@@ -1552,6 +1552,23 @@
     <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>
     <string name="installer_session_sha256_title">APK SHA-256</string>
     <string name="installer_session_sha256_message">These are the bytes AppManagerNG wrote into the install session. Compare this checksum with the publisher\'s posted SHA-256 before accepting Android\'s install prompt:\n\n%1$s</string>
+    <string name="installer_split_cert_mismatch_title">Split APK signing mismatch</string>
+    <string name="installer_split_cert_mismatch_message">Some selected split APKs are not signed with the same certificate as the base APK. Checked optional splits will be removed before installation. Required splits cannot be removed; cancel and choose another bundle if they remain.</string>
+    <string name="installer_split_cert_remove_checked">Remove checked splits</string>
+    <string name="installer_split_cert_install_anyway">Install anyway</string>
+    <string name="installer_split_cert_required_split">Required splits cannot be removed.</string>
+    <string name="installer_split_cert_no_removable_selection">No optional mismatched splits are selected.</string>
+    <plurals name="installer_split_cert_removed">
+        <item quantity="one">Removed %1$d mismatched split.</item>
+        <item quantity="other">Removed %1$d mismatched splits.</item>
+    </plurals>
+    <string name="installer_split_cert_version">Version: %1$s</string>
+    <string name="installer_split_cert_sha256">Cert SHA-256: %1$s</string>
+    <string name="installer_split_cert_reason">Reason: %1$s</string>
+    <string name="installer_split_cert_reason_base_unreadable">Base APK signing certificate could not be read.</string>
+    <string name="installer_split_cert_reason_split_unreadable">Split signing certificate could not be read.</string>
+    <string name="installer_split_cert_reason_signer_count">Signer count differs from the base APK.</string>
+    <string name="installer_split_cert_reason_cert_differs">Signing certificate differs from the base APK.</string>
     <string name="finder_loaded_at">Loaded at %1$s</string>
     <string name="share_backup">Share backup</string>
     <string name="share_backup_empty">No files to share in the selected backup.</string>
