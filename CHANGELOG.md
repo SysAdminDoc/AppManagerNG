@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — CIFS/SMB backup streaming hardening (2026-05-18)
+
+- Backup archive creation now writes split tar streams in bounded 256 KiB
+  provider chunks instead of handing large compressed buffers directly to SAF
+  destinations.
+- APK, data, and keystore backup archives now use a durable split-stream path
+  that opens a file descriptor when available, flushes and fsyncs each chunk,
+  and verifies the final split-file byte count on close.
+- Split stream tests now preserve the original large APK split-hash fixture and
+  add a boundary regression that writes one oversized provider buffer, re-reads
+  every split, and verifies byte-for-byte reconstruction.
+
 ### Changed — scheduled backup freshness gate (2026-05-18)
 
 - Scheduled Auto-Backup now skips only packages whose newest valid backup is
