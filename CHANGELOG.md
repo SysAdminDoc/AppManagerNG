@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — AGP 9.2 build migration (2026-05-18)
+
+- Android Gradle Plugin is now pinned to 9.2.0 with Gradle wrapper 9.4.1 and
+  NDK 28.2.13676358.
+- Build scripts use Gradle-10-safe assignment syntax, the server jar packaging
+  task now uses `androidComponents` / `sdkComponents`, generated `resValue`
+  support is explicit, and the app uses the optimized default ProGuard file.
+- Host unit tests now declare their JVM `org.json` and hidden-API test
+  classpath explicitly, with small runtime hardening for MIUI op names and log
+  setup under non-Android JVM tests.
+
 ### Added — Split APK signing mismatch dialog (2026-05-18)
 
 - Split bundle installs now preflight selected split signing certificates against
