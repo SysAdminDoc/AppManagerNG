@@ -27,6 +27,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
@@ -68,6 +69,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private Runnable mOnDismissCallback;
     @Nullable
     private Ops.AdbConnectionInterface mWirelessSetupCallback;
+    private boolean mAdbTcpipSessionDetected;
 
     /**
      * Wires a continuation to run on the host activity once the user has finished
@@ -125,6 +127,11 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         View setupWirelessAdb = view.findViewById(R.id.action_setup_adb_wifi);
         if (setupWirelessAdb != null) {
             setupWirelessAdb.setOnClickListener(v -> startWirelessAdbSetup());
+        }
+        View useAdbTcpip = view.findViewById(R.id.action_use_adb_tcpip);
+        if (useAdbTcpip != null) {
+            useAdbTcpip.setVisibility(View.GONE);
+            useAdbTcpip.setOnClickListener(v -> startExistingAdbTcpipSession());
         }
         // Highlight the currently active mode card so a user replaying the wizard
         // from Settings can see at a glance which mode is in effect. Nothing to
@@ -257,9 +264,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
         bindAdbWifiStatus(adbWifiStatus);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
-        bindCapabilityStatus(adbTcpStatus, isUsbDebuggingEnabled(),
-                R.string.onboarding_mode_adb_tcp_status_active,
-                R.string.onboarding_mode_adb_tcp_status_inactive);
+        View adbTcpipAction = view.findViewById(R.id.action_use_adb_tcpip);
+        bindAdbTcpStatus(adbTcpStatus, adbTcpipAction);
         // Run the root-manager probe off the UI thread — marker checks shell out
         // when root is granted (~50–150ms). Without root, falls back to a fast
         // PackageManager lookup. Either way, we don't want to block bind().
@@ -526,6 +532,39 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
     }
 
+    private void bindAdbTcpStatus(@Nullable TextView statusView, @Nullable View useTcpipAction) {
+        bindCapabilityStatus(statusView, isUsbDebuggingEnabled(),
+                R.string.onboarding_mode_adb_tcp_status_active,
+                R.string.onboarding_mode_adb_tcp_status_inactive);
+        if (useTcpipAction != null) {
+            useTcpipAction.setVisibility(mAdbTcpipSessionDetected ? View.VISIBLE : View.GONE);
+        }
+        refreshAdbTcpipSessionStatus(statusView, useTcpipAction);
+    }
+
+    private void refreshAdbTcpipSessionStatus(@Nullable TextView statusView, @Nullable View useTcpipAction) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            boolean reachable = AdbTcpipProbe.isDefaultTcpipSessionReachable();
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                mAdbTcpipSessionDetected = reachable;
+                if (useTcpipAction != null) {
+                    useTcpipAction.setVisibility(reachable ? View.VISIBLE : View.GONE);
+                }
+                if (reachable) {
+                    bindCapabilityStatus(statusView, true,
+                            R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
+                            R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
+                            new Object[]{AdbTcpipProbe.DEFAULT_TCPIP_PORT});
+                } else {
+                    bindCapabilityStatus(statusView, isUsbDebuggingEnabled(),
+                            R.string.onboarding_mode_adb_tcp_status_active,
+                            R.string.onboarding_mode_adb_tcp_status_inactive);
+                }
+            });
+        });
+    }
+
     /**
      * Wire tap-to-pick plus a visible details affordance on a mode card. Tap commits
      * the choice via {@link #pick}; details/long-press surfaces an extended explainer
@@ -566,10 +605,14 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void startWirelessAdbSetup() {
-        startWirelessAdbSetup(false);
+        startWirelessAdbSetup(false, false);
     }
 
     private void startWirelessAdbSetup(boolean skipUsbDebuggingPreflight) {
+        startWirelessAdbSetup(skipUsbDebuggingPreflight, true);
+    }
+
+    private void startWirelessAdbSetup(boolean skipUsbDebuggingPreflight, boolean skipTcpipPrompt) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_mode_adb_wifi_title)
@@ -579,12 +622,24 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                     .show();
             return;
         }
+        if (!skipTcpipPrompt && mAdbTcpipSessionDetected) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.onboarding_adb_tcpip_detected_title)
+                    .setMessage(R.string.onboarding_adb_tcpip_detected_message)
+                    .setPositiveButton(R.string.onboarding_adb_tcpip_use_existing,
+                            (d, w) -> startExistingAdbTcpipSession())
+                    .setNeutralButton(R.string.onboarding_mode_adb_wifi_setup,
+                            (d, w) -> startWirelessAdbSetup(false, true))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return;
+        }
         if (!skipUsbDebuggingPreflight && !isUsbDebuggingEnabled()) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_adb_wifi_enable_usb_debugging_title)
                     .setMessage(R.string.onboarding_adb_wifi_enable_usb_debugging_message)
                     .setPositiveButton(R.string.open, (d, w) -> openDeveloperOptions())
-                    .setNeutralButton(R.string.action_continue, (d, w) -> startWirelessAdbSetup(true))
+                    .setNeutralButton(R.string.action_continue, (d, w) -> startWirelessAdbSetup(true, true))
                     .setNegativeButton(R.string.cancel, null)
                     .show();
             return;
@@ -601,6 +656,20 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             } else {
                 Ops.pairAdbInput(activity, callback);
             }
+        });
+    }
+
+    private void startExistingAdbTcpipSession() {
+        FragmentActivity activity = requireActivity();
+        Ops.setMode(Ops.MODE_ADB_OVER_TCP);
+        ServerConfig.setAdbPort(AdbTcpipProbe.DEFAULT_TCPIP_PORT);
+        AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
+        mOnDismissCallback = null;
+        dismissAllowingStateLoss();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            int status = Ops.connectAdb(activity.getApplicationContext(),
+                    AdbTcpipProbe.DEFAULT_TCPIP_PORT, Ops.STATUS_FAILURE);
+            ThreadUtils.postOnMainThread(() -> handleAdbTcpipSetupStatus(activity, status));
         });
     }
 
@@ -673,6 +742,24 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             case Ops.STATUS_FAILURE:
             default:
                 UIUtils.displayShortToast(R.string.adb_pairing_not_finished);
+        }
+    }
+
+    private void handleAdbTcpipSetupStatus(@NonNull FragmentActivity activity, @Ops.Status int status) {
+        if (activity.isFinishing() || activity.isDestroyed()) return;
+        switch (status) {
+            case Ops.STATUS_SUCCESS:
+                UIUtils.displayShortToast(R.string.adb_tcpip_connected);
+                return;
+            case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
+                Ops.displayIncompleteUsbDebuggingMessage(activity);
+                return;
+            case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                Ops.displayLocalNetworkPermissionMessage(activity, getWirelessSetupCallback(activity));
+                return;
+            case Ops.STATUS_FAILURE:
+            default:
+                UIUtils.displayShortToast(R.string.adb_tcpip_not_finished);
         }
     }
 
