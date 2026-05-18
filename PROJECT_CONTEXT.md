@@ -7,11 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 93**. Iter-93 closed the T6 scheduler
-> battery-optimization row: enabling Scheduled Auto-Backup now checks
-> `SelfBatteryOptimization`, silently applies the privileged auto-fix when
-> available, otherwise opens a schedule-specific Android exemption prompt, and
-> shows the battery state in the schedule status row.
+> Last consolidated: **2026-05-18 iter 94**. Iter-94 closed the T6 scheduled
+> backup launcher-shortcut row: Settings -> Backup can pin a "Run scheduled
+> backup" home-screen shortcut, AppManagerNG publishes the same action in the
+> static launcher shortcut list, and both routes pass through an authenticated
+> no-UI shortcut activity before queuing the existing manual scheduled-backup
+> WorkManager request.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -134,6 +135,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-91/`](.ai/research/2026-05-18-iter-91/) | iter 91 | Dhizuku provider detection slice: no direct API AAR, Settings -> Privileges row, Mode Doctor probe, onboarding status, and minSdk-blocked DPM carryover. |
 | [`.ai/research/2026-05-18-iter-92/`](.ai/research/2026-05-18-iter-92/) | iter 92 | Scheduled Auto-Backup core: WorkManager 2.10.5 scheduler/worker, Backup settings controls, run-now/status history, and API 36/37 diagnostics carryover. |
 | [`.ai/research/2026-05-18-iter-93/`](.ai/research/2026-05-18-iter-93/) | iter 93 | Scheduler battery-optimization guardrail: privileged auto-fix on schedule enable, no-privilege Android exemption prompt, and status-row battery state. |
+| [`.ai/research/2026-05-18-iter-94/`](.ai/research/2026-05-18-iter-94/) | iter 94 | Scheduled backup launcher shortcuts: pinned Settings action, static launcher shortcut, authenticated no-UI dispatch, and manual WorkManager enqueue reuse. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -207,6 +209,9 @@ execution, `BatchOpsService` calls it for long-running backup/import/restore
 operations, and `TroubleshootingPreferences` reuses the same helper for the
 manual UI path. Iter-93 wired the same helper into Scheduled Auto-Backup enablement
 and added the no-privilege Android exemption prompt from Settings -> Backup.
+Iter-94 then added the scheduled-backup launcher shortcut surface without adding a
+second execution engine: shortcut launches queue the same manual scheduled-backup
+WorkManager request as Settings -> Backup's "Run scheduled backup now" row.
 
 Pass 8 closed cross-user package state and Finder multi-user scope: `ApplicationItem`
 now keeps per-user enabled/disabled/uninstalled buckets, the main list and
