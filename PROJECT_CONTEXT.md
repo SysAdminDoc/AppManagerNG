@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 130**. Iter-130 shipped CIFS/SMB backup
-> streaming hardening: backup tar creation now opts into durable split-stream
-> writes, bounds SAF-provider chunks to 256 KiB, fsyncs descriptor-backed chunks,
-> verifies final split byte counts, and preserves split-stream round-trip
-> regression coverage.
+> Last consolidated: **2026-05-18 iter 131**. Iter-131 shipped profile
+> blocklist backup-root enumeration: the Profiles add dialog now merges live
+> PackageManager apps with validated latest backup metadata, labels backup-only
+> rows, keeps selected missing packages visible, and renders stale profile rows
+> with a fallback icon plus delete affordance.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -170,6 +170,8 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-127/`](.ai/research/2026-05-18-iter-127/) | iter 127 | Material You widget theming: shared AppWidget palette helper, dynamic RemoteViews tints for usage / clear-cache / log widgets, and Android 12+ system color XML fallback mappings. |
 | [`.ai/research/2026-05-18-iter-128/`](.ai/research/2026-05-18-iter-128/) | iter 128 | Default-app role restore rebinds: backup metadata `default_roles`, privileged restore-time `cmd role add-role-holder`, fallback Default apps review prompt, and focused role helper coverage. |
 | [`.ai/research/2026-05-18-iter-129/`](.ai/research/2026-05-18-iter-129/) | iter 129 | Scheduled-backup newest-age gate: configurable freshness window, newest valid backup per package/user selection, skipped-recent result counts, and focused scheduler coverage. |
+| [`.ai/research/2026-05-18-iter-130/`](.ai/research/2026-05-18-iter-130/) | iter 130 | CIFS/SMB backup streaming hardening: durable tar creation, bounded 256 KiB SAF-provider writes, descriptor fsync when available, close-time byte-count verification, and split-stream boundary coverage. |
+| [`.ai/research/2026-05-18-iter-131/`](.ai/research/2026-05-18-iter-131/) | iter 131 | Profile blocklist backup-root enumeration: backup-only package choices in the Profiles picker, selected missing-package retention, fallback stale-row rendering, and focused merge coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S363).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

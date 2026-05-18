@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Profile blocklist backup-root enumeration (2026-05-18)
+
+- The Profiles app/blocklist picker now merges installed packages with validated
+  latest backup metadata, so packages represented only by an existing backup
+  root can be selected again after uninstall.
+- Backup-only picker rows are explicitly labelled and avoid duplicating live
+  installed apps that also have backups.
+- Existing profile rows with no live app metadata now render a fallback icon and
+  keep the delete affordance available, so stale blocklist entries remain
+  manageable.
+
 ### Changed — CIFS/SMB backup streaming hardening (2026-05-18)
 
 - Backup archive creation now writes split tar streams in bounded 256 KiB

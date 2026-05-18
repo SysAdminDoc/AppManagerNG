@@ -1220,6 +1220,7 @@
     <string name="pref_backup_network_destination_msg">Choose a folder from a DocumentsProvider app such as Material Files, DAVx5, FolderSync, or another provider that exposes your SMB or WebDAV share. AppManagerNG will store backups directly in that selected folder through Android Storage Access Framework permissions.</string>
     <string name="backup_network_destination_selected">Network backup destination selected.</string>
     <string name="backup_network_destination_failed">Could not use the selected network backup destination.</string>
+    <string name="backup_only">Backup only</string>
     <string name="no_volumes_found">Could not find any volumes with write permission.</string>
     <string name="unencrypted">Unencrypted</string>
     <string name="encrypted">Encrypted</string>
