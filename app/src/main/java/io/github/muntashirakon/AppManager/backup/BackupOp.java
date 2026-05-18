@@ -335,7 +335,7 @@ class BackupOp implements Closeable {
         }
         Path[] sourceFiles;
         try {
-            sourceFiles = TarUtils.create(mMetadata.info.tarType, sourceDir, mBackupItem.getUnencryptedBackupPath(), sourceBackupFilePrefix,
+            sourceFiles = TarUtils.createDurable(mMetadata.info.tarType, sourceDir, mBackupItem.getUnencryptedBackupPath(), sourceBackupFilePrefix,
                     /* language=regexp */ new String[]{".*\\.apk"}, null, null, false).toArray(new Path[0]);
         } catch (Throwable th) {
             throw new BackupException("APK files backup is requested but no source directory has been backed up.", th);
@@ -379,7 +379,7 @@ class BackupOp implements Closeable {
             String[] userExclusions = BackupPathExclusionPatterns.getTarExclusionRegexes(
                     mBackupFlags.backupCache(), Prefs.BackupRestore.getBackupExclusionPatterns(),
                     mExclusionGlobs);
-            return TarUtils.create(mMetadata.info.tarType, Paths.get(dir),
+            return TarUtils.createDurable(mMetadata.info.tarType, Paths.get(dir),
                             mBackupItem.getUnencryptedBackupPath(),
                             filePrefix, null, null,
                             BackupUtils.getExcludeDirs(!mBackupFlags.backupCache(), userExclusions), false)
@@ -441,7 +441,7 @@ class BackupOp implements Closeable {
         String keyStorePrefix = KEYSTORE_PREFIX + getExt(mMetadata.info.tarType);
         Path[] backedUpKeyStoreFiles;
         try {
-            backedUpKeyStoreFiles = TarUtils.create(mMetadata.info.tarType, cachePath, mBackupItem.getUnencryptedBackupPath(), keyStorePrefix,
+            backedUpKeyStoreFiles = TarUtils.createDurable(mMetadata.info.tarType, cachePath, mBackupItem.getUnencryptedBackupPath(), keyStorePrefix,
                             keyStoreFilters.toArray(new String[0]), null, null, false)
                     .toArray(new Path[0]);
         } catch (Throwable th) {
