@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Per-app language picker (2026-05-18)
+
+- App Info now shows the selected package/user's Android 13+ per-app language,
+  including a System default state when no override is set.
+- Privileged sessions can change that language from an inline searchable picker
+  backed by the hidden `ILocaleManager` service path.
+- The hidden API baseline now tracks `android.app.ILocaleManager`, and focused
+  tests cover locale option de-duplication plus display summaries.
+
 ### Added — App Info hide/unhide action (2026-05-18)
 
 - App Info now exposes a dedicated Hide/Unhide quick action for `pm hide`

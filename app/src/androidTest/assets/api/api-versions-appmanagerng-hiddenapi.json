@@ -1,7 +1,7 @@
 ﻿{
     "schema":  1,
     "generatedBy":  "scripts/generate-hidden-api-baseline.ps1",
-    "generatedOn":  "2026-05-17",
+    "generatedOn":  "2026-05-18",
     "sourceRoot":  "hiddenapi/src/main/java",
     "classes":  [
                     {
@@ -3308,6 +3308,56 @@
 
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/app/ILocaleManager.java",
+                        "stub":  "android.app.ILocaleManager",
+                        "runtime":  "android.app.ILocaleManager",
+                        "minSdk":  33,
+                        "members":  [
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setApplicationLocales",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int",
+                                                               "LocaleList",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  33,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getApplicationLocales",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/app/ILocaleManager.java",
+                        "stub":  "android.app.ILocaleManager$Stub",
+                        "runtime":  "android.app.ILocaleManager$Stub",
+                        "minSdk":  33,
+                        "members":  [
+                                        {
+                                            "kind":  "method",
+                                            "name":  "asInterface",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "IBinder"
+                                                           ],
+                                            "minSdk":  33,
                                             "deprecated":  false
                                         }
                                     ]
