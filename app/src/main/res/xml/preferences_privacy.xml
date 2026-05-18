@@ -53,6 +53,12 @@
         app:summary="@string/pref_permission_change_monitor_msg"
         app:iconSpaceReserved="false" />
 
+    <SwitchPreferenceCompat
+        app:key="signing_cert_change_monitor"
+        app:title="@string/pref_signing_cert_change_monitor"
+        app:summary="@string/pref_signing_cert_change_monitor_msg"
+        app:iconSpaceReserved="false" />
+
     <PreferenceCategory
         app:key="snapshot_category"
         app:title="@string/pref_snapshot_category"
