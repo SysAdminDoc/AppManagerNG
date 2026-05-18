@@ -7,10 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 102**. Iter-102 shipped the public,
-> user-confirmed Tasker/MacroDroid automation surface: `am://` operation URIs
-> and start-activity intents now parse package/user/component/backup/profile
-> override parameters before dispatching through existing batch/profile services.
+> Last consolidated: **2026-05-18 iter 103**. Iter-103 closed the
+> Hidden-Shizuku fork-detection row: Shizuku manager package discovery now
+> resolves through the installed owner of `moe.shizuku.manager.permission.API_V23`
+> (plus the legacy service-permission fallback) before falling back to the
+> canonical `moe.shizuku.privileged.api`, and version checks, auto-start
+> intents, and clear-data warnings all use the resolved manager package.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -382,6 +384,13 @@ auto-start in Shizuku" button in that state. The intent tries the roadmap
 `moe.shizuku.privileged.api/.AUTO_START` component first, then falls back to
 Shizuku's launcher or Android app-info screen because the v13.6.0 manifest does
 not expose that component universally.
+
+Iter 103 updated that package-facing Shizuku path for renamed/obfuscated
+managers. `ShizukuBridge.getManagerPackageName(Context)` resolves the manager
+from the package declaring `moe.shizuku.manager.permission.API_V23`, falls back
+to the roadmap's legacy service permission owner, and only then uses the
+canonical package. The trusted-WLAN auto-start/app-info fallback, manager version
+checks, and clear-data manager warning all read through the resolver.
 
 Pass 26 parked the T6 JobScheduler Quota Stop-Reason Surfacing row after a fresh
 source and Gradle audit found no `androidx.work`, WorkManager, JobScheduler,

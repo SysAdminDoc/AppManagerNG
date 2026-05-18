@@ -141,7 +141,7 @@ whatever provider holds the permission.
 - ROADMAP **T5 — Rootless Users (Shizuku)**: the user-facing tier that drives this architecture.
 - ROADMAP **Engineering Debt Register → Android 17 targetSdk=37 compliance batch**: gates the privilege-provider work for the next platform-version bump.
 - ROADMAP **iter-19 [S139]** Canta #359 Shizuku permission auto-revoke: a known stale-trust window in the binder lifecycle.
-- ROADMAP **iter-19 [S152]** Hidden-Shizuku fork detection: NG's probe assumes the canonical `moe.shizuku.privileged.api` package name.
+- ROADMAP **iter-19 [S152]** Hidden-Shizuku fork detection: shipped in iter-103 by resolving the manager package from the installed owner of `moe.shizuku.manager.permission.API_V23`, with a legacy service-permission fallback before the canonical `moe.shizuku.privileged.api` package.
 - `libserver/` module — the AIDL binder service. Audit before bumping `targetSdk` to 37 (BAL hardening on `IntentSender.sendIntent()` per [S206]).
 - `libadb-android` (`libadb_version = 3.1.1`) — ADB transport layer; depends on platform-tools mDNS backend behaviour ([S74]).
 
