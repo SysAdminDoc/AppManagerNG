@@ -2397,6 +2397,11 @@
     <string name="auto_backup_notification_channel">Scheduled backup</string>
     <string name="auto_backup_notification_title">Scheduled backup</string>
     <string name="auto_backup_running">Backing up installed apps</string>
+    <string name="auto_backup_progress_preparing">Preparing scheduled backup</string>
+    <string name="auto_backup_progress_apps"><xliff:g id="current" example="3">%1$d</xliff:g>/<xliff:g id="total" example="12">%2$d</xliff:g> apps</string>
+    <string name="auto_backup_progress_apps_eta"><xliff:g id="current" example="3">%1$d</xliff:g>/<xliff:g id="total" example="12">%2$d</xliff:g> apps - about <xliff:g id="eta" example="4:30">%3$s</xliff:g> left</string>
+    <string name="auto_backup_progress_stage"><xliff:g id="stage" example="Backing up AppManagerNG">%1$s</xliff:g> - <xliff:g id="current" example="3">%2$d</xliff:g>/<xliff:g id="total" example="12">%3$d</xliff:g> apps</string>
+    <string name="auto_backup_progress_stage_eta"><xliff:g id="stage" example="Backing up AppManagerNG">%1$s</xliff:g> - <xliff:g id="current" example="3">%2$d</xliff:g>/<xliff:g id="total" example="12">%3$d</xliff:g> apps - about <xliff:g id="eta" example="4:30">%4$s</xliff:g> left</string>
     <string name="auto_backup_result_disabled">Schedule disabled</string>
     <string name="auto_backup_result_no_apps">No installed apps found to back up</string>
     <plurals name="auto_backup_result_success">
