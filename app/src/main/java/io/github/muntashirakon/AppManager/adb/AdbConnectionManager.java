@@ -27,7 +27,10 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
 
     private static AdbConnectionManager sInstance;
 
-    public static AdbConnectionManager getInstance() throws Exception {
+    public static synchronized AdbConnectionManager getInstance() throws Exception {
+        // Synchronized: concurrent first-callers could otherwise both construct an
+        // AdbConnectionManager and race in KeyStoreManager#addKeyPair, where the
+        // second insert of ADB_KEY_ALIAS fails or overwrites the first.
         if (sInstance == null) {
             sInstance = new AdbConnectionManager();
         }

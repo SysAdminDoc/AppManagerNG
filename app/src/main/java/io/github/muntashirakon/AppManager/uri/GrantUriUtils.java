@@ -42,16 +42,17 @@ public final class GrantUriUtils {
         }
         SpannableStringBuilder sb = new SpannableStringBuilder();
         if (basePath != null) {
-            String realPath = getRealPath(authority, basePath);
+            String realPath = authority != null ? getRealPath(authority, basePath) : null;
             sb.append(getStyledKeyValue(context, R.string.folder, realPath != null ? realPath : basePath));
         }
         if (file != null) {
             if (basePath != null) sb.append("\n");
-            String realFile = getRealPath(authority, file);
+            String realFile = authority != null ? getRealPath(authority, file) : null;
             sb.append(getStyledKeyValue(context, R.string.file, realFile != null ? realFile : file));
         }
         sb.append("\n")
-                .append(getSmallerText(getStyledKeyValue(context, R.string.authority, authority)))
+                .append(getSmallerText(getStyledKeyValue(context, R.string.authority,
+                        authority != null ? authority : "?")))
                 .append("\n")
                 .append(getSmallerText(getStyledKeyValue(context, R.string.type, isTree ? "Tree" : "Document")));
         return sb;
@@ -62,6 +63,10 @@ public final class GrantUriUtils {
         switch (authority) {
             case "com.android.externalstorage.documents": {
                 int splitIndex = dirtyFile.indexOf(":", 1);
+                if (splitIndex < 0) {
+                    // Malformed: missing rootId:path separator; fall back to display label.
+                    return null;
+                }
                 String rootId = dirtyFile.substring(0, splitIndex);
                 String path = dirtyFile.substring(splitIndex + 1);
                 if ("primary".equals(rootId) || "home".equals(rootId)) {
@@ -71,6 +76,9 @@ public final class GrantUriUtils {
             }
             case "com.android.providers.downloads.documents": {
                 int splitIndex = dirtyFile.indexOf(":", 1);
+                if (splitIndex < 0) {
+                    return null;
+                }
                 String rootId = dirtyFile.substring(0, splitIndex);
                 String path = dirtyFile.substring(splitIndex + 1);
                 if ("raw".equals(rootId)) {
@@ -84,7 +92,12 @@ public final class GrantUriUtils {
                 // Same as the dirty file
                 return dirtyFile;
             case "me.zhanghai.android.files.file_provider":
-                Uri uri = Uri.parse(dirtyFile);
+                Uri uri;
+                try {
+                    uri = Uri.parse(dirtyFile);
+                } catch (RuntimeException e) {
+                    return dirtyFile;
+                }
                 if (uri == null || !ContentResolver.SCHEME_FILE.equals(uri.getScheme())) {
                     // Unsupported file
                     return dirtyFile;

@@ -83,7 +83,7 @@ public class LogcatRecordingService extends ForegroundService {
         intentFilter.addDataScheme(URI_SCHEME);
         ContextCompat.registerReceiver(this, mReceiver, intentFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
         mWakeLock = CpuUtils.getPartialWakeLock("logcat_recorder");
-        mWakeLock.acquire();
+        CpuUtils.acquireWakeLock(mWakeLock);
     }
 
 

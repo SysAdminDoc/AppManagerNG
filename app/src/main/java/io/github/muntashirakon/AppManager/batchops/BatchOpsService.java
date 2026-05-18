@@ -116,7 +116,7 @@ public class BatchOpsService extends ForegroundService {
     public void onCreate() {
         super.onCreate();
         mWakeLock = CpuUtils.getPartialWakeLock("batch_ops");
-        mWakeLock.acquire();
+        CpuUtils.acquireWakeLock(mWakeLock);
     }
 
     @Override

@@ -63,7 +63,7 @@ public class ProfileApplierService extends ForegroundService {
     public void onCreate() {
         super.onCreate();
         mWakeLock = CpuUtils.getPartialWakeLock("profile_applier");
-        mWakeLock.acquire();
+        CpuUtils.acquireWakeLock(mWakeLock);
     }
 
     @Override

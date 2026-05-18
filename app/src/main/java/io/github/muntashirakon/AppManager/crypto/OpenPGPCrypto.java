@@ -107,8 +107,13 @@ public class OpenPGPCrypto implements Crypto {
     public void close() {
         // Unbind service
         if (mService != null) mService.unbindFromService();
-        // Unregister receiver
-        mContext.unregisterReceiver(mReceiver);
+        // Unregister receiver. Guard against close() being called more than once
+        // (or before bind() finished) — the framework throws IllegalArgumentException
+        // for unregistered receivers and would otherwise mask the original failure.
+        try {
+            mContext.unregisterReceiver(mReceiver);
+        } catch (IllegalArgumentException ignore) {
+        }
     }
 
     @WorkerThread
@@ -190,12 +195,16 @@ public class OpenPGPCrypto implements Crypto {
             Path inputPath = mInputFiles[i];
             Path outputPath = mOutputFiles[i];
             Log.i(TAG, "Input: %s\nOutput: %s", inputPath, outputPath);
-            InputStream is = inputPath.openInputStream();
-            OutputStream os = outputPath.openOutputStream();
-            OpenPgpApi api = new OpenPgpApi(mContext, mService.getService());
-            Intent result = api.executeApi(intent, is, os);
-            mHandler.post(() -> handleResult(result));
-            if (waitForResult) waitForResult();
+            // OpenPgpApi#executeApi does not close the streams it operates on,
+            // so file descriptors leaked for every encrypt/decrypt iteration on the
+            // previous implementation. Hold them in try-with-resources here.
+            try (InputStream is = inputPath.openInputStream();
+                 OutputStream os = outputPath.openOutputStream()) {
+                OpenPgpApi api = new OpenPgpApi(mContext, mService.getService());
+                Intent result = api.executeApi(intent, is, os);
+                mHandler.post(() -> handleResult(result));
+                if (waitForResult) waitForResult();
+            }
             if (mErrorFlag) {
                 outputPath.delete();
                 throw new IOException("Error occurred during en/decryption process");

@@ -39,6 +39,7 @@ import android.util.Pair;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
 
@@ -527,6 +528,14 @@ public final class PackageUtils {
     @Nullable
     @Contract("_,!null -> !null")
     public static String getHiddenCodePathOrDefault(@NonNull String packageName, @Nullable String defaultPath) {
+        // Defense-in-depth: refuse to interpolate anything that isn't a plausible
+        // package identifier into the shell-evaluated `pm dump ... | grep` pipeline.
+        // Android package names match a strict pattern; rejecting outliers prevents
+        // shell-metacharacter injection if a malformed PackageInfo ever reaches us
+        // (e.g. crafted APK, replayed intent extra).
+        if (!isPlausiblePackageName(packageName)) {
+            return defaultPath != null ? new File(defaultPath).getParent() : null;
+        }
         Runner.Result result = Runner.runCommand(RunnerUtils.CMD_PM + " dump " + packageName + " | grep codePath");
         if (result.isSuccessful()) {
             List<String> paths = result.getOutputAsList();
@@ -538,6 +547,29 @@ public final class PackageUtils {
             }
         }
         return defaultPath != null ? new File(defaultPath).getParent() : null;
+    }
+
+    @VisibleForTesting
+    static boolean isPlausiblePackageName(@NonNull String packageName) {
+        int length = packageName.length();
+        if (length == 0 || length > 255) {
+            return false;
+        }
+        char first = packageName.charAt(0);
+        if (!isAsciiLetter(first)) {
+            return false;
+        }
+        for (int i = 0; i < length; ++i) {
+            char c = packageName.charAt(i);
+            if (!isAsciiLetter(c) && (c < '0' || c > '9') && c != '_' && c != '.') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isAsciiLetter(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
 
     @NonNull
