@@ -49,6 +49,7 @@ import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -418,6 +419,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         });
         mModel.getSharableItemsLiveData().observe(getViewLifecycleOwner(), sharableItems ->
                 mActivity.startActivity(sharableItems.toSharableIntent()));
+        mModel.getExtractArchiveLiveData().observe(getViewLifecycleOwner(), this::promptExtractArchive);
         mModel.setOptions(options, uri);
     }
 
@@ -583,6 +585,12 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             FmTasks.FmTask fmTask = new FmTasks.FmTask(FmTasks.FmTask.TYPE_COPY, selectedFiles);
             FmTasks.getInstance().enqueue(fmTask);
             UIUtils.displayShortToast(R.string.copied_to_clipboard);
+        } else if (id == R.id.action_create_archive) {
+            promptCreateArchive(selectedFiles);
+        } else if (id == R.id.action_extract_archive) {
+            if (selectedFiles.size() == 1) {
+                promptExtractArchive(selectedFiles.get(0));
+            }
         } else if (id == R.id.action_copy_path) {
             List<String> paths = new ArrayList<>(selectedFiles.size());
             for (Path path : selectedFiles) {
@@ -758,6 +766,172 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         } else {
             UIUtils.displayShortToast(R.string.failed);
         }
+    }
+
+    private void promptCreateArchive(@NonNull List<Path> selectedFiles) {
+        Uri uri = mPathListAdapter.getCurrentUri();
+        if (uri == null) {
+            return;
+        }
+        Path basePath = Paths.get(uri);
+        String defaultName = getDefaultArchiveName(selectedFiles);
+        new TextInputDialogBuilder(mActivity, null)
+                .setTitle(R.string.create_zip_archive)
+                .setInputText(defaultName)
+                .setPositiveButton(R.string.create, (dialog, which, inputText, isChecked) -> {
+                    String displayName = getZipDisplayName(inputText, defaultName);
+                    String archiveName = findNextBestDisplayName(basePath, Paths.trimPathExtension(displayName),
+                            Paths.getPathExtension(displayName));
+                    try {
+                        Path archivePath = basePath.createNewFile(archiveName, null);
+                        startArchiveCreation(selectedFiles, archivePath);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        showArchiveErrorDialog(R.string.failed_to_create_archive, e);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void promptExtractArchive(@NonNull Path archivePath) {
+        if (!FmArchiveUtils.isSupportedZip(archivePath)) {
+            UIUtils.displayShortToast(R.string.failed_to_extract_archive);
+            return;
+        }
+        Uri uri = mPathListAdapter.getCurrentUri();
+        if (uri == null) {
+            return;
+        }
+        Path basePath = Paths.get(uri);
+        String defaultName = getDirectoryDisplayName(Paths.trimPathExtension(archivePath.getName()), "archive");
+        new TextInputDialogBuilder(mActivity, null)
+                .setTitle(R.string.extract_archive)
+                .setInputText(defaultName)
+                .setPositiveButton(R.string.extract, (dialog, which, inputText, isChecked) -> {
+                    String displayName = getDirectoryDisplayName(inputText, defaultName);
+                    try {
+                        Path destinationPath = getArchiveDestination(basePath, displayName);
+                        startArchiveExtraction(archivePath, destinationPath);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        showArchiveErrorDialog(R.string.failed_to_extract_archive, e);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void startArchiveCreation(@NonNull List<Path> selectedFiles, @NonNull Path archivePath) {
+        AtomicReference<Future<?>> archiveThread = new AtomicReference<>();
+        View view = View.inflate(requireContext(), R.layout.dialog_progress, null);
+        LinearProgressIndicator progress = view.findViewById(R.id.progress_linear);
+        TextView label = view.findViewById(android.R.id.text1);
+        TextView counter = view.findViewById(android.R.id.text2);
+        counter.setText(String.format(Locale.getDefault(), "%d/%d", 0, selectedFiles.size()));
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.create_zip_archive)
+                .setView(view)
+                .setPositiveButton(R.string.action_stop_service, (dialog1, which) -> {
+                    if (archiveThread.get() != null) {
+                        archiveThread.get().cancel(true);
+                    }
+                })
+                .setCancelable(false)
+                .show();
+        archiveThread.set(ThreadUtils.postOnBackgroundThread(() -> {
+            WeakReference<LinearProgressIndicator> progressRef = new WeakReference<>(progress);
+            WeakReference<TextView> labelRef = new WeakReference<>(label);
+            WeakReference<TextView> counterRef = new WeakReference<>(counter);
+            WeakReference<AlertDialog> dialogRef = new WeakReference<>(dialog);
+            boolean success = false;
+            Throwable failure = null;
+            try {
+                FmArchiveUtils.createZipArchive(selectedFiles, archivePath,
+                        (labelText, done, total) -> updateArchiveProgress(progressRef, labelRef, counterRef,
+                                labelText, done, total));
+                success = true;
+            } catch (InterruptedIOException e) {
+                failure = e;
+                archivePath.delete();
+            } catch (IOException e) {
+                failure = e;
+                archivePath.delete();
+            } finally {
+                boolean finalSuccess = success;
+                Throwable finalFailure = failure;
+                AlertDialog d = dialogRef.get();
+                ThreadUtils.postOnMainThread(() -> {
+                    if (d != null) {
+                        d.dismiss();
+                    }
+                    if (finalSuccess) {
+                        UIUtils.displayShortToast(R.string.archive_created_successfully);
+                        mModel.reload(archivePath.getName());
+                    } else {
+                        mModel.reload();
+                        if (!(finalFailure instanceof InterruptedIOException) && finalFailure != null) {
+                            showArchiveErrorDialog(R.string.failed_to_create_archive, finalFailure);
+                        }
+                    }
+                });
+            }
+        }));
+    }
+
+    private void startArchiveExtraction(@NonNull Path archivePath, @NonNull Path destinationPath) {
+        AtomicReference<Future<?>> extractThread = new AtomicReference<>();
+        View view = View.inflate(requireContext(), R.layout.dialog_progress, null);
+        LinearProgressIndicator progress = view.findViewById(R.id.progress_linear);
+        TextView label = view.findViewById(android.R.id.text1);
+        TextView counter = view.findViewById(android.R.id.text2);
+        counter.setText(String.format(Locale.getDefault(), "%d/%d", 0, 0));
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.extract_archive)
+                .setView(view)
+                .setPositiveButton(R.string.action_stop_service, (dialog1, which) -> {
+                    if (extractThread.get() != null) {
+                        extractThread.get().cancel(true);
+                    }
+                })
+                .setCancelable(false)
+                .show();
+        extractThread.set(ThreadUtils.postOnBackgroundThread(() -> {
+            WeakReference<LinearProgressIndicator> progressRef = new WeakReference<>(progress);
+            WeakReference<TextView> labelRef = new WeakReference<>(label);
+            WeakReference<TextView> counterRef = new WeakReference<>(counter);
+            WeakReference<AlertDialog> dialogRef = new WeakReference<>(dialog);
+            boolean success = false;
+            Throwable failure = null;
+            try {
+                FmArchiveUtils.extractZipArchive(archivePath, destinationPath, this::resolveArchiveConflict,
+                        (labelText, done, total) -> updateArchiveProgress(progressRef, labelRef, counterRef,
+                                labelText, done, total));
+                success = true;
+            } catch (InterruptedIOException e) {
+                failure = e;
+            } catch (IOException e) {
+                failure = e;
+            } finally {
+                boolean finalSuccess = success;
+                Throwable finalFailure = failure;
+                AlertDialog d = dialogRef.get();
+                ThreadUtils.postOnMainThread(() -> {
+                    if (d != null) {
+                        d.dismiss();
+                    }
+                    if (finalSuccess) {
+                        UIUtils.displayShortToast(R.string.archive_extracted_successfully);
+                        mModel.reload(destinationPath.getName());
+                    } else {
+                        mModel.reload();
+                        if (!(finalFailure instanceof InterruptedIOException) && finalFailure != null) {
+                            showArchiveErrorDialog(R.string.failed_to_extract_archive, finalFailure);
+                        }
+                    }
+                });
+            }
+        }));
     }
 
     private void startBatchDeletion(@NonNull List<Path> paths) {
@@ -1062,6 +1236,122 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         return source.copyTo(dest, false) != null;
     }
 
+    @NonNull
+    private String getDefaultArchiveName(@NonNull List<Path> selectedFiles) {
+        String prefix = selectedFiles.size() == 1 ? Paths.trimPathExtension(selectedFiles.get(0).getName()) : "archive";
+        return getZipDisplayName(prefix, "archive.zip");
+    }
+
+    @NonNull
+    private String getZipDisplayName(@Nullable CharSequence inputText, @NonNull String fallback) {
+        String displayName = inputText != null ? inputText.toString().trim() : null;
+        displayName = Paths.sanitizeFilename(displayName, null,
+                Paths.SANITIZE_FLAG_FAT_ILLEGAL_CHARS | Paths.SANITIZE_FLAG_UNIX_RESERVED);
+        if (TextUtils.isEmpty(displayName)) {
+            displayName = fallback;
+        }
+        if (!displayName.toLowerCase(Locale.ROOT).endsWith("." + FmArchiveUtils.ZIP_EXTENSION)) {
+            displayName += "." + FmArchiveUtils.ZIP_EXTENSION;
+        }
+        return displayName;
+    }
+
+    @NonNull
+    private String getDirectoryDisplayName(@Nullable CharSequence inputText, @NonNull String fallback) {
+        String displayName = inputText != null ? inputText.toString().trim() : null;
+        displayName = Paths.sanitizeFilename(displayName, null,
+                Paths.SANITIZE_FLAG_FAT_ILLEGAL_CHARS | Paths.SANITIZE_FLAG_UNIX_RESERVED);
+        if (TextUtils.isEmpty(displayName)) {
+            displayName = fallback;
+        }
+        return displayName;
+    }
+
+    @NonNull
+    private Path getArchiveDestination(@NonNull Path basePath, @NonNull String displayName) throws IOException {
+        if (basePath.hasFile(displayName)) {
+            Path existingPath = basePath.findFile(displayName);
+            if (existingPath.isDirectory()) {
+                return existingPath;
+            }
+            displayName = findNextBestDisplayName(basePath, displayName, null);
+        }
+        return basePath.createNewDirectory(displayName);
+    }
+
+    @WorkerThread
+    @NonNull
+    private FmArchiveUtils.ConflictAction resolveArchiveConflict(@NonNull String entryName) throws IOException {
+        CountDownLatch waitForUser = new CountDownLatch(1);
+        AtomicReference<FmArchiveUtils.ConflictAction> selectedAction =
+                new AtomicReference<>(FmArchiveUtils.ConflictAction.ABORT);
+        ThreadUtils.postOnMainThread(() -> {
+            CharSequence[] actions = new CharSequence[]{
+                    getString(R.string.replace),
+                    getString(R.string.copy_keep_both_file),
+                    getString(R.string.skip),
+                    getString(R.string.action_stop_service),
+            };
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.conflict_detected_while_copying)
+                    .setMessage(getString(R.string.conflict_detected_while_extracting_message, entryName))
+                    .setCancelable(false)
+                    .setItems(actions, (dialog, which) -> {
+                        if (which == 0) {
+                            selectedAction.set(FmArchiveUtils.ConflictAction.REPLACE);
+                        } else if (which == 1) {
+                            selectedAction.set(FmArchiveUtils.ConflictAction.KEEP_BOTH);
+                        } else if (which == 2) {
+                            selectedAction.set(FmArchiveUtils.ConflictAction.SKIP);
+                        } else {
+                            selectedAction.set(FmArchiveUtils.ConflictAction.ABORT);
+                        }
+                    })
+                    .setOnDismissListener(dialog -> waitForUser.countDown())
+                    .show();
+        });
+        try {
+            waitForUser.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InterruptedIOException();
+        }
+        return selectedAction.get();
+    }
+
+    private void updateArchiveProgress(@NonNull WeakReference<LinearProgressIndicator> progressRef,
+                                       @NonNull WeakReference<TextView> labelRef,
+                                       @NonNull WeakReference<TextView> counterRef,
+                                       @NonNull String labelText, int done, int total) {
+        ThreadUtils.postOnMainThread(() -> {
+            LinearProgressIndicator progress = progressRef.get();
+            TextView label = labelRef.get();
+            TextView counter = counterRef.get();
+            if (label != null) {
+                label.setText(labelText);
+            }
+            if (counter != null) {
+                counter.setText(String.format(Locale.getDefault(), "%d/%d", done, total));
+            }
+            if (progress != null) {
+                int max = Math.max(total, 1);
+                progress.setMax(max);
+                progress.setProgress(Math.min(done, max));
+                progress.setIndeterminate(false);
+            }
+        });
+    }
+
+    private void showArchiveErrorDialog(int titleRes, @NonNull Throwable throwable) {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(titleRes)
+                .setPositiveButton(R.string.close, null);
+        if (!TextUtils.isEmpty(throwable.getLocalizedMessage())) {
+            builder.setMessage(throwable.getLocalizedMessage());
+        }
+        builder.show();
+    }
+
     private String findNextBestDisplayName(@NonNull Path basePath, @NonNull String prefix, @Nullable String extension) {
         return findNextBestDisplayName(basePath, prefix, extension, 1);
     }
@@ -1086,6 +1376,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         private final MenuItem mDeleteMenu;
         private final MenuItem mCutMenu;
         private final MenuItem mCopyMenu;
+        private final MenuItem mCreateArchiveMenu;
+        private final MenuItem mExtractArchiveMenu;
         private final MenuItem mCopyPathsMenu;
 
         public BatchOpsHandler(@NonNull MultiSelectionView multiSelectionView) {
@@ -1095,6 +1387,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             mDeleteMenu = menu.findItem(R.id.action_delete);
             mCutMenu = menu.findItem(R.id.action_cut);
             mCopyMenu = menu.findItem(R.id.action_copy);
+            mCreateArchiveMenu = menu.findItem(R.id.action_create_archive);
+            mExtractArchiveMenu = menu.findItem(R.id.action_extract_archive);
             mCopyPathsMenu = menu.findItem(R.id.action_copy_path);
         }
 
@@ -1103,11 +1397,25 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             boolean nonZeroSelection = selectionCount > 0;
             boolean canRead = mFolderShortInfo != null && mFolderShortInfo.canRead;
             boolean canWrite = mFolderShortInfo != null && mFolderShortInfo.canWrite;
+            List<Path> selectedItems = nonZeroSelection ? mModel.getSelectedItems() : Collections.emptyList();
+            boolean allSelectedReadable = true;
+            for (Path selectedItem : selectedItems) {
+                if (!selectedItem.canRead()) {
+                    allSelectedReadable = false;
+                    break;
+                }
+            }
+            boolean canExtractArchive = selectedItems.size() == 1
+                    && allSelectedReadable
+                    && canWrite
+                    && FmArchiveUtils.isSupportedZip(selectedItems.get(0));
             mShareMenu.setEnabled(nonZeroSelection && canRead);
             mRenameMenu.setEnabled(nonZeroSelection && canWrite);
             mDeleteMenu.setEnabled(nonZeroSelection && canWrite);
             mCutMenu.setEnabled(nonZeroSelection && canWrite);
             mCopyMenu.setEnabled(nonZeroSelection && canRead);
+            mCreateArchiveMenu.setEnabled(nonZeroSelection && canRead && canWrite && allSelectedReadable);
+            mExtractArchiveMenu.setEnabled(canExtractArchive);
             mCopyPathsMenu.setEnabled(nonZeroSelection);
             return false;
         }
