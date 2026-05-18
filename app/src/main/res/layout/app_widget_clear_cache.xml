@@ -17,6 +17,6 @@
         android:contentDescription="@string/clear_app_cache"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_clear_cache"
-        android:tint="?android:attr/textColorSecondary"
+        android:tint="?attr/colorPrimary"
         tools:ignore="UseAppTint" />
 </RelativeLayout>
