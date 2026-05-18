@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 128**. Iter-128 shipped default-app role
-> restore rebinds: backup metadata now captures Dialer/SMS/Home/Browser role
-> ownership, restore attempts privileged `cmd role add-role-holder` rebinding
-> for the restored package/user, and batch restore completion prompts users to
-> review Android Default apps settings when automatic rebinds are rejected.
+> Last consolidated: **2026-05-18 iter 129**. Iter-129 shipped the scheduled
+> backup newest-age gate: Settings -> Backup now has a configurable freshness
+> window, `AutoBackupWorker` computes the newest valid backup per package/user,
+> skips only packages whose newest backup is still fresh, and reports
+> skipped-recent counts in scheduled-backup results.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -169,6 +169,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-126/`](.ai/research/2026-05-18-iter-126/) | iter 126 | Android 17 cleartext deprecation badge: App Info warns when manifest-wide cleartext is enabled without a Network Security Config, with hidden `networkSecurityConfigRes` compat access and predicate coverage. |
 | [`.ai/research/2026-05-18-iter-127/`](.ai/research/2026-05-18-iter-127/) | iter 127 | Material You widget theming: shared AppWidget palette helper, dynamic RemoteViews tints for usage / clear-cache / log widgets, and Android 12+ system color XML fallback mappings. |
 | [`.ai/research/2026-05-18-iter-128/`](.ai/research/2026-05-18-iter-128/) | iter 128 | Default-app role restore rebinds: backup metadata `default_roles`, privileged restore-time `cmd role add-role-holder`, fallback Default apps review prompt, and focused role helper coverage. |
+| [`.ai/research/2026-05-18-iter-129/`](.ai/research/2026-05-18-iter-129/) | iter 129 | Scheduled-backup newest-age gate: configurable freshness window, newest valid backup per package/user selection, skipped-recent result counts, and focused scheduler coverage. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S363).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

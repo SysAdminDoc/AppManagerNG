@@ -73,6 +73,11 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="backup_schedule_minimum_age"
+        app:title="@string/pref_backup_schedule_minimum_age"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="backup_schedule_run_now"
         app:title="@string/pref_backup_schedule_run_now"
         app:summary="@string/pref_backup_schedule_run_now_msg"

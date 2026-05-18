@@ -17,11 +17,18 @@ import androidx.work.WorkManager;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupUtils;
+import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -33,6 +40,8 @@ public final class AutoBackupScheduler {
     public static final String WORK_TAG = "auto_backup";
     public static final int DEFAULT_HOUR = 2;
     public static final int DEFAULT_MINUTE = 0;
+    public static final int DEFAULT_MINIMUM_AGE_DAYS = 1;
+    public static final int MAX_MINIMUM_AGE_DAYS = 365;
 
     public static final int NETWORK_NOT_REQUIRED = 0;
     public static final int NETWORK_CONNECTED = 1;
@@ -97,6 +106,56 @@ public final class AutoBackupScheduler {
     }
 
     @NonNull
+    public static BackupSelection selectPackagesDueForBackup(@NonNull List<UserPackagePair> pairs,
+                                                             @NonNull List<Backup> existingBackups,
+                                                             int minimumAgeDays,
+                                                             long nowMillis) {
+        int sanitizedMinimumAgeDays = sanitizeMinimumAgeDays(minimumAgeDays);
+        if (sanitizedMinimumAgeDays <= 0 || pairs.isEmpty() || existingBackups.isEmpty()) {
+            return new BackupSelection(new ArrayList<>(pairs), 0);
+        }
+        long minimumAgeMillis = TimeUnit.DAYS.toMillis(sanitizedMinimumAgeDays);
+        Map<String, Backup> latestBackups = new LinkedHashMap<>();
+        for (Backup backup : existingBackups) {
+            if (backup.backupTime <= 0) {
+                continue;
+            }
+            String key = getPackageUserKey(backup.packageName, backup.userId);
+            Backup latestBackup = latestBackups.get(key);
+            if (latestBackup == null || backup.backupTime > latestBackup.backupTime) {
+                latestBackups.put(key, backup);
+            }
+        }
+        ArrayList<UserPackagePair> duePackages = new ArrayList<>(pairs.size());
+        int skipped = 0;
+        for (UserPackagePair pair : pairs) {
+            Backup latestBackup = latestBackups.get(getPackageUserKey(pair.getPackageName(), pair.getUserId()));
+            if (latestBackup != null && nowMillis - latestBackup.backupTime < minimumAgeMillis) {
+                ++skipped;
+                continue;
+            }
+            duePackages.add(pair);
+        }
+        return new BackupSelection(duePackages, skipped);
+    }
+
+    @NonNull
+    public static List<Backup> collectExistingBackups(@NonNull List<UserPackagePair> pairs) {
+        if (pairs.isEmpty()) {
+            return Collections.emptyList();
+        }
+        ArrayList<Backup> backups = new ArrayList<>();
+        Set<String> visitedPackages = new HashSet<>();
+        for (UserPackagePair pair : pairs) {
+            String packageName = pair.getPackageName();
+            if (visitedPackages.add(packageName)) {
+                backups.addAll(BackupUtils.getBackupMetadataFromDbNoLockValidate(packageName));
+            }
+        }
+        return backups;
+    }
+
+    @NonNull
     public static Constraints buildConstraints(boolean requireCharging, int networkType) {
         return new Constraints.Builder()
                 .setRequiresCharging(requireCharging)
@@ -134,6 +193,10 @@ public final class AutoBackupScheduler {
             default:
                 return NETWORK_NOT_REQUIRED;
         }
+    }
+
+    public static int sanitizeMinimumAgeDays(int days) {
+        return Math.max(0, Math.min(MAX_MINIMUM_AGE_DAYS, days));
     }
 
     public static void recordRunStarted(@NonNull String result) {
@@ -190,5 +253,30 @@ public final class AutoBackupScheduler {
             next.add(Calendar.DAY_OF_YEAR, 1);
         }
         return next.getTimeInMillis() - nowMillis;
+    }
+
+    @NonNull
+    private static String getPackageUserKey(@NonNull String packageName, int userId) {
+        return packageName + '\u0000' + userId;
+    }
+
+    public static final class BackupSelection {
+        @NonNull
+        private final List<UserPackagePair> mDuePackages;
+        private final int mSkippedPackages;
+
+        private BackupSelection(@NonNull List<UserPackagePair> duePackages, int skippedPackages) {
+            mDuePackages = Collections.unmodifiableList(duePackages);
+            mSkippedPackages = skippedPackages;
+        }
+
+        @NonNull
+        public List<UserPackagePair> getDuePackages() {
+            return mDuePackages;
+        }
+
+        public int getSkippedPackages() {
+            return mSkippedPackages;
+        }
     }
 }
