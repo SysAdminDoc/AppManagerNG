@@ -336,7 +336,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 signature = LocalServer.buildBootstrapSignature("failed", th,
                         SystemClock.elapsedRealtime() - started, null);
             }
-            ThreadUtils.postOnMainThread(() -> showBootstrapSmokeTestResult(signature));
+            String finalSignature = signature;
+            ThreadUtils.postOnMainThread(() -> showBootstrapSmokeTestResult(finalSignature));
         });
     }
 

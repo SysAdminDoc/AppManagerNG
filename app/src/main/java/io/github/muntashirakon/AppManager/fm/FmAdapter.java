@@ -227,6 +227,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         popupMenu.inflate(R.menu.fragment_fm_item_actions);
         Menu menu = popupMenu.getMenu();
         MenuItem openWithAction = menu.findItem(R.id.action_open_with);
+        MenuItem extractArchiveAction = menu.findItem(R.id.action_extract_archive);
         MenuItem cutAction = menu.findItem(R.id.action_cut);
         MenuItem copyAction = menu.findItem(R.id.action_copy);
         MenuItem renameAction = menu.findItem(R.id.action_rename);
@@ -236,7 +237,10 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         // Disable actions based on criteria
         boolean canRead = item.path.canRead();
         boolean canWrite = item.path.canWrite();
+        boolean isSupportedArchive = canRead && FmArchiveUtils.isSupportedZip(item.path);
         openWithAction.setEnabled(canRead);
+        extractArchiveAction.setEnabled(isSupportedArchive);
+        extractArchiveAction.setVisible(isSupportedArchive);
         cutAction.setEnabled(canRead && canWrite);
         copyAction.setEnabled(canRead);
         renameAction.setEnabled(canRead && canWrite);
@@ -246,6 +250,10 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         openWithAction.setOnMenuItemClickListener(menuItem -> {
             OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(item.path);
             fragment.show(mFmActivity.getSupportFragmentManager(), OpenWithDialogFragment.TAG);
+            return true;
+        });
+        extractArchiveAction.setOnMenuItemClickListener(menuItem -> {
+            mViewModel.requestArchiveExtract(item.path);
             return true;
         });
         cutAction.setOnMenuItemClickListener(menuItem -> {

@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — File Manager ZIP archive actions (2026-05-18)
+
+- Added File Manager actions to create a ZIP archive from the current selection
+  and extract a selected ZIP archive to a folder.
+- Archive operations use the existing File Manager progress dialog pattern with
+  cancellation, success/error feedback, and destination reload.
+- ZIP extraction now prompts on file conflicts with replace, keep-both, skip, or
+  stop choices, and rejects unsafe archive entries such as `../` zip-slip paths.
+- Added focused JVM coverage for ZIP round-trip extraction, keep-both naming,
+  and malicious-entry rejection.
+- Restored local app JVM-test execution by mirroring the Shizuku provider
+  `tools:overrideLibrary` allowance into the test manifest and fixing three
+  stale Java compile blockers found during verification.
+
 ### Added — Restricted Settings unlock walkthrough (2026-05-17)
 
 - Added a Settings -> Privileges row for Android 13+ Restricted Settings,

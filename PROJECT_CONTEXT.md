@@ -7,7 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
+> Last consolidated: **2026-05-18 iter 90**. Iter-90 closed the T13 File Manager
+> Compression tail by adding explicit ZIP create/extract actions, progress/cancel
+> dialogs, extract conflict choices, zip-slip rejection, focused archive tests,
+> and the test-manifest Shizuku minSdk override needed for app JVM tests.
+>
+> Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
 > follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
 > preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
