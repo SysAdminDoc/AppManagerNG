@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 135**. Iter-135 shipped the installer
-> privilege cascade: installer prompts now show route chips, the service
-> temporarily tries ADB -> Shizuku -> root package-session privileges when the
-> active mode cannot install directly, then restores the user's configured mode
-> and falls back to Android confirmation if no elevated provider succeeds.
+> Last consolidated: **2026-05-18 iter 136**. Iter-136 shipped the split APK
+> cert-mismatch dialog: selected split APKs are checked against the base APK's
+> current signing certs before the install session starts, and mismatches are
+> shown in a Material dialog with per-split name, version, cert SHA-256, and
+> reason rows plus optional-split removal.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
