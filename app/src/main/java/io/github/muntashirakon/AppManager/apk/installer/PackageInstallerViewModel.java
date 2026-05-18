@@ -25,6 +25,7 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -155,15 +156,56 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         return mSelectedSplits;
     }
 
+    public void selectDefaultSplitsForInstallation() {
+        if (!mApkFile.isSplit() || !mSelectedSplits.isEmpty()) {
+            return;
+        }
+        HashMap<String, HashSet<Integer>> seenTypes = new HashMap<>();
+        for (ApkFile.Entry entry : mApkFile.getEntries()) {
+            if (entry.isRequired() && entry.supported()) {
+                selectSplit(entry, seenTypes);
+            }
+        }
+        for (ApkFile.Entry entry : mApkFile.getEntries()) {
+            if (mSelectedSplits.contains(entry.id) || !entry.supported()) {
+                continue;
+            }
+            HashSet<Integer> types = seenTypes.get(entry.getFeature());
+            if (types == null) {
+                continue;
+            }
+            switch (entry.type) {
+                case ApkFile.APK_SPLIT_ABI:
+                case ApkFile.APK_SPLIT_DENSITY:
+                case ApkFile.APK_SPLIT_LOCALE:
+                    if (!types.contains(entry.type)) {
+                        selectSplit(entry, seenTypes);
+                    }
+                    break;
+            }
+        }
+    }
+
     @NonNull
     public ArrayList<String> getSelectedSplitsForInstallation() {
         if (mApkFile.isSplit()) {
+            selectDefaultSplitsForInstallation();
             if (mSelectedSplits.isEmpty()) {
                 throw new IllegalArgumentException("No splits selected.");
             }
             return new ArrayList<>(mSelectedSplits);
         }
         return new ArrayList<>(Collections.singletonList(mApkFile.getBaseEntry().id));
+    }
+
+    private void selectSplit(@NonNull ApkFile.Entry entry, @NonNull HashMap<String, HashSet<Integer>> seenTypes) {
+        mSelectedSplits.add(entry.id);
+        HashSet<Integer> types = seenTypes.get(entry.getFeature());
+        if (types == null) {
+            types = new HashSet<>();
+            seenTypes.put(entry.getFeature(), types);
+        }
+        types.add(entry.type);
     }
 
     private void getPackageInfoInternal() throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {

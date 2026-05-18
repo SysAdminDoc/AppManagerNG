@@ -607,6 +607,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         }
         if (id == R.id.action_share) {
             mModel.shareFiles(selectedFiles);
+        } else if (id == R.id.action_install_selected_apks) {
+            startBatchApkInstall(selectedFiles);
         } else if (id == R.id.action_rename) {
             RenameDialogFragment dialog = RenameDialogFragment.getInstance(null, (prefix, extension) ->
                     startBatchRenaming(selectedFiles, prefix, extension));
@@ -641,6 +643,17 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             Utils.copyToClipboard(mActivity, "Paths", TextUtils.join("\n", paths));
         }
         return false;
+    }
+
+    private void startBatchApkInstall(@NonNull List<Path> selectedFiles) {
+        if (!FmBatchApkInstallUtils.canOfferInstall(selectedFiles)) {
+            UIUtils.displayShortToast(R.string.no_installable_apks_selected);
+            return;
+        }
+        startActivity(FmBatchApkInstallUtils.getInstallIntent(requireContext(), selectedFiles));
+        if (mMultiSelectionView != null) {
+            mMultiSelectionView.cancel();
+        }
     }
 
     @Override
@@ -1502,6 +1515,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
 
     private class BatchOpsHandler implements MultiSelectionView.OnSelectionChangeListener {
         private final MenuItem mShareMenu;
+        private final MenuItem mInstallApksMenu;
         private final MenuItem mRenameMenu;
         private final MenuItem mDeleteMenu;
         private final MenuItem mCutMenu;
@@ -1513,6 +1527,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         public BatchOpsHandler(@NonNull MultiSelectionView multiSelectionView) {
             Menu menu = multiSelectionView.getMenu();
             mShareMenu = menu.findItem(R.id.action_share);
+            mInstallApksMenu = menu.findItem(R.id.action_install_selected_apks);
             mRenameMenu = menu.findItem(R.id.action_rename);
             mDeleteMenu = menu.findItem(R.id.action_delete);
             mCutMenu = menu.findItem(R.id.action_cut);
@@ -1539,7 +1554,9 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     && allSelectedReadable
                     && canWrite
                     && FmArchiveUtils.isSupportedZip(selectedItems.get(0));
+            boolean canInstallApks = canRead && FmBatchApkInstallUtils.canOfferInstall(selectedItems);
             mShareMenu.setEnabled(nonZeroSelection && canRead);
+            mInstallApksMenu.setEnabled(canInstallApks);
             mRenameMenu.setEnabled(nonZeroSelection && canWrite);
             mDeleteMenu.setEnabled(nonZeroSelection && canWrite);
             mCutMenu.setEnabled(nonZeroSelection && canWrite);

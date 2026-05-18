@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — File Manager batch APK installer (2026-05-18)
+
+- File Manager multi-selection now offers **Install selected APKs** for readable
+  `.apk`, `.apks`, `.apkm`, and `.xapk` files.
+- The action launches AppManagerNG's installer with a batch `ACTION_SEND_MULTIPLE`
+  intent, content-URI grants, and the existing installer queue/service path.
+- Batch install auto-selects required plus best-matching supported split APK
+  entries, while existing destructive reinstall/signature safety prompts remain
+  in place.
+
 ### Added — KernelSU app profile visibility (2026-05-18)
 
 - Settings -> Privileges now shows the active KernelSU `su` App Profile shape:
