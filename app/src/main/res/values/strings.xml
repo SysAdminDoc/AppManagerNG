@@ -1139,6 +1139,8 @@
     <string name="interceptor_add_extra">Add extra</string>
     <string name="interceptor_no_matching_activities">No installed activity can handle this intent. Adjust the action, data, type, package, or user and try again.</string>
     <string name="share">Share</string>
+    <string name="install_selected_apks">Install selected APKs</string>
+    <string name="no_installable_apks_selected">No installable APK files selected</string>
     <string name="resend_intent">Resend intent</string>
     <string name="interceptor">Interceptor</string>
     <string name="set_custom_app_op">Set custom app op</string>
