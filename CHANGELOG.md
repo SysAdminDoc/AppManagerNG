@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 ML-DSA certificate names (2026-05-18)
+
+- Closed the Android 17 ML-DSA certificate OID roadmap row as already
+  implemented: certificate display already maps ML-DSA-65 and ML-DSA-87 OIDs to
+  readable names through `Utils.getCertificateSignatureAlgorithmName()`.
+- Confirmed Package Info and Scanner both consume the shared certificate
+  algorithm helper while still displaying the canonical signature OID.
+- Removed an unrelated `Utils` class-load dependency on `OsEnvironment` so the
+  ML-DSA mapping regression test runs in the JVM unit-test runner.
+
 ### Compliance — Android 17 targetSdk 37 audit batch (2026-05-18)
 
 - Declared the Android 17 `ACCESS_LOCAL_NETWORK` permission and added a

@@ -83,9 +83,15 @@ Regression coverage lives in
 [`UtilsCertificateAlgorithmTest`](../../app/src/test/java/io/github/muntashirakon/AppManager/utils/UtilsCertificateAlgorithmTest.java).
 The targetSdk=37 bump no longer needs a separate ML-DSA display-name follow-up.
 
+**2026-05-18 refresh:** live source still contains both ML-DSA OID mappings and
+both certificate display surfaces still consume the shared helper. Iter-125 also
+removed an unrelated `Utils` class-load dependency on `OsEnvironment`, which
+previously caused `UtilsCertificateAlgorithmTest` to fail in the JVM unit-test
+runner before the ML-DSA assertions executed.
+
 ## Follow-ups
 
-- Open the ML-DSA prettify-name row in T9.
+- T9 ML-DSA prettify-name row closed in iter-125.
 - When the targetSdk=37 bump lands, capture a screenshot of an ML-DSA-signed APK's cert display under NG for the release notes — useful end-user-visible signal that NG handles post-quantum APK signing transparently.
 
 This is **audit 5 of 5** of the open Android 17 targetSdk=37 compliance batch. **All five audits closed clean.**
