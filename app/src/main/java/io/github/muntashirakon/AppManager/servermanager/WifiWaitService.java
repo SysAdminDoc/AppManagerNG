@@ -142,6 +142,8 @@ public class WifiWaitService extends Service {
             Log.w(TAG, "Autoconnect failed: pairing required");
         } else if (status == Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED) {
             Log.w(TAG, "Autoconnect failed: could not find a valid port");
+        } else if (status == Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED) {
+            Log.w(TAG, "Autoconnect failed: local network permission required");
         } else if (status == Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS) {
             Log.w(TAG, "Autoconnect failed: not enough permissions available");
         } else if (status == Ops.STATUS_SUCCESS) {
