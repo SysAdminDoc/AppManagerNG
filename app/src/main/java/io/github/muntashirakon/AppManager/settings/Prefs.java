@@ -680,6 +680,14 @@ public final class Prefs {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERSISTENT_SESSION_BOOL);
         }
 
+        public static boolean isPermissionChangeMonitorEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_CHANGE_MONITOR_BOOL);
+        }
+
+        public static void setPermissionChangeMonitorEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_PERMISSION_CHANGE_MONITOR_BOOL, enabled);
+        }
+
         public static int getOpHistoryRetentionDays() {
             return AppPref.getInt(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT);
         }

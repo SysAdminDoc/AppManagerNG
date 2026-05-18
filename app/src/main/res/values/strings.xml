@@ -2298,6 +2298,11 @@
     <string name="delete_old_backups_keep_last_n">Keep last %1$d per app</string>
     <string name="delete_old_backups_older_than_days">Delete anything older than %1$d days</string>
     <string name="delete_old_backups_confirm">This deletes matching backup revisions across every installed and uninstalled package. The operation cannot be undone.</string>
+    <!-- Permission Change Monitor (T9/Next) -->
+    <string name="pref_permission_change_monitor">Permission change monitor</string>
+    <string name="pref_permission_change_monitor_msg">Notify when an updated app gains a new dangerous permission compared to the previously installed version. Opt-in; runs locally with no network use.</string>
+    <string name="permission_change_monitor_title">%1$s requests new permissions</string>
+    <string name="permission_change_monitor_body">%1$d new dangerous permission(s): %2$s</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>
