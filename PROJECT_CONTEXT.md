@@ -7,11 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 98**. Iter-98 closed the T6 app-list
-> import/export workflow: the main list can export the current visible/filtered
-> list through the existing CSV/JSON/XML/Markdown exporter, and JSON imports
-> select matching installed apps so the existing multi-select batch toolbar can
-> drive follow-up operations.
+> Last consolidated: **2026-05-18 iter 99**. Iter-99 closed the T6 provider-backed
+> network backup destination slice: Settings -> Backup/Restore can now persist an
+> SMB/WebDAV/SFTP/cloud folder exposed by a user-installed DocumentsProvider app as
+> the active backup volume while keeping the existing Path-based backup engine.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -81,8 +80,8 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-62 follow-through context inline. Cites **340 numbered external sources** in a Source Appendix at the bottom. |
-| [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 → 2026-05-17 shipped work. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-99 follow-through context inline. Cites **361 numbered external sources** in a Source Appendix at the bottom. |
+| [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 -> 2026-05-18 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
 | [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
@@ -139,15 +138,16 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-96/`](.ai/research/2026-05-18-iter-96/) | iter 96 | Separated active/paused schedule lists parked as blocked by future multiple-schedule profiles; current scheduler is one global preference surface. |
 | [`.ai/research/2026-05-18-iter-97/`](.ai/research/2026-05-18-iter-97/) | iter 97 | Scheduled-backup diagnostics: Settings status row shows WorkManager state/attempt/stop details, next run time, and API-36 JobScheduler pending-reason snapshots; API-37 `JobDebugInfo` remains blocked by compile SDK 36. |
 | [`.ai/research/2026-05-18-iter-98/`](.ai/research/2026-05-18-iter-98/) | iter 98 | App-list import/export workflow: visible/filtered list export from the main menu, selected-list export preserved in selection mode, and JSON imports selecting matching installed apps for existing batch actions. |
+| [`.ai/research/2026-05-18-iter-99/`](.ai/research/2026-05-18-iter-99/) | iter 99 | Provider-backed network backup destination: Settings -> Backup/Restore Network backup destination action persists a selected DocumentsProvider tree as the active backup volume and test-covers tree URI normalization. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
 ## 3. Stack, build, code stats
 
 - **Language**: Java + Kotlin (Java in core, Kotlin in newer additions). **629 `.java` files** under `app/src/main/java/io/github/muntashirakon/AppManager/`. Kotlin file count is lower.
-- **UI**: Android Views + Material Components **1.13.0**. Compose is **out of scope** — see `codexprompt.md` ("DO NOT propose Jetpack Compose. Compose migration is a multi-year project").
+- **UI**: Android Views + Material Components **1.13.0**. Compose is not planned for this codebase — see `codexprompt.md` ("DO NOT propose Jetpack Compose. Compose migration is a multi-year project").
 - **Build**: Gradle 8.x, AGP `8.13.2`, Java 8 source/target with desugaring, NDK + CMake for native.
 - **min/target SDK**: **21 / 36**.
 - **Modules** (top-level): `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/`, `libs/`, `scripts/`, `docs/`, `fastlane/`, `LICENSES/`.

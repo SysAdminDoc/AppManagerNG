@@ -165,7 +165,7 @@ public class StorageUtils {
     }
 
     @NonNull
-    private static Uri getFixedTreeUri(@NonNull Uri uri) {
+    public static Uri getFixedTreeUri(@NonNull Uri uri) {
         List<String> paths = uri.getPathSegments();
         int size = paths.size();
         if (size < 2 || !"tree".equals(paths.get(0))) {
