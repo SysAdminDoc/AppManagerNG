@@ -7,8 +7,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import org.junit.Test;
 
 import java.io.File;
@@ -33,27 +35,27 @@ public class HiddenApiDescriptorBaselineTest {
     @Test
     public void baselineCoversEveryHiddenApiSourceFile() throws Exception {
         File root = findRepoRoot();
-        JSONObject baseline = new JSONObject(read(new File(root, BASELINE_PATH)));
-        JSONArray classes = baseline.getJSONArray("classes");
+        JsonObject baseline = JsonParser.parseString(read(new File(root, BASELINE_PATH))).getAsJsonObject();
+        JsonArray classes = baseline.getAsJsonArray("classes");
 
-        assertEquals(1, baseline.getInt("schema"));
-        assertEquals(HIDDEN_API_ROOT, baseline.getString("sourceRoot"));
-        assertTrue("hidden API descriptor should cover the full stub tree", classes.length() >= 100);
+        assertEquals(1, baseline.get("schema").getAsInt());
+        assertEquals(HIDDEN_API_ROOT, baseline.get("sourceRoot").getAsString());
+        assertTrue("hidden API descriptor should cover the full stub tree", classes.size() >= 100);
         assertTrue("hidden API descriptor should include runtime members", countMembers(classes) >= 700);
 
         Set<String> expectedSourceFiles = collectHiddenApiSourceFiles(root);
         Set<String> actualSourceFiles = new HashSet<>();
         Set<String> seenStubs = new HashSet<>();
-        for (int i = 0; i < classes.length(); ++i) {
-            JSONObject item = classes.getJSONObject(i);
+        for (int i = 0; i < classes.size(); ++i) {
+            JsonObject item = classes.get(i).getAsJsonObject();
             assertRequiredString(item, "sourceFile");
             assertRequiredString(item, "stub");
             assertRequiredString(item, "runtime");
-            assertTrue("minSdk must be >= 1", item.getInt("minSdk") >= 1);
-            assertNotNull(item.getJSONArray("members"));
-            assertTrue("duplicate stub descriptor: " + item.getString("stub"),
-                    seenStubs.add(item.getString("stub")));
-            actualSourceFiles.add(item.getString("sourceFile"));
+            assertTrue("minSdk must be >= 1", item.get("minSdk").getAsInt() >= 1);
+            assertNotNull(item.getAsJsonArray("members"));
+            assertTrue("duplicate stub descriptor: " + item.get("stub").getAsString(),
+                    seenStubs.add(item.get("stub").getAsString()));
+            actualSourceFiles.add(item.get("sourceFile").getAsString());
         }
 
         assertEquals("Regenerate the baseline with scripts/generate-hidden-api-baseline.ps1",
@@ -95,17 +97,17 @@ public class HiddenApiDescriptorBaselineTest {
         }
     }
 
-    private static int countMembers(JSONArray classes) throws Exception {
+    private static int countMembers(JsonArray classes) {
         int total = 0;
-        for (int i = 0; i < classes.length(); ++i) {
-            total += classes.getJSONObject(i).getJSONArray("members").length();
+        for (int i = 0; i < classes.size(); ++i) {
+            total += classes.get(i).getAsJsonObject().getAsJsonArray("members").size();
         }
         return total;
     }
 
-    private static void assertRequiredString(JSONObject item, String name) throws Exception {
+    private static void assertRequiredString(JsonObject item, String name) {
         assertTrue("missing " + name, item.has(name));
-        assertFalse(name + " must not be empty", item.getString(name).trim().isEmpty());
+        assertFalse(name + " must not be empty", item.get(name).getAsString().trim().isEmpty());
     }
 
     private static String read(File file) throws IOException {
