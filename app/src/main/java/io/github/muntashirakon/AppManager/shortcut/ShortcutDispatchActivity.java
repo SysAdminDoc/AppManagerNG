@@ -43,6 +43,8 @@ public class ShortcutDispatchActivity extends Activity {
             "io.github.muntashirakon.AppManager.shortcut.action.OPEN_ONE_CLICK_OPS";
     public static final String ACTION_OPEN_FINDER =
             "io.github.muntashirakon.AppManager.shortcut.action.OPEN_FINDER";
+    public static final String ACTION_RUN_SCHEDULED_BACKUP =
+            AutoBackupShortcutActivity.ACTION_RUN_SCHEDULED_BACKUP;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,6 +57,8 @@ public class ShortcutDispatchActivity extends Activity {
                 out = new Intent(this, OneClickOpsActivity.class);
             } else if (ACTION_OPEN_FINDER.equals(action)) {
                 out = new Intent(this, FinderActivity.class);
+            } else if (ACTION_RUN_SCHEDULED_BACKUP.equals(action)) {
+                out = AutoBackupShortcutActivity.getIntent(this);
             } else {
                 // Unknown action — refuse to dispatch. Anything fired at this trampoline must
                 // declare one of the explicit ACTION_* constants above. Treating unknown actions

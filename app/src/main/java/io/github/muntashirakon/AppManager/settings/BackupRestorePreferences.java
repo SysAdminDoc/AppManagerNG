@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.settings.crypto.AESCryptoSelectionDial
 import io.github.muntashirakon.AppManager.settings.crypto.ECCCryptoSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.OpenPgpKeySelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.RSACryptoSelectionDialogFragment;
+import io.github.muntashirakon.AppManager.shortcut.AutoBackupShortcutActivity;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -353,6 +354,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
         SwitchPreferenceCompat scheduleRequireCharging = requirePreference("backup_schedule_require_charging");
         Preference scheduleNetwork = requirePreference("backup_schedule_network");
         Preference scheduleRunNow = requirePreference("backup_schedule_run_now");
+        Preference scheduleShortcut = requirePreference("backup_schedule_shortcut");
         Preference scheduleStatus = requirePreference("backup_schedule_status");
         updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
         scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
@@ -410,6 +412,18 @@ public class BackupRestorePreferences extends PreferenceFragment {
             io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
                     R.string.pref_backup_schedule_run_now_queued);
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            return true;
+        });
+        scheduleShortcut.setOnPreferenceClickListener(preference -> {
+            if (AutoBackupShortcutActivity.requestPinShortcut(requireContext())) {
+                UIUtils.displayShortToast(R.string.pref_backup_schedule_shortcut_requested);
+            } else {
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.error_creating_shortcut)
+                        .setMessage(R.string.error_verbose_pin_shortcut)
+                        .setPositiveButton(R.string.ok, null)
+                        .show();
+            }
             return true;
         });
     }

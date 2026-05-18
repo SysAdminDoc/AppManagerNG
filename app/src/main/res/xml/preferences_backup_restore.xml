@@ -68,6 +68,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="backup_schedule_shortcut"
+        app:title="@string/pref_backup_schedule_shortcut"
+        app:summary="@string/pref_backup_schedule_shortcut_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="backup_schedule_status"
         app:title="@string/pref_backup_schedule_status"
         app:selectable="false"
