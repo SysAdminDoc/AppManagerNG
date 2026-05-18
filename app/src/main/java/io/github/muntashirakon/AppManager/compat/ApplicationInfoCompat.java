@@ -307,6 +307,13 @@ public final class ApplicationInfoCompat {
         return Refine.<ApplicationInfoHidden>unsafeCast(info).primaryCpuAbi;
     }
 
+    public static int getNetworkSecurityConfigRes(@NonNull ApplicationInfo info) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return Refine.<ApplicationInfoHidden>unsafeCast(info).networkSecurityConfigRes;
+        }
+        return 0;
+    }
+
     @Nullable
     public static String getZygotePreloadName(@NonNull ApplicationInfo info) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
