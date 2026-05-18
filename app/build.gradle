@@ -6,20 +6,21 @@ plugins {
 }
 
 android {
-    namespace 'io.github.muntashirakon.AppManager'  // Source namespace kept; applicationId is the install identity
-    compileSdk compile_sdk
+    namespace = 'io.github.muntashirakon.AppManager'  // Source namespace kept; applicationId is the install identity
+    compileSdk = compile_sdk
     buildToolsVersion = build_tools
+    ndkVersion = ndk_version
 
     defaultConfig {
-        applicationId 'io.github.sysadmindoc.AppManagerNG'
-        minSdk min_sdk
-        targetSdk target_sdk
-        versionCode 6
-        versionName "0.4.2"
+        applicationId = 'io.github.sysadmindoc.AppManagerNG'
+        minSdk = min_sdk
+        targetSdk = target_sdk
+        versionCode = 6
+        versionName = "0.4.2"
         // AndroidX JUnit4 instrumentation runner so AndroidJUnit4-annotated tests
         // (e.g. AppsDbMigrationTest) are discovered. Default is the legacy
         // android.test.InstrumentationTestRunner which would silently skip them.
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += [
@@ -62,23 +63,23 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig = signingConfigs.release
             resValue "string", "app_name", "AppManagerNG"
         }
         debug {
-            applicationIdSuffix '.debug'
-            versionNameSuffix '-DEBUG'
+            applicationIdSuffix = '.debug'
+            versionNameSuffix = '-DEBUG'
             if (file('dev_keystore.jks').exists()) {
-                signingConfig signingConfigs.debug
+                signingConfig = signingConfigs.debug
             }
             resValue "string", "app_name", "AM-NG Debug"
             // Generate pseudolocale resources (`en_XA` accented + bracketed, `en_XB` RTL mirror)
             // so debug builds can be switched to a pseudolocale via `adb shell setprop persist.sys.locale en-XA`
             // and surface i18n breakage (truncation, missing-translatable strings, RTL layout breaks)
             // before real translations land. ROADMAP iter-22 T10 [S268]. Off on release builds.
-            pseudoLocalesEnabled true
+            pseudoLocalesEnabled = true
         }
     }
     flavorDimensions "distribution"
@@ -88,26 +89,26 @@ android {
         // out optional third-party network features such as VirusTotal, Pithus,
         // MOTD/update-check style calls, and debloat-definition auto-fetches.
         floss {
-            dimension "distribution"
+            dimension = "distribution"
             isDefault = true
             buildConfigField "boolean", "ALLOW_OPTIONAL_NETWORK_FEATURES", "false"
         }
         full {
-            dimension "distribution"
+            dimension = "distribution"
             buildConfigField "boolean", "ALLOW_OPTIONAL_NETWORK_FEATURES", "true"
         }
     }
     lint {
-        checkReleaseBuilds false
-        abortOnError false
-        checkDependencies true
+        checkReleaseBuilds = false
+        abortOnError = false
+        checkDependencies = true
     }
     compileOptions {
-        encoding "UTF-8"
+        encoding = "UTF-8"
         // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     externalNativeBuild {
         cmake {
@@ -118,7 +119,7 @@ android {
         abi {
             reset()
             include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
-            universalApk true
+            universalApk = true
         }
     }
     aaptOptions {
@@ -127,18 +128,19 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
+            returnDefaultValues = true
         }
     }
     sourceSets {
         androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
     }
     dependenciesInfo {
-        includeInApk false
-        includeInBundle false
+        includeInApk = false
+        includeInBundle = false
     }
     packagingOptions {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging = true
         }
         resources {
             excludes += ['META-INF/*.version']
@@ -146,8 +148,9 @@ android {
         }
     }
     buildFeatures {
-        aidl true
-        buildConfig true
+        aidl = true
+        buildConfig = true
+        resValues = true
     }
 }
 
@@ -238,7 +241,9 @@ dependencies {
 //    androidTestImplementation "com.android.support.test.espresso:espresso-intents:3.0.2"
 
     // Unit Testing
+    testImplementation project(path: ':hiddenapi')
     testImplementation "junit:junit:${junit_version}"
+    testImplementation "org.json:json:${json_version}"
     testImplementation "org.robolectric:robolectric:${robolectric_version}"
 
     // Room v7 -> v8 migration test (see app/src/androidTest/.../AppsDbMigrationTest)
