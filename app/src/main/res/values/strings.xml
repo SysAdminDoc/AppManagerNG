@@ -363,6 +363,8 @@
     <string name="stopped">Stopped</string>
     <string name="disable">Disable</string>
     <string name="enable">Enable</string>
+    <string name="quick_hide_app">Hide</string>
+    <string name="quick_unhide_app">Unhide</string>
     <string name="force_stop">Force-stop</string>
     <string name="failed_to_stop">Could not stop <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="storage_and_cache">Storage and cache</string>
@@ -770,6 +772,7 @@
     <string name="pref_remove_all_rules">Remove all rules</string>
     <string name="pref_remove_all_rules_msg">Permissions will be granted, app ops and components will return to their default values.</string>
     <string name="are_you_sure">Are you sure?</string>
+    <string name="hide_app_confirmation">Hidden apps disappear from the launcher and package lists without being uninstalled. Continue?</string>
     <string name="filter_apps_with_activities">With activities</string>
     <string name="toggle_default_app_ops">Toggle default app ops</string>
     <string name="installer_error_aborted">Installation was cancelled or the installer session closed unexpectedly.</string>
@@ -2033,6 +2036,8 @@
     <string name="pref_sign_apk_no_signing_key">No signing key</string>
     <string name="failed_to_freeze">Could not freeze <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="failed_to_unfreeze">Could not unfreeze <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="failed_to_hide">Could not hide <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="failed_to_unhide">Could not unhide <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="freeze_unfreeze">Freeze/unfreeze</string>
     <string name="profile_freeze_msg">Freezes or unfreezes apps based on state</string>
     <string name="pref_default_freezing_method">Default freezing method</string>
