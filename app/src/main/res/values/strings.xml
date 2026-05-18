@@ -2281,6 +2281,17 @@
     <!-- Export-to-Upstream-AM Compat Profile (Next/T11) -->
     <string name="pref_export_upstream_compat">Export for upstream App Manager</string>
     <string name="profile_export_upstream_compat_done">Exported in upstream-AM-compatible form</string>
+    <!-- Backup retention policy (T6/Next) -->
+    <string name="pref_backup_retention_max_count">Max backups per app</string>
+    <string name="pref_backup_retention_max_age">Max backup age</string>
+    <string name="pref_backup_retention_prune_now">Apply retention now</string>
+    <string name="pref_backup_retention_prune_now_msg">Run the retention policy against every stored backup right now.</string>
+    <string name="backup_retention_unlimited">Unlimited</string>
+    <string name="backup_retention_count_n">Keep last %1$d</string>
+    <string name="backup_retention_age_n">Keep last %1$d days</string>
+    <string name="backup_retention_prune_disabled">Retention policy is set to unlimited · nothing to prune</string>
+    <string name="backup_retention_prune_now_confirm">This deletes the oldest backups beyond the configured count and any backup older than the configured age, for every package. The operation cannot be undone.</string>
+    <string name="backup_retention_prune_done">Retention pruned %1$d backup(s)</string>
     <string name="op_history_summary">Showing <xliff:g id="shown_count" example="3 operations">%1$s</xliff:g> of <xliff:g id="total_count" example="8 operations">%2$s</xliff:g> · <xliff:g id="failed_count" example="2 failures">%3$s</xliff:g> · <xliff:g id="high_risk_count" example="1 high risk">%4$s</xliff:g></string>
     <string name="op_history_clear_confirmation">This removes all saved operation history. It does not undo completed operations.</string>
     <string name="op_history_delete_confirmation">This removes the saved history entry. It does not undo the completed operation.</string>

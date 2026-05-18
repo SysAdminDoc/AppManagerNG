@@ -226,6 +226,32 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_FLAGS_INT, flags);
         }
 
+        /**
+         * Maximum backups to keep per (packageName, userId, backupName) bucket.
+         * {@code 0} means unlimited (no count-based pruning).
+         */
+        public static int getMaxBackupsPerApp() {
+            int v = AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_RETENTION_MAX_COUNT_INT);
+            return Math.max(0, v);
+        }
+
+        public static void setMaxBackupsPerApp(int value) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_RETENTION_MAX_COUNT_INT, Math.max(0, value));
+        }
+
+        /**
+         * Maximum age in days for any backup before it's eligible for pruning.
+         * {@code 0} means unlimited (no age-based pruning).
+         */
+        public static int getMaxBackupAgeDays() {
+            int v = AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_RETENTION_MAX_AGE_DAYS_INT);
+            return Math.max(0, v);
+        }
+
+        public static void setMaxBackupAgeDays(int value) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_RETENTION_MAX_AGE_DAYS_INT, Math.max(0, value));
+        }
+
         public static boolean backupDirectoryExists() {
             Uri uri = Storage.getVolumePath();
             Path path;

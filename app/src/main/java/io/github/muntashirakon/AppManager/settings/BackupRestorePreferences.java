@@ -259,6 +259,100 @@ public class BackupRestorePreferences extends PreferenceFragment {
                             .show();
                     return true;
                 });
+        // Backup retention policy: per-app count cap + age cap + manual prune-now.
+        Preference retentionCount = requirePreference("backup_retention_max_count");
+        Preference retentionAge = requirePreference("backup_retention_max_age");
+        Preference retentionPruneNow = requirePreference("backup_retention_prune_now");
+        updateRetentionSummaries(retentionCount, retentionAge);
+        retentionCount.setOnPreferenceClickListener(preference -> {
+            int[] values = {0, 1, 3, 5, 10, 20};
+            CharSequence[] labels = {
+                    getString(R.string.backup_retention_unlimited),
+                    getString(R.string.backup_retention_count_n, 1),
+                    getString(R.string.backup_retention_count_n, 3),
+                    getString(R.string.backup_retention_count_n, 5),
+                    getString(R.string.backup_retention_count_n, 10),
+                    getString(R.string.backup_retention_count_n, 20),
+            };
+            int current = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupsPerApp();
+            int checked = indexOf(values, current);
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_backup_retention_max_count)
+                    .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                        io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore
+                                .setMaxBackupsPerApp(values[which]);
+                        updateRetentionSummaries(retentionCount, retentionAge);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        retentionAge.setOnPreferenceClickListener(preference -> {
+            int[] values = {0, 7, 30, 90, 180, 365};
+            CharSequence[] labels = {
+                    getString(R.string.backup_retention_unlimited),
+                    getString(R.string.backup_retention_age_n, 7),
+                    getString(R.string.backup_retention_age_n, 30),
+                    getString(R.string.backup_retention_age_n, 90),
+                    getString(R.string.backup_retention_age_n, 180),
+                    getString(R.string.backup_retention_age_n, 365),
+            };
+            int current = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupAgeDays();
+            int checked = indexOf(values, current);
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_backup_retention_max_age)
+                    .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                        io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore
+                                .setMaxBackupAgeDays(values[which]);
+                        updateRetentionSummaries(retentionCount, retentionAge);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        retentionPruneNow.setOnPreferenceClickListener(preference -> {
+            int maxCount = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupsPerApp();
+            int maxAge = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupAgeDays();
+            if (maxCount <= 0 && maxAge <= 0) {
+                io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
+                        R.string.backup_retention_prune_disabled);
+                return true;
+            }
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_backup_retention_prune_now)
+                    .setMessage(R.string.backup_retention_prune_now_confirm)
+                    .setPositiveButton(R.string.action_continue, (d, w) ->
+                            io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
+                                int deleted = io.github.muntashirakon.AppManager.backup
+                                        .BackupRetentionPolicy.pruneAll();
+                                io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
+                                        io.github.muntashirakon.AppManager.utils.UIUtils.displayLongToast(
+                                                getString(R.string.backup_retention_prune_done, deleted)));
+                            }))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+    }
+
+    private static int indexOf(int[] values, int target) {
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] == target) return i;
+        }
+        return -1;
+    }
+
+    private void updateRetentionSummaries(@NonNull Preference countPref, @NonNull Preference agePref) {
+        int maxCount = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupsPerApp();
+        int maxAge = io.github.muntashirakon.AppManager.settings.Prefs.BackupRestore.getMaxBackupAgeDays();
+        countPref.setSummary(maxCount <= 0
+                ? getString(R.string.backup_retention_unlimited)
+                : getString(R.string.backup_retention_count_n, maxCount));
+        agePref.setSummary(maxAge <= 0
+                ? getString(R.string.backup_retention_unlimited)
+                : getString(R.string.backup_retention_age_n, maxAge));
     }
 
     @Override
