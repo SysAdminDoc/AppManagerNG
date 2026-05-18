@@ -62,6 +62,25 @@ public final class BackupRetentionPolicy {
     }
 
     /**
+     * One-shot prune using an explicit policy rather than the persisted prefs.
+     * Used by the 1-Click Ops "Delete old backups" entry so a user can clear out
+     * stale backups without first changing their permanent retention setting.
+     *
+     * @return number of backups actually deleted from disk
+     */
+    @WorkerThread
+    public static int pruneWithPolicy(int maxCount, int maxAgeDays) {
+        if (maxCount <= 0 && maxAgeDays <= 0) return 0;
+        try {
+            List<Backup> all = AppsDb.getInstance().backupDao().getAll();
+            return pruneFromList(all, maxCount, maxAgeDays, System.currentTimeMillis());
+        } catch (Throwable t) {
+            Log.w(TAG, "Backup retention pruneWithPolicy failed", t);
+            return 0;
+        }
+    }
+
+    /**
      * Prune backups for a single package — invoked after a successful backup so
      * the policy is applied incrementally rather than only on app launch.
      */
