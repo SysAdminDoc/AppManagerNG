@@ -7,6 +7,11 @@
         android:title="@string/file_open_with" />
 
     <item
+        android:id="@+id/action_extract_archive"
+        android:icon="@drawable/ic_zip_disk"
+        android:title="@string/extract_archive" />
+
+    <item
         android:id="@+id/action_cut"
         android:icon="@drawable/ic_content_cut"
         android:title="@string/file_cut" />
