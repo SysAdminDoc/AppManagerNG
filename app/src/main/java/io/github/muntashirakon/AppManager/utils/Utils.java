@@ -53,13 +53,12 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
-import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 
 public class Utils {
     private static final String ML_DSA_65_OID = "1.3.6.1.4.1.2.267.12.6.5";
     private static final String ML_DSA_87_OID = "1.3.6.1.4.1.2.267.12.8.7";
 
-    public static final String TERMUX_LOGIN_PATH = OsEnvironment.getDataDirectoryRaw() + "/data/com.termux/files/usr/bin/login";
+    public static final String TERMUX_LOGIN_PATH = "/data/data/com.termux/files/usr/bin/login";
 
     @NonNull
     public static String camelCaseToSpaceSeparatedString(@NonNull String str) {
