@@ -61,6 +61,7 @@ public class AutoBackupWorker extends Worker {
         boolean manual = getInputData().getBoolean(KEY_MANUAL, false);
         if (!manual && !Prefs.BackupRestore.isScheduledAutoBackupEnabled()) {
             AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_disabled));
+            AutoBackupScheduler.refreshDiagnostics(context);
             return Result.success();
         }
         try {
@@ -72,6 +73,7 @@ public class AutoBackupWorker extends Worker {
             if (pairs.isEmpty()) {
                 String message = context.getString(R.string.auto_backup_result_no_apps);
                 AutoBackupScheduler.recordRunResult(message);
+                AutoBackupScheduler.refreshDiagnostics(context);
                 postResultNotification(context, message, false);
                 return Result.success();
             }
@@ -90,6 +92,7 @@ public class AutoBackupWorker extends Worker {
                             success, success)
                     : context.getString(R.string.auto_backup_result_partial, success, pairs.size(), failed);
             AutoBackupScheduler.recordRunResult(message);
+            AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, failed > 0);
             return Result.success(new Data.Builder()
                     .putInt("packages", pairs.size())
@@ -103,6 +106,7 @@ public class AutoBackupWorker extends Worker {
             String message = context.getString(R.string.auto_backup_result_failed,
                     th.getMessage() != null ? th.getMessage() : th.getClass().getSimpleName());
             AutoBackupScheduler.recordRunResult(message);
+            AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, true);
             return Result.failure();
         }

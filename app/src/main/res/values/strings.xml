@@ -2380,7 +2380,7 @@
     <string name="pref_backup_schedule_shortcut_msg">Add a home screen shortcut that queues this scheduled backup immediately.</string>
     <string name="pref_backup_schedule_shortcut_requested">Backup shortcut request sent to launcher.</string>
     <string name="pref_backup_schedule_status">Schedule status</string>
-    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%5$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%6$s</xliff:g></string>
+    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%5$s</xliff:g>\nDiagnostics: <xliff:g id="diagnostics" example="Scheduled: enqueued, attempt 0">%6$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%7$s</xliff:g></string>
     <string name="pref_backup_schedule_state_enabled">Enabled</string>
     <string name="pref_backup_schedule_state_disabled">Disabled</string>
     <string name="pref_backup_schedule_charging_required">Required</string>
@@ -2402,6 +2402,15 @@
     <string name="auto_backup_progress_apps_eta"><xliff:g id="current" example="3">%1$d</xliff:g>/<xliff:g id="total" example="12">%2$d</xliff:g> apps - about <xliff:g id="eta" example="4:30">%3$s</xliff:g> left</string>
     <string name="auto_backup_progress_stage"><xliff:g id="stage" example="Backing up AppManagerNG">%1$s</xliff:g> - <xliff:g id="current" example="3">%2$d</xliff:g>/<xliff:g id="total" example="12">%3$d</xliff:g> apps</string>
     <string name="auto_backup_progress_stage_eta"><xliff:g id="stage" example="Backing up AppManagerNG">%1$s</xliff:g> - <xliff:g id="current" example="3">%2$d</xliff:g>/<xliff:g id="total" example="12">%3$d</xliff:g> apps - about <xliff:g id="eta" example="4:30">%4$s</xliff:g> left</string>
+    <string name="auto_backup_diagnostics_unknown">Not checked yet</string>
+    <string name="auto_backup_diagnostics_unavailable">Unavailable</string>
+    <string name="auto_backup_diagnostics_no_work">No WorkManager request</string>
+    <string name="auto_backup_diagnostics_scheduled">Scheduled</string>
+    <string name="auto_backup_diagnostics_manual">Manual</string>
+    <string name="auto_backup_diagnostics_work"><xliff:g id="label" example="Scheduled">%1$s</xliff:g>: <xliff:g id="state" example="enqueued">%2$s</xliff:g>, attempt <xliff:g id="attempt" example="0">%3$d</xliff:g>, stop: <xliff:g id="stop_reason" example="not stopped">%4$s</xliff:g></string>
+    <string name="auto_backup_diagnostics_next">, next: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g></string>
+    <string name="auto_backup_diagnostics_pending">, pending: <xliff:g id="reasons" example="charging constraint">%1$s</xliff:g></string>
+    <string name="auto_backup_diagnostics_recent">, recent: <xliff:g id="reasons" example="quota">%1$s</xliff:g></string>
     <string name="auto_backup_result_disabled">Schedule disabled</string>
     <string name="auto_backup_result_no_apps">No installed apps found to back up</string>
     <plurals name="auto_backup_result_success">

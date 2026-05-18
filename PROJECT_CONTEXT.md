@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 96**. Iter-96 parked the T6
-> Separated Active/Paused Schedule Lists row as blocked by future multiple-schedule
-> profiles. The current scheduler has one global Settings -> Backup configuration,
-> so active/paused list sections would be decorative until NG grows independently
-> named schedules.
+> Last consolidated: **2026-05-18 iter 97**. Iter-97 closed the compile-SDK-36
+> slice of scheduled-backup diagnostics: Settings -> Backup now surfaces
+> WorkManager state/attempt/stop details plus API-36 JobScheduler pending-reason
+> diagnostics for the matching scheduled/manual auto-backup jobs. API-37
+> `JobDebugInfo` stats stay parked until the project raises compile SDK.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -137,6 +137,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-94/`](.ai/research/2026-05-18-iter-94/) | iter 94 | Scheduled backup launcher shortcuts: pinned Settings action, static launcher shortcut, authenticated no-UI dispatch, and manual WorkManager enqueue reuse. |
 | [`.ai/research/2026-05-18-iter-95/`](.ai/research/2026-05-18-iter-95/) | iter 95 | Scheduled backup progress notifications: foreground WorkManager progress, current app label/stage, ETA, API 36 ProgressStyle segments/point markers, and NotificationCompat fallback. |
 | [`.ai/research/2026-05-18-iter-96/`](.ai/research/2026-05-18-iter-96/) | iter 96 | Separated active/paused schedule lists parked as blocked by future multiple-schedule profiles; current scheduler is one global preference surface. |
+| [`.ai/research/2026-05-18-iter-97/`](.ai/research/2026-05-18-iter-97/) | iter 97 | Scheduled-backup diagnostics: Settings status row shows WorkManager state/attempt/stop details, next run time, and API-36 JobScheduler pending-reason snapshots; API-37 `JobDebugInfo` remains blocked by compile SDK 36. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01–S340).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 

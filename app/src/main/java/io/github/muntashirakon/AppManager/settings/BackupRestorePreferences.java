@@ -357,6 +357,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
         Preference scheduleShortcut = requirePreference("backup_schedule_shortcut");
         Preference scheduleStatus = requirePreference("backup_schedule_status");
         updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+        refreshScheduledBackupDiagnostics();
         scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
         scheduleRequireCharging.setChecked(Prefs.BackupRestore.isScheduledBackupChargingRequired());
         scheduleEnabled.setOnPreferenceChangeListener((preference, newValue) -> {
@@ -364,6 +365,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             Prefs.BackupRestore.setScheduledAutoBackupEnabled(enabled);
             AutoBackupScheduler.scheduleOrCancel(requireContext());
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            refreshScheduledBackupDiagnostics();
             if (enabled) {
                 ensureScheduledBackupBatteryExemption();
             }
@@ -377,6 +379,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 Prefs.BackupRestore.setScheduledBackupMinute(selectedMinute);
                 AutoBackupScheduler.scheduleOrCancel(requireContext());
                 updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+                refreshScheduledBackupDiagnostics();
             }, hour, minute, android.text.format.DateFormat.is24HourFormat(requireContext())).show();
             return true;
         });
@@ -384,6 +387,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             Prefs.BackupRestore.setScheduledBackupChargingRequired((Boolean) newValue);
             AutoBackupScheduler.scheduleOrCancel(requireContext());
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            refreshScheduledBackupDiagnostics();
             return true;
         });
         scheduleNetwork.setOnPreferenceClickListener(preference -> {
@@ -401,6 +405,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                         Prefs.BackupRestore.setScheduledBackupNetworkType(values[which]);
                         AutoBackupScheduler.scheduleOrCancel(requireContext());
                         updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+                        refreshScheduledBackupDiagnostics();
                         dialog.dismiss();
                     })
                     .setNegativeButton(R.string.cancel, null)
@@ -412,6 +417,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
                     R.string.pref_backup_schedule_run_now_queued);
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            refreshScheduledBackupDiagnostics();
             return true;
         });
         scheduleShortcut.setOnPreferenceClickListener(preference -> {
@@ -511,7 +517,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
                         ? R.string.pref_backup_schedule_state_enabled
                         : R.string.pref_backup_schedule_state_disabled),
-                time, charging, network, battery, lastRunSummary));
+                time, charging, network, battery, getScheduledBackupDiagnosticsSummary(), lastRunSummary));
     }
 
     @NonNull
@@ -545,6 +551,28 @@ public class BackupRestorePreferences extends PreferenceFragment {
         return getString(SelfBatteryOptimization.isExempt(context)
                 ? R.string.pref_backup_schedule_battery_exempt
                 : R.string.pref_backup_schedule_battery_optimized);
+    }
+
+    @NonNull
+    private String getScheduledBackupDiagnosticsSummary() {
+        String diagnostics = Prefs.BackupRestore.getScheduledBackupLastDiagnostics();
+        return diagnostics.isEmpty() ? getString(R.string.auto_backup_diagnostics_unknown) : diagnostics;
+    }
+
+    private void refreshScheduledBackupDiagnostics() {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        Context appContext = context.getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            AutoBackupScheduler.refreshDiagnostics(appContext);
+            ThreadUtils.postOnMainThread(() -> {
+                if (isAdded()) {
+                    refreshScheduledBackupSummaries();
+                }
+            });
+        });
     }
 
     private static int indexOf(int[] values, int target) {
@@ -587,6 +615,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
     public void onResume() {
         super.onResume();
         refreshScheduledBackupSummaries();
+        refreshScheduledBackupDiagnostics();
     }
 
     @UiThread
