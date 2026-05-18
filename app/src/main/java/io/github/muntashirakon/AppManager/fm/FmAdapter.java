@@ -169,11 +169,13 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         // TODO: 24/5/23 Set sub-icon if needed
         // Attrs
         String modificationDate = DateUtils.formatDateTime(mFmActivity, item.getLastModified());
+        String location = item.getSearchLocation();
+        String prefix = TextUtils.isEmpty(location) ? "" : location + " • ";
         if (item.isDirectory) {
-            holder.subtitle.setText(String.format(Locale.getDefault(), "%d • %s", item.getChildCount(),
+            holder.subtitle.setText(String.format(Locale.getDefault(), "%s%d • %s", prefix, item.getChildCount(),
                     modificationDate));
         } else {
-            holder.subtitle.setText(String.format(Locale.getDefault(), "%s • %s",
+            holder.subtitle.setText(String.format(Locale.getDefault(), "%s%s • %s", prefix,
                     Formatter.formatShortFileSize(mFmActivity, item.getSize()), modificationDate));
         }
     }

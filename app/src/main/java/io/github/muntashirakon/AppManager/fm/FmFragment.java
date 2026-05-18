@@ -43,6 +43,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
@@ -94,6 +95,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private static final String ARG_URI = "uri";
     public static final String ARG_OPTIONS = "opt";
     public static final String ARG_POSITION = "pos";
+    private static final long SEARCH_DEBOUNCE_MILLIS = 250;
 
     @NonNull
     public static FmFragment getNewInstance(@NonNull FmActivity.Options options,
@@ -126,9 +128,19 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private FloatingActionButtonGroup mFabGroup;
     private FmPathListAdapter mPathListAdapter;
     private FmActivity mActivity;
+    private View mSearchFilterContainer;
+    private Chip mSearchFilterChip;
+    @Nullable
+    private SearchView mSearchView;
+    @Nullable
+    private MenuItem mSearchMenuItem;
+    @NonNull
+    private String mPendingSearchQuery = "";
 
     @Nullable
     private FolderShortInfo mFolderShortInfo;
+
+    private final Runnable mSearchDebounceRunnable = () -> applySearchQuery(mPendingSearchQuery);
 
     private final ViewTreeObserver.OnGlobalLayoutListener mMultiSelectionViewChangeListener = () -> {
         if (mFabGroup != null && getActivity() != null) {
@@ -246,12 +258,11 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         mEmptyViewSummary = view.findViewById(R.id.summary);
         mEmptyViewDetails = view.findViewById(R.id.message);
         mEmptyViewAction = view.findViewById(R.id.empty_action);
-        mEmptyViewAction.setOnClickListener(v -> {
-            if (mSwipeRefresh != null) {
-                mSwipeRefresh.setRefreshing(true);
-            }
-            onRefresh();
-        });
+        setEmptyViewRefreshAction();
+        mSearchFilterContainer = view.findViewById(R.id.fm_search_filter_container);
+        mSearchFilterChip = view.findViewById(R.id.fm_search_filter_chip);
+        mSearchFilterChip.setOnClickListener(v -> clearSearchQuery());
+        mSearchFilterChip.setOnCloseIconClickListener(v -> clearSearchQuery());
         mRecyclerView = view.findViewById(R.id.list_item);
         mRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(mActivity));
         mAdapter = new FmAdapter(mModel, mActivity);
@@ -323,9 +334,16 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                 mSwipeRefresh.setRefreshing(false);
             }
             mAdapter.setFmList(fmItems);
+            updateSearchFilterChip();
             if (fmItems.isEmpty()) {
-                handleEmptyView(R.drawable.ic_file, getString(R.string.fm_empty_folder_title),
-                        getText(R.string.fm_empty_folder_message), null);
+                if (mModel.hasQueryString()) {
+                    handleSearchEmptyView();
+                } else {
+                    handleEmptyView(R.drawable.ic_file, getString(R.string.fm_empty_folder_title),
+                            getText(R.string.fm_empty_folder_message), null);
+                }
+            } else if (mEmptyView.isShown()) {
+                mEmptyView.setVisibility(View.GONE);
             }
         });
         mModel.getFmErrorLiveData().observe(getViewLifecycleOwner(), throwable -> {
@@ -433,9 +451,12 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
 
     @Override
     public void onDestroyView() {
+        ThreadUtils.getUiThreadHandler().removeCallbacks(mSearchDebounceRunnable);
         if (mMultiSelectionView != null) {
             mMultiSelectionView.getViewTreeObserver().removeOnGlobalLayoutListener(mMultiSelectionViewChangeListener);
         }
+        mSearchView = null;
+        mSearchMenuItem = null;
         super.onDestroyView();
     }
 
@@ -464,6 +485,21 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     @Override
     public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.activity_fm_actions, menu);
+        mSearchMenuItem = menu.findItem(R.id.action_search);
+        if (mSearchMenuItem != null) {
+            mSearchView = (SearchView) mSearchMenuItem.getActionView();
+            if (mSearchView != null) {
+                mSearchView.setQueryHint(getString(R.string.fm_search_hint));
+                mSearchView.setOnQueryTextListener(this);
+                String query = mModel.getQueryString();
+                if (!TextUtils.isEmpty(query)) {
+                    mSearchMenuItem.expandActionView();
+                    mSearchView.setQuery(query, false);
+                    mSearchView.clearFocus();
+                }
+            }
+        }
+        updateSearchFilterChip();
     }
 
     @Override
@@ -603,13 +639,21 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        return false;
+        ThreadUtils.getUiThreadHandler().removeCallbacks(mSearchDebounceRunnable);
+        applySearchQuery(query);
+        if (mSearchView != null) {
+            mSearchView.clearFocus();
+            UiUtils.hideKeyboard(mSearchView);
+        }
+        return true;
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        // TODO: 11/7/21
-        return false;
+        mPendingSearchQuery = newText != null ? newText : "";
+        ThreadUtils.getUiThreadHandler().removeCallbacks(mSearchDebounceRunnable);
+        ThreadUtils.postOnMainThreadDelayed(mSearchDebounceRunnable, SEARCH_DEBOUNCE_MILLIS);
+        return true;
     }
 
     @Override
@@ -679,8 +723,60 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         mModel.loadFiles(b.build());
     }
 
+    private void applySearchQuery(@Nullable String query) {
+        mModel.setQueryString(query);
+        updateSearchFilterChip();
+    }
+
+    private void clearSearchQuery() {
+        mPendingSearchQuery = "";
+        ThreadUtils.getUiThreadHandler().removeCallbacks(mSearchDebounceRunnable);
+        if (mSearchView != null) {
+            mSearchView.setQuery("", false);
+            mSearchView.clearFocus();
+            UiUtils.hideKeyboard(mSearchView);
+        }
+        if (mSearchMenuItem != null) {
+            mSearchMenuItem.collapseActionView();
+        }
+        applySearchQuery(null);
+    }
+
+    private void updateSearchFilterChip() {
+        if (mSearchFilterContainer == null || mSearchFilterChip == null || mModel == null) {
+            return;
+        }
+        String query = mModel.getQueryString();
+        boolean hasQuery = !TextUtils.isEmpty(query);
+        mSearchFilterContainer.setVisibility(hasQuery ? View.VISIBLE : View.GONE);
+        if (hasQuery) {
+            mSearchFilterChip.setText(getString(R.string.fm_search_active_filter, query));
+        }
+    }
+
+    private void setEmptyViewRefreshAction() {
+        mEmptyViewAction.setText(R.string.refresh);
+        mEmptyViewAction.setIconResource(R.drawable.ic_refresh);
+        mEmptyViewAction.setOnClickListener(v -> {
+            if (mSwipeRefresh != null) {
+                mSwipeRefresh.setRefreshing(true);
+            }
+            onRefresh();
+        });
+    }
+
+    private void handleSearchEmptyView() {
+        String query = mModel.getQueryString();
+        handleEmptyView(io.github.muntashirakon.ui.R.drawable.ic_search, getString(R.string.fm_search_empty_title),
+                getString(R.string.fm_search_empty_message, query), null);
+        mEmptyViewAction.setText(R.string.main_empty_action_clear_search);
+        mEmptyViewAction.setIconResource(io.github.muntashirakon.ui.R.drawable.ic_clear);
+        mEmptyViewAction.setOnClickListener(v -> clearSearchQuery());
+    }
+
     private void handleEmptyView(@DrawableRes int icon, @Nullable CharSequence title,
                                  @Nullable CharSequence summary, @Nullable Throwable th) {
+        setEmptyViewRefreshAction();
         if (!mEmptyView.isShown()) {
             mEmptyView.setVisibility(View.VISIBLE);
         }

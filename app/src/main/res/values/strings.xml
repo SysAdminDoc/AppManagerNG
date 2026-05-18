@@ -2235,6 +2235,10 @@
     <string name="fm_empty_folder_title">Empty folder</string>
     <string name="fm_empty_folder_message">There are no files here yet. Use Add to create a file or folder, or refresh if the folder changed elsewhere.</string>
     <string name="fm_folder_error_message">App Manager could not open this location. Review storage access or try refreshing.</string>
+    <string name="fm_search_hint">Search files in this folder</string>
+    <string name="fm_search_active_filter">Search: %1$s</string>
+    <string name="fm_search_empty_title">No matching files</string>
+    <string name="fm_search_empty_message">No files or folders under this location match \"%1$s\".</string>
     <plurals name="folder_count">
         <item quantity="one">%d folder</item>
         <item quantity="other">%d folders</item>

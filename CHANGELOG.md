@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — File Manager recursive search (2026-05-18)
+
+- File Manager now has a toolbar search action for filtering the current
+  folder recursively.
+- Active file searches show a clearable chip below the path bar, and empty
+  search results offer a clear-search recovery action.
+- Recursive results include containing-folder context in row subtitles and
+  respect the existing hidden dot-file display option.
+
 ### Added — install-date filtering and active filter indicators (2026-05-18)
 
 - Finder now exposes an `install_date` filter with date-picker backed
