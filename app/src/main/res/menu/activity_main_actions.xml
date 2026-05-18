@@ -46,6 +46,16 @@
         android:title="@string/profiles" />
 
     <item
+        android:id="@+id/action_export_visible_app_list"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/export_visible_app_list" />
+
+    <item
+        android:id="@+id/action_import_app_list"
+        android:icon="@drawable/ic_file_import"
+        android:title="@string/import_app_list" />
+
+    <item
         android:id="@+id/action_op_history"
         android:icon="@drawable/ic_history"
         android:title="@string/op_history" />

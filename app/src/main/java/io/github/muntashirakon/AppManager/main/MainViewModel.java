@@ -22,10 +22,13 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.google.gson.JsonParseException;
+
 import org.json.JSONException;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
@@ -43,9 +46,11 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
+import io.github.muntashirakon.AppManager.apk.list.ListImporter;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
@@ -79,6 +84,7 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class MainViewModel extends AndroidViewModel implements ListOptions.ListOptionActions {
     private final PackageManager mPackageManager;
@@ -114,6 +120,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     private final MutableLiveData<Boolean> mOperationStatus = new MutableLiveData<>();
     @NonNull
+    private final MutableLiveData<AppListImportStatus> mAppListImportStatus = new SingleLiveEvent<>();
+    @NonNull
     private final MutableLiveData<List<ApplicationItem>> mApplicationItemsLiveData = new MutableLiveData<>();
     private final List<ApplicationItem> mApplicationItems = new ArrayList<>();
 
@@ -137,6 +145,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     public LiveData<Boolean> getOperationStatus() {
         return mOperationStatus;
+    }
+
+    @NonNull
+    public LiveData<AppListImportStatus> getAppListImportStatus() {
+        return mAppListImportStatus;
     }
 
     @GuardedBy("applicationItems")
@@ -357,25 +370,97 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
     }
 
-    public void saveExportedAppList(@ListExporter.ExportType int exportType, @NonNull Path path) {
+    public void saveExportedAppList(@ListExporter.ExportType int exportType,
+                                    @NonNull Path path,
+                                    boolean visibleList) {
+        List<ApplicationItem> exportItems = visibleList
+                ? getVisibleApplicationItemsSnapshot()
+                : getSelectedApplicationItemsSnapshot();
         executor.submit(() -> {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(path.openOutputStream(), StandardCharsets.UTF_8))) {
-                List<PackageInfo> packageInfoList = new ArrayList<>();
-                for (String packageName : getSelectedPackages().keySet()) {
-                    int[] userIds = Objects.requireNonNull(getSelectedPackages().get(packageName)).userIds;
-                    for (int userId : userIds) {
-                        packageInfoList.add(PackageManagerCompat.getPackageInfo(packageName,
-                                PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId));
-                        break;
-                    }
+                List<PackageInfo> packageInfoList = getPackageInfoListForExport(exportItems);
+                if (packageInfoList.isEmpty()) {
+                    mOperationStatus.postValue(false);
+                    return;
                 }
                 ListExporter.export(getApplication(), writer, exportType, packageInfoList);
                 mOperationStatus.postValue(true);
-            } catch (IOException | RemoteException | PackageManager.NameNotFoundException e) {
+            } catch (IOException | RemoteException e) {
                 e.printStackTrace();
                 mOperationStatus.postValue(false);
             }
         });
+    }
+
+    public void importAppListSelection(@NonNull Path path) {
+        executor.submit(() -> {
+            try (InputStreamReader reader = new InputStreamReader(path.openInputStream(), StandardCharsets.UTF_8)) {
+                Set<String> packageNames = ListImporter.readPackageNames(reader);
+                int selectedCount = selectImportedPackageNames(packageNames);
+                mAppListImportStatus.postValue(AppListImportStatus.success(selectedCount));
+            } catch (IOException | JsonParseException e) {
+                e.printStackTrace();
+                mAppListImportStatus.postValue(AppListImportStatus.failure());
+            }
+        });
+    }
+
+    @NonNull
+    private List<ApplicationItem> getSelectedApplicationItemsSnapshot() {
+        synchronized (mSelectedPackageApplicationItemMap) {
+            return new ArrayList<>(mSelectedPackageApplicationItemMap.values());
+        }
+    }
+
+    @NonNull
+    private List<ApplicationItem> getVisibleApplicationItemsSnapshot() {
+        List<ApplicationItem> applicationItems = mApplicationItemsLiveData.getValue();
+        return applicationItems != null ? new ArrayList<>(applicationItems) : Collections.emptyList();
+    }
+
+    @NonNull
+    @WorkerThread
+    private List<PackageInfo> getPackageInfoListForExport(@NonNull List<ApplicationItem> applicationItems)
+            throws RemoteException {
+        List<PackageInfo> packageInfoList = new ArrayList<>();
+        HashSet<String> seenPackages = new HashSet<>();
+        for (ApplicationItem item : applicationItems) {
+            if (!item.isInstalled || !seenPackages.add(item.packageName)) {
+                continue;
+            }
+            int[] userIds = item.userIds.length > 0 ? item.userIds : new int[]{UserHandleHidden.myUserId()};
+            for (int userId : userIds) {
+                try {
+                    packageInfoList.add(PackageManagerCompat.getPackageInfo(item.packageName,
+                            PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId));
+                    break;
+                } catch (PackageManager.NameNotFoundException ignore) {
+                }
+            }
+        }
+        return packageInfoList;
+    }
+
+    @WorkerThread
+    private int selectImportedPackageNames(@NonNull Set<String> packageNames) {
+        synchronized (mApplicationItems) {
+            for (ApplicationItem item : mApplicationItems) {
+                item.isSelected = false;
+            }
+            mSelectedPackageApplicationItemMap.clear();
+            for (ApplicationItem item : mApplicationItems) {
+                if (!item.isInstalled || !packageNames.contains(item.packageName)) {
+                    continue;
+                }
+                mSelectedPackageApplicationItemMap.put(item.packageName, item);
+                item.isSelected = true;
+            }
+            List<ApplicationItem> visibleItems = mApplicationItemsLiveData.getValue();
+            if (visibleItems != null) {
+                mApplicationItemsLiveData.postValue(new ArrayList<>(visibleItems));
+            }
+            return mSelectedPackageApplicationItemMap.size();
+        }
     }
 
     @GuardedBy("applicationItems")
@@ -875,6 +960,26 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         if (mPackageObserver != null) getApplication().unregisterReceiver(mPackageObserver);
         executor.shutdownNow();
         super.onCleared();
+    }
+
+    public static final class AppListImportStatus {
+        public final boolean success;
+        public final int selectedCount;
+
+        private AppListImportStatus(boolean success, int selectedCount) {
+            this.success = success;
+            this.selectedCount = selectedCount;
+        }
+
+        @NonNull
+        public static AppListImportStatus success(int selectedCount) {
+            return new AppListImportStatus(true, selectedCount);
+        }
+
+        @NonNull
+        public static AppListImportStatus failure() {
+            return new AppListImportStatus(false, 0);
+        }
     }
 
     public static class PackageIntentReceiver extends PackageChangeReceiver {

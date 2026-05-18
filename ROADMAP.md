@@ -2,7 +2,9 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-18 — Iter-97 closed the API-36 slice of the T6 **WorkManager / JobDebugInfo Schedule Diagnostics** row: Settings -> Backup now surfaces WorkManager state/attempt/stop diagnostics plus JobScheduler pending-reason snapshots for scheduled and manual auto-backup work. The API-37-only `JobDebugInfo` stats tail is split into a blocked follow-up until AppManagerNG moves beyond compile SDK 36.
+**Last updated:** 2026-05-18 — Iter-98 closed the T6 **Export/Import App List** row: the main app list can export the current visible/filtered list through the existing CSV/JSON/XML/Markdown exporter, and JSON imports now select matching installed apps so users can immediately run existing batch operations against a saved list.
+
+**Prior (iter-97, 2026-05-18):** Closed the API-36 slice of the T6 **WorkManager / JobDebugInfo Schedule Diagnostics** row: Settings -> Backup now surfaces WorkManager state/attempt/stop diagnostics plus JobScheduler pending-reason snapshots for scheduled and manual auto-backup work. The API-37-only `JobDebugInfo` stats tail is split into a blocked follow-up until AppManagerNG moves beyond compile SDK 36.
 
 **Prior (iter-96, 2026-05-18):** Parked the T6 **Separated Active/Paused Schedule Lists** row as blocked by multi-schedule support: AppManagerNG currently ships one global Scheduled Auto-Backup preference surface, not a list of independently enabled/paused schedule profiles, so adding active/paused sections now would be decorative dead UI.
 
@@ -315,7 +317,7 @@ Neo Backup ([S20]) and Titanium Backup are the benchmark. AM's backup engine is 
 | ~~**Scheduler Battery Optimization Auto-Fix**~~ ✅ shipped 2026-05-18 (iter-93) | When the user enables Scheduled Auto-Backup, Settings -> Backup now checks AppManagerNG's battery-optimization exemption. If root/ADB/Shizuku has `DEVICE_POWER`, it calls the existing `SelfBatteryOptimization.autoFixIfPossible()` path silently; otherwise it surfaces a schedule-specific one-tap Android exemption prompt. The schedule status row now includes the current battery state (Exempt / Optimized / Not applicable), so users can see why a scheduled backup may be deferred. SD Maid SE v1.7.2 model ([S42]). | Low |
 | ~~**WorkManager / JobDebugInfo Schedule Diagnostics**~~ ✅ API-36 slice shipped 2026-05-18 (iter-97) | Settings -> Backup now includes scheduled-backup diagnostics in the status row: the latest scheduled and manual WorkManager requests show state, run attempt, next run time, and `WorkInfo.getStopReason()`. On API 36+, the diagnostics match WorkManager's `JobInfo` extras back to JobScheduler and add current pending reasons plus the most recent pending-reason history snapshot from `JobScheduler#getPendingJobReasons()` / `getPendingJobReasonsHistory()`. Core scheduling shipped in iter-92; this closes the compile-SDK-36-compatible quota/debug-history instrumentation. | Low |
 | **JobDebugInfo Pending Reason Stats (API 37)** ⏸ blocked-by compileSdk 37 | Once AppManagerNG raises compile SDK beyond 36, surface `JobDebugInfo.getPendingJobReasonStats()` in scheduled-backup history or operation logs when available ([S53]). Do not add reflection-only UI for this before the SDK bump; the current build cannot type-check `JobDebugInfo` and already exposes API-36 WorkManager / JobScheduler diagnostics. | Low |
-| **Export/Import App List** | Export selected/filtered app list to JSON; import to recreate filter or drive batch ops (Issue #122 [S05], 8 reactions) | Medium |
+| ~~**Export/Import App List**~~ ✅ shipped 2026-05-18 (iter-98) | Main-list overflow now exports the current visible/filtered app list through the existing CSV/JSON/XML/Markdown exporter, while selection mode keeps the selected-app export path. JSON imports accept AppManagerNG's exported array objects plus simple wrapped `packages` / `apps` arrays, de-dupe valid package names, select matching installed apps, and open the existing multi-select batch-op workflow. Issue #122 [S05]. Focused coverage: [`ListImporterTest`](app/src/test/java/io/github/muntashirakon/AppManager/apk/list/ListImporterTest.java). | Medium |
 | **SMB / WebDAV Network Backup Destination** | Allow backup archives to be written directly to an SMB share or WebDAV endpoint in addition to local storage; requires root or `MANAGE_EXTERNAL_STORAGE` for full data backup access; scope limited to backup storage-destination selection — no change to the backup engine itself. Android-DataBackup v2.x model ([S79]). | High |
 
 ### T7 — Finder (Cross-App Search)
@@ -1037,6 +1039,18 @@ The external sweep deliberately re-checked the **Material Components 1.14.0** ce
 |------|--------|
 | **Embedded / Scoped Shizuku (Code-on-the-Go pattern)** | Some apps (e.g. the Code on the Go IDE highlighted on HN [S360]) ship a forked/scoped Shizuku embedded inside their own APK rather than depending on a user-installed Shizuku. **WONTFIX for NG.** The security model requires Shizuku to be a separate, user-authorized binder — embedding it inside a package manager creates a confused-deputy attack surface where any Shizuku-relayed call could be misattributed to NG's package identity, and the user loses the ability to revoke privilege at the Shizuku Manager level without uninstalling AppManagerNG. NG already detects "Hidden Shizuku" forks (iter-25 row) — that's the correct integration surface, not embedding. |
 | **ShizuWall-Pattern Native Per-App Firewall** | ShizuWall v4.5 (2026-05-06) [S361] now offers a composite Hybrid policy combinator and screen-lock-mode netblock. **WONTFIX for NG.** Firewall is explicitly out-of-scope per the existing T9 design — NG already cites ShizuWall and de1984 as the canonical complements ([S156], [S157]). Re-implementing a per-app firewall in NG would (a) duplicate maintenance of NetworkPolicy/`VpnService` paths that ShizuWall already handles, (b) compete with rather than complement the recommended Shizuku-ecosystem tools, and (c) violate the "complement, not replicate" rule applied to Aurora / F-Droid (see existing Rejected row "Full on-device app store"). |
+
+### Iter-98 Closures (2026-05-18)
+
+| Item | Result |
+|------|--------|
+| **Export/Import App List** | Closed the T6 import/export row by reusing `ListExporter` for both selected and visible/filtered list exports, adding a Gson-backed JSON `ListImporter`, and wiring main-list JSON import to select installed matching apps. Imported selections immediately surface through the existing multi-select batch actions instead of adding a second batch-operation path. |
+
+### Iter-97 Closures (2026-05-18)
+
+| Item | Result |
+|------|--------|
+| **WorkManager / JobDebugInfo Schedule Diagnostics** | Closed the compile-SDK-36-compatible diagnostics slice for scheduled/manual auto-backup requests. Settings -> Backup now shows WorkManager state, attempt count, stop reason, next run time, and API-36 JobScheduler pending-reason snapshots for the matching WorkManager jobs. API-37 `JobDebugInfo` stats remain blocked until NG raises compile SDK beyond 36. |
 
 ### Iter-96 Closures (2026-05-18)
 
