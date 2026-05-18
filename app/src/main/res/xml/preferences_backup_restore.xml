@@ -39,4 +39,20 @@
         app:summary="@string/pref_import_backups_msg"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="backup_retention_max_count"
+        app:title="@string/pref_backup_retention_max_count"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_retention_max_age"
+        app:title="@string/pref_backup_retention_max_age"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_retention_prune_now"
+        app:title="@string/pref_backup_retention_prune_now"
+        app:summary="@string/pref_backup_retention_prune_now_msg"
+        app:iconSpaceReserved="false" />
+
 </PreferenceScreen>
