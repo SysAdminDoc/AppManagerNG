@@ -152,6 +152,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed — Roadmap triage (2026-05-18)
 
+- Parked the Squashfs writer header-validation row after confirming the live
+  backup engine has no SquashFS writer or dependency; NG currently writes
+  tar-family archives through `TarUtils`, so a magic-byte regression test is
+  reserved for a future backend that actually emits SquashFS images.
 - Parked the two JADX 1.5.5 viewer-follow-up rows until NG has the planned
   T12 JADX viewer or external JADX handoff surface to attach `.apks` ingestion,
   UI zoom, and FlatLaf CJK-font behavior to.
