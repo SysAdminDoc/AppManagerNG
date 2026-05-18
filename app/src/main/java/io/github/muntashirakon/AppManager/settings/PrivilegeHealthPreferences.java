@@ -187,32 +187,34 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
 
     private void bindCapabilityDropping(@NonNull RootCapabilityDiagnostics.Result result) {
         if (!isAdded()) return;
+        String summary;
         switch (result.state) {
             case UNAVAILABLE:
-                mCapabilityDroppingPref.setSummary(R.string.privilege_health_capability_dropping_unavailable);
+                summary = getString(R.string.privilege_health_capability_dropping_unavailable);
                 break;
             case ROOT:
-                mCapabilityDroppingPref.setSummary(getString(
+                summary = getString(
                         R.string.privilege_health_capability_dropping_root,
-                        result.capEff != null ? result.capEff : getString(R.string.state_unknown)));
+                        result.capEff != null ? result.capEff : getString(R.string.state_unknown));
                 break;
             case DROPPED:
-                mCapabilityDroppingPref.setSummary(getString(
+                summary = getString(
                         R.string.privilege_health_capability_dropping_dropped,
-                        result.uid, result.capEff));
+                        result.uid, result.capEff);
                 break;
             case PRESENT:
-                mCapabilityDroppingPref.setSummary(getString(
+                summary = getString(
                         R.string.privilege_health_capability_dropping_present,
-                        result.uid, result.capEff));
+                        result.uid, result.capEff);
                 break;
             case UNKNOWN:
             default:
-                mCapabilityDroppingPref.setSummary(getString(
+                summary = getString(
                         R.string.privilege_health_capability_dropping_unknown,
-                        result.error != null ? result.error : getString(R.string.state_unknown)));
+                        result.error != null ? result.error : getString(R.string.state_unknown));
                 break;
         }
+        mCapabilityDroppingPref.setSummary(appendMagiskCapabilityContext(summary, result));
     }
 
     private void bindShizuku(@NonNull Context context) {
@@ -550,6 +552,62 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             case NONE:
             default:
                 return getString(R.string.privilege_health_root_source_none);
+        }
+    }
+
+    @NonNull
+    private String appendMagiskCapabilityContext(@NonNull String summary,
+                                                 @NonNull RootCapabilityDiagnostics.Result result) {
+        if (result.magiskVersion == null
+                && result.magiskVersionCode == null
+                && result.magiskPolicyState == RootCapabilityDiagnostics.MagiskPolicyState.NOT_MAGISK) {
+            return summary;
+        }
+        return summary + "\n" + getString(R.string.privilege_health_capability_dropping_magisk_context,
+                getMagiskVersionLabel(result),
+                getMagiskDropCapLabel(result),
+                getMagiskPolicyLabel(result));
+    }
+
+    @NonNull
+    private String getMagiskVersionLabel(@NonNull RootCapabilityDiagnostics.Result result) {
+        if (result.magiskVersion != null && result.magiskVersionCode != null) {
+            return getString(R.string.privilege_health_capability_dropping_magisk_version,
+                    result.magiskVersion, result.magiskVersionCode);
+        }
+        if (result.magiskVersion != null) {
+            return result.magiskVersion;
+        }
+        if (result.magiskVersionCode != null) {
+            return result.magiskVersionCode;
+        }
+        return getString(R.string.state_unknown);
+    }
+
+    @NonNull
+    private String getMagiskDropCapLabel(@NonNull RootCapabilityDiagnostics.Result result) {
+        if (result.isMagiskDropCapOptInVersion()) {
+            return getString(R.string.privilege_health_capability_dropping_magisk_drop_cap_opt_in);
+        }
+        if (result.magiskVersionCode != null) {
+            return getString(R.string.privilege_health_capability_dropping_magisk_drop_cap_legacy);
+        }
+        return getString(R.string.privilege_health_capability_dropping_magisk_drop_cap_unknown);
+    }
+
+    @NonNull
+    private String getMagiskPolicyLabel(@NonNull RootCapabilityDiagnostics.Result result) {
+        switch (result.magiskPolicyState) {
+            case MATCHED:
+                return getString(R.string.privilege_health_capability_dropping_magisk_policy_matched,
+                        result.magiskPolicyRules.size());
+            case NO_MATCH:
+                return getString(R.string.privilege_health_capability_dropping_magisk_policy_no_match);
+            case UNAVAILABLE:
+                return getString(R.string.privilege_health_capability_dropping_magisk_policy_unavailable);
+            case NOT_MAGISK:
+            default:
+                return getString(R.string.privilege_health_capability_dropping_magisk_policy_not_magisk);
         }
     }
 

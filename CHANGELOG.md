@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Magisk drop-cap diagnostics (2026-05-18)
+
+- Settings -> Privileges -> Capability dropping now includes Magisk version and
+  version-code context when Magisk is available to the active privileged shell.
+- The diagnostic now samples a bounded `magiskpolicy --live --print-rules`
+  output and reports whether relevant Magisk/capability policy rules were
+  visible.
+- Magisk v30.7+ is labeled with its explicit `su --drop-cap` opt-in capability
+  behavior while the existing UID/CapEff probe remains the source-of-truth
+  runtime state.
+
 ### Added — File Manager whole-volume scan warning (2026-05-18)
 
 - File Manager now warns before a recursive search starts from a storage-volume

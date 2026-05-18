@@ -7,10 +7,10 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 110**. Iter-110 shipped the
-> SD-Maid-style whole-volume scan warning for recursive File Manager search:
-> searches started from storage-volume roots now require confirmation and show
-> a duration estimate when Android exposes the volume size.
+> Last consolidated: **2026-05-18 iter 111**. Iter-111 extended the
+> Settings -> Privileges capability-dropping diagnostic with Magisk version,
+> v30.7+ --drop-cap semantics, and bounded live-policy context while keeping
+> UID/CapEff as the source-of-truth runtime result.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -150,6 +150,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-108/`](.ai/research/2026-05-18-iter-108/) | iter 108 | File Manager recursive in-folder search: toolbar SearchView, 250 ms debounce, active-search clear chip, nested match location subtitles, and hidden dot-path option parity. |
 | [`.ai/research/2026-05-18-iter-109/`](.ai/research/2026-05-18-iter-109/) | iter 109 | Checksum properties audit: `FilePropertiesDialogFragment` already links arbitrary File Manager paths to `ChecksumsDialogFragment`, so the Material Files checksum properties row was stale. |
 | [`.ai/research/2026-05-18-iter-110/`](.ai/research/2026-05-18-iter-110/) | iter 110 | Whole-volume search warning: recursive File Manager search warns on storage-volume roots, estimates scan time from platform volume size, and records Storage Analysis as the future reuse point. |
+| [`.ai/research/2026-05-18-iter-111/`](.ai/research/2026-05-18-iter-111/) | iter 111 | Magisk drop-cap diagnostics: Privileges capability row now captures Magisk version/version-code, v30.7+ opt-in semantics, bounded live-policy context, and expanded parser tests. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
