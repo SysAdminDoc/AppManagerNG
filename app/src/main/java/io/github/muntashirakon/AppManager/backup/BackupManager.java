@@ -82,6 +82,16 @@ public class BackupManager {
             progressHandler.setProgressTextInterface(ProgressHandler.PROGRESS_PERCENT);
             progressHandler.postUpdate(max, 0f);
         }
+        // Pre-backup storage check (Neo Backup v8.3.15 model). Refuse to start a
+        // backup that would almost certainly fail mid-way for lack of disk space.
+        // Returns OK on any classification it can't make (missing PACKAGE_USAGE_STATS
+        // grant, SAF volume, etc.) so it never gates on unreliable input.
+        BackupStorageCheck.Result storageStatus = BackupStorageCheck.evaluate(options.packageName);
+        if (storageStatus.status == BackupStorageCheck.Status.INSUFFICIENT) {
+            throw new BackupException("Insufficient free space on the backup volume: "
+                    + "estimated " + storageStatus.estimatedBytes + " bytes required, "
+                    + storageStatus.freeBytes + " bytes free.");
+        }
         try (BackupOp backupOp = new BackupOp(options.packageName, options.flags, backupItem, options.userId)) {
             backupOp.runBackup(progressHandler);
             BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), backupOp.getMetadata());
