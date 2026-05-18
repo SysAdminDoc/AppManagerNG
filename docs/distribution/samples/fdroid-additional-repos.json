@@ -1,0 +1,9 @@
+[
+  {
+    "name": "AppManagerNG",
+    "address": "https://example.com/fdroid/repo",
+    "description": "AppManagerNG release repository. Replace this template with the production F-Droid repository metadata before shipping in a ROM.",
+    "certificate": "REPLACE_WITH_HEX_ENCODED_REPO_SIGNING_CERTIFICATE",
+    "enabled": true
+  }
+]

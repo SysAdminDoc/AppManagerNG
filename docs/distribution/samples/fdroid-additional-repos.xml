@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string-array name="additional_repos">
+        <!-- name -->
+        <item>AppManagerNG</item>
+        <!-- address -->
+        <item>https://example.com/fdroid/repo</item>
+        <!-- description -->
+        <item>AppManagerNG release repository. Replace this template with the production F-Droid repository metadata before shipping in a ROM.</item>
+        <!-- version -->
+        <item>0</item>
+        <!-- enabled -->
+        <item>1</item>
+        <!-- push requests -->
+        <item>ignore</item>
+        <!-- public certificate -->
+        <item>REPLACE_WITH_HEX_ENCODED_REPO_SIGNING_CERTIFICATE</item>
+    </string-array>
+</resources>
