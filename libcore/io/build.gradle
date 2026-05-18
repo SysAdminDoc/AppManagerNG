@@ -5,23 +5,23 @@ plugins {
 }
 
 android {
-    namespace 'io.github.muntashirakon.io'
-    compileSdk compile_sdk
+    namespace = 'io.github.muntashirakon.io'
+    compileSdk = compile_sdk
     buildToolsVersion = build_tools
 
     defaultConfig {
-        minSdk min_sdk
-        targetSdk target_sdk
+        minSdk = min_sdk
+        targetSdk = target_sdk
     }
 
     compileOptions {
-        encoding "UTF-8"
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        encoding = "UTF-8"
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     buildFeatures {
-        aidl true
-        buildConfig true
+        aidl = true
+        buildConfig = true
     }
 }
 

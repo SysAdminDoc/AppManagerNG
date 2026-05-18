@@ -11,19 +11,19 @@ plugins {
 }
 
 android {
-    namespace 'io.github.muntashirakon.AppManager.server'
-    compileSdk compile_sdk
+    namespace = 'io.github.muntashirakon.AppManager.server'
+    compileSdk = compile_sdk
     buildToolsVersion = build_tools
 
     defaultConfig {
-        minSdk min_sdk
-        targetSdk target_sdk
+        minSdk = min_sdk
+        targetSdk = target_sdk
     }
 
     compileOptions {
-        encoding "UTF-8"
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        encoding = "UTF-8"
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 
@@ -41,58 +41,69 @@ interface InjectedExecOps {
     ExecOperations getExecOps()
 }
 
-android.libraryVariants.configureEach { variant ->
-    String buildType = variant.buildType.name
-    def injected = project.objects.newInstance(InjectedExecOps)
-    def jarTask = tasks.register("create${buildType.capitalize()}ServerJars") {
-        doLast {
-            println("Build type: ${buildType}")
+androidComponents {
+    def sdkDirectory = sdkComponents.sdkDirectory
+    onVariants(selector().all()) { variant ->
+        String buildType = variant.buildType
+        String variantName = variant.name
+        String variantTaskName = variantName.capitalize()
+        String buildTypeTaskName = buildType.capitalize()
+        File projectRoot = project.rootDir
+        String rootDir = projectRoot.absolutePath
 
-            String rootDir = project.rootDir.absolutePath
-            String serverPkg = "io/github/muntashirakon/AppManager/server"
-            String intermediatePath = "build/intermediates/javac/${buildType}/compile${buildType.capitalize()}JavaWithJavac/classes"
-            String serverClassDir = "${rootDir}/server/${intermediatePath}/${serverPkg}/"
-            String libserverClassDir = "${rootDir}/libserver/${intermediatePath}/${serverPkg}/common"
-            String androidJar = "${android.sdkDirectory.path}/platforms/android-${target_sdk}/android.jar"
-            String amJar = "${rootDir}/app/src/main/assets/am.jar"
-            String mainJar = "${rootDir}/app/src/main/assets/main.jar"
-            File d8Executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8")
-            if (!d8Executable.exists()) {
-                d8Executable = file("${android.sdkDirectory.path}/build-tools/${android.buildToolsVersion}/d8.bat")
-            }
+        def injected = project.objects.newInstance(InjectedExecOps)
+        def jarTask = tasks.register("create${buildTypeTaskName}ServerJars") {
+            doLast {
+                println("Build type: ${buildType}")
 
-            println("Creating am.jar...")
-            def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
-            buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
-                !it.fileName.toString().startsWith("IRootServiceManager")
-            }.sorted().map { it.toString() }.collect(Collectors.toList()))
-            buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
-                !it.fileName.toString().startsWith("RootServiceMain")
-            }.sorted().map { it.toString() }.collect(Collectors.toList()))
-            injected.execOps.exec {
-                workingDir = project.rootDir
-                executable = d8Executable
-                args = buildArgs
-            }
-            println("Created ${amJar}")
+                String serverPkg = "io/github/muntashirakon/AppManager/server"
+                String intermediatePath = "build/intermediates/javac/${variantName}/compile${variantTaskName}JavaWithJavac/classes"
+                String serverClassDir = "${rootDir}/server/${intermediatePath}/${serverPkg}/"
+                String libserverClassDir = "${rootDir}/libserver/${intermediatePath}/${serverPkg}/common"
+                String sdkPath = sdkDirectory.get().asFile.absolutePath
+                String androidJar = "${sdkPath}/platforms/android-${target_sdk}/android.jar"
+                String amJar = "${rootDir}/app/src/main/assets/am.jar"
+                String mainJar = "${rootDir}/app/src/main/assets/main.jar"
+                File d8Executable = file("${sdkPath}/build-tools/${build_tools}/d8")
+                if (!d8Executable.exists()) {
+                    d8Executable = file("${sdkPath}/build-tools/${build_tools}/d8.bat")
+                }
 
-            println("Creating main.jar...")
-            buildArgs = ['--release', '--output', mainJar, '--classpath', androidJar]
-            buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
-                it.fileName.toString().startsWith("IRootServiceManager") || it.fileName.toString().startsWith("ServerUtils")
-            }.sorted().map { it.toString() }.collect(Collectors.toList()))
-            buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
-                it.fileName.toString().startsWith("RootServiceMain")
-            }.sorted().map { it.toString() }.collect(Collectors.toList()))
-            injected.execOps.exec {
-                workingDir = project.rootDir
-                executable = d8Executable
-                args = buildArgs
+                println("Creating am.jar...")
+                def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
+                buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
+                    !it.fileName.toString().startsWith("IRootServiceManager")
+                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
+                    !it.fileName.toString().startsWith("RootServiceMain")
+                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                injected.execOps.exec {
+                    workingDir = projectRoot
+                    executable = d8Executable
+                    args = buildArgs
+                }
+                println("Created ${amJar}")
+
+                println("Creating main.jar...")
+                buildArgs = ['--release', '--output', mainJar, '--classpath', androidJar]
+                buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
+                    it.fileName.toString().startsWith("IRootServiceManager") || it.fileName.toString().startsWith("ServerUtils")
+                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
+                    it.fileName.toString().startsWith("RootServiceMain")
+                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                injected.execOps.exec {
+                    workingDir = projectRoot
+                    executable = d8Executable
+                    args = buildArgs
+                }
+                println("Created ${mainJar}")
             }
-            println("Created ${mainJar}")
+        }
+        tasks.matching { task -> task.name == "compile${variantTaskName}JavaWithJavac" }.configureEach {
+            finalizedBy(jarTask)
         }
     }
-    javaCompileProvider.get().finalizedBy(jarTask)
 }
 
 tasks.register('cleanupServerJars') {

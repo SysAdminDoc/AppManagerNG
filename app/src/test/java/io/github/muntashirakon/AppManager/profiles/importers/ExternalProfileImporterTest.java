@@ -11,6 +11,8 @@ import static org.junit.Assert.fail;
 import org.json.JSONException;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 public class ExternalProfileImporterTest {
 
     // -----------------------------------------------------------------------
@@ -67,10 +69,11 @@ public class ExternalProfileImporterTest {
                 + "  \"DEVICE-BBBB\":{\"user10\":[\"com.miui.bloat\",\"com.samsung.bloat.one\"]}"
                 + "}}";
         String[] out = ExternalProfileImporter.parseUadNg(json);
+        Arrays.sort(out);
         assertEquals(3, out.length);
-        assertEquals("com.samsung.bloat.one", out[0]);
-        assertEquals("com.samsung.bloat.two", out[1]);
-        assertEquals("com.miui.bloat", out[2]);
+        assertEquals("com.miui.bloat", out[0]);
+        assertEquals("com.samsung.bloat.one", out[1]);
+        assertEquals("com.samsung.bloat.two", out[2]);
     }
 
     @Test

@@ -7,47 +7,17 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 136**. Iter-136 shipped the split APK
-> cert-mismatch dialog: selected split APKs are checked against the base APK's
-> current signing certs before the install session starts, and mismatches are
-> shown in a Material dialog with per-split name, version, cert SHA-256, and
-> reason rows plus optional-split removal.
+> Last consolidated: **2026-05-18 iter 137**. Iter-137 migrated the build to
+> AGP 9.2.0 and Gradle 9.4.1, pinned NDK 28.2.13676358, converted build scripts
+> to Gradle-10-safe assignment syntax, moved server packaging to
+> `androidComponents` / `sdkComponents`, and restored green floss/full/unit-test
+> verification on the new toolchain.
 >
-> Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
-> thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
-> follow-through, Shizuku/ML-DSA implementation follow-through, and USB-debugging
-> preflight follow-through for Wireless ADB / Shizuku setup, installer checksum
-> confirmation, privileged battery-optimization auto-fix for routines/backups,
-> cross-user package-state/Finder follow-through, and opt-in debloat-definition
-> auto-update follow-through, Privileges health-check follow-through,
-> capability-dropping diagnostics follow-through, and Finder debloat-description
-> search follow-through, Finder backup-only app results, permission-state filters,
-> Finder relevance scoring, the signature-gated automation broadcast API, the
-> stale APK share-target receiver audit closure, per-app launcher action
-> shortcuts, the `floss` / `full` distribution flavor split, the
-> LocalServer bootstrap smoke test in Settings -> Privileges, the
-> scrubbed support-info bundle composer in Settings -> Troubleshooting, and the
-> privileged operation audit-log closure with exit-code and bootstrap-signature
-> export metadata, the privileged batch journal/recovery dialog with Shizuku
-> binder-death marking, the active Mode Doctor probe report in Settings ->
-> Privileges, Shizuku trusted-WLAN auto-start actions in Operating Mode /
-> onboarding, and the JobScheduler quota stop-reason dependency audit for the
-> not-yet-implemented Scheduled Auto-Backup surface, the stale Apktool
-> migration audit for the not-yet-implemented T12 Apktool backend, the
-> Quick Settings freeze profile tile, the hidden-API compatibility harness
-> baseline/generator/instrumented probe, Shizuku clear-data revoke warnings
-> with post-action re-auth routing, operation-history recovery UX closure, and
-> Android 17 / 16 KB native page-size remediation with ELF alignment parsing and
-> reproducible-release native alignment gating, Android Developer Verification
-> guardrails for App Details, installer warnings, and `PackageInstaller` failure
-> reason diagnostics, Shizuku 13.6.0 OEM compatibility warnings for the
-> Transsion Android 15, Mediatek, and Pixel 9 / Android 16 QPR1 regression classes,
-> root-backed Shizuku avoidance / ADB-mode escape hatches for the banking-app
-> compatibility class, generic OS-revert detection for Doze, freeze,
-> component-state, and AppOps writes, Doze-specific allowlist revert
-> diagnostics with `device_idle_constants` / `DeviceConfig device_idle` diffs,
-> an audit-clean Achno Samsung debloat-list cross-check, and the Android 13+
-> Restricted Settings unlock walkthrough in Settings -> Privileges / Mode Doctor.
+> Previous consolidated baseline: **2026-05-18 iter 136**. Iter-136 shipped the
+> split APK cert-mismatch dialog: selected split APKs are checked against the
+> base APK's current signing certs before the install session starts, and
+> mismatches are shown in a Material dialog with per-split name, version, cert
+> SHA-256, and reason rows plus optional-split removal.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -176,6 +146,8 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-133/`](.ai/research/2026-05-18-iter-133/) | iter 133 | SquashFS header-validation row parked: no SquashFS writer/dependency/mount path exists in current source; NG backup archives are tar-family outputs through `TarUtils`, so the header fixture belongs to a future backend. |
 | [`.ai/research/2026-05-18-iter-134/`](.ai/research/2026-05-18-iter-134/) | iter 134 | Per-app audio-volume AppOps: named audio-volume op family, UID-mode writer assertion, App Details group action, custom AppOps helper copy, and focused compat coverage. |
 | [`.ai/research/2026-05-18-iter-135/`](.ai/research/2026-05-18-iter-135/) | iter 135 | Installer privilege cascade: dialog route chips, temporary ADB -> Shizuku -> root install-provider activation, configured-mode restore, Dhizuku/MIUI diagnostics, and focused route-order coverage. |
+| [`.ai/research/2026-05-18-iter-136/`](.ai/research/2026-05-18-iter-136/) | iter 136 | Split APK cert-mismatch dialog: selected split APK signing certs are compared against the base APK before session writes, with optional bad-split removal and required-split blocking. |
+| [`.ai/research/2026-05-18-iter-137/`](.ai/research/2026-05-18-iter-137/) | iter 137 | AGP 9.2.0 / Gradle 9.4.1 migration: Gradle-10-safe build scripts, `androidComponents` server packaging, explicit test classpath hardening, and floss/full/unit-test verification. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -185,7 +157,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 
 - **Language**: Java + Kotlin (Java in core, Kotlin in newer additions). **629 `.java` files** under `app/src/main/java/io/github/muntashirakon/AppManager/`. Kotlin file count is lower.
 - **UI**: Android Views + Material Components **1.13.0**. Compose is not planned for this codebase — see `codexprompt.md` ("DO NOT propose Jetpack Compose. Compose migration is a multi-year project").
-- **Build**: Gradle 8.x, AGP `8.13.2`, Java 8 source/target with desugaring, NDK + CMake for native.
+- **Build**: Gradle 9.4.1, AGP `9.2.0`, Java 8 source/target with desugaring, NDK `28.2.13676358` + CMake for native.
 - **min/target SDK**: **21 / 36**.
 - **Modules** (top-level): `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/`, `libs/`, `scripts/`, `docs/`, `fastlane/`, `LICENSES/`.
 - **app package tree** (excerpt — what each folder does is mostly inferrable from the name): `accessibility`, `adb`, `apk`, `app`, `backup`, `batchops`, `changelog`, `compat`, `crypto`, `db`, `debloat`, `details`, `dex`, `editor`, `filters`, `fm` (file manager), `history`, `intercept`, `ipc`, `logcat`, `logs`, `magisk`, `main`, `misc`, `miui`, `onboarding`, `oneclickops`, `permission`, `permissions`, `profiles`, `progress`, `rules`, `runner`, `runningapps`, `scanner`, `self`, `servermanager`, `session`, `settings`, `sharedpref`, `shizuku`, `shortcut`, `ssaid`, `sysconfig`, `terminal`, `types`, `uri`, `usage`, `users`, `utils`, `viewer`.
@@ -195,7 +167,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | Dep | Pinned | Notes |
 |-----|--------|-------|
 | `compile_sdk` | 36 | Android 16 |
-| `agp_version` | `8.13.2` | AGP 9.x cliff acknowledged in roadmap |
+| `agp_version` | `9.2.0` | AGP 9.2 migration complete; wrapper pinned to Gradle 9.4.1 |
+| `ndk_version` | `28.2.13676358` | Pinned during AGP 9.2 migration so native debug builds do not float |
+| `json_version` | `20251224` | Host JVM `org.json` implementation for unit tests |
 | `material_version` | `1.13.0` | **Ceiling** — `1.14.0-rc01` requires minSdk 23 |
 | `bouncycastle_version` | `1.84` | CVE-2026-3505 / 5588 / 5598 closed |
 | `gson_version` | `2.14.0` | Built-in `java.time` adapters, strict duplicate-JSON-key handling |
