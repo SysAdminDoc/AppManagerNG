@@ -7,12 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 124**. Iter-124 shipped the Android 17
-> targetSdk=37 compatibility batch: Wireless ADB now has a local-network
-> permission declaration plus targetSdk/runtime preflight for mDNS discovery, the
-> remaining static-final `Resources.mSystem` write is legacy-gated below API 37,
-> and the clean Keystore, MemoryLimiter, native DCL, and `IntentSender` BAL
-> sub-audits are recorded in `docs/audits/2026-05-18-android17-targetsdk37-batch.md`.
+> Last consolidated: **2026-05-18 iter 125**. Iter-125 closed the Android 17
+> ML-DSA certificate OID row as already implemented in live source:
+> `Utils.getCertificateSignatureAlgorithmName()` maps ML-DSA-65 and ML-DSA-87,
+> Package Info and Scanner consume the helper, and the focused regression test
+> now runs on the JVM after removing an unrelated `Utils` -> `OsEnvironment`
+> class-initializer dependency.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -166,6 +166,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-122/`](.ai/research/2026-05-18-iter-122/) | iter 122 | Sensitive action authentication gate: optional Privacy toggle, shared `ActionAuthGate`, installer commit prompt, direct/batch uninstall prompt, and direct/batch clear-data prompt. |
 | [`.ai/research/2026-05-18-iter-123/`](.ai/research/2026-05-18-iter-123/) | iter 123 | F-Droid 2.0 ROM preseed docs: JSON and legacy XML repository templates, global/app-specific path guidance, README distribution link, and parser validation. |
 | [`.ai/research/2026-05-18-iter-124/`](.ai/research/2026-05-18-iter-124/) | iter 124 | Android 17 targetSdk=37 audit batch: Wireless ADB local-network permission preflight, legacy-gated static-final `Resources.mSystem` workaround, and clean Keystore/MemoryLimiter/native-DCL/IntentSender BAL findings. |
+| [`.ai/research/2026-05-18-iter-125/`](.ai/research/2026-05-18-iter-125/) | iter 125 | Android 17 ML-DSA certificate OID closure: verified existing OID display-name mapping in Package Info and Scanner, kept OID display, and fixed `UtilsCertificateAlgorithmTest` JVM class initialization. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
