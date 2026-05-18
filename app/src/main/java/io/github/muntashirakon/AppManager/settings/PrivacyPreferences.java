@@ -3,10 +3,15 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -16,13 +21,50 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialSharedAxis;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
+import io.github.muntashirakon.AppManager.snapshot.SnapshotBundle;
+import io.github.muntashirakon.AppManager.snapshot.SnapshotImportException;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class PrivacyPreferences extends PreferenceFragment {
+    private static final String MIME_ZIP = "application/zip";
+
+    private final ActivityResultLauncher<String> mExportSnapshot = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument(MIME_ZIP),
+            uri -> {
+                if (uri == null) return; // user cancelled
+                Context appContext = requireContext().getApplicationContext();
+                Toast.makeText(appContext, R.string.snapshot_export_preparing, Toast.LENGTH_SHORT).show();
+                ThreadUtils.postOnBackgroundThread(() -> exportSnapshot(appContext, uri));
+            });
+
+    private final ActivityResultLauncher<String[]> mImportSnapshot = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri == null) return;
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.snapshot_import_confirm_title)
+                        .setMessage(R.string.snapshot_import_confirm_message)
+                        .setPositiveButton(R.string.action_continue, (d, w) -> {
+                            Context appContext = requireContext().getApplicationContext();
+                            Toast.makeText(appContext, R.string.snapshot_import_in_progress, Toast.LENGTH_SHORT).show();
+                            ThreadUtils.postOnBackgroundThread(() -> importSnapshot(appContext, uri));
+                        })
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
+            });
+
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.preferences_privacy, rootKey);
@@ -122,6 +164,80 @@ public class PrivacyPreferences extends PreferenceFragment {
         requirePreference("auth_manager").setOnPreferenceClickListener(preference -> {
             startActivity(new Intent(requireContext(), AuthManagerActivity.class));
             return true;
+        });
+        // Snapshot Bundle (export / import)
+        requirePreference("snapshot_export").setOnPreferenceClickListener(preference -> {
+            String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
+            mExportSnapshot.launch(getString(R.string.snapshot_default_filename, stamp));
+            return true;
+        });
+        requirePreference("snapshot_import").setOnPreferenceClickListener(preference -> {
+            mImportSnapshot.launch(new String[]{MIME_ZIP, "application/octet-stream", "*/*"});
+            return true;
+        });
+    }
+
+    private void exportSnapshot(@NonNull Context appContext, @NonNull Uri target) {
+        SnapshotBundle.ExportResult result = null;
+        Throwable failure = null;
+        try (OutputStream out = appContext.getContentResolver().openOutputStream(target)) {
+            if (out == null) {
+                failure = new IOException("Cannot open output stream for " + target);
+            } else {
+                result = SnapshotBundle.writeTo(appContext, out);
+            }
+        } catch (Throwable t) {
+            failure = t;
+        }
+        final SnapshotBundle.ExportResult finalResult = result;
+        final Throwable finalFailure = failure;
+        ThreadUtils.postOnMainThread(() -> {
+            if (!isAdded()) return;
+            if (finalFailure != null || finalResult == null) {
+                Toast.makeText(requireContext(), R.string.snapshot_export_failed, Toast.LENGTH_LONG).show();
+                return;
+            }
+            Toast.makeText(requireContext(),
+                    getString(R.string.snapshot_export_done,
+                            finalResult.prefsCount,
+                            finalResult.profilesCount,
+                            finalResult.opHistoryCount),
+                    Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void importSnapshot(@NonNull Context appContext, @NonNull Uri source) {
+        SnapshotBundle.ImportResult result = null;
+        String failureMessage = null;
+        try (InputStream in = appContext.getContentResolver().openInputStream(source)) {
+            if (in == null) {
+                failureMessage = "Cannot open input stream";
+            } else {
+                result = SnapshotBundle.readFrom(appContext, in, new SnapshotBundle.ImportOptions());
+            }
+        } catch (SnapshotImportException e) {
+            failureMessage = e.getMessage();
+        } catch (Throwable t) {
+            failureMessage = t.getClass().getSimpleName()
+                    + (t.getMessage() != null ? ": " + t.getMessage() : "");
+        }
+        final SnapshotBundle.ImportResult finalResult = result;
+        final String finalFailure = failureMessage;
+        ThreadUtils.postOnMainThread(() -> {
+            if (!isAdded()) return;
+            if (finalResult == null) {
+                Toast.makeText(requireContext(),
+                        getString(R.string.snapshot_import_failed,
+                                finalFailure != null ? finalFailure : ""),
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            Toast.makeText(requireContext(),
+                    getString(R.string.snapshot_import_done,
+                            finalResult.prefsRestored,
+                            finalResult.profilesRestored,
+                            finalResult.opHistoryRestored),
+                    Toast.LENGTH_LONG).show();
         });
     }
 

@@ -47,4 +47,21 @@
         app:title="@string/auth_manager_title"
         app:iconSpaceReserved="false" />
 
+    <PreferenceCategory
+        app:key="snapshot_category"
+        app:title="@string/pref_snapshot_category"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="snapshot_export"
+        app:title="@string/pref_snapshot_export"
+        app:summary="@string/pref_snapshot_export_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="snapshot_import"
+        app:title="@string/pref_snapshot_import"
+        app:summary="@string/pref_snapshot_import_summary"
+        app:iconSpaceReserved="false" />
+
 </PreferenceScreen>
