@@ -2239,6 +2239,9 @@
     <string name="fm_search_active_filter">Search: %1$s</string>
     <string name="fm_search_empty_title">No matching files</string>
     <string name="fm_search_empty_message">No files or folders under this location match \"%1$s\".</string>
+    <string name="fm_volume_scan_warning_title">Search entire storage?</string>
+    <string name="fm_volume_scan_warning_message">This search will scan %1$s (%2$s). It may take about %3$d min and can make File Manager feel busy while it runs.</string>
+    <string name="fm_volume_scan_warning_message_unknown">This search will scan %1$s. Large storage roots can take several minutes and can make File Manager feel busy while they run.</string>
     <plurals name="folder_count">
         <item quantity="one">%d folder</item>
         <item quantity="other">%d folders</item>
