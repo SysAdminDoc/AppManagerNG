@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — KernelSU app profile visibility (2026-05-18)
+
+- Settings -> Privileges now shows the active KernelSU `su` App Profile shape:
+  UID, GID, groups, SELinux context, and effective capabilities.
+- KernelSU diagnostics warn when the profile has reduced AppManagerNG's
+  expected root capability set, including DAC, owner, setuid/setgid, and
+  `CAP_SYS_ADMIN` capabilities.
+- The KernelSU details dialog includes raw `id` output and missing-capability
+  context next to the existing seccomp and sulog diagnostics.
+
 ### Added — smali decode options (2026-05-18)
 
 - Settings -> File Manager now exposes smali comment-level options for decoded
