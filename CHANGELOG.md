@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Android 17 ML-DSA key algorithm display (2026-05-18)
+
+- Package Info public-key rows and signer verification logs now map Android 17
+  `ML-DSA`, `ML-DSA-65`, and `ML-DSA-87` key algorithm strings to readable
+  ML-DSA / Dilithium labels.
+- The mapping uses local string constants until compile SDK 37 exposes
+  `KeyProperties.KEY_ALGORITHM_ML_DSA*`, preserving the current SDK 36 build.
+- Focused JVM coverage now verifies both certificate OID and key algorithm
+  fallback behavior.
+
 ### Changed — AGP 9.2 build migration (2026-05-18)
 
 - Android Gradle Plugin is now pinned to 9.2.0 with Gradle wrapper 9.4.1 and
