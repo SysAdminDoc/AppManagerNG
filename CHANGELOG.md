@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Documentation — F-Droid ROM preseed templates (2026-05-18)
+
+- Added a ROM-builder guide for F-Droid 2.0 repository pre-seeding, including
+  the new JSON placement paths and legacy XML transition guidance.
+- Added checked-in JSON and XML templates for AppManagerNG-compatible F-Droid
+  repository preseeding, with explicit placeholder warnings for the future
+  production repo URL and repo signing certificate.
+- Linked the ROM preseed guide from the README install/distribution section.
+
 ### Added — Sensitive action authentication gate (2026-05-18)
 
 - Settings -> Privacy now has an optional "Require authentication for app
