@@ -14,12 +14,18 @@ import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.utils.appearance.AppWidgetThemeUtils;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class ClearCacheAppWidget extends AppWidgetProvider {
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+        context = AppearanceUtils.getThemedWidgetContext(context, false);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.app_widget_clear_cache);
+        AppWidgetThemeUtils.Palette palette = AppWidgetThemeUtils.getPalette(context);
+        AppWidgetThemeUtils.applyWidgetSurface(views, android.R.id.background, palette);
+        AppWidgetThemeUtils.setImageTint(views, palette.primary, R.id.appwidget_icon);
         Intent intent = new Intent(context, OneClickOpsActivity.class);
         intent.putExtra(OneClickOpsActivity.EXTRA_OP, BatchOpsManager.OP_CLEAR_CACHE);
         views.setOnClickPendingIntent(android.R.id.background, PendingIntentCompat.getActivity(context, 0, intent,
