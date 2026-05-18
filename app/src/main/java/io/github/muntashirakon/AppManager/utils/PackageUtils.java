@@ -788,7 +788,8 @@ public final class PackageUtils {
         PublicKey publicKey = certificate.getPublicKey();
         builder.append(getTitleText(ctx, ctx.getString(R.string.public_key)))
                 .append("\n")
-                .append(getStyledKeyValue(ctx, R.string.algorithm, publicKey.getAlgorithm(), separator))
+                .append(getStyledKeyValue(ctx, R.string.algorithm,
+                        Utils.prettifyKeyAlgorithmName(publicKey.getAlgorithm()), separator))
                 .append("\n")
                 .append(getStyledKeyValue(ctx, R.string.format, publicKey.getFormat(), separator));
         if (publicKey instanceof RSAPublicKey) {

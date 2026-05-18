@@ -57,6 +57,10 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 public class Utils {
     private static final String ML_DSA_65_OID = "1.3.6.1.4.1.2.267.12.6.5";
     private static final String ML_DSA_87_OID = "1.3.6.1.4.1.2.267.12.8.7";
+    // Android 17 KeyProperties constants; keep as strings until compileSdk 37 lands.
+    private static final String ML_DSA_ALGORITHM = "ML-DSA";
+    private static final String ML_DSA_65_ALGORITHM = "ML-DSA-65";
+    private static final String ML_DSA_87_ALGORITHM = "ML-DSA-87";
 
     public static final String TERMUX_LOGIN_PATH = "/data/data/com.termux/files/usr/bin/login";
 
@@ -549,6 +553,20 @@ public class Utils {
             return "ML-DSA-87 (Dilithium)";
         }
         return fallback != null ? fallback : "";
+    }
+
+    @NonNull
+    public static String prettifyKeyAlgorithmName(@Nullable String algorithm) {
+        if (ML_DSA_ALGORITHM.equals(algorithm)) {
+            return "ML-DSA (Dilithium)";
+        }
+        if (ML_DSA_65_ALGORITHM.equals(algorithm)) {
+            return "ML-DSA-65 (Dilithium)";
+        }
+        if (ML_DSA_87_ALGORITHM.equals(algorithm)) {
+            return "ML-DSA-87 (Dilithium)";
+        }
+        return algorithm != null ? algorithm : "";
     }
 
     /**
