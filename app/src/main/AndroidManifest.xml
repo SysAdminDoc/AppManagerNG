@@ -1538,6 +1538,23 @@
             </intent-filter>
         </receiver>
 
+        <!--
+            PermissionChangeReceiver — fires the Permission Change Monitor on
+            every package update so the user is alerted when an updated app
+            gains a new dangerous permission. The receiver is always registered
+            (Android requires the manifest entry for the broadcast to reach the
+            app at all) but no-ops unless Settings → Privacy → "Permission
+            change monitor" is enabled. ROADMAP T9 (Permission Change Monitor).
+        -->
+        <receiver
+            android:name=".permission.monitor.PermissionChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name=".fm.FmProvider"
             android:authorities="${applicationId}.file"
