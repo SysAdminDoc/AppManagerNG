@@ -78,6 +78,25 @@ public class AutoBackupWorker extends Worker {
                 postResultNotification(context, message, false);
                 return Result.success();
             }
+            AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
+                    pairs,
+                    AutoBackupScheduler.collectExistingBackups(pairs),
+                    Prefs.BackupRestore.getScheduledBackupMinimumAgeDays(),
+                    System.currentTimeMillis());
+            pairs = selection.getDuePackages();
+            int skipped = selection.getSkippedPackages();
+            if (pairs.isEmpty()) {
+                String message = context.getResources().getQuantityString(
+                        R.plurals.auto_backup_result_all_recent, skipped, skipped);
+                AutoBackupScheduler.recordRunResult(message);
+                AutoBackupScheduler.refreshDiagnostics(context);
+                postResultNotification(context, message, false);
+                return Result.success(new Data.Builder()
+                        .putInt("packages", 0)
+                        .putInt("failed", 0)
+                        .putInt("skipped_recent", skipped)
+                        .build());
+            }
             int flags = Prefs.BackupRestore.getBackupFlags() | BackupFlags.BACKUP_MULTIPLE;
             BatchBackupOptions options = new BatchBackupOptions(flags, null, null);
             AutoBackupProgressHandler progressHandler = new AutoBackupProgressHandler(context);
@@ -88,16 +107,14 @@ public class AutoBackupWorker extends Worker {
             progressHandler.onResult(null);
             int failed = result.getFailedPackages().size();
             int success = Math.max(0, pairs.size() - failed);
-            String message = failed == 0
-                    ? context.getResources().getQuantityString(R.plurals.auto_backup_result_success,
-                            success, success)
-                    : context.getString(R.string.auto_backup_result_partial, success, pairs.size(), failed);
+            String message = buildResultMessage(context, success, pairs.size(), failed, skipped);
             AutoBackupScheduler.recordRunResult(message);
             AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, failed > 0);
             return Result.success(new Data.Builder()
                     .putInt("packages", pairs.size())
                     .putInt("failed", failed)
+                    .putInt("skipped_recent", skipped)
                     .build());
         } catch (Throwable th) {
             if (th instanceof InterruptedException) {
@@ -111,6 +128,21 @@ public class AutoBackupWorker extends Worker {
             postResultNotification(context, message, true);
             return Result.failure();
         }
+    }
+
+    @NonNull
+    private String buildResultMessage(@NonNull Context context, int success, int total, int failed, int skipped) {
+        if (failed == 0) {
+            String successMessage = context.getResources().getQuantityString(R.plurals.auto_backup_result_success,
+                    success, success);
+            return skipped > 0
+                    ? context.getResources().getQuantityString(
+                            R.plurals.auto_backup_result_success_with_skipped, skipped, successMessage, skipped)
+                    : successMessage;
+        }
+        return skipped > 0
+                ? context.getString(R.string.auto_backup_result_partial_with_skipped, success, total, failed, skipped)
+                : context.getString(R.string.auto_backup_result_partial, success, total, failed);
     }
 
     @NonNull

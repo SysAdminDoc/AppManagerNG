@@ -312,6 +312,16 @@ public final class Prefs {
                     AutoBackupScheduler.sanitizeNetworkType(networkType));
         }
 
+        public static int getScheduledBackupMinimumAgeDays() {
+            return AutoBackupScheduler.sanitizeMinimumAgeDays(
+                    AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_MINIMUM_AGE_DAYS_INT));
+        }
+
+        public static void setScheduledBackupMinimumAgeDays(int days) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_MINIMUM_AGE_DAYS_INT,
+                    AutoBackupScheduler.sanitizeMinimumAgeDays(days));
+        }
+
         public static long getScheduledBackupLastRun() {
             return AppPref.getLong(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RUN_LONG);
         }
