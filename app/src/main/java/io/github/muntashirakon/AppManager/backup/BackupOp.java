@@ -233,6 +233,13 @@ class BackupOp implements Closeable {
     public BackupMetadataV5 setupMetadataAndCrypto() throws CryptoException {
         // We don't need to backup custom users or multiple backup flags
         mBackupFlags.removeFlag(BackupFlags.BACKUP_CUSTOM_USERS | BackupFlags.BACKUP_MULTIPLE);
+        boolean systemDataBackup = SystemDataBackup.isSystemDataPackage(mPackageName)
+                && mBackupFlags.backupSystemData();
+        if (systemDataBackup) {
+            SystemDataBackup.retainOnlySystemData(mBackupFlags);
+        } else {
+            mBackupFlags.removeFlag(BackupFlags.BACKUP_SYSTEM_DATA);
+        }
         String backupName = mBackupItem.getBackupName();
         long backupTime = System.currentTimeMillis();
         String tarType = Prefs.BackupRestore.getCompressionMethod();
@@ -249,7 +256,7 @@ class BackupOp implements Closeable {
                 cryptoHelper.getAes(), cryptoHelper.getKeyIds());
         backupInfo.setBackupItem(mBackupItem);
         BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(backupName);
-        metadata.keyStore = KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
+        metadata.keyStore = !systemDataBackup && KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
         metadata.label = mApplicationInfo.loadLabel(mPm).toString();
         metadata.packageName = mPackageName;
         metadata.versionName = mPackageInfo.versionName;
@@ -257,7 +264,12 @@ class BackupOp implements Closeable {
         metadata.apkName = new File(mApplicationInfo.sourceDir).getName();
         metadata.defaultRoles = DefaultAppRoleBackupHelper.getHeldDefaultRoles(mPackageName, mUserId);
         String[] dataDirs = null;
-        if (mBackupFlags.backupAdbData()) {
+        if (systemDataBackup) {
+            dataDirs = SystemDataBackup.getAvailableTokens(mUserId);
+            if (dataDirs.length == 0) {
+                throw new CryptoException("No supported system data paths were found.");
+            }
+        } else if (mBackupFlags.backupAdbData()) {
             if (BackupCompat.isAppEligibleForBackupForUser(mUserId, mPackageName)) {
                 mBackupFlags.removeFlag(BackupFlags.BACKUP_INT_DATA);
                 mBackupFlags.removeFlag(BackupFlags.BACKUP_EXT_DATA);
@@ -303,7 +315,7 @@ class BackupOp implements Closeable {
                 metadata.hasRules = cb.entryCount() > 0;
             }
         }
-        metadata.installer = PackageManagerCompat.getInstallerPackageName(mPackageInfo.packageName, mUserId);
+        metadata.installer = systemDataBackup ? null : PackageManagerCompat.getInstallerPackageName(mPackageInfo.packageName, mUserId);
         return new BackupMetadataV5(backupInfo, metadata);
     }
 
@@ -375,6 +387,17 @@ class BackupOp implements Closeable {
     @NonNull
     private Path[] backupDirectory(@NonNull String dir, int index) throws BackupException {
         String filePrefix = BackupUtils.getDataFilePrefix(index, getExt(mMetadata.info.tarType));
+        if (SystemDataBackup.isSystemDataToken(dir)) {
+            try {
+                SystemDataBackup.Source source = SystemDataBackup.getSource(dir, mUserId);
+                return TarUtils.createDurable(mMetadata.info.tarType, source.source,
+                                mBackupItem.getUnencryptedBackupPath(),
+                                filePrefix, source.filters, null, source.exclusions, false)
+                        .toArray(new Path[0]);
+            } catch (Throwable th) {
+                throw new BackupException("Failed to backup system data " + dir, th);
+            }
+        }
         try {
             String[] userExclusions = BackupPathExclusionPatterns.getTarExclusionRegexes(
                     mBackupFlags.backupCache(), Prefs.BackupRestore.getBackupExclusionPatterns(),
