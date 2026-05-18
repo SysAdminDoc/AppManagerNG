@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — scheduled backup progress notifications (2026-05-18)
+
+- Scheduled and manual auto-backup runs now update their WorkManager foreground
+  notification with app-count progress and the current app being backed up.
+- Progress text includes an ETA once enough runtime exists to estimate the
+  remaining work.
+- Android 16+ devices use platform `Notification.ProgressStyle` segments and
+  current-progress point markers; older devices continue to use the standard
+  progress-bar notification fallback.
+
 ### Added — scheduled backup launcher shortcuts (2026-05-18)
 
 - Added a Settings -> Backup action to pin a "Run scheduled backup" home-screen

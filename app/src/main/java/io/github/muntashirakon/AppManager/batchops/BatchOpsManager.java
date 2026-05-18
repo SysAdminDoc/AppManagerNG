@@ -992,6 +992,8 @@ public class BatchOpsManager {
                 notificationInfo.setGroupId(GROUP_ID);
             }
             ThreadUtils.postOnMainThread(() -> p.onProgressStart(-1, 0, notificationInfo));
+        } else {
+            p.onProgressStart(-1, 0, title);
         }
         return p;
     }
