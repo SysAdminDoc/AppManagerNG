@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 127**. Iter-127 shipped Material You /
-> Monet widget theming: existing home-screen widgets now resolve a shared
-> dynamic palette from the themed context, apply RemoteViews tints at runtime,
-> and use Android 12+ system dynamic color resources for widget XML previews and
-> fallbacks.
+> Last consolidated: **2026-05-18 iter 128**. Iter-128 shipped default-app role
+> restore rebinds: backup metadata now captures Dialer/SMS/Home/Browser role
+> ownership, restore attempts privileged `cmd role add-role-holder` rebinding
+> for the restored package/user, and batch restore completion prompts users to
+> review Android Default apps settings when automatic rebinds are rejected.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -81,7 +81,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-99 follow-through context inline. Cites **361 numbered external sources** in a Source Appendix at the bottom. |
+| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-99 follow-through context inline. Cites **363 numbered external sources** in a Source Appendix at the bottom. |
 | [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 -> 2026-05-18 shipped work. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
@@ -168,8 +168,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-125/`](.ai/research/2026-05-18-iter-125/) | iter 125 | Android 17 ML-DSA certificate OID closure: verified existing OID display-name mapping in Package Info and Scanner, kept OID display, and fixed `UtilsCertificateAlgorithmTest` JVM class initialization. |
 | [`.ai/research/2026-05-18-iter-126/`](.ai/research/2026-05-18-iter-126/) | iter 126 | Android 17 cleartext deprecation badge: App Info warns when manifest-wide cleartext is enabled without a Network Security Config, with hidden `networkSecurityConfigRes` compat access and predicate coverage. |
 | [`.ai/research/2026-05-18-iter-127/`](.ai/research/2026-05-18-iter-127/) | iter 127 | Material You widget theming: shared AppWidget palette helper, dynamic RemoteViews tints for usage / clear-cache / log widgets, and Android 12+ system color XML fallback mappings. |
+| [`.ai/research/2026-05-18-iter-128/`](.ai/research/2026-05-18-iter-128/) | iter 128 | Default-app role restore rebinds: backup metadata `default_roles`, privileged restore-time `cmd role add-role-holder`, fallback Default apps review prompt, and focused role helper coverage. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S363).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
