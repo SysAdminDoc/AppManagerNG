@@ -36,7 +36,21 @@ production code.
 
 NG already ships the textbook-correct posture: Network Security Config wired, base-config rejects cleartext, pinned domains are HTTPS-only, loopback is explicitly opted in. The targetSdk=37 bump introduces no compliance risk on this axis.
 
+## 2026-05-18 App Info UX follow-up
+
+Iter-126 added a user-facing App Info warning for inspected third-party apps
+that opt into manifest-wide cleartext traffic without declaring a Network
+Security Config. The implementation reads `ApplicationInfo.flags` plus the
+hidden `networkSecurityConfigRes` field through `ApplicationInfoCompat`, sets a
+`warnsCleartextDeprecation` tag-cloud bit, and displays a caution tag that
+explains Android 17's Android-18 deprecation warning.
+
+This does not change NG's own verdict above: AppManagerNG itself remains clean
+because its manifest declares `@xml/network_security_config`, its base config
+rejects cleartext, and its only cleartext opt-in is scoped to loopback.
+
 ## Follow-ups
 
-- None required.
-- For the iter-26 carryover sub-audits, this is **audit 1 of 5** of the open Android 17 targetSdk=37 compliance batch — see ROADMAP §"Engineering Debt Register".
+- None required for NG's own cleartext posture.
+- The App Info deprecation badge is shipped; future targetSdk=37 work should
+  continue from the remaining Android 17 audit rows in ROADMAP.
