@@ -39,6 +39,40 @@
         app:summary="@string/pref_import_backups_msg"
         app:iconSpaceReserved="false" />
 
+    <SwitchPreferenceCompat
+        app:key="backup_schedule_enabled"
+        app:title="@string/pref_backup_schedule_enabled"
+        app:summary="@string/pref_backup_schedule_enabled_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_schedule_time"
+        app:title="@string/pref_backup_schedule_time"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
+        app:key="backup_schedule_require_charging"
+        app:title="@string/pref_backup_schedule_require_charging"
+        app:summary="@string/pref_backup_schedule_require_charging_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_schedule_network"
+        app:title="@string/pref_backup_schedule_network"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_schedule_run_now"
+        app:title="@string/pref_backup_schedule_run_now"
+        app:summary="@string/pref_backup_schedule_run_now_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="backup_schedule_status"
+        app:title="@string/pref_backup_schedule_status"
+        app:selectable="false"
+        app:iconSpaceReserved="false" />
+
     <Preference
         app:key="backup_retention_max_count"
         app:title="@string/pref_backup_retention_max_count"

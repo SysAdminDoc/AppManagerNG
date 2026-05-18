@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
 import io.github.muntashirakon.AppManager.fm.FmActivity;
@@ -250,6 +251,69 @@ public final class Prefs {
 
         public static void setMaxBackupAgeDays(int value) {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_RETENTION_MAX_AGE_DAYS_INT, Math.max(0, value));
+        }
+
+        public static boolean isScheduledAutoBackupEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_ENABLED_BOOL);
+        }
+
+        public static void setScheduledAutoBackupEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_ENABLED_BOOL, enabled);
+        }
+
+        public static int getScheduledBackupHour() {
+            return AutoBackupScheduler.sanitizeHour(
+                    AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_HOUR_INT));
+        }
+
+        public static void setScheduledBackupHour(int hour) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_HOUR_INT,
+                    AutoBackupScheduler.sanitizeHour(hour));
+        }
+
+        public static int getScheduledBackupMinute() {
+            return AutoBackupScheduler.sanitizeMinute(
+                    AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_MINUTE_INT));
+        }
+
+        public static void setScheduledBackupMinute(int minute) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_MINUTE_INT,
+                    AutoBackupScheduler.sanitizeMinute(minute));
+        }
+
+        public static boolean isScheduledBackupChargingRequired() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_REQUIRE_CHARGING_BOOL);
+        }
+
+        public static void setScheduledBackupChargingRequired(boolean required) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_REQUIRE_CHARGING_BOOL, required);
+        }
+
+        public static int getScheduledBackupNetworkType() {
+            return AutoBackupScheduler.sanitizeNetworkType(
+                    AppPref.getInt(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_NETWORK_INT));
+        }
+
+        public static void setScheduledBackupNetworkType(int networkType) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_NETWORK_INT,
+                    AutoBackupScheduler.sanitizeNetworkType(networkType));
+        }
+
+        public static long getScheduledBackupLastRun() {
+            return AppPref.getLong(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RUN_LONG);
+        }
+
+        public static void setScheduledBackupLastRun(long lastRun) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RUN_LONG, Math.max(0L, lastRun));
+        }
+
+        @NonNull
+        public static String getScheduledBackupLastResult() {
+            return AppPref.getString(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RESULT_STR);
+        }
+
+        public static void setScheduledBackupLastResult(@NonNull String result) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_RESULT_STR, result);
         }
 
         public static boolean backupDirectoryExists() {
