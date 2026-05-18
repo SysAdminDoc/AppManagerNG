@@ -2376,6 +2376,9 @@
     <string name="pref_backup_schedule_run_now">Run scheduled backup now</string>
     <string name="pref_backup_schedule_run_now_msg">Queue one immediate run with the scheduled-backup engine.</string>
     <string name="pref_backup_schedule_run_now_queued">Scheduled backup queued</string>
+    <string name="pref_backup_schedule_shortcut">Pin backup shortcut</string>
+    <string name="pref_backup_schedule_shortcut_msg">Add a home screen shortcut that queues this scheduled backup immediately.</string>
+    <string name="pref_backup_schedule_shortcut_requested">Backup shortcut request sent to launcher.</string>
     <string name="pref_backup_schedule_status">Schedule status</string>
     <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%5$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%6$s</xliff:g></string>
     <string name="pref_backup_schedule_state_enabled">Enabled</string>
@@ -2768,6 +2771,8 @@
     <string name="shortcut_running_apps_long">Show running apps</string>
     <string name="shortcut_finder_short">Finder</string>
     <string name="shortcut_finder_long">Cross-app search</string>
+    <string name="shortcut_auto_backup_short">Backup now</string>
+    <string name="shortcut_auto_backup_long">Run scheduled backup</string>
     <string name="shortcut_freeze_app">Freeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_unfreeze_app">Unfreeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_force_stop_app">Force-stop <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>

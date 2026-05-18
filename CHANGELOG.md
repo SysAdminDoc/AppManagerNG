@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — scheduled backup launcher shortcuts (2026-05-18)
+
+- Added a Settings -> Backup action to pin a "Run scheduled backup" home-screen
+  shortcut.
+- Added a static launcher shortcut for the same scheduled-backup run-now action
+  in AppManagerNG's long-press launcher menu.
+- Shortcut launches route through an authenticated no-UI activity before
+  queuing the existing scheduled-backup manual WorkManager request.
+
 ### Changed — scheduled backup battery optimization guardrail (2026-05-18)
 
 - Enabling Scheduled Auto-Backup now checks whether AppManagerNG is exempt from
