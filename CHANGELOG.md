@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — OEM debloat uninstall fallbacks (2026-05-18)
+
+- Debloater now detects OEM-protected removal targets for Samsung
+  SmartSuggestions on One UI 8.5, MIUI core, and known OPlus/ColorOS/Realme
+  uninstall-guarded package IDs.
+- Protected selections are labeled in the list/details UI and the batch remove
+  confirmation defaults to "Disable instead", routing those targets through the
+  existing freeze batch path while leaving explicit removal available as an
+  override.
+- Added focused JVM coverage for Samsung, MIUI, and OPlus fallback policy
+  matching.
+
 ### Added — Hidden-Shizuku fork detection (2026-05-18)
 
 - Shizuku manager package discovery now resolves through the package declaring

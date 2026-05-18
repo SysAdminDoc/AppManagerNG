@@ -7,12 +7,12 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 103**. Iter-103 closed the
-> Hidden-Shizuku fork-detection row: Shizuku manager package discovery now
-> resolves through the installed owner of `moe.shizuku.manager.permission.API_V23`
-> (plus the legacy service-permission fallback) before falling back to the
-> canonical `moe.shizuku.privileged.api`, and version checks, auto-start
-> intents, and clear-data warnings all use the resolved manager package.
+> Last consolidated: **2026-05-18 iter 104**. Iter-104 closed the
+> OEM Debloat-Blocker Bypass row: Debloater now detects Samsung
+> SmartSuggestions / One UI 8.5, MIUI core, and exact OPlus uninstall-guarded
+> package IDs from manufacturer/build signals, warns in the list/details flow,
+> and defaults protected batch removals to the existing freeze path while
+> keeping explicit removal as an override.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit
@@ -144,6 +144,8 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-100/`](.ai/research/2026-05-18-iter-100/) | iter 100 | WebDAV self-signed certificate trust closure: no native WebDAV/SMB client exists today, so provider-backed backups delegate TLS/user-CA trust to the selected DocumentsProvider; native `KeyChain` handling is reserved for future first-party protocol work. |
 | [`.ai/research/2026-05-18-iter-101/`](.ai/research/2026-05-18-iter-101/) | iter 101 | Backup path exclusion patterns: glob parser, default throwaway directory filters, global/per-run/profile custom globs, and focused JVM coverage for matching plus batch-option serialization. |
 | [`.ai/research/2026-05-18-iter-102/`](.ai/research/2026-05-18-iter-102/) | iter 102 | Tasker parameterized intent API: public confirmation-gated `am://` operation URIs, Tasker/MacroDroid start-activity action constants, profile JSON overrides, and parser coverage. |
+| [`.ai/research/2026-05-18-iter-103/`](.ai/research/2026-05-18-iter-103/) | iter 103 | Hidden-Shizuku fork detection: Shizuku manager package discovery through the owner of `moe.shizuku.manager.permission.API_V23`, with legacy service-permission and canonical package fallbacks. |
+| [`.ai/research/2026-05-18-iter-104/`](.ai/research/2026-05-18-iter-104/) | iter 104 | OEM debloat-blocker bypass: manufacturer/build keyed uninstall fallback policy for Samsung SmartSuggestions, MIUI core, and OPlus uninstall-guarded packages, wired into Debloater card/details warnings and safe freeze-by-default batch handling. |
 
 **The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S361).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
@@ -495,9 +497,18 @@ info and Accessibility deep-links, while Mode Doctor includes the same
 install-source details and fix hint. The wording stays "likely/recommended"
 because Android does not expose a public per-app restricted-settings-blocked bit.
 
-Unit-test files from passes 4-39 cover the new helpers where runtime code
-changed, but local Gradle execution is still blocked on this Windows shell
-because no JDK is installed / `JAVA_HOME` is unset.
+Iter 104 closed the T7 OEM Debloat-Blocker Bypass row. `OemBloatRiskTable`
+now covers uninstall-fallback policy for Samsung One UI 8.5
+SmartSuggestions, MIUI core, and exact OPlus/ColorOS/OxygenOS/Realme
+uninstall-guarded package IDs. Debloater rows/details show protected-package
+warnings; batch remove confirmations count affected selections and default to
+the existing freeze batch path while preserving explicit removal as the
+override.
+
+Unit-test files from passes 4-39 and iter-91 onward cover the new helpers
+where runtime code changed. As of 2026-05-18 iter-104, this Windows checkout
+can run focused Floss JVM tests plus `compileFlossDebugJavaWithJavac` and
+`assembleFlossDebug` successfully.
 
 ---
 
