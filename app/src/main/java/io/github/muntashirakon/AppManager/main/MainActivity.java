@@ -325,6 +325,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             }
             updateMainListState(applicationItems.size(), trackerSum, permGrantedSum);
             refreshSortChipLabel();
+            refreshQuickFilterChips();
             scheduleAggregateCategoryBreakdown(applicationItems, trackerSum);
         });
         viewModel.getOperationStatus().observe(this, status -> {
@@ -875,6 +876,19 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             clearChip.setOnClickListener(clearListener);
             clearChip.setOnCloseIconClickListener(clearListener);
         }
+        Chip installDateChip = findViewById(R.id.chip_install_date);
+        if (installDateChip != null) {
+            installDateChip.setOnClickListener(v -> {
+                if (viewModel == null) return;
+                MainListOptions.showInstallDateRangePicker(getSupportFragmentManager(), viewModel,
+                        this::refreshQuickFilterChips);
+            });
+            installDateChip.setOnCloseIconClickListener(v -> {
+                if (viewModel == null) return;
+                viewModel.clearInstallDateRange();
+                refreshQuickFilterChips();
+            });
+        }
         Chip sortChip = findViewById(R.id.chip_sort);
         if (sortChip != null) {
             sortChip.setOnClickListener(v -> {
@@ -946,12 +960,15 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             if (sb.length() > 0) sb.append(", ");
             sb.append(label);
         }
+        if (viewModel.hasInstallDateFilter()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(MainListOptions.getInstallDateRangeLabel(this, viewModel));
+        }
         return sb.length() == 0 ? null : sb.toString();
     }
 
     private void refreshQuickFilterChips() {
         if (viewModel == null) return;
-        boolean anyActive = false;
         for (int[] entry : QUICK_FILTER_CHIPS) {
             Chip chip = findViewById(entry[0]);
             if (chip == null) continue;
@@ -967,11 +984,21 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     refreshQuickFilterChips();
                 });
             }
-            if (active) anyActive = true;
+        }
+        Chip installDateChip = findViewById(R.id.chip_install_date);
+        if (installDateChip != null) {
+            boolean hasInstallDateFilter = viewModel.hasInstallDateFilter();
+            installDateChip.setText(hasInstallDateFilter
+                    ? MainListOptions.getInstallDateRangeLabel(this, viewModel)
+                    : getString(R.string.main_filter_install_date));
+            installDateChip.setCloseIconVisible(hasInstallDateFilter);
         }
         Chip clearChip = findViewById(R.id.chip_clear_filters);
         if (clearChip != null) {
-            clearChip.setVisibility(anyActive ? View.VISIBLE : View.GONE);
+            int activeFilterCount = viewModel.getActiveFilterCount();
+            clearChip.setText(getResources().getQuantityString(
+                    R.plurals.main_active_filters_clear, activeFilterCount, activeFilterCount));
+            clearChip.setVisibility(viewModel.hasActiveFilters() ? View.VISIBLE : View.GONE);
         }
     }
 

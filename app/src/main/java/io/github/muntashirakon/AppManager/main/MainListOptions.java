@@ -9,12 +9,19 @@ import android.view.View;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.LinearLayoutCompat;
+import androidx.core.util.Pair;
+import androidx.fragment.app.FragmentManager;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.MaterialDatePicker;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
@@ -33,6 +40,7 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.adapters.SelectedArrayAdapter;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
@@ -222,6 +230,23 @@ public class MainListOptions extends ListOptions {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         MainActivity activity = (MainActivity) requireActivity();
+        LinearLayoutCompat installDateRow = view.findViewById(R.id.install_date_filter_row);
+        MaterialButton installDateButton = view.findViewById(R.id.install_date_filter);
+        MaterialButton clearInstallDateButton = view.findViewById(R.id.clear_install_date_filter);
+        if (installDateRow != null && installDateButton != null && clearInstallDateButton != null) {
+            installDateRow.setVisibility(View.VISIBLE);
+            updateInstallDateControls(activity.viewModel, installDateButton, clearInstallDateButton);
+            installDateButton.setOnClickListener(v -> {
+                if (activity.viewModel == null) return;
+                showInstallDateRangePicker(getParentFragmentManager(), activity.viewModel,
+                        () -> updateInstallDateControls(activity.viewModel, installDateButton, clearInstallDateButton));
+            });
+            clearInstallDateButton.setOnClickListener(v -> {
+                if (activity.viewModel == null) return;
+                activity.viewModel.clearInstallDateRange();
+                updateInstallDateControls(activity.viewModel, installDateButton, clearInstallDateButton);
+            });
+        }
         profileNameSpinner.setOnItemClickListener((parent, view1, position, id) -> {
             if (mAdapter == null || activity.viewModel == null) {
                 return;
@@ -304,6 +329,66 @@ public class MainListOptions extends ListOptions {
             mProfileSuggestionsResult.cancel(true);
         }
         super.onDestroy();
+    }
+
+    public static void showInstallDateRangePicker(@NonNull FragmentManager fragmentManager,
+                                                  @NonNull MainViewModel viewModel,
+                                                  @Nullable Runnable onChanged) {
+        MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker()
+                .setTitleText(R.string.main_filter_install_date);
+        if (viewModel.hasInstallDateFilter()) {
+            long start = viewModel.getInstallDateStartMillis();
+            long end = viewModel.getInstallDateEndMillis();
+            if (end > 0) {
+                end -= TimeUnit.DAYS.toMillis(1) - 1;
+            }
+            if (start <= 0) start = end;
+            if (end <= 0) end = start;
+            builder.setSelection(Pair.create(start, end));
+        }
+        MaterialDatePicker<Pair<Long, Long>> datePicker = builder.build();
+        datePicker.addOnPositiveButtonClickListener(selection -> {
+            if (selection == null || selection.first == null || selection.second == null) {
+                return;
+            }
+            long start = selection.first;
+            long end = selection.second + TimeUnit.DAYS.toMillis(1) - 1;
+            viewModel.setInstallDateRange(start, end);
+            if (onChanged != null) {
+                onChanged.run();
+            }
+        });
+        datePicker.show(fragmentManager, "InstallDateRangePicker");
+    }
+
+    @NonNull
+    public static String getInstallDateRangeLabel(@NonNull android.content.Context context,
+                                                  @NonNull MainViewModel viewModel) {
+        long start = viewModel.getInstallDateStartMillis();
+        long end = viewModel.getInstallDateEndMillis();
+        if (start > 0 && end > 0) {
+            return context.getString(R.string.main_filter_install_date_range,
+                    DateUtils.formatDate(context, start), DateUtils.formatDate(context, end));
+        }
+        if (start > 0) {
+            return context.getString(R.string.main_filter_install_date_from, DateUtils.formatDate(context, start));
+        }
+        if (end > 0) {
+            return context.getString(R.string.main_filter_install_date_to, DateUtils.formatDate(context, end));
+        }
+        return context.getString(R.string.main_filter_install_date);
+    }
+
+    private static void updateInstallDateControls(@Nullable MainViewModel viewModel,
+                                                  @NonNull MaterialButton installDateButton,
+                                                  @NonNull MaterialButton clearInstallDateButton) {
+        if (viewModel == null || !viewModel.hasInstallDateFilter()) {
+            installDateButton.setText(R.string.main_filter_install_date);
+            clearInstallDateButton.setVisibility(View.GONE);
+            return;
+        }
+        installDateButton.setText(getInstallDateRangeLabel(installDateButton.getContext(), viewModel));
+        clearInstallDateButton.setVisibility(View.VISIBLE);
     }
 
     @Nullable

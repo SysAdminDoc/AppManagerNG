@@ -48,6 +48,21 @@ public class FinderViewModel extends AndroidViewModel {
         return mFilterItem;
     }
 
+    public boolean hasActiveFilters() {
+        return mFilterItem.getSize() > 0;
+    }
+
+    public int getActiveFilterCount() {
+        return mFilterItem.getSize();
+    }
+
+    public void clearFilters() {
+        while (mFilterItem.getSize() > 0) {
+            mFilterItem.removeFilterOptionAt(0);
+        }
+        loadFilteredAppList(false);
+    }
+
     public void loadFilteredAppList(boolean refresh) {
         if (mAppListLoaderFuture != null) {
             mAppListLoaderFuture.cancel(true);

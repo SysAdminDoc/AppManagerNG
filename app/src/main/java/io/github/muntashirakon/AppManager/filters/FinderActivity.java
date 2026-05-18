@@ -3,11 +3,13 @@
 package io.github.muntashirakon.AppManager.filters;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.chip.Chip;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -28,6 +30,7 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
     private RecyclerView mRecyclerView;
     private FinderAdapter mAdapter;
     private FloatingActionButton mFilterBtn;
+    private Chip mActiveFiltersChip;
     private MultiSelectionView mMultiSelectionView;
 
     @Override
@@ -38,6 +41,7 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
         mProgress = findViewById(R.id.progress_linear);
         mRecyclerView = findViewById(R.id.item_list);
         mFilterBtn = findViewById(R.id.floatingActionButton);
+        mActiveFiltersChip = findViewById(R.id.finder_active_filters);
         mMultiSelectionView = findViewById(R.id.selection_view);
         UiUtils.applyWindowInsetsAsMargin(mFilterBtn);
         mAdapter = new FinderAdapter();
@@ -45,10 +49,19 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
         mRecyclerView.setAdapter(mAdapter);
         mMultiSelectionView.hide();
         mFilterBtn.setOnClickListener(v -> showFiltersDialog());
+        if (mActiveFiltersChip != null) {
+            View.OnClickListener clearFiltersListener = v -> {
+                mViewModel.clearFilters();
+                updateActiveFiltersChip();
+            };
+            mActiveFiltersChip.setOnClickListener(clearFiltersListener);
+            mActiveFiltersChip.setOnCloseIconClickListener(clearFiltersListener);
+        }
         // Watch livedata
         mViewModel.getFilteredAppListLiveData().observe(this, list -> {
             ProgressIndicatorCompat.setVisibility(mProgress, false);
             mAdapter.setDefaultList(list);
+            updateActiveFiltersChip();
         });
         mViewModel.getLastUpdateTimeLiveData().observe(this, time -> {
             CharSequence subtitle;
@@ -58,6 +71,7 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
             Optional.ofNullable(getSupportActionBar()).ifPresent(actionBar -> actionBar.setSubtitle(subtitle));
         });
         mViewModel.loadFilteredAppList(true);
+        updateActiveFiltersChip();
     }
 
     private void showFiltersDialog() {
@@ -75,5 +89,16 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
     @Override
     public void onItemAltered(@NonNull FilterItem item) {
         mViewModel.loadFilteredAppList(false);
+        updateActiveFiltersChip();
+    }
+
+    private void updateActiveFiltersChip() {
+        if (mActiveFiltersChip == null || mViewModel == null) {
+            return;
+        }
+        int count = mViewModel.getActiveFilterCount();
+        mActiveFiltersChip.setText(getResources().getQuantityString(
+                R.plurals.main_active_filters_clear, count, count));
+        mActiveFiltersChip.setVisibility(mViewModel.hasActiveFilters() ? View.VISIBLE : View.GONE);
     }
 }

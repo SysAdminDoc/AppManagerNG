@@ -258,6 +258,7 @@
         <item>data_usage</item>
         <item>freeze_unfreeze</item>
         <item>installed</item>
+        <item>install_date</item>
         <item>installer</item>
         <item>last_update</item>
         <item>min_sdk</item>

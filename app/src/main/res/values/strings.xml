@@ -62,6 +62,14 @@
     <string name="main_status_guided_trackers_hint">Tap this panel to focus apps with trackers.</string>
     <string name="main_status_guided_permissions_hint">Tap this panel to focus apps with granted dangerous permissions.</string>
     <string name="main_status_guided_details_hint">Tap an app for details. Long-press to select apps.</string>
+    <string name="main_filter_install_date">Install date</string>
+    <string name="main_filter_install_date_range"><xliff:g id="start" example="May 1, 2026">%1$s</xliff:g> - <xliff:g id="end" example="May 18, 2026">%2$s</xliff:g></string>
+    <string name="main_filter_install_date_from">After <xliff:g id="date" example="May 1, 2026">%1$s</xliff:g></string>
+    <string name="main_filter_install_date_to">Before <xliff:g id="date" example="May 18, 2026">%1$s</xliff:g></string>
+    <plurals name="main_active_filters_clear">
+        <item quantity="one">%d filter active - clear</item>
+        <item quantity="other">%d filters active - clear</item>
+    </plurals>
     <string name="tag_dangerous_perms"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions</string>
     <string name="perms_cta_title"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
     <string name="perms_cta_subtitle_can_revoke">Revoke every granted dangerous permission for this app. You can re-grant individual permissions from Android Settings if needed.</string>
