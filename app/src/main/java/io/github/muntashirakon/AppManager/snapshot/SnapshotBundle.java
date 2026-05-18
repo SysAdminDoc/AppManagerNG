@@ -14,6 +14,11 @@ import androidx.annotation.WorkerThread;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -32,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -40,12 +46,23 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
+import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
 import io.github.muntashirakon.io.Path;
 
 /**
@@ -66,7 +83,7 @@ import io.github.muntashirakon.io.Path;
 public final class SnapshotBundle {
     public static final String TAG = "SnapshotBundle";
 
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
     public static final String FORMAT_ID = "appmanagerng-snapshot";
 
     @VisibleForTesting
@@ -75,6 +92,8 @@ public final class SnapshotBundle {
     static final String ENTRY_PREFS_DIR = "prefs/";
     @VisibleForTesting
     static final String ENTRY_PROFILES_DIR = "profiles/";
+    @VisibleForTesting
+    static final String ENTRY_RULES_DIR = "rules/";
     @VisibleForTesting
     static final String ENTRY_TAGS_DIR = "tags/";
     @VisibleForTesting
@@ -111,6 +130,7 @@ public final class SnapshotBundle {
         Context appContext = context.getApplicationContext();
         int prefsCount = 0;
         int profilesCount = 0;
+        int rulesCount = 0;
         int opHistoryCount = 0;
         List<String> contents = new ArrayList<>();
         List<String> excluded = new ArrayList<>();
@@ -148,6 +168,22 @@ public final class SnapshotBundle {
                 contents.add("profiles");
             }
 
+            // Rule TSVs: component, freeze, AppOps, permission, and net-policy rules.
+            File rulesDir = RulesStorageManager.getConfDir(appContext).getFile();
+            if (rulesDir != null && rulesDir.isDirectory()) {
+                File[] ruleFiles = rulesDir.listFiles((dir, name) -> name.endsWith(".tsv"));
+                if (ruleFiles != null) {
+                    for (File ruleFile : ruleFiles) {
+                        if (!ruleFile.isFile()) continue;
+                        writeFileEntry(zos, ENTRY_RULES_DIR + ruleFile.getName(), ruleFile);
+                        ++rulesCount;
+                    }
+                }
+            }
+            if (rulesCount > 0) {
+                contents.add("rules");
+            }
+
             // Tags (forward-compat: include if/when the Multi-Tag feature lands)
             File tagsDir = new File(appContext.getFilesDir(), "tags");
             if (tagsDir.isDirectory()) {
@@ -179,10 +215,10 @@ public final class SnapshotBundle {
 
             // Manifest last so we can record final counts
             String manifest = buildManifestJson(appContext, contents, prefsCount,
-                    profilesCount, opHistoryCount, excluded);
+                    profilesCount, rulesCount, opHistoryCount, excluded);
             writeStringEntry(zos, ENTRY_MANIFEST, manifest);
         }
-        return new ExportResult(prefsCount, profilesCount, opHistoryCount);
+        return new ExportResult(prefsCount, profilesCount, rulesCount, opHistoryCount);
     }
 
     // -----------------------------------------------------------------------
@@ -194,11 +230,11 @@ public final class SnapshotBundle {
     public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
                                         @NonNull ImportOptions options)
             throws IOException, SnapshotImportException {
-        Context appContext = context.getApplicationContext();
         ManifestSummary manifest = null;
         byte[] opHistoryBytes = null;
         List<PendingFile> pendingPrefs = new ArrayList<>();
         List<PendingFile> pendingProfiles = new ArrayList<>();
+        List<PendingFile> pendingRules = new ArrayList<>();
         List<PendingFile> pendingTags = new ArrayList<>();
 
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
@@ -231,6 +267,12 @@ public final class SnapshotBundle {
                         continue;
                     }
                     pendingProfiles.add(new PendingFile(leaf, bytes));
+                } else if (name.startsWith(ENTRY_RULES_DIR)) {
+                    String leaf = name.substring(ENTRY_RULES_DIR.length());
+                    if (!isSafeLeaf(leaf) || !leaf.endsWith(".tsv")) {
+                        continue;
+                    }
+                    pendingRules.add(new PendingFile(leaf, bytes));
                 } else if (name.startsWith(ENTRY_TAGS_DIR)) {
                     String leaf = name.substring(ENTRY_TAGS_DIR.length());
                     if (!isSafeLeaf(leaf)) {
@@ -255,15 +297,17 @@ public final class SnapshotBundle {
                     "Bundle was written by a newer AppManagerNG (schema "
                             + manifest.schemaVersion + " > " + SCHEMA_VERSION + ").");
         }
+        Context appContext = context.getApplicationContext();
 
         int prefsRestored = 0;
         int profilesRestored = 0;
+        int rulesRestored = 0;
         int tagsRestored = 0;
         int opHistoryRestored = 0;
 
         if (options.restorePrefs) {
             for (PendingFile pf : pendingPrefs) {
-                if (restorePrefFile(appContext, pf)) {
+                if (restorePrefFile(appContext, pf, options.mergePrefs)) {
                     ++prefsRestored;
                 }
             }
@@ -276,6 +320,18 @@ public final class SnapshotBundle {
                 for (PendingFile pf : pendingProfiles) {
                     if (writeBytesTo(new File(profilesDir, pf.leaf), pf.bytes)) {
                         ++profilesRestored;
+                    }
+                }
+            }
+        }
+        if (options.restoreRules) {
+            File rulesDir = RulesStorageManager.getConfDir(appContext).getFile();
+            if (rulesDir != null) {
+                //noinspection ResultOfMethodCallIgnored
+                rulesDir.mkdirs();
+                for (PendingFile pf : pendingRules) {
+                    if (restoreRuleFile(new File(rulesDir, pf.leaf), pf, options.mergeRules)) {
+                        ++rulesRestored;
                     }
                 }
             }
@@ -295,7 +351,7 @@ public final class SnapshotBundle {
         }
 
         return new ImportResult(manifest, prefsRestored, profilesRestored, tagsRestored,
-                opHistoryRestored);
+                rulesRestored, opHistoryRestored);
     }
 
     // -----------------------------------------------------------------------
@@ -308,6 +364,7 @@ public final class SnapshotBundle {
                                     @NonNull List<String> contents,
                                     int prefsCount,
                                     int profilesCount,
+                                    int rulesCount,
                                     int opHistoryCount,
                                     @NonNull List<String> excluded) {
         long now = System.currentTimeMillis();
@@ -328,6 +385,7 @@ public final class SnapshotBundle {
             JSONObject counts = new JSONObject();
             counts.put("prefs_files", prefsCount);
             counts.put("profiles", profilesCount);
+            counts.put("rules", rulesCount);
             counts.put("op_history", opHistoryCount);
             manifest.put("counts", counts);
             JSONArray excludedArr = new JSONArray();
@@ -437,7 +495,9 @@ public final class SnapshotBundle {
         return Arrays.asList(files);
     }
 
-    private static boolean restorePrefFile(@NonNull Context appContext, @NonNull PendingFile pf) {
+    private static boolean restorePrefFile(@NonNull Context appContext,
+                                           @NonNull PendingFile pf,
+                                           boolean merge) {
         if (!pf.leaf.endsWith(".xml")) return false;
         String prefName = stripXmlSuffix(pf.leaf);
         if (EXCLUDED_PREF_NAMES.contains(prefName)) return false;
@@ -446,12 +506,49 @@ public final class SnapshotBundle {
         //noinspection ResultOfMethodCallIgnored
         prefsDir.mkdirs();
         File target = new File(prefsDir, pf.leaf);
-        if (!writeBytesTo(target, pf.bytes)) {
+        byte[] bytesToWrite = pf.bytes;
+        if (merge && target.isFile()) {
+            try {
+                bytesToWrite = mergeSharedPreferencesXml(readFileBytes(target), pf.bytes);
+            } catch (IOException | SnapshotImportException e) {
+                Log.w(TAG, "Could not merge preferences from " + pf.leaf + " during snapshot import.", e);
+                return false;
+            }
+        }
+        if (!writeBytesTo(target, bytesToWrite)) {
             return false;
         }
         // Force SharedPreferences to pick up the file on next read.
         SharedPreferences ignored = appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
         return ignored != null;
+    }
+
+    private static boolean restoreRuleFile(@NonNull File target,
+                                           @NonNull PendingFile pf,
+                                           boolean merge) {
+        byte[] bytesToWrite = pf.bytes;
+        if (merge && target.isFile()) {
+            try {
+                bytesToWrite = mergeRuleBytes(readFileBytes(target), pf.bytes);
+            } catch (IOException e) {
+                Log.w(TAG, "Could not merge rules from " + pf.leaf + " during snapshot import.", e);
+                return false;
+            }
+        }
+        return writeBytesTo(target, bytesToWrite);
+    }
+
+    @NonNull
+    private static byte[] readFileBytes(@NonNull File file) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        try (InputStream in = new FileInputStream(file)) {
+            byte[] chunk = new byte[8192];
+            int n;
+            while ((n = in.read(chunk)) != -1) {
+                buf.write(chunk, 0, n);
+            }
+        }
+        return buf.toByteArray();
     }
 
     private static boolean writeBytesTo(@NonNull File target, @NonNull byte[] bytes) {
@@ -540,6 +637,99 @@ public final class SnapshotBundle {
     }
 
     @NonNull
+    @VisibleForTesting
+    static byte[] mergeSharedPreferencesXml(@NonNull byte[] currentBytes,
+                                            @NonNull byte[] incomingBytes)
+            throws SnapshotImportException {
+        if (currentBytes.length == 0) {
+            return incomingBytes;
+        }
+        try {
+            Document current = parseXmlMap(currentBytes);
+            Document incoming = parseXmlMap(incomingBytes);
+            Element currentMap = current.getDocumentElement();
+            Element incomingMap = incoming.getDocumentElement();
+            NodeList importedEntries = incomingMap.getChildNodes();
+            for (int i = 0; i < importedEntries.getLength(); ++i) {
+                Node importedNode = importedEntries.item(i);
+                if (!(importedNode instanceof Element)) {
+                    continue;
+                }
+                Element importedElement = (Element) importedNode;
+                String name = importedElement.getAttribute("name");
+                if (name == null || name.isEmpty()) {
+                    continue;
+                }
+                removePreferenceNode(currentMap, name);
+                currentMap.appendChild(current.importNode(importedElement, true));
+            }
+            return toXmlBytes(current);
+        } catch (IOException | ParserConfigurationException | SAXException | TransformerException e) {
+            throw new SnapshotImportException("Could not merge SharedPreferences XML: " + e.getMessage());
+        }
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static byte[] mergeRuleBytes(@NonNull byte[] currentBytes, @NonNull byte[] incomingBytes) {
+        LinkedHashSet<String> rows = new LinkedHashSet<>();
+        collectRuleRows(rows, currentBytes);
+        collectRuleRows(rows, incomingBytes);
+        StringBuilder merged = new StringBuilder();
+        for (String row : rows) {
+            merged.append(row).append('\n');
+        }
+        return merged.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void collectRuleRows(@NonNull LinkedHashSet<String> rows, @NonNull byte[] bytes) {
+        String text = new String(bytes, StandardCharsets.UTF_8);
+        String[] splitRows = text.split("\\r?\\n");
+        for (String row : splitRows) {
+            if (!row.isEmpty()) {
+                rows.add(row);
+            }
+        }
+    }
+
+    @NonNull
+    private static Document parseXmlMap(@NonNull byte[] bytes)
+            throws IOException, ParserConfigurationException, SAXException, SnapshotImportException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setExpandEntityReferences(false);
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new ByteArrayInputStream(bytes));
+        Element root = doc.getDocumentElement();
+        if (root == null || !"map".equals(root.getTagName())) {
+            throw new SnapshotImportException("SharedPreferences XML root is not <map>.");
+        }
+        return doc;
+    }
+
+    private static void removePreferenceNode(@NonNull Element map, @NonNull String name) {
+        NodeList children = map.getChildNodes();
+        for (int i = children.getLength() - 1; i >= 0; --i) {
+            Node child = children.item(i);
+            if (child instanceof Element && name.equals(((Element) child).getAttribute("name"))) {
+                map.removeChild(child);
+            }
+        }
+    }
+
+    @NonNull
+    private static byte[] toXmlBytes(@NonNull Document doc) throws TransformerException {
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        transformer.transform(new DOMSource(doc), new StreamResult(out));
+        return out.toByteArray();
+    }
+
+    @NonNull
     private static String stripXmlSuffix(@NonNull String fileName) {
         if (fileName.endsWith(".xml")) {
             return fileName.substring(0, fileName.length() - ".xml".length());
@@ -568,18 +758,23 @@ public final class SnapshotBundle {
     public static final class ImportOptions {
         public boolean restorePrefs = true;
         public boolean restoreProfiles = true;
+        public boolean restoreRules = true;
         public boolean restoreTags = true;
         public boolean restoreOpHistory = true;
+        public boolean mergePrefs = true;
+        public boolean mergeRules = true;
     }
 
     public static final class ExportResult {
         public final int prefsCount;
         public final int profilesCount;
+        public final int rulesCount;
         public final int opHistoryCount;
 
-        ExportResult(int prefsCount, int profilesCount, int opHistoryCount) {
+        ExportResult(int prefsCount, int profilesCount, int rulesCount, int opHistoryCount) {
             this.prefsCount = prefsCount;
             this.profilesCount = profilesCount;
+            this.rulesCount = rulesCount;
             this.opHistoryCount = opHistoryCount;
         }
     }
@@ -590,14 +785,16 @@ public final class SnapshotBundle {
         public final int prefsRestored;
         public final int profilesRestored;
         public final int tagsRestored;
+        public final int rulesRestored;
         public final int opHistoryRestored;
 
         ImportResult(@NonNull ManifestSummary manifest, int prefsRestored, int profilesRestored,
-                     int tagsRestored, int opHistoryRestored) {
+                     int tagsRestored, int rulesRestored, int opHistoryRestored) {
             this.manifest = manifest;
             this.prefsRestored = prefsRestored;
             this.profilesRestored = profilesRestored;
             this.tagsRestored = tagsRestored;
+            this.rulesRestored = rulesRestored;
             this.opHistoryRestored = opHistoryRestored;
         }
     }
