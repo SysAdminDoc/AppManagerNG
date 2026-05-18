@@ -611,6 +611,63 @@
         <item quantity="one">Could not back up %1$d app</item>
         <item quantity="other">Could not back up %1$d apps</item>
     </plurals>
+    <!-- Rich Backup Result Notifications (T6/Low, iter-87): per-op success strings -->
+    <plurals name="alert_succeeded_backup">
+        <item quantity="one">Backed up %1$d app</item>
+        <item quantity="other">Backed up %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_backup_apk">
+        <item quantity="one">Saved APK from %1$d app</item>
+        <item quantity="other">Saved APKs from %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_restore">
+        <item quantity="one">Restored %1$d app</item>
+        <item quantity="other">Restored %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_delete_backup">
+        <item quantity="one">Deleted %1$d backup</item>
+        <item quantity="other">Deleted %1$d backups</item>
+    </plurals>
+    <plurals name="alert_succeeded_import_backups">
+        <item quantity="one">Imported %1$d backup</item>
+        <item quantity="other">Imported %1$d backups</item>
+    </plurals>
+    <plurals name="alert_succeeded_freeze">
+        <item quantity="one">Froze %1$d app</item>
+        <item quantity="other">Froze %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_unfreeze">
+        <item quantity="one">Unfroze %1$d app</item>
+        <item quantity="other">Unfroze %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_force_stop">
+        <item quantity="one">Force-stopped %1$d app</item>
+        <item quantity="other">Force-stopped %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_clear_data">
+        <item quantity="one">Cleared data for %1$d app</item>
+        <item quantity="other">Cleared data for %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_clear_cache">
+        <item quantity="one">Cleared cache for %1$d app</item>
+        <item quantity="other">Cleared cache for %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_block_trackers">
+        <item quantity="one">Blocked trackers in %1$d app</item>
+        <item quantity="other">Blocked trackers in %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_unblock_trackers">
+        <item quantity="one">Unblocked trackers in %1$d app</item>
+        <item quantity="other">Unblocked trackers in %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_uninstall">
+        <item quantity="one">Uninstalled %1$d app</item>
+        <item quantity="other">Uninstalled %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_dexopt">
+        <item quantity="one">Optimised %1$d app</item>
+        <item quantity="other">Optimised %1$d apps</item>
+    </plurals>
     <plurals name="alert_failed_to_backup">
         <item quantity="one">Could not back up %1$d app</item>
         <item quantity="other">Could not back up %1$d apps</item>

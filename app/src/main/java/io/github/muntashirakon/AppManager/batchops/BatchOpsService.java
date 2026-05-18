@@ -292,7 +292,16 @@ public class BatchOpsService extends ForegroundService {
             case Activity.RESULT_CANCELED:  // Cancelled
                 break;
             case Activity.RESULT_OK:  // Successful
-                notificationInfo.setBody(getString(R.string.the_operation_was_successful));
+                // Per-op success message — counts the packages the operation
+                // was applied to. Reference: SD Maid SE v1.7.x scheduler result
+                // notifications, which prefer "what was actually done" over a
+                // generic "successful" string ([S112]).
+                int successCount = queueItem != null ? queueItem.getPackages().size() : 0;
+                int successOp = queueItem != null ? queueItem.getOp() : BatchOpsManager.OP_NONE;
+                String successMessage = getDesiredSuccessString(successOp, successCount);
+                notificationInfo.setBody(successMessage != null
+                        ? successMessage
+                        : getString(R.string.the_operation_was_successful));
                 break;
             case Activity.RESULT_FIRST_USER:  // Failed
                 Objects.requireNonNull(opResult);
@@ -427,5 +436,53 @@ public class BatchOpsService extends ForegroundService {
                 return getResources().getQuantityString(R.plurals.alert_failed_to_optimize_apps, failedCount, failedCount);
         }
         return getString(R.string.error);
+    }
+
+    /**
+     * Per-op success message — counts the packages the operation was applied
+     * to so the completion notification surfaces "what was actually done"
+     * (e.g. "Backed up 47 apps") instead of a generic "successful". Returns
+     * {@code null} for ops without a tailored success format; callers fall
+     * back to the generic success string.
+     *
+     * <p>Reference: SD Maid SE v1.7.x scheduler result notifications model
+     * ([S112]).
+     */
+    @Nullable
+    private String getDesiredSuccessString(int op, int successCount) {
+        if (successCount <= 0) return null;
+        switch (op) {
+            case BatchOpsManager.OP_BACKUP:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_backup, successCount, successCount);
+            case BatchOpsManager.OP_BACKUP_APK:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_backup_apk, successCount, successCount);
+            case BatchOpsManager.OP_RESTORE_BACKUP:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_restore, successCount, successCount);
+            case BatchOpsManager.OP_DELETE_BACKUP:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_delete_backup, successCount, successCount);
+            case BatchOpsManager.OP_IMPORT_BACKUPS:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_import_backups, successCount, successCount);
+            case BatchOpsManager.OP_FREEZE:
+            case BatchOpsManager.OP_ADVANCED_FREEZE:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_freeze, successCount, successCount);
+            case BatchOpsManager.OP_UNFREEZE:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_unfreeze, successCount, successCount);
+            case BatchOpsManager.OP_FORCE_STOP:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_force_stop, successCount, successCount);
+            case BatchOpsManager.OP_CLEAR_DATA:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_clear_data, successCount, successCount);
+            case BatchOpsManager.OP_CLEAR_CACHE:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_clear_cache, successCount, successCount);
+            case BatchOpsManager.OP_BLOCK_TRACKERS:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_block_trackers, successCount, successCount);
+            case BatchOpsManager.OP_UNBLOCK_TRACKERS:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_unblock_trackers, successCount, successCount);
+            case BatchOpsManager.OP_UNINSTALL:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_uninstall, successCount, successCount);
+            case BatchOpsManager.OP_DEXOPT:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_dexopt, successCount, successCount);
+            default:
+                return null;
+        }
     }
 }
