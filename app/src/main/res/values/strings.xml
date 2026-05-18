@@ -1177,6 +1177,9 @@
     <string name="backup_skip_signature_checks_description">Restore backups that either fail checksum verification or have different APK signatures than their prior backups.</string>
     <string name="patch_level">Patch level</string>
     <string name="selinux">SELinux</string>
+    <string name="selinux_policy_info">SELinux policy info</string>
+    <string name="selinux_file_contexts">SELinux file contexts</string>
+    <string name="selinux_process_contexts">SELinux process contexts</string>
     <string name="enforcing">Enforcing</string>
     <string name="permissive">Permissive</string>
     <string name="hardware">Hardware</string>

@@ -491,6 +491,10 @@ public class AppInfoViewModel extends AndroidViewModel {
                 appInfo.mainActivity = PackageManagerCompat.getLaunchIntentForPackage(packageName, userId);
                 // SELinux
                 appInfo.seInfo = ApplicationInfoCompat.getSeInfo(applicationInfo);
+                appInfo.dataDirSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.dataDir);
+                appInfo.sourceFileSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.publicSourceDir);
+                appInfo.processSelinuxContexts = AppSelinuxContexts.collectProcessContexts(packageName,
+                        ActivityManagerCompat.getRunningAppProcesses(), AppSelinuxContexts::readProcAttrCurrent);
                 // Primary ABI
                 appInfo.primaryCpuAbi = ApplicationInfoCompat.getPrimaryCpuAbi(applicationInfo);
                 // zygotePreloadName
@@ -635,6 +639,12 @@ public class AppInfoViewModel extends AndroidViewModel {
         public Intent mainActivity;
         @Nullable
         public String seInfo;
+        @Nullable
+        public String dataDirSelinuxContext;
+        @Nullable
+        public String sourceFileSelinuxContext;
+        @NonNull
+        public List<AppSelinuxContexts.ProcessContext> processSelinuxContexts = Collections.emptyList();
         @Nullable
         public String primaryCpuAbi;
         @Nullable

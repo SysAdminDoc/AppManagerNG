@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — App Info SELinux context display (2026-05-18)
+
+- App Info now surfaces SELinux policy info, file contexts for the app's data
+  and source paths, and live process contexts for running package processes.
+- Process contexts are gathered from the running-process list and
+  `/proc/<pid>/attr/current`; blank or unreadable contexts are omitted.
+- Added focused coverage for package/process matching, normalization, and
+  missing process-name fallback.
+
 ### Added — File Manager batch APK installer (2026-05-18)
 
 - File Manager multi-selection now offers **Install selected APKs** for readable
