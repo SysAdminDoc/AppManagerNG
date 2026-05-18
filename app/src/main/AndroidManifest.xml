@@ -250,6 +250,20 @@
             android:taskAffinity=""
             android:theme="@style/AppTheme.TransparentBackground" />
         <activity
+            android:name=".assistant.AssistActionActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/quick_assist_title"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".runningapps.RunningAppsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="true"
@@ -1095,11 +1109,6 @@
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <action android:name="android.media.action.TEXT_OPEN_FROM_SEARCH" />
                 <action android:name="android.media.action.VIDEO_PLAY_FROM_SEARCH" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.ASSIST" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
