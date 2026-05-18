@@ -74,7 +74,27 @@ public final class TarUtils {
                                     @NonNull String destFilePrefix, @Nullable String[] filters,
                                     @Nullable Long splitSize, @Nullable String[] exclude, boolean followLinks)
             throws IOException {
-        try (SplitOutputStream sos = new SplitOutputStream(dest, destFilePrefix, splitSize == null ? DEFAULT_SPLIT_SIZE : splitSize);
+        return create(type, source, dest, destFilePrefix, filters, splitSize, exclude, followLinks, false);
+    }
+
+    @WorkerThread
+    @NonNull
+    public static List<Path> createDurable(@NonNull @TarType String type, @NonNull Path source, @NonNull Path dest,
+                                           @NonNull String destFilePrefix, @Nullable String[] filters,
+                                           @Nullable Long splitSize, @Nullable String[] exclude, boolean followLinks)
+            throws IOException {
+        return create(type, source, dest, destFilePrefix, filters, splitSize, exclude, followLinks, true);
+    }
+
+    @WorkerThread
+    @NonNull
+    private static List<Path> create(@NonNull @TarType String type, @NonNull Path source, @NonNull Path dest,
+                                     @NonNull String destFilePrefix, @Nullable String[] filters,
+                                     @Nullable Long splitSize, @Nullable String[] exclude, boolean followLinks,
+                                     boolean durableWrites)
+            throws IOException {
+        try (SplitOutputStream sos = new SplitOutputStream(dest, destFilePrefix,
+                splitSize == null ? DEFAULT_SPLIT_SIZE : splitSize, durableWrites);
              BufferedOutputStream bos = new BufferedOutputStream(sos);
              OutputStream os = createCompressedStream(bos, type)) {
             try (TarArchiveOutputStream tos = new TarArchiveOutputStream(os)) {

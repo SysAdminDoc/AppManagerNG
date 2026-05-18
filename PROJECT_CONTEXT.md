@@ -7,11 +7,11 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 129**. Iter-129 shipped the scheduled
-> backup newest-age gate: Settings -> Backup now has a configurable freshness
-> window, `AutoBackupWorker` computes the newest valid backup per package/user,
-> skips only packages whose newest backup is still fresh, and reports
-> skipped-recent counts in scheduled-backup results.
+> Last consolidated: **2026-05-18 iter 130**. Iter-130 shipped CIFS/SMB backup
+> streaming hardening: backup tar creation now opts into durable split-stream
+> writes, bounds SAF-provider chunks to 256 KiB, fsyncs descriptor-backed chunks,
+> verifies final split byte counts, and preserves split-stream round-trip
+> regression coverage.
 >
 > Previous consolidated baseline: **2026-05-17 pass 39**. The 2026-05-17 walk-away sequence now has
 > thirty-nine local passes: foundation, source-fix/architecture follow-through, Android-17 audit

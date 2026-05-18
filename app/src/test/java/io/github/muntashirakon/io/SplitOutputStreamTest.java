@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.io;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import androidx.annotation.NonNull;
@@ -12,11 +13,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +56,36 @@ public class SplitOutputStreamTest {
         List<String> expectedHashes = getExpectedHashes();
         List<String> actualHashes = getActualHashes();
         assertEquals(expectedHashes, actualHashes);
+    }
+
+    @Test
+    public void writeSplitsLargeProviderBufferAndRoundTrips() throws Exception {
+        Path tmpPath = Paths.get("/tmp");
+        String filePrefix = "am_split_output_" + System.nanoTime();
+        byte[] payload = "abcdefghijkl".getBytes(StandardCharsets.UTF_8);
+        List<Path> files;
+        try (SplitOutputStream outputStream = new SplitOutputStream(tmpPath, filePrefix, 5)) {
+            outputStream.write(payload);
+            files = outputStream.getFiles();
+        }
+
+        assertEquals(3, files.size());
+        assertEquals(5, files.get(0).length());
+        assertEquals(5, files.get(1).length());
+        assertEquals(2, files.get(2).length());
+        assertArrayEquals(payload, readAll(files));
+        for (Path file : files) {
+            junkFiles.add(new File(file.getFilePath()));
+        }
+    }
+
+    @Test
+    public void zeroLengthWriteDoesNotCreateEmptySplit() throws Exception {
+        try (SplitOutputStream outputStream = new SplitOutputStream(Paths.get("/tmp"),
+                "am_split_zero_" + System.nanoTime(), 5)) {
+            outputStream.write(new byte[0]);
+            assertEquals(0, outputStream.getFiles().size());
+        }
     }
 
     @NonNull
@@ -94,5 +127,15 @@ public class SplitOutputStreamTest {
             junkFiles.add(file);
         }
         return actualHashes;
+    }
+
+    private static byte[] readAll(List<Path> files) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        for (Path file : files) {
+            try (InputStream inputStream = file.openInputStream()) {
+                IoUtils.copy(inputStream, outputStream);
+            }
+        }
+        return outputStream.toByteArray();
     }
 }
