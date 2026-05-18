@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Scheduled auto-backup core (2026-05-18)
+
+- Added a WorkManager-backed scheduled backup engine with a daily time-of-day
+  trigger plus charging and network constraints.
+- Settings -> Backup now exposes scheduled auto-backup enablement, time,
+  require-charging, network condition, run-now, and last-run/result status
+  controls.
+- Scheduled runs use the existing backup engine over installed packages with
+  the current backup options plus multi-backup naming, then record and notify
+  success, partial success, or failure.
+- Pinned WorkManager at 2.10.5 and compile against the existing Guava runtime
+  for WorkManager's exposed `ListenableFuture` API while keeping AppManagerNG's
+  API-21 floor.
+- Added focused JVM coverage for daily delay rollover, schedule value clamping,
+  and WorkManager network constraint mapping.
+
 ### Added — Dhizuku provider diagnostics (2026-05-18)
 
 - Added a no-dependency Dhizuku provider probe that detects the installed

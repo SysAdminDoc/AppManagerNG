@@ -2363,6 +2363,38 @@
     <!-- Export-to-Upstream-AM Compat Profile (Next/T11) -->
     <string name="pref_export_upstream_compat">Export for upstream App Manager</string>
     <string name="profile_export_upstream_compat_done">Exported in upstream-AM-compatible form</string>
+    <!-- Scheduled auto-backup (T6/Next) -->
+    <string name="pref_backup_schedule_enabled">Scheduled auto-backup</string>
+    <string name="pref_backup_schedule_enabled_msg">Run a daily WorkManager backup for installed apps using the current backup options.</string>
+    <string name="pref_backup_schedule_time">Backup time</string>
+    <string name="pref_backup_schedule_require_charging">Require charging</string>
+    <string name="pref_backup_schedule_require_charging_msg">Only run the scheduled backup while the device is charging.</string>
+    <string name="pref_backup_schedule_network">Network condition</string>
+    <string name="pref_backup_schedule_network_not_required">No network required</string>
+    <string name="pref_backup_schedule_network_connected">Any network</string>
+    <string name="pref_backup_schedule_network_unmetered">Unmetered network</string>
+    <string name="pref_backup_schedule_run_now">Run scheduled backup now</string>
+    <string name="pref_backup_schedule_run_now_msg">Queue one immediate run with the scheduled-backup engine.</string>
+    <string name="pref_backup_schedule_run_now_queued">Scheduled backup queued</string>
+    <string name="pref_backup_schedule_status">Schedule status</string>
+    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%5$s</xliff:g></string>
+    <string name="pref_backup_schedule_state_enabled">Enabled</string>
+    <string name="pref_backup_schedule_state_disabled">Disabled</string>
+    <string name="pref_backup_schedule_charging_required">Required</string>
+    <string name="pref_backup_schedule_charging_not_required">Not required</string>
+    <string name="pref_backup_schedule_never_run">Last run: never</string>
+    <string name="pref_backup_schedule_last_run">Last run: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g> - <xliff:g id="result" example="Backed up 3 apps">%2$s</xliff:g></string>
+    <string name="auto_backup_notification_channel">Scheduled backup</string>
+    <string name="auto_backup_notification_title">Scheduled backup</string>
+    <string name="auto_backup_running">Backing up installed apps</string>
+    <string name="auto_backup_result_disabled">Schedule disabled</string>
+    <string name="auto_backup_result_no_apps">No installed apps found to back up</string>
+    <plurals name="auto_backup_result_success">
+        <item quantity="one">Backed up %1$d app</item>
+        <item quantity="other">Backed up %1$d apps</item>
+    </plurals>
+    <string name="auto_backup_result_partial">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed</string>
+    <string name="auto_backup_result_failed">Scheduled backup failed: <xliff:g id="reason" example="No backup volume">%1$s</xliff:g></string>
     <!-- Backup retention policy (T6/Next) -->
     <string name="pref_backup_retention_max_count">Max backups per app</string>
     <string name="pref_backup_retention_max_age">Max backup age</string>

@@ -6,6 +6,7 @@ import static io.github.muntashirakon.AppManager.utils.UIUtils.getSecondaryText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
 import android.app.Activity;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,6 +30,7 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialSharedAxis;
 
+import java.text.DateFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +41,7 @@ import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.convert.ImportType;
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
@@ -259,6 +262,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                             .show();
                     return true;
                 });
+        bindScheduledBackupPreferences();
         // Backup retention policy: per-app count cap + age cap + manual prune-now.
         Preference retentionCount = requirePreference("backup_retention_max_count");
         Preference retentionAge = requirePreference("backup_retention_max_age");
@@ -335,6 +339,119 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     .show();
             return true;
         });
+    }
+
+    private void bindScheduledBackupPreferences() {
+        SwitchPreferenceCompat scheduleEnabled = requirePreference("backup_schedule_enabled");
+        Preference scheduleTime = requirePreference("backup_schedule_time");
+        SwitchPreferenceCompat scheduleRequireCharging = requirePreference("backup_schedule_require_charging");
+        Preference scheduleNetwork = requirePreference("backup_schedule_network");
+        Preference scheduleRunNow = requirePreference("backup_schedule_run_now");
+        Preference scheduleStatus = requirePreference("backup_schedule_status");
+        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+        scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
+        scheduleRequireCharging.setChecked(Prefs.BackupRestore.isScheduledBackupChargingRequired());
+        scheduleEnabled.setOnPreferenceChangeListener((preference, newValue) -> {
+            Prefs.BackupRestore.setScheduledAutoBackupEnabled((Boolean) newValue);
+            AutoBackupScheduler.scheduleOrCancel(requireContext());
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            return true;
+        });
+        scheduleTime.setOnPreferenceClickListener(preference -> {
+            int hour = Prefs.BackupRestore.getScheduledBackupHour();
+            int minute = Prefs.BackupRestore.getScheduledBackupMinute();
+            new TimePickerDialog(requireContext(), (view, selectedHour, selectedMinute) -> {
+                Prefs.BackupRestore.setScheduledBackupHour(selectedHour);
+                Prefs.BackupRestore.setScheduledBackupMinute(selectedMinute);
+                AutoBackupScheduler.scheduleOrCancel(requireContext());
+                updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            }, hour, minute, android.text.format.DateFormat.is24HourFormat(requireContext())).show();
+            return true;
+        });
+        scheduleRequireCharging.setOnPreferenceChangeListener((preference, newValue) -> {
+            Prefs.BackupRestore.setScheduledBackupChargingRequired((Boolean) newValue);
+            AutoBackupScheduler.scheduleOrCancel(requireContext());
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            return true;
+        });
+        scheduleNetwork.setOnPreferenceClickListener(preference -> {
+            int[] values = {
+                    AutoBackupScheduler.NETWORK_NOT_REQUIRED,
+                    AutoBackupScheduler.NETWORK_CONNECTED,
+                    AutoBackupScheduler.NETWORK_UNMETERED,
+            };
+            CharSequence[] labels = getScheduledBackupNetworkLabels();
+            int current = Prefs.BackupRestore.getScheduledBackupNetworkType();
+            int checked = indexOf(values, current);
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_backup_schedule_network)
+                    .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                        Prefs.BackupRestore.setScheduledBackupNetworkType(values[which]);
+                        AutoBackupScheduler.scheduleOrCancel(requireContext());
+                        updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        scheduleRunNow.setOnPreferenceClickListener(preference -> {
+            AutoBackupScheduler.enqueueManualRun(requireContext());
+            io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
+                    R.string.pref_backup_schedule_run_now_queued);
+            updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleStatus);
+            return true;
+        });
+    }
+
+    private void updateScheduledBackupSummaries(@NonNull Preference scheduleTime,
+                                                @NonNull Preference scheduleNetwork,
+                                                @NonNull Preference scheduleStatus) {
+        String time = AutoBackupScheduler.formatScheduleTime(requireContext());
+        String network = getScheduledBackupNetworkLabel(Prefs.BackupRestore.getScheduledBackupNetworkType());
+        String charging = getString(Prefs.BackupRestore.isScheduledBackupChargingRequired()
+                ? R.string.pref_backup_schedule_charging_required
+                : R.string.pref_backup_schedule_charging_not_required);
+        scheduleTime.setSummary(time);
+        scheduleNetwork.setSummary(network);
+        long lastRun = Prefs.BackupRestore.getScheduledBackupLastRun();
+        String lastResult = Prefs.BackupRestore.getScheduledBackupLastResult();
+        String lastRunSummary;
+        if (lastRun <= 0) {
+            lastRunSummary = getString(R.string.pref_backup_schedule_never_run);
+        } else {
+            lastRunSummary = getString(R.string.pref_backup_schedule_last_run,
+                    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                            .format(new java.util.Date(lastRun)),
+                    lastResult.isEmpty() ? getString(R.string.state_unknown) : lastResult);
+        }
+        scheduleStatus.setSummary(getString(R.string.pref_backup_schedule_status_msg,
+                getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
+                        ? R.string.pref_backup_schedule_state_enabled
+                        : R.string.pref_backup_schedule_state_disabled),
+                time, charging, network, lastRunSummary));
+    }
+
+    @NonNull
+    private CharSequence[] getScheduledBackupNetworkLabels() {
+        return new CharSequence[]{
+                getString(R.string.pref_backup_schedule_network_not_required),
+                getString(R.string.pref_backup_schedule_network_connected),
+                getString(R.string.pref_backup_schedule_network_unmetered),
+        };
+    }
+
+    @NonNull
+    private String getScheduledBackupNetworkLabel(int networkType) {
+        switch (networkType) {
+            case AutoBackupScheduler.NETWORK_CONNECTED:
+                return getString(R.string.pref_backup_schedule_network_connected);
+            case AutoBackupScheduler.NETWORK_UNMETERED:
+                return getString(R.string.pref_backup_schedule_network_unmetered);
+            case AutoBackupScheduler.NETWORK_NOT_REQUIRED:
+            default:
+                return getString(R.string.pref_backup_schedule_network_not_required);
+        }
     }
 
     private static int indexOf(int[] values, int target) {
