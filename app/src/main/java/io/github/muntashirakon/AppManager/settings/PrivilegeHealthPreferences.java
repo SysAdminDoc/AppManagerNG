@@ -27,6 +27,8 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
+import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
+import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.AppManager.runner.KernelSuDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
@@ -448,10 +450,64 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mModeDoctorPref.setEnabled(true);
         mModeDoctorPref.setSummary(R.string.privilege_health_mode_doctor_summary);
         Context context = getContext();
-        if (context != null) {
-            UIUtils.displayCopyableErrorDialog(context,
-                    getString(R.string.privilege_health_mode_doctor_title), report);
-        }
+        if (context == null) return;
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.privilege_health_mode_doctor_title)
+                .setMessage(report)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.copy, (d, w) -> {
+                    io.github.muntashirakon.AppManager.utils.ClipboardUtils
+                            .copyToClipboard(context, "mode-doctor", report);
+                    UIUtils.displayShortToast(R.string.copied_to_clipboard);
+                })
+                .setNegativeButton(R.string.privilege_health_mode_doctor_share_with_bundle,
+                        (d, w) -> shareModeDoctorWithSupportBundle(report))
+                .show();
+    }
+
+    /**
+     * Build a Support Info Bundle with the Mode Doctor probe report inlined as
+     * a preamble, then hand the file off to the system share chooser.
+     * EI-08 follow-up: replaces the previously-separate flows where the user
+     * had to copy the doctor report and grab the bundle by hand.
+     */
+    private void shareModeDoctorWithSupportBundle(@NonNull String report) {
+        Context context = getContext();
+        if (context == null) return;
+        Context appContext = context.getApplicationContext();
+        Toast.makeText(context, R.string.privilege_health_mode_doctor_share_preparing,
+                Toast.LENGTH_SHORT).show();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Path bundle;
+            try {
+                bundle = SupportInfoBundle.writeTextBundle(appContext, buildSupportPreamble(report));
+            } catch (Throwable t) {
+                ThreadUtils.postOnMainThread(() -> {
+                    Context current = getContext();
+                    if (current != null) {
+                        Toast.makeText(current, R.string.diagnostic_failed, Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
+            Intent intent = SupportInfoBundle.buildShareIntent(appContext, bundle);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ThreadUtils.postOnMainThread(() -> {
+                Context current = getContext();
+                if (current == null) return;
+                try {
+                    current.startActivity(Intent.createChooser(intent,
+                            current.getString(R.string.support_info_bundle_share_title)));
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(current, R.string.no_apps_to_handle, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    @NonNull
+    private static String buildSupportPreamble(@NonNull String modeDoctorReport) {
+        return "Mode Doctor probe\n=================\n" + modeDoctorReport;
     }
 
     private void showBootstrapSmokeTestResult(@NonNull String signature) {
