@@ -344,6 +344,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.usesPlayAppSigning = PackageUtils.usesPlayAppSigning(applicationInfo);
             tagCloud.developerVerificationStatus = DeveloperVerificationCompat
                     .getVerificationStatus(getApplication(), packageName);
+            tagCloud.packageVisibility = PackageVisibilityInfo.from(packageInfo);
             populateSigningCertInfo(tagCloud, packageInfo, isExternalApk);
             if (ThreadUtils.isInterrupted()) {
                 return;
@@ -595,6 +596,9 @@ public class AppInfoViewModel extends AndroidViewModel {
         public boolean usesPlayAppSigning;
         @DeveloperVerificationCompat.VerificationStatus
         public int developerVerificationStatus = DeveloperVerificationCompat.STATUS_UNAVAILABLE;
+        /** NF-11 — package-visibility signal: declares QUERY_ALL_PACKAGES and/or non-empty <queries>. */
+        @Nullable
+        public PackageVisibilityInfo packageVisibility;
         public List<Backup> backups;
         public boolean isBatteryOptimized;
         public int netPolicies;
