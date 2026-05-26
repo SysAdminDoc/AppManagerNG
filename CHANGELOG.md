@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - APK bundle header parser (T19-C follow-up, 2026-05-26)
+
+- Added `ApkBundleHeaderParser.parse(bytes)` /
+  `parse(InputStream)` in `oneclickops/`. Reads only the ZIP central
+  directory entry names (never payloads) so a gigabyte-class XAPK can
+  be fingerprinted in O(entries) without unpacking.
+- Format heuristics: XAPK (manifest.json + APKs), APKM (info.json +
+  APKs), APKS (base.apk / config splits / BundleConfig.pb / toc.pb),
+  single APK (AndroidManifest.xml + classes.dex), or UNKNOWN
+  otherwise. Returns a `Header` with hasBaseApk, splitApkCount,
+  hasManifestJson, hasInfoJson, hasBundleConfig, and hasObbData so
+  the duplicate finder downstream can group bundles by structural
+  shape before fingerprinting payload.
+- 13 focused JVM tests cover Bundletool APKS, APKMirror APKM,
+  APKPure XAPK (with `Android/obb/` data), single APK, multidex
+  classes2/3.dex, config-only split sets (no base.apk),
+  case-insensitive matching (UPPERCASE entry names), non-ZIP input,
+  empty / short-input rejection, the null/short ZIP-magic check, the
+  empty-entry-set safety, and the toc.pb-as-APKS detection.
+- PackageManager.getPackageArchiveInfo + signing-cert extraction
+  and the One-Click Ops UI remain on the T19-C row.
+
 ### Added - MemorySnapshotComposer for App Details memory panel (T20-C follow-up, 2026-05-26)
 
 - Added `MemorySnapshotComposer.compose(meminfo, gfxinfo, procStatus,
