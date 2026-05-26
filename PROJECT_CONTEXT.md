@@ -7,16 +7,15 @@
 > primary documents (ROADMAP.md, CHANGELOG.md, CLAUDE.md, the audit/research dirs) are
 > the source of truth and they update faster than this index does.
 >
-> Last consolidated: **2026-05-18 iter 141**. Iter-141 shipped persistent
-> `adb tcpip 5555` awareness in onboarding: the wizard probes
-> `127.0.0.1:5555`, shows a detected fixed-TCP session, and connects through
-> the existing ADB-over-TCP LocalServer path without forcing Wireless-debugging
-> pairing first.
+> Last consolidated: **2026-05-26 roadmap consolidation**. `ROADMAP.md` is now
+> the single active checklist; the old long-form roadmap and 2026-05-25 research
+> plans are archived under `docs/roadmap/archive/`. Latest code baseline before
+> this pass: `7febf06` on `main`.
 >
-> Previous consolidated baseline: **2026-05-18 iter 140**. Iter-140 shipped AES
-> backup metadata v7: new AES-mode backups derive a per-archive content key from
-> the single file-backed `am_keystore.bks` AES master key and archive IV through
-> HKDF-SHA256, while v6-and-older restores keep the historical key path.
+> Previous consolidated baseline: **2026-05-25 iter 146**. Iter-146 shipped
+> filter-finder architecture docs, the routine-scheduler contract, and the
+> permissions catalogue after iter-145 landed the NF-09 trigger data layer,
+> saved filter presets, and the keep-open batch hint.
 > Run `git status --short --branch`
 > for the exact current branch/ahead state before starting new code work.
 
@@ -34,7 +33,7 @@ app-ops editing, hidden-API reach), but rebrand under `io.github.sysadmindoc.App
 ship a Material 3 + onboarding-led UX, and treat **Shizuku as a first-class privilege
 path** alongside root and ADB.
 
-Current release: **v0.4.2** (2026-05-13). Code 6.
+Current release: **v0.5.0** (2026-05-25). Code 7.
 
 License: **GPL-3.0-or-later**, REUSE-compliant per-file SPDX headers; vendored deps keep
 their own licenses (Apache-2.0, BSD-2/3, CC-BY-SA-4.0, GPL-2.0, ISC, MIT, WTFPL).
@@ -50,8 +49,9 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`CLAUDE.md`](CLAUDE.md) | 129 | Stack, build commands, origin, gotchas, version status. Tool-specific working notes. |
 | [`AGENTS.md`](AGENTS.md) | 9 | Pointer to `CLAUDE.md` + shared codex memory dir. |
 | [`README.md`](README.md) | 185 | Public user-facing surface — features, install, signing fingerprint. |
-| [`ROADMAP.md`](ROADMAP.md) | large | The plan. Tier-organised (Now / Next / Later / Under Consideration / Rejected) with an Engineering Debt Register, Upstream Sync Strategy, and iter-18 -> iter-99 follow-through context inline. Cites **363 numbered external sources** in a Source Appendix at the bottom. |
-| [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" section currently holds 2026-05-14 -> 2026-05-18 shipped work. |
+| [`ROADMAP.md`](ROADMAP.md) | active | Single live checklist for remaining work. Completed items move to `CHANGELOG.md`; historical research moves to `docs/roadmap/archive/`. |
+| [`CHANGELOG.md`](CHANGELOG.md) | large | Per-release notes back to v0.1.0; "Unreleased" currently holds post-v0.5.0 work from 2026-05-25 onward. |
+| [`docs/roadmap/`](docs/roadmap/) | archive index | Historical roadmap and research-plan archive after the 2026-05-26 consolidation. |
 | [`docs/research/`](docs/research/) | 4 files | `2026-05-02-android-power-tools.md`, `2026-05-09-capability-extension.md`, `2026-05-09-observability-testing-audit.md`, `2026-05-09-roadmap-extension-phase-2.md`. Plus `iter-6-delta.md`. |
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
 | [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
@@ -152,7 +152,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`.ai/research/2026-05-18-iter-140/`](.ai/research/2026-05-18-iter-140/) | iter 140 | AES backup archive-key derivation: metadata v7 HKDF-SHA256 derives per-archive AES keys from the single BKS master key while preserving old restore paths. |
 | [`.ai/research/2026-05-18-iter-141/`](.ai/research/2026-05-18-iter-141/) | iter 141 | Persistent ADB tcpip setup path: onboarding probes `127.0.0.1:5555`, surfaces **Use tcpip 5555**, and reuses the ADB-over-TCP LocalServer connection path. |
 
-**The full external-source corpus the project relies on is in `ROADMAP.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
+**The legacy external-source corpus is archived in `docs/roadmap/archive/ROADMAP-legacy-through-2026-05-25.md` -> "Source Appendix" (S01-S364).** Do not start a new external-research pass without scanning that table first — most modern Android-power-tool ground has been mined.
 
 ---
 
@@ -625,9 +625,9 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 (See [`ROADMAP.md`](ROADMAP.md) for the full picture — these are just the headline targets.)
 
-- **v0.5.0** — Settings reorganization by task; global in-app search; contextual help tooltips; **in-app changelog viewer** (replaces bundled upstream v4.0.5 changelog).
-- **v0.6.0** — Rootless Power: Shizuku integration polish + wireless ADB auto-pairing polish + rootless debloat. (Most of the engine work shipped 2026-05-14 — v0.6.0 is the user-visible roll-up.)
-- **Now / Eng-Debt** — Android 17 device verification for Shizuku's fixed-version floor and 16 KB page-size install testing on a real/emulated 16 KB image. The hidden-API harness shipped in pass 29, the Shizuku clear-data warning shipped in pass 30, the freeze / operation audit-log UX closure shipped in pass 31, and Android 17 16 KB native-page remediation shipped in pass 32.
+- **v0.5.x** — background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
+- **v0.6.0** — Routine scheduler executor/UI on top of the shipped trigger data layer, plus Premium Polish Phase 2.
+- **Now / Eng-Debt** — WorkManager quota / stop-reason instrumentation, Android 17 device verification for Shizuku and 16 KB page-size behavior, and the minSdk-23 / Material 1.14 decision.
 - **Distribution next** — IzzyOnDroid listing, F-Droid listing, Accrescent listing. All gated on the rename being public + reproducible builds (both done).
 
 ---
@@ -636,7 +636,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 
 - This is an **index**, not a memory dump. If you have a new fact to record, ask first whether it belongs in `ROADMAP.md` (planned work), `CHANGELOG.md` (shipped work), `docs/audits/<date>-<topic>.md` (audit verdict), `docs/research/<date>-<topic>.md` (research delta), or `CLAUDE.md` (tool gotcha). Only update this file when the **entry point** changes — e.g. a new top-level directory, a new mandatory read order, a load-bearing convention flip.
 - Tool-specific instruction files (`CLAUDE.md`, `AGENTS.md`) **must not be merged away**. They remain the tool entry points; this file is the project-state consolidation they both point at.
-- Source citations live in the `ROADMAP.md` Source Appendix (S01–S340). Add new sources there, then reference by `[Sxxx]` in roadmap rows / changelog entries / audit docs.
+- Source citations from the legacy research run live in `docs/roadmap/archive/ROADMAP-legacy-through-2026-05-25.md` Source Appendix. Add new source-heavy research to `docs/research/` or a dated audit, then summarize the actionable task in `ROADMAP.md`.
 
 ---
 

@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Roadmap consolidation (2026-05-26)
+
+- Replaced the root roadmap with a single active checklist for the remaining
+  pass-2 NF/EI backlog, v0.6.0 blockers, distribution tasks, platform
+  verification, and accessibility audits.
+- Archived the previous long-form roadmap and both 2026-05-25 research feature
+  plans under [`docs/roadmap/archive/`](docs/roadmap/archive/) so completed
+  work lives in the changelog and open work lives in one file.
+- Refreshed `README.md` and `PROJECT_CONTEXT.md` to point at v0.5.0 and the
+  consolidated roadmap/archive split.
+
 ### Added — Architecture docs 04 / 05 + permissions catalogue (iter-146, 2026-05-25)
 
 - New [`docs/architecture/04-filter-finder.md`](docs/architecture/04-filter-finder.md)
@@ -297,9 +308,10 @@ Full per-slice notes follow.
 - Replaced `app/src/main/res/raw/changelog.xml` with NG-native content covering
   v0.1.0 -> v0.4.2 plus a note that `Unreleased` work lands as v0.5.0; the parser
   no longer references the upstream DTD URL at runtime.
-- README `Roadmap` block now points at the active backlog
-  (`RESEARCH_FEATURE_PLAN_2026-05-25.md`), marks v0.5.0 as in flight with the
-  Iter-91 -> Iter-142 batch summary, and bills v0.6.0 as Rootless Power.
+- README `Roadmap` block pointed at the then-active backlog
+  (`docs/roadmap/archive/RESEARCH_FEATURE_PLAN_2026-05-25.md` after the
+  2026-05-26 consolidation), marked v0.5.0 as in flight with the Iter-91 ->
+  Iter-142 batch summary, and billed v0.6.0 as Rootless Power.
 - `CLAUDE.md` `Status` section now points at `PROJECT_CONTEXT.md` /
   `ROADMAP.md` / `CHANGELOG.md` / the iter research dirs for current state
   instead of stopping at factory-iter-7.
