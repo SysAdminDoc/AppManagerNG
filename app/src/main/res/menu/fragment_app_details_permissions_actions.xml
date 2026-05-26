@@ -16,6 +16,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_open_privacy_dashboard"
+        android:icon="@drawable/ic_security"
+        android:title="@string/action_open_privacy_dashboard"
+        app:showAsAction="never" />
+
+    <item
         android:icon="@drawable/ic_sort"
         android:title="@string/sort"
         app:showAsAction="never">
