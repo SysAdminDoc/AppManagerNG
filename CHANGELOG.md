@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Code Editor large-font status row (2026-05-26)
+
+- Code Editor status fields now use true weighted columns so line, indent, and
+  language labels can wrap instead of crowding at 200 percent font scale.
+- The editor lock toggle now keeps a 48 dp touch target with a readable icon
+  size instead of shrinking to the status-text height.
+- Extended the accessibility layout contract test to pin the status row's
+  large-font layout constraints.
+
 ### Changed — Search control accessibility labels (2026-05-26)
 
 - Help search and Code Editor search navigation buttons now expose explicit
