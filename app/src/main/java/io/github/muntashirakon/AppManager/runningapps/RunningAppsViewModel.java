@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
@@ -37,6 +38,7 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.runner.Runner;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.scanner.vt.VirusTotal;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -263,22 +265,40 @@ public class RunningAppsViewModel extends AndroidViewModel {
     public void preventBackgroundRun(@NonNull ApplicationInfo info) {
         mExecutor.submit(() -> {
             try {
+                int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    appOpsService.setMode(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND, info.uid, info.packageName,
-                            AppOpsManager.MODE_IGNORED);
+                for (int op : appOps) {
+                    appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED);
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    appOpsService.setMode(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND, info.uid, info.packageName,
-                            AppOpsManager.MODE_IGNORED);
+                if (appOps.length > 0) {
+                    int userId = UserHandleHidden.getUserId(info.uid);
+                    try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(info.packageName, userId)) {
+                        for (int op : appOps) {
+                            cb.setAppOp(op, AppOpsManager.MODE_IGNORED);
+                        }
+                    }
                 }
-                // TODO: 14/2/23 Store it to the rules
                 mPreventBackgroundRunResult.postValue(new Pair<>(info, true));
-            } catch (RemoteException e) {
+            } catch (RemoteException | SecurityException e) {
                 e.printStackTrace();
                 mPreventBackgroundRunResult.postValue(new Pair<>(info, false));
             }
         });
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static int[] getBackgroundRunAppOpsForSdk(int sdkInt) {
+        if (sdkInt < Build.VERSION_CODES.N) {
+            return new int[0];
+        }
+        if (sdkInt < Build.VERSION_CODES.P) {
+            return new int[]{AppOpsManagerCompat.OP_RUN_IN_BACKGROUND};
+        }
+        return new int[]{
+                AppOpsManagerCompat.OP_RUN_IN_BACKGROUND,
+                AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND,
+        };
     }
 
     public LiveData<Pair<ApplicationInfo, Boolean>> observePreventBackgroundRun() {

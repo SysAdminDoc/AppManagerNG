@@ -46,8 +46,9 @@ public final class BatchKeepOpenHint {
 
     /** Show the hint with the default copy. */
     @MainThread
-    public static void show(@NonNull Activity activity) {
-        show(activity, R.string.batch_keep_open_default);
+    @Nullable
+    public static Snackbar show(@NonNull Activity activity) {
+        return show(activity, R.string.batch_keep_open_default);
     }
 
     /**

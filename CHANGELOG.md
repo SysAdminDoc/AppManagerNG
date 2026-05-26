@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Running Apps rules + multi-volume cache trim (2026-05-26)
+
+- Running Apps -> "prevent background run" now persists the applied background
+  AppOps into `ComponentsBlocker` rules, matching the batch disable-background
+  path so the setting survives rule re-apply.
+- One-Click Ops cache trimming now attempts internal storage first and then
+  each writable storage volume UUID independently; one volume failure is logged
+  without skipping the remaining volumes.
+- Added focused Robolectric coverage for the SDK-to-background-AppOps mapping
+  and the cache-trim volume UUID ordering/de-duplication helper.
+- Repaired local validation blockers encountered while testing this batch:
+  positional accessibility string formats, About-preferences XML namespace,
+  compile-safe debloat role-holder reflection, the missing `androidx.test:core`
+  unit-test dependency, and the default `BatchKeepOpenHint.show()` return value.
+
 ### Changed — Roadmap consolidation (2026-05-26)
 
 - Replaced the root roadmap with a single active checklist for the remaining
