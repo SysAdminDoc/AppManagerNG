@@ -2,7 +2,9 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-18 — Iter-141 shipped the T5 **Persistent ADB tcpip 5555 Detection in Shizuku Setup** row: onboarding now probes `127.0.0.1:5555`, surfaces a detected fixed `adb tcpip` session, and lets users connect through ADB-over-TCP without redoing Android Wireless debugging pairing.
+**Last updated:** 2026-05-25 — Iter-142 active backlog consolidated. The live checklist for Iter-142+ work lives in [`RESEARCH_FEATURE_PLAN_2026-05-25.md`](RESEARCH_FEATURE_PLAN_2026-05-25.md) §Prioritized Roadmap (NF-01..NF-18 + EI-01..EI-10, P0→P3). Tick boxes there as items ship; this ROADMAP retains the long-form T1–T21 source-of-truth and Eng-Debt Register.
+
+**Prior (iter-141, 2026-05-18):** Shipped the T5 **Persistent ADB tcpip 5555 Detection in Shizuku Setup** row: onboarding now probes `127.0.0.1:5555`, surfaces a detected fixed `adb tcpip` session, and lets users connect through ADB-over-TCP without redoing Android Wireless debugging pairing.
 
 **Prior (iter-140, 2026-05-18):** Shipped the T9 **Keystore 50K Cap — HKDF-from-Master Backup Key Derivation** row: new AES-mode backups now use metadata v7 and derive a per-archive AES-GCM key from the single `am_keystore.bks` master key plus the archive IV.
 

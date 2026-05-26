@@ -19,6 +19,13 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="component_rules_editor"
+        app:title="@string/pref_component_rules_editor"
+        app:summary="@string/pref_component_rules_editor_msg"
+        android:fragment="io.github.muntashirakon.AppManager.settings.ComponentRulesPreferences"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="import_export_rules"
         app:title="@string/pref_import_export_blocking_rules"
         app:summary="@string/pref_import_export_blocking_rules_msg"
