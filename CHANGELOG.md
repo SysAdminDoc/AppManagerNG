@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Documentation - minSdk 21 -> 23 decision memo (2026-05-26)
+
+- Added `docs/policy/2026-05-26-minsdk-23-decision.md` with the explicit
+  hold-the-floor recommendation, decision criteria, named forced-decision
+  triggers, and the step-by-step floor-lift plan if any trigger fires.
+- ROADMAP row "Material Components 1.14 / minSdk 23 decision" is now closed
+  by the recorded decision; the dependency ledger in
+  `docs/policy/minsdk-21-ceiling.md` remains the running cost-of-holding
+  reference.
+
 ### Added - Android 17 emulator CI gate (2026-05-26)
 
 - Added `.github/workflows/android17-emulator.yml`, a weekly +
