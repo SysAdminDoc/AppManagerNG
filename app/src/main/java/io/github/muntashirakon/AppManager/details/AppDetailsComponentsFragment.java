@@ -796,11 +796,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 if (FeatureController.isInterceptorEnabled()) {
                     holder.launchBtn.setOnLongClickListener(v -> {
                         boolean needRoot = mCanStartAnyActivity && (!isExported || !SelfPermissions.checkSelfOrRemotePermission(activityInfo.permission));
-                        Intent intent = new Intent(activity, ActivityInterceptor.class);
-                        intent.putExtra(ActivityInterceptor.EXTRA_PACKAGE_NAME, mPackageName);
-                        intent.putExtra(ActivityInterceptor.EXTRA_CLASS_NAME, activityName);
-                        intent.putExtra(ActivityInterceptor.EXTRA_USER_HANDLE, mUserId);
-                        intent.putExtra(ActivityInterceptor.EXTRA_ROOT, needRoot);
+                        Intent intent = ActivityInterceptor.getLaunchIntent(activity, mPackageName, activityName,
+                                mUserId, needRoot, null, Intent.FLAG_ACTIVITY_NEW_TASK, null);
                         startActivity(intent);
                         return true;
                     });

@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.intercept;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -30,6 +31,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.collection.LruCache;
 import androidx.collection.SimpleArrayMap;
@@ -85,10 +87,13 @@ public class ActivityInterceptor extends BaseActivity {
     public static final String EXTRA_PACKAGE_NAME = BuildConfig.APPLICATION_ID + ".intent.extra.PACKAGE_NAME";
     public static final String EXTRA_CLASS_NAME = BuildConfig.APPLICATION_ID + ".intent.extra.CLASS_NAME";
     public static final String EXTRA_ACTION = BuildConfig.APPLICATION_ID + ".intent.extra.ACTION";
-    // TODO(29/8/21): Enable getting activity result for activities launched with root
     public static final String EXTRA_ROOT = BuildConfig.APPLICATION_ID + ".intent.extra.ROOT";
     // Root only
     public static final String EXTRA_USER_HANDLE = BuildConfig.APPLICATION_ID + ".intent.extra.USER_HANDLE";
+    public static final String EXTRA_INTENT_FLAGS = BuildConfig.APPLICATION_ID + ".intent.extra.INTENT_FLAGS";
+    public static final String EXTRA_INTENT_EXTRAS = BuildConfig.APPLICATION_ID + ".intent.extra.INTENT_EXTRAS";
+    public static final String EXTRA_LAUNCH_RESULT_CODE = BuildConfig.APPLICATION_ID + ".intent.extra.LAUNCH_RESULT_CODE";
+    public static final String EXTRA_LAUNCH_RESULT_ROUTE = BuildConfig.APPLICATION_ID + ".intent.extra.LAUNCH_RESULT_ROUTE";
     // Whether to trigger the Intent on startup, requires `auth` parameter to be set
     public static final String EXTRA_TRIGGER_ON_START = BuildConfig.APPLICATION_ID + ".intent.extra.TRIGGER_ON_START";
     public static final String EXTRA_AUTH = BuildConfig.APPLICATION_ID + ".intent.extra.AUTH";
@@ -299,6 +304,10 @@ public class ActivityInterceptor extends BaseActivity {
     private Integer mLastResultCode = null;
     @Nullable
     private Intent mLastResultIntent = null;
+    @Nullable
+    private Integer mLastLaunchResultCode = null;
+    @Nullable
+    private String mLastLaunchResultRoute = null;
 
     private final LruCache<String, CharSequence> mPackageLabelMap = new LruCache<>(16);
 
@@ -309,6 +318,8 @@ public class ActivityInterceptor extends BaseActivity {
                 Intent data = result.getData();
                 mLastResultCode = result.getResultCode();
                 mLastResultIntent = result.getData();
+                mLastLaunchResultCode = null;
+                mLastLaunchResultRoute = null;
 
                 // Forward the result of the activity to the caller activity
                 setResult(result.getResultCode(), data);
@@ -327,8 +338,12 @@ public class ActivityInterceptor extends BaseActivity {
         Intent intent = new Intent(getIntent());
         mUseRoot = Ops.isWorkingUidRoot() && intent.getBooleanExtra(EXTRA_ROOT, false);
         mUserHandle = intent.getIntExtra(EXTRA_USER_HANDLE, UserHandleHidden.myUserId());
+        int initialFlags = intent.getIntExtra(EXTRA_INTENT_FLAGS, 0);
+        Bundle initialExtras = intent.getBundleExtra(EXTRA_INTENT_EXTRAS);
         intent.removeExtra(EXTRA_ROOT);
         intent.removeExtra(EXTRA_USER_HANDLE);
+        intent.removeExtra(EXTRA_INTENT_FLAGS);
+        intent.removeExtra(EXTRA_INTENT_EXTRAS);
         intent.setPackage(null);
         intent.setComponent(null);
         // Get ComponentName if set
@@ -350,8 +365,15 @@ public class ActivityInterceptor extends BaseActivity {
             }
         }
         String action = intent.getStringExtra(EXTRA_ACTION);
+        intent.removeExtra(EXTRA_ACTION);
         if (action != null) {
             intent.setAction(action);
+        }
+        if (initialFlags != 0) {
+            intent.addFlags(initialFlags);
+        }
+        if (initialExtras != null) {
+            intent.putExtras(initialExtras);
         }
         // For shortcut/startup trigger: Need authorization to prevent abuse
         if (intent.getBooleanExtra(EXTRA_TRIGGER_ON_START, false)
@@ -941,6 +963,12 @@ public class ActivityInterceptor extends BaseActivity {
                 result.append(IntentCompat.describeIntent(mLastResultIntent, "RESULT"));
             }
         }
+        if (mLastLaunchResultCode != null) {
+            result.append("\n");
+            result.append("LAUNCH RESULT\t")
+                    .append(formatLaunchResult(mLastLaunchResultRoute, mLastLaunchResultCode))
+                    .append("\n");
+        }
         return result.toString();
     }
 
@@ -951,15 +979,15 @@ public class ActivityInterceptor extends BaseActivity {
                 Intent chooserIntent = Intent.createChooser(intent, mResendIntentButton != null ?
                         mResendIntentButton.getText() : getString(R.string.open));
                 if (needPrivilege) {
-                    // TODO: 4/2/22 Support sending activity result back to the original app
-                    ActivityManagerCompat.startActivity(chooserIntent, mUserHandle);
+                    handlePrivilegedLaunchResult(ActivityManagerCompat.startActivity(chooserIntent, mUserHandle),
+                            "privileged chooser");
                 } else {
                     mIntentLauncher.launch(chooserIntent);
                 }
             } else { // Launch a fixed component
                 if (needPrivilege) {
-                    // TODO: 4/2/22 Support sending activity result back to the original app
-                    ActivityManagerCompat.startActivity(intent, mUserHandle);
+                    handlePrivilegedLaunchResult(ActivityManagerCompat.startActivity(intent, mUserHandle),
+                            "privileged component");
                 } else {
                     try {
                         // FLAG_ACTIVITY_NEW_TASK is incompatible with startActivityForResult():
@@ -969,8 +997,8 @@ public class ActivityInterceptor extends BaseActivity {
                         intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         mIntentLauncher.launch(intent);
                     } catch (SecurityException e) {
-                        // TODO: 4/6/24 Support sending activity result back to the original app
-                        ActivityManagerCompat.startActivity(intent, mUserHandle);
+                        handlePrivilegedLaunchResult(ActivityManagerCompat.startActivity(intent, mUserHandle),
+                                "privileged fallback");
                     }
                 }
             }
@@ -978,6 +1006,49 @@ public class ActivityInterceptor extends BaseActivity {
             Log.e(TAG, th);
             UIUtils.displayLongToast(R.string.error_with_details, th.getClass().getName() + ": " + th.getMessage());
         }
+    }
+
+    private void handlePrivilegedLaunchResult(int launchResult, @NonNull String route) {
+        mLastResultCode = null;
+        mLastResultIntent = null;
+        mLastLaunchResultCode = launchResult;
+        mLastLaunchResultRoute = route;
+
+        Intent result = new Intent();
+        result.putExtra(EXTRA_LAUNCH_RESULT_CODE, launchResult);
+        result.putExtra(EXTRA_LAUNCH_RESULT_ROUTE, route);
+        setResult(RESULT_OK, result);
+
+        refreshUI();
+        UIUtils.displayLongToast("%s: %s", getString(R.string.activity_result),
+                formatLaunchResult(route, launchResult));
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String formatLaunchResult(@Nullable String route, int launchResult) {
+        return (route == null ? "default" : route) + " (" + launchResult + ")";
+    }
+
+    @NonNull
+    public static Intent getLaunchIntent(@NonNull Context context, @NonNull String packageName,
+                                         @NonNull String className, int userHandle, boolean useRoot,
+                                         @Nullable String action, int flags, @Nullable Bundle extras) {
+        Intent intent = new Intent(context, ActivityInterceptor.class);
+        intent.putExtra(EXTRA_PACKAGE_NAME, packageName);
+        intent.putExtra(EXTRA_CLASS_NAME, className);
+        intent.putExtra(EXTRA_USER_HANDLE, userHandle);
+        intent.putExtra(EXTRA_ROOT, useRoot);
+        if (action != null) {
+            intent.putExtra(EXTRA_ACTION, action);
+        }
+        if (flags != 0) {
+            intent.putExtra(EXTRA_INTENT_FLAGS, flags);
+        }
+        if (extras != null && !extras.isEmpty()) {
+            intent.putExtra(EXTRA_INTENT_EXTRAS, extras);
+        }
+        return intent;
     }
 
     @Override
