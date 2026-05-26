@@ -246,8 +246,14 @@ for the original Effort / Dependency context per row.
   `BackupRetentionPolicy.selectVersionDuplicates` + `pruneVersionDuplicates`
   with `DuplicateKeepStrategy.NEWEST` / `OLDEST` and 6 focused JVM tests
   pinning bucket determinism, user-id splitting, missing-versionCode skip,
-  and tie-break ordering. UI / op_history / "keep largest" follow-up tracked
-  here._
+  and tie-break ordering. "Keep largest" landed 2026-05-26 via
+  `DuplicateKeepStrategy.LARGEST` / `LARGEST_THEN_NEWEST`, a
+  `BackupSizeResolver` SAM interface so the selector remains JVM-unit-
+  testable, and a `reclaimableBytes(List<Backup>, BackupSizeResolver)`
+  helper for the UI's "Reclaim X bytes" hint; 5 additional JVM tests
+  cover size-wins, tie-break-by-newest, unknown-size demotion, the
+  null-resolver fallback, and the reclaim-bytes summer. UI / op_history
+  wiring for the duplicate-cleaner remains on the T19-D row._
 
 #### T20 - Performance and profiling (system-level)
 

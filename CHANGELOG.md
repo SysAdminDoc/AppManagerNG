@@ -5,6 +5,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Backup duplicate cleaner keep-largest strategy (T19-D follow-up, 2026-05-26)
+
+- Added `DuplicateKeepStrategy.LARGEST` and `LARGEST_THEN_NEWEST` to
+  `BackupRetentionPolicy.DuplicateKeepStrategy`. The new
+  `LARGEST_THEN_NEWEST` is the recommended default for the duplicate-
+  cleaner UI when both payload size and freshness matter.
+- New `BackupSizeResolver` SAM interface (`long sizeOnDisk(Backup)`)
+  lets the selector stay JVM-unit-testable - implementations typically
+  call `BackupItems.findBackupItem(relativeDir).getTotalSize()` or walk
+  the backup file tree. Negative returns mean "unknown size" and are
+  demoted below any known size so a partially-resolved set still picks
+  a stable keeper.
+- Added size-aware overloads:
+  `selectVersionDuplicates(List<Backup>, DuplicateKeepStrategy,
+  BackupSizeResolver)` and
+  `pruneVersionDuplicates(DuplicateKeepStrategy, BackupSizeResolver)`.
+  Existing two-argument call sites remain wire-compatible and continue
+  to use the deterministic `relativeDir` tie-break for the
+  `LARGEST` strategy when no resolver is supplied.
+- Added `reclaimableBytes(List<Backup>, BackupSizeResolver)` so the
+  duplicate-cleaner UI can show a "Reclaim X bytes" hint before
+  committing. Unknown sizes are summed as zero so the hint is always a
+  lower bound.
+- 5 additional JVM tests cover the size-wins case, the
+  `LARGEST_THEN_NEWEST` tie-break, unknown-size demotion across input
+  orderings, the null-resolver lexicographic fallback, and the
+  reclaim-bytes summer.
+
 ### Added - Leftover scanner /data/data root fallback (T19-B follow-up, 2026-05-26)
 
 - Added `LeftoverScanner.scanInternalDataStubs(File, Set<String>)` plus a

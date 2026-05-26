@@ -194,6 +194,28 @@ public final class BackupRetentionPolicy {
     @NonNull
     public static List<Backup> selectVersionDuplicates(@NonNull List<Backup> all,
                                                        @NonNull DuplicateKeepStrategy strategy) {
+        return selectVersionDuplicates(all, strategy, null);
+    }
+
+    /**
+     * Size-aware overload of {@link #selectVersionDuplicates(List, DuplicateKeepStrategy)}.
+     *
+     * <p>Required when {@code strategy} is {@link DuplicateKeepStrategy#LARGEST}
+     * or {@link DuplicateKeepStrategy#LARGEST_THEN_NEWEST}; ignored otherwise.
+     * Passing {@code null} when the strategy needs size is treated as
+     * "every row has unknown size" and falls back to the deterministic
+     * insertion-order tie-break, so the method never throws.
+     *
+     * <p>A {@link BackupSizeResolver} that returns a negative number for a
+     * given backup is treated as "unknown". Unknown sizes lose against any
+     * known size; if every row in a bucket is unknown the deterministic
+     * {@code relativeDir} tie-break wins.
+     */
+    @VisibleForTesting
+    @NonNull
+    public static List<Backup> selectVersionDuplicates(@NonNull List<Backup> all,
+                                                       @NonNull DuplicateKeepStrategy strategy,
+                                                       @Nullable BackupSizeResolver sizeResolver) {
         if (all.isEmpty()) {
             return Collections.emptyList();
         }
@@ -208,16 +230,7 @@ public final class BackupRetentionPolicy {
             }
             bucket.add(b);
         }
-        Comparator<Backup> keeperFirst;
-        switch (strategy) {
-            case OLDEST:
-                keeperFirst = OLDEST_FIRST_DETERMINISTIC;
-                break;
-            case NEWEST:
-            default:
-                keeperFirst = NEWEST_FIRST_DETERMINISTIC;
-                break;
-        }
+        Comparator<Backup> keeperFirst = comparatorFor(strategy, sizeResolver);
         List<Backup> duplicates = new ArrayList<>();
         for (List<Backup> bucket : groups.values()) {
             if (bucket.size() < 2) continue;
@@ -231,6 +244,60 @@ public final class BackupRetentionPolicy {
     }
 
     /**
+     * Sum of {@link BackupSizeResolver#sizeOnDisk(Backup)} across the rows the
+     * selector would remove. Unknown sizes (negative resolver output) are
+     * counted as zero. Callers use this to surface a "Reclaim X bytes" hint
+     * in the duplicate-cleaner UI before committing.
+     */
+    public static long reclaimableBytes(@NonNull List<Backup> duplicates,
+                                        @NonNull BackupSizeResolver sizeResolver) {
+        long total = 0L;
+        for (Backup b : duplicates) {
+            long size = sizeResolver.sizeOnDisk(b);
+            if (size > 0L) total += size;
+        }
+        return total;
+    }
+
+    @NonNull
+    private static Comparator<Backup> comparatorFor(@NonNull DuplicateKeepStrategy strategy,
+                                                    @Nullable BackupSizeResolver sizeResolver) {
+        switch (strategy) {
+            case OLDEST:
+                return OLDEST_FIRST_DETERMINISTIC;
+            case LARGEST:
+                return largestFirstThen(sizeResolver, /* breakTieWithNewest */ false);
+            case LARGEST_THEN_NEWEST:
+                return largestFirstThen(sizeResolver, /* breakTieWithNewest */ true);
+            case NEWEST:
+            default:
+                return NEWEST_FIRST_DETERMINISTIC;
+        }
+    }
+
+    @NonNull
+    private static Comparator<Backup> largestFirstThen(@Nullable BackupSizeResolver sizeResolver,
+                                                       boolean breakTieWithNewest) {
+        return (a, b) -> {
+            long sa = sizeResolver != null ? sizeResolver.sizeOnDisk(a) : -1L;
+            long sb = sizeResolver != null ? sizeResolver.sizeOnDisk(b) : -1L;
+            // Unknown sizes (negative) sort last so a known size always wins.
+            boolean aKnown = sa >= 0L;
+            boolean bKnown = sb >= 0L;
+            if (aKnown != bKnown) return aKnown ? -1 : 1;
+            if (aKnown) {
+                int bySize = Long.compare(sb, sa);
+                if (bySize != 0) return bySize;
+            }
+            if (breakTieWithNewest) {
+                int byTime = Long.compare(b.backupTime, a.backupTime);
+                if (byTime != 0) return byTime;
+            }
+            return safeCompare(a.relativeDir, b.relativeDir);
+        };
+    }
+
+    /**
      * Prune cross-name version duplicates from disk. Mirrors the
      * {@link #pruneFromList} shape so the on-disk delete path stays uniform.
      *
@@ -238,9 +305,22 @@ public final class BackupRetentionPolicy {
      */
     @WorkerThread
     public static int pruneVersionDuplicates(@NonNull DuplicateKeepStrategy strategy) {
+        return pruneVersionDuplicates(strategy, null);
+    }
+
+    /**
+     * Size-aware overload of {@link #pruneVersionDuplicates(DuplicateKeepStrategy)}.
+     * The resolver is only consulted for {@link DuplicateKeepStrategy#LARGEST}
+     * and {@link DuplicateKeepStrategy#LARGEST_THEN_NEWEST}; pass {@code null}
+     * for the other strategies (or to opt into the deterministic fallback when
+     * size is genuinely unavailable).
+     */
+    @WorkerThread
+    public static int pruneVersionDuplicates(@NonNull DuplicateKeepStrategy strategy,
+                                             @Nullable BackupSizeResolver sizeResolver) {
         try {
             List<Backup> all = AppsDb.getInstance().backupDao().getAll();
-            List<Backup> duplicates = selectVersionDuplicates(all, strategy);
+            List<Backup> duplicates = selectVersionDuplicates(all, strategy, sizeResolver);
             int deleted = 0;
             for (Backup b : duplicates) {
                 try {
@@ -261,7 +341,26 @@ public final class BackupRetentionPolicy {
 
     public enum DuplicateKeepStrategy {
         NEWEST,
-        OLDEST
+        OLDEST,
+        /** Largest on-disk size wins. Ties broken by ascending {@code relativeDir}. */
+        LARGEST,
+        /**
+         * Largest on-disk size wins; size ties broken by newest {@code backupTime},
+         * then by ascending {@code relativeDir}. Recommended default for the
+         * UI duplicate-cleaner when both size and freshness matter.
+         */
+        LARGEST_THEN_NEWEST
+    }
+
+    /**
+     * Resolves the on-disk byte count of a backup. Implementations typically
+     * call {@code BackupItems.findBackupItem(relativeDir).getTotalSize()} or
+     * walk the backup file tree; the data-layer keeps the contract narrow so
+     * the selector remains JVM-unit-testable. Return a negative value for
+     * "unknown" so the comparator can demote unknown rows below known ones.
+     */
+    public interface BackupSizeResolver {
+        long sizeOnDisk(@NonNull Backup backup);
     }
 
     private static final Comparator<Backup> NEWEST_FIRST_DETERMINISTIC = (a, b) -> {
