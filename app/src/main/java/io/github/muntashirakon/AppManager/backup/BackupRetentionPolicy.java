@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
@@ -162,4 +163,121 @@ public final class BackupRetentionPolicy {
     }
 
     private static final Comparator<Backup> NEWEST_FIRST = (a, b) -> Long.compare(b.backupTime, a.backupTime);
+
+    /**
+     * Pure-function selector for the backup-duplicate-cleaner row (T19-D).
+     *
+     * <p>Buckets each {@link Backup} by {@code (packageName, userId, versionCode)}
+     * <em>ignoring backup name</em>, then within each bucket of size &gt; 1 marks
+     * every entry except the keeper as a duplicate. The keep policy decides
+     * which row survives:
+     * <ul>
+     *   <li>{@link DuplicateKeepStrategy#NEWEST} - newest {@code backupTime}
+     *       wins. Ties broken by ascending {@code relativeDir} so the result is
+     *       deterministic.</li>
+     *   <li>{@link DuplicateKeepStrategy#OLDEST} - oldest {@code backupTime}
+     *       wins. Same tie-breaker. Useful when a user has overwritten a
+     *       known-good snapshot with a partially-failed retry and wants to
+     *       reclaim the retry.</li>
+     * </ul>
+     *
+     * <p>Rows where {@code versionCode &lt;= 0} or {@code packageName} is null
+     * are skipped: they represent metadata that the duplicate scan cannot
+     * compare safely. Rows with {@code backupTime &lt;= 0} are still bucketed
+     * but treated as oldest under {@link DuplicateKeepStrategy#NEWEST}.
+     *
+     * <p>Existing retention policy is not invoked here. Callers that want both
+     * passes should run {@link #selectStaleBackups} on the survivors, mirroring
+     * the way {@link #pruneFromList} chains the on-disk delete step.
+     */
+    @VisibleForTesting
+    @NonNull
+    public static List<Backup> selectVersionDuplicates(@NonNull List<Backup> all,
+                                                       @NonNull DuplicateKeepStrategy strategy) {
+        if (all.isEmpty()) {
+            return Collections.emptyList();
+        }
+        java.util.Map<String, List<Backup>> groups = new java.util.LinkedHashMap<>();
+        for (Backup b : all) {
+            if (b == null || b.packageName == null || b.versionCode <= 0) continue;
+            String key = b.packageName + "\0" + b.userId + "\0" + b.versionCode;
+            List<Backup> bucket = groups.get(key);
+            if (bucket == null) {
+                bucket = new ArrayList<>();
+                groups.put(key, bucket);
+            }
+            bucket.add(b);
+        }
+        Comparator<Backup> keeperFirst;
+        switch (strategy) {
+            case OLDEST:
+                keeperFirst = OLDEST_FIRST_DETERMINISTIC;
+                break;
+            case NEWEST:
+            default:
+                keeperFirst = NEWEST_FIRST_DETERMINISTIC;
+                break;
+        }
+        List<Backup> duplicates = new ArrayList<>();
+        for (List<Backup> bucket : groups.values()) {
+            if (bucket.size() < 2) continue;
+            Collections.sort(bucket, keeperFirst);
+            // The first entry survives; everything after is a duplicate.
+            for (int i = 1; i < bucket.size(); ++i) {
+                duplicates.add(bucket.get(i));
+            }
+        }
+        return duplicates;
+    }
+
+    /**
+     * Prune cross-name version duplicates from disk. Mirrors the
+     * {@link #pruneFromList} shape so the on-disk delete path stays uniform.
+     *
+     * @return number of duplicate backups actually deleted from disk
+     */
+    @WorkerThread
+    public static int pruneVersionDuplicates(@NonNull DuplicateKeepStrategy strategy) {
+        try {
+            List<Backup> all = AppsDb.getInstance().backupDao().getAll();
+            List<Backup> duplicates = selectVersionDuplicates(all, strategy);
+            int deleted = 0;
+            for (Backup b : duplicates) {
+                try {
+                    BackupItems.BackupItem item = b.getItem();
+                    if (item != null && item.delete()) {
+                        ++deleted;
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "Failed to delete duplicate backup " + b.relativeDir, t);
+                }
+            }
+            return deleted;
+        } catch (Throwable t) {
+            Log.w(TAG, "Backup duplicate prune failed", t);
+            return 0;
+        }
+    }
+
+    public enum DuplicateKeepStrategy {
+        NEWEST,
+        OLDEST
+    }
+
+    private static final Comparator<Backup> NEWEST_FIRST_DETERMINISTIC = (a, b) -> {
+        int byTime = Long.compare(b.backupTime, a.backupTime);
+        return byTime != 0 ? byTime : safeCompare(a.relativeDir, b.relativeDir);
+    };
+
+    private static final Comparator<Backup> OLDEST_FIRST_DETERMINISTIC = (a, b) -> {
+        int byTime = Long.compare(a.backupTime, b.backupTime);
+        return byTime != 0 ? byTime : safeCompare(a.relativeDir, b.relativeDir);
+    };
+
+    private static int safeCompare(@Nullable String a, @Nullable String b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+        return a.compareTo(b);
+    }
 }

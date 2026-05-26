@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Backup duplicate detection data layer (T19-D, 2026-05-26)
+
+- Added `BackupRetentionPolicy.selectVersionDuplicates` as a pure-function
+  selector that buckets `Backup` rows by `(packageName, userId, versionCode)`,
+  ignoring `backupName`, and returns redundant rows under a
+  `DuplicateKeepStrategy.NEWEST` or `OLDEST` keep policy.
+- Added `BackupRetentionPolicy.pruneVersionDuplicates` to mirror the existing
+  on-disk delete shape and delete the selector's duplicates through the same
+  `BackupItems.BackupItem.delete()` path used by retention.
+- Tie-breaks on identical `backupTime` are deterministic via `relativeDir`
+  so duplicate detection is reproducible across runs.
+- 6 focused JVM tests cover empty-bucket, NEWEST/OLDEST strategies, user-id
+  splitting, missing `versionCode` skip, and tie-break determinism.
+- UI wiring, `op_history` capture, and a "keep largest" strategy that needs
+  on-disk archive size are tracked as the T19-D follow-up on the roadmap.
+
 ### Documentation - minSdk 21 -> 23 decision memo (2026-05-26)
 
 - Added `docs/policy/2026-05-26-minsdk-23-decision.md` with the explicit
