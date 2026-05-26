@@ -298,12 +298,15 @@ for the original Effort / Dependency context per row.
   measurable improvement recorded in `docs/audits/` with the before/after
   numbers, no behavior change for typical (<300-app) devices, and
   Robolectric coverage where reachable.
-- [ ] **T21-J Material You dynamic-color audit**: confirm both the v2
-  design tokens and existing widget palette honor Android 12+ wallpaper
-  derived `dynamic_*` colors and have a graceful fallback when dynamic
-  colors are disabled or unsupported. Acceptance: dynamic colors disabled
-  in the new high-contrast theme code path, audit doc lands under
-  `docs/audits/`, and the existing M3 palette helpers gain test coverage.
+- [x] **T21-J Material You dynamic-color audit**: source-path audit clean.
+  Activity overlay is applied by
+  `AppearanceUtils.applyToActivityIfAvailable`, widget context wraps through
+  `DynamicColors.wrapContextIfAvailable`, and `AppWidgetThemeUtils.getPalette`
+  uses three-arg `MaterialColors.getColor(context, attr, fallback)` so the
+  palette never returns black where the overlay is unavailable. Audit
+  recorded in `docs/audits/2026-05-26-material-you-dynamic-color.md`;
+  regression guard `DynamicColorContractTest` pins the three call sites.
+  Manual device walkthrough remains open.
 - [ ] T21-K Material 3 Expressive migration. Parked: legacy roadmap flagged
   this as gated on Material Components 1.14 + minSdk 23, which is itself
   tracked under "Material Components 1.14 / minSdk 23 decision". Do not
