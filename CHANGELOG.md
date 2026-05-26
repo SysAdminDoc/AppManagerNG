@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Settings -> About -> Glossary & how-to (2026-05-25)
+
+- New `GlossaryPreferences` screen lists 14 plain-language explainers
+  covering Mode of operations, Shizuku, root, ADB, app ops, freezing,
+  component blocking, trackers, debloater, backup encryption, scheduled
+  backup, Pro Mode, Finder, and Intent Interceptor.
+- Each row opens a scrollable dialog with the full topic body.
+- Topics are automatically searchable through the global Settings search
+  shipped in v0.5.0 because the glossary XML registers as a new source in
+  `SettingsSearchIndex`; searching "Shizuku" or "AES" lands on the right
+  glossary row.
+- Pure-JVM coverage in [`GlossaryPreferencesTest`](app/src/test/java/io/github/muntashirakon/AppManager/settings/GlossaryPreferencesTest.java)
+  pins key->body mapping integrity and the search reach.
+
 ## v0.5.0 — 2026-05-25
 
 Discovery & Polish release. Banks the Iter-91 → Iter-142 work that

@@ -1,0 +1,115 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <Preference
+        app:key="glossary_intro"
+        app:title="@string/pref_glossary_intro_title"
+        app:summary="@string/pref_glossary_intro_summary"
+        app:selectable="false"
+        app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        app:key="glossary_privileges_cat"
+        app:title="@string/pref_glossary_cat_privileges"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_mode_of_operations"
+        app:title="@string/pref_mode_of_operations"
+        app:summary="@string/help_mode_of_operations_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_shizuku"
+        app:title="@string/pref_glossary_shizuku_title"
+        app:summary="@string/help_shizuku_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_root"
+        app:title="@string/pref_glossary_root_title"
+        app:summary="@string/help_root_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_adb"
+        app:title="@string/pref_glossary_adb_title"
+        app:summary="@string/help_adb_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_appops"
+        app:title="@string/pref_glossary_appops_title"
+        app:summary="@string/help_appops_summary"
+        app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        app:key="glossary_safety_cat"
+        app:title="@string/pref_glossary_cat_safety"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_freezing"
+        app:title="@string/pref_glossary_freezing_title"
+        app:summary="@string/help_freezing_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_component_blocking"
+        app:title="@string/pref_glossary_component_blocking_title"
+        app:summary="@string/help_component_blocking_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_trackers"
+        app:title="@string/pref_glossary_trackers_title"
+        app:summary="@string/help_trackers_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_debloater"
+        app:title="@string/pref_glossary_debloater_title"
+        app:summary="@string/help_debloater_summary"
+        app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        app:key="glossary_backup_cat"
+        app:title="@string/pref_glossary_cat_backup"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_backup_encryption"
+        app:title="@string/pref_glossary_backup_encryption_title"
+        app:summary="@string/help_backup_encryption_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_scheduled_backup"
+        app:title="@string/pref_glossary_scheduled_backup_title"
+        app:summary="@string/help_scheduled_backup_summary"
+        app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        app:key="glossary_misc_cat"
+        app:title="@string/pref_glossary_cat_misc"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_pro_mode"
+        app:title="@string/pref_glossary_pro_mode_title"
+        app:summary="@string/help_pro_mode_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_finder"
+        app:title="@string/pref_glossary_finder_title"
+        app:summary="@string/help_finder_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="glossary_intent_interceptor"
+        app:title="@string/pref_glossary_intent_interceptor_title"
+        app:summary="@string/help_intent_interceptor_summary"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>
