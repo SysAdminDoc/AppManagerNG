@@ -10,8 +10,10 @@ described inline at the relevant `app/` package tree.
 | # | Topic | What it covers |
 |---|---|---|
 | 01 | [Privilege providers](01-privilege-providers.md) | Root / Shizuku / Sui / ADB / no-root path selection; the `Runner` decision tree; the `LocalServices` binder bridge; root-manager detection; the `SelfPermissions.checkSelfOrRemotePermission()` capability fan-out pattern. |
-| 02 | [Backup format](02-backup-format.md) | On-disk layout; metadata schema v1–v6; the five crypto modes (`MODE_NO_ENCRYPTION` / `MODE_AES` / `MODE_RSA` / `MODE_ECC` / `MODE_OPEN_PGP`); platform-Keystore vs file-BKS surfaces; the cross-version restore contract; network-destination considerations. |
+| 02 | [Backup format](02-backup-format.md) | On-disk layout; metadata schema v1–v7; the five crypto modes (`MODE_NO_ENCRYPTION` / `MODE_AES` / `MODE_RSA` / `MODE_ECC` / `MODE_OPEN_PGP`); platform-Keystore vs file-BKS surfaces; the cross-version restore contract; network-destination considerations. |
 | 03 | [Hidden-API bypass](03-hidden-api-bypass.md) | The 4-layer stack: `dev.rikka.tools.refine` + `AndroidHiddenApiBypass` runtime, the `hiddenapi/` stub source set (~80 files across 13 subsystem namespaces), `compat/*Compat.java` wrappers, and `app/` call sites. The Android-version migration cliff and how the proposed Compatibility Harness amortises it. |
+| 04 | [Filter & Finder](04-filter-finder.md) | The `IFilterableAppInfo` contract, the `FilterOption` registry (28 options as of iter-145), the expression-tree evaluator, the iter-143 multi-tag store (NF-08), the iter-145 saved filter presets, and where filter logic deliberately isn't (Debloater, Permission Inspector, Profiles). |
+| 05 | [Routine scheduler](05-routine-scheduler.md) | NF-09 contract: the iter-145 `ProfileTrigger` + `ProfileTriggerStore` data layer, the planned `RoutineWorker` shape, the five trigger types and their WorkManager Constraints mapping, the boot-receiver plumbing, the Settings → Profiles → Schedules UI mockup, and the verification plan for when the executor lands. |
 
 ## When to update
 
