@@ -5,6 +5,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - MemoryFormat unit ladder for T20-C UI (2026-05-26)
+
+- Added `MemoryFormat` in `details/info/`, a tiny pure-function
+  formatter that centralises the unit ladders the T20-C memory
+  panel needs: `formatKb`, `formatBytes`, `formatPercent`,
+  `formatLatencyMs`, `formatThreadCount`, `formatSwapKb`.
+- The `-1L` / `-1.0` missing-value sentinel from the four parsers
+  becomes the stable literal `"n/a"` (exposed as
+  `MemoryFormat.NOT_AVAILABLE`) so UI string lookup never renders a
+  bare zero where the underlying parser had no data.
+- `formatSwapKb` is the one specialised renderer: zero swap collapses
+  to `"none"` because the panel should not show "0 KB swap" as if
+  it were a metric to react to.
+- 10 focused JVM tests pin the kB and bytes unit ladders, the
+  percent / latency / thread-count / swap renderers, the
+  not-available sentinel for negative inputs across every method,
+  and the constant invariant.
+
 ### Added - UndoOpHistoryRecorder bridges queue drains to op_history (T21-F follow-up, 2026-05-26)
 
 - Added `UndoOpHistoryRecorder` in `batchops/`, the pure-function
