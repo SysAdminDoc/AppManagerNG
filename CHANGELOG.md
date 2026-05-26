@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Global Settings search (2026-05-25)
+
+- The Settings toolbar SearchView is now wired to an in-app preference index
+  that walks every static `preferences_*.xml` file under `res/xml/` and
+  matches `app:title` / `app:summary` against the live query.
+- Each result row shows the parent breadcrumb (Appearance / Privacy /
+  Privileges / Installer / Backup / ...) and the matching preference's title
+  and summary; tapping the row navigates through the existing
+  `am://settings/<parentKey>/<targetKey>` deep-link path so the user lands
+  on the matching preference within the parent fragment.
+- New `SettingsSearchIndex` is a singleton built lazily on the first query
+  and invalidated on locale change. Pure-JVM coverage in
+  [`SettingsSearchIndexTest`](app/src/test/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndexTest.java).
+- Runtime-built preference rows (ComponentRulesPreferences, ModeOfOpsPreference,
+  ChangeLanguageFragment) are intentionally not indexed because their rows do
+  not exist until the fragment is created.
+
 ### Added — Settings -> About -> What's new + auto-display after update (2026-05-25)
 
 - New Settings -> About -> "What's new" preference opens the in-app changelog
