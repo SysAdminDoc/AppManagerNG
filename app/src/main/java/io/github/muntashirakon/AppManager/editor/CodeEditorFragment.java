@@ -387,6 +387,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     });
             popupMenu.show();
         });
+        view.findViewById(R.id.search_close_button).setOnClickListener(v -> hideSearchWidget());
         mSearchResultCount = view.findViewById(R.id.search_result_count);
         view.findViewById(R.id.previous_button).setOnClickListener(v -> {
             if (!mEditor.getSearcher().hasQuery()) {
@@ -601,7 +602,6 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             return true;
         } else if (id == R.id.action_search) {
             if (mSearchWidget != null) {
-                // FIXME: 21/4/23 Ideally, search widget should have cross button to close it.
                 if (mSearchWidget.getVisibility() == View.VISIBLE) {
                     hideSearchWidget();
                 } else showSearchWidget();
@@ -813,6 +813,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             TransitionManager.beginDelayedTransition(mSearchWidget, sharedAxis);
             mSearchWidget.setVisibility(View.VISIBLE);
             mSearchView.requestFocus();
+            search(mSearchView.getText());
         }
     }
 
@@ -822,6 +823,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             TransitionManager.beginDelayedTransition(mSearchWidget, sharedAxis);
             mSearchWidget.setVisibility(View.GONE);
             mEditor.getSearcher().stopSearch();
+            UiUtils.hideKeyboard(mSearchView);
             mExitSearchBackPressedCallback.setEnabled(false);
         }
     }

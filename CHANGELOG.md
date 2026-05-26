@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Code Editor search close affordance (2026-05-26)
+
+- Code Editor search now has a dedicated close icon in the search panel instead
+  of relying only on the toolbar toggle or back action.
+- Reopening the search panel keeps the existing query text and immediately
+  reapplies it, so users can resume the same search state after closing the
+  panel.
+- Hiding the search panel now also dismisses the keyboard.
+
 ### Changed — File Manager bulk rename preview (2026-05-26)
 
 - File Manager selected-file rename now builds a preview plan before running,

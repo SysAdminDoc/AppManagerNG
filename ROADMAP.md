@@ -55,7 +55,7 @@ work to separate root research files.
   rows and category filter chips to the scanner/library view.
 - [x] **NF-25 File Manager bulk rename**: add a selected-files rename flow with
   preview, conflict detection, and rollback-friendly operation results.
-- [ ] **EI-11 Code Editor search close button**: add the missing close affordance
+- [x] **EI-11 Code Editor search close button**: add the missing close affordance
   for the editor search UI without losing the current query state.
 - [ ] **EI-12 Code Editor line separator rewrite**: replace the TODO-backed
   regex path with a safe line-separator conversion routine.
