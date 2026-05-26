@@ -354,6 +354,19 @@ for the original Effort / Dependency context per row.
   current NG mark), and let users switch via Settings -> Appearance.
   Acceptance: only one alias is enabled at a time, no extra `BOOT_COMPLETED`
   side-effects, and the existing widget icon palette is not affected.
+  _Data layer shipped 2026-05-26: `LauncherIconAliasPlan.plan(current,
+  target)` is a pure-function diff that produces the minimal
+  enable/disable change set the Android controller (PackageManager-side)
+  needs to apply. Canonical iteration order keeps two callers with the
+  same diff in the same order. `resolveCurrent(set)` collapses a
+  malformed multi-enabled state by preferring DEFAULT then canonical
+  order. 11 focused JVM tests pin the default-to-neutral plan, empty
+  plan when the target already matches, multi-enabled collapse,
+  determinism across input set implementations, current-resolution
+  fallback, value-based `Change.equals`, and tolerance for null
+  elements in the raw set. Manifest activity-alias definitions, neutral
+  / monochrome drawables, the Settings entry, and the PackageManager
+  controller wrapper remain on the T21-E roadmap row._
 - [ ] **T21-F Undo SnackBar for destructive operations**: wrap freeze,
   uninstall, force-stop, clear-data, and component-state writes in a
   short-lived "Undo" SnackBar before commit. Acceptance: cancellation skips
