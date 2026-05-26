@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — File Manager bulk rename preview (2026-05-26)
+
+- File Manager selected-file rename now builds a preview plan before running,
+  including the generated target names for each selected item.
+- Batch rename detects target name conflicts up front and reserves generated
+  names so planned rows cannot collide with existing files or each other.
+- Rename completion now shows per-file results with original and target names,
+  making partial results clear enough to reverse manually if needed.
+- Added focused JVM coverage for rename planning, conflict resolution, invalid
+  target validation, and result metadata.
+
 ### Changed — Scanner organization summaries (2026-05-26)
 
 - Scanner tracker details now roll matched signatures up by tracker
