@@ -53,7 +53,7 @@ work to separate root research files.
 
 - [x] **NF-24 Scanner organization summary**: add per-organization summary
   rows and category filter chips to the scanner/library view.
-- [ ] **NF-25 File Manager bulk rename**: add a selected-files rename flow with
+- [x] **NF-25 File Manager bulk rename**: add a selected-files rename flow with
   preview, conflict detection, and rollback-friendly operation results.
 - [ ] **EI-11 Code Editor search close button**: add the missing close affordance
   for the editor search UI without losing the current query state.
