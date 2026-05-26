@@ -625,6 +625,12 @@
     <string name="features">Features</string>
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
+
+    <!-- Onboarding -> "Next steps" tiles on the final step (EI-05) -->
+    <string name="onboarding_next_steps_title">Next steps</string>
+    <string name="onboarding_next_step_privileges">Run Mode Doctor &amp; Privileges check</string>
+    <string name="onboarding_next_step_permission_inspector">Audit dangerous permissions</string>
+    <string name="onboarding_next_step_backup">Set up Scheduled Auto-Backup</string>
     <string name="blocking_rules">Blocking rules</string>
     <string name="external_data">External data</string>
     <string name="internal_data">Internal data</string>

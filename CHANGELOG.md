@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Onboarding "Next steps" tiles on the final card (2026-05-25)
+
+- The replayable onboarding wizard now closes with three outlined-button
+  tiles guiding the first-run user to the next high-value surface:
+  Settings -> Privileges (Mode Doctor home), Permission Inspector, and
+  Settings -> Backup/Restore. Tapping a tile dismisses the sheet, marks
+  onboarding as shown, and launches the destination.
+
 ### Added — Keystore password lifecycle invariant test (2026-05-25)
 
 - New `KeyStorePasswordLifecycleTest` pins the T3 keystore-password
