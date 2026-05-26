@@ -5,6 +5,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Architecture docs 04 / 05 + permissions catalogue (iter-146, 2026-05-25)
+
+- New [`docs/architecture/04-filter-finder.md`](docs/architecture/04-filter-finder.md)
+  documents the `IFilterableAppInfo` contract, the 28-option `FilterOption`
+  registry, the expression-tree evaluator, the iter-143 multi-tag store
+  (NF-08), and the iter-145 saved filter presets. Also captures where filter
+  logic deliberately isn't (Debloater, Permission Inspector, Profiles) and
+  the testing pattern future `FilterOption` subclasses should follow.
+- New [`docs/architecture/05-routine-scheduler.md`](docs/architecture/05-routine-scheduler.md)
+  locks the NF-09 contract: the iter-145 data layer (`ProfileTrigger` +
+  `ProfileTriggerStore`), the planned `RoutineWorker` shape, the five
+  trigger types and their WorkManager Constraints mapping, the boot-receiver
+  plumbing, a Settings → Profiles → Schedules UI mockup, three open
+  decisions, and the on-device verification plan.
+- New [`docs/policy/permissions.md`](docs/policy/permissions.md) catalogues
+  every `<uses-permission>` in `AndroidManifest.xml` (70 entries) into four
+  groups (user-grantable runtime, privileged via Shizuku/root, custom, and
+  hardware features) with a one-line justification + call site each. Also
+  documents what NG deliberately does not request and the F-Droid
+  Anti-Features cross-check. Closes a long-standing F-Droid / IzzyOnDroid
+  reviewer gap.
+- Architecture index ([`docs/architecture/README.md`](docs/architecture/README.md))
+  updated with the two new rows.
+
 ### Added — NF-09 trigger data layer + Saved Filter Presets + Keep-app-open hint (2026-05-25)
 
 - **NF-09 data layer** — new `profiles/trigger/ProfileTrigger` value class
