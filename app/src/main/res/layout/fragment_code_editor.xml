@@ -205,7 +205,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/position"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textSize="13sp"
@@ -214,7 +214,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/line_separator"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textSize="13sp"
@@ -223,7 +223,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tab_size"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textSize="13sp"
@@ -232,7 +232,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/language"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textSize="13sp"
@@ -242,18 +242,12 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/lock"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="13dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingTop="0dp"
-                android:paddingBottom="0dp"
-                android:layout_weight="1"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:gravity="center"
                 android:contentDescription="@string/editor_lock"
                 app:icon="@drawable/ic_unlock"
-                app:iconSize="13dp" />
+                app:iconSize="20dp" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

@@ -32,17 +32,42 @@ public class SearchControlAccessibilityContractTest {
         assertControlContentDescription(layout, "lock", "@string/editor_lock");
     }
 
+    @Test
+    public void codeEditorStatusRowSurvivesLargeFontScale() throws IOException {
+        String layout = read(findAppProjectDir().resolve("src/main/res/layout/fragment_code_editor.xml"));
+
+        assertWeightedStatusCell(layout, "position");
+        assertWeightedStatusCell(layout, "line_separator");
+        assertWeightedStatusCell(layout, "tab_size");
+        assertWeightedStatusCell(layout, "language");
+        assertControlAttribute(layout, "lock", "android:layout_width=\"48dp\"");
+        assertControlAttribute(layout, "lock", "android:layout_height=\"48dp\"");
+        assertControlAttribute(layout, "lock", "app:iconSize=\"20dp\"");
+    }
+
     private static void assertControlContentDescription(String layout,
                                                         String viewId,
                                                         String expectedDescription) {
+        assertControlAttribute(layout, viewId,
+                "android:contentDescription=\"" + expectedDescription + "\"");
+    }
+
+    private static void assertWeightedStatusCell(String layout, String viewId) {
+        assertControlAttribute(layout, viewId, "android:layout_width=\"0dp\"");
+        assertControlAttribute(layout, viewId, "android:layout_weight=\"1\"");
+    }
+
+    private static void assertControlAttribute(String layout,
+                                               String viewId,
+                                               String expectedAttribute) {
         String marker = "android:id=\"@+id/" + viewId + "\"";
         int start = layout.indexOf(marker);
         assertTrue("Missing view id " + viewId, start >= 0);
         int end = layout.indexOf("/>", start);
         assertTrue("Missing self-closing view block for " + viewId, end > start);
         String block = layout.substring(start, end);
-        assertTrue(viewId + " should use " + expectedDescription,
-                block.contains("android:contentDescription=\"" + expectedDescription + "\""));
+        assertTrue(viewId + " should use " + expectedAttribute,
+                block.contains(expectedAttribute));
     }
 
     private static Path findAppProjectDir() {
