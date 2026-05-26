@@ -148,6 +148,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         // highlight on a true first-run — the saved mode will already be the
         // default (MODE_AUTO) and that's still meaningful information.
         highlightActiveMode(view, Ops.getMode());
+        bindNextStepTiles(view);
         // "Re-check capabilities" — for users who toggle Wireless debugging or
         // grant root from another app while the sheet is open. Re-bind the
         // capability badges and the active-mode highlight without dismissing
@@ -771,6 +772,45 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             default:
                 UIUtils.displayShortToast(R.string.adb_tcpip_not_finished);
         }
+    }
+
+    /**
+     * Wire the three "Next steps" tiles on the final onboarding card: jump to
+     * Settings -> Privileges (Mode Doctor home), Permission Inspector, and
+     * Settings -> Backup/Restore. Each tile dismisses the sheet on tap so the
+     * destination screen is the user's next focus.
+     */
+    private void bindNextStepTiles(@NonNull View root) {
+        View privileges = root.findViewById(R.id.onboarding_next_step_privileges);
+        if (privileges != null) {
+            privileges.setOnClickListener(v -> launchNextStep(
+                    io.github.muntashirakon.AppManager.settings.SettingsActivity
+                            .getSettingsIntent(requireContext(), "privilege_health")));
+        }
+        View permInspector = root.findViewById(R.id.onboarding_next_step_permission_inspector);
+        if (permInspector != null) {
+            permInspector.setOnClickListener(v -> launchNextStep(new android.content.Intent(requireContext(),
+                    io.github.muntashirakon.AppManager.permissions.PermissionInspectorActivity.class)));
+        }
+        View backup = root.findViewById(R.id.onboarding_next_step_backup);
+        if (backup != null) {
+            backup.setOnClickListener(v -> launchNextStep(
+                    io.github.muntashirakon.AppManager.settings.SettingsActivity
+                            .getSettingsIntent(requireContext(), "backup_restore_prefs")));
+        }
+    }
+
+    private void launchNextStep(@NonNull android.content.Intent intent) {
+        try {
+            startActivity(intent);
+        } catch (Throwable ignored) {
+            // Fall through; sheet stays open so the user can pick another tile.
+            return;
+        }
+        // Mark onboarding as shown so a fresh-install user who explores the next
+        // step does not get the wizard again on the next launch.
+        AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
+        dismissAllowingStateLoss();
     }
 
     /** True when USB debugging (ADB over USB) is enabled in Developer options. */
