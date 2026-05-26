@@ -24,13 +24,13 @@ work to separate root research files.
 
 ### P0 - Old TODO Cliff
 
-- [ ] **NF-20 Running Apps background-run rule persistence**: make
+- [x] **NF-20 Running Apps background-run rule persistence**: make
   `RunningAppsViewModel.preventBackgroundRun()` save its AppOps change to the
   rule store so the action survives reboot or rule re-apply. Acceptance:
   applies `OP_RUN_IN_BACKGROUND` and, on Android P+, `OP_RUN_ANY_IN_BACKGROUND`;
   records the package/user rule; focused unit or integration coverage where
   local APIs allow it.
-- [ ] **NF-21 One-Click Ops multi-volume cache trim**: replace the internal
+- [x] **NF-21 One-Click Ops multi-volume cache trim**: replace the internal
   volume-only `trimCaches()` call with a guarded iteration over every known
   storage volume UUID. Acceptance: null/internal volume remains covered,
   removable/private volumes are attempted independently, failures are surfaced
