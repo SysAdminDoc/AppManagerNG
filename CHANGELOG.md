@@ -5,6 +5,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Adaptive layout width-class resolver (T21-H follow-up, 2026-05-26)
+
+- Added `WindowWidthSizeClass` enum + `resolve(int widthDp)` in `main/`,
+  mirroring the canonical `androidx.window.core.layout.WindowWidthSizeClass`
+  thresholds: COMPACT &lt; 600 dp, MEDIUM 600-839, EXPANDED &ge; 840.
+  Two helper predicates: `supportsTwoPane(widthDp)` (true for
+  MEDIUM+) and `requiresTwoPane(widthDp)` (EXPANDED only).
+- Negative widths clamp to COMPACT so a malformed configuration never
+  crashes the layout pipeline. Keeping the threshold decision in one
+  place lets every two-pane gate be audited from a single grep.
+- 7 focused JVM tests pin the bucket boundaries (inclusive on the
+  lower bound), negative-width clamping, the two predicates, the
+  constant contract, and a representative real-device matrix
+  (Pixel 7 / Pixel Fold inner / Tab S9 Ultra).
+- The actual two-pane layouts and the
+  `SlidingPaneLayout`+`androidx.window` adapter integration remain on
+  the T21-H roadmap row.
+
 ### Added - Backup archive size aggregator (T19-A follow-up, 2026-05-26)
 
 - Added `BackupArchiveSizeAggregator.aggregate(List<Archive>)` plus a

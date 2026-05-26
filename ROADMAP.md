@@ -428,6 +428,16 @@ for the original Effort / Dependency context per row.
   compatible with the existing View-based layouts, all view IDs preserved
   per the `codexprompt.md` contract, and the new layouts gate on
   available-width thresholds rather than fixed device classes.
+  _Width-class resolver shipped 2026-05-26 via
+  `WindowWidthSizeClass.resolve(int)` plus the convenience predicates
+  `supportsTwoPane(int)` (MEDIUM+) and `requiresTwoPane(int)` (EXPANDED
+  only). Thresholds mirror `androidx.window.core.layout.WindowWidthSizeClass`:
+  COMPACT &lt; 600 dp / MEDIUM 600-840 / EXPANDED &ge; 840. 7 focused
+  JVM tests pin the bucket boundaries, the inclusive lower bounds,
+  negative-width clamping to COMPACT, the two predicates, the constant
+  contract, and a real-device form-factor matrix (Pixel 7 / Pixel Fold
+  / Tab S9 Ultra). Two-pane layouts and adapter integration remain on
+  the T21-H roadmap row._
 - [ ] **T21-I Fast list rendering for 10k+ installed apps**: profile and
   optimize the main app list adapter / cache for unusually large installs;
   set a baseline target of <2 s cold filter on 10 k apps. Acceptance:
