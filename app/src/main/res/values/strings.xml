@@ -626,6 +626,20 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- NF-11 Package visibility chip + dialog -->
+    <string name="package_visibility_query_all_chip">Queries all packages</string>
+    <string name="package_visibility_queries_chip">Targeted package visibility</string>
+    <string name="package_visibility_dialog_title">Package visibility</string>
+    <string name="package_visibility_section_query_all">Holds QUERY_ALL_PACKAGES — can enumerate every installed app.</string>
+    <string name="package_visibility_section_queries_packages">Declared &lt;queries&gt; packages (%1$d):</string>
+    <string name="package_visibility_section_queries_actions">Declared &lt;queries&gt; intent actions (%1$d):</string>
+    <string name="package_visibility_no_signal">No visibility signal declared.</string>
+    <string name="package_visibility_find_callers">Find callers</string>
+    <string name="package_visibility_searching_callers">Scanning installed apps…</string>
+    <string name="package_visibility_callers_title">Apps that query this package</string>
+    <string name="package_visibility_callers_header">Found %1$d installed app(s) listing this package in &lt;queries&gt;:</string>
+    <string name="package_visibility_no_callers">No installed app declares this package in its &lt;queries&gt; manifest block.</string>
+
     <!-- NF-07 Tracker blocking intensity policy -->
     <string name="tracker_blocking_intensity_title">Tracker blocking intensity</string>
     <string name="tracker_blocking_intensity_summary">Picks which detected tracker categories get blocked when you run "Block trackers".</string>
