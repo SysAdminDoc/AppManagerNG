@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Documentation — Accrescent listing packet (2026-05-26)
+
+- Added `docs/distribution/accrescent-listing.md` with the current release
+  identity, signing fingerprint, icon requirement, policy-review notes,
+  sensitive-permission rationale pointers, and the current policy blockers for
+  installer and non-disability accessibility-service use.
+- Added `scripts/build_accrescent_apks.sh` to generate a signed bundletool
+  `.apks` file for Accrescent while preserving bundletool metadata, requiring
+  release signing credentials, checking bundletool 1.11.4+, enforcing the
+  128 MiB APK-set limit, and writing a SHA-256 sidecar.
+
 ### Documentation — F-Droid listing packet (2026-05-26)
 
 - Added `docs/distribution/fdroid-listing.md` with the current package ID,
