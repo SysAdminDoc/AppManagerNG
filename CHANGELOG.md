@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Dex viewer API caveat (2026-05-26)
+
+- Smali-backed Code Editor views now surface a top info bar on Android 7.1 and
+  older explaining that Decompiled Java requires Android 8.0 or newer while
+  Smali remains available.
+- The Java/Smali toggle is disabled on unsupported Android versions instead of
+  attempting a JADX conversion that can only fail generically.
+- Failed Java conversion results are now handled in-place with a toast instead
+  of navigating to an empty read-only editor instance.
+- Added focused JVM coverage for the API 25/API 26 support gate and banner
+  visibility predicate.
+
 ### Changed — BarChart manual minimum axis (2026-05-26)
 
 - `BarChartView` now honors the manual Y-axis minimum configured through

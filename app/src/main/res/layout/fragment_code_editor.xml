@@ -8,6 +8,36 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/java_decompile_unsupported_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingVertical="10dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_information_circle"
+            app:tint="?attr/colorPrimary" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/dex_java_decompile_unsupported"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
+            android:textColor="?attr/colorOnSurface" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
     <io.github.muntashirakon.AppManager.editor.CodeEditorWidget
         android:id="@+id/editor"
         android:layout_width="match_parent"

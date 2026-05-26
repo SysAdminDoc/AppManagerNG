@@ -1733,6 +1733,7 @@
     <string name="import_from_sb">Import from Swift Backup 3.0 – 3.2</string>
     <string name="pref_import_backups_hint">Select a directory containing the backup files (Swift Backup/Titanium Backup) or directories (OAndBackup)</string>
     <string name="java">Java</string>
+    <string name="dex_java_decompile_unsupported">Decompiled Java requires Android 8.0 or newer. Smali view remains available.</string>
     <string name="smali">Smali</string>
     <string name="accessibility_service_description">Generic accessibility service to carry out certain operations such as clearing cache in no-root mode.</string>
     <string name="explore">Explore</string>
