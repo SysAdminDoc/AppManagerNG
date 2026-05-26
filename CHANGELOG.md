@@ -5,6 +5,35 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - procfs status + maps parsers (T20-C follow-up, 2026-05-26)
+
+- Added `ProcStatusParser.parse(String)`, a JVM-only parser for
+  `/proc/<pid>/status`. Extracts Name, Pid, Tgid, PPid, Threads, plus the
+  full Vm* / Rss* family (VmPeak / VmSize / VmHWM / VmRSS / RssAnon /
+  RssFile / RssShmem / VmData / VmStk / VmExe / VmLib / VmPTE / VmSwap)
+  in kB. Missing fields are returned as `-1` so callers can show "n/a"
+  rather than fabricated zeros, and unknown rows are silently ignored so
+  future kernel-version additions do not invalidate the rest of the
+  snapshot. `hasAnyMemoryField()` lets the UI tell a thin-header capture
+  (Pid/Threads only) from a full memory block.
+- Added `ProcMapsSummary.parse(String)`, a JVM-only parser for
+  `/proc/<pid>/maps`. Rolls every region up into byte-count buckets:
+  `dalvikHeap` (every `[anon:dalvik-...]` variant), `nativeHeap`
+  ([heap] / `[anon:libc_malloc]` / `[anon:scudo:...]`), `stack`
+  ([stack] and `[stack:NNN]` worker threads), `code` (executable
+  file-backed regions), `library` (read-only `.so` mappings), and the
+  catch-all `otherAnon` / `otherFile` buckets. `unparsedRegions` reports
+  any input line that did not match the canonical
+  `START-END PERMS OFFSET DEV INODE PATHNAME` shape so the UI can flag
+  a partial capture.
+- Both parsers are pure functions and JVM-clean - no Android API or
+  Robolectric dependency - so the App Details memory panel can degrade
+  to the proc filesystem when `dumpsys meminfo` is truncated by
+  `system_server`. 8 status-parser tests + 10 maps-summary tests pin
+  modern / legacy fixtures, unknown-row tolerance, CRLF parity,
+  scudo+heap classification, anon_inode file-backing, and the
+  null-on-junk contract.
+
 ### Added - Backup duplicate cleaner keep-largest strategy (T19-D follow-up, 2026-05-26)
 
 - Added `DuplicateKeepStrategy.LARGEST` and `LARGEST_THEN_NEWEST` to
