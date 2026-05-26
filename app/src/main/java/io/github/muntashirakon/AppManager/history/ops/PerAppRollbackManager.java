@@ -86,9 +86,20 @@ public final class PerAppRollbackManager {
     }
 
     public static int start(@NonNull Context context, @NonNull RollbackPlan plan) {
+        return start(context, plan, null);
+    }
+
+    /**
+     * Run only the queue items whose index is true in {@code keep}; a null mask
+     * runs the whole plan. EI-09 dry-run preview uses this to commit the user's
+     * checkbox selection.
+     */
+    public static int start(@NonNull Context context, @NonNull RollbackPlan plan, @androidx.annotation.Nullable boolean[] keep) {
+        List<BatchQueueItem> items = plan.getQueueItems();
         int queuedCount = 0;
-        for (BatchQueueItem queueItem : plan.getQueueItems()) {
-            ContextCompat.startForegroundService(context, BatchOpsService.getServiceIntent(context, queueItem));
+        for (int i = 0; i < items.size(); ++i) {
+            if (keep != null && i < keep.length && !keep[i]) continue;
+            ContextCompat.startForegroundService(context, BatchOpsService.getServiceIntent(context, items.get(i)));
             ++queuedCount;
         }
         return queuedCount;
