@@ -311,7 +311,14 @@ for the original Effort / Dependency context per row.
   grants, disabled components, recent OS revert). Acceptance: each badge
   type has a single source of truth in the existing app cache, badge
   rendering does not regress list scroll, and the meaning is documented in
-  the glossary.
+  the glossary. _Data layer shipped 2026-05-26: `AttentionBadgeCalculator`
+  is a pure-function calculator that takes (dangerous-permission-ungranted,
+  user-disabled-components, recent-os-revert) and produces a single
+  prioritised badge (`OS_REVERT > DANGEROUS_PERMISSION > DISABLED_COMPONENT
+  > NONE`) plus `formatCount` for the Material-style 99+ collapse. 8 focused
+  JVM tests pin priority, clamping, severity, and count formatting. Adapter
+  wiring, glossary entry, and the single-source app-cache integration
+  remain on the T21-G roadmap row._
 - [ ] **T21-H Material 3 Adaptive layouts for tablets / large screens**:
   start with App List + App Details master/detail and Settings two-pane
   rebuild using `androidx.window` + `SlidingPaneLayout`. Acceptance: stays

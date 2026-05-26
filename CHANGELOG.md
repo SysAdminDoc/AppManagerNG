@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Attention badge calculator data layer (T21-G, 2026-05-26)
+
+- Added `AttentionBadgeCalculator`, a pure-function calculator that maps
+  three actionable-state signals (ungranted dangerous-permission count,
+  user-disabled component count, recent OS-revert count) to a single
+  prioritised `Badge` describing kind, count, and severity.
+- Priority is `OS_REVERT > DANGEROUS_PERMISSION > DISABLED_COMPONENT >
+  NONE` so the user always sees the highest-attention category first.
+- `Signals` clamps negative inputs to zero and `formatCount` collapses
+  counts above 99 to "99+" to match Material badge components.
+- 8 focused JVM tests pin priority ordering, severity tint, the negative-
+  clamp invariant, and count-format edge cases.
+- Adapter wiring, glossary entry, and the single-source-of-truth app cache
+  integration remain on the T21-G roadmap row.
+
 ### Fixed - Pre-existing TarUtils test failure on Linux CI (2026-05-26)
 
 - Skipped `TarUtilsTest.testGetRelativePathDifferentDriveLetters` on non-
