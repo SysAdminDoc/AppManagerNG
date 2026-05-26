@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Debloater impact preview (NF-16, 2026-05-25)
+
+- The Debloater confirmation dialog now appends a "Removing N apps
+  would un-bind default-app roles" section for every selected package
+  that currently holds an SMS / dialer / home / browser / assistant /
+  call-redirection / call-screening / emergency / wallet role
+  (Android 10+).
+- The role check uses `RoleManager.getRoleHolders` on a worker thread
+  so the dialog stays snappy; on API &lt; 29 the section is silently
+  omitted because the role API does not exist.
+- Pure-JVM coverage in [`DebloatImpactPreviewTest`](app/src/test/java/io/github/muntashirakon/AppManager/debloat/DebloatImpactPreviewTest.java)
+  pins the result struct, render layout, and the disruptive-role
+  allowlist.
+
 ### Added — Package visibility chip in App Details (NF-11, 2026-05-25)
 
 - App Details info card now surfaces a package-visibility tag-cloud chip
