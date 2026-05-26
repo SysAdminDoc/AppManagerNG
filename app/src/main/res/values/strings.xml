@@ -626,6 +626,16 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- NF-17 Runtime telemetry chip + dialog -->
+    <string name="runtime_telemetry_chip_label">Runtime activity (24h)</string>
+    <string name="runtime_telemetry_dialog_title">Last 24h activity</string>
+    <string name="runtime_telemetry_unavailable">Runtime activity needs usage-access permission and an installed package.</string>
+    <string name="runtime_telemetry_screen_time">Screen time: %1$s</string>
+    <string name="runtime_telemetry_times_opened">Times opened: %1$d</string>
+    <string name="runtime_telemetry_last_used">Last used: %1$s</string>
+    <string name="runtime_telemetry_mobile_data">Mobile data — RX %1$s · TX %2$s</string>
+    <string name="runtime_telemetry_wifi_data">Wi-Fi — RX %1$s · TX %2$s</string>
+
     <!-- NF-12 Privacy Dashboard deep link from App Details -> Permissions -->
     <string name="action_open_privacy_dashboard">Open in Privacy Dashboard</string>
     <string name="privacy_dashboard_fallback_hint">Per-permission timeline needs Android 12 or later — opened the standard app info instead.</string>
