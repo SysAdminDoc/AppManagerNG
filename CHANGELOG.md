@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Documentation — IzzyOnDroid listing packet (2026-05-26)
+
+- Reworked Fastlane `en-US` metadata so AppManagerNG's title, short
+  description, full description, and current changelog are NG-specific rather
+  than inherited upstream App Manager copy.
+- Trimmed Fastlane changelogs over 500 characters to fit current IzzyOnDroid /
+  F-Droid metadata guidance.
+- Added `docs/distribution/izzyondroid-listing.md` with the preferred `floss`
+  APK asset, SHA-256, package ID, policy checks, sensitive-permission rationale
+  links, and a ready-to-file inclusion request body.
+
 ### Changed — Premium polish v2 control contract (2026-05-26)
 
 - The v2 design token plane now uses a bounded `premium_radius_control` shape

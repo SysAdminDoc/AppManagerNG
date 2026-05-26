@@ -1,1 +1,1 @@
-A fully-featured package manager for android.
+Power package manager for Android, Shizuku, root and ADB
