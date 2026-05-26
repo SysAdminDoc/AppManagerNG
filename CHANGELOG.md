@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - MotionScaleGate accessibility engine (2026-05-26)
+
+- Added `MotionScaleGate` in `utils/` as the JVM-clean engine that
+  backs `MotionUtils.shouldReduceMotion`. Pure-function predicates:
+  `isReducedMotion(window, transition, animator)` returns true when
+  ANY of the three system animation-scale keys is zero;
+  `isReducedMotion(scale)` is the single-key shortcut; `parseScale`
+  swallows {@code NumberFormatException} so a malformed system value
+  reads as the default 1.0; `clampMultiplier(scale)` enforces the
+  absolute `[0.5f, 4.0f]` window; `scaledDurationMillis(base, scale)`
+  applies the clamp and zero-handling in one shot.
+- Added `diagnose(window, transition, animator)` returning a
+  `Source` enum (NONE / WINDOW / TRANSITION / ANIMATOR_DURATION) so
+  future Settings -> Accessibility surfaces can explain which key
+  triggered reduced-motion for the user.
+- 7 focused JVM tests cover the three-key gate, null-key defaulting,
+  single-key shortcut, `parseScale` malformed-string handling, the
+  clamp floor / ceiling, scaled-duration math, and the diagnose
+  precedence order. `MotionUtils` continues to be the Android-side
+  resolver; future call sites can adopt the gate directly without
+  needing a {@code Context}.
+
 ### Added - Adaptive layout width-class resolver (T21-H follow-up, 2026-05-26)
 
 - Added `WindowWidthSizeClass` enum + `resolve(int widthDp)` in `main/`,
