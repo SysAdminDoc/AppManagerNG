@@ -11,11 +11,13 @@ import androidx.core.content.ContextCompat;
 import io.github.muntashirakon.AppManager.self.filecache.InternalCacheCleanerService;
 import io.github.muntashirakon.AppManager.servermanager.WifiWaitService;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+        String action = intent.getAction();
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             if (Ops.getMode().equals(Ops.MODE_ADB_WIFI)) {
                 // Connect ADB
                 Intent serviceIntent = new Intent(context, WifiWaitService.class);
@@ -23,6 +25,10 @@ public class BootReceiver extends BroadcastReceiver {
             }
             // Schedule cache cleaning
             InternalCacheCleanerService.scheduleAlarm(context.getApplicationContext());
+            RoutineScheduler.applyAll(context);
+            RoutineScheduler.enqueueBootTriggers(context);
+        } else if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
+            RoutineScheduler.applyAll(context);
         }
     }
 }
