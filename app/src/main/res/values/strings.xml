@@ -626,6 +626,16 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- NF-07 Tracker blocking intensity policy -->
+    <string name="tracker_blocking_intensity_title">Tracker blocking intensity</string>
+    <string name="tracker_blocking_intensity_summary">Picks which detected tracker categories get blocked when you run "Block trackers".</string>
+    <string name="tracker_blocking_intensity_detect_only">Detect only</string>
+    <string name="tracker_blocking_intensity_detect_only_summary">Report trackers but do not block them.</string>
+    <string name="tracker_blocking_intensity_standard">Standard</string>
+    <string name="tracker_blocking_intensity_standard_summary">Block ad, analytics, and identification trackers. Leave crash, push, location, and social SDKs alone.</string>
+    <string name="tracker_blocking_intensity_strict">Strict</string>
+    <string name="tracker_blocking_intensity_strict_summary">Block every detected tracker. May break apps that depend on a bundled SDK for non-tracking features.</string>
+
     <!-- Onboarding -> "Next steps" tiles on the final step (EI-05) -->
     <string name="onboarding_next_steps_title">Next steps</string>
     <string name="onboarding_next_step_privileges">Run Mode Doctor &amp; Privileges check</string>
