@@ -35,6 +35,7 @@ public final class RoutineScheduler {
     private static final String PREFS_NAME = "profile_trigger_runs";
     private static final String KEY_LAST_RUN_PREFIX = "last_run_";
     private static final String KEY_LAST_RESULT_PREFIX = "last_result_";
+    private static final String KEY_LAST_DIAGNOSTICS_PREFIX = "last_diagnostics_";
 
     private RoutineScheduler() {
     }
@@ -103,6 +104,22 @@ public final class RoutineScheduler {
                 .apply();
     }
 
+    public static void recordDiagnostics(@NonNull Context context,
+                                         @NonNull String triggerId,
+                                         @NonNull String diagnostics) {
+        getRunPrefs(context).edit()
+                .putString(KEY_LAST_DIAGNOSTICS_PREFIX + triggerId, diagnostics)
+                .apply();
+    }
+
+    public static void clearStoredState(@NonNull Context context, @NonNull String triggerId) {
+        getRunPrefs(context).edit()
+                .remove(KEY_LAST_RUN_PREFIX + triggerId)
+                .remove(KEY_LAST_RESULT_PREFIX + triggerId)
+                .remove(KEY_LAST_DIAGNOSTICS_PREFIX + triggerId)
+                .apply();
+    }
+
     public static long getLastRunMillis(@NonNull Context context, @NonNull String triggerId) {
         return getRunPrefs(context).getLong(KEY_LAST_RUN_PREFIX + triggerId, 0L);
     }
@@ -110,6 +127,27 @@ public final class RoutineScheduler {
     @Nullable
     public static String getLastResult(@NonNull Context context, @NonNull String triggerId) {
         return getRunPrefs(context).getString(KEY_LAST_RESULT_PREFIX + triggerId, null);
+    }
+
+    @Nullable
+    public static String getLastDiagnostics(@NonNull Context context, @NonNull String triggerId) {
+        return getRunPrefs(context).getString(KEY_LAST_DIAGNOSTICS_PREFIX + triggerId, null);
+    }
+
+    @NonNull
+    public static String refreshDiagnostics(@NonNull Context context, @NonNull ProfileTrigger trigger) {
+        try {
+            String diagnostics = RoutineDiagnostics.collect(context, trigger);
+            recordDiagnostics(context, trigger.id, diagnostics);
+            return diagnostics;
+        } catch (Throwable th) {
+            if (th instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            String diagnostics = context.getString(R.string.profile_trigger_diagnostics_unavailable);
+            recordDiagnostics(context, trigger.id, diagnostics);
+            return diagnostics;
+        }
     }
 
     @NonNull
@@ -134,7 +172,14 @@ public final class RoutineScheduler {
     public static String formatTriggerSummary(@NonNull Context context, @NonNull ProfileTrigger trigger) {
         String state = context.getString(trigger.enabled ? R.string.enabled : R.string.disabled_app);
         String last = formatLastRun(context, trigger.id);
-        return context.getString(R.string.profile_trigger_summary, state, last);
+        String diagnostics = getLastDiagnostics(context, trigger.id);
+        if (diagnostics == null || diagnostics.isEmpty()) {
+            diagnostics = trigger.type == ProfileTrigger.TYPE_ON_BOOT
+                    ? context.getString(R.string.profile_trigger_diagnostics_boot)
+                    : context.getString(R.string.profile_trigger_diagnostics_unknown);
+        }
+        return context.getString(R.string.profile_trigger_summary, state, last,
+                context.getString(R.string.profile_trigger_diagnostics, diagnostics));
     }
 
     @NonNull

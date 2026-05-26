@@ -13,11 +13,12 @@ the shipped shape and the remaining validation gaps.
 | Trigger value type | `profiles/trigger/ProfileTrigger.java` | Immutable record. Five `Type` constants: `TYPE_TIME_OF_DAY`, `TYPE_ON_CHARGING`, `TYPE_ON_NETWORK_WIFI`, `TYPE_ON_NETWORK_ANY`, `TYPE_ON_BOOT`. Carries opaque `profileId` plus optional `hourOfDay` / `minuteOfHour` for time triggers. UUID id; created-at timestamp. |
 | Trigger store | `profiles/trigger/ProfileTriggerStore.java` | SharedPreferences-backed JSON-array store. `all / find / forProfile / put / remove / removeForProfile / toggleEnabled / setEnabled / hasAnyEnabled`. Mirrors the `AppTagStore` shape from NF-08. |
 | JSON round-trip helpers | `ProfileTrigger.toJson()` / `ProfileTrigger.fromJson()` | Type discriminator is the lowercase-snake-case string returned by `typeAsString(int)`; `parseTypeString` is the inverse. Adding a new type appends a case to both. |
-| Scheduler bridge | `profiles/trigger/RoutineScheduler.java` | Maps enabled triggers to unique WorkManager requests, handles boot-trigger one-shots, stores last-run diagnostics, and formats schedule labels for UI. |
+| Scheduler bridge | `profiles/trigger/RoutineScheduler.java` | Maps enabled triggers to unique WorkManager requests, handles boot-trigger one-shots, stores last-run and WorkManager diagnostics, and formats schedule labels for UI. |
+| WorkManager diagnostics | `profiles/trigger/RoutineDiagnostics.java` | Reads per-trigger WorkManager state, run attempts, stop reason, next schedule time, and API 36 JobScheduler pending/quota reasons when Android exposes them. |
 | Worker | `profiles/trigger/RoutineWorker.java` | Resolves the trigger/profile, starts `ProfileApplierService` with `BaseProfile.STATE_ON`, records the last result, and disables orphaned/failing triggers. |
 | Boot plumbing | `self/BootReceiver.java` + `AndroidManifest.xml` | Existing receiver now re-applies periodic schedules after `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`, then enqueues enabled boot triggers on boot. |
 | Profile UI | `profiles/ConfPreferences.java` + `preferences_profile_config.xml` | Profile editor Schedules row lists trigger state/last run, adds the five trigger types, and supports enable/disable/delete actions. |
-| Tests | `ProfileTriggerStoreTest`, `RoutineSchedulerTest`, `RoutineWorkerTest` | Store persistence, timing/constraint mapping, stable input data, worker no-op, and missing-profile disable paths. |
+| Tests | `ProfileTriggerStoreTest`, `RoutineSchedulerTest`, `RoutineWorkerTest`, `RoutineDiagnosticsTest` | Store persistence, timing/constraint mapping, stable input data, worker no-op, missing-profile disable paths, and scheduler stop/quota label coverage. |
 
 ## 2. Worker side
 
@@ -36,6 +37,13 @@ the shipped shape and the remaining validation gaps.
 or orphaned triggers. The user-visible failure state is persisted through
 `RoutineScheduler.recordRunResult(...)`; repeated failure loops are avoided by
 disabling missing-profile and exception paths before returning success.
+
+`RoutineDiagnostics` is separate from the worker because stop/quota state is
+owned by WorkManager / JobScheduler after scheduling decisions happen. The
+profile editor refreshes those diagnostics on a background thread and displays
+the last known string beside each trigger's state and last-run result. Boot
+triggers report that they are one-shot boot work rather than a periodic
+WorkManager request.
 
 ## 3. Boot trigger plumbing
 
@@ -89,7 +97,7 @@ Implementation notes:
   Schedules row opens a Material list dialog instead of adding another nested
   fragment.
 - Each stored trigger is shown with a formatted title, enabled/disabled state,
-  and last-run result.
+  last-run result, and the most recently refreshed WorkManager diagnostics.
 - Tapping a trigger opens actions for enable/disable, delete, and close.
 - Enabling/disabling routes through `ProfileTriggerStore.setEnabled(...)` and
   `RoutineScheduler.scheduleOrCancel(...)`.
@@ -116,9 +124,13 @@ Implementation notes:
 - JVM/Robolectric: `ProfileTriggerStoreTest`, `RoutineSchedulerTest`, and
   `RoutineWorkerTest` cover set-enabled persistence, WorkManager interval /
   constraint mapping, stable input data, disabled-trigger no-op, and
-  missing-profile disable behavior.
-- Compile: `compileFullDebugJavaWithJavac` passed after the NF-09 executor
-  landed.
+  missing-profile disable behavior. `RoutineDiagnosticsTest` covers
+  stop/quota and pending-reason labels plus persisted diagnostics in trigger
+  summaries.
+- Compile: `testFullDebugUnitTest --tests ...BarChartViewTest --tests
+  ...RoutineDiagnosticsTest --tests ...RoutineSchedulerTest` passed after the
+  diagnostics and accessibility hardening pass; this task includes
+  `compileFullDebugJavaWithJavac`.
 - **Pixel 9a (Android 17)** — Time-of-day trigger fires within 5 minutes
   of the configured time.
 - **Samsung S25 Ultra (One UI 8.x)** — On-charging trigger fires within
@@ -137,6 +149,8 @@ Implementation notes:
   feature builds on).
 - 2026-05-26 NF-09 — `RoutineScheduler`, `RoutineWorker`, boot re-apply, profile
   editor schedule UI, last-run diagnostics, and disable-on-failure behavior.
+- 2026-05-26 hardening — `RoutineDiagnostics` adds WorkManager stop/quota and
+  JobScheduler pending-reason visibility to routine schedules.
 - `.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md` §"NF-09 next-slice
   suggestion" — pre-implementation plan superseded by this implementation note.
 - ROADMAP **T8** — Routine Operations / Scheduler row.
