@@ -626,6 +626,11 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- EI-04 Permission Inspector chip-row filter -->
+    <string name="perm_apps_filter_all">All apps</string>
+    <string name="perm_apps_filter_user">User apps</string>
+    <string name="perm_apps_filter_granted">Granted only</string>
+
     <!-- NF-11 Package visibility chip + dialog -->
     <string name="package_visibility_query_all_chip">Queries all packages</string>
     <string name="package_visibility_queries_chip">Targeted package visibility</string>

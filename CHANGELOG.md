@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Permission Inspector filter chips (EI-04, 2026-05-25)
+
+- The per-group "apps that hold this permission" screen now has a
+  toolbar chip row with three filters: All apps (default), User apps
+  (drops system rows), and Granted only. Single-select; one chip is
+  always active.
+- `PermissionAppsViewModel.applyFilter` is the pure filter helper;
+  reload preserves the active filter so a toggle round-trip lands in
+  the same view.
+- Pure-JVM coverage at `PermissionAppsViewModelFilterTest`.
+
 ### Added — Debloater impact preview (NF-16, 2026-05-25)
 
 - The Debloater confirmation dialog now appends a "Removing N apps
