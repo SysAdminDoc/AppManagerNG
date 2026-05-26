@@ -49,6 +49,7 @@ import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.changelog.ChangelogAutoDisplay;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsJournal;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
@@ -359,6 +360,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             }
         });
         maybeShowInterruptedBatchOpRecovery();
+        ChangelogAutoDisplay.showIfPending(this);
     }
 
     private void maybeShowInterruptedBatchOpRecovery() {

@@ -13,6 +13,12 @@
         tools:summary="v3.0.0 (410)"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="whats_new"
+        app:title="@string/whats_new"
+        app:summary="@string/pref_whats_new_summary"
+        app:iconSpaceReserved="false" />
+
     <io.github.muntashirakon.preference.HyperlinkPreference
         app:key="license"
         app:title="@string/license"

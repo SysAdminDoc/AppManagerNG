@@ -624,6 +624,7 @@
     <string name="components">Components</string>
     <string name="features">Features</string>
     <string name="whats_new">What\'s new</string>
+    <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
     <string name="blocking_rules">Blocking rules</string>
     <string name="external_data">External data</string>
     <string name="internal_data">Internal data</string>

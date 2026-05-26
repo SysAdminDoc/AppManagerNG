@@ -44,6 +44,12 @@ public class AboutPreferences extends PreferenceFragment {
             mModel.loadChangeLog();
             return true;
         });
+        // What's new — dedicated entry point for the in-app changelog viewer
+        ((Preference) Objects.requireNonNull(findPreference("whats_new")))
+                .setOnPreferenceClickListener(preference -> {
+                    mModel.loadChangeLog();
+                    return true;
+                });
         // User manual
         ((Preference) Objects.requireNonNull(findPreference("user_manual")))
                 .setOnPreferenceClickListener(preference -> {
