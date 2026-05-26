@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Scheduled backup status row is tappable (EI-07, 2026-05-25)
+
+- Settings -> Backup/Restore -> "Scheduled backup status" row now opens
+  a scrollable dialog with the full WorkManager / JobScheduler
+  diagnostics, the last-run summary, and a plain-language explainer of
+  the freshness-window setting that drove the "recent" skip count in
+  the run result.
+- The preference summary still shows the truncated version; the dialog
+  is the new at-a-glance "Why did this skip?" surface.
+
 ### Added — Permission Inspector filter chips (EI-04, 2026-05-25)
 
 - The per-group "apps that hold this permission" screen now has a
