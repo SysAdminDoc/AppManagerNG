@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - simpleperf CPU profile command builder (T20-B, 2026-05-26)
+
+- Added `CpuProfileCommandBuilder.build`, a pure-function builder for the
+  canonical `simpleperf record --app <pkg> --duration <s> -e <event> -g
+  --call-graph dwarf -o <path>` argv used by the future "Record CPU
+  profile" App Details action.
+- Validates the target package name, clamps duration to the supported
+  window (default 10 s, max 120 s), normalises the event name against an
+  allowlist that falls back to `cpu-cycles`, and rejects shell
+  metacharacters / control bytes in the output path as defense-in-depth
+  against argument-injection when a runner routes through `sh -c`.
+- 10 focused JVM tests pin the canonical argv shape, the duration clamp,
+  the event allowlist behaviour, malformed-package rejection, the
+  metacharacter guard, and the realistic-path / control-byte boundaries.
+- Privileged runner integration, output capture, and the cancellation
+  surface remain on the T20-B roadmap row.
+
 ### Fixed - Settings search misses section-name queries (2026-05-26)
 
 - Settings -> Search now matches the section parent label in addition to
