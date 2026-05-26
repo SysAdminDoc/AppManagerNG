@@ -218,8 +218,12 @@ for the original Effort / Dependency context per row.
   `Android/{data,obb,media}` roots, `selectOrphans` is a pure-function
   selector with package-name validation, and `sizeOnDisk` provides recursive
   byte counts; 11 focused JVM tests pin the orphan / hidden / valid-package
-  semantics. UI wiring, `/data/data` root fallback, op_history capture, and
-  the App Details entry remain on the T19-B roadmap row._
+  semantics. Root `/data/data` fallback landed 2026-05-26 via
+  `LeftoverScanner.scanInternalDataStubs` plus a new
+  `KIND_INTERNAL_STUB` bucket; 4 additional JVM tests pin the
+  orphan / hidden / unreadable-root / all-installed cases. UI wiring,
+  op_history capture, and the App Details entry remain on the T19-B
+  roadmap row._
 - [ ] **T19-C APK duplicate finder**: index Downloads, backup destinations,
   and external storage for `.apk` / `.apks` / `.apkm` / `.xapk` files,
   deduplicate by package name + signing cert + version code, and surface a

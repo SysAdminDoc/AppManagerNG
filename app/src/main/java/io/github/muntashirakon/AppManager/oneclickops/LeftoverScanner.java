@@ -43,18 +43,28 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
  * testable. The {@code KIND_*} taxonomy is propagated through both layers so
  * UI / op-history downstream can render per-bucket counts without re-walking.
  *
- * <p>This is the data-layer slice. UI wiring, recursive size reporting, root
- * fallback for {@code /data/data}, and the deletion path with op-history
- * capture are tracked on the T19-B roadmap row.
+ * <p>The {@code /data/data/<pkg>} stub fallback is surfaced through the
+ * dedicated entry point {@link #scanInternalDataStubs} so callers can route
+ * the listing through the privileged runner (root / Shizuku) before
+ * deciding to delete. UI wiring, recursive size reporting, and the
+ * deletion path with op-history capture remain on the T19-B roadmap row.
  */
 public final class LeftoverScanner {
 
     public static final int KIND_DATA = 0;
     public static final int KIND_OBB = 1;
     public static final int KIND_MEDIA = 2;
+    /**
+     * Root-accessible {@code /data/data/<pkg>} stub left behind after an
+     * uninstall. Surfaced as a separate bucket because (a) reading
+     * {@code /data/data} requires root, so a UI must gate the
+     * privileged-runner call, and (b) deleting an internal stub is a
+     * higher-stakes action than removing an external-storage orphan.
+     */
+    public static final int KIND_INTERNAL_STUB = 3;
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({KIND_DATA, KIND_OBB, KIND_MEDIA})
+    @IntDef({KIND_DATA, KIND_OBB, KIND_MEDIA, KIND_INTERNAL_STUB})
     public @interface LeftoverKind {
     }
 
@@ -79,6 +89,7 @@ public final class LeftoverScanner {
                 case KIND_DATA: return "data";
                 case KIND_OBB: return "obb";
                 case KIND_MEDIA: return "media";
+                case KIND_INTERNAL_STUB: return "internal-stub";
                 default: return "unknown";
             }
         }
@@ -118,6 +129,35 @@ public final class LeftoverScanner {
         if (ThreadUtils.isInterrupted()) return all;
         all.addAll(scanRoot(new File(androidRoot, "media"), installedPackages, KIND_MEDIA));
         return all;
+    }
+
+    /**
+     * Walk a root-accessible {@code /data/data} directory and return every
+     * child whose name (treated as a package name) is not in
+     * {@code installedPackages}. Always returns {@code KIND_INTERNAL_STUB}.
+     *
+     * <p>Caller is responsible for routing the listing through the
+     * privileged runner (root/Shizuku) before passing the directory listing
+     * into the underlying {@link #selectOrphans} call. The {@link File}
+     * objects bound to a privileged listing intentionally need to be
+     * resolvable by the privileged runner that later deletes them; this
+     * I/O wrapper exists only for the common case where the JVM already
+     * has direct read access (e.g. when invoked from a privileged
+     * AppManagerNG worker process).
+     *
+     * @param dataDataRoot the literal {@code /data/data} directory; usually
+     *                     {@code new File("/data/data")} on real devices.
+     *                     If the directory cannot be enumerated (typical
+     *                     unprivileged caller) the method returns
+     *                     {@link Collections#emptyList()}.
+     * @param installedPackages set of currently-installed package names,
+     *                          across all users the caller can enumerate.
+     */
+    @WorkerThread
+    @NonNull
+    public static List<Leftover> scanInternalDataStubs(@NonNull File dataDataRoot,
+                                                       @NonNull Set<String> installedPackages) {
+        return scanRoot(dataDataRoot, installedPackages, KIND_INTERNAL_STUB);
     }
 
     @WorkerThread
