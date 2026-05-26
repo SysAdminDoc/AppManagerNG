@@ -5,6 +5,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Undoable action queue data layer (T21-F, 2026-05-26)
+
+- Added `UndoableActionQueue` as the deferred-commit container for the
+  Undo-SnackBar workflow. The queue is intentionally surface-agnostic:
+  `defer` registers a pending privileged commit with a deadline; `cancel`
+  rescinds it if the user taps Undo; `pollExpired` drains the elapsed
+  entries the heartbeat should now run; `drainAll` flushes the queue on
+  lifecycle teardown.
+- Injectable `Clock` strategy makes the deadline path JVM-unit-testable
+  without sleeping the test thread.
+- All public methods are thread-safe through an instance monitor, and the
+  drain order is deterministic on insertion order so a single heartbeat
+  commits actions in the order the user kicked them off.
+- 10 focused JVM tests cover the cancel-prevents-commit invariant, partial
+  draining, deterministic ordering on tied deadlines, lifecycle drainAll,
+  negative-delay clamping, and unique-handle guarantees.
+- SnackBar wiring per destructive surface (freeze, uninstall, force-stop,
+  clear-data, component-state) and the op_history capture remain tracked
+  on the T21-F roadmap row.
+
 ### Added - App memory snapshot parser data layer (T20-C, 2026-05-26)
 
 - Added `AppMemoryInfoParser.parseAppSummary`, a JVM-only parser for the
