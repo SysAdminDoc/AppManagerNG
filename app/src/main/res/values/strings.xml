@@ -1319,8 +1319,8 @@
     <string name="backup_obb_media_description">Back up OBB and media folders.</string>
     <string name="backup_cache_description">Back up <b>cache</b>, <b>no_cache</b> and <b>no_backup</b> folders.</string>
     <string name="backup_extras">Extras</string>
-    <string name="backup_extras_description">Back up app permissions, battery saving and data usage options, MagiskHide status, SSAID, etc. <font fgcolor="#ff0000">Depending on the permissions, not all extras can be restored.</font></string>
-    <string name="backup_rules_description">Back up rules configured within App Manager. <font fgcolor="#ff0000">Depending on the permissions, not all rules can be reapplied during restore.</font></string>
+    <string name="backup_extras_description">Back up app permissions, battery saving and data usage options, MagiskHide status, SSAID, etc. <b>Warning:</b> Depending on the permissions, not all extras can be restored.</string>
+    <string name="backup_rules_description">Back up rules configured within App Manager. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
     <string name="backup_system_data">System data</string>
     <string name="backup_system_data_description">Root-only backup for Android System: Wi-Fi networks, Bluetooth pairings, and account databases.</string>
     <string name="backup_multiple_description">Create a separate <i>named</i> backup instead of the base backup.</string>
@@ -2775,7 +2775,7 @@
     <string name="sensors">Sensors</string>
     <string name="tag_sensors_disabled">Sensors disabled</string>
     <string name="pref_use_system_font">Use system font</string>
-    <string name="pref_use_system_font_msg">Use the system-default font instead of the material font. <font fgcolor="#ff0000">This is an experimental feature.</font></string>
+    <string name="pref_use_system_font_msg">Use the system-default font instead of the material font. <b>Experimental:</b> This feature may not work as expected on every device.</string>
     <string name="pref_preview_new_design">Preview new design (BETA)</string>
     <string name="pref_preview_new_design_msg">Apply the refreshed visual language: refined typography, calmer surfaces, tighter spacing and bounded controls. Restart the app after toggling. Layouts are unchanged in this release.</string>
     <string name="actual_installer">Actual installer</string>

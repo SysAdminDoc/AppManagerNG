@@ -125,7 +125,9 @@ work to separate root research files.
 
 - [x] WorkManager quota and stop-reason instrumentation for scheduled backup
   and routine scheduling.
-- [ ] High-contrast theme audit.
+- [ ] High-contrast theme audit. Static v2 palette/string hardening is recorded
+  in `docs/audits/2026-05-26-high-contrast-theme.md`; manual major-screen and
+  device/OEM contrast walkthrough remains open.
 - [ ] 200 percent font-scale audit.
 - [ ] TalkBack traversal and action-label audit.
 - [ ] Reduced-motion setting audit.
