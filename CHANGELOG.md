@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Keystore password lifecycle invariant test (2026-05-25)
+
+- New `KeyStorePasswordLifecycleTest` pins the T3 keystore-password
+  contract: methods and fields under `KeyStoreManager` whose names look
+  password-related must use `char[]`, not `String`, so
+  `Utils.clearChars(char[])` can zero the buffer afterwards. A drive-by
+  refactor that reintroduces a `String` password parameter now breaks
+  the build in `tests.yml`.
+
 ### Changed — Mode Doctor can share results with a Support info bundle (2026-05-25)
 
 - Settings -> Privileges -> Mode Doctor result dialog now offers a "Share
