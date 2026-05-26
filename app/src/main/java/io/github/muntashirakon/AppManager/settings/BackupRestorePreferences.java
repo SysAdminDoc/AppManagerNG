@@ -421,6 +421,10 @@ public class BackupRestorePreferences extends PreferenceFragment {
         Preference scheduleRunNow = requirePreference("backup_schedule_run_now");
         Preference scheduleShortcut = requirePreference("backup_schedule_shortcut");
         Preference scheduleStatus = requirePreference("backup_schedule_status");
+        scheduleStatus.setOnPreferenceClickListener(p -> {
+            showScheduledBackupDiagnosticsDialog();
+            return true;
+        });
         updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
         refreshScheduledBackupDiagnostics();
         scheduleEnabled.setChecked(Prefs.BackupRestore.isScheduledAutoBackupEnabled());
@@ -797,5 +801,46 @@ public class BackupRestorePreferences extends PreferenceFragment {
         return new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                 .putExtra("android.provider.extra.SHOW_ADVANCED", true)
                 .putExtra("android.provider.extra.INITIAL_URI", Paths.getPrimaryPath(path).getUri());
+    }
+
+    /**
+     * EI-07 — show the full scheduled-backup diagnostics in a scrollable dialog
+     * so users can see the freshness-window reason behind aggregate skip
+     * counts that wouldn't fit in the preference summary. "Run scheduled
+     * backup now" deep-links to the existing button.
+     */
+    private void showScheduledBackupDiagnosticsDialog() {
+        Context context = getContext();
+        if (context == null) return;
+        String diagnostics = Prefs.BackupRestore.getScheduledBackupLastDiagnostics();
+        String lastResult = Prefs.BackupRestore.getScheduledBackupLastResult();
+        long lastRun = Prefs.BackupRestore.getScheduledBackupLastRun();
+        int freshnessDays = Prefs.BackupRestore.getScheduledBackupMinimumAgeDays();
+        StringBuilder body = new StringBuilder();
+        if (lastRun > 0) {
+            body.append(getString(R.string.pref_backup_schedule_last_run,
+                    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                            .format(new java.util.Date(lastRun)),
+                    lastResult == null || lastResult.isEmpty()
+                            ? getString(R.string.state_unknown)
+                            : lastResult));
+            body.append("\n\n");
+        }
+        body.append(getString(R.string.pref_backup_schedule_diagnostics_freshness_explainer,
+                freshnessDays <= 0
+                        ? getString(R.string.pref_backup_schedule_minimum_age_always)
+                        : getResources().getQuantityString(
+                                R.plurals.pref_backup_schedule_minimum_age_days,
+                                freshnessDays, freshnessDays)));
+        body.append("\n\n");
+        body.append(diagnostics == null || diagnostics.isEmpty()
+                ? getString(R.string.auto_backup_diagnostics_unknown)
+                : diagnostics);
+        new io.github.muntashirakon.dialog.ScrollableDialogBuilder(requireActivity())
+                .setTitle(R.string.pref_backup_schedule_diagnostics_title)
+                .setMessage(body.toString())
+                .enableAnchors()
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 }
