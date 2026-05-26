@@ -300,7 +300,17 @@ for the original Effort / Dependency context per row.
   focused JVM tests cover legacy non-RSS dumps, garbage numerics, missing
   headers, the modern-vs-legacy jank row, last-write-wins percentile
   bucketing, and forward compatibility with unrecognized App Summary rows.
-  procfs streaming and the App Details UI remain on the T20-C roadmap row._
+  procfs streaming landed 2026-05-26 via `ProcStatusParser.parse` (Name /
+  Pid / Tgid / PPid / Threads plus VmPeak / VmSize / VmHWM / VmRSS /
+  RssAnon / RssFile / RssShmem / VmData / VmStk / VmExe / VmLib / VmPTE /
+  VmSwap in kB) and `ProcMapsSummary.parse` (per-region rollup into
+  dalvik / native heap / stack / code / library / other-anon / other-file
+  buckets). 8 + 10 focused JVM tests pin the modern dump, unknown-row
+  tolerance, garbled-value sentinel, junk-input null, CRLF parity,
+  representative `/proc/maps` shape, dalvik-variant grouping, stack
+  variants, scudo / heap classification, file-backed anon_inode handling,
+  and malformed-line counting. App Details UI remains on the T20-C
+  roadmap row._
 - [ ] T20-D LeakCanary leak-detection wrapper. Parked: requires shipping a
   debuggable agent into target processes, conflicts with NG's GPL+vendored
   posture, and the legacy roadmap already flagged it as high-risk-for-
