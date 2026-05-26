@@ -151,8 +151,14 @@ work to separate root research files.
   `scripts/verify-native-page-alignment.py` against the build, and runs the
   hidden-API + DB-migration instrumented tests on an API-37 google_apis
   emulator. Real-device Shizuku verification still requires manual sign-off.
-- [ ] Material Components 1.14 / minSdk 23 decision, tracked against
-  [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md).
+- [x] Material Components 1.14 / minSdk 23 decision. Recommendation memo is
+  recorded in
+  [`docs/policy/2026-05-26-minsdk-23-decision.md`](docs/policy/2026-05-26-minsdk-23-decision.md)
+  alongside the dependency ledger in
+  [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md):
+  hold `min_sdk = 21` through v0.6.x, reopen when one of the named
+  forced-decision triggers fires (security backport gap, hard 1.14.0
+  component dependency, API-21 CI loss, external integrator dependency).
 
 ### Later Research Buckets
 
