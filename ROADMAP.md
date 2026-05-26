@@ -235,8 +235,19 @@ for the original Effort / Dependency context per row.
   keep strategies, deterministic path tie-break, and
   `reclaimableBytes` accounting; 13 focused JVM tests pin bucket separation
   by cert/version, drop semantics, and unknown-size handling. APK
-  enumeration on disk, parser glue, and One-Click Ops UI remain on the
-  T19-C roadmap row._
+  enumeration glue landed 2026-05-26 via `ApkFileScanner.scan` (depth-first
+  walk with explicit stack, symlink-cycle defence via canonical-path
+  visited set, MAX_RECURSION_DEPTH cap, cancellation signal + thread
+  interrupt) plus the file-predicate trio
+  `isAcceptableApk` / `hasAcceptedExtension` / `matchesPartialDownloadSuffix`
+  with zero-byte rejection, hidden-file rejection, and the
+  `.crdownload` / `.part` / `.download` / `.opdownload` / `.tmp` partial
+  allow-list. 13 focused JVM tests pin the extension matrix, the
+  case-insensitive walk, nested directory enumeration, cancellation
+  short-circuit, custom-extension-set override, and the individual
+  rejection predicates. Parser glue (PackageManager.getPackageArchiveInfo
+  + .apkm/.xapk parsers) and One-Click Ops UI remain on the T19-C
+  roadmap row._
 - [ ] **T19-D Backup duplicate cleaner**: detect duplicate
   `<package>@<version>@<variant>` backup archives across configured backup
   roots; offer per-pair "keep newest" or "keep largest" with manual override.
