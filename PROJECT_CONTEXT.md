@@ -12,7 +12,7 @@
 > plans are archived under `docs/roadmap/archive/`. Latest code baseline before
 > this pass: `7febf06` on `main`.
 > Post-consolidation batches have landed NF-20/NF-21, NF-19/NF-22, NF-23,
-> NF-24 through NF-29, EI-11 through EI-15; read `ROADMAP.md` plus
+> NF-24 through NF-29 and EI-11 through EI-16; read `ROADMAP.md` plus
 > `CHANGELOG.md` for the exact current open item.
 >
 > Previous consolidated baseline: **2026-05-25 iter 146**. Iter-146 shipped

@@ -76,7 +76,7 @@ work to separate root research files.
   for files that cannot be rendered as text.
 - [x] **EI-14 BarChart manual minimum value**: support an explicit minimum axis
   value without breaking existing auto-scaling.
-- [ ] **EI-16 Dex viewer API caveat**: surface the API <26 behavior caveat in
+- [x] **EI-16 Dex viewer API caveat**: surface the API <26 behavior caveat in
   the Dex viewer rather than leaving it as tribal knowledge.
 
 ### v0.6.0 Blockers
