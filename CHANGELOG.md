@@ -5,6 +5,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - APK file scanner data layer (T19-C follow-up, 2026-05-26)
+
+- Added `ApkFileScanner.scan(File, CancellationSignal)` plus the
+  three pure-function predicates `isAcceptableApk`,
+  `hasAcceptedExtension`, and `matchesPartialDownloadSuffix`. Walks a
+  directory tree depth-first with an explicit stack (no recursion), a
+  canonical-path visited set that short-circuits symlink loops, and a
+  `MAX_RECURSION_DEPTH = 32` ceiling that matches Android's scoped-
+  storage depth limits.
+- Recognised extensions are the canonical APK set
+  (`.apk`/`.apks`/`.apkm`/`.xapk`), case-insensitive. Zero-byte files,
+  hidden files (leading dot), and partial-download markers
+  (`.crdownload`/`.part`/`.download`/`.opdownload`/`.tmp`) are dropped
+  by the predicate so the duplicate selector never sees them.
+- `ApkFileScanner.CancellationSignal` plus a per-iteration
+  `ThreadUtils.isInterrupted()` check let the UI abort a scan bounded;
+  the scanner returns the partial set it had collected so far.
+- 13 focused JVM tests cover the extension matrix, nested-directory
+  enumeration, zero-byte / hidden / partial-download rejection,
+  case-insensitive matching, the custom-extension-set override, the
+  cancellation short-circuit, and the individual rejection predicates.
+  Parser glue (PackageManager.getPackageArchiveInfo + .apkm/.xapk
+  parsers) and the One-Click Ops UI remain on the T19-C row.
+
 ### Added - Attention badge app-cache adapter (T21-G follow-up, 2026-05-26)
 
 - Added `AttentionBadgeSource` in `main/` as the single integration point
