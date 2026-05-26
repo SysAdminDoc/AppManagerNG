@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer
 import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
@@ -80,7 +81,7 @@ public class TrackerWindow implements View.OnTouchListener {
                 WindowManager.LayoutParams.WRAP_CONTENT, type, flags, PixelFormat.TRANSLUCENT);
         mWindowLayoutParams.gravity = Gravity.CENTER;
         mWindowLayoutParams.width = mMaxWidth;
-        mWindowLayoutParams.windowAnimations = android.R.style.Animation_Toast;
+        MotionUtils.setWindowAnimations(context, mWindowLayoutParams, android.R.style.Animation_Toast);
 
         mView = View.inflate(themedContext, R.layout.window_activity_tracker, null);
         mIconView = mView.findViewById(R.id.icon);

@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Reduced-motion hardening (2026-05-26)
+
+- Added `MotionUtils` to centralize system animation-scale checks and route
+  app-owned transitions through one reduced-motion gate.
+- Settings subpage transitions, Settings and Scanner fragment animations, Help
+  and Code Editor search reveal transitions, and the UI tracker overlay window
+  animation now skip app-controlled motion when a system animation scale is 0.
+- Added Robolectric coverage for the reduced-motion detector, including
+  disabled, enabled, missing, and malformed animation-scale values.
+
 ### Changed - TalkBack action-label hardening (2026-05-26)
 
 - The UI tracker floating window now labels its expand, move, app-details,
