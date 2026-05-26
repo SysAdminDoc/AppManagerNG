@@ -37,14 +37,18 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.scanner.vt.VtAvEngineResult;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -323,34 +327,47 @@ public class ScannerFragment extends Fragment {
     }
 
     private void setTrackerInfo(@NonNull List<SignatureInfo> trackerInfoList, @NonNull View view) {
-        Map<String, SpannableStringBuilder> foundTrackerInfoMap = new ArrayMap<>();
-        foundTrackerInfoMap.putAll(getNativeLibraryInfo(true));
+        Map<String, SpannableStringBuilder> nativeTrackerInfoMap = getNativeLibraryInfo(true);
+        List<ScannerTrackerSummary.Organization> trackerSummaries = ScannerTrackerSummary.summarize(trackerInfoList);
+        List<Spannable> foundTrackerInfo = new ArrayList<>(nativeTrackerInfoMap.values());
+        EnumMap<TrackerCategory, List<Spannable>> trackerRowsByCategory = new EnumMap<>(TrackerCategory.class);
+        TreeSet<String> foundTrackerNames = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        foundTrackerNames.addAll(nativeTrackerInfoMap.keySet());
         boolean hasSecondDegree = false;
-        // Iterate over signatures again but this time list only the found ones.
-        for (SignatureInfo trackerInfo : trackerInfoList) {
-            if (foundTrackerInfoMap.get(trackerInfo.label) == null) {
-                foundTrackerInfoMap.put(trackerInfo.label, new SpannableStringBuilder()
-                        .append(getPrimaryText(mActivity, trackerInfo.label)));
+
+        for (ScannerTrackerSummary.Organization trackerSummary : trackerSummaries) {
+            SpannableStringBuilder row = buildTrackerOrganizationRow(trackerSummary);
+            foundTrackerInfo.add(row);
+            List<Spannable> rows = trackerRowsByCategory.get(trackerSummary.category);
+            if (rows == null) {
+                rows = new ArrayList<>();
+                trackerRowsByCategory.put(trackerSummary.category, rows);
             }
-            //noinspection ConstantConditions Never null here
-            foundTrackerInfoMap.get(trackerInfo.label)
-                    .append("\n")
-                    .append(getMonospacedText(trackerInfo.signature))
-                    .append(getSmallerText(" (" + trackerInfo.getCount() + ")"));
-            if (!hasSecondDegree) {
-                hasSecondDegree = trackerInfo.label.startsWith("²");
+            rows.add(row);
+            foundTrackerNames.add(trackerSummary.label);
+            for (SignatureInfo signatureInfo : trackerSummary.signatures) {
+                if (!hasSecondDegree && signatureInfo.label.startsWith("²")) {
+                    hasSecondDegree = true;
+                }
             }
         }
-        Set<String> foundTrackerNames = foundTrackerInfoMap.keySet();
-        List<Spannable> foundTrackerInfo = new ArrayList<>(foundTrackerInfoMap.values());
+
         Collections.sort(foundTrackerInfo, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
         SpannableStringBuilder trackerList = new SpannableStringBuilder(UiUtils.getOrderedList(foundTrackerInfo));
+        CharSequence[] filterLabels = buildTrackerFilterLabels(trackerRowsByCategory);
+        CharSequence[] filterMessages = buildTrackerFilterMessages(trackerList, trackerRowsByCategory);
+        SpannableStringBuilder categoryBreakdown = buildTrackerCategoryBreakdown(trackerRowsByCategory);
+
         SpannableStringBuilder foundTrackerList = new SpannableStringBuilder();
-        int totalTrackersFound = foundTrackerInfoMap.size();
+        int totalTrackersFound = foundTrackerNames.size();
         if (totalTrackersFound > 0) {
             foundTrackerList.append(getString(R.string.found_trackers)).append(" ").append(
                     TextUtilsCompat.joinSpannable(", ", foundTrackerNames));
+            if (categoryBreakdown.length() > 0) {
+                foundTrackerList.append("\n").append(categoryBreakdown);
+            }
         }
+
         int totalTrackerClasses = mViewModel.getTrackerClasses().size();
         // Get summary
         CharSequence summary;
@@ -383,16 +400,95 @@ public class ScannerFragment extends Fragment {
         MaterialCardView trackersView = view.findViewById(R.id.tracker);
         boolean finalHasSecondDegree = hasSecondDegree;
         trackersView.setOnClickListener(v -> {
-            TrackerInfoDialog fragment = TrackerInfoDialog.getInstance(coloredSummary, trackerList, finalHasSecondDegree);
+            TrackerInfoDialog fragment = TrackerInfoDialog.getInstance(coloredSummary, trackerList,
+                    finalHasSecondDegree, filterLabels, filterMessages);
             fragment.show(getParentFragmentManager(), TrackerInfoDialog.TAG);
         });
+    }
+
+    @NonNull
+    private SpannableStringBuilder buildTrackerOrganizationRow(
+            @NonNull ScannerTrackerSummary.Organization organization) {
+        SpannableStringBuilder builder = new SpannableStringBuilder(getPrimaryText(mActivity, organization.label));
+        builder.append("\n").append(getSmallerText(getTrackerOrganizationSummary(organization)));
+        for (SignatureInfo signatureInfo : organization.signatures) {
+            builder.append("\n")
+                    .append(getMonospacedText(signatureInfo.signature))
+                    .append(getSmallerText(" (" + signatureInfo.getCount() + ")"));
+        }
+        return builder;
+    }
+
+    @NonNull
+    private String getTrackerOrganizationSummary(@NonNull ScannerTrackerSummary.Organization organization) {
+        List<String> parts = new ArrayList<>(3);
+        parts.add(getString(organization.category.getLabelRes()));
+        parts.add(getResources().getQuantityString(R.plurals.scanner_signature_count,
+                organization.getSignatureCount(), organization.getSignatureCount()));
+        parts.add(getResources().getQuantityString(R.plurals.classes,
+                organization.classCount, organization.classCount));
+        return TextUtils.join(" - ", parts);
+    }
+
+    @Nullable
+    private CharSequence[] buildTrackerFilterLabels(@NonNull EnumMap<TrackerCategory, List<Spannable>> rowsByCategory) {
+        if (rowsByCategory.size() <= 1) {
+            return null;
+        }
+        List<CharSequence> labels = new ArrayList<>(rowsByCategory.size() + 1);
+        labels.add(getString(R.string.all));
+        for (TrackerCategory category : TrackerCategory.values()) {
+            List<Spannable> rows = rowsByCategory.get(category);
+            if (rows == null || rows.isEmpty()) {
+                continue;
+            }
+            labels.add(getString(R.string.scanner_category_chip,
+                    getString(category.getLabelRes()), rows.size()));
+        }
+        return labels.toArray(new CharSequence[0]);
+    }
+
+    @Nullable
+    private CharSequence[] buildTrackerFilterMessages(@NonNull CharSequence allRows,
+                                                      @NonNull EnumMap<TrackerCategory, List<Spannable>> rowsByCategory) {
+        if (rowsByCategory.size() <= 1) {
+            return null;
+        }
+        List<CharSequence> messages = new ArrayList<>(rowsByCategory.size() + 1);
+        messages.add(allRows);
+        for (TrackerCategory category : TrackerCategory.values()) {
+            List<Spannable> rows = rowsByCategory.get(category);
+            if (rows == null || rows.isEmpty()) {
+                continue;
+            }
+            Collections.sort(rows, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
+            messages.add(UiUtils.getOrderedList(rows));
+        }
+        return messages.toArray(new CharSequence[0]);
+    }
+
+    @NonNull
+    private SpannableStringBuilder buildTrackerCategoryBreakdown(
+            @NonNull EnumMap<TrackerCategory, List<Spannable>> rowsByCategory) {
+        List<CharSequence> parts = new ArrayList<>();
+        for (TrackerCategory category : TrackerCategory.values()) {
+            List<Spannable> rows = rowsByCategory.get(category);
+            if (rows == null || rows.isEmpty()) {
+                continue;
+            }
+            parts.add(getString(R.string.scanner_category_summary,
+                    getString(category.getLabelRes()), rows.size()));
+        }
+        return new SpannableStringBuilder(TextUtilsCompat.joinSpannable(" - ", parts));
     }
 
     private void setLibraryInfo(@NonNull List<SignatureInfo> libraryInfoList, @NonNull View view) {
         Map<String, SpannableStringBuilder> foundLibInfoMap = new ArrayMap<>();
         foundLibInfoMap.putAll(getNativeLibraryInfo(false));
+        Map<String, String> libTypeByLabel = new HashMap<>();
         // Iterate over signatures again but this time list only the found ones.
         for (SignatureInfo libraryInfo : libraryInfoList) {
+            libTypeByLabel.put(libraryInfo.label, libraryInfo.type);
             if (foundLibInfoMap.get(libraryInfo.label) == null) {
                 // Add the lib info since it isn't added already
                 foundLibInfoMap.put(libraryInfo.label, new SpannableStringBuilder()
@@ -410,6 +506,9 @@ public class ScannerFragment extends Fragment {
         int totalLibsFound = foundLibInfoList.size();
         Collections.sort(foundLibInfoList, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
         Spanned foundLibsInfo = UiUtils.getOrderedList(foundLibInfoList);
+        Map<String, List<Spannable>> libraryRowsByType = getLibraryRowsByType(foundLibInfoMap, libTypeByLabel);
+        CharSequence[] filterLabels = buildNamedFilterLabels(libraryRowsByType);
+        CharSequence[] filterMessages = buildNamedFilterMessages(foundLibsInfo, libraryRowsByType);
         String summary;
         if (totalLibsFound == 0) {
             summary = getString(R.string.no_libs);
@@ -422,10 +521,59 @@ public class ScannerFragment extends Fragment {
         if (totalLibsFound == 0) return;
         MaterialCardView libsView = view.findViewById(R.id.libs);
         libsView.setOnClickListener(v -> {
-            LibraryInfoDialog fragment = LibraryInfoDialog.getInstance(summary, foundLibsInfo);
+            LibraryInfoDialog fragment = LibraryInfoDialog.getInstance(summary, foundLibsInfo,
+                    filterLabels, filterMessages);
             fragment.show(getParentFragmentManager(), LibraryInfoDialog.TAG);
         });
 
+    }
+
+    @NonNull
+    private Map<String, List<Spannable>> getLibraryRowsByType(
+            @NonNull Map<String, SpannableStringBuilder> foundLibInfoMap,
+            @NonNull Map<String, String> libTypeByLabel) {
+        Map<String, List<Spannable>> rowsByType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, String> entry : libTypeByLabel.entrySet()) {
+            SpannableStringBuilder row = foundLibInfoMap.get(entry.getKey());
+            if (row == null) {
+                continue;
+            }
+            List<Spannable> rows = rowsByType.get(entry.getValue());
+            if (rows == null) {
+                rows = new ArrayList<>();
+                rowsByType.put(entry.getValue(), rows);
+            }
+            rows.add(row);
+        }
+        return rowsByType;
+    }
+
+    @Nullable
+    private CharSequence[] buildNamedFilterLabels(@NonNull Map<String, List<Spannable>> rowsByName) {
+        if (rowsByName.size() <= 1) {
+            return null;
+        }
+        List<CharSequence> labels = new ArrayList<>(rowsByName.size() + 1);
+        labels.add(getString(R.string.all));
+        for (Map.Entry<String, List<Spannable>> entry : rowsByName.entrySet()) {
+            labels.add(getString(R.string.scanner_category_chip, entry.getKey(), entry.getValue().size()));
+        }
+        return labels.toArray(new CharSequence[0]);
+    }
+
+    @Nullable
+    private CharSequence[] buildNamedFilterMessages(@NonNull CharSequence allRows,
+                                                    @NonNull Map<String, List<Spannable>> rowsByName) {
+        if (rowsByName.size() <= 1) {
+            return null;
+        }
+        List<CharSequence> messages = new ArrayList<>(rowsByName.size() + 1);
+        messages.add(allRows);
+        for (List<Spannable> rows : rowsByName.values()) {
+            Collections.sort(rows, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
+            messages.add(UiUtils.getOrderedList(rows));
+        }
+        return messages.toArray(new CharSequence[0]);
     }
 
     @NonNull
