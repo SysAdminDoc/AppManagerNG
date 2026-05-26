@@ -20,6 +20,8 @@ work to separate root research files.
 - NF-09 now has a WorkManager-backed executor, boot/package-replaced
   re-application, profile-editor schedule UI, last-run diagnostics, and
   disable-on-failure behavior.
+- NF-10 normalized the v2 control shape contract away from pill/oval text
+  backdrops, synced the staged design resources, and added a JVM guard test.
 - The historical roadmap and the 2026-05-25 research feature plans were
   archived under `docs/roadmap/archive/` during this consolidation pass.
 
@@ -87,7 +89,7 @@ work to separate root research files.
 - [x] **NF-09 Routine scheduler executor**: build the `RoutineWorker`, boot
   receiver, Settings UI, last-run diagnostics, and disable-on-failure behavior
   on top of the shipped `ProfileTriggerStore`.
-- [ ] **NF-10 Premium Polish Phase 2**: continue the UI polish pass with
+- [x] **NF-10 Premium Polish Phase 2**: continue the UI polish pass with
   restrained Material components, accessibility review, and no pill, oval, or
   fully-rounded text backdrops.
 

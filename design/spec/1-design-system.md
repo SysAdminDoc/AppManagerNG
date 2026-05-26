@@ -200,7 +200,10 @@ Operational rules:
 | `radius-card` | 12dp | list row/card |
 | `radius-sheet` | 16dp | bottom sheet top corners |
 | `radius-modal` | 24dp | dialogs, onboarding cards |
-| `radius-pill` | 9999dp | chips, badges, search bar |
+| `radius-control` | 8dp | chips, badges, search bar, compact buttons |
+
+No v2 control uses a fully rounded or 9999dp pill radius. Circular shapes are
+reserved for actual icon/avatar masks where the content itself is non-text.
 
 ## Iconography
 

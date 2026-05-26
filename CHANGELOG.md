@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Premium polish v2 control contract (2026-05-26)
+
+- The v2 design token plane now uses a bounded `premium_radius_control` shape
+  for search, chips, badges, extended FABs, and status text backdrops instead
+  of a pill/fully-rounded control token.
+- Updated onboarding/pro-mode help copy and the staged `design/impl` resources
+  so implementation resources and design documentation agree on the no-pill
+  control rule.
+- Added a JVM resource contract test that fails if app resources reintroduce
+  the deprecated v2 pill radius token, shape name, or user-facing copy.
+
 ### Changed — Routine scheduler executor (2026-05-26)
 
 - Profile schedules now have a WorkManager-backed executor: non-boot triggers
