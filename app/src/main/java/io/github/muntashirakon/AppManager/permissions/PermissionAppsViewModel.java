@@ -52,6 +52,9 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         }
     }
 
+    /** EI-04 — chip-row filter state. */
+    public enum Filter { ALL, USER_APPS, GRANTED }
+
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private final AppOpsManagerCompat mAppOpsManager = new AppOpsManagerCompat();
     private final MutableLiveData<List<AppRow>> mRows = new MutableLiveData<>();
@@ -61,6 +64,11 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> mLastSkippedCount = new MutableLiveData<>();
 
     private PermissionGroupCatalog.Group mGroup;
+    /** The full unfiltered set; {@link #mRows} stays the post-filter view. */
+    @NonNull
+    private List<AppRow> mUnfiltered = Collections.emptyList();
+    @NonNull
+    private Filter mFilter = Filter.ALL;
 
     public PermissionAppsViewModel(@NonNull Application application) {
         super(application);
@@ -141,10 +149,46 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                     return String.valueOf(a.label).compareToIgnoreCase(String.valueOf(b.label));
                 }
             });
-            mRows.postValue(rows);
+            mUnfiltered = rows;
+            mRows.postValue(applyFilter(rows, mFilter));
         } finally {
             mLoading.postValue(false);
         }
+    }
+
+    /** EI-04 — change the active chip-row filter and re-emit. */
+    public void setFilter(@NonNull Filter filter) {
+        if (mFilter == filter) return;
+        mFilter = filter;
+        mRows.postValue(applyFilter(mUnfiltered, mFilter));
+    }
+
+    @NonNull
+    public Filter getFilter() {
+        return mFilter;
+    }
+
+    @NonNull
+    static List<AppRow> applyFilter(@NonNull List<AppRow> source, @NonNull Filter filter) {
+        if (filter == Filter.ALL || source.isEmpty()) {
+            return new ArrayList<>(source);
+        }
+        ArrayList<AppRow> out = new ArrayList<>(source.size());
+        for (AppRow row : source) {
+            switch (filter) {
+                case USER_APPS:
+                    if (!row.isSystem) out.add(row);
+                    break;
+                case GRANTED:
+                    if (row.anyGranted) out.add(row);
+                    break;
+                case ALL:
+                default:
+                    out.add(row);
+                    break;
+            }
+        }
+        return out;
     }
 
     public void togglePermission(@NonNull AppRow row) {

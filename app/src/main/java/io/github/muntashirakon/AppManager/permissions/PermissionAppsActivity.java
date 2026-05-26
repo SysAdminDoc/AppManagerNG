@@ -94,6 +94,7 @@ public class PermissionAppsActivity extends BaseActivity {
 
         mViewModel = new ViewModelProvider(this).get(PermissionAppsViewModel.class);
         mViewModel.setGroup(mGroup);
+        bindFilterChips();
         mViewModel.getRows().observe(this, rows -> {
             mRows = rows;
             mAdapter.submit(rows);
@@ -218,5 +219,26 @@ public class PermissionAppsActivity extends BaseActivity {
             if (!row.anyGranted && row.anyModifiable) return true;
         }
         return false;
+    }
+
+    /**
+     * EI-04 — wire the three filter chips. The ChipGroup is single-selection
+     * with selection-required so exactly one chip is always active.
+     */
+    private void bindFilterChips() {
+        com.google.android.material.chip.ChipGroup group = findViewById(R.id.perm_apps_filter_chips);
+        if (group == null || mViewModel == null) return;
+        group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
+            int id = checkedIds.isEmpty() ? R.id.chip_perm_filter_all : checkedIds.get(0);
+            PermissionAppsViewModel.Filter filter;
+            if (id == R.id.chip_perm_filter_user) {
+                filter = PermissionAppsViewModel.Filter.USER_APPS;
+            } else if (id == R.id.chip_perm_filter_granted) {
+                filter = PermissionAppsViewModel.Filter.GRANTED;
+            } else {
+                filter = PermissionAppsViewModel.Filter.ALL;
+            }
+            mViewModel.setFilter(filter);
+        });
     }
 }
