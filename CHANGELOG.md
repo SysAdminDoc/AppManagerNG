@@ -5,6 +5,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Attention badge app-cache adapter (T21-G follow-up, 2026-05-26)
+
+- Added `AttentionBadgeSource` in `main/` as the single integration point
+  between the `App` cache row and the existing
+  `AttentionBadgeCalculator`. Mapping rules: `dangerousPermissionsRequestedNotGranted`
+  = `max(0, app.dangerousPermTotal - app.dangerousPermGranted)`,
+  `userDisabledComponentCount` = `max(0, app.rulesCount)`,
+  `recentOsRevertCount` from the caller (the cache does not track this
+  signal yet; a future `OsRevertMonitor.countRecent` will plug into the
+  three-arg overload).
+- `forApp(App)` / `forApp(App, int)` derive the calculator's `Signals`;
+  `badgeFor(App, int)` resolves the signals through `compute()` in one
+  pass for the main-list adapter call site. `null` rows are tolerated
+  (zero signals) so a partially-loaded cache cannot crash the adapter.
+- 11 focused JVM tests cover the dangerous-permission derivation, the
+  rules-count proxy, defensive clamping (negative rulesCount, granted >
+  total), null-row tolerance, and full calculator-priority
+  pass-through. The adapter wiring and glossary entry remain on the
+  T21-G row.
+
 ### Added - procfs status + maps parsers (T20-C follow-up, 2026-05-26)
 
 - Added `ProcStatusParser.parse(String)`, a JVM-only parser for
