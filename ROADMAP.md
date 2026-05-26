@@ -59,7 +59,7 @@ work to separate root research files.
   for the editor search UI without losing the current query state.
 - [x] **EI-12 Code Editor line separator rewrite**: replace the TODO-backed
   regex path with a safe line-separator conversion routine.
-- [ ] **EI-13 Main list select all matching active chip**: let users select the
+- [x] **EI-13 Main list select all matching active chip**: let users select the
   current filtered/chip-matched result set without selecting hidden rows.
 - [ ] **EI-15 SharedPrefs atomic writes**: move SharedPrefs edits to the
   existing atomic-file pattern so failed writes do not corrupt XML.

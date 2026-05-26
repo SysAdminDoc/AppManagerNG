@@ -18,6 +18,7 @@ import io.github.muntashirakon.widget.MultiSelectionView;
 public class MainBatchOpsHandler implements MultiSelectionView.OnSelectionChangeListener {
     private final MainViewModel mViewModel;
     private final MenuItem mUninstallMenu;
+    private final MenuItem mSelectVisibleMenu;
     private final MenuItem mFreezeUnfreezeMenu;
     private final MenuItem mForceStopMenu;
     private final MenuItem mClearDataCacheMenu;
@@ -43,6 +44,7 @@ public class MainBatchOpsHandler implements MultiSelectionView.OnSelectionChange
         Menu selectionMenu = multiSelectionView.getMenu();
         mViewModel = viewModel;
         mUninstallMenu = selectionMenu.findItem(R.id.action_uninstall);
+        mSelectVisibleMenu = selectionMenu.findItem(R.id.action_select_visible);
         mFreezeUnfreezeMenu = selectionMenu.findItem(R.id.action_freeze_unfreeze);
         mForceStopMenu = selectionMenu.findItem(R.id.action_force_stop);
         mClearDataCacheMenu = selectionMenu.findItem(R.id.action_clear_data_cache);
@@ -97,6 +99,7 @@ public class MainBatchOpsHandler implements MultiSelectionView.OnSelectionChange
             }
         }
         /* === Enable/Disable === */
+        mSelectVisibleMenu.setEnabled(nonZeroSelection);
         // Enable “Uninstall” action iff all selections are installed
         mUninstallMenu.setEnabled(nonZeroSelection && (areAllInstalled || areAllUninstalledWithoutData));
         mFreezeUnfreezeMenu.setEnabled(nonZeroSelection && areAllInstalled);
@@ -115,6 +118,7 @@ public class MainBatchOpsHandler implements MultiSelectionView.OnSelectionChange
         mOptimizeMenu.setEnabled(nonZeroSelection);
         mAddToProfileMenu.setEnabled(nonZeroSelection);
         /* === Visible/Invisible === */
+        mSelectVisibleMenu.setVisible(mViewModel.hasConstrainedVisibleList());
         mFreezeUnfreezeMenu.setVisible(mCanFreezeUnfreezePackages);
         mForceStopMenu.setVisible(mCanForceStopPackages);
         mClearDataCacheMenu.setVisible(mCanClearData || mCanClearCache);
