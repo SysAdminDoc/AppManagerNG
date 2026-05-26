@@ -211,7 +211,14 @@ for the original Effort / Dependency context per row.
   deduplicate by package name + signing cert + version code, and surface a
   cleanup action in File Manager and the backup list. Acceptance: ignores
   zero-byte and partially-downloaded files, respects user-cancelled scans,
-  and records sample-set telemetry only in the operation log.
+  and records sample-set telemetry only in the operation log. _Data layer
+  shipped 2026-05-26: `ApkDuplicateSelector.selectDuplicates` buckets by
+  `(packageName, versionCode, signingCertSha256)` with `LARGEST` / `SMALLEST`
+  keep strategies, deterministic path tie-break, and
+  `reclaimableBytes` accounting; 13 focused JVM tests pin bucket separation
+  by cert/version, drop semantics, and unknown-size handling. APK
+  enumeration on disk, parser glue, and One-Click Ops UI remain on the
+  T19-C roadmap row._
 - [ ] **T19-D Backup duplicate cleaner**: detect duplicate
   `<package>@<version>@<variant>` backup archives across configured backup
   roots; offer per-pair "keep newest" or "keep largest" with manual override.
