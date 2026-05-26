@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Pre-existing TarUtils test failure on Linux CI (2026-05-26)
+
+- Skipped `TarUtilsTest.testGetRelativePathDifferentDriveLetters` on non-
+  Windows hosts via `Assume.assumeTrue(File.separatorChar == '\\')`. The
+  assertion depended on `File.getAbsolutePath()` recognising `D:\` as a
+  separate volume root, which is Windows-only behavior; the previous CI
+  failure on Linux runners was a host-mismatch, not a regression. The
+  broader CI hygiene work (Robolectric resource fixtures for
+  `ZipFileSystemTest`, `OABConverterTest`, and `SettingsSearchIndexTest`)
+  is tracked under "Test Suite Hygiene" in ROADMAP.md.
+
 ### Added - Undoable action queue data layer (T21-F, 2026-05-26)
 
 - Added `UndoableActionQueue` as the deferred-commit container for the
