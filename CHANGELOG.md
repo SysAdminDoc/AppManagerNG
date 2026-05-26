@@ -5,6 +5,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Launcher icon alias planner (T21-E follow-up, 2026-05-26)
+
+- Added `LauncherIconAliasPlan` in `main/`, a pure-function planner that
+  produces the deterministic enable/disable change set the Android
+  controller (PackageManager-side) needs to apply to switch the launcher
+  between four styles: `DEFAULT` (current SplashActivity), `NG_MARK`
+  (branded NG icon), `NEUTRAL_SQUARE` (the "discreet" choice), and
+  `MONOCHROME` (Material You themed tile).
+- `plan(current, target)` returns only the aliases whose enabled-state
+  changes, in canonical order, so a no-op invocation is empty and a
+  malformed multi-enabled state collapses to a single enabled alias in
+  one batch. `resolveCurrent(set)` prefers `DEFAULT` when multiple
+  aliases are enabled and falls back to the first canonical match
+  otherwise, mirroring how the Android launcher resolver picks a
+  primary alias.
+- 11 focused JVM tests pin the default-to-neutral plan, the empty
+  plan when the target already matches, the multi-enabled collapse,
+  determinism across HashSet / LinkedHashSet / EnumSet inputs, the
+  current-resolution fallback, value-based `Change.equals`, and
+  tolerance for null elements in the raw enabled set.
+- Manifest activity-alias declarations, the neutral / monochrome
+  drawables, the Settings entry, and the PackageManager controller
+  wrapper remain on the T21-E roadmap row.
+
 ### Added - Shared privileged-runner argv validator (T20-A/B follow-up, 2026-05-26)
 
 - Added `PrivilegedRunnerArgValidator` in
