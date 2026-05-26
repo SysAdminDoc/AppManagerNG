@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Attention badges architecture doc (T21-G glossary follow-up, 2026-05-26)
+
+- Added `docs/architecture/attention-badges.md` documenting the
+  three-module data layer (calculator + source + tracker), the
+  priority order (OS Revert > Dangerous Permission > Disabled
+  Component > None), count semantics per signal, the 7-day TTL
+  rationale, the adapter wiring sketch with severity-tint mapping,
+  and the future in-app glossary copy.
+- Closes the "glossary entry" half of the T21-G row. Adapter wiring,
+  `OsRevertMonitor.watch*` -> `OsRevertCountTracker.recordRevert`
+  call sites, and the eviction heartbeat hook remain on the roadmap.
+
 ### Added - CpuProfileEventCatalog per-device event filter (T20-B follow-up, 2026-05-26)
 
 - Added `CpuProfileEventCatalog` in `details/profile/`, a per-API-
