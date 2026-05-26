@@ -1355,6 +1355,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             certTag.setText(getString(R.string.cert_fingerprint_chip_label, shortFingerprint(fp)))
                     .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp, subject, issuer));
         }
+        // NF-17 — Runtime activity chip. Always surface so the user can sample
+        // last-24h screen-time / network use without opening the global usage
+        // surface. Backgrounded by RuntimeTelemetryHelper so the chip render
+        // stays on the UI thread.
+        if (!mIsExternalApk) {
+            TagItem runtimeTag = new TagItem();
+            tagItems.add(runtimeTag);
+            runtimeTag.setTextRes(R.string.runtime_telemetry_chip_label)
+                    .setOnClickListener(v -> showRuntimeTelemetryDialog());
+        }
         // NF-11 — package-visibility signal. Surfaces only when the app holds
         // QUERY_ALL_PACKAGES or declares a non-empty <queries> manifest block.
         if (tagCloud.packageVisibility != null && tagCloud.packageVisibility.hasSignal()) {
@@ -1681,6 +1691,39 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         findAndShowVisibilityCallers(mPackageName))
                 .setPositiveButton(R.string.close, null)
                 .show();
+    }
+
+    /**
+     * NF-17 — Runtime activity dialog. Collects last-24h usage snapshot for
+     * the inspected package on a worker thread, then posts a scrollable
+     * dialog with screen time, last-use, times-opened, and mobile / Wi-Fi
+     * data totals.
+     */
+    private void showRuntimeTelemetryDialog() {
+        if (mPackageName == null) return;
+        final String packageName = mPackageName;
+        final int userId = mUserId;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            RuntimeTelemetryHelper.Snapshot snapshot;
+            try {
+                snapshot = RuntimeTelemetryHelper.collectLast24h(packageName, userId);
+            } catch (Throwable t) {
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isAdded()) UIUtils.displayShortToast(R.string.runtime_telemetry_unavailable);
+                });
+                return;
+            }
+            String body = RuntimeTelemetryHelper.renderSummary(appContext, snapshot);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                new MaterialAlertDialogBuilder(mActivity)
+                        .setTitle(R.string.runtime_telemetry_dialog_title)
+                        .setMessage(body)
+                        .setPositiveButton(R.string.close, null)
+                        .show();
+            });
+        });
     }
 
     /** O(N) inverse lookup: find every installed app whose <queries> lists mPackageName. */
