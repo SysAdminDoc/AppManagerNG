@@ -106,6 +106,22 @@ public final class UndoableActionQueue {
     }
 
     /**
+     * Convenience overload that consults {@link SnackbarDurationPolicy} to
+     * derive the undo window from a destructiveness severity and the
+     * current system animation scale, then defers via the existing
+     * {@link #defer(String, Runnable, long)}. The caller still gets the
+     * computed window via {@link Entry#expiresAtMillis} so the SnackBar
+     * UI can match its visible duration to the queue deadline.
+     */
+    @AnyThread
+    public synchronized int deferWithPolicy(@NonNull String label, @NonNull Runnable commit,
+                                            @NonNull SnackbarDurationPolicy.Severity severity,
+                                            float systemAnimScale) {
+        long window = SnackbarDurationPolicy.windowFor(severity, systemAnimScale);
+        return defer(label, commit, window);
+    }
+
+    /**
      * Cancel a pending action. Returns {@code true} if a matching entry was
      * still pending (the privileged commit will NOT run). Returns
      * {@code false} if the handle is unknown or the entry already expired
