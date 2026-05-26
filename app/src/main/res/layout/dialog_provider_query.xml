@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?><!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingVertical="@dimen/padding_small">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/provider_query_warning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/provider_query_warning"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/provider_query_authority_layout"
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/authority"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_authority"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textIsSelectable="true"
+                tools:text="settings" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/path"
+            app:helperText="@string/provider_query_path_helper"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_path"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textIsSelectable="true"
+                tools:text="system" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/query_parameters"
+            app:helperText="@string/provider_query_parameters_helper"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_parameters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:maxLines="3"
+                android:minLines="2"
+                android:textIsSelectable="true"
+                tools:text="limit=50" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/projection"
+            app:helperText="@string/provider_query_projection_helper"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_projection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:maxLines="4"
+                android:minLines="2"
+                android:textIsSelectable="true"
+                tools:text="_id&#10;name&#10;value" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/selection"
+            app:helperText="@string/provider_query_selection_helper"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_selection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:maxLines="3"
+                android:minLines="2"
+                android:textIsSelectable="true"
+                tools:text="name = ?" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/selection_arguments"
+            app:helperText="@string/provider_query_selection_args_helper"
+            app:hintEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/provider_query_selection_args"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:maxLines="4"
+                android:minLines="2"
+                android:textIsSelectable="true"
+                tools:text="screen_brightness" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/provider_query_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            tools:text="content://settings/system" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/provider_query_progress"
+            style="@style/Widget.AppTheme.LinearProgressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/provider_query_result_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            tools:text="Loaded 12 rows and 3 columns." />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="260dp"
+            android:layout_marginTop="@dimen/padding_very_small"
+            android:fillViewport="true">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/provider_query_results"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:nestedScrollingEnabled="false" />
+
+        </HorizontalScrollView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/provider_query_load_more"
+            style="@style/Widget.AppTheme.Button.OutlinedButton.Dense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_very_small"
+            android:text="@string/provider_query_load_more"
+            android:visibility="gone"
+            app:icon="@drawable/ic_replay"
+            app:iconGravity="textStart"
+            app:iconPadding="@dimen/padding_very_small"
+            tools:visibility="visible" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

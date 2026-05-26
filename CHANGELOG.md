@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Provider query inspector (2026-05-26)
+
+- App Details -> Providers now exposes a guarded "Query provider" action for
+  current-profile providers that AppManagerNG can read through the normal
+  `ContentResolver` route.
+- Added a provider query dialog with authority/path/query-parameter builders,
+  projection and selection-argument inputs, placeholder-count validation, and
+  read-only cursor execution on a worker thread.
+- Query results render as a horizontally scrollable table, cap each read at
+  500 rows by default with a load-more action, format null/blob cells safely,
+  and export the loaded result set as TSV through Android's share sheet.
+- Added focused JVM coverage for authority parsing, URI construction,
+  projection/selection validation, row caps, cell formatting, TSV export, and
+  provider access guard decisions.
+
 ### Changed — Services start/stop actions (2026-05-26)
 
 - App Details -> Services now labels the existing service launch affordance as

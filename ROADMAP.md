@@ -70,7 +70,7 @@ work to separate root research files.
   for receiver components with user/profile routing preserved.
 - [x] **NF-29 Services start/stop**: add guarded service start/stop actions with
   clear privilege and Android-version failure messages.
-- [ ] **NF-27 Providers query inspector**: add a provider query UI with safe
+- [x] **NF-27 Providers query inspector**: add a provider query UI with safe
   projection/selection inputs and exportable results.
 - [ ] **NF-26 File Manager hex/binary viewer**: add a read-only binary viewer
   for files that cannot be rendered as text.
