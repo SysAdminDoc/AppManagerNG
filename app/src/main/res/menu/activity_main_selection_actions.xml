@@ -2,6 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_select_visible"
+        android:icon="@drawable/ic_check_circle"
+        android:title="@string/select_visible" />
+    <item
         android:id="@+id/action_uninstall"
         android:icon="@drawable/ic_trash_can"
         android:title="@string/uninstall" />
