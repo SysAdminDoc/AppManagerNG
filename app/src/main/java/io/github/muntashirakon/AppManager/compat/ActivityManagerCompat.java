@@ -142,6 +142,12 @@ public final class ActivityManagerCompat {
         return cn;
     }
 
+    public static int stopService(Intent intent, @UserIdInt int userHandle)
+            throws RemoteException {
+        IActivityManager am = getActivityManager();
+        return am.stopService(null, intent, intent.getType(), userHandle);
+    }
+
     public static int sendBroadcast(Intent intent, @UserIdInt int userHandle)
             throws RemoteException {
         IActivityManager am = getActivityManager();

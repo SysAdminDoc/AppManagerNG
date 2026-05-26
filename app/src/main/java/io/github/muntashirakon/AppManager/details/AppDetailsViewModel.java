@@ -90,6 +90,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsOverlayItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsServiceItem;
 import io.github.muntashirakon.AppManager.details.components.ReceiverBroadcastUtils;
+import io.github.muntashirakon.AppManager.details.components.ServiceActionUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView.ChoiceGenerator;
@@ -107,7 +108,6 @@ import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.scanner.NativeLibraries;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
-import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.users.UserInfo;
@@ -1358,7 +1358,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 // 1) Not from an external APK
                 // 2) Root enabled or the service is exportable without any permission
                 // 3) App or the service is not disabled and/or blocked
-                serviceItem.canLaunch = !mExternalApk && canLaunchService(serviceInfo) && !serviceItem.isDisabled()
+                serviceItem.canLaunch = !mExternalApk && canLaunchService(serviceInfo, mUserId) && !serviceItem.isDisabled()
                         && !serviceItem.isBlocked();
                 mServiceItems.add(serviceItem);
             }
@@ -1545,18 +1545,14 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return !componentInfo.isEnabled();
     }
 
-    private static boolean canLaunchService(@NonNull ServiceInfo info) {
-        if (info.exported && info.permission == null) {
+    private static boolean canLaunchService(@NonNull ServiceInfo info, int userId) {
+        if (SelfPermissions.isSystemOrRootOrShell()) {
             return true;
         }
-        int uid = Users.getSelfOrRemoteUid();
-        if (uid == Ops.ROOT_UID || (uid == Ops.SYSTEM_UID && info.permission == null)) {
-            return true;
-        }
-        if (info.permission == null) {
-            return false;
-        }
-        return SelfPermissions.checkSelfOrRemotePermission(info.permission, uid);
+        boolean hasPermission = info.permission != null
+                && SelfPermissions.checkSelfOrRemotePermission(info.permission, Users.getSelfOrRemoteUid());
+        return ServiceActionUtils.canUseUnprivilegedRoute(info.exported, info.permission, hasPermission, userId,
+                UserHandleHidden.myUserId());
     }
 
     @NonNull
