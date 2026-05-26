@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfUriManager;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.UiUtils;
 
@@ -164,15 +165,9 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         if (defaultPref == null && mDualPaneMode) {
             defaultPref = "custom_locale";
         }
-        getSupportFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        R.animator.enter_from_left,
-                        R.animator.enter_from_right,
-                        R.animator.exit_from_right,
-                        R.animator.exit_from_left
-                )
-                .replace(R.id.main_layout, MainPreferences.getInstance(defaultPref, mDualPaneMode))
+        FragmentTransaction initialTransaction = MotionUtils.maybeSetDefaultFragmentAnimations(this,
+                getSupportFragmentManager().beginTransaction());
+        initialTransaction.replace(R.id.main_layout, MainPreferences.getInstance(defaultPref, mDualPaneMode))
                 .commit();
     }
 
@@ -231,12 +226,8 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         fragment.setTargetFragment(caller, 0);
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         if (!mDualPaneMode) {
-            transaction.setCustomAnimations(
-                    R.animator.enter_from_left,
-                    R.animator.enter_from_right,
-                    R.animator.exit_from_right,
-                    R.animator.exit_from_left
-            ).addToBackStack(null);
+            MotionUtils.maybeSetDefaultFragmentAnimations(this, transaction)
+                    .addToBackStack(null);
         }
         transaction
                 .replace(mDualPaneMode ? R.id.secondary_layout : R.id.main_layout, fragment)
