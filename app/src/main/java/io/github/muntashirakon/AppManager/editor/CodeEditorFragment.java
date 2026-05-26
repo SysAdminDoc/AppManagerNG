@@ -296,9 +296,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mEditor.setLineSpacing(2f, 1.1f);
         mEditor.subscribeEvent(ContentChangeEvent.class, (event, unsubscribe) -> {
             if (!mTextModified && event.getAction() != ContentChangeEvent.ACTION_SET_NEW_TEXT) {
-                mTextModified = true;
-                mTextModifiedBackPressedCallback.setEnabled(true);
-                getActionBar().ifPresent(actionBar -> actionBar.setSubtitle("* " + mOptions.subtitle));
+                markTextModified();
             }
             mEditor.postDelayed(this::updateLiveButtons, 50);
         });
@@ -444,23 +442,19 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             menu.add(R.string.line_separator).setEnabled(false);
             if (!mEditor.getLineSeparator().equals(LineSeparator.CRLF)) {
                 menu.add("CRLF - Windows (\\r\\n)").setOnMenuItemClickListener(menuItem -> {
-                    mEditor.setLineSeparator(LineSeparator.CRLF);
-                    // TODO: 18/9/22 Update line separator for existing texts
-                    lineSeparatorButton.setText(mEditor.getLineSeparator().name());
+                    applyLineSeparator(LineSeparator.CRLF, lineSeparatorButton);
                     return true;
                 });
             }
             if (!mEditor.getLineSeparator().equals(LineSeparator.CR)) {
                 menu.add("CR - Classic Mac OS (\\r)").setOnMenuItemClickListener(menuItem -> {
-                    mEditor.setLineSeparator(LineSeparator.CR);
-                    lineSeparatorButton.setText(mEditor.getLineSeparator().name());
+                    applyLineSeparator(LineSeparator.CR, lineSeparatorButton);
                     return true;
                 });
             }
             if (!mEditor.getLineSeparator().equals(LineSeparator.LF)) {
                 menu.add("LF - Unix & Mac OS (\\n)").setOnMenuItemClickListener(menuItem -> {
-                    mEditor.setLineSeparator(LineSeparator.LF);
-                    lineSeparatorButton.setText(mEditor.getLineSeparator().name());
+                    applyLineSeparator(LineSeparator.LF, lineSeparatorButton);
                     return true;
                 });
             }
@@ -644,6 +638,16 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         }
     }
 
+    private void markTextModified() {
+        if (mTextModified) {
+            return;
+        }
+        mTextModified = true;
+        mTextModifiedBackPressedCallback.setEnabled(true);
+        getActionBar().ifPresent(actionBar -> actionBar.setSubtitle("* " + mOptions.subtitle));
+        updateLiveButtons();
+    }
+
     private void updateStartupMenu() {
         if (mViewModel == null) return;
         if (mJavaSmaliToggleMenu != null) {
@@ -770,6 +774,28 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     .append(" chars)");
         }
         mPositionButton.setText(text);
+    }
+
+    private void applyLineSeparator(@NonNull LineSeparator lineSeparator, @NonNull TextView lineSeparatorButton) {
+        if (mEditor.getLineSeparator().equals(lineSeparator)) {
+            return;
+        }
+        Content content = mEditor.getText();
+        String convertedText = CodeEditorLineSeparatorUtils.convert(content, lineSeparator);
+        Cursor cursor = mEditor.getCursor();
+        int leftLine = cursor.getLeftLine();
+        int leftColumn = cursor.getLeftColumn();
+        int rightLine = cursor.getRightLine();
+        int rightColumn = cursor.getRightColumn();
+        mEditor.setLineSeparator(lineSeparator);
+        if (!convertedText.contentEquals(content)) {
+            int lastLine = content.getLineCount() - 1;
+            int lastColumn = content.getColumnCount(lastLine);
+            content.replace(0, 0, lastLine, lastColumn, convertedText);
+            mEditor.setSelectionRegion(leftLine, leftColumn, rightLine, rightColumn);
+            markTextModified();
+        }
+        lineSeparatorButton.setText(mEditor.getLineSeparator().name());
     }
 
     @MainThread

@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Code Editor line separator conversion (2026-05-26)
+
+- Code Editor line separator changes now rewrite existing editor content to
+  the selected CRLF, CR, or LF style instead of only changing the future
+  separator preference.
+- Added a scanner-based conversion helper that handles mixed CRLF/CR/LF input
+  without regex replacement or double-converting existing CRLF pairs.
+- Added focused JVM coverage for mixed separators, CRLF preservation, and
+  dangling carriage returns.
+
 ### Changed — Code Editor search close affordance (2026-05-26)
 
 - Code Editor search now has a dedicated close icon in the search panel instead
