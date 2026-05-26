@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -29,6 +30,7 @@ import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.IoUtils;
 
@@ -91,15 +93,9 @@ public class ScannerActivity extends BaseActivity {
         model.setApkFile(apkFile);
         model.setApkUri(mApkUri);
 
-        getSupportFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        R.animator.enter_from_left,
-                        R.animator.enter_from_right,
-                        R.animator.exit_from_right,
-                        R.animator.exit_from_left
-                )
-                .replace(R.id.main_layout, new ScannerFragment())
+        FragmentTransaction initialTransaction = MotionUtils.maybeSetDefaultFragmentAnimations(this,
+                getSupportFragmentManager().beginTransaction());
+        initialTransaction.replace(R.id.main_layout, new ScannerFragment())
                 .commit();
     }
 
@@ -154,15 +150,9 @@ public class ScannerActivity extends BaseActivity {
     }
 
     public void loadNewFragment(Fragment fragment) {
-        getSupportFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        R.animator.enter_from_left,
-                        R.animator.enter_from_right,
-                        R.animator.exit_from_right,
-                        R.animator.exit_from_left
-                )
-                .replace(R.id.main_layout, fragment)
+        FragmentTransaction transaction = MotionUtils.maybeSetDefaultFragmentAnimations(this,
+                getSupportFragmentManager().beginTransaction());
+        transaction.replace(R.id.main_layout, fragment)
                 .addToBackStack(null)
                 .commit();
     }

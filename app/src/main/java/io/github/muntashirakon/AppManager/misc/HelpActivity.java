@@ -19,14 +19,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.SearchView;
-import androidx.transition.Transition;
-import androidx.transition.TransitionManager;
 import androidx.webkit.WebViewClientCompat;
-
-import com.google.android.material.transition.MaterialSharedAxis;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.ResourceUtil;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.util.UiUtils;
@@ -88,8 +85,7 @@ public class HelpActivity extends BaseActivity implements SearchView.OnQueryText
         mSearchView.findViewById(androidx.appcompat.R.id.search_close_btn).setOnClickListener(v -> {
             mWebView.clearMatches();
             mSearchView.setQuery(null, false);
-            Transition sharedAxis = new MaterialSharedAxis(MaterialSharedAxis.Y, true);
-            TransitionManager.beginDelayedTransition(mContainer, sharedAxis);
+            MotionUtils.beginSharedAxisDelayedTransition(mContainer, MotionUtils.AXIS_Y, true);
             mSearchContainer.setVisibility(View.GONE);
         });
         mSearchView.setOnQueryTextListener(this);
@@ -119,12 +115,10 @@ public class HelpActivity extends BaseActivity implements SearchView.OnQueryText
         } else if (id == R.id.action_search) {
             if (mSearchContainer.getVisibility() == View.VISIBLE) {
                 mSearchView.setQuery(null, false);
-                Transition sharedAxis = new MaterialSharedAxis(MaterialSharedAxis.Y, true);
-                TransitionManager.beginDelayedTransition(mContainer, sharedAxis);
+                MotionUtils.beginSharedAxisDelayedTransition(mContainer, MotionUtils.AXIS_Y, true);
                 mSearchContainer.setVisibility(View.GONE);
             } else {
-                Transition sharedAxis = new MaterialSharedAxis(MaterialSharedAxis.Y, false);
-                TransitionManager.beginDelayedTransition(mContainer, sharedAxis);
+                MotionUtils.beginSharedAxisDelayedTransition(mContainer, MotionUtils.AXIS_Y, false);
                 mSearchContainer.setVisibility(View.VISIBLE);
             }
             return true;

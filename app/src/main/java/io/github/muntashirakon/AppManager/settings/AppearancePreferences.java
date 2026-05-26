@@ -10,13 +10,12 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
-import com.google.android.material.transition.MaterialSharedAxis;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.TypefaceUtil;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
@@ -118,8 +117,7 @@ public class AppearancePreferences extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        MotionUtils.applySharedAxisZTransition(this);
     }
 
     @Override

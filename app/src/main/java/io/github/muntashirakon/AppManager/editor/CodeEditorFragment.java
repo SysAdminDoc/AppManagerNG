@@ -36,8 +36,6 @@ import androidx.core.os.ParcelCompat;
 import androidx.core.view.MenuProvider;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.transition.Transition;
-import androidx.transition.TransitionManager;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
@@ -46,7 +44,6 @@ import com.google.android.material.elevation.SurfaceColors;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.android.material.transition.MaterialSharedAxis;
 
 import java.util.Objects;
 import java.util.regex.PatternSyntaxException;
@@ -55,6 +52,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.app.AndroidFragment;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
@@ -859,8 +857,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     public void showSearchWidget() {
         if (mSearchWidget != null) {
             mExitSearchBackPressedCallback.setEnabled(true);
-            Transition sharedAxis = new MaterialSharedAxis(MaterialSharedAxis.Y, true);
-            TransitionManager.beginDelayedTransition(mSearchWidget, sharedAxis);
+            MotionUtils.beginSharedAxisDelayedTransition(mSearchWidget, MotionUtils.AXIS_Y, true);
             mSearchWidget.setVisibility(View.VISIBLE);
             mSearchView.requestFocus();
             search(mSearchView.getText());
@@ -869,8 +866,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
 
     public void hideSearchWidget() {
         if (mSearchWidget != null) {
-            Transition sharedAxis = new MaterialSharedAxis(MaterialSharedAxis.Y, false);
-            TransitionManager.beginDelayedTransition(mSearchWidget, sharedAxis);
+            MotionUtils.beginSharedAxisDelayedTransition(mSearchWidget, MotionUtils.AXIS_Y, false);
             mSearchWidget.setVisibility(View.GONE);
             mEditor.getSearcher().stopSearch();
             UiUtils.hideKeyboard(mSearchView);
