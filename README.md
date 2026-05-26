@@ -85,13 +85,15 @@ A new main-menu entry that flips the standard "app -> permissions" view on its h
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap. Version targets:
+See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap and
+[RESEARCH_FEATURE_PLAN_2026-05-25.md](RESEARCH_FEATURE_PLAN_2026-05-25.md)
+for the current active backlog. Version targets:
 
 - **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
 - **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
 - **v0.4.0** ✅ — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action) + Onboarding capability wizard
-- **v0.5.0** — Settings reorganization by task, global in-app search, contextual help tooltips, in-app changelog viewer
-- **v0.6.0** — Rootless Power: Shizuku integration polish, wireless ADB auto-pairing, rootless debloat
+- **v0.5.0** (in flight) — Discovery & Polish: in-app changelog viewer, global in-app Settings search, Settings reorganization by task, contextual help tooltips, plus the Iter-91 → Iter-142 batch (scheduled auto-backup, AES v7 archive-key derivation, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, component-rules preview, …). See `CHANGELOG.md` `Unreleased`.
+- **v0.6.0** — Rootless Power: Routine Operations / Scheduler, Multi-Tag per App, Saved Filter Presets, Tracker Blocking via AppOps, Premium Polish Phase 2.
 
 ## Install
 
