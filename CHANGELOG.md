@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — BarChart manual minimum axis (2026-05-26)
+
+- `BarChartView` now honors the manual Y-axis minimum configured through
+  `setManualYAxisRange(...)` instead of always anchoring bar scaling at zero.
+- Grid labels, bar heights, touch lines, value labels, and accessibility bounds
+  now share the same min/max normalization path, with out-of-range values
+  clamped to the chart area and invalid manual ranges padded safely.
+- Added focused Robolectric coverage for the default zero-minimum path, manual
+  non-zero minimums, range clamping, and equal min/max padding.
+
 ### Changed — File Manager hex viewer (2026-05-26)
 
 - File Manager now includes a read-only "Open as hex" path from both the file
