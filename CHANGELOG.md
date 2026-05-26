@@ -5,6 +5,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - CpuProfileEventCatalog per-device event filter (T20-B follow-up, 2026-05-26)
+
+- Added `CpuProfileEventCatalog` in `details/profile/`, a per-API-
+  level / per-ABI catalog of simpleperf events known-safe to record.
+  Pairs with `CpuProfileCommandBuilder.allowedEvents()`: that
+  allow-list is the static union; this catalog narrows the list to
+  what the target device's kernel will actually deliver.
+- Event classes: `SOFTWARE` (always available - cpu-clock / task-clock
+  / page-faults / context-switches / cpu-migrations / minor-faults /
+  major-faults), `PMU_BASIC` (gated on API >= 23 + a PMU-bearing ABI;
+  the cycles / instructions / cache / branch / bus family), and
+  `PMU_ADVANCED` (gated on API >= 27 + a PMU-bearing ABI; the
+  stalled-cycles / dcache / icache / TLB family).
+- `availableEvents(apiLevel, abi)` returns the immutable union for
+  the device; `unavailableOn(apiLevel, abi)` returns a list of
+  `UnavailableEvent` records carrying `name`, a `Reason` enum
+  (`NO_PMU_FOR_ABI` / `API_TOO_LOW` / `OTHER`), and a one-line
+  explanation the UI can show next to disabled chips. Useful for the
+  App Details "Record CPU profile" dialog to surface a coherent
+  "cycles unavailable on this CPU" hint rather than silently dropping
+  the event.
+- 12 focused JVM tests pin the always-available software events, the
+  API <-> PMU_BASIC / PMU_ADVANCED gate threshold, the no-PMU-ABI
+  rejection (riscv64 / mips64), the empty-ABI rejection,
+  full-availability happy path on API 34 + arm64-v8a, immutable
+  return sets, distinct event-class buckets (no overlap), and the
+  unavailable-reason precedence.
+
 ### Added - PerfettoConfigInspector preview-side parser (T20-A follow-up, 2026-05-26)
 
 - Added `PerfettoConfigInspector.inspect(textProto)` in
