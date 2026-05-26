@@ -30,6 +30,7 @@ public final class FilterOptions {
             case "running_apps": return new RunningAppsOption();
             case "screen_time": return new ScreenTimeOption();
             case "signature": return new SignatureOption();
+            case "tags": return new TagsOption();
             case "target_sdk": return new TargetSdkOption();
             case "times_opened": return new TimesOpenedOption();
             case "total_size": return new TotalSizeOption();
