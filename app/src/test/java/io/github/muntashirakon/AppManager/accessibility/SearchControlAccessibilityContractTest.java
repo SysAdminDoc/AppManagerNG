@@ -19,6 +19,8 @@ public class SearchControlAccessibilityContractTest {
 
         assertControlContentDescription(layout, "previous_button", "@string/find_previous_match");
         assertControlContentDescription(layout, "next_button", "@string/find_next_match");
+        assertIconButtonTouchTarget(layout, "previous_button");
+        assertIconButtonTouchTarget(layout, "next_button");
     }
 
     @Test
@@ -30,6 +32,21 @@ public class SearchControlAccessibilityContractTest {
         assertControlContentDescription(layout, "previous_button", "@string/find_previous_match");
         assertControlContentDescription(layout, "next_button", "@string/find_next_match");
         assertControlContentDescription(layout, "lock", "@string/editor_lock");
+        assertIconButtonTouchTarget(layout, "search_close_button");
+        assertIconButtonTouchTarget(layout, "replace_all_button");
+        assertIconButtonTouchTarget(layout, "replace_button");
+        assertIconButtonTouchTarget(layout, "previous_button");
+        assertIconButtonTouchTarget(layout, "next_button");
+    }
+
+    @Test
+    public void searchableDialogSearchFieldsSurviveLargeFontScale() throws IOException {
+        Path appDir = findAppProjectDir();
+        String multiChoiceLayout = read(appDir.resolve("src/main/res/layout/dialog_searchable_multi_choice.xml"));
+        String openWithLayout = read(appDir.resolve("src/main/res/layout/dialog_open_with.xml"));
+
+        assertControlAttribute(multiChoiceLayout, "action_search", "android:layout_height=\"48dp\"");
+        assertControlAttribute(openWithLayout, "action_search", "android:layout_height=\"48dp\"");
     }
 
     @Test
@@ -55,6 +72,12 @@ public class SearchControlAccessibilityContractTest {
     private static void assertWeightedStatusCell(String layout, String viewId) {
         assertControlAttribute(layout, viewId, "android:layout_width=\"0dp\"");
         assertControlAttribute(layout, viewId, "android:layout_weight=\"1\"");
+    }
+
+    private static void assertIconButtonTouchTarget(String layout, String viewId) {
+        assertControlAttribute(layout, viewId, "android:layout_width=\"48dp\"");
+        assertControlAttribute(layout, viewId, "android:layout_height=\"48dp\"");
+        assertControlAttribute(layout, viewId, "app:iconSize=\"24dp\"");
     }
 
     private static void assertControlAttribute(String layout,

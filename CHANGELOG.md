@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Large-font search controls (2026-05-26)
+
+- Help, Code Editor, Open With, and searchable multi-choice search controls
+  now use 48 dp search or touch targets instead of compact 40 dp controls.
+- Code Editor and Help search navigation icons now use 24 dp icons inside
+  48 dp buttons so 200 percent font scale and touch exploration have stable
+  hit targets.
+- Searchable multi-choice "Select all" can grow vertically while keeping a
+  48 dp minimum target.
+- Extended the accessibility layout contract test to pin these large-font
+  search constraints.
+
 ### Changed — High-contrast theme hardening (2026-05-26)
 
 - Replaced hardcoded red HTML warning spans in backup/rules and system-font
