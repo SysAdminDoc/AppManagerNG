@@ -57,22 +57,22 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/previous_button"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="center_vertical"
                 android:contentDescription="@string/find_previous_match"
                 app:icon="@drawable/ic_expand_less"
-                app:iconSize="30dp" />
+                app:iconSize="24dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/next_button"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="center_vertical"
                 android:contentDescription="@string/find_next_match"
                 app:icon="@drawable/ic_expand_more"
-                app:iconSize="30dp" />
+                app:iconSize="24dp" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

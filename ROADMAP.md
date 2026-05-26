@@ -128,7 +128,10 @@ work to separate root research files.
 - [ ] High-contrast theme audit. Static v2 palette/string hardening is recorded
   in `docs/audits/2026-05-26-high-contrast-theme.md`; manual major-screen and
   device/OEM contrast walkthrough remains open.
-- [ ] 200 percent font-scale audit.
+- [ ] 200 percent font-scale audit. Code Editor status row and shared
+  search-control touch targets have source-level guards recorded in
+  `docs/audits/2026-05-26-font-scale.md`; broader major-screen/device
+  walkthrough remains open.
 - [ ] TalkBack traversal and action-label audit.
 - [ ] Reduced-motion setting audit.
 - [ ] Dyslexia-font compatibility audit.
