@@ -1,0 +1,10 @@
+Discovery & Polish release. 50+ slices since v0.4.2.
+
+- In-app changelog viewer and global Settings search.
+- AES backup metadata v7 (HKDF per-archive keys), scheduled-backup freshness gate, launcher shortcut, progress notifications, role rebind, exclusion globs, root system-data backup, provider-backed Network destination.
+- Installer privilege cascade with route chips, split-APK cert-mismatch dialog, batch install from File Manager, optional auth gate for install / uninstall / clear-data.
+- Component rules preview, per-app rollback, snapshot portability v2, OEM bypass.
+- KernelSU + Magisk diagnostics, Dhizuku detection, Restricted Settings walkthrough, OS-revert banner.
+- Tasker am:// intents, broadcast API, QS freeze tile, Canta/UAD-NG/Hail import.
+- File Manager recursive search, ZIP create/extract.
+- AGP 9.2.0 / Gradle 9.4.1; security and CI hardening.
