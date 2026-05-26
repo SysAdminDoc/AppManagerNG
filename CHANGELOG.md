@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - TalkBack action-label hardening (2026-05-26)
+
+- The UI tracker floating window now labels its expand, move, app-details,
+  minimize, pause/resume, and close controls for TalkBack, with 48 dp control
+  targets and 24 dp icons.
+- The UI tracker play/pause button now updates its spoken action between
+  "Pause UI tracker" and "Resume UI tracker" whenever the tracker state
+  changes.
+- Debloat details and suggestion rows now label their icon-only app-info or
+  app-store actions and use 48 dp targets.
+- Added an accessibility contract test covering these action labels and touch
+  target constraints.
+
 ### Changed - Large-font search controls (2026-05-26)
 
 - Help, Code Editor, Open With, and searchable multi-choice search controls
