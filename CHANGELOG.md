@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Scanner organization summaries (2026-05-26)
+
+- Scanner tracker details now roll matched signatures up by tracker
+  organization, showing each organization category, signature count, and class
+  count before the matched signature rows.
+- Tracker scan cards now include a category breakdown, and tracker details add
+  category chips for narrowing the visible organization rows.
+- Library details now add type chips so the detected library rows can be
+  narrowed by their bundled category/type.
+- Added focused JVM coverage for tracker organization grouping and
+  second-degree tracker label handling.
+
 ### Changed — Logcat structured export polish (2026-05-26)
 
 - Logcat Export now offers the existing diagnostic bundle plus structured JSON
