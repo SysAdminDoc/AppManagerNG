@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Tracker blocking intensity (NF-07, 2026-05-25)
+
+- Settings -> Privacy -> "Tracker blocking intensity" picks which detected
+  tracker categories are blocked when "Block trackers" runs.
+- Three tiers: **Detect only** (block nothing), **Standard** (block ad /
+  analytics / identification, leave crash / push / location / social SDKs
+  intact), **Strict** (block every detected tracker, matches the
+  pre-v0.5.x behaviour, default).
+- The intensity is honoured by both the batch `OP_BLOCK_TRACKERS` op and
+  the installer's "Block trackers after install" toggle.
+- Pure-JVM coverage in [`TrackerBlockingIntensityTest`](app/src/test/java/io/github/muntashirakon/AppManager/rules/compontents/TrackerBlockingIntensityTest.java).
+
 ### Changed — Per-app rollback now shows a dry-run preview (2026-05-25)
 
 - App Details -> "Revert AppManager changes" now opens a multi-choice

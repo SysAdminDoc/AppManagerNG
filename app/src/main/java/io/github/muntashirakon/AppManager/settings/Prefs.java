@@ -799,6 +799,17 @@ public final class Prefs {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_SCREEN_LOCK_BOOL);
         }
 
+        /** NF-07: which tracker categories get blocked when "Block trackers" runs. */
+        @NonNull
+        public static io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity getTrackerBlockingIntensity() {
+            return io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity
+                    .fromPrefValue(AppPref.getString(AppPref.PrefKey.PREF_TRACKER_BLOCKING_INTENSITY_STR));
+        }
+
+        public static void setTrackerBlockingIntensity(@NonNull io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity intensity) {
+            AppPref.set(AppPref.PrefKey.PREF_TRACKER_BLOCKING_INTENSITY_STR, intensity.name());
+        }
+
         public static boolean isAutoLockEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_AUTO_LOCK_BOOL);
         }
