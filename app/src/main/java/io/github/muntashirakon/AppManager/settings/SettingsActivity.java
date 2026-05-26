@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +20,8 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -27,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -71,6 +76,14 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     private boolean mDualPaneMode;
     @Nullable
     private MaterialToolbar mSecondaryToolbar;
+    @Nullable
+    private View mMainPane;
+    @Nullable
+    private RecyclerView mSearchResultsView;
+    @Nullable
+    private TextView mSearchEmptyView;
+    @Nullable
+    private SettingsSearchAdapter mSearchAdapter;
 
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
@@ -84,10 +97,35 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
         progressIndicator.hide();
+        mMainPane = findViewById(R.id.main_layout);
+        mSearchResultsView = findViewById(R.id.settings_search_results);
+        mSearchEmptyView = findViewById(R.id.settings_search_empty);
+        if (mSearchResultsView != null) {
+            mSearchAdapter = new SettingsSearchAdapter();
+            mSearchAdapter.setListener(this::navigateToSearchResult);
+            mSearchResultsView.setLayoutManager(new LinearLayoutManager(this));
+            mSearchResultsView.setAdapter(mSearchAdapter);
+            mSearchResultsView.setHasFixedSize(true);
+        }
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayShowCustomEnabled(true);
-            searchView = UIUtils.setupSearchView(actionBar, null);
+            searchView = UIUtils.setupSearchView(actionBar, new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    onQueryTextChange(query);
+                    if (searchView != null) {
+                        searchView.clearFocus();
+                    }
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    applySettingsSearch(newText);
+                    return true;
+                }
+            });
             searchView.setQueryHint(getString(R.string.search_settings));
         }
         // Apply necessary padding: ignore start
@@ -248,5 +286,55 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
             return true;
         }
         return false;
+    }
+
+    /**
+     * Filter the {@link SettingsSearchIndex} against {@code query} and toggle the
+     * results overlay. Empty query restores the normal main pane.
+     */
+    private void applySettingsSearch(@Nullable String query) {
+        if (mSearchResultsView == null || mSearchAdapter == null || mSearchEmptyView == null
+                || mMainPane == null) {
+            return;
+        }
+        final String text = query == null ? "" : query.trim();
+        if (text.isEmpty()) {
+            mSearchResultsView.setVisibility(View.GONE);
+            mSearchEmptyView.setVisibility(View.GONE);
+            mMainPane.setVisibility(View.VISIBLE);
+            mSearchAdapter.submit(Collections.emptyList());
+            return;
+        }
+        mMainPane.setVisibility(View.GONE);
+        Context appContext = getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<SettingsSearchIndex.Entry> matches = SettingsSearchIndex.get(appContext).search(text);
+            ThreadUtils.postOnMainThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (searchView == null) return;
+                CharSequence current = searchView.getQuery();
+                if (current == null || !text.equals(current.toString().trim())) {
+                    // Result is stale for the current query
+                    return;
+                }
+                mSearchAdapter.submit(matches);
+                boolean hasMatches = !matches.isEmpty();
+                mSearchResultsView.setVisibility(hasMatches ? View.VISIBLE : View.GONE);
+                mSearchEmptyView.setVisibility(hasMatches ? View.GONE : View.VISIBLE);
+            });
+        });
+    }
+
+    private void navigateToSearchResult(@NonNull SettingsSearchIndex.Entry entry) {
+        // Clear search state so onNewIntent navigation reveals the target fragment
+        if (searchView != null) {
+            searchView.setQuery("", false);
+            searchView.clearFocus();
+        }
+        applySettingsSearch(null);
+        String[] keys = entry.targetKey == null
+                ? new String[] { entry.parentKey }
+                : new String[] { entry.parentKey, entry.targetKey };
+        onNewIntent(getSettingsIntent(this, keys));
     }
 }
