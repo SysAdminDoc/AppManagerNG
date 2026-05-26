@@ -2,7 +2,7 @@
 
 **Status:** Living document — update on every version bump.  
 **Baseline:** v0.1.0, forked from [App Manager](https://github.com/MuntashirAkon/AppManager) @ `3d11bcb` (post-v4.0.5), 2026-04-30.  
-**Last updated:** 2026-05-25 — Iter-142 active backlog consolidated. The live checklist for Iter-142+ work lives in [`RESEARCH_FEATURE_PLAN_2026-05-25.md`](RESEARCH_FEATURE_PLAN_2026-05-25.md) §Prioritized Roadmap (NF-01..NF-18 + EI-01..EI-10, P0→P3). Tick boxes there as items ship; this ROADMAP retains the long-form T1–T21 source-of-truth and Eng-Debt Register.
+**Last updated:** 2026-05-25 — **v0.5.0 cut** (versionCode 7, "Discovery & Polish"). Banks the Iter-91 → Iter-142 batch (AES metadata v7, scheduled-backup polish, installer privilege cascade, Component Rules preview, NG-native bundled changelog, global Settings search, What's-new entry) over v0.4.2. The live Iter-142+ checklist lives in [`RESEARCH_FEATURE_PLAN_2026-05-25.md`](RESEARCH_FEATURE_PLAN_2026-05-25.md) §Prioritized Roadmap (NF-01..NF-18 + EI-01..EI-10, P0→P3). Tick boxes there as items ship; this ROADMAP retains the long-form T1–T21 source-of-truth and Eng-Debt Register.
 
 **Prior (iter-141, 2026-05-18):** Shipped the T5 **Persistent ADB tcpip 5555 Detection in Shizuku Setup** row: onboarding now probes `127.0.0.1:5555`, surfaces a detected fixed `adb tcpip` session, and lets users connect through ADB-over-TCP without redoing Android Wireless debugging pairing.
 
@@ -272,8 +272,8 @@ Hard constraints:
 | **v0.2.0** ✅ | Identity | `applicationId` + namespace rename → `io.github.sysadmindoc.AppManagerNG`; new release keystore; GitHub Actions release pipeline; NG-specific CONTRIBUTING.md |
 | **v0.3.0** ✅ | UX Refresh | Material 3 dashboard; Pro Mode toggle; edge-to-edge (Android 15/16 compliance); AMOLED/dark/light themes |
 | **v0.4.0** ✅ | Permission Inspector | Review and bulk-revoke dangerous runtime permissions across all installed apps; critical-package denylist guard; in-app recovery action for previously revoked system packages |
-| **v0.5.0** | Settings & Discovery | Settings reorganization by task; global in-app search; contextual help tooltips; in-app changelog viewer |
-| **v0.6.0** | Rootless Power | Shizuku integration; rootless debloat; wireless ADB auto-pairing |
+| **v0.5.0** ✅ 2026-05-25 | Discovery & Polish | In-app changelog viewer + What's new entry + first-run-after-update bottom sheet; global in-app Settings search; Component rules preview; AES metadata v7 HKDF per-archive keys; scheduled-backup polish (freshness gate, launcher shortcut, progress notifications, role rebind, exclusion globs, root system-data, network destination); installer privilege cascade + split-APK cert mismatch; KernelSU/Magisk/Dhizuku/Restricted Settings/OS-revert diagnostics; Tasker am:// intents, QS freeze tile, profile importers; FM recursive search and ZIP create/extract; AGP 9.2.0 build; security and CI hardening. Settings reorganization by task and contextual help tooltips deferred to v0.5.x point release. |
+| **v0.6.0** | Rootless Power | Routine Operations / Scheduler, Multi-Tag per App, Saved Filter Presets, Tracker Blocking via AppOps, Premium Polish Phase 2. |
 
 ---
 
