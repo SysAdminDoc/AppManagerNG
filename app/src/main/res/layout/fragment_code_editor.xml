@@ -36,24 +36,43 @@
             android:visibility="gone"
             tools:visibility="visible">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/search_bar_container"
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:hintEnabled="true"
-                android:hint="@string/search"
-                app:endIconMode="custom"
-                app:endIconDrawable="@drawable/ic_settings">
+                android:baselineAligned="false"
+                android:orientation="horizontal">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/search_bar"
-                    android:layout_width="match_parent"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/search_bar_container"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:singleLine="true"
-                    tools:text="@tools:sample/full_names" />
+                    android:layout_weight="1"
+                    android:hint="@string/search"
+                    app:endIconDrawable="@drawable/ic_settings"
+                    app:endIconMode="custom"
+                    app:hintEnabled="true">
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/search_bar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:singleLine="true"
+                        tools:text="@tools:sample/full_names" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/search_close_button"
+                    style="@style/Widget.AppTheme.Button.IconButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:contentDescription="@string/close"
+                    app:icon="@drawable/ic_close"
+                    app:iconSize="30dp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/replace_bar_container"
