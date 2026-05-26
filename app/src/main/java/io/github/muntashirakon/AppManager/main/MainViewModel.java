@@ -140,6 +140,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 || mSelectedUsers != null;
     }
 
+    public boolean hasConstrainedVisibleList() {
+        return hasActiveFilters() || !TextUtils.isEmpty(mSearchQuery);
+    }
+
     public int getActiveFilterCount() {
         int count = Integer.bitCount(mFilterFlags);
         if (mFilterProfileName != null) {
@@ -249,6 +253,12 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     public Collection<ApplicationItem> getSelectedApplicationItems() {
         return mSelectedPackageApplicationItemMap.values();
+    }
+
+    public int selectOnlyApplicationItems(@NonNull Collection<ApplicationItem> applicationItems) {
+        synchronized (mApplicationItems) {
+            return MainSelectionUtils.selectOnly(mApplicationItems, applicationItems, mSelectedPackageApplicationItemMap);
+        }
     }
 
     public String getSearchQuery() {

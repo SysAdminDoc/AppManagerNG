@@ -502,7 +502,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_backup) {
+        if (id == R.id.action_select_visible) {
+            if (mAdapter != null && mMultiSelectionView != null) {
+                mAdapter.selectAll();
+                mMultiSelectionView.updateCounter(false);
+            }
+        } else if (id == R.id.action_backup) {
             if (viewModel != null) {
                 BackupRestoreDialogFragment fragment = BackupRestoreDialogFragment.getInstance(viewModel.getSelectedPackagesWithUsers());
                 fragment.setOnActionBeginListener(mode -> showProgressIndicator(true));
