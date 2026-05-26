@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Leftover scanner /data/data root fallback (T19-B follow-up, 2026-05-26)
+
+- Added `LeftoverScanner.scanInternalDataStubs(File, Set<String>)` plus a
+  new `KIND_INTERNAL_STUB` (= 3) entry on the existing `@LeftoverKind`
+  taxonomy and `Leftover.kindLabel()`. The new entry point walks a
+  caller-supplied `/data/data` directory and re-uses the same
+  `selectOrphans` filter as the external-storage path, so the `looksLikePackageName`
+  guard rejects `lost+found`, `.cache`, OEM artefacts, etc. before
+  emitting a leftover.
+- The new helper is intentionally split out from `scan` because reading
+  `/data/data` requires root / Shizuku; UI surfaces should route the
+  directory enumeration through the privileged runner before calling
+  this and again before deleting any returned entry.
+- 4 additional JVM tests pin the orphan / hidden / unreadable-root /
+  all-installed cases. T19-B's UI wiring, op_history capture, and the
+  App Details entry remain open.
+
 ### Fixed - CI red: pre-2026-05-25 Robolectric tests parked behind @Ignore (2026-05-26)
 
 - `app:testFlossDebugUnitTest` was failing on five pre-existing
