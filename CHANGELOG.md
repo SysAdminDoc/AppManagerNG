@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Snackbar duration policy + queue bridge (T21-F follow-up, 2026-05-26)
+
+- Added `SnackbarDurationPolicy.windowFor(Severity, animScale)`, a pure-
+  function policy that converts a destructiveness severity (`NORMAL` /
+  `HIGH` / `CRITICAL` -> 4s / 7s / 10s base) and the current system
+  animation scale into a clamped millisecond window. `animScale` is
+  bounded to `[0.5x, 4x]`; an explicit reduced-motion setting of zero
+  collapses to the 0.5x floor rather than instant so the undo
+  affordance is always reachable. Absolute `MIN_WINDOW_MS` (1.5s) and
+  `MAX_WINDOW_MS` (60s) guard against malformed system settings.
+- Added `UndoableActionQueue.deferWithPolicy(label, commit, severity,
+  animScale)` bridge so call sites consult the policy in one line and
+  the queue records the matching `expiresAtMillis`. Existing
+  `defer(label, commit, delayMillis)` callers remain unchanged.
+- 9 new JVM tests cover base-window-per-severity, the reduced-motion
+  floor, the negative / over-ceiling clamps, the absolute MIN/MAX
+  guards, and the queue-side bridge expiry math. SnackBar wiring per
+  destructive surface and op_history capture remain on the T21-F row.
+
 ### Added - APK file scanner data layer (T19-C follow-up, 2026-05-26)
 
 - Added `ApkFileScanner.scan(File, CancellationSignal)` plus the

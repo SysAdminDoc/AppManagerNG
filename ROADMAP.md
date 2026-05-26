@@ -356,8 +356,17 @@ for the original Effort / Dependency context per row.
   `pollExpired` / `drainAll`, injectable clock for tests, and deterministic
   insertion-order draining; 10 focused JVM tests cover the cancel-prevents-
   commit invariant, partial drain, ordering, and clock-injection edge cases.
-  SnackBar wiring per destructive surface, op_history capture, and the
-  reduced-motion duration tie-in remain on the T21-F roadmap row._
+  Reduced-motion duration tie-in landed 2026-05-26 via
+  `SnackbarDurationPolicy.windowFor(Severity, animScale)` (NORMAL=4s /
+  HIGH=7s / CRITICAL=10s base, scaled by clamped `animScale` in
+  `[0.5x, 4x]` with absolute MIN/MAX clamps; scale 0 collapses to the
+  reduced-motion floor of 0.5x rather than zero) plus a
+  `UndoableActionQueue.deferWithPolicy(label, commit, severity, animScale)`
+  bridge so call sites do not compute the window themselves. 9 focused
+  JVM tests pin base-window-per-severity, reduced-motion floor, the
+  negative / over-ceiling clamps, the absolute MIN/MAX guards, and the
+  queue-side bridge expiry math. SnackBar wiring per destructive
+  surface and op_history capture remain on the T21-F roadmap row._
 - [ ] **T21-G Attention badges on app list rows**: surface a tiny circular
   badge counter on rows where actionable state exists (pending permission
   grants, disabled components, recent OS revert). Acceptance: each badge
