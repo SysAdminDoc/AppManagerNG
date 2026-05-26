@@ -257,7 +257,15 @@ for the original Effort / Dependency context per row.
   action in App Details that wraps `simpleperf` for a bounded sampling
   window, gated on root/Shizuku/ADB. Acceptance: output saved as flame-graph
   SVG plus a raw `perf.data` for desktop tools, action explains binary
-  source/version, and capture is cancellable.
+  source/version, and capture is cancellable. _Data layer shipped
+  2026-05-26: `CpuProfileCommandBuilder.build` produces the canonical
+  `simpleperf record --app ... --duration ... -e ... -g --call-graph dwarf
+  -o ...` argv, with package-name validation, duration clamping to
+  `[MIN_DURATION_SECONDS, MAX_DURATION_SECONDS]`, event-allowlist fallback,
+  and an argument-injection guard on the output path; 10 focused JVM tests
+  pin the argv shape, clamping, allowlist behavior, and metacharacter
+  rejection. Privileged runner integration, output capture, and the
+  cancellation surface remain on the T20-B roadmap row._
 - [ ] **T20-C Memory allocations inspector**: parse `dumpsys meminfo`,
   `dumpsys gfxinfo`, and `procfs` native-memory snapshots for the target
   package and surface them in App Details. Acceptance: works on
@@ -314,8 +322,9 @@ for the original Effort / Dependency context per row.
   the glossary. _Data layer shipped 2026-05-26: `AttentionBadgeCalculator`
   is a pure-function calculator that takes (dangerous-permission-ungranted,
   user-disabled-components, recent-os-revert) and produces a single
-  prioritised badge (`OS_REVERT > DANGEROUS_PERMISSION > DISABLED_COMPONENT
-  > NONE`) plus `formatCount` for the Material-style 99+ collapse. 8 focused
+  prioritised badge with kinds ranked `OS_REVERT`, `DANGEROUS_PERMISSION`,
+  `DISABLED_COMPONENT`, then `NONE`, plus `formatCount` for the
+  Material-style 99+ collapse. 8 focused
   JVM tests pin priority, clamping, severity, and count formatting. Adapter
   wiring, glossary entry, and the single-source app-cache integration
   remain on the T21-G roadmap row._
