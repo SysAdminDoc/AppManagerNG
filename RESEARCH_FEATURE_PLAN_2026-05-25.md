@@ -1361,8 +1361,10 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
 
 - [x] P3 - **NF-18**: Keystore-password `char[]` lifecycle JUnit invariant — SHIPPED iter-143.
 - [x] P3 - **EI-08**: Mode Doctor share-as-Support-Info-Bundle — SHIPPED iter-143.
-- [ ] P3 - Architecture docs `04-filter-finder.md`, `05-routine-scheduler.md`,
-        `docs/policy/permissions.md` — pending, depends on NF-09 landing.
+- [x] P3 - Architecture docs `04-filter-finder.md`, `05-routine-scheduler.md`,
+        `docs/policy/permissions.md` — SHIPPED iter-146 (2026-05-25). The NF-09
+        data layer from iter-145 made the scheduler doc concrete; the permissions
+        catalogue closes a long-standing F-Droid / IzzyOnDroid reviewer gap.
 - [ ] P3 - Extract `filters/` to a Gradle module (after NF-08 schema lands) — deferred; the SharedPreferences shape from iter-143 is not yet enough to warrant a module split.
 
 ### Phase 5 — Iter-145 next-slice work (this iteration)
