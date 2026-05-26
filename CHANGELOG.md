@@ -5,6 +5,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - MemorySnapshotComposer for App Details memory panel (T20-C follow-up, 2026-05-26)
+
+- Added `MemorySnapshotComposer.compose(meminfo, gfxinfo, procStatus,
+  procMaps)` in `details/info/`, the unifier the App Details memory
+  panel will call once. Picks the best-available field per metric:
+  meminfo's App Summary for PSS rows, /proc/status for RSS / threads /
+  SWAP (more accurate than meminfo's TOTAL RSS), gfxinfo for jank %
+  and frame-latency percentiles, /proc/maps for per-region virtual
+  byte counts.
+- Every metric on `AppMemorySnapshot` carries a `FieldSource` enum
+  (`UNAVAILABLE` / `DUMPSYS_MEMINFO` / `DUMPSYS_GFXINFO` /
+  `PROC_STATUS` / `PROC_MAPS`) so the UI can label provenance with a
+  one-liner ("via /proc/maps", "via dumpsys") - PSS vs RSS vs virtual
+  is a real difference the panel needs to disambiguate.
+- Override precedence (preserved in tests): /proc/status RSS wins over
+  meminfo TOTAL RSS; meminfo PSS rows win over /proc/maps virtual when
+  both are present; /proc/maps fills in PSS-style rows when meminfo is
+  truncated. The `truncated` flag propagates from
+  `ProcMapsSummary.unparsedRegions > 0` so the panel can flag a
+  partial capture.
+- 12 focused JVM tests cover empty-on-all-null, meminfo-only,
+  proc-status-override-for-RSS, proc-maps-PSS-fallback, meminfo-wins-
+  over-procmaps, gfxinfo presence/absence, swap fallback, regions
+  flow-through, truncated flag, empty-maps tolerance, and a full
+  round-trip with every source populated.
+
 ### Added - OsRevertCountTracker for attention-badge signal (T21-G follow-up, 2026-05-26)
 
 - Added `OsRevertCountTracker` in `revert/`, a thread-safe per-package
