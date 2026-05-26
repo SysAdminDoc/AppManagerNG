@@ -21,11 +21,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.github.muntashirakon.AppManager.StaticDataset;
@@ -174,6 +177,34 @@ public final class ComponentUtils {
         Path[] paths = confDir.listFiles((dir, name) -> name.endsWith(".tsv"));
         for (Path path : paths) {
             packages.add(Paths.trimPathExtension(path.getUri().getLastPathSegment()));
+        }
+        return packages;
+    }
+
+    @NonNull
+    public static List<String> getAllPackagesWithComponentRuleFiles(@NonNull Context context) {
+        Set<String> packages = new LinkedHashSet<>(getAllPackagesWithRules(context));
+        packages.addAll(getAllPackagesWithIfwRuleFiles(Paths.get(ComponentsBlocker.SYSTEM_RULES_PATH)));
+        List<String> sortedPackages = new ArrayList<>(packages);
+        Collections.sort(sortedPackages);
+        return sortedPackages;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static List<String> getAllPackagesWithIfwRuleFiles(@NonNull Path ifwDir) {
+        List<String> packages = new ArrayList<>();
+        Path[] paths;
+        try {
+            paths = ifwDir.listFiles((dir, name) -> name.endsWith(".xml"));
+        } catch (Throwable ignored) {
+            return packages;
+        }
+        for (Path path : paths) {
+            String fileName = path.getUri().getLastPathSegment();
+            if (fileName != null) {
+                packages.add(Paths.trimPathExtension(fileName));
+            }
         }
         return packages;
     }
