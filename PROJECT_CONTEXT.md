@@ -11,7 +11,7 @@
 > the single active checklist; the old long-form roadmap and 2026-05-25 research
 > plans are archived under `docs/roadmap/archive/`. Latest code baseline before
 > this pass: `7febf06` on `main`.
-> Post-consolidation batches have landed NF-09, NF-20/NF-21, NF-19/NF-22,
+> Post-consolidation batches have landed NF-09/NF-10, NF-20/NF-21, NF-19/NF-22,
 > NF-23, NF-24 through NF-29 and EI-11 through EI-16; read `ROADMAP.md` plus
 > `CHANGELOG.md` for the exact current open item.
 >

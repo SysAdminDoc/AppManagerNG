@@ -2,5 +2,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="?attr/colorPrimaryContainer" />
-    <corners android:radius="@dimen/premium_radius_pill" />
+    <corners android:radius="@dimen/premium_radius_control" />
 </shape>
