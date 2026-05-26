@@ -556,6 +556,46 @@
             app:iconGravity="textStart" />
 
         <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/onboarding_next_steps_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:text="@string/onboarding_next_steps_title"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/onboarding_next_step_privileges"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:text="@string/onboarding_next_step_privileges"
+            app:icon="@drawable/ic_security_network"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/onboarding_next_step_permission_inspector"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:text="@string/onboarding_next_step_permission_inspector"
+            app:icon="@drawable/ic_security"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/onboarding_next_step_backup"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_small"
+            android:text="@string/onboarding_next_step_backup"
+            app:icon="@drawable/ic_backup_restore"
+            app:iconGravity="textStart" />
+
+        <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
