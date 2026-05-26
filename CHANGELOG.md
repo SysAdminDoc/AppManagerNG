@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Per-app rollback now shows a dry-run preview (2026-05-25)
+
+- App Details -> "Revert AppManager changes" now opens a multi-choice
+  dialog listing every inverse `BatchOp` the planner produced so the user
+  can untick rows before confirming. Closes EI-09 of the 2026-05-25 plan.
+- `PerAppRollbackManager.start(Context, RollbackPlan, boolean[] keep)` is
+  the new entry point; the existing single-arg variant delegates so older
+  callers behave unchanged.
+
 ### Added — Onboarding "Next steps" tiles on the final card (2026-05-25)
 
 - The replayable onboarding wizard now closes with three outlined-button
