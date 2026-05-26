@@ -1355,6 +1355,23 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             certTag.setText(getString(R.string.cert_fingerprint_chip_label, shortFingerprint(fp)))
                     .setOnClickListener(v -> showCertFingerprintDialog(v.getContext(), fp, subject, issuer));
         }
+        // NF-11 — package-visibility signal. Surfaces only when the app holds
+        // QUERY_ALL_PACKAGES or declares a non-empty <queries> manifest block.
+        if (tagCloud.packageVisibility != null && tagCloud.packageVisibility.hasSignal()) {
+            PackageVisibilityInfo visibility = tagCloud.packageVisibility;
+            TagItem visibilityTag = new TagItem();
+            tagItems.add(visibilityTag);
+            int summaryRes = visibility.holdsQueryAllPackages
+                    ? R.string.package_visibility_query_all_chip
+                    : R.string.package_visibility_queries_chip;
+            visibilityTag.setTextRes(summaryRes)
+                    .setOnClickListener(v -> showPackageVisibilityDialog(visibility));
+            if (visibility.holdsQueryAllPackages) {
+                visibilityTag.setColor(ColorCodes.getFailureColor(context));
+            } else {
+                visibilityTag.setColor(ColorCodes.getRemovalCautionIndicatorColor(context));
+            }
+        }
         if (tagCloud.developerVerificationStatus != DeveloperVerificationCompat.STATUS_UNAVAILABLE) {
             TagItem verifierTag = new TagItem();
             tagItems.add(verifierTag);
@@ -1625,6 +1642,72 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 })
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    /**
+     * NF-11 — show the package-visibility signal in a scrollable dialog with
+     * three sections: holds-QUERY_ALL_PACKAGES, <queries> packages, and
+     * <queries> intent actions. A "Find apps querying this" action kicks off
+     * the O(N) inverse lookup on a background thread.
+     */
+    private void showPackageVisibilityDialog(@NonNull PackageVisibilityInfo visibility) {
+        StringBuilder body = new StringBuilder();
+        if (visibility.holdsQueryAllPackages) {
+            body.append(getString(R.string.package_visibility_section_query_all)).append('\n');
+        }
+        if (!visibility.queriesPackages.isEmpty()) {
+            if (body.length() > 0) body.append('\n');
+            body.append(getString(R.string.package_visibility_section_queries_packages, visibility.queriesPackages.size()));
+            for (String pkg : visibility.queriesPackages) {
+                body.append("\n  • ").append(pkg);
+            }
+            body.append('\n');
+        }
+        if (!visibility.queriesIntentActions.isEmpty()) {
+            if (body.length() > 0) body.append('\n');
+            body.append(getString(R.string.package_visibility_section_queries_actions, visibility.queriesIntentActions.size()));
+            for (String action : visibility.queriesIntentActions) {
+                body.append("\n  • ").append(action);
+            }
+            body.append('\n');
+        }
+        if (body.length() == 0) {
+            body.append(getString(R.string.package_visibility_no_signal));
+        }
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.package_visibility_dialog_title)
+                .setMessage(body.toString())
+                .setNeutralButton(R.string.package_visibility_find_callers, (dialog, which) ->
+                        findAndShowVisibilityCallers(mPackageName))
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
+    /** O(N) inverse lookup: find every installed app whose <queries> lists mPackageName. */
+    private void findAndShowVisibilityCallers(@NonNull String targetPackageName) {
+        Context appContext = requireContext().getApplicationContext();
+        displayShortToast(R.string.package_visibility_searching_callers);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<String> callers = PackageVisibilityInfo.findAppsQueryingPackage(
+                    appContext.getPackageManager(), targetPackageName);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                StringBuilder body = new StringBuilder();
+                if (callers.isEmpty()) {
+                    body.append(getString(R.string.package_visibility_no_callers));
+                } else {
+                    body.append(getString(R.string.package_visibility_callers_header, callers.size()));
+                    for (String pkg : callers) {
+                        body.append("\n  • ").append(pkg);
+                    }
+                }
+                new MaterialAlertDialogBuilder(mActivity)
+                        .setTitle(R.string.package_visibility_callers_title)
+                        .setMessage(body.toString())
+                        .setPositiveButton(R.string.close, null)
+                        .show();
+            });
+        });
     }
 
     private void displayRunningServices(

@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Package visibility chip in App Details (NF-11, 2026-05-25)
+
+- App Details info card now surfaces a package-visibility tag-cloud chip
+  for any app that holds `QUERY_ALL_PACKAGES` or declares a non-empty
+  `<queries>` manifest block. The chip is failure-coloured for
+  `QUERY_ALL_PACKAGES` and caution-coloured for targeted `<queries>` so
+  the difference between an app that can enumerate everything vs. an
+  app with narrow targets is visible at a glance.
+- Tapping the chip opens a scrollable dialog listing the queried
+  packages and intent actions, plus a "Find callers" action that
+  performs an O(N) inverse scan across installed apps to surface every
+  package whose own `<queries>` block lists this one.
+- Pure-JVM coverage in [`PackageVisibilityInfoTest`](app/src/test/java/io/github/muntashirakon/AppManager/details/info/PackageVisibilityInfoTest.java).
+
 ### Added — Multi-tag store + Finder filter (NF-08 data layer, 2026-05-25)
 
 - New `AppTagStore` is a SharedPreferences-backed multi-tag store for
