@@ -30,6 +30,10 @@ work to separate root research files.
 - F-Droid submission metadata is prepared in
   `docs/distribution/fdroid-listing.md`; the external fdroiddata merge request
   requires maintainer action.
+- Accrescent packaging notes and a signed APK-set helper are prepared in
+  `docs/distribution/accrescent-listing.md`; the listing remains blocked by
+  current Accrescent policy on installer/accessibility-service use plus
+  maintainer-only external access.
 - The historical roadmap and the 2026-05-25 research feature plans were
   archived under `docs/roadmap/archive/` during this consolidation pass.
 
@@ -110,7 +114,12 @@ work to separate root research files.
   `docs/distribution/fdroid-listing.md`; blocked on a maintainer filing the
   external fdroiddata merge request and watching F-Droid CI scanner/build
   feedback.
-- [ ] Accrescent listing.
+- [ ] Accrescent listing. Packaging notes and signed APK-set helper are ready in
+  `docs/distribution/accrescent-listing.md` and
+  `scripts/build_accrescent_apks.sh`; blocked on a maintainer/product decision
+  because current Accrescent policy conflicts with AppManagerNG's installer
+  permission and non-disability accessibility service, plus external
+  allowlisted-account and release-keystore access.
 
 ### Platform and Accessibility
 

@@ -632,7 +632,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **v0.5.x** — background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
 - **v0.6.0** — Routine scheduler executor/UI on top of the shipped trigger data layer, plus Premium Polish Phase 2.
 - **Now / Eng-Debt** — Android 17 device verification for Shizuku and 16 KB page-size behavior, high-contrast / 200 percent font-scale / TalkBack audits, and the minSdk-23 / Material 1.14 decision. WorkManager quota / stop-reason instrumentation is now in scheduled backup and routine schedules.
-- **Distribution next** — IzzyOnDroid and F-Droid listing packets are ready but need the maintainer to file the external tracker / fdroiddata requests; Accrescent listing remains next. Rename is public and reproducible builds are done.
+- **Distribution next** — IzzyOnDroid and F-Droid listing packets are ready but need the maintainer to file the external tracker / fdroiddata requests. Accrescent has packaging notes plus `scripts/build_accrescent_apks.sh`, but current Accrescent policy conflicts with NG's installer permission and non-disability accessibility service unless a maintainer chooses an Accrescent-specific reduced flavor or obtains an exception. Rename is public and reproducible builds are done.
 
 ---
 
