@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App memory snapshot parser data layer (T20-C, 2026-05-26)
+
+- Added `AppMemoryInfoParser.parseAppSummary`, a JVM-only parser for the
+  "App Summary" block of `dumpsys meminfo` output. Returns a `Snapshot`
+  with Java Heap, Native Heap, Code, Stack, Graphics, Private Other,
+  System, and Unknown PSS+RSS plus TOTAL PSS/RSS/SWAP. Missing fields
+  stay at `-1` so callers can render "n/a" instead of fabricated zeros.
+- Parser tolerates both modern (Android 8+ two-column) and legacy
+  (Android 6-7 PSS-only) dumpsys output, ignores forward-compatible
+  unknown rows, and rejects garbage numeric values without throwing.
+- 7 focused JVM tests cover an Android 14 capture, an Android 7 capture,
+  empty input, header-only input, an unknown future "Fonts" row, sum-vs-
+  total invariants, and unparseable values.
+- `dumpsys gfxinfo`, procfs streaming, and App Details UI surface tracked
+  on the T20-C roadmap row.
+
 ### Changed - Material You dynamic-color audit (T21-J, 2026-05-26)
 
 - Added `docs/audits/2026-05-26-material-you-dynamic-color.md` recording the
