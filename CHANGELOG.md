@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Documentation — F-Droid listing packet (2026-05-26)
+
+- Added `docs/distribution/fdroid-listing.md` with the current package ID,
+  release tag, version code, `floss` build target, fdroiddata metadata draft,
+  submodule requirements, binary test-fixture removal notes, and maintainer
+  filing steps.
+- Corrected the F-Droid flavor contract in
+  `docs/distribution/build-flavors.md`: fdroiddata metadata should list the
+  `floss` flavor, not the full `flossRelease` Gradle task name.
+- Verified the current F-Droid build target locally with
+  `.\gradlew.bat assembleFlossRelease`.
+
 ### Changed — Code Editor large-font status row (2026-05-26)
 
 - Code Editor status fields now use true weighted columns so line, indent, and
