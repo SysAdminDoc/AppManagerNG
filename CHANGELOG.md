@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Settings -> About -> What's new + auto-display after update (2026-05-25)
+
+- New Settings -> About -> "What's new" preference opens the in-app changelog
+  viewer directly, instead of relying on tapping the version row.
+- After an in-place app update, the main screen now surfaces the latest
+  release block once via the existing changelog dialog using
+  `ChangelogAutoDisplay`. Fresh installs do not see the dialog; the auto-display
+  flag is consumed atomically so screen rotation cannot redisplay.
+- Pure-JVM coverage in [`ChangelogAutoDisplayTest`](app/src/test/java/io/github/muntashirakon/AppManager/changelog/ChangelogAutoDisplayTest.java).
+
 ### Changed — NG-native bundled changelog + doc drift fixes (2026-05-25)
 
 - Replaced `app/src/main/res/raw/changelog.xml` with NG-native content covering
