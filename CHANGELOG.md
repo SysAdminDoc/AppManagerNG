@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Settings search misses section-name queries (2026-05-26)
+
+- Settings -> Search now matches the section parent label in addition to
+  the per-row title and summary, so typing "About" surfaces every row
+  inside the About section even when no individual preference title
+  repeats the section name. Previously, "About", "Backup", "Privileges"
+  and similar section-name queries returned zero results, leaving users
+  with no way to reach a section without remembering one of its row
+  titles.
+- Added `parentLabelMatchSurfacesEverySectionRow` regression test.
+
 ### Added - Attention badge calculator data layer (T21-G, 2026-05-26)
 
 - Added `AttentionBadgeCalculator`, a pure-function calculator that maps

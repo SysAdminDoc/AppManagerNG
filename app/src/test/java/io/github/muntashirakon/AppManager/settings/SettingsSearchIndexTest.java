@@ -48,11 +48,30 @@ public class SettingsSearchIndexTest {
     public void substringMatchesAreCaseInsensitive() {
         SettingsSearchIndex.invalidate();
         SettingsSearchIndex index = SettingsSearchIndex.get(ApplicationProvider.getApplicationContext());
-        // The string "About" lives in preferences_about.xml; both casings must match.
+        // "About" is the parent label of preferences_about.xml; the search
+        // path matches parent label in addition to title and summary so a user
+        // typing the section name reaches every row inside that section.
         List<SettingsSearchIndex.Entry> lower = index.search("about");
         List<SettingsSearchIndex.Entry> upper = index.search("ABOUT");
         assertEquals(lower.size(), upper.size());
         assertTrue("Expected at least one 'about' match", lower.size() >= 1);
+    }
+
+    @Test
+    public void parentLabelMatchSurfacesEverySectionRow() {
+        SettingsSearchIndex.invalidate();
+        SettingsSearchIndex index = SettingsSearchIndex.get(ApplicationProvider.getApplicationContext());
+        // Every row whose parent label contains the needle must show up - even
+        // when no individual title or summary repeats the section name. This
+        // is the regression guard for the bug where searching "about" returned
+        // zero results because the substring is only on the parent label.
+        List<SettingsSearchIndex.Entry> matches = index.search("about");
+        int aboutRows = 0;
+        for (SettingsSearchIndex.Entry entry : matches) {
+            if ("about".equals(entry.parentKey)) ++aboutRows;
+        }
+        assertTrue("Expected every preferences_about.xml row to surface for query 'about'",
+                aboutRows >= 1);
     }
 
     @Test
