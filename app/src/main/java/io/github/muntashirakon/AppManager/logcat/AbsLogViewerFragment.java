@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logcat.helper.LogcatStructuredExporter;
 import io.github.muntashirakon.AppManager.logcat.helper.PreferenceHelper;
 import io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
@@ -70,6 +71,8 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
     private TextView mEmptyStateSummary;
     @Nullable
     private MaterialButton mEmptyStateAction;
+    @Nullable
+    private TextView mLogCountSummary;
 
     protected boolean mAutoscrollToBottom = true;
     @Nullable
@@ -153,6 +156,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         mViewModel.observeLogLevelLiveData().observe(getViewLifecycleOwner(), logLevel -> {
             mLogListAdapter.setLogLevelLimit(logLevel);
             updateEmptyState();
+            updateLogCountSummary();
         });
     }
 
@@ -227,7 +231,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         }  else if (id == R.id.action_share) {
             displaySaveDebugLogsDialog(true, false);
         } else if (id == R.id.action_export) {
-            displaySaveDebugLogsDialog(false, false);
+            displayExportLogDialog(false);
             return true;
         } else return false;
         return true;
@@ -258,6 +262,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
             mRecyclerView.scrollToPosition(count - 1);
         }
         updateEmptyState();
+        updateLogCountSummary();
     }
 
     protected void updateEmptyState() {
@@ -274,6 +279,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
             mEmptyStateSummary.setText(getDefaultEmptyStateMessageRes());
             mEmptyStateAction.setVisibility(View.GONE);
         }
+        updateLogCountSummary();
     }
 
     protected int getDefaultEmptyStateTitleRes() {
@@ -285,6 +291,7 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
     }
 
     private void bindEmptyState(@NonNull View view) {
+        mLogCountSummary = view.findViewById(R.id.log_count_summary);
         mEmptyView = view.findViewById(android.R.id.empty);
         if (mEmptyView == null) {
             return;
@@ -297,6 +304,20 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         }
         mRecyclerView.setEmptyView(mEmptyView);
         updateEmptyState();
+    }
+
+    protected void updateLogCountSummary() {
+        if (mLogCountSummary == null || mLogListAdapter == null) {
+            return;
+        }
+        int visibleCount = mLogListAdapter.getItemCount();
+        int totalCount = mLogListAdapter.getRealSize();
+        if (hasActiveSearch() || mLogListAdapter.getLogLevelLimit() > Log.VERBOSE) {
+            mLogCountSummary.setText(getString(R.string.log_viewer_count_filtered, visibleCount, totalCount));
+        } else {
+            mLogCountSummary.setText(getResources().getQuantityString(
+                    R.plurals.log_viewer_count_total, totalCount, totalCount));
+        }
     }
 
     private boolean isFilterHidingLogs() {
@@ -327,12 +348,26 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
     }
 
     @NonNull
+    protected final List<LogLine> getCurrentLogLines() {
+        List<LogLine> result = new ArrayList<>(mLogListAdapter.getItemCount());
+        for (int i = 0; i < mLogListAdapter.getItemCount(); i++) {
+            result.add(mLogListAdapter.getItem(i));
+        }
+        return result;
+    }
+
+    @NonNull
     protected final List<String> getSelectedLogsAsStrings() {
         List<String> result = new ArrayList<>();
         for (LogLine logLine : mLogListAdapter.getSelectedLogLines()) {
             result.add(logLine.getOriginalLine());
         }
         return result;
+    }
+
+    @NonNull
+    protected final List<LogLine> getSelectedLogLines() {
+        return new ArrayList<>(mLogListAdapter.getSelectedLogLines());
     }
 
     protected final void displaySaveLogDialog(boolean onlySelected) {
@@ -350,6 +385,33 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    protected final void displayExportLogDialog(boolean onlySelected) {
+        String[] exportChoices = new String[]{
+                getString(R.string.log_export_diagnostic_bundle),
+                getString(R.string.log_export_json),
+                getString(R.string.log_export_csv)
+        };
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.pref_export)
+                .setItems(exportChoices, (dialog, which) -> {
+                    if (which == 0) {
+                        displaySaveDebugLogsDialog(false, onlySelected);
+                    } else if (which == 1) {
+                        displayStructuredExportLogDialog(LogcatStructuredExporter.Format.JSON, onlySelected);
+                    } else {
+                        displayStructuredExportLogDialog(LogcatStructuredExporter.Format.CSV, onlySelected);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void displayStructuredExportLogDialog(@NonNull LogcatStructuredExporter.Format format, boolean onlySelected) {
+        mActivity.setLogsToBeShared(false, true);
+        mViewModel.prepareStructuredLogsToBeSent(format,
+                onlySelected ? getSelectedLogLines() : getCurrentLogLines());
     }
 
     protected final void displaySaveDebugLogsDialog(boolean share, boolean onlySelected) {
