@@ -96,6 +96,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     public static final String ARG_OPTIONS = "opt";
     public static final String ARG_POSITION = "pos";
     private static final long SEARCH_DEBOUNCE_MILLIS = 250;
+    private static final int BATCH_RENAME_PREVIEW_LIMIT = 30;
 
     @NonNull
     public static FmFragment getNewInstance(@NonNull FmActivity.Options options,
@@ -611,7 +612,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             startBatchApkInstall(selectedFiles);
         } else if (id == R.id.action_rename) {
             RenameDialogFragment dialog = RenameDialogFragment.getInstance(null, (prefix, extension) ->
-                    startBatchRenaming(selectedFiles, prefix, extension));
+                    showBatchRenamePreview(new ArrayList<>(selectedFiles), prefix, extension));
             dialog.show(getChildFragmentManager(), RenameDialogFragment.TAG);
         } else if (id == R.id.action_delete) {
             new MaterialAlertDialogBuilder(mActivity)
@@ -1151,13 +1152,74 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         }));
     }
 
-    private void startBatchRenaming(List<Path> paths, String prefix, @Nullable String extension) {
+    private void showBatchRenamePreview(@NonNull List<Path> paths, @NonNull String prefix, @Nullable String extension) {
+        FmBatchRenameUtils.Plan plan = FmBatchRenameUtils.createPlan(paths, prefix, extension);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.batch_rename_preview_title)
+                .setMessage(getBatchRenamePreviewMessage(plan));
+        if (plan.canExecute()) {
+            builder.setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.rename, (dialog, which) -> startBatchRenaming(plan));
+        } else {
+            builder.setPositiveButton(R.string.close, null);
+        }
+        builder.show();
+    }
+
+    @NonNull
+    private CharSequence getBatchRenamePreviewMessage(@NonNull FmBatchRenameUtils.Plan plan) {
+        StringBuilder builder = new StringBuilder();
+        if (!plan.issues.isEmpty()) {
+            builder.append(getString(R.string.batch_rename_cannot_start));
+            for (FmBatchRenameUtils.Issue issue : plan.issues) {
+                builder.append("\n").append(getBatchRenameIssueMessage(issue));
+            }
+            return builder;
+        }
+        builder.append(getResources().getQuantityString(R.plurals.batch_rename_preview_count,
+                plan.entries.size(), plan.entries.size()));
+        if (plan.resolvedConflictCount > 0) {
+            builder.append("\n").append(getResources().getQuantityString(R.plurals.batch_rename_conflict_count,
+                    plan.resolvedConflictCount, plan.resolvedConflictCount));
+        }
+        int previewCount = Math.min(plan.entries.size(), BATCH_RENAME_PREVIEW_LIMIT);
+        for (int i = 0; i < previewCount; ++i) {
+            FmBatchRenameUtils.Entry entry = plan.entries.get(i);
+            builder.append("\n").append(getString(R.string.batch_rename_preview_row,
+                    entry.sourceName, entry.targetName));
+        }
+        int remainingCount = plan.entries.size() - previewCount;
+        if (remainingCount > 0) {
+            builder.append("\n").append(getResources().getQuantityString(R.plurals.and_n_more,
+                    remainingCount, remainingCount));
+        }
+        return builder;
+    }
+
+    @NonNull
+    private CharSequence getBatchRenameIssueMessage(@NonNull FmBatchRenameUtils.Issue issue) {
+        switch (issue.type) {
+            case EMPTY_TARGET_NAME:
+                return getString(R.string.batch_rename_empty_target);
+            case INVALID_TARGET_NAME:
+                return getString(R.string.batch_rename_invalid_target, issue.targetName);
+            case MISSING_PARENT:
+                return getString(R.string.batch_rename_missing_parent, issue.sourceName);
+            case NO_AVAILABLE_TARGET_NAME:
+            default:
+                return getString(R.string.batch_rename_no_available_target, issue.sourceName);
+        }
+    }
+
+    private void startBatchRenaming(@NonNull FmBatchRenameUtils.Plan plan) {
         AtomicReference<Future<?>> renameThread = new AtomicReference<>();
+        AtomicReference<FmBatchRenameUtils.BatchResult> resultRef = new AtomicReference<>(
+                new FmBatchRenameUtils.BatchResult(Collections.emptyList(), false));
         View view = View.inflate(requireContext(), R.layout.dialog_progress, null);
         LinearProgressIndicator progress = view.findViewById(R.id.progress_linear);
         TextView label = view.findViewById(android.R.id.text1);
         TextView counter = view.findViewById(android.R.id.text2);
-        counter.setText(String.format(Locale.getDefault(), "%d/%d", 0, paths.size()));
+        counter.setText(String.format(Locale.getDefault(), "%d/%d", 0, plan.entries.size()));
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.rename)
                 .setView(view)
@@ -1176,56 +1238,76 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             try {
                 LinearProgressIndicator p = progressRef.get();
                 if (p != null) {
-                    p.setMax(paths.size());
+                    p.setMax(plan.entries.size());
                     p.setProgress(0);
                     p.setIndeterminate(false);
                 }
-                int i = 1;
-                for (Path path : paths) {
-                    // Update label
-                    TextView l = labelRef.get();
-                    if (l != null) {
-                        ThreadUtils.postOnMainThread(() -> l.setText(path.getName()));
-                    }
-                    if (ThreadUtils.isInterrupted()) {
-                        break;
-                    }
-                    // Sleep, rename, progress
-                    SystemClock.sleep(2_000);
-                    if (ThreadUtils.isInterrupted()) {
-                        break;
-                    }
-                    Path basePath = path.getParent();
-                    if (basePath != null) {
-                        String displayName = findNextBestDisplayName(basePath, prefix, extension, i);
-                        path.renameTo(displayName);
-                    }
-                    TextView c = counterRef.get();
-                    int finalI = i;
-                    ThreadUtils.postOnMainThread(() -> {
-                        if (c != null) {
-                            c.setText(String.format(Locale.getDefault(), "%d/%d", finalI, paths.size()));
+                resultRef.set(FmBatchRenameUtils.execute(plan, new FmBatchRenameUtils.ProgressListener() {
+                    @Override
+                    public void onEntryStarted(@NonNull FmBatchRenameUtils.Entry entry, int index, int total) {
+                        TextView l = labelRef.get();
+                        if (l != null) {
+                            ThreadUtils.postOnMainThread(() -> l.setText(entry.sourceName));
                         }
-                        if (p != null) {
-                            p.setProgress(finalI);
-                        }
-                    });
-                    ++i;
-                    if (ThreadUtils.isInterrupted()) {
-                        break;
                     }
-                }
+
+                    @Override
+                    public void onEntryFinished(@NonNull FmBatchRenameUtils.Entry entry, int completed, int total) {
+                        TextView c = counterRef.get();
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (c != null) {
+                                c.setText(String.format(Locale.getDefault(), "%d/%d", completed, total));
+                            }
+                            if (p != null) {
+                                p.setProgress(completed);
+                            }
+                        });
+                    }
+                }));
             } finally {
                 AlertDialog d = dialogRef.get();
                 if (d != null) {
                     ThreadUtils.postOnMainThread(() -> {
                         d.dismiss();
-                        UIUtils.displayShortToast(R.string.renamed_successfully);
+                        if (isAdded()) {
+                            showBatchRenameResult(resultRef.get());
+                        }
                         mModel.reload();
                     });
                 }
             }
         }));
+    }
+
+    private void showBatchRenameResult(@NonNull FmBatchRenameUtils.BatchResult result) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.batch_rename_result_title)
+                .setMessage(getBatchRenameResultMessage(result))
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
+    @NonNull
+    private CharSequence getBatchRenameResultMessage(@NonNull FmBatchRenameUtils.BatchResult result) {
+        StringBuilder builder = new StringBuilder(getString(R.string.batch_rename_result_summary,
+                result.getSuccessCount(), result.results.size()));
+        if (result.interrupted) {
+            builder.append("\n").append(getString(R.string.batch_rename_interrupted));
+        }
+        for (FmBatchRenameUtils.Result item : result.results) {
+            builder.append("\n");
+            if (item.success) {
+                builder.append(getString(R.string.batch_rename_result_success_row,
+                        item.entry.sourceName, item.entry.targetName));
+            } else if (TextUtils.isEmpty(item.failureMessage)) {
+                builder.append(getString(R.string.batch_rename_result_failed_row,
+                        item.entry.sourceName, item.entry.targetName));
+            } else {
+                builder.append(getString(R.string.batch_rename_result_failed_row_with_reason,
+                        item.entry.sourceName, item.entry.targetName, item.failureMessage));
+            }
+        }
+        return builder;
     }
 
     private void startBatchPaste(@NonNull FmTasks.FmTask task) {
