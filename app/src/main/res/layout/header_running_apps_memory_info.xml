@@ -73,7 +73,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/premium_space_8"
             app:cardBackgroundColor="?attr/colorSurfaceVariant"
-            app:cardCornerRadius="@dimen/premium_radius_pill"
+            app:cardCornerRadius="@dimen/premium_radius_control"
             app:cardElevation="@dimen/premium_elevation_0"
             app:strokeWidth="@dimen/premium_stroke_none">
 
@@ -137,7 +137,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/premium_space_8"
             app:cardBackgroundColor="?attr/colorSurfaceVariant"
-            app:cardCornerRadius="@dimen/premium_radius_pill"
+            app:cardCornerRadius="@dimen/premium_radius_control"
             app:cardElevation="@dimen/premium_elevation_0"
             app:strokeWidth="@dimen/premium_stroke_none">
 
