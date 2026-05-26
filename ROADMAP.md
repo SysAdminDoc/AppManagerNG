@@ -257,9 +257,18 @@ for the original Effort / Dependency context per row.
   allow-list. 13 focused JVM tests pin the extension matrix, the
   case-insensitive walk, nested directory enumeration, cancellation
   short-circuit, custom-extension-set override, and the individual
-  rejection predicates. Parser glue (PackageManager.getPackageArchiveInfo
-  + .apkm/.xapk parsers) and One-Click Ops UI remain on the T19-C
-  roadmap row._
+  rejection predicates. Bundle header parser landed 2026-05-26 via
+  `ApkBundleHeaderParser.parse(bytes/InputStream)` which recognises
+  APKS (Bundletool / Apks Helper), APKM (APKMirror Installer), XAPK
+  (APKPure), and single-APK by reading only the ZIP central-directory
+  entry names (never payloads). Returns a `Header` with hasBaseApk,
+  splitApkCount, hasManifestJson, hasInfoJson, hasBundleConfig
+  (`BundleConfig.pb` / `toc.pb`), and hasObbData. 13 focused JVM
+  tests pin bundletool / APKM / XAPK / single-APK / multidex /
+  config-only / case-insensitivity / non-ZIP / empty / short-input /
+  null / empty-entry-set classification. PackageManager.getPackageArchiveInfo
+  + signing-cert extraction and the One-Click Ops UI remain on the
+  T19-C roadmap row._
 - [ ] **T19-D Backup duplicate cleaner**: detect duplicate
   `<package>@<version>@<variant>` backup archives across configured backup
   roots; offer per-pair "keep newest" or "keep largest" with manual override.
