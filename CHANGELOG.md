@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — SharedPrefs editor atomic writes (2026-05-26)
+
+- SharedPrefs editor saves now route local file writes through
+  `AtomicExtendedFile`, committing complete XML via the repo's `.new` +
+  fsync + rename pattern instead of truncating the target file directly.
+- Failed SharedPrefs writes now abandon the pending `.new` file and leave the
+  original XML intact; successful local writes restore the original mode,
+  owner/group, and SELinux context when available.
+- Added focused JVM coverage for successful XML commits and simulated
+  mid-write failures.
+
 ### Changed — Main list select all visible action (2026-05-26)
 
 - Main list selection mode now adds a "Select all visible" action whenever a
