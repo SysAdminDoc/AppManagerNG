@@ -208,6 +208,113 @@ public class BackupRetentionPolicyTest {
     }
 
     @Test
+    public void duplicateSelectorLargestKeepsTheBiggestPayload() {
+        // Three copies of the same (pkg, user, versionCode). LARGEST wins on
+        // size; the smaller two are dropped regardless of backup name.
+        Backup small = versionedBackup("com.foo", 0, "small", 100L, NOW);
+        Backup medium = versionedBackup("com.foo", 0, "medium", 100L, NOW - DAY);
+        Backup huge = versionedBackup("com.foo", 0, "huge", 100L, NOW - 2 * DAY);
+        java.util.Map<Backup, Long> sizes = new java.util.HashMap<>();
+        sizes.put(small, 100L);
+        sizes.put(medium, 1_000L);
+        sizes.put(huge, 50_000L);
+        BackupRetentionPolicy.BackupSizeResolver resolver = backup -> {
+            Long s = sizes.get(backup);
+            return s == null ? -1L : s;
+        };
+
+        List<Backup> dupes = BackupRetentionPolicy.selectVersionDuplicates(
+                Arrays.asList(small, medium, huge),
+                BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST, resolver);
+        assertEquals(2, dupes.size());
+        Set<String> dupeNames = new HashSet<>();
+        for (Backup b : dupes) dupeNames.add(b.backupName);
+        // "huge" is the largest and survives; "small" + "medium" are dupes.
+        assertTrue(dupeNames.contains("small"));
+        assertTrue(dupeNames.contains("medium"));
+    }
+
+    @Test
+    public void duplicateSelectorLargestThenNewestBreaksSizeTiesWithFreshness() {
+        // Three copies with the same on-disk size; the LARGEST_THEN_NEWEST
+        // policy must keep the newest backup.
+        Backup oldA = versionedBackup("com.foo", 0, "old-a", 100L, NOW - 30 * DAY);
+        Backup mid = versionedBackup("com.foo", 0, "mid", 100L, NOW - 5 * DAY);
+        Backup fresh = versionedBackup("com.foo", 0, "fresh", 100L, NOW);
+        java.util.Map<Backup, Long> sizes = new java.util.HashMap<>();
+        sizes.put(oldA, 5_000L);
+        sizes.put(mid, 5_000L);
+        sizes.put(fresh, 5_000L);
+
+        BackupRetentionPolicy.BackupSizeResolver resolverTied = backup -> {
+            Long s = sizes.get(backup);
+            return s == null ? -1L : s;
+        };
+        List<Backup> dupes = BackupRetentionPolicy.selectVersionDuplicates(
+                Arrays.asList(oldA, mid, fresh),
+                BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST_THEN_NEWEST,
+                resolverTied);
+        assertEquals(2, dupes.size());
+        Set<String> dupeNames = new HashSet<>();
+        for (Backup b : dupes) dupeNames.add(b.backupName);
+        assertTrue(dupeNames.contains("old-a"));
+        assertTrue(dupeNames.contains("mid"));
+    }
+
+    @Test
+    public void duplicateSelectorLargestTreatsUnknownSizesAsLastResort() {
+        // Two rows in the same bucket; resolver returns -1 ("unknown") for one
+        // and a real size for the other. Known size must win regardless of
+        // which row appears first in the input.
+        Backup known = versionedBackup("com.foo", 0, "known", 100L, NOW - DAY);
+        Backup unknown = versionedBackup("com.foo", 0, "unknown", 100L, NOW);
+        BackupRetentionPolicy.BackupSizeResolver resolver = b -> b == known ? 4_096L : -1L;
+
+        // Same input ordering both ways: keeper must always be `known`.
+        List<Backup> a = BackupRetentionPolicy.selectVersionDuplicates(
+                Arrays.asList(known, unknown),
+                BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST, resolver);
+        List<Backup> b = BackupRetentionPolicy.selectVersionDuplicates(
+                Arrays.asList(unknown, known),
+                BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST, resolver);
+        assertEquals(1, a.size());
+        assertEquals(1, b.size());
+        assertEquals("unknown", a.get(0).backupName);
+        assertEquals("unknown", b.get(0).backupName);
+    }
+
+    @Test
+    public void duplicateSelectorLargestNullResolverFallsBackToDeterministicOrder() {
+        // Without a resolver every row is "unknown size", so the
+        // relativeDir tie-break selects the keeper deterministically.
+        Backup alpha = versionedBackup("com.foo", 0, "alpha", 100L, NOW);
+        Backup beta = versionedBackup("com.foo", 0, "beta", 100L, NOW - DAY);
+        alpha.relativeDir = "com.foo/alpha";
+        beta.relativeDir = "com.foo/beta";
+        List<Backup> dupes = BackupRetentionPolicy.selectVersionDuplicates(
+                Arrays.asList(alpha, beta),
+                BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST, null);
+        assertEquals(1, dupes.size());
+        // alpha < beta lexicographically, so alpha is the keeper.
+        assertEquals("beta", dupes.get(0).backupName);
+    }
+
+    @Test
+    public void reclaimableBytesSumsKnownSizesAndIgnoresUnknown() {
+        Backup a = versionedBackup("com.foo", 0, "a", 100L, NOW);
+        Backup b = versionedBackup("com.foo", 0, "b", 100L, NOW - DAY);
+        Backup c = versionedBackup("com.foo", 0, "c", 100L, NOW - 2 * DAY);
+        BackupRetentionPolicy.BackupSizeResolver resolver = row -> {
+            if (row == a) return 1_024L;
+            if (row == b) return -1L;       // unknown
+            if (row == c) return 2_048L;
+            return 0L;
+        };
+        long bytes = BackupRetentionPolicy.reclaimableBytes(Arrays.asList(a, b, c), resolver);
+        assertEquals(3_072L, bytes);
+    }
+
+    @Test
     public void nullEntriesAndNullPackageNamesAreSkipped() {
         List<Backup> backups = new ArrayList<>();
         backups.add(null);
