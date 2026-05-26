@@ -10,6 +10,7 @@ import android.content.pm.PathPermission;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.os.UserHandleHidden;
@@ -19,7 +20,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.details.components.BroadcastSendDialogFragment;
+import io.github.muntashirakon.AppManager.details.components.ServiceActionUtils;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsActivityItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsComponentItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
@@ -568,7 +569,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             TextView textView4;
             TextView processNameView;
             ImageView imageView;
-            Button shortcutBtn;
+            MaterialButton shortcutBtn;
             MaterialButton launchBtn;
             MaterialSwitch toggleSwitch;
             TextView blockingMethod;
@@ -873,20 +874,40 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.processNameView.setText(String.format(Locale.ROOT, "%s: %s",
                         getString(R.string.process_name), processName));
             } else holder.processNameView.setVisibility(View.GONE);
-            if (serviceItem.canLaunch) {
+            if (!mIsExternalApk) {
+                holder.launchBtn.setText(R.string.start_service);
+                holder.launchBtn.setIconResource(R.drawable.ic_play_arrow);
+                holder.launchBtn.setEnabled(serviceItem.canLaunch);
                 holder.launchBtn.setOnClickListener(v -> {
-                    Intent intent = new Intent();
-                    intent.setClassName(mPackageName, serviceInfo.name);
-                    try {
-                        ActivityManagerCompat.startService(intent, mUserId, true);
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                        UIUtils.displayShortToast(th.toString());
+                    if (serviceItem.canLaunch) {
+                        confirmServiceAction(context, serviceInfo, true);
                     }
                 });
+                holder.launchBtn.setTooltipText(getString(serviceItem.canLaunch
+                        ? R.string.start_service
+                        : R.string.service_action_start_unavailable));
                 holder.launchBtn.setVisibility(View.VISIBLE);
             } else {
+                holder.launchBtn.setOnClickListener(null);
                 holder.launchBtn.setVisibility(View.GONE);
+            }
+            boolean canStop = canStopService(serviceInfo);
+            if (!mIsExternalApk && serviceItem.isRunning()) {
+                holder.shortcutBtn.setText(R.string.stop_service);
+                holder.shortcutBtn.setIconResource(R.drawable.ic_stop);
+                holder.shortcutBtn.setEnabled(canStop);
+                holder.shortcutBtn.setOnClickListener(v -> {
+                    if (canStop) {
+                        confirmServiceAction(context, serviceInfo, false);
+                    }
+                });
+                holder.shortcutBtn.setTooltipText(getString(canStop
+                        ? R.string.stop_service
+                        : R.string.service_action_stop_unavailable));
+                holder.shortcutBtn.setVisibility(View.VISIBLE);
+            } else {
+                holder.shortcutBtn.setOnClickListener(null);
+                holder.shortcutBtn.setVisibility(View.GONE);
             }
             // Blocking
             if (mCanModifyComponentStates) {
@@ -895,6 +916,81 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.toggleSwitch.setVisibility(View.GONE);
                 holder.blockingMethod.setVisibility(View.GONE);
             }
+        }
+
+        private boolean canStopService(@NonNull ServiceInfo serviceInfo) {
+            if (SelfPermissions.isSystemOrRootOrShell()) {
+                return true;
+            }
+            boolean hasPermission = serviceInfo.permission == null
+                    || SelfPermissions.checkSelfOrRemotePermission(serviceInfo.permission);
+            return ServiceActionUtils.canUseUnprivilegedRoute(serviceInfo.exported, serviceInfo.permission,
+                    hasPermission, mUserId, UserHandleHidden.myUserId());
+        }
+
+        private void confirmServiceAction(@NonNull Context context, @NonNull ServiceInfo serviceInfo, boolean start) {
+            boolean hasPermission = serviceInfo.permission == null
+                    || SelfPermissions.checkSelfOrRemotePermission(serviceInfo.permission);
+            boolean privileged = ServiceActionUtils.needsPrivilegedDispatch(serviceInfo.exported, serviceInfo.permission,
+                    hasPermission, mUserId, UserHandleHidden.myUserId());
+            if (privileged && !SelfPermissions.isSystemOrRootOrShell()) {
+                UIUtils.displayLongToast(R.string.service_action_requires_privilege);
+                return;
+            }
+            String route = getString(privileged
+                    ? R.string.receiver_broadcast_route_privileged
+                    : R.string.receiver_broadcast_route_unprivileged);
+            new MaterialAlertDialogBuilder(context)
+                    .setTitle(start ? R.string.start_service : R.string.stop_service)
+                    .setMessage(getString(R.string.service_action_confirm_message, serviceInfo.name, mUserId, route))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(start ? R.string.start_service : R.string.stop_service,
+                            (dialog, which) -> dispatchServiceAction(context.getApplicationContext(), serviceInfo, start, privileged))
+                    .show();
+        }
+
+        private void dispatchServiceAction(@NonNull Context context, @NonNull ServiceInfo serviceInfo,
+                                           boolean start, boolean privileged) {
+            Intent intent = ServiceActionUtils.buildServiceIntent(mPackageName, serviceInfo.name);
+            ThreadUtils.postOnBackgroundThread(() -> {
+                try {
+                    if (start) {
+                        if (privileged) {
+                            ActivityManagerCompat.startService(intent, mUserId, true);
+                        } else {
+                            context.startService(intent);
+                        }
+                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.service_action_started));
+                    } else {
+                        boolean stopped;
+                        if (privileged) {
+                            stopped = ActivityManagerCompat.stopService(intent, mUserId) != 0;
+                        } else {
+                            stopped = context.stopService(intent);
+                        }
+                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(stopped
+                                ? R.string.service_action_stopped
+                                : R.string.service_action_stop_no_match));
+                    }
+                } catch (Throwable e) {
+                    String message = getServiceActionFailureMessage(context, start, e);
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(message));
+                }
+            });
+        }
+
+        @NonNull
+        private String getServiceActionFailureMessage(@NonNull Context context, boolean start,
+                                                      @NonNull Throwable throwable) {
+            String message = throwable.getLocalizedMessage();
+            if (message == null || message.trim().isEmpty()) {
+                message = throwable.getClass().getSimpleName();
+            }
+            if (start && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                return context.getString(R.string.service_action_start_failed_android_o, message);
+            }
+            return context.getString(R.string.service_action_failed,
+                    context.getString(start ? R.string.start_service : R.string.stop_service), message);
         }
 
         private void getReceiverView(@NonNull ViewHolder holder, int index) {
