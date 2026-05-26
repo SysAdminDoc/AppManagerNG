@@ -211,7 +211,12 @@ for the original Effort / Dependency context per row.
   roots; offer per-pair "keep newest" or "keep largest" with manual override.
   Acceptance: extends the existing T6 retention policy, never deletes the
   only good copy when both reads succeed checksum verification, and writes
-  to `op_history` like other backup actions.
+  to `op_history` like other backup actions. _Data layer shipped 2026-05-26:
+  `BackupRetentionPolicy.selectVersionDuplicates` + `pruneVersionDuplicates`
+  with `DuplicateKeepStrategy.NEWEST` / `OLDEST` and 6 focused JVM tests
+  pinning bucket determinism, user-id splitting, missing-versionCode skip,
+  and tie-break ordering. UI / op_history / "keep largest" follow-up tracked
+  here._
 
 #### T20 - Performance and profiling (system-level)
 
