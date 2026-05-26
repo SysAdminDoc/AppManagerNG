@@ -294,6 +294,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     }
                 });
             });
+        } else if (id == R.id.action_open_privacy_dashboard) {
+            openPrivacyDashboardForInspectedPackage();
             // Sorting
         } else if (id == R.id.action_sort_by_name) {  // All
             setSortBy(SORT_BY_NAME);
@@ -433,6 +435,46 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
         if (viewModel == null || mIsExternalApk) return;
         ProgressIndicatorCompat.setVisibility(progressIndicator, true);
         viewModel.triggerPackageChange();
+    }
+
+    /**
+     * NF-12 — deep-link to the system Privacy Dashboard per-app permission
+     * usage screen on Android 12+ (API 31+). The dedicated action
+     * {@code ACTION_REVIEW_PERMISSION_USAGE} doesn't exist on older releases;
+     * fall back to {@code ACTION_APPLICATION_DETAILS_SETTINGS} so the user can
+     * still review permissions inline, and surface a toast explaining the
+     * timeline is unavailable.
+     */
+    private void openPrivacyDashboardForInspectedPackage() {
+        if (viewModel == null || viewModel.getPackageName() == null) {
+            return;
+        }
+        String packageName = viewModel.getPackageName();
+        android.content.Context context = getContext();
+        if (context == null) return;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            // ACTION_REVIEW_PERMISSION_USAGE — Android 12+ per-app timeline view.
+            android.content.Intent intent = new android.content.Intent(
+                    "android.intent.action.REVIEW_PERMISSION_USAGE");
+            intent.setData(android.net.Uri.parse("package:" + packageName));
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                startActivity(intent);
+                return;
+            } catch (Throwable ignored) {
+                // Some OEM ROMs strip the action; fall through to app-details intent.
+            }
+        }
+        android.content.Intent fallback = new android.content.Intent(
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        fallback.setData(android.net.Uri.parse("package:" + packageName));
+        fallback.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(fallback);
+            UIUtils.displayShortToast(R.string.privacy_dashboard_fallback_hint);
+        } catch (Throwable ignored) {
+            UIUtils.displayShortToast(R.string.privacy_dashboard_unavailable);
+        }
     }
 
     @UiThread
