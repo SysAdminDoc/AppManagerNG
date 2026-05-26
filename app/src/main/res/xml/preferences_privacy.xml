@@ -25,6 +25,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="tracker_blocking_intensity"
+        app:title="@string/tracker_blocking_intensity_title"
+        app:summary="@string/tracker_blocking_intensity_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="op_history_retention_days"
         app:title="@string/op_history_retention_title"
         app:iconSpaceReserved="false" />

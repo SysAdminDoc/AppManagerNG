@@ -512,12 +512,14 @@ public class BatchOpsManager {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         int max = info.size();
+        io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity intensity =
+                io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getTrackerBlockingIntensity();
         UserPackagePair pair;
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
             try {
-                ComponentUtils.blockTrackingComponents(pair);
+                ComponentUtils.blockTrackingComponents(pair, intensity);
             } catch (Exception e) {
                 log("====> op=BLOCK_TRACKERS, pkg=" + pair, e);
                 failedPackages.add(pair);

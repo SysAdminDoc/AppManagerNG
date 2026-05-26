@@ -94,10 +94,31 @@ public final class ComponentUtils {
     }
 
     public static void blockTrackingComponents(@NonNull UserPackagePair pair) {
+        blockTrackingComponents(pair, TrackerBlockingIntensity.STRICT);
+    }
+
+    /**
+     * Block tracker components for {@code pair}, filtering by category according
+     * to {@code intensity}. STRICT keeps the pre-NF-07 behaviour of blocking
+     * every detected tracker; STANDARD blocks only categories likely to be
+     * hostile (ad / analytics / identification); DETECT_ONLY blocks nothing.
+     */
+    public static void blockTrackingComponents(@NonNull UserPackagePair pair,
+                                                @NonNull TrackerBlockingIntensity intensity) {
+        if (intensity == TrackerBlockingIntensity.DETECT_ONLY) {
+            return;
+        }
         Map<String, RuleType> components = ComponentUtils.getTrackerComponentsForPackage(pair.getPackageName(), pair.getUserId());
         try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
-            for (String componentName : components.keySet()) {
-                cb.addComponent(componentName, Objects.requireNonNull(components.get(componentName)));
+            for (Map.Entry<String, RuleType> entry : components.entrySet()) {
+                String componentName = entry.getKey();
+                if (intensity != TrackerBlockingIntensity.STRICT) {
+                    TrackerCategory category = TrackerCategory.categorize(getTrackerLabel(componentName));
+                    if (!intensity.shouldBlock(category)) {
+                        continue;
+                    }
+                }
+                cb.addComponent(componentName, Objects.requireNonNull(entry.getValue()));
             }
             cb.applyRules(true);
         }
