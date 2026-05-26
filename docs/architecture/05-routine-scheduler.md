@@ -1,59 +1,25 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # 05 — Routine scheduler
 
-Architecture sketch for the Routine Operations / Scheduler feature (ROADMAP
+Architecture note for the Routine Operations / Scheduler feature (ROADMAP
 **T8**, upstream issue [#61], 21 reactions). The data layer landed in
-iter-145; the executor remains parked on real-device validation. This doc
-locks the contract so the next session can pick up without re-deriving the
-shape.
+iter-145; the NF-09 executor/UI slice landed on 2026-05-26. This doc records
+the shipped shape and the remaining validation gaps.
 
-## 1. What exists today (iter-145)
+## 1. What exists today
 
 | Component | File | Role |
 |---|---|---|
 | Trigger value type | `profiles/trigger/ProfileTrigger.java` | Immutable record. Five `Type` constants: `TYPE_TIME_OF_DAY`, `TYPE_ON_CHARGING`, `TYPE_ON_NETWORK_WIFI`, `TYPE_ON_NETWORK_ANY`, `TYPE_ON_BOOT`. Carries opaque `profileId` plus optional `hourOfDay` / `minuteOfHour` for time triggers. UUID id; created-at timestamp. |
-| Trigger store | `profiles/trigger/ProfileTriggerStore.java` | SharedPreferences-backed JSON-array store. `all / find / forProfile / put / remove / removeForProfile / toggleEnabled / hasAnyEnabled`. Mirrors the `AppTagStore` shape from NF-08. |
+| Trigger store | `profiles/trigger/ProfileTriggerStore.java` | SharedPreferences-backed JSON-array store. `all / find / forProfile / put / remove / removeForProfile / toggleEnabled / setEnabled / hasAnyEnabled`. Mirrors the `AppTagStore` shape from NF-08. |
 | JSON round-trip helpers | `ProfileTrigger.toJson()` / `ProfileTrigger.fromJson()` | Type discriminator is the lowercase-snake-case string returned by `typeAsString(int)`; `parseTypeString` is the inverse. Adding a new type appends a case to both. |
-| Tests | `ProfileTriggerStoreTest` | Round-trip across instances, dedup by id, `forProfile` filter, `toggleEnabled` on missing, `removeForProfile` sweep, builder rejection for invalid time-of-day, type-string round-trip. |
+| Scheduler bridge | `profiles/trigger/RoutineScheduler.java` | Maps enabled triggers to unique WorkManager requests, handles boot-trigger one-shots, stores last-run diagnostics, and formats schedule labels for UI. |
+| Worker | `profiles/trigger/RoutineWorker.java` | Resolves the trigger/profile, starts `ProfileApplierService` with `BaseProfile.STATE_ON`, records the last result, and disables orphaned/failing triggers. |
+| Boot plumbing | `self/BootReceiver.java` + `AndroidManifest.xml` | Existing receiver now re-applies periodic schedules after `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`, then enqueues enabled boot triggers on boot. |
+| Profile UI | `profiles/ConfPreferences.java` + `preferences_profile_config.xml` | Profile editor Schedules row lists trigger state/last run, adds the five trigger types, and supports enable/disable/delete actions. |
+| Tests | `ProfileTriggerStoreTest`, `RoutineSchedulerTest`, `RoutineWorkerTest` | Store persistence, timing/constraint mapping, stable input data, worker no-op, and missing-profile disable paths. |
 
-What the iter-145 work explicitly does **not** include:
-
-- The `RoutineWorker` (WorkManager Worker that the scheduler enqueues).
-- The `RoutineScheduler` (the WorkManager-facing class that maps triggers to
-  `PeriodicWorkRequest` / `OneTimeWorkRequest` with Constraints).
-- The boot receiver (`BOOT_COMPLETED` → re-enqueue all enabled triggers).
-- The Settings → Profiles → Schedules UI surface.
-- A `RoutineSchedulerCompat` adapter that reuses `ProfileApplierService` as the
-  executor.
-
-## 2. Target shape — Worker side
-
-```java
-public final class RoutineWorker extends Worker {
-    // Constructed by WorkManager via the default ctor + Context + WorkerParameters.
-
-    @NonNull
-    public Result doWork() {
-        String triggerId = getInputData().getString("trigger_id");
-        ProfileTriggerStore store = new ProfileTriggerStore(getApplicationContext());
-        ProfileTrigger trigger = store.find(triggerId);
-        if (trigger == null || !trigger.enabled) {
-            return Result.success();           // trigger removed / disabled
-        }
-        BaseProfile profile = BaseProfile.loadProfileById(getApplicationContext(), trigger.profileId);
-        if (profile == null) {
-            return Result.success();           // profile deleted; trigger orphan
-        }
-        Intent intent = ProfileApplierService.getIntent(getApplicationContext(),
-                profile.profileId, BaseProfile.STATE_ON);
-        ContextCompat.startForegroundService(getApplicationContext(), intent);
-        // Don't await the service; the foreground notification reports
-        // completion. Returning success() unblocks WorkManager so the next
-        // periodic occurrence can re-fire on schedule.
-        return Result.success();
-    }
-}
-```
+## 2. Worker side
 
 `Constraints.Builder` maps `ProfileTrigger.Type` to the existing
 `AutoBackupScheduler.NETWORK_*` shape:
@@ -64,36 +30,42 @@ public final class RoutineWorker extends Worker {
 | `TYPE_ON_CHARGING` | `.setRequiresCharging(true)`; periodic 15-min request (the WorkManager minimum). |
 | `TYPE_ON_NETWORK_WIFI` | `.setRequiredNetworkType(NetworkType.UNMETERED)`; periodic 15-min. |
 | `TYPE_ON_NETWORK_ANY` | `.setRequiredNetworkType(NetworkType.CONNECTED)`; periodic 15-min. |
-| `TYPE_ON_BOOT` | One-shot `OneTimeWorkRequest` enqueued from `BootCompletedReceiver`. |
+| `TYPE_ON_BOOT` | One-shot `OneTimeWorkRequest` enqueued from `BootReceiver` after boot. |
+
+`RoutineWorker` intentionally returns `Result.success()` for removed, disabled,
+or orphaned triggers. The user-visible failure state is persisted through
+`RoutineScheduler.recordRunResult(...)`; repeated failure loops are avoided by
+disabling missing-profile and exception paths before returning success.
 
 ## 3. Boot trigger plumbing
 
 ```xml
-<receiver android:name=".profiles.trigger.BootCompletedReceiver"
-          android:exported="true"
-          android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+<receiver android:name=".self.BootReceiver"
+          android:enabled="true"
+          android:exported="false">
     <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED"/>
         <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-        <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
     </intent-filter>
 </receiver>
 ```
 
 `MY_PACKAGE_REPLACED` is critical: it covers the case where AppManagerNG
-updates on-device. Without it the user's persisted triggers go silent until
-the next reboot.
+updates on-device. Without it the user's persisted periodic triggers go silent
+until the next reboot.
 
 The receiver re-walks the trigger store and re-enqueues every enabled trigger
-through `RoutineScheduler.applyAll(context)`. `LOCKED_BOOT_COMPLETED` is for
-direct-boot-aware execution; the trigger store lives in
-`Context.createDeviceProtectedStorageContext()`-backed SharedPreferences if
-this is wired (a future Eng-Debt row — today the prefs are credential-encrypted
-and only available after the user unlocks the device).
+through `RoutineScheduler.applyAll(context)`. On `BOOT_COMPLETED` it also calls
+`RoutineScheduler.enqueueBootTriggers(context)` so boot-only triggers run once.
 
-## 4. Settings → Profiles → Schedules UI
+`LOCKED_BOOT_COMPLETED` is intentionally not registered in the shipped slice:
+the trigger store and profile definitions are credential-encrypted app prefs,
+so direct-boot execution would not have reliable profile data until a separate
+device-protected migration lands.
 
-The mockup that makes this discoverable:
+## 4. Profile editor Schedules UI
+
+The shipped surface is inside the profile configuration screen:
 
 ```
 Profiles › <Profile name> › Schedules
@@ -113,10 +85,14 @@ opens an Android `TimePickerDialog`; the other four are immediate adds.
 
 Implementation notes:
 
-- The screen is a `PreferenceFragment` so it slots into the iter-143 Settings
-  search index automatically.
-- Each row is a `SwitchPreferenceCompat` whose checked state mirrors
-  `ProfileTrigger.enabled` and routes through `store.toggleEnabled(id)`.
+- The profile config screen is already a `PreferenceFragmentCompat`; the new
+  Schedules row opens a Material list dialog instead of adding another nested
+  fragment.
+- Each stored trigger is shown with a formatted title, enabled/disabled state,
+  and last-run result.
+- Tapping a trigger opens actions for enable/disable, delete, and close.
+- Enabling/disabling routes through `ProfileTriggerStore.setEnabled(...)` and
+  `RoutineScheduler.scheduleOrCancel(...)`.
 - The screen lives in the Profile editor, not Settings root, because triggers
   belong to a profile.
 
@@ -131,12 +107,18 @@ Implementation notes:
 2. **Maximum trigger count per profile** — five (one per type)? Unlimited?
    The current `ProfileTriggerStore` has no cap; the UI should soft-cap at
    a reasonable number for readability.
-3. **History rotation** — `AutoBackupScheduler` writes the last result to
-   `PREF_BACKUP_SCHEDULE_LAST_RESULT_STR`. Triggers will multiply this by
-   N; a Room `routine_history` table is probably the right shape.
+3. **History rotation** — NF-09 records only the last result per trigger in
+   `profile_trigger_runs` SharedPreferences. A Room `routine_history` table is
+   still the right shape if users need multiple past runs or exported history.
 
-## 6. Verification plan when the executor lands
+## 6. Verification
 
+- JVM/Robolectric: `ProfileTriggerStoreTest`, `RoutineSchedulerTest`, and
+  `RoutineWorkerTest` cover set-enabled persistence, WorkManager interval /
+  constraint mapping, stable input data, disabled-trigger no-op, and
+  missing-profile disable behavior.
+- Compile: `compileFullDebugJavaWithJavac` passed after the NF-09 executor
+  landed.
 - **Pixel 9a (Android 17)** — Time-of-day trigger fires within 5 minutes
   of the configured time.
 - **Samsung S25 Ultra (One UI 8.x)** — On-charging trigger fires within
@@ -146,16 +128,15 @@ Implementation notes:
 - **Galaxy A57 (One UI 8.5, aggressive battery)** — Self-battery-
   optimization exempt before scheduling; otherwise periodic requests get
   killed.
-- **Robolectric Worker** — `RoutineWorker.doWork()` returns `success()` for
-  every (trigger present, trigger missing, profile missing, profile present)
-  combination.
 
 ## 7. Cross-references
 
 - iter-92 → iter-99 — `AutoBackupScheduler` / `AutoBackupWorker` (the
   template for `RoutineScheduler`).
 - iter-145 — `ProfileTrigger` + `ProfileTriggerStore` (the data layer this
-  doc covers).
+  feature builds on).
+- 2026-05-26 NF-09 — `RoutineScheduler`, `RoutineWorker`, boot re-apply, profile
+  editor schedule UI, last-run diagnostics, and disable-on-failure behavior.
 - `.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md` §"NF-09 next-slice
-  suggestion" — pre-implementation plan that this doc supersedes.
+  suggestion" — pre-implementation plan superseded by this implementation note.
 - ROADMAP **T8** — Routine Operations / Scheduler row.

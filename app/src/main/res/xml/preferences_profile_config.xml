@@ -51,6 +51,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="routine_triggers"
+        app:title="@string/profile_routine_triggers"
+        tools:summary="2 schedules, 1 enabled"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="export_rules"
         app:title="@string/export_blocking_rules"
         tools:summary="Allowed flags"
