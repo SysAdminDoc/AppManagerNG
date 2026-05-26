@@ -48,6 +48,7 @@ import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
+import io.github.muntashirakon.AppManager.batchops.BatchKeepOpenHint;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.changelog.ChangelogAutoDisplay;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsJournal;
@@ -392,6 +393,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     BatchOpsJournal.dismissInterrupted(this);
                     ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, queueItem));
                     UIUtils.displayShortToast(R.string.batch_results_retry_started);
+                    BatchKeepOpenHint.show(this);
                 })
                 .show();
     }
