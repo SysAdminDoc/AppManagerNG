@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Services start/stop actions (2026-05-26)
+
+- App Details -> Services now labels the existing service launch affordance as
+  "Start service" and adds a "Stop service" action for rows that Android
+  reports as running.
+- Service actions now confirm the target service, user/profile, and dispatch
+  route before execution; cross-profile, non-exported, and permission-gated
+  services require root, Shizuku, or ADB mode.
+- Added `ActivityManagerCompat.stopService(...)` for privileged stop requests,
+  kept same-user exported services on the unprivileged route when possible,
+  and surfaced an Android 8+ background/foreground-service failure hint for
+  blocked start attempts.
+- Added focused JVM coverage for explicit service intent construction and
+  privileged-route decisions.
+
 ### Changed — Receiver send-broadcast guardrails (2026-05-26)
 
 - App Details -> Receivers now exposes a guarded "Send broadcast" action for

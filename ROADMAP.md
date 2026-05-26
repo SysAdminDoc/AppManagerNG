@@ -68,7 +68,7 @@ work to separate root research files.
 
 - [x] **NF-28 Receivers send broadcast**: add a guarded send-broadcast action
   for receiver components with user/profile routing preserved.
-- [ ] **NF-29 Services start/stop**: add guarded service start/stop actions with
+- [x] **NF-29 Services start/stop**: add guarded service start/stop actions with
   clear privilege and Android-version failure messages.
 - [ ] **NF-27 Providers query inspector**: add a provider query UI with safe
   projection/selection inputs and exportable results.

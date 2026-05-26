@@ -1399,6 +1399,17 @@
     <string name="receiver_broadcast_privileged_required">This broadcast requires root, Shizuku, or ADB mode.</string>
     <string name="receiver_broadcast_sent">Broadcast sent.</string>
     <string name="receiver_broadcast_failed">Could not send broadcast: <xliff:g id="error" example="Permission denied">%1$s</xliff:g></string>
+    <string name="start_service">Start service</string>
+    <string name="stop_service">Stop service</string>
+    <string name="service_action_start_unavailable">Start unavailable: requires root, Shizuku, ADB mode, an exported service, or the declared service permission.</string>
+    <string name="service_action_stop_unavailable">Stop unavailable: requires root, Shizuku, ADB mode, an exported service, or the declared service permission.</string>
+    <string name="service_action_requires_privilege">This service action requires root, Shizuku, or ADB mode.</string>
+    <string name="service_action_confirm_message">Service: <xliff:g id="service" example="com.example.SyncService">%1$s</xliff:g>\nUser: <xliff:g id="user" example="0">%2$d</xliff:g>\nRoute: <xliff:g id="route" example="Privileged">%3$s</xliff:g></string>
+    <string name="service_action_started">Service start requested.</string>
+    <string name="service_action_stopped">Service stop requested.</string>
+    <string name="service_action_stop_no_match">No running service instance matched the stop request.</string>
+    <string name="service_action_failed">Could not run <xliff:g id="action" example="Start service">%1$s</xliff:g>: <xliff:g id="error" example="Permission denied">%2$s</xliff:g></string>
+    <string name="service_action_start_failed_android_o">Could not start service. Android 8+ can block background service starts or require the target service to become foreground: <xliff:g id="error" example="Background start not allowed">%1$s</xliff:g></string>
     <string name="has_net_policy">Net policy</string>
     <string name="net_policy">Net policy</string>
     <string name="initializing">Initializing…</string>
