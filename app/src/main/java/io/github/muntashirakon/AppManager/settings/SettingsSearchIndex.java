@@ -150,9 +150,15 @@ public final class SettingsSearchIndex {
     }
 
     /**
-     * Case-insensitive substring match against title or summary. Empty or
-     * whitespace queries return an empty list. Caller is responsible for
-     * deciding the result-limit; this method returns all matches.
+     * Case-insensitive substring match against title, summary, or parent
+     * label. Empty or whitespace queries return an empty list. Caller is
+     * responsible for deciding the result-limit; this method returns all
+     * matches.
+     *
+     * <p>Parent-label matching is what lets a user type a section name
+     * ("About", "Backup", "Privileges") and surface every row inside that
+     * section, instead of returning empty just because no individual
+     * preference title repeated the section name.
      */
     @AnyThread
     @NonNull
@@ -162,7 +168,9 @@ public final class SettingsSearchIndex {
         if (needle.isEmpty()) return Collections.emptyList();
         List<Entry> matches = new ArrayList<>();
         for (Entry entry : mEntries) {
-            if (matches(entry.title, needle) || matches(entry.summary, needle)) {
+            if (matches(entry.title, needle)
+                    || matches(entry.summary, needle)
+                    || matches(entry.parentLabel, needle)) {
                 matches.add(entry);
             }
         }
