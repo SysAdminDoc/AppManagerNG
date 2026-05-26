@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Settings -> Rules -> Component rules (2026-05-25)
+
+- New Settings -> Rules -> "Component rules" entry opens a read-only viewer that
+  scans every package with an AppManagerNG rule file plus the active IFW XML
+  directory and lists the matching packages.
+- Each row shows a per-package breakdown of IFW entries, disabled-only entries,
+  provider entries, and pending-write entries; tap to see a generated
+  Blocker-style IFW XML preview plus a copyable component-rule listing.
+- "App info" jumps straight to the App Details Components tab for visual edits;
+  "Copy" places the IFW XML on the clipboard for export to root tools.
+
 ### Added — Persistent ADB tcpip setup path (2026-05-18)
 
 - Onboarding now probes `127.0.0.1:5555` for an existing fixed
