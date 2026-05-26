@@ -99,6 +99,9 @@ public final class SettingsSearchIndex {
             new Source("advanced_prefs", R.xml.preferences_advanced, R.string.pref_cat_advanced),
             new Source("about", R.xml.preferences_about, R.string.about),
             new Source("troubleshooting_prefs", R.xml.preferences_troubleshooting, R.string.troubleshooting),
+            // Glossary topics: each row is its own searchable explainer. The parent
+            // is the "Glossary & how-to" preference inside Settings -> About.
+            new Source("glossary", R.xml.preferences_glossary, R.string.pref_glossary_title),
     };
 
     private static final String ANDROID_NS = "http://schemas.android.com/apk/res/android";
