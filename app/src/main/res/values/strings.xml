@@ -626,6 +626,10 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- EI-07 Scheduled-backup diagnostics dialog -->
+    <string name="pref_backup_schedule_diagnostics_title">Scheduled backup diagnostics</string>
+    <string name="pref_backup_schedule_diagnostics_freshness_explainer">Freshness window: %1$s. Packages whose newest backup is younger than this window are skipped and counted as "recent" in the run result.</string>
+
     <!-- EI-04 Permission Inspector chip-row filter -->
     <string name="perm_apps_filter_all">All apps</string>
     <string name="perm_apps_filter_user">User apps</string>
