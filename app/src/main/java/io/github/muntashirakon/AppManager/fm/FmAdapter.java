@@ -33,6 +33,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.RenameDialogFragment;
+import io.github.muntashirakon.AppManager.fm.hex.HexViewerActivity;
 import io.github.muntashirakon.AppManager.fm.icons.FmIconFetcher;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
@@ -229,6 +230,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         popupMenu.inflate(R.menu.fragment_fm_item_actions);
         Menu menu = popupMenu.getMenu();
         MenuItem openWithAction = menu.findItem(R.id.action_open_with);
+        MenuItem openAsHexAction = menu.findItem(R.id.action_open_as_hex);
         MenuItem extractArchiveAction = menu.findItem(R.id.action_extract_archive);
         MenuItem cutAction = menu.findItem(R.id.action_cut);
         MenuItem copyAction = menu.findItem(R.id.action_copy);
@@ -241,6 +243,8 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         boolean canWrite = item.path.canWrite();
         boolean isSupportedArchive = canRead && FmArchiveUtils.isSupportedZip(item.path);
         openWithAction.setEnabled(canRead);
+        openAsHexAction.setEnabled(canRead && !item.isDirectory);
+        openAsHexAction.setVisible(!item.isDirectory);
         extractArchiveAction.setEnabled(isSupportedArchive);
         extractArchiveAction.setVisible(isSupportedArchive);
         cutAction.setEnabled(canRead && canWrite);
@@ -252,6 +256,11 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         openWithAction.setOnMenuItemClickListener(menuItem -> {
             OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(item.path);
             fragment.show(mFmActivity.getSupportFragmentManager(), OpenWithDialogFragment.TAG);
+            return true;
+        });
+        openAsHexAction.setOnMenuItemClickListener(menuItem -> {
+            mFmActivity.startActivity(HexViewerActivity.getIntent(mFmActivity, item.path.getUri(), item.path.getName(),
+                    FmUtils.getDisplayablePath(item.path)));
             return true;
         });
         extractArchiveAction.setOnMenuItemClickListener(menuItem -> {
