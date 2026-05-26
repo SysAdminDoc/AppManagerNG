@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Logcat structured export polish (2026-05-26)
+
+- Logcat Export now offers the existing diagnostic bundle plus structured JSON
+  and CSV exports for the currently visible filtered rows or the selected rows.
+- Structured exports include parsed log fields such as timestamp, UID owner,
+  UID, PID, TID, level, tag, package, message, and original line; CSV output
+  quotes fields and defuses spreadsheet formula prefixes.
+- Added a compact visible count strip to Logcat showing total entries, or
+  visible-vs-total entries when search text or log-level filters are active.
+- Added unit coverage for JSON fields, CSV escaping, formula defusing, and
+  structured export filenames.
+
 ### Changed — Activity Interceptor launch builder + privileged launch status (2026-05-26)
 
 - Added a formal `ActivityInterceptor.getLaunchIntent(...)` builder that lets

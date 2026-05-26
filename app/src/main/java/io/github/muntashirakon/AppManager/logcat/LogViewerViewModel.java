@@ -14,6 +14,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import org.json.JSONException;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +35,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.logcat.helper.BuildHelper;
+import io.github.muntashirakon.AppManager.logcat.helper.LogcatStructuredExporter;
 import io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelper;
 import io.github.muntashirakon.AppManager.logcat.reader.LogcatReader;
 import io.github.muntashirakon.AppManager.logcat.reader.LogcatReaderLoader;
@@ -394,6 +397,32 @@ public class LogViewerViewModel extends AndroidViewModel {
                     th.printStackTrace();
                     sendLogDetails.setAttachmentType(null);
                 }
+            }
+            mLogToBeSentLiveData.postValue(sendLogDetails);
+        });
+    }
+
+    @AnyThread
+    public void prepareStructuredLogsToBeSent(@NonNull LogcatStructuredExporter.Format format,
+                                              @NonNull List<LogLine> logLines) {
+        mExecutor.submit(() -> {
+            SendLogDetails sendLogDetails = new SendLogDetails();
+            sendLogDetails.setSubject(getApplication().getString(R.string.subject_log_report));
+            try {
+                String exportedLogs = format == LogcatStructuredExporter.Format.JSON
+                        ? LogcatStructuredExporter.toJson(logLines)
+                        : LogcatStructuredExporter.toCsv(logLines);
+                Path tempFile = SaveLogHelper.saveTemporaryFile(format.extension, exportedLogs, null);
+                if (tempFile == null) {
+                    sendLogDetails.setAttachmentType(null);
+                } else {
+                    sendLogDetails.setAttachmentType(format.mimeType);
+                    sendLogDetails.setAttachment(tempFile);
+                    sendLogDetails.setAttachmentName(LogcatStructuredExporter.createExportFilename(format));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                sendLogDetails.setAttachmentType(null);
             }
             mLogToBeSentLiveData.postValue(sendLogDetails);
         });

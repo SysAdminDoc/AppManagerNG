@@ -149,7 +149,7 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
                 ThreadUtils.postOnMainThread(() -> Utils.copyToClipboard(ContextUtils.getContext(), "Logs", logs));
             });
         } else if (id == R.id.action_export) {
-            displaySaveDebugLogsDialog(false, true);
+            displayExportLogDialog(true);
         } else if (id == R.id.action_share) {
             displaySaveDebugLogsDialog(true, true);
         } else return false;
