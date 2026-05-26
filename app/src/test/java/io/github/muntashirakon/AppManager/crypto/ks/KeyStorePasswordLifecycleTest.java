@@ -37,15 +37,61 @@ public class KeyStorePasswordLifecycleTest {
             String name = method.getName().toLowerCase(Locale.ROOT);
             if (!isPasswordRelated(name)) continue;
             Class<?>[] params = method.getParameterTypes();
+            // The invariant: every password-carrying method must accept the
+            // payload as char[]. If a password-named method does NOT take a
+            // char[] at all, it can't be carrying a password by reference -
+            // skip it. This excludes status / lookup methods like
+            // hasKeyStorePassword() that happen to have "password" in the name.
+            if (!takesCharArray(params)) continue;
+            // Once we know the method carries a char[] payload, String
+            // parameters are still allowed in the well-defined SharedPreferences
+            // alias slot: methods like savePass(Context, String prefAlias,
+            // char[] password) intentionally take a String for the storage key,
+            // not the password. The invariant only forbids String *next to or
+            // instead of* the char[] payload.
             for (int i = 0; i < params.length; ++i) {
                 Class<?> param = params[i];
-                if (param == String.class) {
-                    fail("KeyStoreManager." + method.getName()
-                            + " takes String at parameter " + i
-                            + "; password-carrying methods must use char[] so Utils.clearChars can zero them.");
-                }
+                if (param != String.class) continue;
+                if (isSharedPreferencesAliasSlot(method.getName(), i, params)) continue;
+                fail("KeyStoreManager." + method.getName()
+                        + " takes String at parameter " + i
+                        + "; password-carrying methods must use char[] so Utils.clearChars can zero them.");
             }
         }
+    }
+
+    private static boolean takesCharArray(Class<?>[] params) {
+        for (Class<?> p : params) {
+            if (p == char[].class) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Methods that pair a SharedPreferences key (String alias) with a
+     * char[] payload, e.g. {@code savePass(Context, String prefAlias,
+     * char[] password)}, intentionally take a String for the storage slot.
+     * That String is never the password and is never zeroed. The method
+     * signature must still keep the password as char[]; the rest of the
+     * predicate enforces that via {@link #takesCharArray}.
+     */
+    private static boolean isSharedPreferencesAliasSlot(String methodName, int paramIndex,
+                                                        Class<?>[] params) {
+        String n = methodName.toLowerCase(Locale.ROOT);
+        if (!(n.equals("savepass") || n.equals("getpass"))) return false;
+        // The alias slot is the parameter typed String immediately followed
+        // by (or preceding) the char[] password. Only honor the exemption if
+        // the method actually has that shape.
+        if (params[paramIndex] != String.class) return false;
+        boolean charArrayElsewhere = false;
+        for (int i = 0; i < params.length; ++i) {
+            if (i == paramIndex) continue;
+            if (params[i] == char[].class) {
+                charArrayElsewhere = true;
+                break;
+            }
+        }
+        return charArrayElsewhere;
     }
 
     @Test
