@@ -48,12 +48,14 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/info"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_weight="0"
                 android:layout_marginStart="@dimen/padding_small"
                 android:layout_gravity="center"
-                app:icon="@drawable/ic_information" />
+                android:contentDescription="@string/app_info"
+                app:icon="@drawable/ic_information"
+                app:iconSize="24dp" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
