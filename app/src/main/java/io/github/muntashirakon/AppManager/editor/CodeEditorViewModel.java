@@ -10,10 +10,12 @@ import static org.xmlpull.v1.XmlPullParser.TEXT;
 
 import android.app.Application;
 import android.net.Uri;
+import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -241,6 +243,24 @@ public class CodeEditorViewModel extends AndroidViewModel {
         return mCanGenerateJava;
     }
 
+    public boolean isJavaDecompileSupported() {
+        return isJavaDecompileSupported(Build.VERSION.SDK_INT);
+    }
+
+    public boolean shouldShowJavaDecompileUnsupportedCaveat() {
+        return shouldShowJavaDecompileUnsupportedCaveat(mCanGenerateJava, Build.VERSION.SDK_INT);
+    }
+
+    @VisibleForTesting
+    static boolean isJavaDecompileSupported(int sdkInt) {
+        return sdkInt >= Build.VERSION_CODES.O;
+    }
+
+    @VisibleForTesting
+    static boolean shouldShowJavaDecompileUnsupportedCaveat(boolean canGenerateJava, int sdkInt) {
+        return canGenerateJava && !isJavaDecompileSupported(sdkInt);
+    }
+
     @Nullable
     public String getLanguage() {
         return mLanguage;
@@ -257,7 +277,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
     }
 
     public void generateJava(Content smaliContent) {
-        if (!mCanGenerateJava) {
+        if (!mCanGenerateJava || !isJavaDecompileSupported()) {
             return;
         }
         if (mJavaConverterResult != null) {
