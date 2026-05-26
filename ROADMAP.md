@@ -252,7 +252,17 @@ for the original Effort / Dependency context per row.
   "Export trace" action gated on Shizuku or ADB. Acceptance: trace persists
   to Downloads as `.perfetto-trace`, optionally produces a `ui.perfetto.dev`
   deep link, and the action falls back to system Developer Options when
-  unavailable.
+  unavailable. _Data layer shipped 2026-05-26: `PerfettoTraceConfigBuilder`
+  emits the canonical app-targeted text-proto (`linux.ftrace` +
+  `linux.process_stats`, ring-buffer, `atrace_apps` pinned to the target,
+  duration / buffer-size clamping), `PerfettoCommandBuilder` produces the
+  argv for `perfetto -c <cfg> --txt -o <out>` with the same shell-
+  metacharacter guard as the simpleperf builder, and `perfettoUiUrl()`
+  exposes the stable `ui.perfetto.dev` open path; 11 focused JVM tests
+  cover the proto shape, the duration/buffer clamps, malformed-package
+  rejection, ftrace event integrity, and unsafe-path rejection. Privileged
+  runner integration and the App Details action remain on the T20-A
+  roadmap row._
 - [ ] **T20-B simpleperf CPU profile capture**: ship a "Record CPU profile"
   action in App Details that wraps `simpleperf` for a bounded sampling
   window, gated on root/Shizuku/ADB. Acceptance: output saved as flame-graph
