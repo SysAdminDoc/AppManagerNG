@@ -5,6 +5,65 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## v0.5.0 — 2026-05-25
+
+Discovery & Polish release. Banks the Iter-91 → Iter-142 work that
+accumulated after v0.4.2 (2026-05-13). Highlights:
+
+- **Discovery** — Settings → About → "What's new" entry point, automatic
+  release-notes display after in-place updates, global in-app Settings
+  search wired through the existing toolbar SearchView, and a NG-native
+  bundled changelog so the in-app viewer no longer ships upstream
+  v4.0.5 release notes.
+- **Backup engine** — AES backup metadata v7 derives per-archive AES-GCM
+  content keys from the single `am_keystore.bks` master key through
+  HKDF-SHA256, CIFS/SMB streaming hardening, scheduled-backup freshness
+  gate, scheduled-backup launcher shortcut, scheduled-backup progress
+  notifications with API-36 ProgressStyle, default-app role rebind after
+  restore, backup path-exclusion globs, root-only Android System data
+  backups, provider-backed Network destination, profile blocklist
+  enumerates backup roots.
+- **Installer** — Privilege cascade (ADB → Shizuku → root) with route
+  chips and Dhizuku / MIUI diagnostics, split-APK cert-mismatch dialog,
+  batch APK install from File Manager, installer SHA-256 checksum
+  confirmation dialog, sensitive-action authentication gate for
+  install / uninstall / clear-data, Android 17 cleartext-traffic
+  deprecation warning, Android 17 ML-DSA key algorithm display.
+- **Rules** — New Settings → Rules → "Component rules" preview screen,
+  per-app rollback planner (App Details → "Revert AppManager changes"),
+  settings snapshot bundle portability v2 (rule TSVs included), OEM
+  uninstall-blocker bypass (Samsung One UI 8.5 SmartSuggestions / MIUI
+  core / OPlus uninstall-guarded packages), debloat-definition auto-update.
+- **Privileges** — KernelSU diagnostics (seccomp / sulog / App Profile),
+  Magisk `--drop-cap` policy surface, Dhizuku Provider detection,
+  Restricted Settings unlock walkthrough, OS-revert detection banner +
+  Doze allowlist diff, capability-dropping probe, persistent ADB
+  `tcpip 5555` detection + reuse in the onboarding Wireless ADB setup
+  branch.
+- **Filters & Finder** — Install-date filter + filter-applied chip,
+  permission-flags filter, Finder relevance scoring, backup-only Finder
+  results, tracker-name search, per-app language picker, `pm hide`
+  toggle, SELinux context display, audio-volume AppOps preset.
+- **Automation** — Tasker-parameterised `am://` intents, signature-gated
+  broadcast API, Quick Settings freeze tile, profile import (Canta /
+  UAD-NG / Hail), Material You / Monet AppWidget theming, assistant
+  quick actions on `ACTION_ASSIST`.
+- **File Manager** — Recursive in-folder search, ZIP create / extract
+  with zip-slip guard, smali decode-level option (`none` / `basic` /
+  `verbose`).
+- **Distribution & build** — AGP 9.2.0 / Gradle 9.4.1 migration with
+  Gradle-10-safe build scripts, F-Droid 2.0 ROM preseed templates,
+  LocalServer bootstrap smoke test, Support Info Bundle composer.
+- **Permission monitoring** — Permission Change Monitor and Signing-Cert
+  Change Alert (both opt-in, default OFF).
+- **Security** — Deep-link parser crash / validation-bypass fix,
+  install-transcript URI redactor hardening, onboarding root-manager
+  probe fragment-detach fix, OperationHistoryExporter CSV / formula
+  injection defuse, static launcher shortcut export hardening, GitHub
+  Actions script-injection mitigations.
+
+Full per-slice notes follow.
+
 ### Added — Global Settings search (2026-05-25)
 
 - The Settings toolbar SearchView is now wired to an in-app preference index

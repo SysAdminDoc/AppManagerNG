@@ -8,6 +8,35 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.5.0"
+        code="7"
+        date="25 May 2026">
+        <note>Discovery and Polish release. Banks the Iter-91 -> Iter-142 work.</note>
+        <new title="Discovery">Settings -> About -> What's new opens the in-app changelog viewer directly; the app now surfaces release notes once after each in-place update.</new>
+        <new title="Discovery">Global in-app Settings search: the toolbar SearchView indexes every static preference XML and routes taps through the existing am://settings deep link.</new>
+        <new title="Rules">Settings -> Rules -> Component rules preview lists every package with an AppManagerNG rule file or active IFW XML; tap a row for an IFW XML preview and a jump to App Details.</new>
+        <new title="Backup">AES backup metadata v7 derives per-archive AES-GCM content keys from the BKS master key through HKDF-SHA256; v6-and-older restores stay backward compatible.</new>
+        <new title="Backup">Scheduled Auto-Backup gains a freshness-window gate, a pinned launcher shortcut, foreground progress notifications (API 36 ProgressStyle), default-app role rebind, path-exclusion globs, root-only Android System data backups, and a provider-backed Network destination.</new>
+        <new title="Installer">Privilege cascade tries ADB / Shizuku / root before falling back to Android confirmation; split APKs are checked against the base APK signing cert; batch install from File Manager handles .apk / .apks / .apkm / .xapk.</new>
+        <new title="Security">Optional sensitive-action authentication gate for install, uninstall, and clear-data; signing-cert change monitor and dangerous-permission change monitor (both opt-in).</new>
+        <new title="Privileges">KernelSU and Magisk diagnostics (seccomp, sulog, App Profile, drop-cap policy); Dhizuku detection; Restricted Settings unlock walkthrough; OS-revert detection banner with Doze allowlist diff; persistent ADB tcpip 5555 reuse in onboarding.</new>
+        <new title="Filters">Install-date range filter; permission-flags filter; Finder relevance scoring; backup-only Finder results; tracker-name search.</new>
+        <new title="App Info">Per-app language picker (Android 13+); `pm hide` toggle; SELinux context display; audio-volume AppOps preset.</new>
+        <new title="Automation">Tasker-parameterised am:// intents; signature-gated broadcast API; Quick Settings freeze tile; profile import from Canta / UAD-NG / Hail.</new>
+        <new title="File Manager">Recursive in-folder search; ZIP create / extract with zip-slip protection; smali decode-level option.</new>
+        <new title="Distribution">F-Droid 2.0 ROM preseed templates; LocalServer bootstrap smoke test; Support Info Bundle composer.</new>
+        <improve title="Build">Migrated to AGP 9.2.0 / Gradle 9.4.1 with Gradle-10-safe build scripts, pinned NDK 28.2.13676358, and an `androidComponents` server packaging path.</improve>
+        <improve title="UI">Material You / Monet AppWidget theming; assistant quick actions on Android Assist.</improve>
+        <fix title="Security">Hardened deep-link parser against crash and validation-bypass; closed userinfo / query / fragment leak in install transcript redactor; defused CSV / formula injection in op-history exports; locked down static launcher shortcuts behind a trampoline.</fix>
+        <note subtext="true">
+            Multi-file AES backups produced by v0.4.0 / v0.4.1 (metadata v5) reused the GCM IV across files and remain
+            unsafe to restore. v0.4.2+ writes metadata v6+ with per-file IV derivation and v0.5.0 layers HKDF-SHA256
+            per-archive key derivation through metadata v7 on top.
+        </note>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.4.2"
         code="6"
         date="13 May 2026">
