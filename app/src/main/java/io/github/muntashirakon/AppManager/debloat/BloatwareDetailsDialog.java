@@ -311,6 +311,7 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
             if (users != null && users.length > 0) {
                 MaterialButton appInfoButton = holder.marketOrAppInfoButton;
                 appInfoButton.setIconResource(io.github.muntashirakon.ui.R.drawable.ic_information);
+                appInfoButton.setContentDescription(holder.itemView.getContext().getString(R.string.app_info));
                 appInfoButton.setOnClickListener(v -> {
                     Intent appDetailsIntent = AppDetailsActivity.getIntent(requireContext(), suggestion.packageName,
                             users[0]);
@@ -319,6 +320,7 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
             } else {
                 MaterialButton marketButton = holder.marketOrAppInfoButton;
                 marketButton.setIconResource(suggestion.isInFDroidMarket() ? R.drawable.ic_frost_fdroid : R.drawable.ic_frost_aurorastore);
+                marketButton.setContentDescription(holder.itemView.getContext().getString(R.string.open_in_app_store));
                 marketButton.setOnClickListener(v -> {
                     Intent appDetailsIntent = suggestion.getMarketLink();
                     appDetailsIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

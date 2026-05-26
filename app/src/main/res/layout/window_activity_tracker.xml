@@ -9,6 +9,7 @@
         android:id="@+id/icon"
         android:layout_width="45dp"
         android:layout_height="45dp"
+        android:contentDescription="@string/tracker_window_expand"
         app:srcCompat="@mipmap/ic_launcher_round"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent" />
 
@@ -120,43 +121,54 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/drag"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:clickable="false"
-                    app:icon="@drawable/ic_drag" />
+                    android:contentDescription="@string/tracker_window_move"
+                    android:focusable="true"
+                    app:icon="@drawable/ic_drag"
+                    app:iconSize="24dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/info"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
-                    app:icon="@drawable/ic_information" />
+                    android:contentDescription="@string/tracker_window_open_app_info"
+                    app:icon="@drawable/ic_information"
+                    app:iconSize="24dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/mini"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
-                    app:icon="@drawable/ic_fold_vertical" />
+                    android:contentDescription="@string/tracker_window_minimize"
+                    app:icon="@drawable/ic_fold_vertical"
+                    app:iconSize="24dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/action_play_pause"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
-                    app:icon="@drawable/ic_pause" />
+                    android:contentDescription="@string/tracker_window_pause"
+                    app:icon="@drawable/ic_pause"
+                    app:iconSize="24dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@android:id/closeButton"
                     style="@style/Widget.AppTheme.Button.IconButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
-                    app:icon="@drawable/ic_power_settings" />
+                    android:contentDescription="@string/tracker_window_close"
+                    app:icon="@drawable/ic_power_settings"
+                    app:iconSize="24dp" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 

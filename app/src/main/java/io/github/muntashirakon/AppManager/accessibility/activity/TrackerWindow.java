@@ -138,13 +138,14 @@ public class TrackerWindow implements View.OnTouchListener {
         mView.findViewById(R.id.mini).setOnClickListener(v -> iconify());
         mPlayPauseButton.setOnClickListener(v -> {
             mPaused = !mPaused;
-            mPlayPauseButton.setIconResource(mPaused ? R.drawable.ic_play_arrow : R.drawable.ic_pause);
+            updatePlayPauseButton();
         });
         mView.findViewById(android.R.id.closeButton).setOnClickListener(v -> dismiss());
         mIconView.setVisibility(View.GONE);
         mIconView.setOnClickListener(v -> expand());
         mView.findViewById(R.id.drag).setOnTouchListener(this);
         mIconView.setOnTouchListener(this);
+        updatePlayPauseButton();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -237,6 +238,7 @@ public class TrackerWindow implements View.OnTouchListener {
         }
         mIconView.setVisibility(View.VISIBLE);
         mContentView.setVisibility(View.GONE);
+        updatePlayPauseButton();
         updateLayout();
     }
 
@@ -252,7 +254,15 @@ public class TrackerWindow implements View.OnTouchListener {
             mWindowPosition.x = width;
             mWindowLayoutParams.x = width;
         }
+        updatePlayPauseButton();
         updateLayout();
+    }
+
+    private void updatePlayPauseButton() {
+        mPlayPauseButton.setIconResource(mPaused ? R.drawable.ic_play_arrow : R.drawable.ic_pause);
+        mPlayPauseButton.setContentDescription(mView.getContext().getString(mPaused
+                ? R.string.tracker_window_resume
+                : R.string.tracker_window_pause));
     }
 
     private void updateLayout() {
