@@ -98,8 +98,19 @@ Version targets:
 
 ## Install
 
+### FLOSS vs FULL builds
+
+Every AppManagerNG release ships **two build flavors**. Both are the same app; the only difference is whether the optional online features are compiled in.
+
+| Flavor | For | Optional online features (VirusTotal, Pithus, debloat-definition auto-updates, Settings → Privacy → "Use the Internet") |
+|---|---|---|
+| **`floss`** | F-Droid, IzzyOnDroid, reproducibility audits, anyone who wants a fully offline build | **Removed at compile time** — there is no setting to turn them on. Local networking (ADB-over-TCP, wireless pairing, the localhost privileged-server) still works. |
+| **`full`** | GitHub Releases / Obtainium power users who want online scan reports and the debloat-definition auto-updater | **Available, opt-in** — every online feature stays gated behind its existing user toggle and the master "Use the Internet" preference. Nothing reaches the network without you turning it on. |
+
+`floss` is the default flavor in source; `full` is the optional variant. If you don't need VirusTotal / Pithus / debloat-definition auto-updates, `floss` is the right choice. See [docs/distribution/build-flavors.md](docs/distribution/build-flavors.md) for the maintainer contract.
+
 ### Direct download
-Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick the `full` APK for optional online scan reports / debloat-definition updates, or the `floss` APK for the F-Droid-clean bundled-only build. Use `arm64-v8a` for modern devices or `universal` for maximum compatibility (older 32-bit ARM and x86_64 emulators). Details: [distribution build flavors](docs/distribution/build-flavors.md).
+Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `full` or `floss` per the table above. Use `arm64-v8a` for modern devices or `universal` for maximum compatibility (older 32-bit ARM and x86_64 emulators).
 
 ### Via Obtainium
 
