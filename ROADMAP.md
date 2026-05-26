@@ -145,7 +145,12 @@ work to separate root research files.
   `DyslexiaFontCompatibilityContractTest` regression guard; manual device
   walkthrough on a ROM with a dyslexia-friendly system font remains open.
 - [ ] Android 17 device or emulator verification for Shizuku and 16 KB page
-  size behavior.
+  size behavior. A weekly + workflow-dispatch
+  [`android17-emulator.yml`](.github/workflows/android17-emulator.yml)
+  workflow now assembles the FLOSS debug APK, runs
+  `scripts/verify-native-page-alignment.py` against the build, and runs the
+  hidden-API + DB-migration instrumented tests on an API-37 google_apis
+  emulator. Real-device Shizuku verification still requires manual sign-off.
 - [ ] Material Components 1.14 / minSdk 23 decision, tracked against
   [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md).
 

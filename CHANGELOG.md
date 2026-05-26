@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Android 17 emulator CI gate (2026-05-26)
+
+- Added `.github/workflows/android17-emulator.yml`, a weekly +
+  workflow-dispatch job that assembles `:app:assembleFlossDebug`, runs
+  `scripts/verify-native-page-alignment.py` against the build output, and
+  runs the project's instrumented Android tests (including
+  `HiddenApiCompatibilityInstrumentedTest` and the Apps DB migration test)
+  on an API-37 `google_apis` emulator via `reactivecircus/android-emulator-runner`.
+- Upload artifacts now include the connected test reports and the device
+  logcat tail so the API-37 drift surface stays auditable after a failing
+  run.
+- Real-device Shizuku verification remains the open follow-up on the
+  roadmap row.
+
 ### Changed - Dyslexia-font compatibility hardening (2026-05-26)
 
 - Removed the `android:fontFamily="sans-serif-condensed"` override on the
