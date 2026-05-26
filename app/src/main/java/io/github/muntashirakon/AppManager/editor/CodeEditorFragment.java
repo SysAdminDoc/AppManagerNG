@@ -206,6 +206,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private MaterialButton mReplaceButton;
     private MaterialButton mReplaceAllButton;
     private TextView mSearchResultCount;
+    private View mJavaDecompileUnsupportedBanner;
     private Options mOptions;
     private SearchOptions mSearchOptions = new SearchOptions(false, false);
     private MenuItem mSaveMenu;
@@ -290,6 +291,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mViewModel.setOptions(mOptions);
         mColorScheme = EditorThemes.getColorScheme(requireContext());
         mEditor = view.findViewById(R.id.editor);
+        mJavaDecompileUnsupportedBanner = view.findViewById(R.id.java_decompile_unsupported_banner);
+        updateJavaDecompileCaveat();
         mEditor.setColorScheme(mColorScheme);
         mEditor.setTypefaceText(Typeface.MONOSPACE);
         mEditor.setTextSize(14);
@@ -503,6 +506,10 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
         });
         mViewModel.getJavaFileLiveData().observe(getViewLifecycleOwner(), uri -> {
+            if (uri == null) {
+                UIUtils.displayLongToast(R.string.failed);
+                return;
+            }
             CodeEditorFragment.Options options = new CodeEditorFragment.Options.Builder()
                     .setUri(uri)
                     .setTitle(mOptions.title)
@@ -592,6 +599,10 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
             return true;
         } else if (id == R.id.action_java_smali_toggle) {
+            if (!mViewModel.isJavaDecompileSupported()) {
+                UIUtils.displayLongToast(R.string.dex_java_decompile_unsupported);
+                return true;
+            }
             mViewModel.generateJava(mEditor.getText());
             return true;
         } else if (id == R.id.action_search) {
@@ -650,12 +661,23 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
 
     private void updateStartupMenu() {
         if (mViewModel == null) return;
+        boolean canGenerateJava = mViewModel.canGenerateJava();
+        boolean javaDecompileSupported = mViewModel.isJavaDecompileSupported();
         if (mJavaSmaliToggleMenu != null) {
-            mJavaSmaliToggleMenu.setVisible(mViewModel.canGenerateJava());
-            mJavaSmaliToggleMenu.setEnabled(mViewModel.canGenerateJava());
+            mJavaSmaliToggleMenu.setVisible(canGenerateJava);
+            mJavaSmaliToggleMenu.setEnabled(canGenerateJava && javaDecompileSupported);
         }
         if (mShareMenu != null) {
             mShareMenu.setEnabled(mViewModel.isBackedByAFile());
+        }
+        updateJavaDecompileCaveat();
+    }
+
+    private void updateJavaDecompileCaveat() {
+        if (mJavaDecompileUnsupportedBanner != null) {
+            mJavaDecompileUnsupportedBanner.setVisibility(
+                    mViewModel != null && mViewModel.shouldShowJavaDecompileUnsupportedCaveat()
+                            ? View.VISIBLE : View.GONE);
         }
     }
 
