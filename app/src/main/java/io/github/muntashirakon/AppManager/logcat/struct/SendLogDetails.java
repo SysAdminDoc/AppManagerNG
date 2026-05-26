@@ -15,6 +15,8 @@ public class SendLogDetails {
     private Path mAttachment;
     @Nullable
     private String mAttachmentType;
+    @Nullable
+    private String mAttachmentName;
 
     @Nullable
     public String getSubject() {
@@ -41,5 +43,14 @@ public class SendLogDetails {
 
     public void setAttachmentType(@Nullable String attachmentType) {
         mAttachmentType = attachmentType;
+    }
+
+    @Nullable
+    public String getAttachmentName() {
+        return mAttachmentName;
+    }
+
+    public void setAttachmentName(@Nullable String attachmentName) {
+        mAttachmentName = attachmentName;
     }
 }

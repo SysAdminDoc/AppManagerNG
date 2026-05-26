@@ -11,6 +11,8 @@
 > the single active checklist; the old long-form roadmap and 2026-05-25 research
 > plans are archived under `docs/roadmap/archive/`. Latest code baseline before
 > this pass: `7febf06` on `main`.
+> Post-consolidation batches have landed NF-20/NF-21, NF-19/NF-22, and NF-23;
+> read `ROADMAP.md` plus `CHANGELOG.md` for the exact current open item.
 >
 > Previous consolidated baseline: **2026-05-25 iter 146**. Iter-146 shipped
 > filter-finder architecture docs, the routine-scheduler contract, and the

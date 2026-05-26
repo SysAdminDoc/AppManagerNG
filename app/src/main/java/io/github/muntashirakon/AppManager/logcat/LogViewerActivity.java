@@ -219,7 +219,10 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
                         sendLogDetails.getAttachment());
             } else {
                 // Open SAF activity
-                mSaveLauncher.launch(sendLogDetails.getAttachment().getName(), uri -> {
+                String attachmentName = sendLogDetails.getAttachmentName() != null
+                        ? sendLogDetails.getAttachmentName()
+                        : sendLogDetails.getAttachment().getName();
+                mSaveLauncher.launch(attachmentName, uri -> {
                     if (uri == null) return;
                     mViewModel.saveLogs(Paths.get(uri), sendLogDetails);
                 });

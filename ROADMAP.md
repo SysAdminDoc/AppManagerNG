@@ -45,7 +45,7 @@ work to separate root research files.
 - [x] **NF-22 Activity launch builder**: expand the App Details activity launch
   flow beyond package/class/root/user by supporting extras, flags, and intent
   actions before dispatch.
-- [ ] **NF-23 Logcat structured export polish**: search already exists in
+- [x] **NF-23 Logcat structured export polish**: search already exists in
   `LogViewerActivity`; add structured JSON/CSV export and visible match/count
   affordances for filtered logs.
 
