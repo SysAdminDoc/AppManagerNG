@@ -417,8 +417,17 @@ for the original Effort / Dependency context per row.
   bridge so call sites do not compute the window themselves. 9 focused
   JVM tests pin base-window-per-severity, reduced-motion floor, the
   negative / over-ceiling clamps, the absolute MIN/MAX guards, and the
-  queue-side bridge expiry math. SnackBar wiring per destructive
-  surface and op_history capture remain on the T21-F roadmap row._
+  queue-side bridge expiry math. op_history bridge landed 2026-05-26
+  via `UndoOpHistoryRecorder.record(entry, outcome, recordedAtMillis,
+  extraJson)` plus `recordCommittedBatch` (for `pollExpired` drains)
+  and `recordShutdownFlush` (for `drainAll` on Activity destroy);
+  returned `OpHistoryEntry` carries a stable `TYPE` =
+  `destructive_op_v1`, `statusLabel()` literals (committed /
+  cancelled / flushed), and both expiry + recording timestamps. 8
+  focused JVM tests pin every outcome, batch null-tolerance,
+  empty-input handling, status-label stability, and the type
+  constant. SnackBar wiring per destructive surface remains on the
+  T21-F roadmap row._
 - [ ] **T21-G Attention badges on app list rows**: surface a tiny circular
   badge counter on rows where actionable state exists (pending permission
   grants, disabled components, recent OS revert). Acceptance: each badge

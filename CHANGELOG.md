@@ -5,6 +5,31 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - UndoOpHistoryRecorder bridges queue drains to op_history (T21-F follow-up, 2026-05-26)
+
+- Added `UndoOpHistoryRecorder` in `batchops/`, the pure-function
+  bridge between `UndoableActionQueue` drains and the Room-backed
+  `OpHistory` table. Surface:
+  - `record(entry, outcome, recordedAtMillis, extraJson)` builds one
+    `OpHistoryEntry` row from a queue entry + outcome.
+  - `recordCommittedBatch(drainedEntries, recordedAtMillis)` for
+    `pollExpired` heartbeats.
+  - `recordShutdownFlush(drainedEntries, recordedAtMillis)` for
+    `drainAll` on Activity / Service shutdown.
+- `OpHistoryEntry` carries a stable `TYPE` = `destructive_op_v1`, the
+  outcome (`COMMITTED` / `CANCELLED` / `FLUSHED_ON_SHUTDOWN`), both
+  expiry and recording timestamps, an optional `extraJson` blob, and
+  a `statusLabel()` literal (`committed` / `cancelled` / `flushed`)
+  the history UI's filter chip code can match against without
+  re-parsing the outcome.
+- The recorder never touches Room - that's the Android-side caller's
+  job (`OpHistoryManager`). The pure-function shape keeps the
+  outcome / label / timestamp wiring JVM-unit-testable.
+- 8 focused JVM tests pin every outcome path, batch null-tolerance,
+  empty-input handling, status-label stability across outcomes, and
+  the type-constant invariant. SnackBar wiring per destructive
+  surface remains on the T21-F row.
+
 ### Added - APK bundle header parser (T19-C follow-up, 2026-05-26)
 
 - Added `ApkBundleHeaderParser.parse(bytes)` /
