@@ -2435,6 +2435,11 @@
         <item quantity="one">%1$d selected app matches an OEM uninstall blocker and will be frozen instead of removed: %2$s.</item>
         <item quantity="other">%1$d selected apps match OEM uninstall blockers and will be frozen instead of removed: %2$s.</item>
     </plurals>
+    <!-- NF-16 — Debloat impact preview: role-handler losses -->
+    <plurals name="debloat_impact_preview_header">
+        <item quantity="one">Impact preview: removing %d selected app would un-bind a default-app role. Android will ask you to pick a replacement on first use.</item>
+        <item quantity="other">Impact preview: removing %d selected apps would un-bind default-app roles. Android will ask you to pick a replacement on first use.</item>
+    </plurals>
     <string name="rootless_debloat_confirmation_risky_examples">Review first: %1$s.</string>
     <string name="rootless_debloat_confirmation_footer">This removes apps from the selected user profile. System packages can usually be restored later with Install existing if the base APK remains on the device.</string>
     <string name="rootless_debloat_confirmation_oem_footer">OEM-safe actions remove eligible apps and freeze OEM-protected apps instead. Choose Remove for user only if you explicitly want to bypass the safer fallback.</string>

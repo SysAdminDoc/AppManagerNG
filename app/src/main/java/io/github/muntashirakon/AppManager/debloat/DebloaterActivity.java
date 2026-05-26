@@ -404,9 +404,16 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         if (selectedObjects.isEmpty()) return;
         boolean usesPmUninstall = RootlessDebloat.canUsePmUninstall();
         boolean hasOemFallbacks = hasOemUninstallFallbacks(selectedObjects);
+        // NF-16 — compute role-loss impact on a worker thread first; the
+        // RoleManager calls below add up to ~10 IPCs on API 29+.
+        List<String> selectedPackages = new ArrayList<>(selectedObjects.size());
+        for (DebloatObject obj : selectedObjects) {
+            selectedPackages.add(obj.packageName);
+        }
+        DebloatImpactPreview.Result impact = DebloatImpactPreview.compute(this, selectedPackages);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.rootless_debloat_uninstall_title)
-                .setMessage(buildDebloatUninstallMessage(selectedObjects, usesPmUninstall))
+                .setMessage(buildDebloatUninstallMessage(selectedObjects, usesPmUninstall, impact))
                 .setPositiveButton(hasOemFallbacks ? R.string.debloat_oem_safe_action
                                 : (usesPmUninstall ? R.string.remove_for_user : R.string.uninstall),
                         (dialog, which) -> {
@@ -427,6 +434,14 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     @NonNull
     private String buildDebloatUninstallMessage(@NonNull List<DebloatObject> selectedObjects,
                                                 boolean usesPmUninstall) {
+        return buildDebloatUninstallMessage(selectedObjects, usesPmUninstall,
+                new DebloatImpactPreview.Result(java.util.Collections.emptyMap()));
+    }
+
+    @NonNull
+    private String buildDebloatUninstallMessage(@NonNull List<DebloatObject> selectedObjects,
+                                                boolean usesPmUninstall,
+                                                @NonNull DebloatImpactPreview.Result impact) {
         int safe = 0;
         int replace = 0;
         int caution = 0;
@@ -503,6 +518,17 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             message.append("\n")
                     .append(getString(R.string.rootless_debloat_confirmation_risky_examples,
                             TextUtils.join(", ", reviewFirst)));
+        }
+        // NF-16 — surface default-app role losses inline so users see when a
+        // selection includes the current SMS / dialer / browser / home handler.
+        if (impact.hasAny()) {
+            message.append("\n\n")
+                    .append(getResources().getQuantityString(
+                            R.plurals.debloat_impact_preview_header,
+                            impact.roleLosses.size(),
+                            impact.roleLosses.size()))
+                    .append("\n")
+                    .append(DebloatImpactPreview.render(impact));
         }
         message.append("\n\n").append(getString(oemFallbacks > 0
                 ? R.string.rootless_debloat_confirmation_oem_footer
