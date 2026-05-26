@@ -5,6 +5,27 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - PerfettoConfigInspector preview-side parser (T20-A follow-up, 2026-05-26)
+
+- Added `PerfettoConfigInspector.inspect(textProto)` in
+  `details/profile/`, the read-side counterpart to
+  `PerfettoTraceConfigBuilder`. Extracts `duration_ms`, `size_kb`,
+  every `atrace_apps`, every `ftrace_events`, and every data-source
+  `name` so the App Details T20-A "Export trace" surface can render a
+  preview chip ("10s · 64 MB ring · 8 ftrace events · com.example")
+  before the user pulls the trigger.
+- `Inspection.isValid()` is true when duration > 0, buffer > 0, and
+  at least one target package is in the config. `oneLineSummary`
+  renders the canonical preview chip; invalid inspections collapse to
+  `"Invalid trace config"`.
+- Pure JVM regex parsing of the subset the builder actually emits;
+  not a general-purpose perfetto-cfg parser. 12 focused JVM tests
+  pin duration / buffer extraction, multi-package target lists, the
+  ftrace-event set, the data-source set, a full
+  builder-to-inspector round-trip, empty / null / missing-target
+  invalid-input handling, list immutability, and the one-line
+  summary canonical shape.
+
 ### Added - Launcher icon mode architecture doc (T21-E follow-up, 2026-05-26)
 
 - Added `docs/architecture/launcher-icon-aliases.md` documenting the
