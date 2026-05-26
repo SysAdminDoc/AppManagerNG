@@ -1,9 +1,8 @@
-- [1-Click ops] Enabled "Clear data from uninstalled apps" to no-root users
-- [App info] Fixed freezing an app with "Remember for this app" turned on
-- [App ops] Fixed setting app ops in custom ROMs with MIUI properties injected
-- [Debloater] Display unsafe bloatware info
-- [Debloater] Sort by app label (or app name) rather than package name
-- [Installer] Added option to allow installing the existing applications
-- [Profile] Fixed updating profile modification status when an application is deleted from the list
-- [Terminal] Handled common colors and cursor movements
-- Enabled predictive back in Android 14 onwards, and others.
+- No-root clear-data cleanup for uninstalled apps.
+- Fixed App Info freeze with per-app remembered settings.
+- Fixed App Ops on MIUI-derived custom ROMs.
+- Debloater unsafe-info display and app-label sorting.
+- Installer option for existing apps.
+- Profile modified-state fix after package deletion.
+- Terminal color and cursor handling.
+- Predictive back on Android 14+.

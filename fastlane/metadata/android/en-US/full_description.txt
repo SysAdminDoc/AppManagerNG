@@ -1,51 +1,31 @@
-<i>App Manager</i> began by merging the features of <i>App_packages Info</i> (formerly <i>Application Info</i>), <i>ClassyShark3xodus</i>, <i>Activity Launcher</i> and <i>Watt</i> into a single app with material design and dark mode to give a modern look and feel.
+<p><b>AppManagerNG</b> is a maintained fork of MuntashirAkon's App Manager. It keeps the original power-user scope, uses the unique package name <code>io.github.sysadmindoc.AppManagerNG</code>, and ships a refreshed NG identity, release pipeline, and distribution-friendly build flavors.</p>
 
-<b>General features</b>
+<p>AppManagerNG is built for users who need to inspect, repair, back up, and automate Android apps from one place. It works without privilege where Android allows it, and can use Shizuku, ADB, or root for operations that the platform normally reserves for system tools.</p>
 
-• Fully reproducible, copylefted libre software (GPLv3+)
-• Material 3 with dynamic colours
-• Display as much information as possible in the main page
-• List activities, broadcast receivers, services, providers, app ops, permissions, signatures, shared libraries, etc. of an application
-• Launch activities and services
-• Create shortcuts of activities
-• Intercept activities
-• Scan for trackers and libraries in apps and list (all or only) tracking classes (and their code dump)
-• View/save the manifest of an app
-• Display app usage, data usage (mobile and Wi-Fi), and app storage info (requires “Usage Access” permission)
-• Install/uninstall APK files (including APKS, APKM and XAPK with OBB files)
-• Share APK files
-• Back up/restore APK files
-• Batch operations
-• Single-click operations
-• Logcat viewer, manager and exporter
-• Profiles
-• Debloater
-• Code editor
-• File manager
-• Simple terminal emulator
-• Open an app in Aurora Store or in your favourite F-Droid client
-• Sign APK files with custom signatures before installing
-• Backup encryption: OpenPGP via OpenKeychain, RSA, ECC (hybrid encryption with AES) and AES.
-• Track foreground UI components
+<p><b>Core features</b></p>
 
-<b>Root/ADB-only features</b>
+<ul>
+<li>List installed and backed-up apps across users and profiles</li>
+<li>Inspect activities, services, receivers, providers, app ops, permissions, signatures, trackers, libraries, manifests, storage, and usage</li>
+<li>Launch activities and services, send guarded broadcasts, and query content providers</li>
+<li>Install APK, APKS, APKM, XAPK, split APK, and OBB packages</li>
+<li>Back up and restore apps, data, rules, extras, roles, permissions, and encrypted archives</li>
+<li>Run batch operations, one-click operations, profiles, scheduled routines, and Tasker-compatible intents</li>
+<li>Use the debloater, file manager, code editor, shared-preferences editor, logcat exporter, terminal, and tracker scanner</li>
+</ul>
 
-• Revoke runtime (AKA dangerous) and development permissions
-• Change the mode of an app op
-• Display/kill/force-stop running apps or processes
-• Clear app data or app cache
-• View/change net policy
-• Control battery optimization
-• Freeze/unfreeze apps
+<p><b>Privileged features</b></p>
 
-<b>Root-only features</b>
+<ul>
+<li>Freeze, unfreeze, force-stop, clear data, clear cache, and control battery optimization</li>
+<li>Change app ops, revoke runtime and development permissions, and inspect privileged state</li>
+<li>Block components with rule import/export support</li>
+<li>Back up and restore app data with root, Shizuku, ADB, and fallback paths where supported</li>
+<li>Inspect running apps, processes, network policy, SSAID, and system configuration</li>
+</ul>
 
-• Block any activities, broadcast receivers, services, or providers of an app with native import/export as well as Watt and Blocker import support
-• View/edit/delete shared preferences of any app
-• Back up/restore apps with data, rules and extras (such as permissions, battery optimization, SSAID, etc.)
-• View system configurations including blacklisted or whitelisted apps, permissions, etc.
-• View/change SSAID.
+<p><b>Distribution posture</b></p>
 
-…and many more! This single app combines the features of 5 or 6 apps any tech-savvy person needs!
+<p>The default <code>floss</code> build disables optional third-party online report features at compile time. AppManagerNG has no ads, no analytics, no telemetry upload, and no bundled tracking SDKs. Broad package visibility is required because this is an on-device package manager; the project documents that permission in <code>docs/distribution/package-visibility.md</code>.</p>
 
-See the instructions page within the app for more information on how to use the app.
+<p>Source, license, reproducible-build notes, changelog, and issue tracker are available from the project repository.</p>

@@ -59,7 +59,7 @@ Read these in order. Do **not** rewrite them as a drive-by; they are mature.
 | [`docs/audits/`](docs/audits/) | 20 files + README | Per-audit verdicts for Android 16/17/18 platform changes, crypto/dependency bumps, predictive back, Play policy, and Shizuku Android-17 compatibility. Read `docs/audits/README.md` first for verdict vocabulary. |
 | [`research/iter-20-delta.md`](research/iter-20-delta.md) | — | Free-form 2026-05-08 issue-mining notes from the iter-20 sweep. Subsequent iters live inline in ROADMAP. |
 | [`design/`](design/) | 7 files | Premium-facelift design system (`spec/1-design-system.md`, `impl/values/*-v2.xml`, `impl/layout/*_v2.xml`, `plan/3-rollout.md`, `audit/0-recon.md`, `audit/4-painpoints.md`). Driven by [`codexprompt.md`](codexprompt.md) at repo root. |
-| [`docs/distribution/`](docs/distribution/) | 6 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier, build-flavor contract. |
+| [`docs/distribution/`](docs/distribution/) | 7 files | Obtainium config (`obtainium-config.json` + `.license`), reproducible-builds doc, backup-destinations matrix, package-visibility dossier, build-flavor contract, IzzyOnDroid listing packet. |
 | [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) | — | Running ledger of every dep that has dropped (or imminently drops) API 21-22 support. Read this **before** bumping `min_sdk` in [`versions.gradle`](versions.gradle). |
 | [`docs/security-advisories/`](docs/security-advisories/) | 1 file | CVE-2026-0073 ADB-mode advisory. |
 | [`docs/intent-api.md`](docs/intent-api.md) | — | `app-manager://` + `am://` deep-link contract. |
@@ -631,7 +631,7 @@ repo. Reading them here saves a fresh AI session a re-discovery pass.
 - **v0.5.x** — background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
 - **v0.6.0** — Routine scheduler executor/UI on top of the shipped trigger data layer, plus Premium Polish Phase 2.
 - **Now / Eng-Debt** — WorkManager quota / stop-reason instrumentation, Android 17 device verification for Shizuku and 16 KB page-size behavior, and the minSdk-23 / Material 1.14 decision.
-- **Distribution next** — IzzyOnDroid listing, F-Droid listing, Accrescent listing. All gated on the rename being public + reproducible builds (both done).
+- **Distribution next** — IzzyOnDroid listing packet is ready but needs the maintainer to file the external tracker request; F-Droid listing and Accrescent listing remain next. Rename is public and reproducible builds are done.
 
 ---
 
