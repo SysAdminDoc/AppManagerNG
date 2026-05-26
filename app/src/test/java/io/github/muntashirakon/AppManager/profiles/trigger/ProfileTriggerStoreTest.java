@@ -100,6 +100,23 @@ public class ProfileTriggerStoreTest {
     }
 
     @Test
+    public void setEnabledWritesExplicitState() {
+        ProfileTrigger trigger = buildEvent("profile-a", ProfileTrigger.TYPE_ON_NETWORK_WIFI);
+        mStore.put(trigger);
+
+        ProfileTrigger disabled = mStore.setEnabled(trigger.id, false);
+        assertNotNull(disabled);
+        assertFalse(disabled.enabled);
+        ProfileTrigger unchanged = mStore.setEnabled(trigger.id, false);
+        assertNotNull(unchanged);
+        assertFalse(unchanged.enabled);
+        ProfileTrigger enabled = mStore.setEnabled(trigger.id, true);
+        assertNotNull(enabled);
+        assertTrue(enabled.enabled);
+        assertNull(mStore.setEnabled("does-not-exist", true));
+    }
+
+    @Test
     public void removeRemovesByIdAndIsIdempotent() {
         ProfileTrigger trigger = buildEvent("profile-a", ProfileTrigger.TYPE_ON_CHARGING);
         mStore.put(trigger);
