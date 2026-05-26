@@ -92,7 +92,8 @@ for the current active backlog. Version targets:
 - **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
 - **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
 - **v0.4.0** ✅ — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action) + Onboarding capability wizard
-- **v0.5.0** (in flight) — Discovery & Polish: in-app changelog viewer, global in-app Settings search, Settings reorganization by task, contextual help tooltips, plus the Iter-91 → Iter-142 batch (scheduled auto-backup, AES v7 archive-key derivation, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, component-rules preview, …). See `CHANGELOG.md` `Unreleased`.
+- **v0.5.0** ✅ 2026-05-25 — Discovery & Polish: in-app changelog viewer + auto-display after update, global in-app Settings search, plus the Iter-91 → Iter-142 batch (scheduled auto-backup polish, AES metadata v7 HKDF per-archive keys, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, Dhizuku detection, Restricted Settings unlock walkthrough, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, Component rules preview, Tasker am:// intents, QS freeze tile, FM recursive search and ZIP create/extract, AGP 9.2.0). See `CHANGELOG.md`.
+- **v0.5.x** — Settings reorganization by task, contextual help tooltips (deferred from v0.5.0).
 - **v0.6.0** — Rootless Power: Routine Operations / Scheduler, Multi-Tag per App, Saved Filter Presets, Tracker Blocking via AppOps, Premium Polish Phase 2.
 
 ## Install
