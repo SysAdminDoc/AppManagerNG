@@ -19,6 +19,13 @@
         app:summary="@string/pref_whats_new_summary"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        android:fragment="io.github.muntashirakon.AppManager.settings.GlossaryPreferences"
+        app:key="glossary"
+        app:title="@string/pref_glossary_title"
+        app:summary="@string/pref_glossary_summary"
+        app:iconSpaceReserved="false" />
+
     <io.github.muntashirakon.preference.HyperlinkPreference
         app:key="license"
         app:title="@string/license"

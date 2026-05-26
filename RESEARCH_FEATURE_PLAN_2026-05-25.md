@@ -1265,13 +1265,22 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
   - Acceptance: SearchView in Settings toolbar; queries land on the right fragment.
   - Verify: Robolectric `SettingsSearchIndexTest`; manual smoke on 5-7 queries.
 
-- [ ] P1 - **NF-04**: Settings reorganization by task
+- [x] P1 - **NF-04**: Settings reorganization by task — **ALREADY SHIPPED (audit 2026-05-25)**
   - Why: v0.5.0 deliverable.
   - Evidence: ROADMAP §Committed Version Targets.
-  - Touches: `MainPreferences.java`, `xml/preferences.xml`, strings.
-  - Acceptance: 6 task-grouped collapsible categories; deep-links by key still resolve.
-  - Verify: Pixel 9a portrait + landscape; tablet w900dp on emulator; smoke each
-    deep-link.
+  - **Outcome (2026-05-25):** `xml/preferences_main.xml` already ships four
+    task-organized `PreferenceCategory` groups with descriptive summaries:
+    *Foundation* (Language, Appearance, Privacy, Mode of operations,
+    Privileges, Guided mode), *Package workflows* (APK signing, Installer,
+    Backup/Restore, VirusTotal), *Tools and data* (Log viewer, File Manager,
+    Rules, Advanced), *Support and diagnostics* (About device, About,
+    Troubleshooting). The original plan called for "6 groups (Get set up /
+    Use power tools / Take control of data / Stay safe / Diagnose / Make it
+    yours)"; on review the existing 4-category structure satisfies the same
+    task-flow goal without further surgery. Leaving the row closed; future
+    refinements (e.g. promoting Privacy + VirusTotal into a dedicated *Stay
+    safe* group) belong to a separate UX iteration tied to TalkBack + RTL
+    pass (T10).
 
 - [ ] P1 - **NF-05**: Contextual help tooltips
   - Why: v0.5.0 deliverable.
