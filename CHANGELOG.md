@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Perfetto trace config + command builder (T20-A, 2026-05-26)
+
+- Added `PerfettoTraceConfigBuilder.buildTextProto`, which emits a
+  canonical app-targeted Perfetto text-proto configuration with
+  `linux.ftrace` + `linux.process_stats` data sources, a ring-buffer
+  policy, and `atrace_apps` pinned to the target package.
+- Duration (default 10 s, max 120 s) and buffer size (default 64 MiB, max
+  256 MiB) are clamped to safe bounds before emission so a runaway action
+  cannot start an indefinite trace.
+- Added `PerfettoCommandBuilder` producing the canonical `perfetto -c
+  <config> --txt -o <output>` argv with shell-metacharacter rejection on
+  both paths, plus `perfettoUiUrl()` exposing the stable
+  `https://ui.perfetto.dev/` open path for the post-capture viewer.
+- 11 focused JVM tests cover the proto shape, duration / buffer clamps,
+  malformed-package rejection, ftrace event integrity, the canonical argv,
+  and unsafe-path rejection on the command builder.
+- Privileged runner integration and the App Details "Export trace" action
+  remain on the T20-A roadmap row.
+
 ### Added - simpleperf CPU profile command builder (T20-B, 2026-05-26)
 
 - Added `CpuProfileCommandBuilder.build`, a pure-function builder for the
