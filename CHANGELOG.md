@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Receiver send-broadcast guardrails (2026-05-26)
+
+- App Details -> Receivers now exposes a guarded "Send broadcast" action for
+  installed receiver components, with declared manifest actions preloaded when
+  the APK manifest can be parsed.
+- Broadcast sends now target the explicit receiver component, preserve the
+  selected user/profile through privileged dispatch when needed, and refuse
+  protected Android actions, cross-profile sends, and non-exported receivers
+  unless root, Shizuku, or ADB mode is active.
+- The send dialog includes action/category/extras inputs, a dry-run summary,
+  a final execution confirmation, and typed extra parsing for common scalar
+  values.
+- Added focused JVM coverage for explicit receiver intent construction,
+  category/extras parsing, component-name normalization, and privileged-route
+  decisions.
+
 ### Changed — SharedPrefs editor atomic writes (2026-05-26)
 
 - SharedPrefs editor saves now route local file writes through

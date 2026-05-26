@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.details.components.BroadcastSendDialogFragment;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsActivityItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsComponentItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
@@ -947,6 +948,17 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.processNameView.setText(String.format(Locale.ROOT, "%s: %s",
                         getString(R.string.process_name), processName));
             } else holder.processNameView.setVisibility(View.GONE);
+            if (!mIsExternalApk) {
+                holder.launchBtn.setText(R.string.send_broadcast);
+                holder.launchBtn.setIconResource(R.drawable.ic_play_arrow);
+                holder.launchBtn.setOnClickListener(v -> BroadcastSendDialogFragment.show(getParentFragmentManager(),
+                        mPackageName, activityInfo.name, mUserId, activityInfo.exported, activityInfo.permission,
+                        componentItem.getIntentActions(), componentItem.getIntentCategories()));
+                holder.launchBtn.setVisibility(View.VISIBLE);
+            } else {
+                holder.launchBtn.setOnClickListener(null);
+                holder.launchBtn.setVisibility(View.GONE);
+            }
             // Blocking
             if (mCanModifyComponentStates) {
                 handleBlock(holder, componentItem, RuleType.RECEIVER);
