@@ -132,7 +132,10 @@ work to separate root research files.
   search-control touch targets have source-level guards recorded in
   `docs/audits/2026-05-26-font-scale.md`; broader major-screen/device
   walkthrough remains open.
-- [ ] TalkBack traversal and action-label audit.
+- [ ] TalkBack traversal and action-label audit. UI tracker and debloat
+  details action-label hardening is recorded in
+  `docs/audits/2026-05-26-talkback-action-labels.md`; full runtime traversal
+  and adapter-bound row verification remains open.
 - [ ] Reduced-motion setting audit.
 - [ ] Dyslexia-font compatibility audit.
 - [ ] Android 17 device or emulator verification for Shizuku and 16 KB page
