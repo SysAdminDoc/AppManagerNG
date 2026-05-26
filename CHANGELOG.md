@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Mode Doctor can share results with a Support info bundle (2026-05-25)
+
+- Settings -> Privileges -> Mode Doctor result dialog now offers a "Share
+  with bundle" action that prepends the PASS/WARN/FAIL/SKIP probe report
+  to a freshly-generated `SupportInfoBundle` text file and launches the
+  system share chooser, replacing the previous copy-and-collect dance.
+- `SupportInfoBundle.writeTextBundle(Context, CharSequence)` accepts an
+  optional preamble that callers can use to inline any free-form section
+  before the standard environment dump.
+
+### Changed — Onboarding re-checks capability badges on resume (2026-05-25)
+
+- The replayable onboarding wizard now re-runs `refreshCapabilityStatuses`
+  in `onResume`, so a user who jumps into Developer options to toggle USB
+  debugging or Wireless debugging and returns sees the fresh state
+  without manually tapping Re-check.
+
 ### Added — Settings -> About -> Glossary & how-to (2026-05-25)
 
 - New `GlossaryPreferences` screen lists 14 plain-language explainers
