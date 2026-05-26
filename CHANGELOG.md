@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Runtime activity chip in App Details (NF-17, 2026-05-25)
+
+- App Details info card now shows a "Runtime activity (24h)" tag-cloud
+  chip on every installed package. Tapping the chip runs a background
+  query against the existing `AppUsageStatsManager` for a 24-hour
+  window and surfaces screen time, last-use relative time, times
+  opened, plus mobile / Wi-Fi RX/TX totals in a single dialog.
+- New `RuntimeTelemetryHelper` is the shared snapshot+render helper.
+  Pure-JVM coverage in [`RuntimeTelemetryHelperTest`](app/src/test/java/io/github/muntashirakon/AppManager/details/info/RuntimeTelemetryHelperTest.java).
+- Permission failures (missing `PACKAGE_USAGE_STATS`) surface as a
+  short toast rather than a crash.
+
 ### Added — Privacy Dashboard deep link (NF-12, 2026-05-25)
 
 - App Details -> Permissions tab overflow now has an "Open in Privacy
