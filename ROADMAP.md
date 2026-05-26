@@ -72,7 +72,7 @@ work to separate root research files.
   clear privilege and Android-version failure messages.
 - [x] **NF-27 Providers query inspector**: add a provider query UI with safe
   projection/selection inputs and exportable results.
-- [ ] **NF-26 File Manager hex/binary viewer**: add a read-only binary viewer
+- [x] **NF-26 File Manager hex/binary viewer**: add a read-only binary viewer
   for files that cannot be rendered as text.
 - [ ] **EI-14 BarChart manual minimum value**: support an explicit minimum axis
   value without breaking existing auto-scaling.

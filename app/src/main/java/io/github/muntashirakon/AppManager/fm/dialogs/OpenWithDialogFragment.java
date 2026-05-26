@@ -42,7 +42,9 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
+import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
+import io.github.muntashirakon.AppManager.fm.hex.HexViewerActivity;
 import io.github.muntashirakon.AppManager.intercept.ActivityInterceptor;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -186,11 +188,11 @@ public class OpenWithDialogFragment extends DialogFragment {
                 .setCustomTitle(titleBuilder.build())
                 .setView(mDialogView)
                 .setPositiveButton(R.string.file_open_as, null)
-                .setNeutralButton(R.string.file_open_with_custom_activity, null)
+                .setNeutralButton(R.string.file_open_as_hex, null)
                 .create();
         alertDialog.setOnShowListener(dialog -> {
             Button fileOpenAsButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            Button customButton = alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+            Button hexButton = alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
             fileOpenAsButton.setOnClickListener(v -> {
                 String[] customTypes = requireContext().getResources().getStringArray(R.array.file_open_as_option_types);
                 new SearchableItemsDialogBuilder<>(requireActivity(), R.array.file_open_as_options)
@@ -210,8 +212,12 @@ public class OpenWithDialogFragment extends DialogFragment {
                         .setNegativeButton(R.string.close, null)
                         .show();
             });
-            // TODO: 20/11/22 Add option to set custom activity
-            customButton.setVisibility(View.GONE);
+            hexButton.setEnabled(mPath.canRead());
+            hexButton.setOnClickListener(v -> {
+                startActivity(HexViewerActivity.getIntent(requireContext(), mPath.getUri(), mPath.getName(),
+                        FmUtils.getDisplayablePath(mPath)));
+                dismiss();
+            });
         });
         return alertDialog;
     }
