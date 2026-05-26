@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Privacy Dashboard deep link (NF-12, 2026-05-25)
+
+- App Details -> Permissions tab overflow now has an "Open in Privacy
+  Dashboard" action that deep-links Android 12+ system per-app
+  permission usage timeline via `ACTION_REVIEW_PERMISSION_USAGE`. On
+  older releases the action falls back to standard app-info settings
+  and surfaces a toast explaining the timeline is unavailable.
+
 ### Changed — Scheduled backup status row is tappable (EI-07, 2026-05-25)
 
 - Settings -> Backup/Restore -> "Scheduled backup status" row now opens
