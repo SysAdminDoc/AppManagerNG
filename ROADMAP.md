@@ -148,10 +148,142 @@ work to separate root research files.
 
 ### Later Research Buckets
 
-- [ ] T18 overlays, deep links, and unfreeze shortcut consolidation.
-- [ ] T19 storage analysis expansion.
-- [ ] T20 system profiling expansion.
-- [ ] T21 remaining polish items after the v0.6.0 blockers land.
+These were "Later" buckets in the legacy roadmap. Each parent now has a
+decomposed checklist of actionable child rows. Tick a child as you ship it,
+move the inventory line to `CHANGELOG.md`, and update this section. Parents
+close only when every actionable child closes or is marked parked with a
+recorded reason. See
+[`docs/roadmap/archive/ROADMAP-legacy-through-2026-05-25.md`](docs/roadmap/archive/ROADMAP-legacy-through-2026-05-25.md)
+for the original Effort / Dependency context per row.
+
+#### T18 - Overlay management, deep links, freeze shortcut consolidation
+
+- [x] T18-A Per-app overlay management. App Details already ships
+  `AppDetailsOverlaysFragment` + `AppDetailsOverlayItem`; row closed by audit
+  on 2026-05-26.
+- [x] T18-B `app-manager://` + `am://` deep-link contract. Shipped through
+  v0.5.0; documented in [`docs/intent-api.md`](docs/intent-api.md).
+- [x] T18-C Unfreeze on shortcut launch with optional re-freeze on phone
+  lock. Shipped via
+  [`FreezeUnfreeze.launchApp`](app/src/main/java/io/github/muntashirakon/AppManager/apk/behavior/FreezeUnfreeze.java)
+  with `FLAG_ON_UNFREEZE_OPEN_APP` / `FLAG_FREEZE_ON_PHONE_LOCKED` /
+  `FreezeUnfreezeService`; closed by audit on 2026-05-26.
+- [x] T18-D Certificate SHA-256 chip in App Info. Shipped 2026-05-02 per
+  legacy roadmap; closed.
+
+#### T19 - Package-aware storage analysis
+
+- [x] T19-A App Details Storage panel completeness audit. Storage and Cache
+  block already shows code/data/cache/obb/media/total via `PackageSizeInfo`
+  in
+  [`AppInfoFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java).
+  Confirm split-APK breakdown and add backup-archive size as a sibling row.
+- [ ] **T19-B Leftover detection after uninstall**: implement an explicit
+  scanner for `Android/data/<pkg>`, `Android/obb/<pkg>`, root-accessible
+  `/data/data/<pkg>` stubs, `Android/media/<pkg>`, and bundled debloat-rule
+  remnants. Surface from One-Click Ops alongside the existing "clear data of
+  uninstalled apps" entry and from App Details when the package is detected
+  as uninstalled. Acceptance: scan is privilege-aware (no privileged read of
+  `/data/data` without root), the result list is exportable, and selected
+  items can be cleaned in one batch with audit-log capture.
+- [ ] **T19-C APK duplicate finder**: index Downloads, backup destinations,
+  and external storage for `.apk` / `.apks` / `.apkm` / `.xapk` files,
+  deduplicate by package name + signing cert + version code, and surface a
+  cleanup action in File Manager and the backup list. Acceptance: ignores
+  zero-byte and partially-downloaded files, respects user-cancelled scans,
+  and records sample-set telemetry only in the operation log.
+- [ ] **T19-D Backup duplicate cleaner**: detect duplicate
+  `<package>@<version>@<variant>` backup archives across configured backup
+  roots; offer per-pair "keep newest" or "keep largest" with manual override.
+  Acceptance: extends the existing T6 retention policy, never deletes the
+  only good copy when both reads succeed checksum verification, and writes
+  to `op_history` like other backup actions.
+
+#### T20 - Performance and profiling (system-level)
+
+- [ ] **T20-A Perfetto system-trace export**: integrate Perfetto 54.0+ trace
+  capture filtered to a target app on Android 11+; expose as an App Details
+  "Export trace" action gated on Shizuku or ADB. Acceptance: trace persists
+  to Downloads as `.perfetto-trace`, optionally produces a `ui.perfetto.dev`
+  deep link, and the action falls back to system Developer Options when
+  unavailable.
+- [ ] **T20-B simpleperf CPU profile capture**: ship a "Record CPU profile"
+  action in App Details that wraps `simpleperf` for a bounded sampling
+  window, gated on root/Shizuku/ADB. Acceptance: output saved as flame-graph
+  SVG plus a raw `perf.data` for desktop tools, action explains binary
+  source/version, and capture is cancellable.
+- [ ] **T20-C Memory allocations inspector**: parse `dumpsys meminfo`,
+  `dumpsys gfxinfo`, and `procfs` native-memory snapshots for the target
+  package and surface them in App Details. Acceptance: works on
+  non-debuggable apps where the data is privileged-readable, surfaces a
+  point-in-time snapshot before deciding on streaming, and notes when
+  `system_server` returns truncated data.
+- [ ] T20-D LeakCanary leak-detection wrapper. Parked: requires shipping a
+  debuggable agent into target processes, conflicts with NG's GPL+vendored
+  posture, and the legacy roadmap already flagged it as high-risk-for-
+  stability. Reopen only with explicit owner sign-off.
+
+#### T21 - UI/design polish and premium feel
+
+- [x] T21-A Landscape / w600dp density overrides. Already shipped via
+  factory iter-7 dimens overrides in
+  [`app/src/main/res/values-w600dp/dimens.xml`](app/src/main/res/values-w600dp/dimens.xml)
+  and the libcore mirror; row closed.
+- [x] T21-B Launcher shortcuts for scheduled backup. Shipped via iter-94
+  pinned Settings action + static launcher shortcut; closed.
+- [x] T21-C Material 3 result notifications for long-running operations.
+  Shipped via iter-95 foreground progress notification + API 36
+  `Notification.ProgressStyle` segments; closed.
+- [x] T21-D In-app per-app language picker. Shipped via iter-121 for the
+  managed-package locale; the AppManagerNG-self locale picker already exists
+  in Settings -> Appearance via `AppCompatDelegate.setApplicationLocales`.
+- [ ] **T21-E Discreet / generic launcher-icon mode**: ship two extra
+  launcher activity-alias icons (a neutral system-styled square and the
+  current NG mark), and let users switch via Settings -> Appearance.
+  Acceptance: only one alias is enabled at a time, no extra `BOOT_COMPLETED`
+  side-effects, and the existing widget icon palette is not affected.
+- [ ] **T21-F Undo SnackBar for destructive operations**: wrap freeze,
+  uninstall, force-stop, clear-data, and component-state writes in a
+  short-lived "Undo" SnackBar before commit. Acceptance: cancellation skips
+  the privileged write entirely, an unactioned SnackBar still records the
+  operation in `op_history`, and the Snackbar duration follows the existing
+  reduced-motion gate.
+- [ ] **T21-G Attention badges on app list rows**: surface a tiny circular
+  badge counter on rows where actionable state exists (pending permission
+  grants, disabled components, recent OS revert). Acceptance: each badge
+  type has a single source of truth in the existing app cache, badge
+  rendering does not regress list scroll, and the meaning is documented in
+  the glossary.
+- [ ] **T21-H Material 3 Adaptive layouts for tablets / large screens**:
+  start with App List + App Details master/detail and Settings two-pane
+  rebuild using `androidx.window` + `SlidingPaneLayout`. Acceptance: stays
+  compatible with the existing View-based layouts, all view IDs preserved
+  per the `codexprompt.md` contract, and the new layouts gate on
+  available-width thresholds rather than fixed device classes.
+- [ ] **T21-I Fast list rendering for 10k+ installed apps**: profile and
+  optimize the main app list adapter / cache for unusually large installs;
+  set a baseline target of <2 s cold filter on 10 k apps. Acceptance:
+  measurable improvement recorded in `docs/audits/` with the before/after
+  numbers, no behavior change for typical (<300-app) devices, and
+  Robolectric coverage where reachable.
+- [ ] **T21-J Material You dynamic-color audit**: confirm both the v2
+  design tokens and existing widget palette honor Android 12+ wallpaper
+  derived `dynamic_*` colors and have a graceful fallback when dynamic
+  colors are disabled or unsupported. Acceptance: dynamic colors disabled
+  in the new high-contrast theme code path, audit doc lands under
+  `docs/audits/`, and the existing M3 palette helpers gain test coverage.
+- [ ] T21-K Material 3 Expressive migration. Parked: legacy roadmap flagged
+  this as gated on Material Components 1.14 + minSdk 23, which is itself
+  tracked under "Material Components 1.14 / minSdk 23 decision". Do not
+  start until that decision lands.
+- [ ] T21-L Custom user shell-action / Tasker batch actions. Parked: the
+  legacy row already flagged "non-trivial security review needed"; reopen
+  only after the broadcast-intent automation API stops being our only
+  public surface (i.e. once it has had at least one external integration in
+  production).
+- [ ] T21-M Compose performance pass. **Not applicable**: NG explicitly does
+  not ship Compose (see `codexprompt.md`). Row removed from the active
+  checklist; preserved here so the legacy bucket is fully accounted for.
 
 ## Verification Cadence
 
