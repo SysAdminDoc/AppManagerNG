@@ -17,12 +17,11 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.SwitchPreferenceCompat;
 
-import com.google.android.material.transition.MaterialSharedAxis;
-
 import java.util.Arrays;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
 import io.github.muntashirakon.AppManager.logcat.helper.PreferenceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
@@ -213,8 +212,7 @@ public class LogViewerPreferences extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        MotionUtils.applySharedAxisZTransition(this);
     }
 
     public static void sendBufferChanged(FragmentActivity activity) {

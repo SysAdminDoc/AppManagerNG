@@ -136,7 +136,10 @@ work to separate root research files.
   details action-label hardening is recorded in
   `docs/audits/2026-05-26-talkback-action-labels.md`; full runtime traversal
   and adapter-bound row verification remains open.
-- [ ] Reduced-motion setting audit.
+- [ ] Reduced-motion setting audit. App-owned Settings, Scanner, Help,
+  Code Editor, and UI tracker transitions now honor system animation scale via
+  `MotionUtils`; device verification and Material-internal motion checks are
+  recorded in `docs/audits/2026-05-26-reduced-motion.md`.
 - [ ] Dyslexia-font compatibility audit.
 - [ ] Android 17 device or emulator verification for Shizuku and 16 KB page
   size behavior.

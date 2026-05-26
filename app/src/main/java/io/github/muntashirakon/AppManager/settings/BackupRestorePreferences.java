@@ -34,8 +34,6 @@ import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.transition.MaterialSharedAxis;
-
 import java.text.DateFormat;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +41,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
@@ -715,8 +714,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        MotionUtils.applySharedAxisZTransition(this);
     }
 
     @Override

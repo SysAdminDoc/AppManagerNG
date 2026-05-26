@@ -10,9 +10,8 @@ import androidx.annotation.StringRes;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
 
-import com.google.android.material.transition.MaterialSharedAxis;
-
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 
 /**
@@ -63,8 +62,7 @@ public class GlossaryPreferences extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setEnterTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, true));
-        setReturnTransition(new MaterialSharedAxis(MaterialSharedAxis.Z, false));
+        MotionUtils.applySharedAxisZTransition(this);
     }
 
     @Override
