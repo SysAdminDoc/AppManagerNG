@@ -199,7 +199,13 @@ for the original Effort / Dependency context per row.
   uninstalled apps" entry and from App Details when the package is detected
   as uninstalled. Acceptance: scan is privilege-aware (no privileged read of
   `/data/data` without root), the result list is exportable, and selected
-  items can be cleaned in one batch with audit-log capture.
+  items can be cleaned in one batch with audit-log capture. _Data layer
+  shipped 2026-05-26: `LeftoverScanner.scan` walks the three
+  `Android/{data,obb,media}` roots, `selectOrphans` is a pure-function
+  selector with package-name validation, and `sizeOnDisk` provides recursive
+  byte counts; 11 focused JVM tests pin the orphan / hidden / valid-package
+  semantics. UI wiring, `/data/data` root fallback, op_history capture, and
+  the App Details entry remain on the T19-B roadmap row._
 - [ ] **T19-C APK duplicate finder**: index Downloads, backup destinations,
   and external storage for `.apk` / `.apks` / `.apkm` / `.xapk` files,
   deduplicate by package name + signing cert + version code, and surface a
