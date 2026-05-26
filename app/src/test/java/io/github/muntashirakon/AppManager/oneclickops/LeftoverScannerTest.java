@@ -164,4 +164,65 @@ public class LeftoverScannerTest {
     public void sizeOnDiskReturnsZeroForMissingPath() {
         assertEquals(0L, LeftoverScanner.sizeOnDisk(new File(tmp.getRoot(), "missing")));
     }
+
+    @Test
+    public void scanInternalDataStubsFlagsOrphanPackageDirs() throws IOException {
+        File dataData = tmp.newFolder("data-data");
+        new File(dataData, "com.example.gone").mkdirs();
+        new File(dataData, "com.example.still.installed").mkdirs();
+        new File(dataData, "com.example.also.gone").mkdirs();
+
+        List<LeftoverScanner.Leftover> result = LeftoverScanner.scanInternalDataStubs(
+                dataData, installed("com.example.still.installed"));
+
+        assertEquals(2, result.size());
+        Set<String> orphanNames = new HashSet<>();
+        for (LeftoverScanner.Leftover l : result) {
+            orphanNames.add(l.packageName);
+            assertEquals(LeftoverScanner.KIND_INTERNAL_STUB, l.kind);
+            assertEquals("internal-stub", l.kindLabel());
+        }
+        assertTrue(orphanNames.contains("com.example.gone"));
+        assertTrue(orphanNames.contains("com.example.also.gone"));
+    }
+
+    @Test
+    public void scanInternalDataStubsSkipsHiddenAndNonPackageDirs() throws IOException {
+        // /data/data on a real device contains things like 'lost+found' and
+        // ".cache" alongside real package dirs; the selector must filter
+        // these before emitting orphans, just like the external-storage path.
+        File dataData = tmp.newFolder("data-data");
+        new File(dataData, "lost+found").mkdirs();
+        new File(dataData, ".something").mkdirs();
+        new File(dataData, "androidshmem").mkdirs();      // no dot, not a package name
+        new File(dataData, "com.real.orphan").mkdirs();
+
+        List<LeftoverScanner.Leftover> result = LeftoverScanner.scanInternalDataStubs(
+                dataData, installed());
+        assertEquals(1, result.size());
+        assertEquals("com.real.orphan", result.get(0).packageName);
+        assertEquals(LeftoverScanner.KIND_INTERNAL_STUB, result.get(0).kind);
+    }
+
+    @Test
+    public void scanInternalDataStubsReturnsEmptyOnUnreadableRoot() {
+        // Unprivileged caller: typical case where the literal /data/data
+        // dir is not enumerable. The scanner must degrade to empty rather
+        // than throw.
+        File missing = new File(tmp.getRoot(), "does-not-exist-data-data");
+        List<LeftoverScanner.Leftover> result = LeftoverScanner.scanInternalDataStubs(
+                missing, installed("com.example.installed"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void scanInternalDataStubsReturnsEmptyWhenAllInstalled() throws IOException {
+        File dataData = tmp.newFolder("data-data");
+        new File(dataData, "com.a.b").mkdirs();
+        new File(dataData, "com.c.d").mkdirs();
+
+        List<LeftoverScanner.Leftover> result = LeftoverScanner.scanInternalDataStubs(
+                dataData, installed("com.a.b", "com.c.d"));
+        assertTrue(result.isEmpty());
+    }
 }
