@@ -160,6 +160,20 @@ work to separate root research files.
   forced-decision triggers fires (security backport gap, hard 1.14.0
   component dependency, API-21 CI loss, external integrator dependency).
 
+### Test Suite Hygiene
+
+- [ ] **CI red since before 2026-05-25**: `app:testFlossDebugUnitTest`
+  has been failing on the same set of pre-existing tests for every push.
+  Known failure clusters: `ZipFileSystemTest`, `ZipDocumentFileTest`,
+  `OABConverterTest`, `TarUtilsTest`, `SettingsSearchIndexTest`. The
+  failures are environmental / fixture-missing, not regressions from the
+  Discovery-Polish or 2026-05-26 hardening commits. Land a follow-up that
+  either fixes the fixtures or marks the affected tests
+  `@Ignore("<reason>")` with a tracking link so CI signal returns to
+  green and new data-layer slices get real CI feedback. Tests added under
+  the T19-/T20-/T21- data-layer pass since 2026-05-26 are designed to be
+  JVM-clean and rely only on fixtures created inside the test method.
+
 ### Later Research Buckets
 
 These were "Later" buckets in the legacy roadmap. Each parent now has a
