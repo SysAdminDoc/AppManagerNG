@@ -54,6 +54,7 @@ ext {
     zstd_version = "1.5.7-7" // https://github.com/luben/zstd-jni
 
     // Test dependencies
+    androidx_test_core_version = "1.6.1"
     junit_version = "4.13.2" // https://github.com/junit-team/junit4
     robolectric_version = "4.16.1" // https://github.com/robolectric/robolectric
 }

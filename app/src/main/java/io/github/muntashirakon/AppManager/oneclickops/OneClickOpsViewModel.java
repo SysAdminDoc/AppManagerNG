@@ -13,10 +13,15 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
+import android.os.storage.StorageManagerHidden;
+import android.os.storage.StorageVolume;
+import android.os.storage.StorageVolumeHidden;
+import android.util.Log;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -25,9 +30,11 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
@@ -253,15 +260,56 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     public void trimCaches() {
         ThreadUtils.postOnBackgroundThread(() -> {
             long size = 1024L * 1024L * 1024L * 1024L;  // 1 TB
-            try {
-                // TODO: 30/8/21 Iterate all volumes?
-                PackageManagerCompat.freeStorageAndNotify(null /* internal */, size,
-                        StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
-                mTrimCachesResult.postValue(true);
-            } catch (RemoteException e) {
-                mTrimCachesResult.postValue(false);
+            boolean success = true;
+            for (String volumeUuid : getTrimCacheVolumeUuids(getWritableStorageVolumeUuids())) {
+                try {
+                    PackageManagerCompat.freeStorageAndNotify(volumeUuid, size,
+                            StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to trim caches for volume " + (volumeUuid == null ? "internal" : volumeUuid), e);
+                    success = false;
+                }
             }
+            mTrimCachesResult.postValue(success);
         });
+    }
+
+    @NonNull
+    private List<String> getWritableStorageVolumeUuids() {
+        List<String> volumeUuids = new ArrayList<>();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return volumeUuids;
+        }
+        try {
+            StorageVolume[] volumes = StorageManagerCompat.getVolumeList(getApplication(),
+                    UserHandleHidden.myUserId(), StorageManagerHidden.FLAG_FOR_WRITE);
+            for (@NonNull StorageVolume volume : volumes) {
+                try {
+                    String uuid = Refine.<StorageVolumeHidden>unsafeCast(volume).getUuid();
+                    if (uuid != null) {
+                        volumeUuids.add(uuid);
+                    }
+                } catch (Throwable e) {
+                    Log.w(TAG, "Failed to read storage volume UUID.", e);
+                }
+            }
+        } catch (SecurityException e) {
+            Log.w(TAG, "Failed to enumerate storage volumes for cache trimming.", e);
+        }
+        return volumeUuids;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static List<String> getTrimCacheVolumeUuids(@NonNull List<String> storageVolumeUuids) {
+        LinkedHashSet<String> orderedVolumeUuids = new LinkedHashSet<>();
+        orderedVolumeUuids.add(null);
+        for (String uuid : storageVolumeUuids) {
+            if (uuid != null && !uuid.isEmpty()) {
+                orderedVolumeUuids.add(uuid);
+            }
+        }
+        return new ArrayList<>(orderedVolumeUuids);
     }
 
     public void listAppsInstalledByAmForDexOpt() {
