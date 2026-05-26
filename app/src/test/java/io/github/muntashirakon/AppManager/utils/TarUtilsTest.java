@@ -329,6 +329,12 @@ public class TarUtilsTest {
 
     @Test
     public void testGetRelativePathDifferentDriveLetters() {
+        // Windows-host-only: on POSIX hosts the JDK File implementation does not
+        // recognize "D:\" as a separate volume root, so the two operands share
+        // the JVM working directory as a common prefix and getRelativePath
+        // produces a relative path instead of the absolute fallback this test
+        // asserts. Skip on non-Windows runners rather than weaken the assertion.
+        org.junit.Assume.assumeTrue("Windows-host-only test", File.separatorChar == '\\');
         File target = new File("D:\\sources\\recovery\\RecEnv.exe");
         File base = new File("C:\\Java\\workspace\\AcceptanceTests\\Standard test data\\geo\\");
         assertEquals(target.getAbsolutePath(), getRelativePath(target, base, "\\"));
