@@ -2552,6 +2552,31 @@
     <string name="moved_successfully">Moved</string>
     <string name="failed_to_copy_specified_file">Could not copy “%1$s”.</string>
     <string name="failed_to_delete_specified_file_after_copying">Could not delete “%1$s” after copying it, possibly due to not enough permission.</string>
+    <string name="batch_rename_preview_title">Rename preview</string>
+    <plurals name="batch_rename_preview_count">
+        <item quantity="one">%1$d selected item will be renamed.</item>
+        <item quantity="other">%1$d selected items will be renamed.</item>
+    </plurals>
+    <plurals name="batch_rename_conflict_count">
+        <item quantity="one">%1$d target name conflict will use an alternate name.</item>
+        <item quantity="other">%1$d target name conflicts will use alternate names.</item>
+    </plurals>
+    <string name="batch_rename_preview_row">%1$s → %2$s</string>
+    <plurals name="and_n_more">
+        <item quantity="one">and %1$d more</item>
+        <item quantity="other">and %1$d more</item>
+    </plurals>
+    <string name="batch_rename_cannot_start">Rename cannot start.</string>
+    <string name="batch_rename_empty_target">Target name is empty.</string>
+    <string name="batch_rename_invalid_target">Invalid target name: %1$s</string>
+    <string name="batch_rename_missing_parent">Could not find parent folder for %1$s.</string>
+    <string name="batch_rename_no_available_target">Could not find an available name for %1$s.</string>
+    <string name="batch_rename_result_title">Rename result</string>
+    <string name="batch_rename_result_summary">%1$d/%2$d renamed.</string>
+    <string name="batch_rename_interrupted">Operation stopped before all items finished.</string>
+    <string name="batch_rename_result_success_row">%1$s → %2$s</string>
+    <string name="batch_rename_result_failed_row">%1$s → %2$s (failed)</string>
+    <string name="batch_rename_result_failed_row_with_reason">%1$s → %2$s (failed: %3$s)</string>
     <string name="title_change_selinux_context">Change SELinux context</string>
     <string name="apply_recursively">Apply to enclosed files</string>
     <string name="change_owner_uid">Change owner (UID)</string>
