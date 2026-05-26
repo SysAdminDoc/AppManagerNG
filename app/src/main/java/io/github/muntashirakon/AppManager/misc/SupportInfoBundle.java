@@ -52,11 +52,28 @@ public final class SupportInfoBundle {
     @WorkerThread
     @NonNull
     public static Path writeTextBundle(@NonNull Context context) throws IOException {
+        return writeTextBundle(context, null);
+    }
+
+    /**
+     * Variant that lets a caller (e.g. Mode Doctor) inline a probe report or
+     * other free-form section above the standard support bundle. The
+     * {@code preamble}, if non-null, is written verbatim followed by a blank
+     * line before the regular bundle body so an analyst opening the file sees
+     * the contextual report first and the environment dump below.
+     */
+    @WorkerThread
+    @NonNull
+    public static Path writeTextBundle(@NonNull Context context, @Nullable CharSequence preamble) throws IOException {
         Date now = new Date();
         String text = buildText(context.getApplicationContext(), formatUtc(now), readScrubbedLogcatTail());
         File dir = FileCache.getGlobalFileCache().createCachedDir("support-info");
         File file = new File(dir, buildFileName(Build.DEVICE, now));
         try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            if (preamble != null && preamble.length() > 0) {
+                writer.write(preamble.toString());
+                writer.write("\n\n");
+            }
             writer.write(text);
         }
         return Paths.get(file);

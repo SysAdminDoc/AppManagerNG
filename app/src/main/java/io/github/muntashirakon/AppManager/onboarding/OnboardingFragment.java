@@ -101,9 +101,19 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         return inflater.inflate(R.layout.fragment_onboarding, container, false);
     }
 
+    /**
+     * The fragment's bound root view, retained between onViewCreated and onResume so we can
+     * silently refresh capability badges when the user returns from Developer options
+     * (toggling USB debugging, Wireless debugging, or granting root) without forcing them to
+     * tap "Re-check". Cleared in onDestroyView to avoid retaining a detached view.
+     */
+    @Nullable
+    private View mBoundView;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        mBoundView = view;
         bindAdbPatchLevelWarning(view);
         refreshCapabilityStatuses(view);
         bindCardActions(view, R.id.card_mode_auto, R.id.info_mode_auto, View.NO_ID, Ops.MODE_AUTO,
@@ -837,8 +847,20 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        // Re-evaluate capability badges silently when the wizard regains focus,
+        // so a user who toggled USB debugging or Wireless debugging in
+        // Developer options sees the new state without re-tapping Re-check.
+        if (mBoundView != null) {
+            refreshCapabilityStatuses(mBoundView);
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         mWirelessSetupCallback = null;
+        mBoundView = null;
         super.onDestroyView();
     }
 
