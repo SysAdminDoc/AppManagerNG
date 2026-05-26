@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Multi-tag store + Finder filter (NF-08 data layer, 2026-05-25)
+
+- New `AppTagStore` is a SharedPreferences-backed multi-tag store for
+  installed apps. Tags are normalised on write (trim, lower-case, restrict
+  to `[a-z0-9_-]` with an alphanumeric first character, 32-char cap) and
+  persisted as a per-package JSON array.
+- New `TagsOption` Finder predicate registers under the `tags` key and
+  supports `any`, `none`, `has_all`, `has_any`, `missing_all` selectors —
+  so saved filter chains can target tagged sets without touching the App
+  Details UI yet.
+- Pure-JVM coverage in [`AppTagStoreTest`](app/src/test/java/io/github/muntashirakon/AppManager/tags/AppTagStoreTest.java)
+  pins normalisation, dedup, role-back-down-to-empty, cross-package
+  rollup, and persistence round-trip.
+- Follow-up: App Details tag editor + main-list tag filter chip + Room
+  migration (when the JSON-only shape stops scaling).
+
 ### Added — Tracker blocking intensity (NF-07, 2026-05-25)
 
 - Settings -> Privacy -> "Tracker blocking intensity" picks which detected
