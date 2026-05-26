@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Launcher icon mode architecture doc (T21-E follow-up, 2026-05-26)
+
+- Added `docs/architecture/launcher-icon-aliases.md` documenting the
+  three-layer plan for the T21-E discreet launcher-icon mode: the
+  shipped planner (`LauncherIconAliasPlan`), the deferred manifest
+  activity-aliases with snippet, and the deferred PackageManager
+  controller layer.
+- Doc includes the literal `<activity-alias>` XML for the three new
+  aliases (SplashAliasNgMark / SplashAliasNeutral /
+  SplashAliasMonochrome), the controller pseudocode (with the
+  `DONT_KILL_APP` critical note that prevents the launcher from
+  re-creating pinned shortcuts), and the future in-app glossary copy
+  so the next iteration can ship the Settings entry + strings
+  together.
+
 ### Added - MemoryFormat unit ladder for T20-C UI (2026-05-26)
 
 - Added `MemoryFormat` in `details/info/`, a tiny pure-function
