@@ -143,4 +143,28 @@ public class UndoableActionQueueTest {
         assertTrue(q.drainAll().isEmpty());
         assertEquals(0, q.size());
     }
+
+    @Test
+    public void deferWithPolicyUsesComputedWindow() {
+        FixedClock clock = new FixedClock();
+        clock.now = 1_000;
+        UndoableActionQueue q = new UndoableActionQueue(clock);
+        int handle = q.deferWithPolicy("uninstall",
+                () -> {}, SnackbarDurationPolicy.Severity.CRITICAL, 1.0f);
+        UndoableActionQueue.Entry e = q.peek(handle);
+        assertEquals(1_000L + SnackbarDurationPolicy.BASE_CRITICAL_MS,
+                e.expiresAtMillis);
+    }
+
+    @Test
+    public void deferWithPolicyHonoursReducedMotionAnimScale() {
+        FixedClock clock = new FixedClock();
+        clock.now = 0;
+        UndoableActionQueue q = new UndoableActionQueue(clock);
+        // animScale = 0 (reduced motion) collapses to floor 0.5x.
+        int handle = q.deferWithPolicy("freeze",
+                () -> {}, SnackbarDurationPolicy.Severity.HIGH, 0.0f);
+        UndoableActionQueue.Entry e = q.peek(handle);
+        assertEquals(SnackbarDurationPolicy.BASE_HIGH_MS / 2, e.expiresAtMillis);
+    }
 }
