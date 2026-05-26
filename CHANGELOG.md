@@ -5,6 +5,27 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Leftover detection scanner data layer (T19-B, 2026-05-26)
+
+- Added `LeftoverScanner` that walks the three canonical roots under
+  `<ext>/Android/{data,obb,media}` and returns every package-named child
+  directory whose name does not appear in the supplied installed-package
+  set.
+- The selector `selectOrphans` is a pure function on
+  `(directories, installedPackages, kind)` so the bucketing rules stay
+  JVM-unit-testable independent of the I/O wrapper.
+- Conservative `looksLikePackageName` predicate gates the orphan boundary
+  against `.nomedia`, `lost+found`, and OEM oddballs without misclassifying
+  them as deletable leftovers.
+- Recursive `sizeOnDisk` helper provides a byte total for any orphan path,
+  swallowing per-subtree permission errors so a problem directory cannot
+  abort the maintenance scan.
+- 11 focused JVM tests cover the empty-orphan baseline, three-root
+  detection, hidden / unnamed directory filtering, missing-root robustness,
+  and the package-name predicate's accept / reject boundary.
+- UI wiring, `/data/data` root fallback, and the op_history capture path
+  remain tracked as the T19-B follow-up on the roadmap.
+
 ### Added - Backup duplicate detection data layer (T19-D, 2026-05-26)
 
 - Added `BackupRetentionPolicy.selectVersionDuplicates` as a pure-function
