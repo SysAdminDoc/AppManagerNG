@@ -2349,8 +2349,21 @@
     <string name="fm_always_open_with">Always open</string>
     <string name="fm_open_with_for_this_file_only">Only for this file</string>
     <string name="file_open_as">Open as…</string>
+    <string name="file_open_as_hex">Open as hex</string>
     <string name="file_open_with_custom_activity">Custom</string>
     <string name="file_open_with_os_default_dialog">Open with OS-default dialog</string>
+    <string name="title_hex_viewer">Hex viewer</string>
+    <string name="previous">Previous</string>
+    <string name="offset">Offset</string>
+    <string name="hex_search">Hex search</string>
+    <string name="hex_viewer_offset_helper">Decimal or 0x-prefixed hex offset.</string>
+    <string name="hex_viewer_search_helper">Hex bytes, for example 7F 45 4C 46.</string>
+    <string name="hex_viewer_page_summary">Offset <xliff:g id="start" example="00000000">%1$s</xliff:g> - <xliff:g id="end" example="00000FFF">%2$s</xliff:g> · <xliff:g id="bytes" example="4096">%3$d</xliff:g> bytes loaded · <xliff:g id="size" example="52 MB">%4$s</xliff:g></string>
+    <string name="hex_viewer_open_failed">Could not open binary viewer: <xliff:g id="error" example="Permission denied">%1$s</xliff:g></string>
+    <string name="hex_viewer_search_failed">Hex search failed: <xliff:g id="error" example="Read failed">%1$s</xliff:g></string>
+    <string name="hex_viewer_search_no_match">No matching bytes found.</string>
+    <string name="hex_viewer_empty_file">empty file</string>
+    <string name="hex_viewer_unknown_size">unknown size</string>
     <string name="open_as_text">Text</string>
     <string name="open_as_image">Image</string>
     <string name="open_as_video">Video</string>

@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — File Manager hex viewer (2026-05-26)
+
+- File Manager now includes a read-only "Open as hex" path from both the file
+  row overflow menu and the existing Open With dialog.
+- Added `HexViewerActivity` with 4 KB page reads, fixed 16-byte offset / hex /
+  ASCII rows, previous/next paging, go-to-offset support, and hex byte search
+  that scans forward without loading the whole file.
+- The viewer prefers random-access `Path.openFileChannel(...)` reads when
+  available and falls back to bounded `InputStream` paging for SAF/content
+  providers, keeping binary inspection usable without routing through the text
+  editor.
+- Added focused JVM coverage for offset parsing, hex pattern parsing, row
+  formatting, page alignment, and byte-pattern search primitives.
+
 ### Changed — Provider query inspector (2026-05-26)
 
 - App Details -> Providers now exposes a guarded "Query provider" action for

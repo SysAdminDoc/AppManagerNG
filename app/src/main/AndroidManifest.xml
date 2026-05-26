@@ -1446,6 +1446,11 @@
             android:label="@string/file_open_with"
             android:theme="@style/AppTheme.TransparentBackground" />
         <activity
+            android:name=".fm.hex.HexViewerActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/title_hex_viewer" />
+        <activity
             android:name=".viewer.audio.AudioPlayerActivity"
             android:enableOnBackInvokedCallback="false"
             android:excludeFromRecents="true"

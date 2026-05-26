@@ -7,6 +7,11 @@
         android:title="@string/file_open_with" />
 
     <item
+        android:id="@+id/action_open_as_hex"
+        android:icon="@drawable/ic_code"
+        android:title="@string/file_open_as_hex" />
+
+    <item
         android:id="@+id/action_extract_archive"
         android:icon="@drawable/ic_zip_disk"
         android:title="@string/extract_archive" />
