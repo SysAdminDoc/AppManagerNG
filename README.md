@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.4.2-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.5.0-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -85,16 +85,16 @@ A new main-menu entry that flips the standard "app -> permissions" view on its h
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the full prioritized roadmap and
-[RESEARCH_FEATURE_PLAN_2026-05-25.md](RESEARCH_FEATURE_PLAN_2026-05-25.md)
-for the current active backlog. Version targets:
+See [ROADMAP.md](ROADMAP.md) for the single active roadmap. Historical roadmap
+and research ledgers are archived under [`docs/roadmap/archive/`](docs/roadmap/archive/).
+Version targets:
 
 - **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
 - **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
 - **v0.4.0** ✅ — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action) + Onboarding capability wizard
 - **v0.5.0** ✅ 2026-05-25 — Discovery & Polish: in-app changelog viewer + auto-display after update, global in-app Settings search, plus the Iter-91 → Iter-142 batch (scheduled auto-backup polish, AES metadata v7 HKDF per-archive keys, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, Dhizuku detection, Restricted Settings unlock walkthrough, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, Component rules preview, Tasker am:// intents, QS freeze tile, FM recursive search and ZIP create/extract, AGP 9.2.0). See `CHANGELOG.md`.
-- **v0.5.x** — Settings reorganization by task, contextual help tooltips (deferred from v0.5.0).
-- **v0.6.0** — Rootless Power: Routine Operations / Scheduler, Multi-Tag per App, Saved Filter Presets, Tracker Blocking via AppOps, Premium Polish Phase 2.
+- **v0.5.x** — post-release consolidation plus the pass-2 feature backlog: background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
+- **v0.6.0** — Rootless Power: Routine Operations / Scheduler executor and UI, plus Premium Polish Phase 2. Multi-tag and saved-filter data layers already landed.
 
 ## Install
 

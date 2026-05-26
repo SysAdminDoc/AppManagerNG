@@ -181,7 +181,7 @@ query, not just Finder.
 
 If you find yourself wishing one of these surfaces could compose with a
 `FilterItem`, the right next step is the **filters/ Gradle-module split**
-already noted in `RESEARCH_FEATURE_PLAN_2026-05-25.md` Phase 4. That depends
+now tracked in [`ROADMAP.md`](../../ROADMAP.md). That depends
 on the `IFilterableAppInfo` accessor surface stabilising first — which
 won't happen until NF-09 lands and adds its trigger-bound `FilterItem`
 constraint surface.
