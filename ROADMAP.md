@@ -281,9 +281,14 @@ for the original Effort / Dependency context per row.
   metacharacter guard as the simpleperf builder, and `perfettoUiUrl()`
   exposes the stable `ui.perfetto.dev` open path; 11 focused JVM tests
   cover the proto shape, the duration/buffer clamps, malformed-package
-  rejection, ftrace event integrity, and unsafe-path rejection. Privileged
-  runner integration and the App Details action remain on the T20-A
-  roadmap row._
+  rejection, ftrace event integrity, and unsafe-path rejection. Shared
+  argv gate landed 2026-05-26 via `PrivilegedRunnerArgValidator.validateArgv`
+  (also used by T20-B); 14 focused JVM tests pin shell-metachar /
+  control-byte rejection, MAX_ARGV / MAX_ARG ceilings, path-traversal
+  rejection (`..` segments, not filenames containing `..`), package-name
+  format, and truncated error messages for long offenders. App Details
+  action and privileged-runner integration remain on the T20-A roadmap
+  row._
 - [ ] **T20-B simpleperf CPU profile capture**: ship a "Record CPU profile"
   action in App Details that wraps `simpleperf` for a bounded sampling
   window, gated on root/Shizuku/ADB. Acceptance: output saved as flame-graph
@@ -295,8 +300,11 @@ for the original Effort / Dependency context per row.
   `[MIN_DURATION_SECONDS, MAX_DURATION_SECONDS]`, event-allowlist fallback,
   and an argument-injection guard on the output path; 10 focused JVM tests
   pin the argv shape, clamping, allowlist behavior, and metacharacter
-  rejection. Privileged runner integration, output capture, and the
-  cancellation surface remain on the T20-B roadmap row._
+  rejection. Shared argv gate landed 2026-05-26 via
+  `PrivilegedRunnerArgValidator.validateArgv` (also used by T20-A);
+  see the T20-A row for the full validator coverage. App Details
+  output capture and the cancellation surface remain on the T20-B
+  roadmap row._
 - [ ] **T20-C Memory allocations inspector**: parse `dumpsys meminfo`,
   `dumpsys gfxinfo`, and `procfs` native-memory snapshots for the target
   package and surface them in App Details. Acceptance: works on

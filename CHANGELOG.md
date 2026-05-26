@@ -5,6 +5,35 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Shared privileged-runner argv validator (T20-A/B follow-up, 2026-05-26)
+
+- Added `PrivilegedRunnerArgValidator` in
+  `details/profile/`, the single source of truth for the argv gate
+  shared by the T20-A Perfetto exporter and the T20-B simpleperf
+  profile capture. Both builders already validated their own inputs,
+  but the runner boundary is reached by multiple callers (root,
+  Shizuku, ADB tcp), so the gate is now centralized.
+- Surface: `validateArgv(String[])`, `validateArgument(String)`,
+  `validatePath(String)`, `validatePackageName(String)`, plus
+  non-throwing predicates `isSafeArgument` / `isSafePath` /
+  `isValidPackageName` and a `Rejection` enum so the call site can
+  branch precisely. Hard ceilings: `MAX_ARG_LENGTH` = 4096,
+  `MAX_ARGV_LENGTH` = 64.
+- Rejection set covers shell metacharacters
+  (`` ` $ " ' ; & | < > * ? ! \ \n \r ``), control bytes (< 0x20 and
+  0x7f), null / empty / over-length arguments, embedded `..` path
+  traversal segments (but not filenames that just contain two dots),
+  and Android package-name format violations.
+- Thrown errors carry a stable `[reason=<Rejection>, index=<i>]`
+  suffix so the UI can surface a precise message without re-parsing.
+  Long offending strings are truncated by an internal `describe()`
+  helper so a megabyte of garbage never floods the log.
+- 14 focused JVM tests cover the canonical safe argv, the argv-length
+  ceiling, control-byte rejection, the full metachar set, null /
+  empty / too-long argument rejection, path-traversal rejection
+  (segments only, not filenames with `..`), package-name format,
+  index-of-offender reporting, and message truncation.
+
 ### Added - Snackbar duration policy + queue bridge (T21-F follow-up, 2026-05-26)
 
 - Added `SnackbarDurationPolicy.windowFor(Severity, animScale)`, a pure-
