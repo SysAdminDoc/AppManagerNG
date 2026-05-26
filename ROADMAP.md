@@ -340,7 +340,17 @@ for the original Effort / Dependency context per row.
   tolerance, garbled-value sentinel, junk-input null, CRLF parity,
   representative `/proc/maps` shape, dalvik-variant grouping, stack
   variants, scudo / heap classification, file-backed anon_inode handling,
-  and malformed-line counting. App Details UI remains on the T20-C
+  and malformed-line counting. Composer landed 2026-05-26 via
+  `MemorySnapshotComposer.compose(meminfo, gfxinfo, procStatus,
+  procMaps)` which picks the best-available field per metric (meminfo
+  for PSS, /proc/status for RSS + threads + SWAP, gfxinfo for jank +
+  percentiles, /proc/maps for per-region virtual bytes) and tags each
+  field with a `FieldSource` enum so the UI can label provenance. 12
+  focused JVM tests cover empty-on-all-null, every per-source fallback
+  path, the override precedence rules (proc-status wins for RSS,
+  meminfo wins for PSS when both present), gfxinfo presence/absence,
+  truncated-flag propagation from `unparsedRegions`, and a
+  full-source round-trip. App Details UI remains on the T20-C
   roadmap row._
 - [ ] T20-D LeakCanary leak-detection wrapper. Parked: requires shipping a
   debuggable agent into target processes, conflicts with NG's GPL+vendored
