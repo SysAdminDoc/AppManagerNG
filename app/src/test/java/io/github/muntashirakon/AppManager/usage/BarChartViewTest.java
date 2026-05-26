@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.usage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 
@@ -12,6 +13,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.R;
 
@@ -66,6 +68,19 @@ public class BarChartViewTest {
         assertEquals(5f, chart.getAxisMinValue(), DELTA);
         assertEquals(6f, chart.getAxisMaxValue(), DELTA);
         assertEquals(0f, chart.getNormalizedValueForTesting(5f), DELTA);
+    }
+
+    @Test
+    public void weeklyHoursAccessibilityTextFormatsWithoutCrash() {
+        BarChartView chart = newChart();
+        long weekStart = UsageUtils.getWeekBounds(System.currentTimeMillis()).getStartTime();
+
+        UsageDataProcessor.updateChartWithDailyAppUsage(chart, Collections.singletonList(
+                new PackageUsageInfo.Entry(weekStart, weekStart + 3 * 60 * 60 * 1000L)), weekStart);
+
+        String description = chart.getAccessibleBarDescriptionForTesting(0);
+        assertTrue(description, description.contains("3.0 hours"));
+        assertTrue(description, description.contains("Bar 1 of 7"));
     }
 
     private static BarChartView newChart() {

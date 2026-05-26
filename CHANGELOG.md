@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Routine and usage accessibility diagnostics (2026-05-26)
+
+- Routine schedules now persist WorkManager diagnostics beside last-run
+  results: state, attempt count, stop reason, next run, and API 36
+  JobScheduler pending/quota reasons when available.
+- Profile editor Schedules rows refresh diagnostics on a background thread and
+  show the most recent scheduler state without blocking the UI.
+- Fixed a malformed weekly usage-chart accessibility format string that could
+  crash TalkBack content-description generation when weekly usage was displayed
+  in hours.
+- Added focused Robolectric coverage for routine stop/quota labels, persisted
+  schedule diagnostics, and weekly-hours chart accessibility formatting.
+
 ### Documentation — IzzyOnDroid listing packet (2026-05-26)
 
 - Reworked Fastlane `en-US` metadata so AppManagerNG's title, short

@@ -1181,13 +1181,22 @@
     <string name="profile_trigger_on_network_wifi">When Wi-Fi is connected</string>
     <string name="profile_trigger_on_network_any">When any network is connected</string>
     <string name="profile_trigger_on_boot">After device boot</string>
-    <string name="profile_trigger_summary">%1$s\n%2$s</string>
+    <string name="profile_trigger_summary">%1$s\n%2$s\n%3$s</string>
     <string name="profile_trigger_last_run_never">Never run</string>
     <string name="profile_trigger_last_run_format">%1$s: %2$s</string>
     <string name="profile_trigger_result_disabled">Schedule disabled</string>
     <string name="profile_trigger_result_profile_missing">Profile missing; schedule disabled</string>
     <string name="profile_trigger_result_started">Started %1$s</string>
     <string name="profile_trigger_result_failed_disabled">Failed and disabled: %1$s</string>
+    <string name="profile_trigger_diagnostics">Diagnostics: %1$s</string>
+    <string name="profile_trigger_diagnostics_unknown">Not checked yet</string>
+    <string name="profile_trigger_diagnostics_unavailable">Unavailable</string>
+    <string name="profile_trigger_diagnostics_boot">Runs after device boot; no periodic WorkManager request</string>
+    <string name="profile_trigger_diagnostics_no_work">No WorkManager request</string>
+    <string name="profile_trigger_diagnostics_work">WorkManager: <xliff:g id="state" example="enqueued">%1$s</xliff:g>, attempt <xliff:g id="attempt" example="0">%2$d</xliff:g>, stop: <xliff:g id="stop_reason" example="not stopped">%3$s</xliff:g></string>
+    <string name="profile_trigger_diagnostics_next">, next: <xliff:g id="time" example="5/26/26, 2:00 AM">%1$s</xliff:g></string>
+    <string name="profile_trigger_diagnostics_pending">, pending: <xliff:g id="reasons" example="charging constraint">%1$s</xliff:g></string>
+    <string name="profile_trigger_diagnostics_recent">, recent: <xliff:g id="reasons" example="quota">%1$s</xliff:g></string>
     <string name="profile_state">Profile state</string>
     <string name="allow_routine_ops_msg">Allow the profile to be used in the routine operations</string>
     <string name="profile_force_stop_msg">Force-stops apps</string>
@@ -3110,7 +3119,7 @@
         <item quantity="other">Bar chart with %d data points.</item>
     </plurals>
     <string name="usage_daily_bar_chart_accessibility_description">Usage at %1$s is %2$.0f minutes. Bar %3$d of %4$d</string>
-    <string name="usage_weekly_hours_bar_chart_accessibility_description">Usage on %1$s is %2$.lf hours. Bar %3$d of %4$d</string>
+    <string name="usage_weekly_hours_bar_chart_accessibility_description">Usage on %1$s is %2$.1f hours. Bar %3$d of %4$d</string>
     <string name="usage_weekly_minutes_bar_chart_accessibility_description">Usage on %1$s is %2$.0f minutes. Bar %3$d of %4$d</string>
     <string name="usage_bar_chart_y_axis_label_minute">%.0f min</string>
     <string name="usage_bar_chart_y_axis_label_hour">%.0f hr</string>

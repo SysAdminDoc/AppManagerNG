@@ -20,6 +20,8 @@ work to separate root research files.
 - NF-09 now has a WorkManager-backed executor, boot/package-replaced
   re-application, profile-editor schedule UI, last-run diagnostics, and
   disable-on-failure behavior.
+- Scheduled auto-backup and profile routine schedules now expose WorkManager
+  state, attempt, stop/quota, next-run, and API 36 pending-reason diagnostics.
 - NF-10 normalized the v2 control shape contract away from pill/oval text
   backdrops, synced the staged design resources, and added a JVM guard test.
 - IzzyOnDroid submission metadata is prepared in
@@ -106,8 +108,8 @@ work to separate root research files.
 
 ### Platform and Accessibility
 
-- [ ] WorkManager quota and stop-reason instrumentation for scheduled backup
-  and future routine scheduling.
+- [x] WorkManager quota and stop-reason instrumentation for scheduled backup
+  and routine scheduling.
 - [ ] High-contrast theme audit.
 - [ ] 200 percent font-scale audit.
 - [ ] TalkBack traversal and action-label audit.

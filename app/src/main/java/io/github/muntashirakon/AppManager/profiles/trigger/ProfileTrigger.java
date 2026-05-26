@@ -19,15 +19,14 @@ import java.util.UUID;
  * NF-09 — value object describing a profile-execution trigger.
  *
  * <p>This is the immutable data contract that {@link ProfileTriggerStore}
- * persists and a future {@code RoutineScheduler} will read. It is intentionally
- * decoupled from any Android scheduler: the {@link #type} field is a stable
+ * persists and {@link RoutineScheduler} reads. It is intentionally
+ * decoupled from WorkManager details: the {@link #type} field is a stable
  * enum; the optional {@link #hourOfDay} / {@link #minuteOfHour} fields apply
  * only to {@link #TYPE_TIME_OF_DAY}; the {@link #profileId} is opaque to the
  * trigger and resolved by the executor.</p>
  *
- * <p>Five trigger types are defined up-front; the data layer accepts every
- * value, even if the executor does not yet honour all of them. This avoids a
- * format break when the executor grows support.</p>
+ * <p>Five trigger types are defined up-front and are all handled by the
+ * scheduler executor.</p>
  */
 public final class ProfileTrigger {
     public static final int TYPE_TIME_OF_DAY = 0;

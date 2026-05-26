@@ -416,6 +416,15 @@ public class BarChartView extends View {
     }
 
     @VisibleForTesting
+    @NonNull
+    String getAccessibleBarDescriptionForTesting(int barIndex) {
+        if (barIndex < 0 || barIndex >= mBarDataList.size()) {
+            throw new IndexOutOfBoundsException("Invalid bar index " + barIndex);
+        }
+        return getAccessibleBarDescription(barIndex, mBarDataList.get(barIndex));
+    }
+
+    @VisibleForTesting
     float getNormalizedValueForTesting(float value) {
         return getNormalizedValue(value);
     }
