@@ -7,20 +7,26 @@ import android.app.Application;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
+import io.github.muntashirakon.io.AtomicExtendedFile;
+import io.github.muntashirakon.io.ExtendedFile;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.io.UidGidPair;
 
 public class SharedPrefsViewModel extends AndroidViewModel {
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
@@ -29,7 +35,6 @@ public class SharedPrefsViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> mSharedPrefsDeletedLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mSharedPrefsModifiedLiveData = new MutableLiveData<>();
 
-    // TODO: 8/2/22 Use AtomicExtendedFile to better handle errors
     private Path mSharedPrefsFile;
     private Map<String, Object> mSharedPrefsMap;
     private boolean mModified;
@@ -101,9 +106,8 @@ public class SharedPrefsViewModel extends AndroidViewModel {
     @AnyThread
     public void writeSharedPrefs() {
         mExecutor.submit(() -> {
-            try (OutputStream xmlFile = mSharedPrefsFile.openOutputStream()) {
-                SharedPrefsUtil.writeSharedPref(xmlFile, mSharedPrefsMap);
-                // TODO: 9/7/21 Investigate the state of permission (should be unchanged)
+            try {
+                writeSharedPrefsAtomically(mSharedPrefsFile, mSharedPrefsMap);
                 mSharedPrefsSavedLiveData.postValue(true);
                 mSharedPrefsModifiedLiveData.postValue(mModified = false);
             } catch (IOException e) {
@@ -111,6 +115,86 @@ public class SharedPrefsViewModel extends AndroidViewModel {
                 mSharedPrefsSavedLiveData.postValue(false);
             }
         });
+    }
+
+    @VisibleForTesting
+    static void writeSharedPrefsAtomically(@NonNull Path sharedPrefsFile,
+                                           @NonNull Map<String, Object> sharedPrefsMap)
+            throws IOException {
+        writeSharedPrefsAtomically(sharedPrefsFile,
+                outputStream -> SharedPrefsUtil.writeSharedPref(outputStream, sharedPrefsMap));
+    }
+
+    @VisibleForTesting
+    static void writeSharedPrefsAtomically(@NonNull Path sharedPrefsFile,
+                                           @NonNull SharedPrefsWriter writer)
+            throws IOException {
+        ExtendedFile baseFile = sharedPrefsFile.getFile();
+        if (baseFile == null) {
+            try (OutputStream outputStream = sharedPrefsFile.openOutputStream()) {
+                writer.write(outputStream);
+            }
+            return;
+        }
+        AtomicExtendedFile atomicFile = new AtomicExtendedFile(baseFile);
+        FileMetadata originalMetadata = FileMetadata.from(sharedPrefsFile);
+        ExtendedFile pendingFile = Objects.requireNonNull(baseFile.getParentFile())
+                .getChildFile(baseFile.getName() + ".new");
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = atomicFile.startWrite();
+            writer.write(outputStream);
+            atomicFile.finishWrite(outputStream);
+            outputStream = null;
+            if (pendingFile.exists()) {
+                throw new IOException("Failed to commit atomic SharedPreferences write.");
+            }
+            if (originalMetadata != null) {
+                originalMetadata.applyTo(sharedPrefsFile);
+            }
+        } catch (IOException | RuntimeException e) {
+            atomicFile.failWrite(outputStream);
+            throw e;
+        }
+    }
+
+    @VisibleForTesting
+    interface SharedPrefsWriter {
+        void write(@NonNull OutputStream outputStream) throws IOException;
+    }
+
+    private static class FileMetadata {
+        private final int mode;
+        @Nullable
+        private final UidGidPair uidGid;
+        @Nullable
+        private final String selinuxContext;
+
+        private FileMetadata(int mode, @Nullable UidGidPair uidGid, @Nullable String selinuxContext) {
+            this.mode = mode;
+            this.uidGid = uidGid;
+            this.selinuxContext = selinuxContext;
+        }
+
+        @Nullable
+        private static FileMetadata from(@NonNull Path path) {
+            if (!path.exists()) {
+                return null;
+            }
+            return new FileMetadata(path.getMode(), path.getUidGid(), path.getSelinuxContext());
+        }
+
+        private void applyTo(@NonNull Path path) {
+            if (mode != 0) {
+                path.setMode(mode);
+            }
+            if (uidGid != null) {
+                path.setUidGid(uidGid);
+            }
+            if (selinuxContext != null) {
+                path.setSelinuxContext(selinuxContext);
+            }
+        }
     }
 
     @AnyThread
