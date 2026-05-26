@@ -1283,12 +1283,10 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
     bottom-sheet explainer.
   - Verify: Manual; TalkBack on each registered help target.
 
-- [ ] P1 - **NF-13**: JADX 1.4.7 → 1.5.5 dep bump
+- [x] P1 - **NF-13**: JADX 1.4.7 → 1.5.5 dep bump — **PARKED 2026-05-25**
   - Why: Eng-Debt; gates T12 APK editing.
   - Evidence: ROADMAP Eng-Debt Register row "JADX 1.4.7".
-  - Touches: `versions.gradle`, `scripts/android-libraries` submodule pointer.
-  - Acceptance: `./gradlew :app:assembleFlossDebug` green; `DexUtilsTest` green.
-  - Verify: `./gradlew :app:testFlossDebugUnitTest --tests "*DexUtilsTest"`.
+  - **Outcome (2026-05-25):** `gh api repos/MuntashirAkon/jadx-android/tags` confirms the MuntashirAkon Android fork has no `1.5.5` tag — `1.4.7` is the most recent upstream-tracking tag (the fork's `v0.x`/`v1.x.0` tags are Android-only patches). Bump is gated on the fork publishing `1.5.5`; switching to upstream `jadx` from JetBrains is not viable because it lacks the desugared Android build. ROADMAP Eng-Debt row updated with the blocker and the reopen condition.
 
 ### Phase 2 — Premium Polish Phase 2 + ahead-of-v0.6.0 work (4-8 weeks)
 
