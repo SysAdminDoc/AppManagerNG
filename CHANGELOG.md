@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Split-APK breakdown audit doc (T19-A audit half, 2026-05-26)
+
+- Added `docs/audits/2026-05-26-split-apk-breakdown.md`, closing the
+  audit half of the T19-A "App Details Storage panel completeness"
+  row. Findings: the underlying split enumeration is already in
+  place (`PackageInfo.splitPublicSourceDirs` ->
+  `ApkFile.entries()` -> SplitApkChooser); the open follow-up is a
+  Storage-and-Cache "Splits" expander row, not a data-layer gap.
+- Documents the recommended Android-side slice (re-use
+  `BackupArchiveSizeAggregator.formatBytes` for the unit ladder) so
+  the next iteration can land the UI without re-deriving the byte
+  format.
+
 ### Added - MotionScaleGate accessibility engine (2026-05-26)
 
 - Added `MotionScaleGate` in `utils/` as the JVM-clean engine that
