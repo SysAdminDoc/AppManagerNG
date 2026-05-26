@@ -378,6 +378,8 @@
     <string name="str_logo">Logo</string>
     <string name="pref_global_blocking_enabled">Instant component blocking</string>
     <string name="pref_global_blocking_enabled_msg">Lets you block any component of any app without explicitly turning on blocking for the app.</string>
+    <string name="pref_component_rules_editor">Component rules</string>
+    <string name="pref_component_rules_editor_msg">Review packages with component rules, preview active IFW XML, and jump to visual toggles.</string>
     <string name="usage_access">Usage access</string>
     <string name="app_settings">Settings</string>
     <string name="usage_yesterday">Yesterday</string>
@@ -492,6 +494,17 @@
     <string name="pref_import_msg">Import previously exported blocking rules from App Manager.</string>
     <string name="pref_import_watt_msg">Import blocking rules from Watt, each file containing rules for a single named package as <tt>packagename.xml</tt> etc.</string>
     <string name="pref_import_blocker_msg">Import blocking rules from Blocker, each file containing rules for a single package.</string>
+    <string name="component_rules_loading_summary">Scanning AppManagerNG rules and active IFW files.</string>
+    <string name="component_rules_overview_title">Component rules overview</string>
+    <string name="component_rules_overview_summary">%1$d packages. %2$d IFW entries, %3$d PackageManager/provider entries. IFW path: %4$s</string>
+    <string name="component_rules_refresh_summary">Reload package rule files and active IFW XML.</string>
+    <string name="component_rules_empty_title">No component rules</string>
+    <string name="component_rules_empty_summary">Block a component from App Details or import a rules file to populate this screen.</string>
+    <string name="component_rules_packages_title">Packages with component rules</string>
+    <string name="component_rules_package_summary">%1$s\n%2$d IFW, %3$d disabled-only, %4$d provider, %5$d pending</string>
+    <string name="component_rules_dialog_summary">Package: %1$s\nIFW entries: %2$d\nDisabled-only entries: %3$d\nProvider entries: %4$d\nPending entries: %5$d</string>
+    <string name="component_rules_ifw_xml_title">Active IFW XML preview</string>
+    <string name="component_rules_ifw_xml_copied">IFW XML copied.</string>
     <string name="pref_app_theme">App theme</string>
     <string name="follow_system">Follow system</string>
     <string name="battery_mode">Battery mode</string>
