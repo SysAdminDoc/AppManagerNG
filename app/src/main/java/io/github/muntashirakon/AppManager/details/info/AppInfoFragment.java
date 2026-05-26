@@ -705,14 +705,34 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     UIUtils.displayLongToast(R.string.per_app_rollback_none);
                     return;
                 }
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.per_app_rollback_confirm_title)
-                        .setMessage(buildPerAppRollbackMessage(plan, label))
-                        .setNegativeButton(R.string.cancel, null)
-                        .setPositiveButton(R.string.per_app_rollback, (dialog, which) -> startPerAppRollback(plan))
-                        .show();
+                showPerAppRollbackPreview(plan, label);
             });
         });
+    }
+
+    /**
+     * EI-09 dry-run preview. Show a multi-choice dialog listing each inverse
+     * BatchOp the rollback planner produced so the user can untick rows before
+     * committing. The original single-line summary is preserved as the dialog
+     * subtitle so the manual-review count remains visible.
+     */
+    private void showPerAppRollbackPreview(@NonNull PerAppRollbackManager.RollbackPlan plan,
+                                            @NonNull CharSequence label) {
+        java.util.List<io.github.muntashirakon.AppManager.batchops.BatchQueueItem> items = plan.getQueueItems();
+        CharSequence[] rowLabels = new CharSequence[items.size()];
+        boolean[] keep = new boolean[items.size()];
+        for (int i = 0; i < items.size(); ++i) {
+            rowLabels[i] = io.github.muntashirakon.AppManager.batchops.BatchOpsService
+                    .getDesiredOpTitle(requireContext(), items.get(i).getOp());
+            keep[i] = true;
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.per_app_rollback_confirm_title)
+                .setMessage(buildPerAppRollbackMessage(plan, label))
+                .setMultiChoiceItems(rowLabels, keep, (dialog, which, isChecked) -> keep[which] = isChecked)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.per_app_rollback, (dialog, which) -> startPerAppRollback(plan, keep))
+                .show();
     }
 
     @NonNull
@@ -734,7 +754,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void startPerAppRollback(@NonNull PerAppRollbackManager.RollbackPlan plan) {
-        int queuedCount = PerAppRollbackManager.start(requireContext(), plan);
+        startPerAppRollback(plan, null);
+    }
+
+    private void startPerAppRollback(@NonNull PerAppRollbackManager.RollbackPlan plan,
+                                      @Nullable boolean[] keep) {
+        int queuedCount = PerAppRollbackManager.start(requireContext(), plan, keep);
         if (queuedCount == 0) {
             UIUtils.displayLongToast(R.string.per_app_rollback_none);
             return;
