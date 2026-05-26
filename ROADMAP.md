@@ -358,9 +358,17 @@ for the original Effort / Dependency context per row.
   prioritised badge with kinds ranked `OS_REVERT`, `DANGEROUS_PERMISSION`,
   `DISABLED_COMPONENT`, then `NONE`, plus `formatCount` for the
   Material-style 99+ collapse. 8 focused
-  JVM tests pin priority, clamping, severity, and count formatting. Adapter
-  wiring, glossary entry, and the single-source app-cache integration
-  remain on the T21-G roadmap row._
+  JVM tests pin priority, clamping, severity, and count formatting.
+  Single-source app-cache integration landed 2026-05-26 via
+  `AttentionBadgeSource.forApp(App)` / `forApp(App, int)` plus a
+  `badgeFor(App, int)` convenience that resolves through the calculator
+  in one pass. Mapping rules:
+  `dangerousPermissionsRequestedNotGranted = max(0, dangerousPermTotal -
+  dangerousPermGranted)`, `userDisabledComponentCount = max(0,
+  rulesCount)`, `recentOsRevertCount` from the caller. 11 focused JVM
+  tests pin derivation, inverted-field clamping, null-row tolerance,
+  and full calculator-priority pass-through. Adapter wiring and the
+  glossary entry remain on the T21-G roadmap row._
 - [ ] **T21-H Material 3 Adaptive layouts for tablets / large screens**:
   start with App List + App Details master/detail and Settings two-pane
   rebuild using `androidx.window` + `SlidingPaneLayout`. Acceptance: stays
