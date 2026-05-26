@@ -7,6 +7,10 @@ import android.content.pm.ComponentInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 
 /**
@@ -22,6 +26,10 @@ public class AppDetailsComponentItem extends AppDetailsItem<ComponentInfo> {
     @Nullable
     private ComponentRule mRule;
     private boolean mIsDisabled;
+    @NonNull
+    private List<String> mIntentActions = Collections.emptyList();
+    @NonNull
+    private List<String> mIntentCategories = Collections.emptyList();
 
     public AppDetailsComponentItem(@NonNull ComponentInfo componentInfo) {
         super(componentInfo);
@@ -68,5 +76,23 @@ public class AppDetailsComponentItem extends AppDetailsItem<ComponentInfo> {
 
     public void setDisabled(boolean disabled) {
         mIsDisabled = disabled;
+    }
+
+    @NonNull
+    public List<String> getIntentActions() {
+        return new ArrayList<>(mIntentActions);
+    }
+
+    public void setIntentActions(@NonNull List<String> intentActions) {
+        mIntentActions = new ArrayList<>(intentActions);
+    }
+
+    @NonNull
+    public List<String> getIntentCategories() {
+        return new ArrayList<>(mIntentCategories);
+    }
+
+    public void setIntentCategories(@NonNull List<String> intentCategories) {
+        mIntentCategories = new ArrayList<>(intentCategories);
     }
 }

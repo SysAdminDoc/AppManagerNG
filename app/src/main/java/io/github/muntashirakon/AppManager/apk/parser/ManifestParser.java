@@ -98,7 +98,7 @@ public class ManifestParser {
                         case TAG_SERVICE:
                         case TAG_RECEIVER:
                         case TAG_PROVIDER:
-                            componentIfList.add(parseComponentInfo(elem));
+                            componentIfList.add(parseComponentInfo(elem, tagName));
                             break;
                     }
                 }
@@ -108,12 +108,13 @@ public class ManifestParser {
     }
 
     @NonNull
-    private ManifestComponent parseComponentInfo(@NonNull ResXmlElement componentElement) throws IOException {
+    private ManifestComponent parseComponentInfo(@NonNull ResXmlElement componentElement,
+                                                 @NonNull String componentType) throws IOException {
         String componentName = getAttributeValue(componentElement, ATTR_NAME);
         if (componentName == null) {
             throw new IOException("\"" + componentElement.getName() + "\" does not have  required attribute \"android:name\".");
         }
-        ManifestComponent componentIf = new ManifestComponent(new ComponentName(mPackageName, componentName));
+        ManifestComponent componentIf = new ManifestComponent(new ComponentName(mPackageName, componentName), componentType);
         // manifest -> application -> component -> intent-filter
         Iterator<ResXmlElement> resXmlElementIt = componentElement.getElements(TAG_INTENT_FILTER);
         while (resXmlElementIt.hasNext()) {

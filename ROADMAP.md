@@ -66,7 +66,7 @@ work to separate root research files.
 
 ### P3 - Advanced Inspectors
 
-- [ ] **NF-28 Receivers send broadcast**: add a guarded send-broadcast action
+- [x] **NF-28 Receivers send broadcast**: add a guarded send-broadcast action
   for receiver components with user/profile routing preserved.
 - [ ] **NF-29 Services start/stop**: add guarded service start/stop actions with
   clear privilege and Android-version failure messages.

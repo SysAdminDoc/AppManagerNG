@@ -53,8 +53,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -64,7 +66,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
+import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestComponent;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestIntentFilter;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestParser;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
@@ -83,6 +89,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsLibraryItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsOverlayItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsServiceItem;
+import io.github.muntashirakon.AppManager.details.components.ReceiverBroadcastUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView.ChoiceGenerator;
@@ -1375,10 +1382,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mReceivers.postValue(Collections.emptyList());
                 return;
             }
+            Map<String, ReceiverIntentDetails> receiverIntentDetails = collectReceiverIntentDetails(packageInfo);
             CharSequence appLabel = packageInfo.applicationInfo.loadLabel(mPackageManager);
             for (ActivityInfo activityInfo : packageInfo.receivers) {
                 AppDetailsComponentItem componentItem = new AppDetailsComponentItem(activityInfo);
                 componentItem.label = getComponentLabel(activityInfo, appLabel);
+                ReceiverIntentDetails intentDetails = receiverIntentDetails.get(activityInfo.name);
+                if (intentDetails != null) {
+                    componentItem.setIntentActions(new ArrayList<>(intentDetails.actions));
+                    componentItem.setIntentCategories(new ArrayList<>(intentDetails.categories));
+                }
                 synchronized (mBlockerLocker) {
                     if (!mExternalApk) {
                         componentItem.setRule(mBlocker.getComponent(activityInfo.name));
@@ -1392,6 +1405,43 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
             mReceivers.postValue(filterAndSortComponents(mReceiverItems));
         }
+    }
+
+    @NonNull
+    private Map<String, ReceiverIntentDetails> collectReceiverIntentDetails(@NonNull PackageInfo packageInfo) {
+        ApplicationInfo applicationInfo = packageInfo.applicationInfo;
+        if (applicationInfo == null || applicationInfo.publicSourceDir == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, ReceiverIntentDetails> receiverIntentDetails = new HashMap<>();
+        try {
+            ManifestParser parser = new ManifestParser(ApkUtils.getManifestFromApk(new File(applicationInfo.publicSourceDir)));
+            for (ManifestComponent component : parser.parseComponents()) {
+                if (!ManifestComponent.TYPE_RECEIVER.equals(component.type)) {
+                    continue;
+                }
+                String receiverName = ReceiverBroadcastUtils.toQualifiedComponentName(packageInfo.packageName,
+                        component.cn.getClassName());
+                ReceiverIntentDetails details = receiverIntentDetails.get(receiverName);
+                if (details == null) {
+                    details = new ReceiverIntentDetails();
+                    receiverIntentDetails.put(receiverName, details);
+                }
+                for (ManifestIntentFilter filter : component.intentFilters) {
+                    details.actions.addAll(filter.actions);
+                    details.categories.addAll(filter.categories);
+                }
+            }
+        } catch (Throwable e) {
+            Log.w(TAG, "Could not parse receiver intent filters for %s", e, packageInfo.packageName);
+            return Collections.emptyMap();
+        }
+        return receiverIntentDetails;
+    }
+
+    private static class ReceiverIntentDetails {
+        final Set<String> actions = new LinkedHashSet<>();
+        final Set<String> categories = new LinkedHashSet<>();
     }
 
     @NonNull
