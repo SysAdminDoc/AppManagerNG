@@ -123,7 +123,7 @@
     </style>
 
     <style name="Widget.AppTheme.V2.SearchBarCard" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">@dimen/premium_radius_pill</item>
+        <item name="cardCornerRadius">@dimen/premium_radius_control</item>
         <item name="cardElevation">@dimen/premium_elevation_1</item>
         <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
     </style>
@@ -138,7 +138,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
-        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
@@ -150,7 +150,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
-        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainer</item>
@@ -162,7 +162,7 @@
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
-        <item name="chipCornerRadius">@dimen/premium_radius_pill</item>
+        <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
@@ -174,7 +174,7 @@
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.BodyLarge</item>
         <item name="frameMarginHorizontal">@dimen/premium_space_12</item>
         <item name="android:backgroundTint">?attr/colorSurfaceContainerHigh</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
     </style>
 
     <style name="Widget.AppTheme.V2.Button.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
@@ -185,7 +185,7 @@
     <style name="Widget.AppTheme.V2.Button.EFAB" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
         <item name="elevation">@dimen/premium_elevation_3</item>
         <item name="android:minHeight">@dimen/premium_button_min_height</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Pill</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
     </style>
 
     <style name="Widget.AppTheme.V2.BottomSheet.Content" parent="android:Widget">
@@ -204,8 +204,8 @@
         <item name="android:background">?attr/colorSurfaceContainer</item>
     </style>
 
-    <style name="ShapeAppearance.AppTheme.V2.Pill" parent="">
-        <item name="cornerSize">@dimen/premium_radius_pill</item>
+    <style name="ShapeAppearance.AppTheme.V2.Control" parent="">
+        <item name="cornerSize">@dimen/premium_radius_control</item>
         <item name="cornerFamily">rounded</item>
     </style>
 

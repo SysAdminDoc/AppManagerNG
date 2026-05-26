@@ -410,7 +410,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         background.setStroke(
                 getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline),
                 ColorUtils.setAlphaComponent(contentColor, STATUS_BADGE_STROKE_ALPHA));
-        background.setCornerRadius(getResources().getDimensionPixelSize(R.dimen.premium_radius_pill));
+        background.setCornerRadius(getResources().getDimensionPixelSize(R.dimen.premium_radius_control));
         statusView.setBackground(background);
     }
 
