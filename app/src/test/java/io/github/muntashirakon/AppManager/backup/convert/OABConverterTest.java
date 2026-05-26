@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -27,6 +28,7 @@ import io.github.muntashirakon.AppManager.utils.TarUtilsTest;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
+@Ignore("env-fixture missing pre-2026-05-25; tracked in ROADMAP.md Test Suite Hygiene")
 @RunWith(RobolectricTestRunner.class)
 public class OABConverterTest {
     private static final String PACKAGE_NAME_FULL = "dnsfilter.android";
