@@ -16,4 +16,8 @@ public final class StorageVolumeHidden {
     public String getUserLabel() {
         return HiddenUtil.throwUOE();
     }
+
+    public String getUuid() {
+        return HiddenUtil.throwUOE();
+    }
 }

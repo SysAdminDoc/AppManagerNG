@@ -242,6 +242,7 @@ dependencies {
 
     // Unit Testing
     testImplementation project(path: ':hiddenapi')
+    testImplementation "androidx.test:core:${androidx_test_core_version}"
     testImplementation "junit:junit:${junit_version}"
     testImplementation "org.json:json:${json_version}"
     testImplementation "org.robolectric:robolectric:${robolectric_version}"

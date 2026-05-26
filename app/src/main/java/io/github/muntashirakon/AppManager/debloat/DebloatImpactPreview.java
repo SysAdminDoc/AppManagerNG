@@ -93,7 +93,7 @@ public final class DebloatImpactPreview {
             List<String> holders;
             try {
                 if (!rm.isRoleAvailable(role)) continue;
-                holders = rm.getRoleHolders(role);
+                holders = getRoleHolders(rm, role);
             } catch (Throwable t) {
                 continue;
             }
@@ -106,6 +106,17 @@ public final class DebloatImpactPreview {
             }
         }
         return new Result(losses);
+    }
+
+    @NonNull
+    @SuppressWarnings("unchecked")
+    private static List<String> getRoleHolders(@NonNull RoleManager roleManager, @NonNull String role)
+            throws ReflectiveOperationException {
+        Object holders = RoleManager.class.getMethod("getRoleHolders", String.class).invoke(roleManager, role);
+        if (holders instanceof List) {
+            return (List<String>) holders;
+        }
+        return Collections.emptyList();
     }
 
     /**
