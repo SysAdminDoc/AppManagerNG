@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Search control accessibility labels (2026-05-26)
+
+- Help search and Code Editor search navigation buttons now expose explicit
+  "Previous match" / "Next match" content descriptions for TalkBack.
+- Code Editor replace and replace-all icon buttons now announce the matching
+  action instead of swapped labels.
+- The Code Editor lock toggle now updates its spoken action label between
+  "Lock editor", "Unlock editor", and the read-only locked state.
+- Added a source-level layout contract test for these search/action labels.
+
 ### Changed — Routine and usage accessibility diagnostics (2026-05-26)
 
 - Routine schedules now persist WorkManager diagnostics beside last-run

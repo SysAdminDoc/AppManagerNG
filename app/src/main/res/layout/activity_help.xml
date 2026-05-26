@@ -60,6 +60,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="center_vertical"
+                android:contentDescription="@string/find_previous_match"
                 app:icon="@drawable/ic_expand_less"
                 app:iconSize="30dp" />
 
@@ -69,6 +70,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="center_vertical"
+                android:contentDescription="@string/find_next_match"
                 app:icon="@drawable/ic_expand_more"
                 app:iconSize="30dp" />
 

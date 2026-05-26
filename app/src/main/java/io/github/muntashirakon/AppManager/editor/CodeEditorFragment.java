@@ -481,10 +481,12 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mEditor.setEditorLanguage(getLanguage(mViewModel.getLanguage()));
             if (mViewModel.isReadOnly()) {
                 mLockButton.setIconResource(R.drawable.ic_lock);
+                mLockButton.setContentDescription(getString(R.string.editor_locked_read_only));
                 mLockButton.setEnabled(false);
                 mEditor.setEditable(false);
             } else {
                 mLockButton.setEnabled(true);
+                updateLockButtonContentDescription();
             }
             languageButton.setText(mViewModel.getLanguage());
             languageButton.setEnabled(!mViewModel.isReadOnly());
@@ -895,6 +897,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mEditor.setEditable(false);
             mSymbolInputView.setVisibility(View.GONE);
             mLockButton.setIconResource(R.drawable.ic_lock);
+            updateLockButtonContentDescription();
         }
     }
 
@@ -906,7 +909,13 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mEditor.setEditable(true);
             mSymbolInputView.setVisibility(View.VISIBLE);
             mLockButton.setIconResource(R.drawable.ic_unlock);
+            updateLockButtonContentDescription();
         }
+    }
+
+    private void updateLockButtonContentDescription() {
+        mLockButton.setContentDescription(getString(mEditor.isEditable()
+                ? R.string.editor_lock : R.string.editor_unlock));
     }
 
     private void launchIntentSaver() {
