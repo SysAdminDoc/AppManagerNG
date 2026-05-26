@@ -1168,6 +1168,26 @@
     <string name="shizuku_shell">Shizuku (shell)</string>
     <string name="shizuku_root">Shizuku (root)</string>
     <string name="allow_routine_ops">Allow routine ops</string>
+    <string name="profile_routine_triggers">Schedules</string>
+    <string name="profile_routine_triggers_summary_none">No routine schedules</string>
+    <plurals name="profile_routine_triggers_summary">
+        <item quantity="one">%1$d schedule, %2$d enabled</item>
+        <item quantity="other">%1$d schedules, %2$d enabled</item>
+    </plurals>
+    <string name="profile_trigger_add">Add schedule</string>
+    <string name="profile_trigger_type_time_of_day">Every day at a time</string>
+    <string name="profile_trigger_time_of_day">Every day at %1$s</string>
+    <string name="profile_trigger_on_charging">When charging</string>
+    <string name="profile_trigger_on_network_wifi">When Wi-Fi is connected</string>
+    <string name="profile_trigger_on_network_any">When any network is connected</string>
+    <string name="profile_trigger_on_boot">After device boot</string>
+    <string name="profile_trigger_summary">%1$s\n%2$s</string>
+    <string name="profile_trigger_last_run_never">Never run</string>
+    <string name="profile_trigger_last_run_format">%1$s: %2$s</string>
+    <string name="profile_trigger_result_disabled">Schedule disabled</string>
+    <string name="profile_trigger_result_profile_missing">Profile missing; schedule disabled</string>
+    <string name="profile_trigger_result_started">Started %1$s</string>
+    <string name="profile_trigger_result_failed_disabled">Failed and disabled: %1$s</string>
     <string name="profile_state">Profile state</string>
     <string name="allow_routine_ops_msg">Allow the profile to be used in the routine operations</string>
     <string name="profile_force_stop_msg">Force-stops apps</string>

@@ -2,10 +2,12 @@
 
 package io.github.muntashirakon.AppManager.profiles;
 
+import android.app.TimePickerDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
+import android.text.format.DateFormat;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -21,6 +23,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +34,9 @@ import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
+import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStore;
+import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -56,6 +62,8 @@ public class ConfPreferences extends PreferenceFragmentCompat {
     private String[] mPermissions;
     @Nullable
     private AppsBaseProfile.BackupInfo mBackupInfo;
+    private ProfileTriggerStore mTriggerStore;
+    private Preference mRoutineTriggersPref;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -78,6 +86,7 @@ public class ConfPreferences extends PreferenceFragmentCompat {
             return;
         }
         mModel = mActivity.model;
+        mTriggerStore = new ProfileTriggerStore(mActivity);
         // Set profile ID
         Preference profileIdPref = Objects.requireNonNull(findPreference("profile_id"));
         profileIdPref.setSummary(mModel.getProfileId());
@@ -120,6 +129,13 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                         dialog.dismiss();
                     })
                     .show();
+            return true;
+        });
+        // Set routine triggers
+        mRoutineTriggersPref = Objects.requireNonNull(findPreference("routine_triggers"));
+        updateRoutineTriggersPref();
+        mRoutineTriggersPref.setOnPreferenceClickListener(preference -> {
+            showRoutineTriggersDialog();
             return true;
         });
         // Set users
@@ -358,6 +374,124 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         else {
             pref.setSummary(TextUtils.join(", ", mPermissions));
         }
+    }
+
+    private void updateRoutineTriggersPref() {
+        if (mRoutineTriggersPref == null || mTriggerStore == null) {
+            return;
+        }
+        String profileId = mModel.getProfileId();
+        if (profileId == null) {
+            mRoutineTriggersPref.setSummary(R.string.profile_routine_triggers_summary_none);
+            return;
+        }
+        List<ProfileTrigger> triggers = mTriggerStore.forProfile(profileId);
+        if (triggers.isEmpty()) {
+            mRoutineTriggersPref.setSummary(R.string.profile_routine_triggers_summary_none);
+            return;
+        }
+        int enabled = 0;
+        for (ProfileTrigger trigger : triggers) {
+            if (trigger.enabled) ++enabled;
+        }
+        mRoutineTriggersPref.setSummary(getResources().getQuantityString(
+                R.plurals.profile_routine_triggers_summary, triggers.size(), triggers.size(), enabled));
+    }
+
+    private void showRoutineTriggersDialog() {
+        if (mTriggerStore == null) {
+            return;
+        }
+        String profileId = mModel.getProfileId();
+        if (profileId == null) {
+            return;
+        }
+        List<ProfileTrigger> triggers = mTriggerStore.forProfile(profileId);
+        CharSequence[] items = new CharSequence[triggers.size() + 1];
+        for (int i = 0; i < triggers.size(); ++i) {
+            ProfileTrigger trigger = triggers.get(i);
+            items[i] = RoutineScheduler.formatTriggerTitle(mActivity, trigger) + "\n"
+                    + RoutineScheduler.formatTriggerSummary(mActivity, trigger);
+        }
+        items[items.length - 1] = getString(R.string.profile_trigger_add);
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.profile_routine_triggers)
+                .setItems(items, (dialog, which) -> {
+                    if (which == triggers.size()) {
+                        showAddRoutineTriggerDialog(profileId);
+                    } else {
+                        showRoutineTriggerActions(triggers.get(which));
+                    }
+                })
+                .setNegativeButton(R.string.close, null)
+                .show();
+    }
+
+    private void showRoutineTriggerActions(@NonNull ProfileTrigger trigger) {
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(RoutineScheduler.formatTriggerTitle(mActivity, trigger))
+                .setMessage(RoutineScheduler.formatTriggerSummary(mActivity, trigger))
+                .setPositiveButton(trigger.enabled ? R.string.disable : R.string.enable, (dialog, which) -> {
+                    ProfileTrigger updated = mTriggerStore.setEnabled(trigger.id, !trigger.enabled);
+                    if (updated != null) {
+                        RoutineScheduler.scheduleOrCancel(mActivity, updated);
+                    }
+                    updateRoutineTriggersPref();
+                })
+                .setNegativeButton(R.string.delete, (dialog, which) -> {
+                    RoutineScheduler.cancel(mActivity, trigger);
+                    mTriggerStore.remove(trigger.id);
+                    updateRoutineTriggersPref();
+                })
+                .setNeutralButton(R.string.close, null)
+                .show();
+    }
+
+    private void showAddRoutineTriggerDialog(@NonNull String profileId) {
+        final int[] triggerTypes = {
+                ProfileTrigger.TYPE_TIME_OF_DAY,
+                ProfileTrigger.TYPE_ON_CHARGING,
+                ProfileTrigger.TYPE_ON_NETWORK_WIFI,
+                ProfileTrigger.TYPE_ON_NETWORK_ANY,
+                ProfileTrigger.TYPE_ON_BOOT
+        };
+        CharSequence[] labels = {
+                getString(R.string.profile_trigger_type_time_of_day),
+                getString(R.string.profile_trigger_on_charging),
+                getString(R.string.profile_trigger_on_network_wifi),
+                getString(R.string.profile_trigger_on_network_any),
+                getString(R.string.profile_trigger_on_boot)
+        };
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.profile_trigger_add)
+                .setItems(labels, (dialog, which) -> {
+                    int type = triggerTypes[which];
+                    if (type == ProfileTrigger.TYPE_TIME_OF_DAY) {
+                        showTimeOfDayTriggerDialog(profileId);
+                    } else {
+                        addRoutineTrigger(new ProfileTrigger.Builder(profileId, type).build());
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showTimeOfDayTriggerDialog(@NonNull String profileId) {
+        Calendar now = Calendar.getInstance();
+        new TimePickerDialog(mActivity, (view, hourOfDay, minute) -> addRoutineTrigger(
+                new ProfileTrigger.Builder(profileId, ProfileTrigger.TYPE_TIME_OF_DAY)
+                        .timeOfDay(hourOfDay, minute)
+                        .build()),
+                now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE),
+                DateFormat.is24HourFormat(mActivity))
+                .show();
+    }
+
+    private void addRoutineTrigger(@NonNull ProfileTrigger trigger) {
+        mTriggerStore.put(trigger);
+        RoutineScheduler.scheduleOrCancel(mActivity, trigger);
+        updateRoutineTriggersPref();
     }
 
     private List<Integer> mSelectedUsers;

@@ -17,6 +17,9 @@ work to separate root research files.
   and long-running batch keep-open hint.
 - Iter-146 shipped architecture docs for filters and routine scheduling plus
   the permissions catalogue.
+- NF-09 now has a WorkManager-backed executor, boot/package-replaced
+  re-application, profile-editor schedule UI, last-run diagnostics, and
+  disable-on-failure behavior.
 - The historical roadmap and the 2026-05-25 research feature plans were
   archived under `docs/roadmap/archive/` during this consolidation pass.
 
@@ -81,7 +84,7 @@ work to separate root research files.
 
 ### v0.6.0 Blockers
 
-- [ ] **NF-09 Routine scheduler executor**: build the `RoutineWorker`, boot
+- [x] **NF-09 Routine scheduler executor**: build the `RoutineWorker`, boot
   receiver, Settings UI, last-run diagnostics, and disable-on-failure behavior
   on top of the shipped `ProfileTriggerStore`.
 - [ ] **NF-10 Premium Polish Phase 2**: continue the UI polish pass with

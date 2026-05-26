@@ -127,6 +127,19 @@ public final class ProfileTriggerStore {
         return flipped.enabled;
     }
 
+    /** Set the enabled bit on a stored trigger; returns the updated trigger or null when missing. */
+    @AnyThread
+    @Nullable
+    public ProfileTrigger setEnabled(@NonNull String triggerId, boolean enabled) {
+        Map<String, ProfileTrigger> map = readMap();
+        ProfileTrigger existing = map.get(triggerId);
+        if (existing == null) return null;
+        ProfileTrigger updated = existing.withEnabled(enabled);
+        map.put(updated.id, updated);
+        write(map);
+        return updated;
+    }
+
     /** True when at least one stored trigger is enabled. */
     @AnyThread
     public boolean hasAnyEnabled() {

@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Routine scheduler executor (2026-05-26)
+
+- Profile schedules now have a WorkManager-backed executor: non-boot triggers
+  map to periodic work with charging/network/time-of-day constraints, while
+  boot triggers enqueue one-shot work after `BOOT_COMPLETED`.
+- The existing boot receiver re-applies enabled schedules after device boot and
+  package replacement so persisted triggers survive app updates and reboots.
+- Profile configuration now exposes a Schedules entry for adding, enabling,
+  disabling, and deleting the five shipped trigger types, with last-run
+  diagnostics shown alongside each schedule.
+- `RoutineWorker` starts the selected profile through `ProfileApplierService`,
+  records the last result, and disables orphaned or failing triggers instead of
+  repeatedly retrying broken schedules.
+- Added focused JVM/Robolectric coverage for trigger enablement persistence,
+  WorkManager timing/constraint mapping, and worker no-op/disable paths.
+
 ### Changed — Dex viewer API caveat (2026-05-26)
 
 - Smali-backed Code Editor views now surface a top info bar on Android 7.1 and
