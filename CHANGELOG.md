@@ -5,6 +5,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - APK duplicate selector data layer (T19-C, 2026-05-26)
+
+- Added `ApkDuplicateSelector.selectDuplicates`, a pure-function selector
+  that buckets parsed APK / APKS / APKM / XAPK candidates by
+  `(packageName, versionCode, signingCertSha256)` and returns the redundant
+  copies under either a `LARGEST` or `SMALLEST` keep strategy.
+- Size ties break on absolute path so duplicate detection produces the same
+  keeper across runs regardless of input order.
+- `ApkDuplicateSelector.reclaimableBytes` totals only the would-be-dropped
+  files, treating unknown sizes as zero so the surface never lies about how
+  much space the cleanup would free.
+- 13 focused JVM tests pin uniqueness, strategy-driven keep, cert-fork
+  separation, version-upgrade separation, the missing-version skip, the
+  null-cert legacy fallback, deterministic tie-breaks, and multi-package
+  bucketing.
+- APK enumeration on disk, parser glue for split bundles, and One-Click
+  Ops wiring remain tracked as the T19-C follow-up on the roadmap.
+
 ### Added - Leftover detection scanner data layer (T19-B, 2026-05-26)
 
 - Added `LeftoverScanner` that walks the three canonical roots under
