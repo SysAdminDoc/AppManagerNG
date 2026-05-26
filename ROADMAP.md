@@ -38,11 +38,11 @@ work to separate root research files.
 
 ### P1 - Activity, Components, Logcat
 
-- [ ] **NF-19 Activity Interceptor result bridge**: complete
+- [x] **NF-19 Activity Interceptor result bridge**: complete
   `ActivityInterceptor` result handoff so launched activities can return
   structured results to the interceptor UI without dropping root/Shizuku/ADB
   routing context.
-- [ ] **NF-22 Activity launch builder**: expand the App Details activity launch
+- [x] **NF-22 Activity launch builder**: expand the App Details activity launch
   flow beyond package/class/root/user by supporting extras, flags, and intent
   actions before dispatch.
 - [ ] **NF-23 Logcat structured export polish**: search already exists in
