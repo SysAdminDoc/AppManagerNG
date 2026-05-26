@@ -113,6 +113,7 @@
     <string name="finder_user_state">User %1$d: %2$s</string>
     <string name="main_list_open_app">Open <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="main_list_select_app">Select <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
+    <string name="select_visible">Select all visible</string>
     <string name="app_details_app_icon">App icon</string>
     <string name="app_details_empty_title_no_matches">No matching details</string>
     <string name="app_details_empty_message_no_matches">Search is hiding every item in this tab.</string>

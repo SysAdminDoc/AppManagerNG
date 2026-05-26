@@ -182,7 +182,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     @Override
     public void selectAll() {
         synchronized (mAdapterList) {
-            super.selectAll();
+            mActivity.viewModel.selectOnlyApplicationItems(mAdapterList);
+            notifySelectionChange();
+            if (!mAdapterList.isEmpty()) {
+                notifyItemRangeChanged(0, mAdapterList.size(), AdapterUtils.STUB);
+            }
         }
     }
 

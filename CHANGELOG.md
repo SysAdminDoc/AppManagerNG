@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Main list select all visible action (2026-05-26)
+
+- Main list selection mode now adds a "Select all visible" action whenever a
+  search or list filter constrains the visible result set.
+- Selecting all visible apps now replaces the selected package set with the
+  currently rendered rows, so stale hidden selections are cleared before batch
+  operations run.
+- Added focused JVM coverage for the selection helper to pin hidden-selection
+  clearing, canonical item selection, and missing-row skips.
+
 ### Changed — Code Editor line separator conversion (2026-05-26)
 
 - Code Editor line separator changes now rewrite existing editor content to
