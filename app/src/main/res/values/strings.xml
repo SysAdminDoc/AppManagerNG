@@ -38,6 +38,7 @@
     <string name="signatures">Signatures</string>
     <string name="app_signing_signatures">Signatures</string>
     <string name="app_signing_no_signatures">No valid signatures</string>
+    <string name="all">All</string>
     <string name="configurations">Configurations</string>
     <string name="no_configurations">No configurations</string>
     <string name="input_features">Input features</string>
@@ -266,6 +267,12 @@
     <string name="tracker_details">Tracker details</string>
     <string name="tracker_classes">Tracker classes</string>
     <string name="all_classes">All classes</string>
+    <plurals name="scanner_signature_count">
+        <item quantity="one">%1$d signature</item>
+        <item quantity="other">%1$d signatures</item>
+    </plurals>
+    <string name="scanner_category_chip"><xliff:g id="category" example="Analytics">%1$s</xliff:g> (<xliff:g id="count" example="4">%2$d</xliff:g>)</string>
+    <string name="scanner_category_summary"><xliff:g id="category" example="Analytics">%1$s</xliff:g> <xliff:g id="count" example="4">%2$d</xliff:g></string>
     <plurals name="main_list_date_days">
         <item quantity="one"><xliff:g id="last_update_date" example="20/10/2020">%1$s</xliff:g> <xliff:g id="day_no" example="5">%2$d</xliff:g> day</item>
         <item quantity="other"><xliff:g id="last_update_date" example="20/10/2020">%1$s</xliff:g> <xliff:g id="day_no" example="5">%2$d</xliff:g> days</item>

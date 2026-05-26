@@ -51,7 +51,7 @@ work to separate root research files.
 
 ### P2 - Scanner, Files, Editor, Reliability
 
-- [ ] **NF-24 Scanner organization summary**: add per-organization summary
+- [x] **NF-24 Scanner organization summary**: add per-organization summary
   rows and category filter chips to the scanner/library view.
 - [ ] **NF-25 File Manager bulk rename**: add a selected-files rename flow with
   preview, conflict detection, and rollback-friendly operation results.
