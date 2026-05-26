@@ -206,6 +206,18 @@ for the original Effort / Dependency context per row.
   in
   [`AppInfoFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java).
   Confirm split-APK breakdown and add backup-archive size as a sibling row.
+  _Data layer for the backup-archive sibling row shipped 2026-05-26 via
+  `BackupArchiveSizeAggregator.aggregate(List<Archive>)` which returns a
+  `Summary` with `totalBytes`, `archiveCount`, per-`versionCode`
+  bucketing (newest-first within each bucket, ties broken by descending
+  size), and a `newestArchive` shortcut for the panel header. Negative
+  / zero sizes count toward `archiveCount` but not `totalBytes` so the
+  panel never under-reports. `formatBytes` renders SI units to match
+  the Storage panel chrome. 9 focused JVM tests pin empty / null
+  inputs, sum semantics, version-code bucketing, tie-break, newest
+  picker, unknown-size handling, null-entry tolerance, immutable
+  return-map, and the byte-format unit ladder. UI wiring into
+  `AppInfoFragment` remains a small Android-side follow-up._
 - [ ] **T19-B Leftover detection after uninstall**: implement an explicit
   scanner for `Android/data/<pkg>`, `Android/obb/<pkg>`, root-accessible
   `/data/data/<pkg>` stubs, `Android/media/<pkg>`, and bundled debloat-rule

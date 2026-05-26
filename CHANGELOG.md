@@ -5,6 +5,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Backup archive size aggregator (T19-A follow-up, 2026-05-26)
+
+- Added `BackupArchiveSizeAggregator.aggregate(List<Archive>)` plus a
+  `formatBytes` SI-unit renderer. The aggregator returns a `Summary`
+  with `totalBytes`, `archiveCount`, per-`versionCode` bucketing
+  (newest-first within each bucket, ties broken by descending size),
+  and a `newestArchive` shortcut so the App Details Storage panel
+  header can show a one-line backup hint without iterating the full
+  list.
+- Negative / zero-byte archives still count toward `archiveCount` so
+  the panel header reads accurately even when individual sizes are
+  unknown; only known sizes contribute to `totalBytes` so the total is
+  always a lower bound.
+- 9 focused JVM tests cover null / empty inputs, the per-version-code
+  bucketing, the newest-first within-bucket ordering, the
+  ties-broken-by-descending-size invariant, the cross-bucket
+  newestArchive picker, unknown-size handling, null-entry tolerance,
+  the unmodifiable return-map contract, and the byte-format unit
+  ladder.
+- UI wiring (the sibling row inside `AppInfoFragment.Storage and Cache`)
+  remains a small Android-side follow-up.
+
 ### Added - Launcher icon alias planner (T21-E follow-up, 2026-05-26)
 
 - Added `LauncherIconAliasPlan` in `main/`, a pure-function planner that
