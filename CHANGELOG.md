@@ -5,6 +5,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - OsRevertCountTracker for attention-badge signal (T21-G follow-up, 2026-05-26)
+
+- Added `OsRevertCountTracker` in `revert/`, a thread-safe per-package
+  counter with a TTL window so the T21-G attention-badge source has a
+  real feed for `AttentionBadgeSource.forApp(app, recentOsRevertCount)`.
+  `OsRevertMonitor` currently emits point-in-time `LiveData<RevertEvent>`;
+  this tracker turns that stream into a recent-count aggregate the
+  main-list adapter can ask without walking history.
+- Surface: `recordRevert(packageName, nowMillis)`,
+  `countRecent(packageName, nowMillis, ttlMillis)`,
+  `evictExpired(nowMillis, ttlMillis)`, `trackedPackages()` snapshot,
+  plus `trackedPackageCount` / `totalEventCount` diagnostics. Hard
+  caps: `MAX_EVENTS_PER_PACKAGE` = 256 (oldest events drop first),
+  `MAX_TRACKED_PACKAGES` = 8192 (oldest-touched packages evict first).
+  Default TTL is 7 days, long enough to surface multi-day OEM cleanup.
+- 10 focused JVM tests cover empty-tracker behaviour, in-TTL /
+  out-of-TTL counting, zero / negative TTL handling,
+  evictExpired's package-row cleanup, per-package isolation, the
+  256-event cap, empty-package-name rejection, immutable
+  trackedPackages snapshot, clear(), and a multi-threaded
+  record-storm test (8 threads x 1000 events) that asserts the cap
+  is preserved.
+- The Android-side wiring that calls `recordRevert` from
+  `OsRevertMonitor.watchAppOp` / `watchFreeze` / `watchComponent`
+  remains a small follow-up on the T21-G row.
+
 ### Added - Split-APK breakdown audit doc (T19-A audit half, 2026-05-26)
 
 - Added `docs/audits/2026-05-26-split-apk-breakdown.md`, closing the
