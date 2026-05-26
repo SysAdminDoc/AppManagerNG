@@ -284,10 +284,13 @@ for the original Effort / Dependency context per row.
   `system_server` returns truncated data. _Data layer shipped 2026-05-26:
   `AppMemoryInfoParser.parseAppSummary` extracts Java/Native/Code/Stack/
   Graphics/Private Other/System/Unknown PSS+RSS plus TOTAL PSS/RSS/SWAP from
-  an Android 6-17 `dumpsys meminfo` capture; 7 focused JVM tests cover
-  legacy non-RSS dumps, garbage numerics, missing headers, and forward
-  compatibility with unrecognized App Summary rows. `dumpsys gfxinfo`,
-  procfs streaming, and App Details UI remain on the T20-C roadmap row._
+  an Android 6-17 `dumpsys meminfo` capture; `GfxInfoParser.parse` extracts
+  jank ratio, p50/p90/p95/p99 latency, missed-vsync, slow-UI / slow-bitmap /
+  slow-draw / frame-deadline-missed counters from `dumpsys gfxinfo`; 7+7
+  focused JVM tests cover legacy non-RSS dumps, garbage numerics, missing
+  headers, the modern-vs-legacy jank row, last-write-wins percentile
+  bucketing, and forward compatibility with unrecognized App Summary rows.
+  procfs streaming and the App Details UI remain on the T20-C roadmap row._
 - [ ] T20-D LeakCanary leak-detection wrapper. Parked: requires shipping a
   debuggable agent into target processes, conflicts with NG's GPL+vendored
   posture, and the legacy roadmap already flagged it as high-risk-for-

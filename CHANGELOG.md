@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - GfxInfo parser data layer (T20-C follow-up, 2026-05-26)
+
+- Added `GfxInfoParser.parse`, a JVM-only parser for the
+  "Profile data / Janky frames" block of `dumpsys gfxinfo <package>`
+  output. Extracts total frames, jank count + ratio, p50 / p90 / p95 / p99
+  latency in ms, and the canonical jank-cause counters (missed vsync,
+  high input latency, slow UI thread, slow bitmap uploads, slow draw
+  commands, frame deadline missed).
+- Heuristic rejection: unrelated dumpsys output (e.g. a meminfo capture
+  fed by mistake) returns `null` instead of an all-sentinel snapshot, so
+  the App Details UI never claims to know frame stats it does not have.
+- Multi-block traces use last-write-wins for percentile rows so the
+  outer / app-summary block wins over inner per-window blocks.
+- 7 focused JVM tests cover the full dump, the empty / unrelated input
+  baseline, partial dumps, garbled numerics, the legacy-row shadow
+  guard, and the last-write-wins percentile bucketing.
+
 ### Fixed - KeyStorePasswordLifecycle false positive on savePass alias (2026-05-26)
 
 - The reflection-based contract test in `KeyStorePasswordLifecycleTest`
