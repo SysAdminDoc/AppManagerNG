@@ -316,6 +316,8 @@
     <string name="menu_remove_rules">Turn off saved rules</string>
     <string name="menu_apply_rules">Apply saved rules</string>
     <string name="search">Search</string>
+    <string name="find_previous_match">Previous match</string>
+    <string name="find_next_match">Next match</string>
     <string name="search_settings">Search settings</string>
     <string name="settings_search_empty_title">No matching settings</string>
     <string name="settings_search_empty_message">Try a feature name, permission, workflow, or preference keyword.</string>
@@ -3146,6 +3148,9 @@
     </plurals>
     <string name="editor_go_to_line_title">Go to line</string>
     <string name="editor_go_to_line_input_label">Line number</string>
+    <string name="editor_lock">Lock editor</string>
+    <string name="editor_unlock">Unlock editor</string>
+    <string name="editor_locked_read_only">Editor locked because the file is read-only</string>
     <!-- Profiles: share-profile-as-JSON popup action -->
     <string name="share_profile_json">Share as JSON</string>
     <string name="share_profile_subject">AppManager profile · %1$s</string>

@@ -144,7 +144,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="0"
                     android:layout_gravity="center_vertical"
-                    android:contentDescription="@string/replace"
+                    android:contentDescription="@string/action_replace_all"
                     app:icon="@drawable/ic_find_and_replace_all"
                     app:iconSize="30dp" />
 
@@ -155,7 +155,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="0"
                     android:layout_gravity="center_vertical"
-                    android:contentDescription="@string/action_replace_all"
+                    android:contentDescription="@string/replace"
                     app:icon="@drawable/ic_find_and_replace"
                     app:iconSize="30dp" />
 
@@ -166,6 +166,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="0"
                     android:layout_gravity="center_vertical"
+                    android:contentDescription="@string/find_previous_match"
                     app:icon="@drawable/ic_expand_less"
                     app:iconSize="30dp" />
 
@@ -176,6 +177,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="0"
                     android:layout_gravity="center_vertical"
+                    android:contentDescription="@string/find_next_match"
                     app:icon="@drawable/ic_expand_more"
                     app:iconSize="30dp" />
 
@@ -249,6 +251,7 @@
                 android:paddingBottom="0dp"
                 android:layout_weight="1"
                 android:gravity="center"
+                android:contentDescription="@string/editor_lock"
                 app:icon="@drawable/ic_unlock"
                 app:iconSize="13dp" />
 
