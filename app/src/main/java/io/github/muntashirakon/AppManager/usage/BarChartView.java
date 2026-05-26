@@ -21,6 +21,7 @@ import android.view.accessibility.AccessibilityEvent;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.TintTypedArray;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
@@ -67,6 +68,7 @@ public class BarChartView extends View {
     // Chart configuration
     private int mGridLineCount;
     private boolean mShowGridLabelsOnLeft;
+    private float mMinValue = 0f;
     private float mMaxValue = 0f;
     @Nullable
     private Float mManualMinValue = null;
@@ -289,7 +291,11 @@ public class BarChartView extends View {
 
     private void calculateValueRange() {
         if (mBarDataList.isEmpty()) {
-            mMaxValue = 1f;
+            mMinValue = mManualMinValue != null ? mManualMinValue : 0f;
+            mMaxValue = mManualMaxValue != null ? mManualMaxValue : mMinValue + 1f;
+            if (mMaxValue <= mMinValue) {
+                mMaxValue = mMinValue + 1f;
+            }
             return;
         }
 
@@ -298,14 +304,10 @@ public class BarChartView extends View {
             values.add(bar.value);
         }
 
-        if (mManualMaxValue != null) {
-            mMaxValue = mManualMaxValue;
-        } else {
-            mMaxValue = Collections.max(values);
-        }
-
-        if (mManualMinValue != null) {
-            // TODO: 9/21/25 Handle manual min value. All our charts for now begins with 0
+        mMinValue = mManualMinValue != null ? mManualMinValue : 0f;
+        mMaxValue = mManualMaxValue != null ? mManualMaxValue : Collections.max(values);
+        if (mMaxValue <= mMinValue) {
+            mMaxValue = mMinValue + 1f;
         }
     }
 
@@ -346,7 +348,7 @@ public class BarChartView extends View {
             // Measure Y-axis labels
             float maxYLabelWidth = 0f;
             for (int i = 0; i < mGridLineCount; i++) {
-                float value = (mMaxValue * i) / (mGridLineCount - 1);
+                float value = getGridLineValue(i);
                 String label = formatYAxisValue(value);
                 Rect textBounds = new Rect();
                 mTextPaint.getTextBounds(label, 0, label.length(), textBounds);
@@ -384,6 +386,38 @@ public class BarChartView extends View {
         } else {
             return mValueFormatter.format(value);
         }
+    }
+
+    private float getGridLineValue(int gridLineIndex) {
+        return mMinValue + (getValueRange() * gridLineIndex) / (mGridLineCount - 1);
+    }
+
+    private float getValueRange() {
+        return Math.max(1f, mMaxValue - mMinValue);
+    }
+
+    private float getNormalizedValue(float value) {
+        float normalized = (value - mMinValue) / getValueRange();
+        return Math.max(0f, Math.min(1f, normalized));
+    }
+
+    private float getBarTop(float value) {
+        return mChartBottom - getNormalizedValue(value) * mChartHeight;
+    }
+
+    @VisibleForTesting
+    float getAxisMinValue() {
+        return mMinValue;
+    }
+
+    @VisibleForTesting
+    float getAxisMaxValue() {
+        return mMaxValue;
+    }
+
+    @VisibleForTesting
+    float getNormalizedValueForTesting(float value) {
+        return getNormalizedValue(value);
     }
 
     @Override
@@ -432,7 +466,7 @@ public class BarChartView extends View {
             canvas.drawLine(mChartLeft, y, mChartRight, y, mGridPaint);
 
             // Draw grid value labels
-            float value = (mMaxValue * i) / (mGridLineCount - 1);
+            float value = getGridLineValue(i);
             String label = formatYAxisValue(value);
 
             Rect textBounds = new Rect();
@@ -460,7 +494,7 @@ public class BarChartView extends View {
 
             float barLeft = mChartLeft + dims.gapWidth + (i * (dims.barWidth + dims.gapWidth));
             float barRight = barLeft + dims.barWidth;
-            float barTop = mChartBottom - (bar.value / mMaxValue) * mChartHeight;
+            float barTop = getBarTop(bar.value);
             float barBottom = mChartBottom;
 
             // Choose paint based on selection state
@@ -471,7 +505,7 @@ public class BarChartView extends View {
 
             if (mValueOnTopOfBar) {
                 // Draw value on top of bar
-                if (bar.value > 0 && barTop > mChartTop + dpToPx(20)) {
+                if (getNormalizedValue(bar.value) > 0 && barTop > mChartTop + dpToPx(20)) {
                     String valueText = formatYAxisValue(bar.value);
                     Rect textBounds = new Rect();
                     mTextPaint.getTextBounds(valueText, 0, valueText.length(), textBounds);
@@ -523,7 +557,7 @@ public class BarChartView extends View {
 
         // Calculate the bar's top position
         BarData bar = mBarDataList.get(mTouchedBarIndex);
-        float barTop = mChartBottom - (bar.value / mMaxValue) * mChartHeight;
+        float barTop = getBarTop(bar.value);
 
         // Draw vertical line from chart top to bar top
         canvas.drawLine(barCenter, mChartTop, barCenter, barTop, mTouchLinePaint);
@@ -886,7 +920,7 @@ public class BarChartView extends View {
         float barRight = barLeft + dims.barWidth;
 
         BarData bar = mBarDataList.get(barIndex);
-        float barTop = mChartBottom - (bar.value / mMaxValue) * mChartHeight;
+        float barTop = getBarTop(bar.value);
         float barBottom = mChartBottom;
 
         return new Rect((int) barLeft, (int) barTop, (int) barRight, (int) barBottom);

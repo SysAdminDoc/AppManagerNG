@@ -74,7 +74,7 @@ work to separate root research files.
   projection/selection inputs and exportable results.
 - [x] **NF-26 File Manager hex/binary viewer**: add a read-only binary viewer
   for files that cannot be rendered as text.
-- [ ] **EI-14 BarChart manual minimum value**: support an explicit minimum axis
+- [x] **EI-14 BarChart manual minimum value**: support an explicit minimum axis
   value without breaking existing auto-scaling.
 - [ ] **EI-16 Dex viewer API caveat**: surface the API <26 behavior caveat in
   the Dex viewer rather than leaving it as tribal knowledge.
