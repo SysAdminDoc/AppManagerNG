@@ -140,7 +140,10 @@ work to separate root research files.
   Code Editor, and UI tracker transitions now honor system animation scale via
   `MotionUtils`; device verification and Material-internal motion checks are
   recorded in `docs/audits/2026-05-26-reduced-motion.md`.
-- [ ] Dyslexia-font compatibility audit.
+- [ ] Dyslexia-font compatibility audit. Static audit slice is recorded in
+  `docs/audits/2026-05-26-dyslexia-font-compatibility.md` along with the
+  `DyslexiaFontCompatibilityContractTest` regression guard; manual device
+  walkthrough on a ROM with a dyslexia-friendly system font remains open.
 - [ ] Android 17 device or emulator verification for Shizuku and 16 KB page
   size behavior.
 - [ ] Material Components 1.14 / minSdk 23 decision, tracked against

@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Dyslexia-font compatibility hardening (2026-05-26)
+
+- Removed the `android:fontFamily="sans-serif-condensed"` override on the
+  record-log launcher widget subtitle so the system font cascade reaches
+  this surface, including ROM-level OpenDyslexic replacements and Samsung
+  custom fonts.
+- Added `docs/audits/2026-05-26-dyslexia-font-compatibility.md` cataloging
+  the audit boundary: theme files declare no global `android:fontFamily`,
+  all remaining `monospace` overrides serve documented technical surfaces
+  (code editor, hex viewer, logcat, terminal, passwords, identifiers,
+  process state, profile preview, UI tracker overlay), and remaining
+  manual-walkthrough scope.
+- Added `DyslexiaFontCompatibilityContractTest` to pin the theme-level
+  no-`fontFamily` invariant, hold the recording widget free of font
+  overrides, and prevent drive-by removal of monospace from any documented
+  technical surface.
+
 ### Changed - Reduced-motion hardening (2026-05-26)
 
 - Added `MotionUtils` to centralize system animation-scale checks and route

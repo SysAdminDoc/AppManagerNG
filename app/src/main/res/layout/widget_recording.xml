@@ -26,7 +26,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:ellipsize="marquee"
-        android:fontFamily="sans-serif-condensed"
         android:gravity="center"
         android:text="@string/record_log"
         android:textColor="?attr/colorOnSurfaceVariant"
