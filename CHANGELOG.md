@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Material You dynamic-color audit (T21-J, 2026-05-26)
+
+- Added `docs/audits/2026-05-26-material-you-dynamic-color.md` recording the
+  audit boundary: the per-activity overlay is applied by
+  `AppearanceUtils.ActivityAppearanceCallback`, the widget context wraps
+  through `DynamicColors.wrapContextIfAvailable`, and the widget palette
+  reads every color through three-arg `MaterialColors.getColor` with a
+  non-zero brand fallback so devices without the dynamic-color overlay
+  never render black.
+- Added `DynamicColorContractTest` source-level regression guard pinning
+  the three call sites so a drive-by refactor cannot silently drop the
+  overlay.
+
 ### Added - APK duplicate selector data layer (T19-C, 2026-05-26)
 
 - Added `ApkDuplicateSelector.selectDuplicates`, a pure-function selector
