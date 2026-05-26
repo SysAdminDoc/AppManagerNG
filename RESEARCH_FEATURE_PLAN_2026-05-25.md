@@ -1201,7 +1201,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
 
 ### Phase 0 — Hygiene cut (target this week)
 
-- [ ] P0 - Commit or revert the in-progress Component Rules editor
+- [x] P0 - Commit or revert the in-progress Component Rules editor
   - Why: 3 modified + 3 new files in working tree; either complete the feature for v0.5.0
     or revert to avoid drift.
   - Evidence: `git status -sb` working tree;
@@ -1215,7 +1215,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
   - Verify: `./gradlew :app:testFlossDebugUnitTest --tests "*ComponentRulesPreviewTest"`
     passes; manually open Settings → Rules → Component rules and verify shape.
 
-- [ ] P0 - Investigate `main` `ahead 177 / behind 177` parity with `origin/main`
+- [x] P0 - Investigate `main` `ahead 177 / behind 177` parity with `origin/main`
   - Why: A parallel history blocks any clean push or tag. Likely a force-push from a
     different host.
   - Evidence: `git status -sb`.
@@ -1224,7 +1224,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
   - Verify: `git log --oneline origin/main..HEAD` and `git log --oneline HEAD..origin/main`
     yield expected disjoint sets.
 
-- [ ] P0 - **NF-01**: Cut v0.5.0 release
+- [x] P0 - **NF-01**: Cut v0.5.0 release
   - Why: 177 commits + Premium polish + iter-141 sit in `Unreleased`. Bank them.
   - Evidence: `CHANGELOG.md Unreleased`; fastlane changelogs jump from 6.txt to nothing.
   - Touches: `versions.gradle`, `app/build.gradle`, `CHANGELOG.md`,
@@ -1236,7 +1236,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
     S25 Ultra; smoke-test scheduled-backup, batch APK install, per-app rollback, Mode
     Doctor.
 
-- [ ] P0 - **EI-01 + EI-02 + EI-03**: README / CLAUDE.md / bundled-changelog drift
+- [x] P0 - **EI-01 + EI-02 + EI-03**: README / CLAUDE.md / bundled-changelog drift
   - Why: Three independent docs that lie about current state.
   - Evidence: README §Roadmap line 93; CLAUDE.md §Status ends 2026-05-02;
     `raw/changelog.xml` opens with `version="v4.0.5"`.
@@ -1248,7 +1248,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
 
 ### Phase 1 — v0.5.0 Discovery polish (next 2 weeks)
 
-- [ ] P0 - **NF-02**: In-app changelog viewer (NG-native data)
+- [x] P0 - **NF-02**: In-app changelog viewer (NG-native data)
   - Why: v0.5.0 deliverable.
   - Evidence: ROADMAP §Committed Version Targets.
   - Touches: `raw/changelog.xml`, `ChangelogParser`, `AboutPreferences`, `MainActivity`,
@@ -1257,7 +1257,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
     launch after version bump shows the bottom-sheet once.
   - Verify: Manual; bump versionCode in a side build.
 
-- [ ] P0 - **NF-03**: Global in-app search
+- [x] P0 - **NF-03**: Global in-app search
   - Why: v0.5.0 deliverable.
   - Evidence: ROADMAP §Committed Version Targets.
   - Touches: `settings/SettingsSearchIndex.java` (new),
@@ -1282,7 +1282,7 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
     safe* group) belong to a separate UX iteration tied to TalkBack + RTL
     pass (T10).
 
-- [ ] P1 - **NF-05**: Contextual help tooltips
+- [x] P1 - **NF-05**: Contextual help tooltips — SHIPPED (Glossary, iter-143)
   - Why: v0.5.0 deliverable.
   - Evidence: ROADMAP §Committed Version Targets;
     `design/audit/4-painpoints.md`.
@@ -1343,27 +1343,42 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
 
 ### Phase 3 — Privacy / Diagnostics deepening (8-12 weeks)
 
-- [ ] P2 - **NF-11**: Package Visibility Analysis panel
-- [ ] P2 - **NF-12**: Privacy Dashboard integration (Android 12+ usage timeline)
-- [ ] P2 - **NF-16**: "What changes if I remove this?" debloat preview
-- [ ] P2 - **NF-17**: Per-app runtime telemetry panel (foreground time / network / wakelock)
-- [ ] P2 - **NF-06**: Pro Mode discovery (hero card + comparison)
-- [ ] P2 - **NF-14**: JaCoCo coverage badge
-- [ ] P2 - **NF-15**: Markdown link checker scope check (`PROJECT_CONTEXT.md`, ROADMAP)
-- [ ] P2 - **EI-04**: Permission Inspector "recently installed + sideloaded" lens
-- [ ] P2 - **EI-05**: Onboarding final-step "Next steps" tiles
-- [ ] P2 - **EI-06**: OEM-protected chip on Debloater confirmation rows
-- [ ] P2 - **EI-07**: Scheduled-backup "Why did the last run skip?" bottom sheet
-- [ ] P2 - **EI-09**: Per-app rollback dry-run preview
-- [ ] P2 - **EI-10**: Onboarding USB-debugging preflight re-check on resume
+- [x] P2 - **NF-11**: Package Visibility Analysis panel — SHIPPED iter-144 (chip + dialog + caller scan).
+- [x] P2 - **NF-12**: Privacy Dashboard integration — SHIPPED iter-144 (deep-link only; data-integration deferred).
+- [x] P2 - **NF-16**: "What changes if I remove this?" debloat preview — SHIPPED iter-144 (default-app role losses).
+- [x] P2 - **NF-17**: Per-app runtime telemetry panel — SHIPPED iter-144 (24h chip + dialog).
+- [x] P2 - **NF-06**: Pro Mode discovery — partial; explainer shipped via Glossary (iter-143). Hero card on Onboarding deferred.
+- [x] P2 - **NF-14**: JaCoCo coverage badge — already in CI when audited (iter-143).
+- [x] P2 - **NF-15**: Markdown link checker scope — already covered by `*.md` glob (iter-143).
+- [x] P2 - **EI-04**: Permission Inspector "recently installed + sideloaded" lens — superseded by chip-row filter (All / User / Granted) shipped iter-144.
+- [x] P2 - **EI-05**: Onboarding final-step "Next steps" tiles — SHIPPED iter-143.
+- [x] P2 - **EI-06**: OEM-protected chip on Debloater rows — already inline since iter-104.
+- [x] P2 - **EI-07**: Scheduled-backup skip-reason — SHIPPED iter-144 (tappable status + diagnostics dialog).
+- [x] P2 - **EI-09**: Per-app rollback dry-run preview — SHIPPED iter-143.
+- [x] P2 - **EI-10**: Onboarding USB-debugging preflight re-check on resume — SHIPPED iter-143.
 
 ### Phase 4 — Engineering polish (background)
 
-- [ ] P3 - **NF-18**: Keystore-password `char[]` lifecycle JUnit invariant
-- [ ] P3 - **EI-08**: Mode Doctor share-as-Support-Info-Bundle
+- [x] P3 - **NF-18**: Keystore-password `char[]` lifecycle JUnit invariant — SHIPPED iter-143.
+- [x] P3 - **EI-08**: Mode Doctor share-as-Support-Info-Bundle — SHIPPED iter-143.
 - [ ] P3 - Architecture docs `04-filter-finder.md`, `05-routine-scheduler.md`,
-        `docs/policy/permissions.md`
-- [ ] P3 - Extract `filters/` to a Gradle module (after NF-08 schema lands)
+        `docs/policy/permissions.md` — pending, depends on NF-09 landing.
+- [ ] P3 - Extract `filters/` to a Gradle module (after NF-08 schema lands) — deferred; the SharedPreferences shape from iter-143 is not yet enough to warrant a module split.
+
+### Phase 5 — Iter-145 next-slice work (this iteration)
+
+- [ ] P1 - **NF-09 data layer**: `profiles/trigger/ProfileTrigger` value class +
+        `profiles/trigger/ProfileTriggerStore` (SharedPreferences-backed JSON, mirroring
+        the `AppTagStore` shape from NF-08). The Worker / Settings UI / boot trigger
+        remain blocked on real-device validation, but a stable trigger data model lets
+        a future session ship the executor without redoing the contract.
+- [ ] P1 - **Saved Filter Presets data layer**: `filters/preset/FilterPresetStore` —
+        serialise a named `FilterItem` chain to SharedPreferences JSON so the Finder
+        can ship a "Save filter" action in a future UI iteration.
+- [ ] P1 - **Keep-app-open banner** (Hail / Neo-Backup model): batch/backup foreground
+        notifications already say "running"; surface a persistent in-app banner during
+        long-running ops so users don't background the activity and lose progress
+        feedback.
 
 ---
 
