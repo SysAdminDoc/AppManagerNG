@@ -626,6 +626,11 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- NF-12 Privacy Dashboard deep link from App Details -> Permissions -->
+    <string name="action_open_privacy_dashboard">Open in Privacy Dashboard</string>
+    <string name="privacy_dashboard_fallback_hint">Per-permission timeline needs Android 12 or later — opened the standard app info instead.</string>
+    <string name="privacy_dashboard_unavailable">Cannot open the system Privacy Dashboard on this device.</string>
+
     <!-- EI-07 Scheduled-backup diagnostics dialog -->
     <string name="pref_backup_schedule_diagnostics_title">Scheduled backup diagnostics</string>
     <string name="pref_backup_schedule_diagnostics_freshness_explainer">Freshness window: %1$s. Packages whose newest backup is younger than this window are skipped and counted as "recent" in the run result.</string>
