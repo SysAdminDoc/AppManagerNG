@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Activity Interceptor launch builder + privileged launch status (2026-05-26)
+
+- Added a formal `ActivityInterceptor.getLaunchIntent(...)` builder that lets
+  App Details seed target action, flags, and extras without leaking interceptor
+  control extras into the dispatched intent.
+- App Details activity long-press now uses the builder and carries the initial
+  `FLAG_ACTIVITY_NEW_TASK` into the interceptor so users can inspect or remove
+  it before launching.
+- Privileged chooser/component/fallback launches now record a structured launch
+  result route and raw framework start code in the interceptor output and in
+  the activity result extras. Normal same-user launches still use
+  `StartActivityForResult` and forward the real activity result.
+- Added Robolectric coverage for the builder metadata and privileged launch
+  result formatter.
+
 ### Changed — Running Apps rules + multi-volume cache trim (2026-05-26)
 
 - Running Apps -> "prevent background run" now persists the applied background
