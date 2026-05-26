@@ -51,6 +51,8 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.details.components.BroadcastSendDialogFragment;
+import io.github.muntashirakon.AppManager.details.components.ProviderQueryDialogFragment;
+import io.github.muntashirakon.AppManager.details.components.ProviderQueryUtils;
 import io.github.muntashirakon.AppManager.details.components.ServiceActionUtils;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsActivityItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsComponentItem;
@@ -1138,6 +1140,25 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.processNameView.setText(String.format(Locale.ROOT, "%s: %s",
                         getString(R.string.process_name), processName));
             } else holder.processNameView.setVisibility(View.GONE);
+            if (!mIsExternalApk) {
+                boolean canQuery = canQueryProvider(providerInfo);
+                holder.launchBtn.setText(R.string.query_provider);
+                holder.launchBtn.setIconResource(R.drawable.ic_database);
+                holder.launchBtn.setEnabled(canQuery);
+                holder.launchBtn.setOnClickListener(v -> {
+                    if (canQuery) {
+                        ProviderQueryDialogFragment.show(getParentFragmentManager(), mPackageName, providerInfo.name,
+                                providerInfo.authority, mUserId, providerInfo.readPermission);
+                    }
+                });
+                holder.launchBtn.setTooltipText(getString(canQuery
+                        ? R.string.query_provider
+                        : R.string.provider_query_unavailable));
+                holder.launchBtn.setVisibility(View.VISIBLE);
+            } else {
+                holder.launchBtn.setOnClickListener(null);
+                holder.launchBtn.setVisibility(View.GONE);
+            }
             // Blocking
             if (mCanModifyComponentStates) {
                 handleBlock(holder, componentItem, RuleType.PROVIDER);
@@ -1145,6 +1166,18 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 holder.toggleSwitch.setVisibility(View.GONE);
                 holder.blockingMethod.setVisibility(View.GONE);
             }
+        }
+
+        private boolean canQueryProvider(@NonNull ProviderInfo providerInfo) {
+            if (ProviderQueryUtils.parseAuthorities(providerInfo.authority).isEmpty()) {
+                return false;
+            }
+            boolean hasReadPermission = providerInfo.readPermission == null
+                    || SelfPermissions.checkSelfPermission(providerInfo.readPermission);
+            String providerPackageName = providerInfo.packageName == null ? mPackageName : providerInfo.packageName;
+            return ProviderQueryUtils.canUseUnprivilegedQuery(providerInfo.exported, providerInfo.readPermission,
+                    hasReadPermission, providerPackageName, requireContext().getPackageName(), mUserId,
+                    UserHandleHidden.myUserId());
         }
     }
 }
