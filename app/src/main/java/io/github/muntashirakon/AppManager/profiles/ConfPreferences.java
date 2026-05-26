@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.profiles;
 
 import android.app.TimePickerDialog;
+import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.InputType;
@@ -42,6 +43,7 @@ import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
@@ -136,8 +138,10 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         updateRoutineTriggersPref();
         mRoutineTriggersPref.setOnPreferenceClickListener(preference -> {
             showRoutineTriggersDialog();
+            refreshRoutineTriggerDiagnostics();
             return true;
         });
+        refreshRoutineTriggerDiagnostics();
         // Set users
         Preference usersPref = Objects.requireNonNull(findPreference("users"));
         handleUsersPref(usersPref);
@@ -398,6 +402,31 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                 R.plurals.profile_routine_triggers_summary, triggers.size(), triggers.size(), enabled));
     }
 
+    private void refreshRoutineTriggerDiagnostics() {
+        if (mTriggerStore == null || mModel == null || mActivity == null) {
+            return;
+        }
+        String profileId = mModel.getProfileId();
+        if (profileId == null) {
+            return;
+        }
+        List<ProfileTrigger> triggers = mTriggerStore.forProfile(profileId);
+        if (triggers.isEmpty()) {
+            return;
+        }
+        Context appContext = mActivity.getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            for (ProfileTrigger trigger : triggers) {
+                RoutineScheduler.refreshDiagnostics(appContext, trigger);
+            }
+            ThreadUtils.postOnMainThread(() -> {
+                if (isAdded()) {
+                    updateRoutineTriggersPref();
+                }
+            });
+        });
+    }
+
     private void showRoutineTriggersDialog() {
         if (mTriggerStore == null) {
             return;
@@ -435,12 +464,14 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     ProfileTrigger updated = mTriggerStore.setEnabled(trigger.id, !trigger.enabled);
                     if (updated != null) {
                         RoutineScheduler.scheduleOrCancel(mActivity, updated);
+                        refreshRoutineTriggerDiagnostics();
                     }
                     updateRoutineTriggersPref();
                 })
                 .setNegativeButton(R.string.delete, (dialog, which) -> {
                     RoutineScheduler.cancel(mActivity, trigger);
                     mTriggerStore.remove(trigger.id);
+                    RoutineScheduler.clearStoredState(mActivity, trigger.id);
                     updateRoutineTriggersPref();
                 })
                 .setNeutralButton(R.string.close, null)
@@ -492,6 +523,7 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         mTriggerStore.put(trigger);
         RoutineScheduler.scheduleOrCancel(mActivity, trigger);
         updateRoutineTriggersPref();
+        refreshRoutineTriggerDiagnostics();
     }
 
     private List<Integer> mSelectedUsers;
