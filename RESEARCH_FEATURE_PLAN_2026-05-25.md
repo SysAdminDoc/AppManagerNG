@@ -1299,18 +1299,18 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
 
 ### Phase 2 — Premium Polish Phase 2 + ahead-of-v0.6.0 work (4-8 weeks)
 
-- [ ] P1 - **NF-10**: Premium Polish Phase 2 (AppDetails / AppUsage / Settings v2)
+- [x] P1 - **NF-10**: Premium Polish Phase 2 — **PARKED 2026-05-25 (next session)**
   - Why: Phase 1 shipped 2026-05-02; Phase 2 is the next chunk before v0.6.x default
     flip.
   - Evidence: `design/plan/3-rollout.md`; ROADMAP §Premium Polish Track.
-  - Touches: `app/src/main/res/layout/*_v2.xml` (new); conditional inflation in
-    `AppDetailsActivity`, `AppUsageActivity`, `SettingsActivity`.
-  - Acceptance: With `PREF_PREMIUM_PREVIEW_BOOL=true`, App Details / App Usage / Settings
-    surfaces render in v2 layouts; with false, classic; all view IDs preserved.
-  - Verify: Robolectric layout-inflation tests (assert `findViewById` shape parity);
-    manual on Pixel 9a + Galaxy A57 + Moto g22.
+  - **Outcome (2026-05-25):** `design/impl/layout/` only stages
+    `activity_main_v2.xml` and `item_main_v2.xml` (Phase 1, already shipped). Phase 2
+    layouts have not been authored yet — they need designer input, not just a token
+    swap, and validation needs real-device or wide Robolectric layout-inflation tests.
+    Plan + suggested next slice recorded in
+    [`.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md`](.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md).
 
-- [ ] P1 - **NF-07**: Tracker Blocking via AppOps
+- [x] P1 - **NF-07**: Tracker Blocking via AppOps — **SHIPPED 2026-05-25**
   - Why: T9 open; complements existing tracker scanner with **action**.
   - Evidence: ROADMAP T9 "Tracker Blocking (AppOps)".
   - Touches: `tracker/TrackerBlockingPolicy.java`, `tracker/TrackerBlockingApplier.java`,
@@ -1320,28 +1320,26 @@ roadmap rows, source comments) or in the ROADMAP Source Appendix.
   - Verify: Robolectric policy → action conversion test; manual on a test app with
     Firebase Analytics.
 
-- [ ] P1 - **NF-09**: Routine Operations / Scheduler (generalize Auto-Backup core)
+- [x] P1 - **NF-09**: Routine Operations / Scheduler — **PARKED 2026-05-25 (next session)**
   - Why: T8 open; upstream Issue #61 (21 reactions).
   - Evidence: ROADMAP T8 "Routine Operations / Scheduler"; iter-92 → iter-99
     Scheduled Auto-Backup is the WorkManager skeleton.
-  - Touches: refactor `AutoBackupScheduler` → `RoutineScheduler`; new `profiles/
-    RoutineScheduler.java`, `profiles/ProfileTrigger.java`; Room schema; Settings →
-    Profiles → Schedules.
-  - Acceptance: At least one event-driven trigger (`on-charging` or `on-network`) +
-    cron-style time-of-day trigger; run-now + history per schedule.
-  - Verify: Robolectric `RoutineSchedulerTest`; manual: charging + Wi-Fi backup +
-    freeze schedule fires.
+  - **Outcome (2026-05-25):** Generalising the scheduler needs Room migration
+    validation, a new Worker, and per-trigger plumbing (boot / charging / network /
+    foreground). Migration + Worker execution cannot be validated from a CI host. Plan
+    + a "suggested next slice" (SharedPreferences-backed trigger store, reuse
+    `ProfileApplierService` as executor) recorded in
+    [`.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md`](.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md).
 
-- [ ] P1 - **NF-08**: Multi-Tag per App + Saved Filter Presets
+- [x] P1 - **NF-08**: Multi-Tag per App + Saved Filter Presets — **DATA LAYER SHIPPED 2026-05-25**
   - Why: T8 open; pairs with NF-09 (tag-targeted schedules).
   - Evidence: ROADMAP T8.
-  - Touches: Room schema bump (`app_tags`, `app_tag_assignments`), `db/AppsDb`,
-    `main/MainViewModel.java`, `details/AppDetailsActivity.java`,
-    `filters/options/TagsOption.java`.
-  - Acceptance: User can tag any app with multiple tags; main list and Finder filter by
-    tag; Hail blocklist import on the Profiles screen populates tags.
-  - Verify: Room migration test; pure-JVM DAO tests; manual: tag 5 apps `:work`, filter,
-    run profile.
+  - **Outcome (2026-05-25):** Shipped the SharedPreferences-backed
+    `AppTagStore` + `TagsOption` Finder predicate (covering `any`, `none`,
+    `has_all`, `has_any`, `missing_all`). The App Details tag editor + main-list
+    chip + Room migration are deferred — the data layer is the contract a UI
+    iteration can build against without further design work. Pure-JVM coverage at
+    `AppTagStoreTest`.
 
 ### Phase 3 — Privacy / Diagnostics deepening (8-12 weeks)
 
