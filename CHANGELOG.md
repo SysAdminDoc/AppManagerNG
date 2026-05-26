@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — High-contrast theme hardening (2026-05-26)
+
+- Replaced hardcoded red HTML warning spans in backup/rules and system-font
+  preference copy with semantic styled warning labels so text follows the
+  active theme instead of forcing a low-contrast light-theme red.
+- Extended the v2 appearance contract test to verify light and night text,
+  primary/secondary, and semantic status color pairs meet a 4.5:1 contrast
+  floor.
+- Added `docs/audits/2026-05-26-high-contrast-theme.md` to record the static
+  audit slice and the manual screen/device coverage still open.
+
 ### Documentation — Accrescent listing packet (2026-05-26)
 
 - Added `docs/distribution/accrescent-listing.md` with the current release
