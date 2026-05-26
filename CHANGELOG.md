@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - KeyStorePasswordLifecycle false positive on savePass alias (2026-05-26)
+
+- The reflection-based contract test in `KeyStorePasswordLifecycleTest`
+  was failing on `KeyStoreManager.savePass(Context, String prefAlias,
+  char[] password)`. The String parameter is a SharedPreferences key, not
+  the password; the test predicate was incorrectly flagging any password-
+  named method that took any String at all.
+- Refined the predicate to (a) skip methods that do not take a `char[]`
+  payload at all and (b) honor a documented exemption for the
+  `savePass` / `getPass` SharedPreferences alias slot when the method
+  still carries the password as `char[]` elsewhere. A regression that
+  actually drops the `char[]` payload still fails as before.
+
 ### Added - Perfetto trace config + command builder (T20-A, 2026-05-26)
 
 - Added `PerfettoTraceConfigBuilder.buildTextProto`, which emits a
