@@ -285,7 +285,13 @@ for the original Effort / Dependency context per row.
   short-lived "Undo" SnackBar before commit. Acceptance: cancellation skips
   the privileged write entirely, an unactioned SnackBar still records the
   operation in `op_history`, and the Snackbar duration follows the existing
-  reduced-motion gate.
+  reduced-motion gate. _Data layer shipped 2026-05-26: `UndoableActionQueue`
+  is a thread-safe deferred-commit container with `defer` / `cancel` /
+  `pollExpired` / `drainAll`, injectable clock for tests, and deterministic
+  insertion-order draining; 10 focused JVM tests cover the cancel-prevents-
+  commit invariant, partial drain, ordering, and clock-injection edge cases.
+  SnackBar wiring per destructive surface, op_history capture, and the
+  reduced-motion duration tie-in remain on the T21-F roadmap row._
 - [ ] **T21-G Attention badges on app list rows**: surface a tiny circular
   badge counter on rows where actionable state exists (pending permission
   grants, disabled components, recent OS revert). Acceptance: each badge
