@@ -157,9 +157,11 @@ public class PackageInstallerService extends ForegroundService {
                             OperationJournalMetadata.forInstaller(PackageInstallerService.this, apkQueueItem,
                                     result, blockingPackage, statusMessage));
                     if (success) {
-                        // Block trackers if requested
+                        // Block trackers if requested, honoring the configured intensity
                         if (options.isBlockTrackers()) {
-                            ComponentUtils.blockTrackingComponents(new UserPackagePair(packageName, options.getUserId()));
+                            ComponentUtils.blockTrackingComponents(
+                                    new UserPackagePair(packageName, options.getUserId()),
+                                    io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getTrackerBlockingIntensity());
                         }
                         // Perform force dex optimization if requested
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && options.isForceDexOpt()) {

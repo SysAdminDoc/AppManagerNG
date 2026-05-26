@@ -184,6 +184,7 @@ public class AppPref {
         PREF_USE_SYSTEM_FONT_BOOL,
         PREF_ZIP_ALIGN_BOOL,
         PREF_PREMIUM_PREVIEW_BOOL,
+        PREF_TRACKER_BLOCKING_INTENSITY_STR,
         ;
 
         private static final String[] sKeys = new String[values().length];
@@ -550,6 +551,8 @@ public class AppPref {
                 return ComponentRule.COMPONENT_TO_BE_BLOCKED_IFW_DISABLE;
             case PREF_SAVED_APK_FORMAT_STR:
                 return "%label%_%version%";
+            case PREF_TRACKER_BLOCKING_INTENSITY_STR:
+                return io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity.STRICT.name();
             case PREF_AUTHORIZATION_KEY_STR:
                 return AuthManager.generateKey();
             case PREF_FREEZE_TYPE_INT:

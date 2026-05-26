@@ -70,6 +70,7 @@ public class PrivacyPreferences extends PreferenceFragment {
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.preferences_privacy, rootKey);
         getPreferenceManager().setPreferenceDataStore(new SettingsDataStore());
+        bindTrackerBlockingIntensity();
         boolean isScreenLockEnabled = Prefs.Privacy.isScreenLockEnabled();
         boolean isPersistentSessionEnabled = Prefs.Privacy.isPersistentSessionAllowed();
         // Auto lock
@@ -369,6 +370,46 @@ public class PrivacyPreferences extends PreferenceFragment {
             requireContext().stopService(service);
             ContextCompat.startForegroundService(requireContext(), service);
         }
+    }
+
+    /**
+     * NF-07 — wire the tracker-blocking intensity picker. The Preference itself
+     * is a plain entry (no per-row checkbox); tapping it opens a single-choice
+     * dialog with one row per {@link io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity}.
+     * The current choice is also shown as the row's live summary so users can
+     * see what is active without opening the dialog.
+     */
+    private void bindTrackerBlockingIntensity() {
+        androidx.preference.Preference pref = findPreference("tracker_blocking_intensity");
+        if (pref == null) return;
+        applyTrackerBlockingIntensitySummary(pref);
+        pref.setOnPreferenceClickListener(p -> {
+            io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity[] options =
+                    io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity.values();
+            CharSequence[] labels = new CharSequence[options.length];
+            for (int i = 0; i < options.length; ++i) {
+                labels[i] = getString(options[i].getLabelRes());
+            }
+            int current = Prefs.Privacy.getTrackerBlockingIntensity().ordinal();
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.tracker_blocking_intensity_title)
+                    .setSingleChoiceItems(labels, current, (dialog, which) -> {
+                        Prefs.Privacy.setTrackerBlockingIntensity(options[which]);
+                        applyTrackerBlockingIntensitySummary(pref);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+    }
+
+    private void applyTrackerBlockingIntensitySummary(@NonNull androidx.preference.Preference pref) {
+        io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity intensity =
+                Prefs.Privacy.getTrackerBlockingIntensity();
+        pref.setSummary(getString(R.string.tracker_blocking_intensity_summary)
+                + "\n" + getString(intensity.getLabelRes())
+                + " — " + getString(intensity.getSummaryRes()));
     }
 
 }
