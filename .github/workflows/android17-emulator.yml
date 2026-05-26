@@ -1,0 +1,123 @@
+name: Android 17 emulator gate
+
+on:
+  schedule:
+    # Weekly run, so the API 37 system image drift surfaces without burning
+    # CI minutes on every push.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      api-level:
+        description: 'Android API level to boot (default 37 / Android 17)'
+        default: '37'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android17-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    # KVM acceleration is only available on linux runners.
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: ['37']
+        arch: ['x86_64']
+    env:
+      AM_NG_EMULATOR_API_LEVEL: ${{ matrix.api-level }}
+
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Assemble FLOSS debug APK
+        run: ./gradlew :app:assembleFlossDebug :app:assembleFlossDebugAndroidTest
+
+      - name: Verify native 16 KB page alignment on built APKs
+        run: |
+          python3 scripts/verify-native-page-alignment.py \
+            app/build/outputs/apk/floss/debug
+
+      - name: AVD cache key
+        id: avd-cache-key
+        run: |
+          echo "value=avd-api${{ matrix.api-level }}-${{ matrix.arch }}-v1" >> "$GITHUB_OUTPUT"
+
+      - name: Cache AVD
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ steps.avd-cache-key.outputs.value }}
+
+      - name: Prime AVD snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ matrix.arch }}
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "AVD primed"
+
+      - name: Run instrumented tests on Android ${{ matrix.api-level }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ matrix.arch }}
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb logcat -c || true
+            ./gradlew :app:connectedFlossDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest
+            adb logcat -d > "${GITHUB_WORKSPACE}/android17-emulator-logcat.txt" || true
+
+      - name: Upload instrumented test reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android17-connectedAndroidTest-reports-api${{ matrix.api-level }}
+          path: |
+            app/build/reports/androidTests/connected/
+            android17-emulator-logcat.txt
+          if-no-files-found: warn
+
+      - name: Upload hidden-API descriptor report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android17-hidden-api-report-api${{ matrix.api-level }}
+          path: app/build/outputs/connected_android_test_additional_output/
+          if-no-files-found: warn
