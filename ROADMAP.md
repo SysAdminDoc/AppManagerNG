@@ -27,6 +27,9 @@ work to separate root research files.
 - IzzyOnDroid submission metadata is prepared in
   `docs/distribution/izzyondroid-listing.md`; the external tracker submission
   requires maintainer action.
+- F-Droid submission metadata is prepared in
+  `docs/distribution/fdroid-listing.md`; the external fdroiddata merge request
+  requires maintainer action.
 - The historical roadmap and the 2026-05-25 research feature plans were
   archived under `docs/roadmap/archive/` during this consolidation pass.
 
@@ -103,7 +106,10 @@ work to separate root research files.
 - [ ] IzzyOnDroid listing. Submission packet is ready in
   `docs/distribution/izzyondroid-listing.md`; blocked on a maintainer filing
   the external inclusion request and confirming the `floss` APK asset pattern.
-- [ ] F-Droid listing.
+- [ ] F-Droid listing. Submission packet is ready in
+  `docs/distribution/fdroid-listing.md`; blocked on a maintainer filing the
+  external fdroiddata merge request and watching F-Droid CI scanner/build
+  feedback.
 - [ ] Accrescent listing.
 
 ### Platform and Accessibility

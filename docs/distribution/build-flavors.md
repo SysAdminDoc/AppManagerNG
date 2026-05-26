@@ -25,15 +25,19 @@ feature gate.
 
 ## F-Droid Metadata Contract
 
-F-Droid metadata should build the `flossRelease` variant, not `fullRelease`:
+F-Droid metadata should select the `floss` flavor, which builds the
+`flossRelease` variant instead of `fullRelease`:
 
 ```yaml
 Builds:
   - versionName: <tag version>
     versionCode: <version code>
     gradle:
-      - flossRelease
+      - floss
 ```
+
+F-Droid's `gradle` field takes flavor names, not the full Gradle task name; the
+server composes `assemble<flavor>Release` from that list.
 
 The reason is F-Droid's anti-feature policy. F-Droid marks apps from the user's
 point of view and lists `Non-Free Network Services` for apps that promote or
