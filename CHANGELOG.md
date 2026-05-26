@@ -5,6 +5,29 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — NF-09 trigger data layer + Saved Filter Presets + Keep-app-open hint (2026-05-25)
+
+- **NF-09 data layer** — new `profiles/trigger/ProfileTrigger` value class
+  with five trigger types (time-of-day, on-charging, on-network Wi-Fi,
+  on-network any, on-boot) and a SharedPreferences-backed
+  `ProfileTriggerStore` mirroring the `AppTagStore` shape from NF-08.
+  Builder validates time-of-day bounds; toggleEnabled persists; coverage
+  in `ProfileTriggerStoreTest`. Worker / Settings UI / boot trigger
+  remain blocked on real-device validation; the data layer is the
+  stable contract a future session can build the executor on.
+- **Saved Filter Presets data layer** — new
+  `filters/preset/FilterPresetStore` persists named `FilterItem` chains
+  to SharedPreferences JSON with case-insensitive de-dup, rename, and
+  validation against a `[a-z0-9 _-]` name allowlist. Pure-JVM coverage
+  in `FilterPresetStoreTest`. A Finder "Save filter" UI iteration can
+  ship without further data work.
+- **Keep-app-open hint** — new `BatchKeepOpenHint` static helper
+  surfaces an indefinite Material Snackbar guiding the user not to
+  background the app while long-running batch operations run. Wired
+  from the BatchOps journal retry path in `MainActivity`; other
+  call sites can opt in with a single static call. Robolectric smoke
+  test pins show/dismiss/isShowing bookkeeping.
+
 ### Added — Runtime activity chip in App Details (NF-17, 2026-05-25)
 
 - App Details info card now shows a "Runtime activity (24h)" tag-cloud

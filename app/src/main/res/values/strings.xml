@@ -626,6 +626,9 @@
     <string name="whats_new">What\'s new</string>
     <string name="pref_whats_new_summary">Open the in-app changelog viewer.</string>
 
+    <!-- BatchKeepOpenHint — Hail-style indefinite snackbar during long ops -->
+    <string name="batch_keep_open_default">Keep AppManagerNG open while this operation runs. Backgrounding the app may pause it on aggressive OEMs.</string>
+
     <!-- NF-17 Runtime telemetry chip + dialog -->
     <string name="runtime_telemetry_chip_label">Runtime activity (24h)</string>
     <string name="runtime_telemetry_dialog_title">Last 24h activity</string>
