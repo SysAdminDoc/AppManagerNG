@@ -42,6 +42,7 @@ import java.util.Set;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
+import io.github.muntashirakon.AppManager.backup.BackupRetentionPolicy;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
@@ -294,6 +295,41 @@ public class OneClickOpsActivity extends BaseActivity {
                                                     io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
                                                             UIUtils.displayLongToast(getString(
                                                                     R.string.backup_retention_prune_done, deleted)));
+                                                }))
+                                        .setNegativeButton(R.string.cancel, null)
+                                        .show();
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .show();
+                });
+        // T19-D: collapse same-version duplicate backups (a package backed up
+        // more than once at the same versionCode across backup folders/names)
+        // down to a single copy, keeping the newest or oldest per the user's
+        // choice. Backed by the shared BackupRetentionPolicy duplicate engine.
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.delete_duplicate_backups),
+                        getString(R.string.delete_duplicate_backups_description), R.drawable.ic_trash_can)
+                .setOnClickListener(v -> {
+                    CharSequence[] labels = {
+                            getString(R.string.delete_duplicate_backups_keep_newest),
+                            getString(R.string.delete_duplicate_backups_keep_oldest),
+                    };
+                    final BackupRetentionPolicy.DuplicateKeepStrategy[] strategies = {
+                            BackupRetentionPolicy.DuplicateKeepStrategy.NEWEST,
+                            BackupRetentionPolicy.DuplicateKeepStrategy.OLDEST,
+                    };
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.delete_duplicate_backups)
+                            .setItems(labels, (dialog, which) -> {
+                                final BackupRetentionPolicy.DuplicateKeepStrategy strategy = strategies[which];
+                                new MaterialAlertDialogBuilder(this)
+                                        .setTitle(R.string.delete_duplicate_backups)
+                                        .setMessage(R.string.delete_duplicate_backups_confirm)
+                                        .setPositiveButton(R.string.action_continue, (d, w) ->
+                                                io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
+                                                    int deleted = BackupRetentionPolicy.pruneVersionDuplicates(strategy);
+                                                    io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
+                                                            UIUtils.displayLongToast(getString(
+                                                                    R.string.duplicate_backups_pruned, deleted)));
                                                 }))
                                         .setNegativeButton(R.string.cancel, null)
                                         .show();

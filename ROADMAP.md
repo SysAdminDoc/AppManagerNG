@@ -70,14 +70,15 @@ than by historical priority tier:
   classification from ZIP central directory); 39 JVM tests.
   **Open: `PackageManager.getPackageArchiveInfo` + signing-cert extraction
   glue, One-Click Ops UI, File Manager action.**_
-- [ ] **T19-D Backup duplicate cleaner**: detect duplicate
-  `<package>@<version>@<variant>` archives across backup roots; per-pair "keep
-  newest"/"keep largest" with manual override. Acceptance: extends T6 retention
-  policy, never deletes the only good checksum-verified copy, writes to
-  `op_history`. _Data layer shipped: `BackupRetentionPolicy`
-  `selectVersionDuplicates`/`pruneVersionDuplicates` with NEWEST/OLDEST/LARGEST/
-  LARGEST_THEN_NEWEST, `BackupSizeResolver` SAM, `reclaimableBytes`; 11 JVM
-  tests. **Open: duplicate-cleaner UI + op_history wiring.**_
+- [x] **T19-D Backup duplicate cleaner**: One-Click Ops "Delete duplicate
+  backups" entry shipped 2026-05-28 — offers "keep newest"/"keep oldest" and
+  runs `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
+  thread, reporting the removed count. Same-version duplicates across backup
+  folders/names collapse to one copy per package. _Data layer:
+  `selectVersionDuplicates`/`pruneVersionDuplicates` (NEWEST/OLDEST/LARGEST/
+  LARGEST_THEN_NEWEST), `BackupSizeResolver`, `reclaimableBytes`; 11 JVM tests.
+  **Follow-up: "keep largest" needs a backup-size accessor on `BackupItem`;
+  reclaimable-bytes hint and a dedicated `op_history` DB type remain.**_
 
 ### T20 — Performance and profiling (system-level)
 
