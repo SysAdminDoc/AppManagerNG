@@ -46,16 +46,19 @@ than by historical priority tier:
 
 ### T19 — Package-aware storage analysis
 
-- [ ] **T19-B Leftover detection after uninstall**: surface
-  `oneclickops/LeftoverScanner` from One-Click Ops (alongside "clear data of
-  uninstalled apps") and from App Details when the package is detected
-  uninstalled. Acceptance: privilege-aware (no privileged read of `/data/data`
-  without root), exportable result list, one-batch clean with `op_history`
-  capture. _Data layer shipped: `LeftoverScanner.scan` walks
-  `Android/{data,obb,media}` roots, `scanInternalDataStubs` adds the root
-  `/data/data` stub bucket (`KIND_INTERNAL_STUB`), `selectOrphans` is a
-  pure-function package-name-validating selector, `sizeOnDisk` recurses bytes;
-  15 JVM tests. **Open: UI wiring + op_history + App Details entry.**_
+- [x] **T19-B Leftover detection after uninstall**: One-Click Ops "Detect
+  leftover folders" entry shipped 2026-05-28 — `OneClickOpsViewModel.scanLeftovers`
+  builds the installed set, scans `Android/{data,obb,media}` (and, when
+  privileged, the root `/data/data` stubs), precomputes per-folder sizes off the
+  main thread, and posts a `LeftoverEntry` list; the Activity shows a searchable
+  multi-choice review dialog ("pkg · kind · size"), gates deletion behind
+  `ActionAuthGate`, and `deleteLeftovers` removes each folder via the privileged
+  `Paths.get(...).delete()` (recursive) with per-folder audit lines through the
+  app `Log` and a "reclaimed X" result toast. _Data layer: `LeftoverScanner`
+  (scan/scanInternalDataStubs/selectOrphans/sizeOnDisk; 15 JVM tests).
+  **Follow-up: App Details uninstalled-package convenience entry, a result-list
+  export action, and migrating the audit capture to a dedicated `op_history` DB
+  type (shared with T21-F).**_
 - [ ] **T19-C APK duplicate finder**: index Downloads / backup destinations /
   external storage for `.apk`/`.apks`/`.apkm`/`.xapk`, dedupe by package name +
   signing cert + version code, surface cleanup in File Manager and the backup
