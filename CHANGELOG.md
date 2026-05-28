@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Duplicate backup cleaner in One-Click Ops (T19-D UI, 2026-05-28)
+
+- One-Click Ops -> Maintenance now has a "Delete duplicate backups" entry
+  that collapses same-version backup copies of a package (across backup
+  folders and names) down to a single copy. The user picks "keep the
+  newest copy" or "keep the oldest copy"; the action runs
+  `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
+  thread and reports the number of removed duplicates.
+- Follow-up: a "keep largest" option needs an on-disk size accessor on
+  `BackupItem`; the reclaimable-bytes hint and a dedicated `op_history`
+  DB type remain on the T19-D roadmap row.
+
 ### Added - Leftover folder detection in One-Click Ops (T19-B UI, 2026-05-28)
 
 - One-Click Ops -> Maintenance now has a "Detect leftover folders" entry
