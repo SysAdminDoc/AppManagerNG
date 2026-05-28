@@ -2938,6 +2938,12 @@
     <string name="delete_old_backups_keep_last_n">Keep last %1$d per app</string>
     <string name="delete_old_backups_older_than_days">Delete anything older than %1$d days</string>
     <string name="delete_old_backups_confirm">This deletes matching backup revisions across every installed and uninstalled package. The operation cannot be undone.</string>
+    <string name="delete_duplicate_backups">Delete duplicate backups</string>
+    <string name="delete_duplicate_backups_description">Find same-version backup copies of a package across backup folders and keep just one of each.</string>
+    <string name="delete_duplicate_backups_keep_newest">Keep the newest copy</string>
+    <string name="delete_duplicate_backups_keep_oldest">Keep the oldest copy</string>
+    <string name="delete_duplicate_backups_confirm">Delete the redundant same-version backup copies, keeping your chosen copy of each package? This cannot be undone.</string>
+    <string name="duplicate_backups_pruned">Removed <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s).</string>
     <!-- Permission Change Monitor (T9/Next) -->
     <string name="pref_permission_change_monitor">Permission change monitor</string>
     <string name="pref_permission_change_monitor_msg">Notify when an updated app gains a new dangerous permission compared to the previously installed version. Opt-in; runs locally with no network use.</string>
