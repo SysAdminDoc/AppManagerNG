@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.text.SpannableStringBuilder;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -116,6 +117,13 @@ public class OneClickOpsActivity extends BaseActivity {
             DexOptDialog dialog = DexOptDialog.getInstance(packages);
             dialog.show(getSupportFragmentManager(), DexOptDialog.TAG);
         });
+        mViewModel.watchLeftoverScanResult().observe(this, this::reviewLeftovers);
+        mViewModel.watchLeftoverDeleteResult().observe(this, result -> {
+            CpuUtils.releaseWakeLock(wakeLock);
+            setBusy(false);
+            UIUtils.displayLongToast(getString(R.string.leftover_files_deleted, result.first,
+                    Formatter.formatShortFileSize(this, result.second)));
+        });
     }
 
     private void initItemContainers() {
@@ -200,6 +208,19 @@ public class OneClickOpsActivity extends BaseActivity {
                         wakeLock.acquire();
                     }
                     mViewModel.clearData();
+                });
+        // T19-B: detect orphan Android/{data,obb,media} folders (and root
+        // /data/data stubs) left behind by uninstalled apps. This complements
+        // the package-record-based "clear data" entry above by catching
+        // file-system remnants the framework never cleaned up.
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.detect_leftover_files),
+                        getString(R.string.detect_leftover_files_description), R.drawable.ic_trash_can)
+                .setOnClickListener(v -> {
+                    setBusy(true);
+                    if (!wakeLock.isHeld()) {
+                        wakeLock.acquire();
+                    }
+                    mViewModel.scanLeftovers();
                 });
 //        mItemCreator.addItemWithTitleSubtitle(getString(R.string.clear_app_cache),
 //                        getString(R.string.clear_app_cache_description))
@@ -459,6 +480,53 @@ public class OneClickOpsActivity extends BaseActivity {
                     launchService(item);
                 })
                 .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> setBusy(false))
+                .show();
+    }
+
+    private void reviewLeftovers(@Nullable List<OneClickOpsViewModel.LeftoverEntry> entries) {
+        CpuUtils.releaseWakeLock(wakeLock);
+        setBusy(false);
+        if (entries == null || entries.isEmpty()) {
+            showInfoDialog(R.string.detect_leftover_files, R.string.no_leftover_files_found_message);
+            return;
+        }
+        final ArrayList<Integer> indices = new ArrayList<>(entries.size());
+        final List<CharSequence> labels = new ArrayList<>(entries.size());
+        for (int i = 0; i < entries.size(); ++i) {
+            OneClickOpsViewModel.LeftoverEntry entry = entries.get(i);
+            indices.add(i);
+            labels.add(new SpannableStringBuilder(entry.leftover.packageName)
+                    .append("\n").append(getSmallerText(entry.leftover.kindLabel() + " · "
+                            + Formatter.formatShortFileSize(this, entry.size))));
+        }
+        new SearchableMultiChoiceDialogBuilder<>(this, indices, labels)
+                .addSelections(indices)
+                .setTitle(R.string.leftover_files_found_title)
+                .setPositiveButton(R.string.delete, (dialog, which, selectedIndices) -> {
+                    if (!requirePackageSelection(selectedIndices)) return;
+                    List<OneClickOpsViewModel.LeftoverEntry> selected = new ArrayList<>(selectedIndices.size());
+                    for (Integer index : selectedIndices) {
+                        selected.add(entries.get(index));
+                    }
+                    confirmDeleteLeftovers(selected);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmDeleteLeftovers(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.detect_leftover_files)
+                .setMessage(R.string.delete_leftover_files_confirm)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(this, R.string.authenticate_to_clear_data, () -> {
+                            setBusy(true);
+                            if (!wakeLock.isHeld()) {
+                                wakeLock.acquire();
+                            }
+                            mViewModel.deleteLeftovers(entries);
+                        }))
                 .show();
     }
 

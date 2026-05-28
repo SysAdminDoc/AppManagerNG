@@ -5,6 +5,27 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Leftover folder detection in One-Click Ops (T19-B UI, 2026-05-28)
+
+- One-Click Ops -> Maintenance now has a "Detect leftover folders" entry
+  that finds orphan `Android/data`, `Android/obb`, and `Android/media`
+  folders (plus root `/data/data` stubs when privileged) left behind by
+  uninstalled apps, complementing the existing package-record-based
+  "Clear data from uninstalled apps" entry.
+- `OneClickOpsViewModel.scanLeftovers()` builds the installed-package set,
+  runs the `LeftoverScanner` data layer, and precomputes each folder's
+  on-disk size on the worker thread so the review dialog never walks the
+  file system on the main thread. Results are surfaced through a new
+  `LeftoverEntry` (folder + size) LiveData.
+- The review dialog is a searchable multi-choice list ("package · kind ·
+  size"); deletion is gated behind `ActionAuthGate`, runs through the
+  privileged `Paths.get(...).delete()` recursive delete, records a
+  per-folder audit line in the app log, and reports a "Deleted N folders,
+  reclaimed X" toast.
+- Follow-up: App Details uninstalled-package entry, result-list export,
+  and a dedicated `op_history` DB type (shared with T21-F) remain on the
+  T19-B roadmap row.
+
 ### Added - Attention badges architecture doc (T21-G glossary follow-up, 2026-05-26)
 
 - Added `docs/architecture/attention-badges.md` documenting the

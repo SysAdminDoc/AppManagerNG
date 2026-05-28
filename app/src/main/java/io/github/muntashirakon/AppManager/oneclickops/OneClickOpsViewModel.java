@@ -11,6 +11,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Environment;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.os.storage.StorageManagerHidden;
@@ -46,6 +47,7 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.io.Paths;
 
 public class OneClickOpsViewModel extends AndroidViewModel {
     public static final String TAG = OneClickOpsViewModel.class.getSimpleName();
@@ -57,6 +59,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     private final MutableLiveData<List<String>> mClearDataCandidates = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mTrimCachesResult = new MutableLiveData<>();
     private final MutableLiveData<String[]> mAppsInstalledByAmForDexOpt = new MutableLiveData<>();
+    private final MutableLiveData<List<LeftoverEntry>> mLeftoverScanResult = new MutableLiveData<>();
+    private final MutableLiveData<Pair<Integer, Long>> mLeftoverDeleteResult = new MutableLiveData<>();
 
     @Nullable
     private Future<?> mFutureResult;
@@ -96,6 +100,109 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     public MutableLiveData<String[]> getAppsInstalledByAmForDexOpt() {
         return mAppsInstalledByAmForDexOpt;
+    }
+
+    public LiveData<List<LeftoverEntry>> watchLeftoverScanResult() {
+        return mLeftoverScanResult;
+    }
+
+    public LiveData<Pair<Integer, Long>> watchLeftoverDeleteResult() {
+        return mLeftoverDeleteResult;
+    }
+
+    /**
+     * A single leftover folder paired with its precomputed on-disk size so the
+     * review dialog never walks the file system on the main thread (T19-B).
+     */
+    public static class LeftoverEntry {
+        @NonNull
+        public final LeftoverScanner.Leftover leftover;
+        public final long size;
+
+        LeftoverEntry(@NonNull LeftoverScanner.Leftover leftover, long size) {
+            this.leftover = leftover;
+            this.size = size;
+        }
+    }
+
+    /**
+     * Scan external storage (and, when privileged, the root {@code /data/data}
+     * stubs) for orphan per-package directories left behind by uninstalled
+     * apps. Sizes are computed on the worker thread so the UI can render them
+     * without re-walking.
+     */
+    @AnyThread
+    public void scanLeftovers() {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            HashSet<String> installed = new HashSet<>();
+            for (ApplicationInfo applicationInfo : PackageUtils.getAllApplications(0)) {
+                if (applicationInfo != null && applicationInfo.packageName != null) {
+                    installed.add(applicationInfo.packageName);
+                }
+                if (ThreadUtils.isInterrupted()) {
+                    return;
+                }
+            }
+            List<LeftoverScanner.Leftover> leftovers = new ArrayList<>(
+                    LeftoverScanner.scan(Environment.getExternalStorageDirectory(), installed));
+            if (!ThreadUtils.isInterrupted() && SelfPermissions.isSystemOrRootOrShell()) {
+                // The data layer's File-based listing only succeeds when this
+                // process itself can read /data/data; on a remote-privileged
+                // setup it returns empty, which is the safe fallback.
+                leftovers.addAll(LeftoverScanner.scanInternalDataStubs(
+                        new java.io.File("/data/data"), installed));
+            }
+            List<LeftoverEntry> entries = new ArrayList<>(leftovers.size());
+            for (LeftoverScanner.Leftover leftover : leftovers) {
+                if (ThreadUtils.isInterrupted()) {
+                    return;
+                }
+                entries.add(new LeftoverEntry(leftover, LeftoverScanner.sizeOnDisk(leftover.path)));
+            }
+            mLeftoverScanResult.postValue(entries);
+        });
+    }
+
+    /**
+     * Delete the selected leftover folders through the privileged
+     * {@link io.github.muntashirakon.io.Path} layer (recursive), recording
+     * each deletion in the app log for an audit trail. Posts a (count, bytes)
+     * summary when done.
+     */
+    @AnyThread
+    public void deleteLeftovers(@NonNull List<LeftoverEntry> entries) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            int deleted = 0;
+            long reclaimed = 0L;
+            for (LeftoverEntry entry : entries) {
+                if (ThreadUtils.isInterrupted()) {
+                    break;
+                }
+                try {
+                    if (Paths.get(entry.leftover.path).delete()) {
+                        ++deleted;
+                        reclaimed += entry.size;
+                        io.github.muntashirakon.AppManager.logs.Log.i(TAG, "Deleted leftover "
+                                + entry.leftover.kindLabel() + " folder for "
+                                + entry.leftover.packageName + " (" + entry.size + " bytes): "
+                                + entry.leftover.path);
+                    } else {
+                        io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                                "Failed to delete leftover folder: " + entry.leftover.path);
+                    }
+                } catch (Throwable th) {
+                    io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                            "Error deleting leftover folder: " + entry.leftover.path, th);
+                }
+            }
+            mLeftoverDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+        });
     }
 
     @AnyThread
