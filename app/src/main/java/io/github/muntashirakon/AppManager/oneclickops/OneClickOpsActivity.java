@@ -125,6 +125,13 @@ public class OneClickOpsActivity extends BaseActivity {
             UIUtils.displayLongToast(getString(R.string.leftover_files_deleted, result.first,
                     Formatter.formatShortFileSize(this, result.second)));
         });
+        mViewModel.watchApkDuplicates().observe(this, this::reviewApkDuplicates);
+        mViewModel.watchApkDuplicateDeleteResult().observe(this, result -> {
+            CpuUtils.releaseWakeLock(wakeLock);
+            setBusy(false);
+            UIUtils.displayLongToast(getString(R.string.duplicate_apks_deleted, result.first,
+                    Formatter.formatShortFileSize(this, result.second)));
+        });
     }
 
     private void initItemContainers() {
@@ -336,6 +343,17 @@ public class OneClickOpsActivity extends BaseActivity {
                             })
                             .setNegativeButton(R.string.cancel, null)
                             .show();
+                });
+        // T19-C: scan storage for duplicate .apk files (same package + version +
+        // signing cert) and reclaim space by keeping the largest copy of each.
+        mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.find_duplicate_apks),
+                        getString(R.string.find_duplicate_apks_description), R.drawable.ic_file_copy)
+                .setOnClickListener(v -> {
+                    setBusy(true);
+                    if (!wakeLock.isHeld()) {
+                        wakeLock.acquire();
+                    }
+                    mViewModel.scanApkDuplicates(ApkDuplicateSelector.KeepStrategy.LARGEST);
                 });
         setBusy(false);
     }
@@ -562,6 +580,57 @@ public class OneClickOpsActivity extends BaseActivity {
                                 wakeLock.acquire();
                             }
                             mViewModel.deleteLeftovers(entries);
+                        }))
+                .show();
+    }
+
+    private void reviewApkDuplicates(@Nullable List<ApkDuplicateSelector.DuplicateGroup> groups) {
+        CpuUtils.releaseWakeLock(wakeLock);
+        setBusy(false);
+        if (groups == null || groups.isEmpty()) {
+            showInfoDialog(R.string.find_duplicate_apks, R.string.no_duplicate_apks_found_message);
+            return;
+        }
+        final ArrayList<ApkDuplicateSelector.Candidate> drops = new ArrayList<>();
+        final ArrayList<Integer> indices = new ArrayList<>();
+        final List<CharSequence> labels = new ArrayList<>();
+        for (ApkDuplicateSelector.DuplicateGroup group : groups) {
+            for (ApkDuplicateSelector.Candidate drop : group.drop) {
+                indices.add(drops.size());
+                drops.add(drop);
+                labels.add(new SpannableStringBuilder(drop.path.getName())
+                        .append("\n").append(getSmallerText(drop.packageName + " v" + drop.versionCode
+                                + " · " + Formatter.formatShortFileSize(this, drop.sizeBytes)
+                                + " · " + getString(R.string.apk_duplicate_keeping, group.keeper.path.getName()))));
+            }
+        }
+        new SearchableMultiChoiceDialogBuilder<>(this, indices, labels)
+                .addSelections(indices)
+                .setTitle(R.string.duplicate_apks_review_title)
+                .setPositiveButton(R.string.delete, (dialog, which, selectedIndices) -> {
+                    if (!requirePackageSelection(selectedIndices)) return;
+                    List<ApkDuplicateSelector.Candidate> selected = new ArrayList<>(selectedIndices.size());
+                    for (Integer index : selectedIndices) {
+                        selected.add(drops.get(index));
+                    }
+                    confirmDeleteApkDuplicates(selected);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmDeleteApkDuplicates(@NonNull List<ApkDuplicateSelector.Candidate> dropFiles) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.find_duplicate_apks)
+                .setMessage(R.string.delete_duplicate_apks_confirm)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(this, R.string.authenticate_to_clear_data, () -> {
+                            setBusy(true);
+                            if (!wakeLock.isHeld()) {
+                                wakeLock.acquire();
+                            }
+                            mViewModel.deleteApkDuplicates(dropFiles);
                         }))
                 .show();
     }

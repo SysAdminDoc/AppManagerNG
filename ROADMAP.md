@@ -59,17 +59,19 @@ than by historical priority tier:
   **Follow-up: App Details uninstalled-package convenience entry, a result-list
   export action, and migrating the audit capture to a dedicated `op_history` DB
   type (shared with T21-F).**_
-- [ ] **T19-C APK duplicate finder**: index Downloads / backup destinations /
-  external storage for `.apk`/`.apks`/`.apkm`/`.xapk`, dedupe by package name +
-  signing cert + version code, surface cleanup in File Manager and the backup
-  list. Acceptance: ignores zero-byte / partial downloads, respects cancelled
-  scans, telemetry only in the op log. _Data layer shipped:
-  `ApkDuplicateSelector` (bucket by `(pkg, versionCode, certSha256)`,
-  LARGEST/SMALLEST keep, `reclaimableBytes`), `ApkFileScanner` (DFS walk,
-  symlink-cycle defence, cancellation), `ApkBundleHeaderParser` (APKS/APKM/XAPK
-  classification from ZIP central directory); 39 JVM tests.
-  **Open: `PackageManager.getPackageArchiveInfo` + signing-cert extraction
-  glue, One-Click Ops UI, File Manager action.**_
+- [x] **T19-C APK duplicate finder**: One-Click Ops "Find duplicate APK files"
+  entry shipped 2026-05-28 — `OneClickOpsViewModel.scanApkDuplicates` walks
+  external storage with `ApkFileScanner`, fingerprints each `.apk` via
+  `PackageManager.getPackageArchiveInfo` + `PackageUtils.getSigningCertSha256Checksum`
+  (cert re-derived from the archive path), runs `ApkDuplicateSelector` keeping
+  the largest copy, and posts duplicate groups. The review dialog flattens the
+  drop set ("file · pkg vN · size · keeping <keeper>"), gates deletion behind
+  `ActionAuthGate`, deletes via the privileged `Paths.get(...).delete()` with
+  audit logging + a reclaimed-bytes toast. _Data layer: `ApkDuplicateSelector`,
+  `ApkFileScanner`, `ApkBundleHeaderParser`; 39 JVM tests. **Follow-up: base-APK
+  extraction so `.apks`/`.apkm`/`.xapk` bundles (not parseable by
+  `getPackageArchiveInfo`) can be deduped; a File Manager selection action; and
+  scanning configured backup destinations beyond external storage.**_
 - [x] **T19-D Backup duplicate cleaner**: One-Click Ops "Delete duplicate
   backups" entry shipped 2026-05-28 — offers "keep newest"/"keep oldest" and
   runs `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
