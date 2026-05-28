@@ -829,6 +829,12 @@
     <string name="no_component_matches_message">No apps matched the component signatures you entered.</string>
     <string name="no_app_ops_matches_message">No apps matched the selected app ops.</string>
     <string name="no_uninstalled_app_data_message">No leftover data from uninstalled apps was found.</string>
+    <string name="detect_leftover_files">Detect leftover folders</string>
+    <string name="detect_leftover_files_description">Find orphan <tt>Android/data</tt>, <tt>obb</tt>, and <tt>media</tt> folders (and root <tt>/data/data</tt> stubs) left behind by uninstalled apps.</string>
+    <string name="leftover_files_found_title">Review leftover folders</string>
+    <string name="no_leftover_files_found_message">No leftover folders from uninstalled apps were found.</string>
+    <string name="delete_leftover_files_confirm">Permanently delete the selected leftover folders? This cannot be undone.</string>
+    <string name="leftover_files_deleted">Deleted <xliff:g id="count" example="5">%1$d</xliff:g> folder(s), reclaimed <xliff:g id="size" example="12 MB">%2$s</xliff:g>.</string>
     <string name="no_packages_selected">No packages selected</string>
     <string name="no_packages_selected_message">Select at least one package before applying this operation.</string>
     <string name="no">No</string>
