@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Duplicate APK finder in One-Click Ops (T19-C UI, 2026-05-28)
+
+- One-Click Ops -> Maintenance now has a "Find duplicate APK files" entry
+  that walks external storage with `ApkFileScanner`, fingerprints every
+  `.apk` by `(packageName, versionCode, signing-cert SHA-256)` using
+  `PackageManager.getPackageArchiveInfo` plus the existing
+  `PackageUtils.getSigningCertSha256Checksum`, and runs the
+  `ApkDuplicateSelector` data layer keeping the largest copy of each
+  version.
+- The review dialog is a searchable multi-choice list of the redundant
+  copies ("file · package vN · size · keeping <keeper>"); deletion is
+  auth-gated, runs through the privileged recursive `Paths` delete, logs
+  each removal, and reports a "Deleted N APKs, reclaimed X" toast.
+- Follow-up: base-APK extraction so `.apks`/`.apkm`/`.xapk` bundles can be
+  deduped, a File Manager selection action, and scanning configured backup
+  destinations beyond external storage remain on the T19-C roadmap row.
+
 ### Added - Duplicate backup cleaner in One-Click Ops (T19-D UI, 2026-05-28)
 
 - One-Click Ops -> Maintenance now has a "Delete duplicate backups" entry

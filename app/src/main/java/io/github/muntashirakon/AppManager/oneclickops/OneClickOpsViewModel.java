@@ -23,6 +23,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.content.pm.PackageInfoCompat;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -61,6 +62,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     private final MutableLiveData<String[]> mAppsInstalledByAmForDexOpt = new MutableLiveData<>();
     private final MutableLiveData<List<LeftoverEntry>> mLeftoverScanResult = new MutableLiveData<>();
     private final MutableLiveData<Pair<Integer, Long>> mLeftoverDeleteResult = new MutableLiveData<>();
+    private final MutableLiveData<List<ApkDuplicateSelector.DuplicateGroup>> mApkDuplicates = new MutableLiveData<>();
+    private final MutableLiveData<Pair<Integer, Long>> mApkDuplicateDeleteResult = new MutableLiveData<>();
 
     @Nullable
     private Future<?> mFutureResult;
@@ -108,6 +111,116 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     public LiveData<Pair<Integer, Long>> watchLeftoverDeleteResult() {
         return mLeftoverDeleteResult;
+    }
+
+    public LiveData<List<ApkDuplicateSelector.DuplicateGroup>> watchApkDuplicates() {
+        return mApkDuplicates;
+    }
+
+    public LiveData<Pair<Integer, Long>> watchApkDuplicateDeleteResult() {
+        return mApkDuplicateDeleteResult;
+    }
+
+    /**
+     * Scan external storage for {@code .apk} files, fingerprint each by
+     * (package, versionCode, signing-cert SHA-256) via
+     * {@link PackageManager#getPackageArchiveInfo}, and surface every
+     * redundant copy through {@link ApkDuplicateSelector} (T19-C).
+     */
+    @AnyThread
+    public void scanApkDuplicates(@NonNull ApkDuplicateSelector.KeepStrategy strategy) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            List<java.io.File> apkFiles = ApkFileScanner.scan(
+                    Environment.getExternalStorageDirectory(), null);
+            List<ApkDuplicateSelector.Candidate> candidates = new ArrayList<>(apkFiles.size());
+            for (java.io.File apk : apkFiles) {
+                if (ThreadUtils.isInterrupted()) {
+                    return;
+                }
+                ApkDuplicateSelector.Candidate candidate = buildApkCandidate(apk);
+                if (candidate != null) {
+                    candidates.add(candidate);
+                }
+            }
+            mApkDuplicates.postValue(ApkDuplicateSelector.selectDuplicates(candidates, strategy));
+        });
+    }
+
+    /**
+     * Parse a single {@code .apk} into a duplicate-finder candidate. Bundle
+     * formats ({@code .apks}/{@code .apkm}/{@code .xapk}) are not parseable by
+     * {@code getPackageArchiveInfo} and return {@code null} here; their
+     * base-APK extraction stays on the T19-C follow-up.
+     */
+    @Nullable
+    private ApkDuplicateSelector.Candidate buildApkCandidate(@NonNull java.io.File apk) {
+        try {
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? PackageManager.GET_SIGNING_CERTIFICATES
+                    : PackageManager.GET_SIGNATURES;
+            PackageInfo packageInfo = mPm.getPackageArchiveInfo(apk.getAbsolutePath(), flags);
+            if (packageInfo == null || packageInfo.packageName == null
+                    || packageInfo.applicationInfo == null) {
+                return null;
+            }
+            // getSignerInfo(..., isExternal=true) re-derives the cert from the
+            // APK path via apksig, so point the archive info at the real file.
+            packageInfo.applicationInfo.sourceDir = apk.getAbsolutePath();
+            packageInfo.applicationInfo.publicSourceDir = apk.getAbsolutePath();
+            long versionCode = PackageInfoCompat.getLongVersionCode(packageInfo);
+            String cert = null;
+            String[] certs = PackageUtils.getSigningCertSha256Checksum(packageInfo, true);
+            if (certs.length > 0) {
+                cert = certs[0];
+            }
+            return new ApkDuplicateSelector.Candidate(apk, packageInfo.packageName, versionCode,
+                    cert, apk.length());
+        } catch (Throwable th) {
+            Log.w(TAG, "Failed to parse APK candidate: " + apk, th);
+            return null;
+        }
+    }
+
+    /**
+     * Delete the chosen duplicate APK files through the privileged
+     * {@link Paths} layer, logging each removal and posting a (count, bytes)
+     * summary. The keeper of each group is never passed in here.
+     */
+    @AnyThread
+    public void deleteApkDuplicates(@NonNull List<ApkDuplicateSelector.Candidate> dropFiles) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            int deleted = 0;
+            long reclaimed = 0L;
+            for (ApkDuplicateSelector.Candidate candidate : dropFiles) {
+                if (ThreadUtils.isInterrupted()) {
+                    break;
+                }
+                try {
+                    if (Paths.get(candidate.path).delete()) {
+                        ++deleted;
+                        if (candidate.sizeBytes > 0) {
+                            reclaimed += candidate.sizeBytes;
+                        }
+                        io.github.muntashirakon.AppManager.logs.Log.i(TAG, "Deleted duplicate APK "
+                                + candidate.packageName + " v" + candidate.versionCode + ": "
+                                + candidate.path);
+                    } else {
+                        io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                                "Failed to delete duplicate APK: " + candidate.path);
+                    }
+                } catch (Throwable th) {
+                    io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                            "Error deleting duplicate APK: " + candidate.path, th);
+                }
+            }
+            mApkDuplicateDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+        });
     }
 
     /**
