@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.RemoteException;
@@ -357,6 +358,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 ? R.string.main_list_open_app
                 : R.string.main_list_select_app, item.label));
         ImageLoader.getInstance().displayImage(item.packageName, item, holder.icon);
+        // T21-G attention badge — a single severity-tinted dot when the row has
+        // actionable state. Recent-OS-revert count is not yet wired into the
+        // cache, so it is passed as 0 for now (the perm/disabled signals already
+        // drive the badge); the OsRevertCountTracker hook is a follow-up.
+        bindAttentionBadge(holder, item);
         // Set app label
         if (!TextUtils.isEmpty(mSearchQuery) && item.label.toLowerCase(Locale.ROOT).contains(mSearchQuery)) {
             // Highlight searched query
@@ -851,9 +857,47 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         return context.getString(R.string.state_unknown);
     }
 
+    // T21-G: render the single prioritised attention badge (or hide it) for a row.
+    private void bindAttentionBadge(@NonNull ViewHolder holder, @NonNull ApplicationItem item) {
+        if (holder.attentionBadge == null) {
+            return;
+        }
+        AttentionBadgeCalculator.Badge badge = AttentionBadgeSource.badgeFor(item, 0);
+        if (badge.isNone()) {
+            holder.attentionBadge.setVisibility(View.GONE);
+            holder.attentionBadge.setContentDescription(null);
+            return;
+        }
+        int colorAttr = badge.severity == AttentionBadgeCalculator.Severity.WARN
+                ? androidx.appcompat.R.attr.colorError
+                : com.google.android.material.R.attr.colorTertiary;
+        int fallback = badge.severity == AttentionBadgeCalculator.Severity.WARN
+                ? 0xFFB3261E : 0xFF7D5260;
+        int color = MaterialColors.getColor(holder.attentionBadge, colorAttr, fallback);
+        holder.attentionBadge.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        holder.attentionBadge.setVisibility(View.VISIBLE);
+        Context ctx = holder.attentionBadge.getContext();
+        int reasonRes;
+        switch (badge.kind) {
+            case OS_REVERT:
+                reasonRes = R.string.attention_badge_os_revert;
+                break;
+            case DANGEROUS_PERMISSION:
+                reasonRes = R.string.attention_badge_dangerous_permission;
+                break;
+            case DISABLED_COMPONENT:
+            default:
+                reasonRes = R.string.attention_badge_disabled_component;
+                break;
+        }
+        holder.attentionBadge.setContentDescription(ctx.getString(R.string.attention_badge_content_description,
+                AttentionBadgeCalculator.formatCount(badge.count), ctx.getString(reasonRes)));
+    }
+
     public static class ViewHolder extends MultiSelectionView.ViewHolder {
         MaterialCardView itemView;
         AppCompatImageView icon;
+        AppCompatImageView attentionBadge;
         AppCompatImageView debugIcon;
         TextView label;
         TextView packageName;
@@ -874,6 +918,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             super(itemView);
             this.itemView = (MaterialCardView) itemView;
             icon = itemView.findViewById(R.id.icon);
+            attentionBadge = itemView.findViewById(R.id.attention_badge);
             debugIcon = itemView.findViewById(R.id.favorite_icon);
             label = itemView.findViewById(R.id.label);
             packageName = itemView.findViewById(R.id.packageName);

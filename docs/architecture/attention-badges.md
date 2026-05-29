@@ -111,13 +111,21 @@ The main-list adapter should:
 
 ## Open follow-ups
 
-- [ ] Main-list adapter wiring (`AppListAdapter.onBindViewHolder`).
+- [x] Main-list adapter wiring — shipped 2026-05-28 in
+  `MainRecyclerAdapter.bindAttentionBadge` via the
+  `AttentionBadgeSource.badgeFor(ApplicationItem, int)` overload. The visible
+  indicator is a true-circle severity dot (`bg_attention_dot`); the exact count
+  + reason are exposed through the row `contentDescription` (a stadium-shaped
+  count chip would violate the no-pill rule), so the count is not drawn in the
+  dot itself.
+- [x] Glossary entry — shipped 2026-05-28 (Settings -> Glossary -> "Attention
+  badges", `help_attention_badges_body`).
 - [ ] Wire `OsRevertMonitor.watchAppOp` / `watchFreeze` / `watchComponent`
   to call `OsRevertCountTracker.recordRevert(packageName, now)` on
-  every event.
+  every event. (The adapter passes `recentOsRevertCount = 0` until this lands.)
 - [ ] Add `OsRevertCountTracker.evictExpired` to the existing
   `MainViewModel` refresh heartbeat so the map cannot grow unbounded.
-- [ ] Add `pref_glossary_attention_badge_*` strings using the
-  glossary copy above; link to it from the new Help expander row.
 - [ ] Optional v0.6.x: split `rulesCount` proxy into a dedicated
   `disabledComponentCount` cache column for sharper badge semantics.
+- [ ] Optional: a no-pill numeric rendering of the count (e.g. a fixed-size
+  circle for 1-digit counts) if user feedback wants the number on-screen.

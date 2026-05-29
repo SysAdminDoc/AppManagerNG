@@ -1,0 +1,10 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+    T21-G attention badge: a true circle (oval shape on a square view) recolored
+    at runtime by severity. NOT a pill/stadium backdrop - it is a count/status
+    dot, which is the allowed circular-indicator case.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+</shape>

@@ -41,6 +41,7 @@ public class GlossaryPreferences extends PreferenceFragment {
             "glossary_pro_mode",
             "glossary_finder",
             "glossary_intent_interceptor",
+            "glossary_attention_badges",
     };
 
     @Override
@@ -100,6 +101,7 @@ public class GlossaryPreferences extends PreferenceFragment {
             case "glossary_pro_mode": return R.string.help_pro_mode_body;
             case "glossary_finder": return R.string.help_finder_body;
             case "glossary_intent_interceptor": return R.string.help_intent_interceptor_body;
+            case "glossary_attention_badges": return R.string.help_attention_badges_body;
             default: return 0;
         }
     }

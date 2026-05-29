@@ -82,4 +82,29 @@ public final class AttentionBadgeSource {
                                                           int recentOsRevertCount) {
         return AttentionBadgeCalculator.compute(forApp(app, recentOsRevertCount));
     }
+
+    /**
+     * Main-list integration overload: the adapter binds {@link ApplicationItem}
+     * (not the raw {@link App} cache row), which already carries the same three
+     * counts populated during the {@code MainViewModel} refresh. Mapping mirrors
+     * {@link #forApp(App, int)} so a row and its detail view agree on the badge.
+     */
+    @NonNull
+    public static AttentionBadgeCalculator.Signals forItem(@Nullable ApplicationItem item,
+                                                           int recentOsRevertCount) {
+        if (item == null) {
+            return new AttentionBadgeCalculator.Signals(0, 0, Math.max(0, recentOsRevertCount));
+        }
+        int total = item.dangerousPermTotal != null ? item.dangerousPermTotal : 0;
+        int granted = item.dangerousPermGranted != null ? item.dangerousPermGranted : 0;
+        int ungranted = Math.max(0, total - granted);
+        int disabled = item.blockedCount != null ? Math.max(0, item.blockedCount) : 0;
+        return new AttentionBadgeCalculator.Signals(ungranted, disabled, Math.max(0, recentOsRevertCount));
+    }
+
+    @NonNull
+    public static AttentionBadgeCalculator.Badge badgeFor(@Nullable ApplicationItem item,
+                                                          int recentOsRevertCount) {
+        return AttentionBadgeCalculator.compute(forItem(item, recentOsRevertCount));
+    }
 }
