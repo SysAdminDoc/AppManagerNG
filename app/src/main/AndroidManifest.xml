@@ -1344,6 +1344,56 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+        <!--
+            T21-E discreet / generic launcher-icon aliases. All target the
+            SplashActivity launcher and ship disabled; LauncherIconAliasController
+            enables exactly one at a time (Settings -> Appearance -> Launcher
+            icon). None declares android:label so the launcher always shows the
+            app's own label regardless of icon. See
+            docs/architecture/launcher-icon-aliases.md.
+        -->
+        <activity-alias
+            android:name=".main.SplashAliasNgMark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity=".main.SplashActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".main.SplashAliasNeutral"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_neutral"
+            android:roundIcon="@drawable/ic_launcher_neutral"
+            android:targetActivity=".main.SplashActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".main.SplashAliasMonochrome"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_mono"
+            android:roundIcon="@drawable/ic_launcher_mono"
+            android:targetActivity=".main.SplashActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
         <activity
             android:name=".logcat.LogViewerActivity"
             android:enableOnBackInvokedCallback="true"

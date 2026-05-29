@@ -5,6 +5,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Discreet / generic launcher-icon mode (T21-E, 2026-05-28)
+
+- Settings -> Appearance -> "Launcher icon" now lets you pick how
+  AppManagerNG appears on the home screen: Default, AppManagerNG mark,
+  Neutral square (a discreet system-styled tile), or Monochrome.
+- Three manifest `activity-alias` entries target `SplashActivity`
+  (`enabled="false"` by default, `LAUNCHER` + `LEANBACK_LAUNCHER` filters,
+  no `android:label` so the app label is unchanged). The new
+  `LauncherIconAliasController` maps each style to its component, reads the
+  live enabled-state as the source of truth, and applies the
+  `LauncherIconAliasPlan` diff with
+  `setComponentEnabledSetting(..., DONT_KILL_APP)` so exactly one alias is
+  enabled and pinned shortcuts/widgets are not invalidated.
+- Functional neutral + monochrome vector icons ship as placeholders;
+  polished adaptive-icon assets are a designer follow-up. The launcher
+  enable/disable round-trip needs on-device verification (it cannot be
+  exercised on a CI host).
+
 ### Added - Perfetto trace export + simpleperf CPU profiling in App Details (T20-A/T20-B UI, 2026-05-28)
 
 - App Details overflow menu now has "Export Perfetto trace" and "Record

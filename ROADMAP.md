@@ -118,17 +118,20 @@ than by historical priority tier:
 
 ### T21 — UI/design polish and premium feel
 
-- [ ] **T21-E Discreet / generic launcher-icon mode**: extra launcher
-  activity-alias icons (neutral system-styled square + monochrome + NG mark),
-  switchable via Settings -> Appearance. Acceptance: exactly one alias enabled
-  at a time, no extra `BOOT_COMPLETED` side-effects, widget icon palette
-  unaffected. Design contract:
-  [`docs/architecture/launcher-icon-aliases.md`](docs/architecture/launcher-icon-aliases.md).
-  _Data layer shipped: `LauncherIconAliasPlan.plan(current, target)` +
-  `resolveCurrent`; 11 JVM tests. **Open: manifest activity-aliases, neutral /
-  monochrome drawables, `LauncherIconAliasController`
-  (`setComponentEnabledSetting` + `DONT_KILL_APP`), Settings entry, glossary
-  strings.**_
+- [x] **T21-E Discreet / generic launcher-icon mode**: shipped 2026-05-28 —
+  three manifest activity-aliases (`SplashAliasNgMark`/`Neutral`/`Monochrome`,
+  all `enabled="false"`, targeting `SplashActivity` with `LAUNCHER` filters),
+  neutral + monochrome vector icons, and `LauncherIconAliasController` that maps
+  each `LauncherIconStyle` to its component, reads the live enabled-set as the
+  source of truth, and applies the `LauncherIconAliasPlan` diff via
+  `setComponentEnabledSetting(..., DONT_KILL_APP)`. Wired into Settings ->
+  Appearance -> "Launcher icon" (single-choice, reflects current style). aapt2
+  link + JVM tests green. _Data layer: `LauncherIconAliasPlan` (plan +
+  resolveCurrent; 11 tests) + 3 new controller-mapping tests._
+  **Device verification still required:** the alias enable/disable round-trip
+  and launcher re-enumeration (incl. the disabled-target interaction) can't be
+  exercised on a CI host. **Designer follow-up:** polished adaptive-icon assets
+  to replace the functional neutral/mono vectors; glossary strings.
 - [ ] **T21-F Undo SnackBar for destructive operations**: wrap freeze,
   uninstall, force-stop, clear-data, and component-state writes in a
   short-lived "Undo" SnackBar before commit. Acceptance: cancellation skips the
