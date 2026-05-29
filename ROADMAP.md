@@ -256,29 +256,25 @@ walkthrough remains open for each.
   Compose (see `codexprompt.md`). Recorded closed so the legacy bucket is fully
   accounted for.
 
-## Known failing unit tests (pre-existing — fix first)
+## Known failing unit tests — RESOLVED 2026-05-28
 
-Surfaced by a full `:app:testFullDebugUnitTest` run on 2026-05-28 (4 failed /
-1092). All live in data-layer classes from **prior** sessions (not touched by
-the 2026-05-28 UI-wiring pass) and are root-caused but not yet fixed:
+The 4 failures from the 2026-05-28 full-suite run are fixed; `:app:testFullDebugUnitTest`
+is green (1092 tests).
 
-- [ ] `ApkDuplicateSelectorTest.sizeTieBreaksOnAbsolutePathDeterministically`
-  — **Windows-host-only**. The test normalises separators but does not strip the
-  `C:` drive prefix Windows `File.getAbsolutePath()` adds (`expected \dl\alpha.apk`,
-  `got C:\dl\alpha.apk`). The selector logic is correct; it passes on Linux CI.
-  Fix the test to compare basenames or strip the drive root.
-- [ ] `SnackbarDurationPolicyTest.minWindowFloorAppliesEvenAfterShrinking`
-  — **stale test**. `windowFor(NORMAL, 0.3f)` returns 2000 ms because the impl
-  clamps `animScale` to `MIN_SCALE` (0.5×) first (4000×0.5), which matches the
-  documented "scale 0 collapses to the 0.5× reduced-motion floor" design; the
-  test assumes raw 0.3× then a 1500 ms floor. Decide the intended contract and
-  align test↔impl (impl appears correct per its own doc).
-- [ ] `PrivilegedRunnerArgValidatorTest.rejectsShellMetacharacters` and
-  `…isSafePathAndIsSafeArgumentMatchClassifierOk` — the classifier returns
-  `CONTROL_CHARACTER` for `\n` where the test expects `SHELL_METACHARACTER`.
-  Both paths still **reject** the input (no security regression); only the
-  category label differs. Decide whether control-char or metachar precedence is
-  canonical, then align. Security-adjacent — change with care.
+- [x] `ApkDuplicateSelectorTest.sizeTieBreaksOnAbsolutePathDeterministically`
+  — was a Windows-host artifact (the `C:` drive prefix). Test now compares the
+  keeper basename (`getName()`), independent of the host's absolute-path form.
+- [x] `SnackbarDurationPolicyTest.minWindowFloorAppliesEvenAfterShrinking`
+  — was a stale assertion; the impl is correct (scale clamps to 0.5× → 2000 ms,
+  which stays above the 1500 ms floor). Test now asserts the documented
+  two-clamp behavior.
+- [x] `PrivilegedRunnerArgValidatorTest.rejectsShellMetacharacters` and
+  `…isSafePathAndIsSafeArgumentMatchClassifierOk` — fixed in the **impl**:
+  `\n`/`\r` are now classified `SHELL_METACHARACTER` (command separators) before
+  the generic control-byte check, and a space in a single argv token is rejected
+  as `SHELL_METACHARACTER` (word-splitting / injection signal; no legitimate
+  perfetto/simpleperf argv element contains a space). Strengthens the gate;
+  no behavior change for valid argv.
 
 ## Verification Cadence
 
