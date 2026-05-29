@@ -829,6 +829,7 @@
     <string name="no_component_matches_message">No apps matched the component signatures you entered.</string>
     <string name="no_app_ops_matches_message">No apps matched the selected app ops.</string>
     <string name="no_uninstalled_app_data_message">No leftover data from uninstalled apps was found.</string>
+    <string name="batch_undo_pending"><xliff:g id="operation" example="Uninstall">%1$s</xliff:g> starting — tap Undo to cancel</string>
     <string name="detect_leftover_files">Detect leftover folders</string>
     <string name="detect_leftover_files_description">Find orphan <tt>Android/data</tt>, <tt>obb</tt>, and <tt>media</tt> folders (and root <tt>/data/data</tt> stubs) left behind by uninstalled apps.</string>
     <string name="leftover_files_found_title">Review leftover folders</string>
