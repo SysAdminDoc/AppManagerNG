@@ -5,6 +5,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Attention badges on App List rows (T21-G UI, 2026-05-28)
+
+- App List rows now overlay a small severity-tinted dot on the app icon
+  when the row has actionable state: a recent OS revert (warning tint), an
+  ungranted dangerous permission, or AppManagerNG-managed component rules
+  (the single highest-priority signal wins). Bound in
+  `MainRecyclerAdapter.bindAttentionBadge` through the new
+  `AttentionBadgeSource.badgeFor(ApplicationItem, int)` overload, which
+  reuses the per-row counts already loaded by `MainViewModel` (no extra
+  query in the scroll hot path).
+- The indicator is a true circle (not a stadium-shaped count chip); the
+  exact count and reason are exposed via the row `contentDescription` so
+  TalkBack announces e.g. "3 · managed component rules".
+- Added a "Attention badges" glossary entry (Settings -> Glossary).
+- Follow-up: wiring `OsRevertMonitor` events into
+  `OsRevertCountTracker.recordRevert` (the OS-revert count is currently 0)
+  and an eviction heartbeat remain on the T21-G roadmap row.
+
 ### Added - Discreet / generic launcher-icon mode (T21-E, 2026-05-28)
 
 - Settings -> Appearance -> "Launcher icon" now lets you pick how
