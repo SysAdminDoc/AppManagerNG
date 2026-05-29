@@ -138,6 +138,7 @@ import io.github.muntashirakon.AppManager.details.manifest.ManifestViewerActivit
 import io.github.muntashirakon.AppManager.details.profile.AppProfileCapture;
 import io.github.muntashirakon.AppManager.details.profile.CpuProfileCommandBuilder;
 import io.github.muntashirakon.AppManager.details.profile.PerfettoCommandBuilder;
+import io.github.muntashirakon.AppManager.details.profile.PerfettoConfigInspector;
 import io.github.muntashirakon.AppManager.details.profile.PerfettoTraceConfigBuilder;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
@@ -825,9 +826,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         final String packageName = mPackageName;
+        // T20-A: preview the exact trace config the capture will use, parsed
+        // back from the generated text-proto via PerfettoConfigInspector.
+        String configPreview = PerfettoConfigInspector.oneLineSummary(PerfettoConfigInspector.inspect(
+                PerfettoTraceConfigBuilder.buildTextProto(packageName,
+                        PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS)));
+        CharSequence confirmMessage = getString(R.string.perfetto_trace_confirm)
+                + "\n\n" + getString(R.string.perfetto_trace_preview, configPreview);
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.action_export_trace)
-                .setMessage(R.string.perfetto_trace_confirm)
+                .setMessage(confirmMessage)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.action_continue, (d, w) -> {
                     String outputPath = profileOutputPath(packageName, ".perfetto-trace");

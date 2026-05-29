@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Perfetto trace config preview (T20-A follow-up, 2026-05-28)
+
+- The "Export Perfetto trace" confirm dialog now shows a one-line preview of
+  the exact config the capture will use ("10s · 64 MB ring · N ftrace events ·
+  package"), parsed back from the generated text-proto via the existing
+  `PerfettoConfigInspector`, so the user sees what they're about to capture.
+
 ### Added - Scheduled-backup skip-reason capture (EI-07 data layer, 2026-05-28)
 
 - The scheduled-backup selector now records *why* each package was skipped
