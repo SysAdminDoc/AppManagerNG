@@ -888,6 +888,14 @@
         <item>@string/launcher_icon_neutral</item>
         <item>@string/launcher_icon_monochrome</item>
     </string-array>
+    <!-- T21-G Attention badges (main list) -->
+    <string name="attention_badge_content_description"><xliff:g id="count" example="3">%1$s</xliff:g> · <xliff:g id="reason" example="disabled components">%2$s</xliff:g></string>
+    <string name="attention_badge_os_revert">recently reverted by the system</string>
+    <string name="attention_badge_dangerous_permission">ungranted dangerous permission</string>
+    <string name="attention_badge_disabled_component">managed component rules</string>
+    <string name="pref_glossary_attention_badges_title">Attention badges</string>
+    <string name="help_attention_badges_summary">The small dots on App List rows</string>
+    <string name="help_attention_badges_body">Attention badges are small dots on App List rows that flag where actionable state exists. AppManagerNG shows at most one badge per row, prioritised in this order:\n\n• OS revert (warning tint) — the system reverted a recent privileged change you made (a setting, an app op, a freeze). Tap the row to investigate.\n• Dangerous permission — the app requested a dangerous permission that is not granted. Tap to review.\n• Managed component rules — AppManagerNG (or another tool) has rules for this package.\n\nThe exact count and reason are read aloud by TalkBack. OS-revert badges decay automatically 7 days after the event; the others reflect current state.</string>
     <string name="no_packages_selected">No packages selected</string>
     <string name="no_packages_selected_message">Select at least one package before applying this operation.</string>
     <string name="no">No</string>

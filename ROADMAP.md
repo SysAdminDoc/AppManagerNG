@@ -141,17 +141,21 @@ than by historical priority tier:
   `drainAll`, injectable clock), `SnackbarDurationPolicy.windowFor`,
   `UndoOpHistoryRecorder.record`/`recordCommittedBatch`/`recordShutdownFlush`;
   27 JVM tests. **Open: SnackBar wiring per destructive surface.**_
-- [ ] **T21-G Attention badges on app list rows**: tiny badge counter on rows
-  with actionable state (pending dangerous-permission grants, disabled
-  components, recent OS revert). Acceptance: single source of truth in the app
-  cache, no list-scroll regression, glossary-documented. Design contract:
-  [`docs/architecture/attention-badges.md`](docs/architecture/attention-badges.md).
-  _Data layer shipped: `AttentionBadgeCalculator` (priority OS_REVERT >
-  DANGEROUS_PERMISSION > DISABLED_COMPONENT > NONE, `formatCount` 99+),
-  `AttentionBadgeSource.forApp`/`badgeFor`, `OsRevertCountTracker`
-  (7-day TTL, bounded); 19+ JVM tests. **Open: `MainRecyclerAdapter`
-  rendering, `OsRevertCountTracker.recordRevert` call sites + eviction
-  heartbeat, glossary entry.**_
+- [x] **T21-G Attention badges on app list rows**: shipped 2026-05-28 — the
+  main-list row icon now overlays a single severity-tinted **true-circle dot**
+  (12 dp, `bg_attention_dot`, recoloured per `Severity`) bound in
+  `MainRecyclerAdapter.bindAttentionBadge` via a new
+  `AttentionBadgeSource.forItem`/`badgeFor(ApplicationItem,int)` overload
+  (reusing the `ApplicationItem` perm/rule counts already loaded — single
+  source of truth, no extra query in the hot path). The exact count + reason
+  live in the `contentDescription` for TalkBack, so the visible indicator stays
+  a compliant circle rather than a stadium count chip. Glossary entry added
+  (Settings -> Glossary -> "Attention badges"). aapt2 link + compile green.
+  _Data layer: `AttentionBadgeCalculator`, `AttentionBadgeSource`,
+  `OsRevertCountTracker`. **Follow-up: wire `OsRevertMonitor.watch*` ->
+  `OsRevertCountTracker.recordRevert` (currently the OS-revert count is passed
+  as 0; perm/disabled signals already drive the badge) and add the eviction
+  heartbeat to the `MainViewModel` refresh.**_
 - [ ] **T21-H Material 3 Adaptive layouts for tablets / large screens**: App
   List + App Details master/detail and Settings two-pane via `androidx.window`
   + `SlidingPaneLayout`. Acceptance: compatible with existing View-based
