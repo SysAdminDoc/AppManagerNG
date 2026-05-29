@@ -1,0 +1,23 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+    T21-E neutral / discreet launcher icon: a system-styled blue-grey square
+    with a generic "app" frame glyph. Intentionally unbranded so the app does
+    not stand out on the home screen. Functional placeholder; polished
+    adaptive-icon assets are a designer follow-up.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#546E7A"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:fillType="evenOdd"
+        android:pathData="M34,34h40v40h-40z M40,40v28h28v-28z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M50,50h8v8h-8z" />
+</vector>

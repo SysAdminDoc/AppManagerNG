@@ -26,6 +26,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="launcher_icon_style"
+        app:title="@string/pref_launcher_icon"
+        app:summary="@string/pref_launcher_icon_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="enabled_features"
         app:title="@string/enable_disable_features"
         app:summary="@string/pref_enable_disable_features_msg"
