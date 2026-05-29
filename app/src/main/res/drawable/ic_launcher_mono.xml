@@ -1,0 +1,23 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+    T21-E monochrome launcher icon: a dark slate tile with a single light-grey
+    glyph. A muted, single-tone alternative for users who prefer a quiet home
+    screen. Functional placeholder; a Material You themed-icon variant is a
+    designer follow-up.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#263238"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:fillType="evenOdd"
+        android:pathData="M34,34h40v40h-40z M40,40v28h28v-28z" />
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M50,50h8v8h-8z" />
+</vector>

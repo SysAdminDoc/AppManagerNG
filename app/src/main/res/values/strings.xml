@@ -875,6 +875,19 @@
     <string name="profile_capture_failed">Capture failed: <xliff:g id="reason" example="permission denied">%1$s</xliff:g></string>
     <string name="open_perfetto_ui">Open Perfetto UI</string>
     <string name="open_developer_options">Open developer options</string>
+    <!-- T21-E Discreet / generic launcher icon (Settings -> Appearance) -->
+    <string name="pref_launcher_icon">Launcher icon</string>
+    <string name="pref_launcher_icon_summary">Choose how AppManagerNG appears on your home screen.</string>
+    <string name="launcher_icon_default">Default</string>
+    <string name="launcher_icon_ng_mark">AppManagerNG mark</string>
+    <string name="launcher_icon_neutral">Neutral square</string>
+    <string name="launcher_icon_monochrome">Monochrome</string>
+    <string-array name="launcher_icon_styles">
+        <item>@string/launcher_icon_default</item>
+        <item>@string/launcher_icon_ng_mark</item>
+        <item>@string/launcher_icon_neutral</item>
+        <item>@string/launcher_icon_monochrome</item>
+    </string-array>
     <string name="no_packages_selected">No packages selected</string>
     <string name="no_packages_selected_message">Select at least one package before applying this operation.</string>
     <string name="no">No</string>
