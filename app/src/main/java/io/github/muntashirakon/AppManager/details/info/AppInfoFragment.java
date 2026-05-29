@@ -498,6 +498,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } catch (Throwable th) {
                 UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
             }
+        } else if (itemId == R.id.action_memory_snapshot) {
+            showMemorySnapshot();
         } else if (itemId == R.id.action_export_blocking_rules) {
             final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(mActivity, System.currentTimeMillis()) + ".am.tsv";
             mExport.launch(fileName, uri -> {
@@ -684,6 +686,40 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
         } else return false;
         return true;
+    }
+
+    // T20-C: capture and show a point-in-time memory snapshot (dumpsys meminfo
+    // + gfxinfo + /proc/<pid>/status + /proc/<pid>/maps) for the target package.
+    private void showMemorySnapshot() {
+        if (!SelfPermissions.isSystemOrRootOrShell()) {
+            new MaterialAlertDialogBuilder(mActivity)
+                    .setIcon(R.drawable.ic_information_circle)
+                    .setTitle(R.string.root_or_adb_required)
+                    .setMessage(R.string.memory_snapshot_permission_required)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+            return;
+        }
+        if (mPackageName == null) {
+            return;
+        }
+        final String packageName = mPackageName;
+        showProgressIndicator(true);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            MemorySnapshotComposer.AppMemorySnapshot snapshot = AppMemorySnapshotLoader.load(packageName);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                showProgressIndicator(false);
+                new ScrollableDialogBuilder(mActivity)
+                        .setTitle(R.string.action_memory_snapshot)
+                        .setMessage(AppMemorySnapshotLoader.format(mActivity, snapshot))
+                        .enableAnchors()
+                        .setNegativeButton(R.string.close, null)
+                        .show();
+            });
+        });
     }
 
     private void showPerAppRollbackConfirmation() {
