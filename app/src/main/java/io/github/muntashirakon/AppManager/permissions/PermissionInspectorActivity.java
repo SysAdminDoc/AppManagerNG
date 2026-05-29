@@ -9,12 +9,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textview.MaterialTextView;
@@ -40,6 +42,11 @@ public class PermissionInspectorActivity extends BaseActivity {
     private MenuItem mRestoreCriticalMenu;
     private boolean mLoading;
     private boolean mRestoring;
+    // EI-04 chip-row filter state.
+    @Nullable
+    private List<PermissionInspectorViewModel.Row> mAllRows;
+    @NonNull
+    private PermissionInspectorFilter.Filter mFilter = PermissionInspectorFilter.Filter.ALL;
     private final ExecutorService mRecoveryExecutor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -66,9 +73,19 @@ public class PermissionInspectorActivity extends BaseActivity {
         });
         recycler.setAdapter(mAdapter);
 
+        // EI-04: chip-row filter over the permission-group catalog.
+        ChipGroup filterChips = findViewById(R.id.inspector_filter_chips);
+        if (filterChips != null) {
+            filterChips.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                mFilter = filterForChip(checkedIds.isEmpty() ? R.id.chip_perm_all : checkedIds.get(0));
+                applyFilter();
+            });
+        }
+
         mViewModel = new ViewModelProvider(this).get(PermissionInspectorViewModel.class);
         mViewModel.getRows().observe(this, rows -> {
-            mAdapter.submit(rows);
+            mAllRows = rows;
+            applyFilter();
             updateSummary(rows);
         });
         mViewModel.getLoading().observe(this, loading -> {
@@ -139,6 +156,26 @@ public class PermissionInspectorActivity extends BaseActivity {
                 });
             }
         });
+    }
+
+    private void applyFilter() {
+        if (mAdapter != null) {
+            mAdapter.submit(PermissionInspectorFilter.apply(mAllRows, mFilter));
+        }
+    }
+
+    @NonNull
+    private static PermissionInspectorFilter.Filter filterForChip(int chipId) {
+        if (chipId == R.id.chip_perm_requested) {
+            return PermissionInspectorFilter.Filter.REQUESTED;
+        }
+        if (chipId == R.id.chip_perm_granted) {
+            return PermissionInspectorFilter.Filter.GRANTED;
+        }
+        if (chipId == R.id.chip_perm_attention) {
+            return PermissionInspectorFilter.Filter.NEEDS_ATTENTION;
+        }
+        return PermissionInspectorFilter.Filter.ALL;
     }
 
     private void updateSummary(@Nullable List<PermissionInspectorViewModel.Row> rows) {
