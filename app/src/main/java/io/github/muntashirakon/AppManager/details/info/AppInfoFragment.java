@@ -1819,6 +1819,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             })
                             .show());
         }
+        // NF-08: surface user-authored tags (AppTagStore) in the cloud so tags
+        // assigned via "Edit tags" are visible, not just filterable in Finder.
+        // Tapping one opens the editor.
+        if (mPackageName != null) {
+            for (String userTag : new AppTagStore(requireContext()).getTags(mPackageName)) {
+                tagItems.add(new TagItem()
+                        .setText(userTag)
+                        .setOnClickListener(v -> showEditTagsDialog()));
+            }
+        }
         return tagItems;
     }
 
