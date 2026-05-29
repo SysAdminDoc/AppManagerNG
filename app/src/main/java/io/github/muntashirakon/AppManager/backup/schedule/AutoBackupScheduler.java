@@ -112,7 +112,7 @@ public final class AutoBackupScheduler {
                                                              long nowMillis) {
         int sanitizedMinimumAgeDays = sanitizeMinimumAgeDays(minimumAgeDays);
         if (sanitizedMinimumAgeDays <= 0 || pairs.isEmpty() || existingBackups.isEmpty()) {
-            return new BackupSelection(new ArrayList<>(pairs), 0);
+            return new BackupSelection(new ArrayList<>(pairs), new ArrayList<>());
         }
         long minimumAgeMillis = TimeUnit.DAYS.toMillis(sanitizedMinimumAgeDays);
         Map<String, Backup> latestBackups = new LinkedHashMap<>();
@@ -127,11 +127,12 @@ public final class AutoBackupScheduler {
             }
         }
         ArrayList<UserPackagePair> duePackages = new ArrayList<>(pairs.size());
-        int skipped = 0;
+        ArrayList<SkippedPackage> skipped = new ArrayList<>();
         for (UserPackagePair pair : pairs) {
             Backup latestBackup = latestBackups.get(getPackageUserKey(pair.getPackageName(), pair.getUserId()));
             if (latestBackup != null && nowMillis - latestBackup.backupTime < minimumAgeMillis) {
-                ++skipped;
+                skipped.add(new SkippedPackage(pair.getPackageName(), pair.getUserId(),
+                        SkipReason.BACKED_UP_RECENTLY, latestBackup.backupTime));
                 continue;
             }
             duePackages.add(pair);
@@ -260,14 +261,41 @@ public final class AutoBackupScheduler {
         return packageName + '\u0000' + userId;
     }
 
+    /** Why a package was not backed up on this run (EI-07). */
+    public enum SkipReason {
+        /** A backup newer than the configured minimum age already exists. */
+        BACKED_UP_RECENTLY
+    }
+
+    /** A single skipped package with the reason it was held back (EI-07). */
+    public static final class SkippedPackage {
+        @NonNull
+        public final String packageName;
+        public final int userId;
+        @NonNull
+        public final SkipReason reason;
+        /** Epoch millis of the most recent existing backup, or {@code 0} if unknown. */
+        public final long lastBackupMillis;
+
+        SkippedPackage(@NonNull String packageName, int userId, @NonNull SkipReason reason,
+                       long lastBackupMillis) {
+            this.packageName = packageName;
+            this.userId = userId;
+            this.reason = reason;
+            this.lastBackupMillis = lastBackupMillis;
+        }
+    }
+
     public static final class BackupSelection {
         @NonNull
         private final List<UserPackagePair> mDuePackages;
-        private final int mSkippedPackages;
+        @NonNull
+        private final List<SkippedPackage> mSkippedDetails;
 
-        private BackupSelection(@NonNull List<UserPackagePair> duePackages, int skippedPackages) {
+        private BackupSelection(@NonNull List<UserPackagePair> duePackages,
+                               @NonNull List<SkippedPackage> skippedDetails) {
             mDuePackages = Collections.unmodifiableList(duePackages);
-            mSkippedPackages = skippedPackages;
+            mSkippedDetails = Collections.unmodifiableList(skippedDetails);
         }
 
         @NonNull
@@ -276,7 +304,13 @@ public final class AutoBackupScheduler {
         }
 
         public int getSkippedPackages() {
-            return mSkippedPackages;
+            return mSkippedDetails.size();
+        }
+
+        /** Per-package skip details so a UI can answer "why did this skip?" (EI-07). */
+        @NonNull
+        public List<SkippedPackage> getSkippedDetails() {
+            return mSkippedDetails;
         }
     }
 }
