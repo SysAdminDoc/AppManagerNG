@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Large-list rendering audit + safe optimizations (T21-I, 2026-05-28)
+
+- App List `RecyclerView` now sets `setHasFixedSize(true)` and
+  `setItemViewCacheSize(15)` (behavior-preserving) for smoother flings on
+  large installs; negligible impact on typical (< 300-app) devices.
+- Added `docs/audits/2026-05-28-large-list-rendering.md` documenting the
+  current architecture (already stable-ID + DiffUtil + async icons), the
+  dominant cold-filter cost (main-thread `DiffUtil.calculateDiff` in
+  `setDefaultList`), the async-diff fix, and a Perfetto-based measurement
+  plan. Moving the diff off-main and recording real before/after numbers is
+  device-gated and tracked as the open half of T21-I.
+
 ### Added - Attention badges on App List rows (T21-G UI, 2026-05-28)
 
 - App List rows now overlay a small severity-tinted dot on the app icon
