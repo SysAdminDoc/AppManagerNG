@@ -204,10 +204,14 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   from the scheduled-backup screen.
 - [ ] **NF-06 Pro Mode hero card**: the Pro Mode explainer copy shipped in
   v0.5.0; the deferred onboarding hero card remains.
-- [ ] **NF-08 tag UI follow-up**: `AppTagStore` + `TagsOption` Finder predicate
-  shipped (data layer). Verify/finish the App Details tag editor and the
-  main-list tag chip so user-authored tags round-trip through the
-  SharedPreferences store (preserve `AppTagStore.normaliseTag` semantics).
+- [x] **NF-08 tag UI follow-up**: App Details overflow -> "Edit tags" shipped
+  2026-05-28 — a `SearchableMultiChoiceDialogBuilder` over all known + current
+  tags (current pre-selected) assigns/removes user tags via `AppTagStore`, and a
+  "New tag" neutral button opens a `TextInputDialogBuilder` (validated by
+  `AppTagStore.isValidTag`) to create one. This closes the loop so the Finder
+  "Tags" filter (`TagsOption`) finally has a way to create the tags it matches.
+  compile + aapt2 link green. **Follow-up: surface user tags in the App Info tag
+  cloud + a main-list tag chip (display only; creation/filtering now work).**
 
 ## B. Blocked on maintainer / external trackers
 
