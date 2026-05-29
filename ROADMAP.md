@@ -165,11 +165,18 @@ than by historical priority tier:
   `requiresTwoPane` (COMPACT <600 / MEDIUM 600–840 / EXPANDED ≥840); 7 JVM
   tests. `androidx.window 1.4.0` is already a dependency.
   **Open: two-pane layouts + activity integration.**_
-- [ ] **T21-I Fast list rendering for 10k+ installed apps**: profile + optimize
-  the main app-list adapter/cache; baseline target <2 s cold filter on 10k
-  apps. Acceptance: before/after numbers recorded in `docs/audits/`, no
-  behavior change for typical (<300-app) devices, Robolectric coverage where
-  reachable.
+- [~] **T21-I Fast list rendering for 10k+ installed apps**: source audit +
+  safe optimizations shipped 2026-05-28 in
+  [`docs/audits/2026-05-28-large-list-rendering.md`](docs/audits/2026-05-28-large-list-rendering.md).
+  Confirmed the list already uses stable IDs + `DiffUtil` (not blanket
+  `notifyDataSetChanged`) and async icon loading. Applied behavior-preserving
+  `setHasFixedSize(true)` + `setItemViewCacheSize(15)`. The audit identifies the
+  **main-thread `DiffUtil.calculateDiff` in `setDefaultList` as the dominant
+  cold-filter cost** and specifies the async-diff fix + a Perfetto-based
+  measurement plan. **Open (device-gated): move the diff off-main
+  (AsyncListDiffer / background `calculateDiff`) and record the real before/after
+  numbers — both require a seeded 10k-app device profile, so this is not landed
+  blind.**
 
 ### Discovery & Polish carry-overs (re-surfaced from iter-143 handoff)
 

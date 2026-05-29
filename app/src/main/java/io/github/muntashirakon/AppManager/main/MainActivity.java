@@ -282,6 +282,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         mAdapter = new MainRecyclerAdapter(MainActivity.this);
         mAdapter.setHasStableIds(true);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        // T21-I large-list rendering: the row layout never changes the
+        // RecyclerView's own bounds, so setHasFixedSize lets it skip a full
+        // requestLayout on every adapter update; a larger view cache keeps more
+        // off-screen rows hot for smoother flings on big installs. Both are
+        // behavior-preserving. See docs/audits/2026-05-28-large-list-rendering.md.
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemViewCacheSize(15);
         recyclerView.setAdapter(mAdapter);
         mMultiSelectionView = findViewById(R.id.selection_view);
         mMultiSelectionView.setOnItemSelectedListener(this);
