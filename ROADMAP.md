@@ -158,10 +158,12 @@ than by historical priority tier:
   a compliant circle rather than a stadium count chip. Glossary entry added
   (Settings -> Glossary -> "Attention badges"). aapt2 link + compile green.
   _Data layer: `AttentionBadgeCalculator`, `AttentionBadgeSource`,
-  `OsRevertCountTracker`. **Follow-up: wire `OsRevertMonitor.watch*` ->
-  `OsRevertCountTracker.recordRevert` (currently the OS-revert count is passed
-  as 0; perm/disabled signals already drive the badge) and add the eviction
-  heartbeat to the `MainViewModel` refresh.**_
+  `OsRevertCountTracker`. OS-revert wiring completed 2026-05-28:
+  `OsRevertCountTracker.getInstance()` is now a process-wide singleton;
+  `OsRevertMonitor.schedule` records into it (per package) on every detected
+  revert (freeze / component / app-op / doze), the main-list adapter reads
+  `countRecent(pkg, now, DEFAULT_TTL_MILLIS)` per row, and `MainActivity.onResume`
+  runs `evictExpired` as the prune heartbeat. compile green._
 - [ ] **T21-H Material 3 Adaptive layouts for tablets / large screens**: App
   List + App Details master/detail and Settings two-pane via `androidx.window`
   + `SlidingPaneLayout`. Acceptance: compatible with existing View-based
