@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.revert.OsRevertCountTracker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -862,7 +863,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         if (holder.attentionBadge == null) {
             return;
         }
-        AttentionBadgeCalculator.Badge badge = AttentionBadgeSource.badgeFor(item, 0);
+        int osRevertCount = item.packageName != null
+                ? OsRevertCountTracker.getInstance().countRecent(item.packageName,
+                        System.currentTimeMillis(), OsRevertCountTracker.DEFAULT_TTL_MILLIS)
+                : 0;
+        AttentionBadgeCalculator.Badge badge = AttentionBadgeSource.badgeFor(item, osRevertCount);
         if (badge.isNone()) {
             holder.attentionBadge.setVisibility(View.GONE);
             holder.attentionBadge.setContentDescription(null);

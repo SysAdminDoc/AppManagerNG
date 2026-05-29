@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Attention badges now light up on OS reverts (T21-G follow-up, 2026-05-28)
+
+- `OsRevertCountTracker` is now a process-wide singleton. When
+  `OsRevertMonitor` detects that the system reverted a recent change (freeze,
+  component state, app-op, or doze battery-optimization), it records the event
+  against the affected package; the App List attention badge reads the recent
+  count per row, so an OS-revert now actually surfaces the warning-tint dot.
+- `MainActivity.onResume` prunes expired revert events (7-day TTL) so the
+  tracker can't grow unbounded.
+
 ### Added - Permission Inspector chip-row filter (EI-04, 2026-05-28)
 
 - The Permission Inspector catalog now has a chip-row filter (All /
