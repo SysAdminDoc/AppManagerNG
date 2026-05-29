@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Perfetto trace export + simpleperf CPU profiling in App Details (T20-A/T20-B UI, 2026-05-28)
+
+- App Details overflow menu now has "Export Perfetto trace" and "Record
+  CPU profile" actions, both gated on root/Shizuku/ADB. The new shared
+  `AppProfileCapture` helper builds a validated argv from the existing
+  command builders and runs it through `Runner`.
+- Perfetto: the `PerfettoTraceConfigBuilder` text-proto is piped to
+  `perfetto -c - --txt -o` via stdin (no temp file needed across the
+  root/shell uid boundary); the `.perfetto-trace` lands in Downloads and a
+  result dialog offers an "Open Perfetto UI" button. When privilege is
+  unavailable the dialog offers "Open developer options".
+- simpleperf: `CpuProfileCommandBuilder` produces the
+  `simpleperf record --app … -g --call-graph dwarf` argv; the raw
+  `perf.data` is saved to Downloads.
+- Output paths use a digits-only timestamp so they stay metacharacter-free
+  and pass `PrivilegedRunnerArgValidator`. Follow-up: duration/event
+  pickers, a pre-capture config-preview chip, on-device flame-graph SVG
+  conversion, and true mid-capture cancellation remain on the T20-A/B rows.
+
 ### Added - Memory snapshot inspector in App Details (T20-C UI, 2026-05-28)
 
 - App Details overflow menu now has a "Memory snapshot" action that

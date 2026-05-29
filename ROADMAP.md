@@ -84,22 +84,26 @@ than by historical priority tier:
 
 ### T20 — Performance and profiling (system-level)
 
-- [ ] **T20-A Perfetto system-trace export**: App Details "Export trace" action
-  gated on Shizuku/ADB; trace persists to Downloads as `.perfetto-trace`,
-  optional `ui.perfetto.dev` deep link, falls back to Developer Options when
-  unavailable. _Data layer shipped: `PerfettoTraceConfigBuilder` (app-targeted
-  text-proto), `PerfettoCommandBuilder` (argv + shell-metachar guard),
-  `PerfettoConfigInspector` (preview parser), `perfettoUiUrl()`; shared
-  `PrivilegedRunnerArgValidator.validateArgv`. **Open: App Details action +
-  privileged-runner integration.**_
-- [ ] **T20-B simpleperf CPU profile capture**: App Details "Record CPU
-  profile" wrapping `simpleperf` for a bounded window, gated on
-  root/Shizuku/ADB; output as flame-graph SVG + raw `perf.data`; cancellable;
-  explains binary source/version. _Data layer shipped:
-  `CpuProfileCommandBuilder.build` (canonical `simpleperf record` argv,
-  duration clamp, event allow-list, injection guard), `CpuProfileEventCatalog`
-  (per-API/per-ABI event availability), shared `PrivilegedRunnerArgValidator`.
-  **Open: App Details output capture + cancellation surface.**_
+- [x] **T20-A Perfetto system-trace export**: App Details overflow ->
+  "Export Perfetto trace" shipped 2026-05-28 — gated on root/Shizuku/ADB (with
+  an "Open developer options" fallback when unavailable), confirms, then
+  `AppProfileCapture.capturePerfettoTrace` pipes the
+  `PerfettoTraceConfigBuilder` text-proto to `perfetto -c - --txt -o` via
+  `Runner` (argv validated by `PrivilegedRunnerArgValidator`), saving a
+  `.perfetto-trace` to Downloads and offering an "Open Perfetto UI" button
+  (`perfettoUiUrl()`). _Data layer: `PerfettoTraceConfigBuilder`,
+  `PerfettoCommandBuilder`, `PerfettoConfigInspector`. **Follow-up: duration
+  picker, a pre-capture config preview chip via `PerfettoConfigInspector`, and
+  true mid-capture cancellation (device-verified).**_
+- [x] **T20-B simpleperf CPU profile capture**: App Details overflow ->
+  "Record CPU profile" shipped 2026-05-28 — gated on root/Shizuku/ADB, confirms
+  (explaining the DWARF call-graph + platform `simpleperf`), then
+  `AppProfileCapture.captureCpuProfile` runs the `CpuProfileCommandBuilder`
+  argv (validated) via `Runner`, saving raw `perf.data` to Downloads.
+  _Data layer: `CpuProfileCommandBuilder`, `CpuProfileEventCatalog`,
+  `PrivilegedRunnerArgValidator`. **Follow-up: duration/event picker (gated by
+  `CpuProfileEventCatalog`), on-device flame-graph SVG conversion, and true
+  mid-capture cancellation (device-verified).**_
 - [x] **T20-C Memory allocations inspector**: App Details overflow ->
   "Memory snapshot" shipped 2026-05-28 — `AppMemorySnapshotLoader.load` runs
   `dumpsys meminfo`/`gfxinfo` plus `pidof` -> `/proc/<pid>/status` + `/maps`
