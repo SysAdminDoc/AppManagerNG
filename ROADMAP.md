@@ -242,8 +242,9 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   "New tag" neutral button opens a `TextInputDialogBuilder` (validated by
   `AppTagStore.isValidTag`) to create one. This closes the loop so the Finder
   "Tags" filter (`TagsOption`) finally has a way to create the tags it matches.
-  compile + aapt2 link green. **Follow-up: surface user tags in the App Info tag
-  cloud + a main-list tag chip (display only; creation/filtering now work).**
+  User tags now also render in the App Info tag cloud (tappable -> editor),
+  shipped 2026-05-28. compile + aapt2 link green. **Follow-up: a main-list tag
+  chip (display only; creation/filtering/App-Details-display now work).**
 
 ## B. Blocked on maintainer / external trackers
 
