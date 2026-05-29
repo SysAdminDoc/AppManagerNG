@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - User tag editor in App Details (NF-08 UI, 2026-05-28)
+
+- App Details overflow now has an "Edit tags" action to create and assign
+  user-authored tags to a package, backed by the existing `AppTagStore`. A
+  multi-choice dialog assigns/removes from the known-tag set; a "New tag"
+  button creates a validated tag. This closes the loop with the Finder
+  "Tags" filter, which previously matched tags users had no way to create.
+- Follow-up: display assigned tags in the App Info tag cloud and as a
+  main-list chip (creation + filtering now work end-to-end).
+
 ### Added - Attention badges now light up on OS reverts (T21-G follow-up, 2026-05-28)
 
 - `OsRevertCountTracker` is now a process-wide singleton. When
