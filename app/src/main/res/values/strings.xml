@@ -873,6 +873,7 @@
     <string name="action_record_cpu_profile">Record CPU profile</string>
     <string name="profile_capture_permission_required">Profiling needs root, Shizuku, or ADB access.</string>
     <string name="perfetto_trace_confirm">Capture a ~10-second Perfetto system trace focused on this app? The <tt>.perfetto-trace</tt> file is saved to Downloads.</string>
+    <string name="perfetto_trace_preview">Trace config: <xliff:g id="summary" example="10s · 64 MB ring · 8 ftrace events · com.example">%1$s</xliff:g></string>
     <string name="cpu_profile_confirm">Record a ~10-second simpleperf CPU profile for this app? The raw <tt>perf.data</tt> is saved to Downloads. <tt>simpleperf</tt> ships with the platform; sampling uses a DWARF call graph.</string>
     <string name="profile_capturing">Capturing — this runs for the full sampling window.</string>
     <string name="profile_capture_result_title">Capture complete</string>
