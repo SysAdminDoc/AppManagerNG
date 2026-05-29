@@ -88,6 +88,8 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -156,6 +158,7 @@ import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.scanner.ScannerActivity;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.tags.AppTagStore;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -192,6 +195,7 @@ import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
@@ -503,6 +507,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } catch (Throwable th) {
                 UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
             }
+        } else if (itemId == R.id.action_edit_tags) {
+            showEditTagsDialog();
         } else if (itemId == R.id.action_memory_snapshot) {
             showMemorySnapshot();
         } else if (itemId == R.id.action_export_trace) {
@@ -695,6 +701,70 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
         } else return false;
         return true;
+    }
+
+    // NF-08: manage user-authored tags (AppTagStore) for this package. These
+    // are the tags the Finder "Tags" filter (TagsOption) matches against.
+    private void showEditTagsDialog() {
+        if (mPackageName == null) {
+            return;
+        }
+        AppTagStore store = new AppTagStore(requireContext());
+        Set<String> current = store.getTags(mPackageName);
+        java.util.LinkedHashSet<String> all = new java.util.LinkedHashSet<>(store.getAllKnownTags());
+        all.addAll(current);
+        if (all.isEmpty()) {
+            // Nothing to choose from yet — jump straight to creating a tag.
+            promptNewTag(store);
+            return;
+        }
+        ArrayList<String> items = new ArrayList<>(all);
+        List<CharSequence> itemNames = new ArrayList<>(items);
+        new SearchableMultiChoiceDialogBuilder<String>(requireActivity(), items, itemNames)
+                .setTitle(R.string.edit_tags)
+                .addSelections(new ArrayList<>(current))
+                .setPositiveButton(R.string.save, (dialog, which, selectedItems) -> {
+                    Set<String> selected = new HashSet<>(selectedItems);
+                    for (String tag : items) {
+                        boolean want = selected.contains(tag);
+                        boolean had = current.contains(tag);
+                        if (want && !had) {
+                            store.addTag(mPackageName, tag);
+                        } else if (!want && had) {
+                            store.removeTag(mPackageName, tag);
+                        }
+                    }
+                    if (mMainModel != null) {
+                        mMainModel.getTagsAlteredLiveData().setValue(true);
+                    }
+                })
+                .setNeutralButton(R.string.new_tag, (dialog, which, selectedItems) -> promptNewTag(store))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void promptNewTag(@NonNull AppTagStore store) {
+        if (mPackageName == null) {
+            return;
+        }
+        new TextInputDialogBuilder(requireActivity(), R.string.tag_name)
+                .setTitle(R.string.new_tag)
+                .setPositiveButton(R.string.add, (dialog, which, inputText, isChecked) -> {
+                    if (inputText == null) return;
+                    String tag = inputText.toString().trim();
+                    if (!AppTagStore.isValidTag(tag)) {
+                        UIUtils.displayShortToast(R.string.invalid_tag);
+                        return;
+                    }
+                    store.addTag(mPackageName, tag);
+                    if (mMainModel != null) {
+                        mMainModel.getTagsAlteredLiveData().setValue(true);
+                    }
+                    // Reopen the picker so the new tag can be assigned/reviewed.
+                    showEditTagsDialog();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     // T20-C: capture and show a point-in-time memory snapshot (dumpsys meminfo

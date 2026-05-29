@@ -112,6 +112,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_edit_tags"
+        android:icon="@drawable/ic_edit"
+        android:title="@string/edit_tags"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_add_to_profile"
         android:icon="@drawable/ic_file_plus"
         android:title="@string/add_to_profile"
