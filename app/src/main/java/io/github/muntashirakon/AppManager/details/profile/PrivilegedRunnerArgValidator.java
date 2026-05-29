@@ -146,6 +146,11 @@ public final class PrivilegedRunnerArgValidator {
         if (arg.length() > MAX_ARG_LENGTH) return Rejection.TOO_LONG;
         for (int i = 0; i < arg.length(); ++i) {
             char c = arg.charAt(i);
+            // Newlines / carriage returns are shell command separators, the
+            // classic injection vector — classify them as metacharacters
+            // explicitly before the generic control-byte check (which would
+            // otherwise pre-empt them, since 0x0A/0x0D are < 0x20).
+            if (c == '\n' || c == '\r') return Rejection.SHELL_METACHARACTER;
             if (c < 0x20 || c == 0x7f) return Rejection.CONTROL_CHARACTER;
             switch (c) {
                 case '`':
@@ -161,8 +166,9 @@ public final class PrivilegedRunnerArgValidator {
                 case '?':
                 case '!':
                 case '\\':
-                case '\n':
-                case '\r':
+                case ' ':   // word-splitting: a single argv token never legitimately
+                            // contains a space in the perfetto/simpleperf argv set,
+                            // and a spaced token is the hallmark of an injected command.
                     return Rejection.SHELL_METACHARACTER;
                 default:
                     break;
