@@ -171,8 +171,27 @@ than by historical priority tier:
   available-width thresholds not fixed device classes. _Width-class resolver
   shipped: `WindowWidthSizeClass.resolve(int)` + `supportsTwoPane`/
   `requiresTwoPane` (COMPACT <600 / MEDIUM 600–840 / EXPANDED ≥840); 7 JVM
-  tests. `androidx.window 1.4.0` is already a dependency.
-  **Open: two-pane layouts + activity integration.**_
+  tests. `androidx.window 1.4.0` is already a dependency._
+  **Device-gated** — a layout restructure whose correctness (view-ID
+  preservation + nav/back behavior) cannot be CI-verified; must be exercised on
+  a tablet/foldable before shipping, so it is not landed blind. **Concrete
+  plan for the device pass:**
+  1. **Settings first (lowest risk)**: add `layout-w840dp/activity_settings.xml`
+     that wraps the existing `FragmentContainerView` in a `SlidingPaneLayout`
+     (left: a preferences-headers list; right: the detail container, keeping the
+     existing fragment-container view ID). `SettingsActivity` reads
+     `WindowWidthSizeClass.resolve(config.screenWidthDp)`; on EXPANDED it opens
+     the two-pane (header click -> replace detail pane) else the current
+     single-pane. No existing IDs change — the `-w840dp` resource qualifier
+     swaps the layout only on wide screens.
+  2. **App List + App Details master/detail**: `layout-w840dp/activity_main.xml`
+     hosting a `SlidingPaneLayout` (left: the existing `R.id.item_list`
+     RecyclerView untouched; right: a `FragmentContainerView` for an embedded
+     `AppInfoFragment`). On EXPANDED, a row tap binds the detail fragment instead
+     of launching `AppDetailsActivity`; on COMPACT it keeps the current launch.
+     All current main-list IDs preserved; the detail pane is additive.
+  3. Verify on Pixel Fold / Tab S9: rotation + fold/unfold keeps state, back
+     from detail collapses the pane, and COMPACT phones are visually unchanged.
 - [~] **T21-I Fast list rendering for 10k+ installed apps**: source audit +
   safe optimizations shipped 2026-05-28 in
   [`docs/audits/2026-05-28-large-list-rendering.md`](docs/audits/2026-05-28-large-list-rendering.md).
@@ -208,8 +227,14 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   **Open: the interactive bottom sheet on the scheduled-backup settings screen
   (needs persisting the last run's skip details so the screen can read them — a
   settings-surface + persistence plumbing follow-up).**
-- [ ] **NF-06 Pro Mode hero card**: the Pro Mode explainer copy shipped in
-  v0.5.0; the deferred onboarding hero card remains.
+- [ ] **NF-06 Pro Mode hero card**: **blocked on a product/UX decision** (no
+  acceptance spec). The onboarding flow is a privilege-*mode* picker
+  (Auto/Root/Shizuku/ADB); "Pro Mode" is the orthogonal advanced-features toggle
+  and is already explained via the Settings -> Glossary "Pro Mode" entry. A
+  "hero card" has no defined placement (onboarding step? dashboard? a Pro Mode
+  settings screen?) or content, and inventing one would be speculative UI
+  against the "no unrequested features" rule. Needs a one-line decision on
+  *where* the hero card lives and *what* it says before implementation.
 - [x] **NF-08 tag UI follow-up**: App Details overflow -> "Edit tags" shipped
   2026-05-28 — a `SearchableMultiChoiceDialogBuilder` over all known + current
   tags (current pre-selected) assigns/removes user tags via `AppTagStore`, and a
