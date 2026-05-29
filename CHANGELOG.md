@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Permission Inspector chip-row filter (EI-04, 2026-05-28)
+
+- The Permission Inspector catalog now has a chip-row filter (All /
+  Requested / Granted / Needs review) in its header. "Needs review" shows
+  permission groups where at least one requesting app hasn't granted it
+  (`requested > granted`) — the actionable set.
+- Backed by the pure-function `PermissionInspectorFilter` (JVM-tested) and
+  re-filters the list on chip change. Uses the existing bounded-radius
+  filter-chip style (no pill backdrops).
+
 ### Added - Undo SnackBar for destructive batch operations (T21-F, 2026-05-28)
 
 - Destructive batch operations from the App List (uninstall, clear data,

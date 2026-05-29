@@ -3295,6 +3295,11 @@
     <string name="perm_inspector_info_body">This view lists apps that request the selected permission group.\n\n• Use an app switch to grant or revoke that app only.\n• Use bulk actions after reviewing the group summary and confirmation dialog.\n• Bulk revoke skips known OS- and vendor-critical packages to reduce reboot and service-breakage risk.\n\nIndividual app switches remain available for power-user recovery or testing. Treat critical system packages carefully.</string>
     <string name="perm_inspector_header_title">Permission posture</string>
     <string name="perm_inspector_summary_loading">Building permission summary…</string>
+    <!-- EI-04 permission-inspector chip-row filter -->
+    <string name="filter_all">All</string>
+    <string name="perm_filter_requested">Requested</string>
+    <string name="perm_filter_granted">Granted</string>
+    <string name="perm_filter_needs_attention">Needs review</string>
     <string name="perm_inspector_summary_stats">%1$d groups · %2$d app requests · %3$d active grants</string>
     <string name="perm_recovery_action">Restore system app permissions</string>
     <string name="perm_recovery_confirm_title">Restore system app permissions?</string>
