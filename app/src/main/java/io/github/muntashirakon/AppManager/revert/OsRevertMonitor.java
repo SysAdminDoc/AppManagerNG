@@ -44,7 +44,7 @@ public final class OsRevertMonitor {
         Context appContext = context.getApplicationContext();
         DozeAllowlistDiagnostics.Snapshot beforeSnapshot =
                 DozeAllowlistDiagnostics.snapshot(appContext, packageName);
-        schedule(() -> {
+        schedule(packageName, () -> {
             boolean currentExempt = !DeviceIdleManagerCompat.isBatteryOptimizedApp(packageName);
             if (stateMatches(expectedExempt, currentExempt)) {
                 return null;
@@ -65,7 +65,7 @@ public final class OsRevertMonitor {
                                    int userId,
                                    boolean expectedFrozen) {
         Context appContext = context.getApplicationContext();
-        schedule(() -> {
+        schedule(packageName, () -> {
             boolean currentFrozen = FreezeUtils.isFrozen(packageName, userId);
             if (stateMatches(expectedFrozen, currentFrozen)) {
                 return null;
@@ -84,7 +84,7 @@ public final class OsRevertMonitor {
                                       int userId,
                                       @PackageManagerCompat.EnabledState int expectedState) {
         Context appContext = context.getApplicationContext();
-        schedule(() -> {
+        schedule(componentName.getPackageName(), () -> {
             int currentState = PackageManagerCompat.getComponentEnabledSetting(componentName, userId);
             if (componentStateMatches(expectedState, currentState)) {
                 return null;
@@ -104,7 +104,7 @@ public final class OsRevertMonitor {
                                   int op,
                                   @AppOpsManagerCompat.Mode int expectedMode) {
         Context appContext = context.getApplicationContext();
-        schedule(() -> {
+        schedule(packageName, () -> {
             int currentMode = getConfiguredAppOpMode(packageName, uid, op);
             if (appOpModeMatches(expectedMode, currentMode)) {
                 return null;
@@ -119,16 +119,20 @@ public final class OsRevertMonitor {
         });
     }
 
-    private static void schedule(@NonNull Probe probe) {
-        schedule(probe, DEFAULT_REPOLL_DELAY_MILLIS);
+    private static void schedule(@NonNull String packageName, @NonNull Probe probe) {
+        schedule(packageName, probe, DEFAULT_REPOLL_DELAY_MILLIS);
     }
 
-    private static void schedule(@NonNull Probe probe, long delayMillis) {
+    private static void schedule(@NonNull String packageName, @NonNull Probe probe, long delayMillis) {
         ThreadUtils.postOnMainThreadDelayed(() -> ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 RevertEvent event = probe.run();
                 if (event != null) {
                     Log.w(TAG, "Detected OS-reverted state: " + event.getDetailMessage());
+                    // T21-G: feed the attention-badge tracker so the main list
+                    // can surface a "recently reverted" dot for this package.
+                    OsRevertCountTracker.getInstance().recordRevert(packageName,
+                            System.currentTimeMillis());
                     ThreadUtils.postOnMainThread(() -> sRevertEvents.setValue(event));
                 }
             } catch (Throwable th) {

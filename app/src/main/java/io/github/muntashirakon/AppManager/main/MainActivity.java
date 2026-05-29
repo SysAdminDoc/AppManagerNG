@@ -73,6 +73,7 @@ import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity;
 import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.profiles.ProfilesActivity;
+import io.github.muntashirakon.AppManager.revert.OsRevertCountTracker;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.runningapps.RunningAppsActivity;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -657,6 +658,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     protected void onResume() {
         super.onResume();
         if (viewModel != null) viewModel.onResume();
+        // T21-G: prune expired OS-revert events so the attention-badge tracker
+        // cannot grow unbounded across long-lived sessions.
+        OsRevertCountTracker.getInstance().evictExpired(System.currentTimeMillis(),
+                OsRevertCountTracker.DEFAULT_TTL_MILLIS);
         if (mAdapter != null && mBatchOpsHandler != null && mAdapter.isInSelectionMode()) {
             mBatchOpsHandler.updateConstraints();
             mMultiSelectionView.updateCounter(false);

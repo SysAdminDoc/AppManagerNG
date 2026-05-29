@@ -53,6 +53,25 @@ public final class OsRevertCountTracker {
     private final Map<String, List<Long>> mPerPackageEventTimes = new HashMap<>();
     private final Map<String, Long> mLastTouchMillis = new HashMap<>();
 
+    private static volatile OsRevertCountTracker sInstance;
+
+    /**
+     * Process-wide shared tracker. {@link OsRevertMonitor} records into it when
+     * an OS revert is detected; the main-list adapter reads from it to drive the
+     * T21-G attention badge. Tests still construct their own instances.
+     */
+    @NonNull
+    public static OsRevertCountTracker getInstance() {
+        if (sInstance == null) {
+            synchronized (OsRevertCountTracker.class) {
+                if (sInstance == null) {
+                    sInstance = new OsRevertCountTracker();
+                }
+            }
+        }
+        return sInstance;
+    }
+
     /** Record a single revert event for {@code packageName} at {@code nowMillis}. */
     public synchronized void recordRevert(@NonNull String packageName, long nowMillis) {
         if (packageName.isEmpty()) return;

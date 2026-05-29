@@ -120,11 +120,13 @@ The main-list adapter should:
   dot itself.
 - [x] Glossary entry — shipped 2026-05-28 (Settings -> Glossary -> "Attention
   badges", `help_attention_badges_body`).
-- [ ] Wire `OsRevertMonitor.watchAppOp` / `watchFreeze` / `watchComponent`
-  to call `OsRevertCountTracker.recordRevert(packageName, now)` on
-  every event. (The adapter passes `recentOsRevertCount = 0` until this lands.)
-- [ ] Add `OsRevertCountTracker.evictExpired` to the existing
-  `MainViewModel` refresh heartbeat so the map cannot grow unbounded.
+- [x] Wire `OsRevertMonitor` -> `OsRevertCountTracker.recordRevert` — shipped
+  2026-05-28. `OsRevertCountTracker.getInstance()` is a process-wide singleton;
+  `OsRevertMonitor.schedule(packageName, probe, …)` records into it on every
+  detected revert (freeze / component / app-op / doze battery-optimization), and
+  the main-list adapter reads `countRecent(pkg, now, DEFAULT_TTL_MILLIS)` per row.
+- [x] Eviction heartbeat — shipped 2026-05-28 via `evictExpired` in
+  `MainActivity.onResume`, so the tracker map cannot grow unbounded.
 - [ ] Optional v0.6.x: split `rulesCount` proxy into a dedicated
   `disabledComponentCount` cache column for sharper badge semantics.
 - [ ] Optional: a no-pill numeric rendering of the count (e.g. a fixed-size
