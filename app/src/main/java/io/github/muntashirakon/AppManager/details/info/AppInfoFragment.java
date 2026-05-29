@@ -33,6 +33,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.system.Os;
 import android.system.OsConstants;
 import android.os.Bundle;
@@ -132,6 +133,10 @@ import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
 import io.github.muntashirakon.AppManager.details.AppDetailsViewModel;
 import io.github.muntashirakon.AppManager.details.manifest.ManifestViewerActivity;
+import io.github.muntashirakon.AppManager.details.profile.AppProfileCapture;
+import io.github.muntashirakon.AppManager.details.profile.CpuProfileCommandBuilder;
+import io.github.muntashirakon.AppManager.details.profile.PerfettoCommandBuilder;
+import io.github.muntashirakon.AppManager.details.profile.PerfettoTraceConfigBuilder;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
@@ -500,6 +505,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
         } else if (itemId == R.id.action_memory_snapshot) {
             showMemorySnapshot();
+        } else if (itemId == R.id.action_export_trace) {
+            showPerfettoTraceCapture();
+        } else if (itemId == R.id.action_record_cpu_profile) {
+            showCpuProfileCapture();
         } else if (itemId == R.id.action_export_blocking_rules) {
             final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(mActivity, System.currentTimeMillis()) + ".am.tsv";
             mExport.launch(fileName, uri -> {
@@ -720,6 +729,129 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         .show();
             });
         });
+    }
+
+    // T20-A: capture a duration-bounded Perfetto system trace focused on this
+    // app, saved to Downloads, with an "Open Perfetto UI" follow-up.
+    private void showPerfettoTraceCapture() {
+        if (!SelfPermissions.isSystemOrRootOrShell()) {
+            new MaterialAlertDialogBuilder(mActivity)
+                    .setIcon(R.drawable.ic_information_circle)
+                    .setTitle(R.string.root_or_adb_required)
+                    .setMessage(R.string.profile_capture_permission_required)
+                    .setPositiveButton(R.string.ok, null)
+                    .setNeutralButton(R.string.open_developer_options, (d, w) -> {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        } catch (Throwable th) {
+                            UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
+                        }
+                    })
+                    .show();
+            return;
+        }
+        if (mPackageName == null) {
+            return;
+        }
+        final String packageName = mPackageName;
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.action_export_trace)
+                .setMessage(R.string.perfetto_trace_confirm)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.action_continue, (d, w) -> {
+                    String outputPath = profileOutputPath(packageName, ".perfetto-trace");
+                    showProgressIndicator(true);
+                    displayShortToast(R.string.profile_capturing);
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        AppProfileCapture.Result result = AppProfileCapture.capturePerfettoTrace(
+                                packageName, PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS, outputPath);
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            showProgressIndicator(false);
+                            if (result.success) {
+                                new MaterialAlertDialogBuilder(mActivity)
+                                        .setTitle(R.string.profile_capture_result_title)
+                                        .setMessage(getString(R.string.perfetto_trace_saved, result.outputPath))
+                                        .setNegativeButton(R.string.close, null)
+                                        .setPositiveButton(R.string.open_perfetto_ui, (d2, w2) -> openUrl(
+                                                PerfettoCommandBuilder.perfettoUiUrl()))
+                                        .show();
+                            } else {
+                                displayLongToast(getString(R.string.profile_capture_failed,
+                                        result.error != null ? result.error : "?"));
+                            }
+                        });
+                    });
+                })
+                .show();
+    }
+
+    // T20-B: record a duration-bounded simpleperf CPU profile for this app,
+    // saved as raw perf.data in Downloads.
+    private void showCpuProfileCapture() {
+        if (!SelfPermissions.isSystemOrRootOrShell()) {
+            new MaterialAlertDialogBuilder(mActivity)
+                    .setIcon(R.drawable.ic_information_circle)
+                    .setTitle(R.string.root_or_adb_required)
+                    .setMessage(R.string.profile_capture_permission_required)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+            return;
+        }
+        if (mPackageName == null) {
+            return;
+        }
+        final String packageName = mPackageName;
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.action_record_cpu_profile)
+                .setMessage(R.string.cpu_profile_confirm)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.action_continue, (d, w) -> {
+                    String outputPath = profileOutputPath(packageName, ".perf.data");
+                    showProgressIndicator(true);
+                    displayShortToast(R.string.profile_capturing);
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        AppProfileCapture.Result result = AppProfileCapture.captureCpuProfile(
+                                packageName, CpuProfileCommandBuilder.DEFAULT_DURATION_SECONDS, null, outputPath);
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            showProgressIndicator(false);
+                            if (result.success) {
+                                new MaterialAlertDialogBuilder(mActivity)
+                                        .setTitle(R.string.profile_capture_result_title)
+                                        .setMessage(getString(R.string.cpu_profile_saved, result.outputPath))
+                                        .setPositiveButton(R.string.close, null)
+                                        .show();
+                            } else {
+                                displayLongToast(getString(R.string.profile_capture_failed,
+                                        result.error != null ? result.error : "?"));
+                            }
+                        });
+                    });
+                })
+                .show();
+    }
+
+    // Downloads path with a digits-only timestamp so the privileged runner sees
+    // a metacharacter-free, validator-safe output path.
+    @NonNull
+    private String profileOutputPath(@NonNull String packageName, @NonNull String extension) {
+        File downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        return new File(downloads, packageName + "-" + System.currentTimeMillis() + extension).getAbsolutePath();
+    }
+
+    private void openUrl(@NonNull String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Throwable th) {
+            UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
+        }
     }
 
     private void showPerAppRollbackConfirmation() {
