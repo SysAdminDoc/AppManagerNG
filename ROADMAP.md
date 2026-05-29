@@ -91,10 +91,11 @@ than by historical priority tier:
   `PerfettoTraceConfigBuilder` text-proto to `perfetto -c - --txt -o` via
   `Runner` (argv validated by `PrivilegedRunnerArgValidator`), saving a
   `.perfetto-trace` to Downloads and offering an "Open Perfetto UI" button
-  (`perfettoUiUrl()`). _Data layer: `PerfettoTraceConfigBuilder`,
-  `PerfettoCommandBuilder`, `PerfettoConfigInspector`. **Follow-up: duration
-  picker, a pre-capture config preview chip via `PerfettoConfigInspector`, and
-  true mid-capture cancellation (device-verified).**_
+  (`perfettoUiUrl()`). The confirm dialog shows a pre-capture config preview
+  ("10s · 64 MB ring · N ftrace events · pkg") via `PerfettoConfigInspector`
+  (shipped 2026-05-28). _Data layer: `PerfettoTraceConfigBuilder`,
+  `PerfettoCommandBuilder`, `PerfettoConfigInspector`. **Follow-up: a duration
+  picker and true mid-capture cancellation (device-verified).**_
 - [x] **T20-B simpleperf CPU profile capture**: App Details overflow ->
   "Record CPU profile" shipped 2026-05-28 — gated on root/Shizuku/ADB, confirms
   (explaining the DWARF call-graph + platform `simpleperf`), then
