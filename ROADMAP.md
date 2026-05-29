@@ -189,9 +189,14 @@ than by historical priority tier:
 These were noted open in `.ai/research/2026-05-25-iter-143/CONTINUE_FROM_HERE.md`
 but were dropped from the 2026-05-26 consolidation. Folded back in here.
 
-- [ ] **EI-04 Permission Inspector chip-row filter**: add a toolbar chip row to
-  the permissions screen (e.g. Dangerous / Granted / Denied / Signature) backed
-  by ViewModel filter state, mirroring the main-list quick-filter chip pattern.
+- [x] **EI-04 Permission Inspector chip-row filter**: shipped 2026-05-28 — a
+  single-selection chip row (All / Requested / Granted / Needs review) in the
+  Permission Inspector header, backed by the pure-function
+  `PermissionInspectorFilter` (`matches`/`apply`; 4 JVM tests) and re-filtering
+  the group catalog on chip change in `PermissionInspectorActivity`. Reuses the
+  bounded-radius `Widget.AppTheme.Chip.MainFilter` style (no pill backdrops).
+  "Needs review" surfaces groups where some requesting app hasn't granted
+  (`requested > granted`). compile + aapt2 link + filter tests green.
 - [ ] **EI-07 Scheduled-backup "Why did this skip?" bottom sheet**: capture
   per-package skip-reason in the backup worker and surface it in a bottom sheet
   from the scheduled-backup screen.
