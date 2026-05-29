@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Scheduled-backup skip-reason capture (EI-07 data layer, 2026-05-28)
+
+- The scheduled-backup selector now records *why* each package was skipped
+  (currently "backed up recently", with the newest existing-backup time) via
+  `AutoBackupScheduler.BackupSelection.getSkippedDetails()`, instead of only a
+  count. `AutoBackupWorker` logs each skipped package + reason, so the
+  previously-discarded per-package "why did this skip?" detail is captured.
+- Follow-up: an interactive "Why did this skip?" bottom sheet on the
+  scheduled-backup settings screen (needs persisting the last run's skip
+  details for the screen to read).
+
 ### Added - User tag editor in App Details (NF-08 UI, 2026-05-28)
 
 - App Details overflow now has an "Edit tags" action to create and assign

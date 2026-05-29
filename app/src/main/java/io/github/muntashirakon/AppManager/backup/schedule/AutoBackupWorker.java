@@ -85,6 +85,13 @@ public class AutoBackupWorker extends Worker {
                     System.currentTimeMillis());
             pairs = selection.getDuePackages();
             int skipped = selection.getSkippedPackages();
+            // EI-07: capture the per-package "why did this skip?" detail the
+            // worker previously discarded (only a count was kept). Logged so the
+            // reason is retrievable; an interactive bottom sheet is a follow-up.
+            for (AutoBackupScheduler.SkippedPackage sp : selection.getSkippedDetails()) {
+                Log.i(TAG, "Auto-backup skipped " + sp.packageName + " (u" + sp.userId + "): "
+                        + sp.reason + "; last backup at " + sp.lastBackupMillis);
+            }
             if (pairs.isEmpty()) {
                 String message = context.getResources().getQuantityString(
                         R.plurals.auto_backup_result_all_recent, skipped, skipped);

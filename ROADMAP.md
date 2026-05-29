@@ -199,9 +199,15 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   bounded-radius `Widget.AppTheme.Chip.MainFilter` style (no pill backdrops).
   "Needs review" surfaces groups where some requesting app hasn't granted
   (`requested > granted`). compile + aapt2 link + filter tests green.
-- [ ] **EI-07 Scheduled-backup "Why did this skip?" bottom sheet**: capture
-  per-package skip-reason in the backup worker and surface it in a bottom sheet
-  from the scheduled-backup screen.
+- [~] **EI-07 Scheduled-backup "Why did this skip?"**: data-layer capture
+  shipped 2026-05-28 — `AutoBackupScheduler.BackupSelection` now carries
+  `getSkippedDetails()` (a `List<SkippedPackage>` with package, user, `SkipReason`,
+  and the newest existing-backup time) instead of only a count, and
+  `AutoBackupWorker` logs each skipped package + reason (previously the per-package
+  "why" was discarded). 1 new JVM test; `getSkippedPackages()` count preserved.
+  **Open: the interactive bottom sheet on the scheduled-backup settings screen
+  (needs persisting the last run's skip details so the screen can read them — a
+  settings-surface + persistence plumbing follow-up).**
 - [ ] **NF-06 Pro Mode hero card**: the Pro Mode explainer copy shipped in
   v0.5.0; the deferred onboarding hero card remains.
 - [x] **NF-08 tag UI follow-up**: App Details overflow -> "Edit tags" shipped

@@ -87,6 +87,29 @@ public class AutoBackupSchedulerTest {
     }
 
     @Test
+    public void skippedDetailsCaptureReasonAndNewestBackupTime() {
+        long now = 10 * DAY;
+        AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
+                Arrays.asList(pair("com.fresh", 0), pair("com.stale", 0), pair("com.unknown", 0)),
+                Arrays.asList(
+                        backup("com.fresh", 0, now - 2 * DAY),
+                        backup("com.fresh", 0, now - TimeUnit.HOURS.toMillis(6)),
+                        backup("com.stale", 0, now - 3 * DAY),
+                        backup("com.unknown", 0, 0)),
+                1,
+                now);
+
+        java.util.List<AutoBackupScheduler.SkippedPackage> skipped = selection.getSkippedDetails();
+        assertEquals(1, skipped.size());
+        AutoBackupScheduler.SkippedPackage sp = skipped.get(0);
+        assertEquals("com.fresh", sp.packageName);
+        assertEquals(0, sp.userId);
+        assertEquals(AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, sp.reason);
+        // The newest of com.fresh's two backups (6h ago) is the one recorded.
+        assertEquals(now - TimeUnit.HOURS.toMillis(6), sp.lastBackupMillis);
+    }
+
+    @Test
     public void ageGateIsPerUser() {
         long now = 10 * DAY;
         AutoBackupScheduler.BackupSelection selection = AutoBackupScheduler.selectPackagesDueForBackup(
