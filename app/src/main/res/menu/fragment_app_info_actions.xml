@@ -94,6 +94,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_memory_snapshot"
+        android:icon="@drawable/ic_pulse"
+        android:title="@string/action_memory_snapshot"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_add_to_profile"
         android:icon="@drawable/ic_file_plus"
         android:title="@string/add_to_profile"

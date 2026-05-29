@@ -100,14 +100,17 @@ than by historical priority tier:
   duration clamp, event allow-list, injection guard), `CpuProfileEventCatalog`
   (per-API/per-ABI event availability), shared `PrivilegedRunnerArgValidator`.
   **Open: App Details output capture + cancellation surface.**_
-- [ ] **T20-C Memory allocations inspector**: parse `dumpsys meminfo`,
-  `dumpsys gfxinfo`, and procfs snapshots for the target package; surface in
-  App Details. Acceptance: works on non-debuggable apps where data is
-  privileged-readable, point-in-time snapshot, notes truncated `system_server`
-  data. _Data layer shipped: `AppMemoryInfoParser`, `GfxInfoParser`,
-  `ProcStatusParser`, `ProcMapsSummary`, `MemorySnapshotComposer` (per-field
-  provenance via `FieldSource`), `MemoryFormat` unit-ladder; 50+ JVM tests.
-  **Open: App Details UI.**_
+- [x] **T20-C Memory allocations inspector**: App Details overflow ->
+  "Memory snapshot" shipped 2026-05-28 — `AppMemorySnapshotLoader.load` runs
+  `dumpsys meminfo`/`gfxinfo` plus `pidof` -> `/proc/<pid>/status` + `/maps`
+  through `Runner`, feeds the JVM-tested parsers, composes via
+  `MemorySnapshotComposer`, and `format()` renders a provenance-tagged
+  ("via /proc/maps · virtual", "via /proc/status") scrollable block using
+  `MemoryFormat`. The action is gated on root/Shizuku/ADB and degrades
+  gracefully when the app is not running or a source is truncated. _Data layer:
+  the four parsers + composer + `MemoryFormat`; 50+ JVM tests, plus 11 new tests
+  for `firstPid`/`provenanceFor`. **Follow-up: streaming/refresh and a richer
+  per-region chart beyond the point-in-time text snapshot.**_
 
 ### T21 — UI/design polish and premium feel
 

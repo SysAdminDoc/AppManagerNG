@@ -5,6 +5,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Memory snapshot inspector in App Details (T20-C UI, 2026-05-28)
+
+- App Details overflow menu now has a "Memory snapshot" action that
+  captures a point-in-time memory view of the target package. The new
+  `AppMemorySnapshotLoader` runs `dumpsys meminfo`, `dumpsys gfxinfo`, and
+  (via `pidof`) `/proc/<pid>/status` + `/proc/<pid>/maps` through `Runner`,
+  feeds the JVM-tested parsers, and composes them with
+  `MemorySnapshotComposer`.
+- The result renders as a scrollable, provenance-tagged block (PSS totals,
+  Java/Native/Code/Stack/Graphics heaps, RSS/Swap, thread count, jank +
+  frame latency percentiles, and per-region virtual byte counts), with
+  "via /proc/maps · virtual" / "via /proc/status" suffixes where the number
+  type differs from a dumpsys PSS value.
+- The action is gated on root/Shizuku/ADB and degrades gracefully when the
+  app is not running or `system_server` truncates the data.
+- 11 focused JVM tests pin the `firstPid` PID-parsing and the provenance
+  mapping. Follow-up: streaming/refresh and a per-region chart remain on the
+  T20-C roadmap row.
+
 ### Added - Duplicate APK finder in One-Click Ops (T19-C UI, 2026-05-28)
 
 - One-Click Ops -> Maintenance now has a "Find duplicate APK files" entry
