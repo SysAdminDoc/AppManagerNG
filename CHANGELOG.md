@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Undo SnackBar for destructive batch operations (T21-F, 2026-05-28)
+
+- Destructive batch operations from the App List (uninstall, clear data,
+  freeze, force-stop, block components) now open a short "Undo" SnackBar
+  before the privileged dispatch actually fires. Tapping Undo cancels the
+  operation entirely; letting it time out (or navigating away) commits it.
+- The undo window length comes from `SnackbarDurationPolicy` keyed on the
+  operation's severity (uninstall/clear-data = 10s, freeze/component = 7s,
+  force-stop = 4s) and scaled by the system animation scale, so it honors
+  reduced-motion settings. Wired at the single `MainActivity` batch
+  chokepoint via a per-operation `UndoableActionQueue`.
+- `op_history` is unchanged — `BatchOpsService` still records it on dispatch,
+  so the undo gate only delays the commit. Follow-up: on-device timing
+  verification and extending the gate to App Details single-app actions.
+
 ### Fixed - Green up the unit-test suite (2026-05-28)
 
 - `PrivilegedRunnerArgValidator` now classifies `\n`/`\r` as

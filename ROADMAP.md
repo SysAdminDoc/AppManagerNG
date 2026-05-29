@@ -132,15 +132,21 @@ than by historical priority tier:
   and launcher re-enumeration (incl. the disabled-target interaction) can't be
   exercised on a CI host. **Designer follow-up:** polished adaptive-icon assets
   to replace the functional neutral/mono vectors; glossary strings.
-- [ ] **T21-F Undo SnackBar for destructive operations**: wrap freeze,
-  uninstall, force-stop, clear-data, and component-state writes in a
-  short-lived "Undo" SnackBar before commit. Acceptance: cancellation skips the
-  privileged write entirely, an unactioned SnackBar still records `op_history`,
-  duration follows the reduced-motion gate. _Data layer shipped:
-  `UndoableActionQueue` (deferred-commit, `defer`/`cancel`/`pollExpired`/
-  `drainAll`, injectable clock), `SnackbarDurationPolicy.windowFor`,
-  `UndoOpHistoryRecorder.record`/`recordCommittedBatch`/`recordShutdownFlush`;
-  27 JVM tests. **Open: SnackBar wiring per destructive surface.**_
+- [x] **T21-F Undo SnackBar for destructive operations**: shipped 2026-05-28 at
+  the main-list batch chokepoint (`MainActivity.handleBatchOpAfterAuth` ->
+  `dispatchBatchOpOrUndo`). Destructive batch ops (uninstall/clear-data ->
+  CRITICAL, freeze/component-block -> HIGH, force-stop -> NORMAL) now open a
+  per-op `UndoableActionQueue` + a Material `Snackbar` whose duration is
+  `SnackbarDurationPolicy.windowFor(severity, ANIMATOR_DURATION_SCALE)` (so it
+  honors the reduced-motion gate). Tapping **Undo** `cancel()`s the deferred
+  dispatch entirely; a non-action dismiss (timeout / navigate-away) `drainAll()`s
+  and commits via `startForegroundService`. A fresh per-op queue prevents a
+  later op's SnackBar (CONSECUTIVE-dismissing this one) from committing it early.
+  op_history is still written by `BatchOpsService` on dispatch (no
+  double-record). compile + aapt2 link green. _Data layer: `UndoableActionQueue`,
+  `SnackbarDurationPolicy`, `UndoOpHistoryRecorder`; 27 JVM tests._ **Follow-up
+  (device-gated): verify the SnackBar↔dispatch timing on-device; extend the
+  same gate to App Details single-app destructive actions + One-Click Ops.**
 - [x] **T21-G Attention badges on app list rows**: shipped 2026-05-28 — the
   main-list row icon now overlays a single severity-tinted **true-circle dot**
   (12 dp, `bg_attention_dot`, recoloured per `Severity`) bound in
