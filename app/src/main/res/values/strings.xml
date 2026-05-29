@@ -842,6 +842,26 @@
     <string name="apk_duplicate_keeping">keeping <xliff:g id="name" example="base.apk">%1$s</xliff:g></string>
     <string name="delete_duplicate_apks_confirm">Permanently delete the selected duplicate APK files? The kept copy of each app version is preserved.</string>
     <string name="duplicate_apks_deleted">Deleted <xliff:g id="count" example="3">%1$d</xliff:g> APK file(s), reclaimed <xliff:g id="size" example="80 MB">%2$s</xliff:g>.</string>
+    <!-- T20-C Memory allocations inspector (App Details) -->
+    <string name="action_memory_snapshot">Memory snapshot</string>
+    <string name="memory_snapshot_permission_required">Reading another app\'s memory needs root or ADB access.</string>
+    <string name="memory_snapshot_unavailable">No memory data available. The app may not be running, or privileged access is unavailable.</string>
+    <string name="memory_snapshot_truncated">Some memory regions were truncated by the system.</string>
+    <string name="memory_total_pss">Total PSS</string>
+    <string name="memory_total_rss">Total RSS</string>
+    <string name="memory_swap">Swap</string>
+    <string name="memory_java_heap">Java heap</string>
+    <string name="memory_native_heap">Native heap</string>
+    <string name="memory_code">Code</string>
+    <string name="memory_stack">Stack</string>
+    <string name="memory_graphics">Graphics</string>
+    <string name="memory_threads">Threads</string>
+    <string name="memory_jank">Janky frames</string>
+    <string name="memory_frame_p90">Frame latency p90</string>
+    <string name="memory_frame_p99">Frame latency p99</string>
+    <string name="memory_region_dalvik">Dalvik (virtual)</string>
+    <string name="memory_region_native">Native (virtual)</string>
+    <string name="memory_region_library">Libraries (virtual)</string>
     <string name="no_packages_selected">No packages selected</string>
     <string name="no_packages_selected_message">Select at least one package before applying this operation.</string>
     <string name="no">No</string>
