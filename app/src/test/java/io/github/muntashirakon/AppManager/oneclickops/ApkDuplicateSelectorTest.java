@@ -130,9 +130,11 @@ public class ApkDuplicateSelectorTest {
                 Arrays.asList(c, b, a), ApkDuplicateSelector.KeepStrategy.LARGEST);
         assertEquals(1, g1.size());
         assertEquals(1, g2.size());
-        // Tie-breaker prefers lexicographically smallest path - alpha.apk.
-        assertEquals("/dl/alpha.apk".replace('/', File.separatorChar),
-                g1.get(0).keeper.path.getAbsolutePath().replace('/', File.separatorChar));
+        // Tie-breaker prefers the lexicographically smallest path - alpha.apk.
+        // Compare the basename so the assertion is independent of the host's
+        // absolute-path form (a Windows getAbsolutePath() adds a "C:\" drive
+        // prefix that the original Unix-only literal did not account for).
+        assertEquals("alpha.apk", g1.get(0).keeper.path.getName());
         assertEquals(g1.get(0).keeper.path.getAbsolutePath(),
                 g2.get(0).keeper.path.getAbsolutePath());
     }
