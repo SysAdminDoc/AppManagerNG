@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.Menu;
@@ -33,6 +34,7 @@ import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.snackbar.Snackbar;
 
 
 import java.util.ArrayList;
@@ -53,6 +55,8 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.changelog.ChangelogAutoDisplay;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsJournal;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
+import io.github.muntashirakon.AppManager.batchops.SnackbarDurationPolicy;
+import io.github.muntashirakon.AppManager.batchops.UndoableActionQueue;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchNetPolicyOptions;
@@ -1139,11 +1143,79 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         NotificationUtils.requestPostNotificationsForWorkflow(this,
                 R.string.batch_ops_notification_permission_title,
                 R.string.batch_ops_notification_permission_message,
-                () -> {
-                    showProgressIndicator(true);
-                    Intent intent = BatchOpsService.getServiceIntent(this, item);
-                    ContextCompat.startForegroundService(this, intent);
-                });
+                () -> dispatchBatchOpOrUndo(op, item));
+    }
+
+    /**
+     * T21-F: for destructive batch ops, open a short "Undo" SnackBar window
+     * before the privileged dispatch actually fires. Tapping Undo cancels the
+     * dispatch entirely; letting the SnackBar time out (or navigating away)
+     * commits it. Non-destructive ops dispatch immediately as before.
+     *
+     * <p>op_history is still written by {@link BatchOpsService} on dispatch, so
+     * the undo gate only delays the commit — it does not double-record.
+     * Runtime timing of the SnackBar↔dispatch handoff needs on-device
+     * verification.
+     */
+    private void dispatchBatchOpOrUndo(@BatchOpsManager.OpType int op, @NonNull BatchQueueItem item) {
+        SnackbarDurationPolicy.Severity severity = undoSeverityFor(op);
+        if (severity == null) {
+            dispatchBatchService(item);
+            return;
+        }
+        CharSequence opTitle = BatchOpsService.getDesiredOpTitle(this, op);
+        long window = SnackbarDurationPolicy.windowFor(severity, currentAnimatorScale());
+        // A fresh per-op queue so a later op's SnackBar (which dismisses this
+        // one as CONSECUTIVE) cannot drain-and-commit this op prematurely.
+        final UndoableActionQueue queue = new UndoableActionQueue();
+        final int handle = queue.defer(String.valueOf(opTitle), () -> dispatchBatchService(item), window);
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.coordinator_layout),
+                getString(R.string.batch_undo_pending, opTitle), (int) window);
+        snackbar.setAction(R.string.undo, v -> queue.cancel(handle));
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onDismissed(@NonNull Snackbar transientBottomBar, int event) {
+                if (event == DISMISS_EVENT_ACTION) {
+                    // Undo tapped — cancel() already removed the entry.
+                    return;
+                }
+                for (UndoableActionQueue.Entry entry : queue.drainAll()) {
+                    entry.commit.run();
+                }
+            }
+        });
+        snackbar.show();
+    }
+
+    private void dispatchBatchService(@NonNull BatchQueueItem item) {
+        showProgressIndicator(true);
+        Intent intent = BatchOpsService.getServiceIntent(this, item);
+        ContextCompat.startForegroundService(this, intent);
+    }
+
+    @Nullable
+    private static SnackbarDurationPolicy.Severity undoSeverityFor(@BatchOpsManager.OpType int op) {
+        switch (op) {
+            case BatchOpsManager.OP_UNINSTALL:
+            case BatchOpsManager.OP_CLEAR_DATA:
+                return SnackbarDurationPolicy.Severity.CRITICAL;
+            case BatchOpsManager.OP_FREEZE:
+            case BatchOpsManager.OP_BLOCK_COMPONENTS:
+                return SnackbarDurationPolicy.Severity.HIGH;
+            case BatchOpsManager.OP_FORCE_STOP:
+                return SnackbarDurationPolicy.Severity.NORMAL;
+            default:
+                return null;
+        }
+    }
+
+    private float currentAnimatorScale() {
+        try {
+            return Settings.Global.getFloat(getContentResolver(),
+                    Settings.Global.ANIMATOR_DURATION_SCALE, 1f);
+        } catch (Throwable t) {
+            return 1f;
+        }
     }
 
     void showProgressIndicator(boolean show) {
