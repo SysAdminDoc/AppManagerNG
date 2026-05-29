@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.main.LauncherIconAliasController;
+import io.github.muntashirakon.AppManager.main.LauncherIconAliasPlan;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.TypefaceUtil;
@@ -95,6 +97,29 @@ public class AppearancePreferences extends PreferenceFragment {
                         mCurrentLayoutDirection = Objects.requireNonNull(selectedLayoutOrientation);
                         Prefs.Appearance.setLayoutDirection(mCurrentLayoutDirection);
                         AppearanceUtils.applyConfigurationChangesToActivities();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+        // Launcher icon style (T21-E)
+        final String[] launcherIconLabels = getResources().getStringArray(R.array.launcher_icon_styles);
+        final List<LauncherIconAliasPlan.LauncherIconStyle> launcherStyles =
+                Arrays.asList(LauncherIconAliasPlan.LauncherIconStyle.values());
+        Preference launcherIcon = Objects.requireNonNull(findPreference("launcher_icon_style"));
+        launcherIcon.setSummary(launcherIconLabels[launcherStyles.indexOf(
+                LauncherIconAliasController.currentStyle(requireContext()))]);
+        launcherIcon.setOnPreferenceClickListener(preference -> {
+            LauncherIconAliasPlan.LauncherIconStyle current =
+                    LauncherIconAliasController.currentStyle(requireContext());
+            new SearchableSingleChoiceDialogBuilder<>(requireActivity(), launcherStyles, launcherIconLabels)
+                    .setTitle(R.string.pref_launcher_icon)
+                    .setSelection(current)
+                    .setPositiveButton(R.string.apply, (dialog, which, selectedStyle) -> {
+                        if (selectedStyle != null) {
+                            LauncherIconAliasController.apply(requireContext(), selectedStyle);
+                            preference.setSummary(launcherIconLabels[launcherStyles.indexOf(selectedStyle)]);
+                        }
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
