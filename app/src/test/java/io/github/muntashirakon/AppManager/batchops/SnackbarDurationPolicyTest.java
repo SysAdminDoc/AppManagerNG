@@ -58,10 +58,14 @@ public class SnackbarDurationPolicyTest {
 
     @Test
     public void minWindowFloorAppliesEvenAfterShrinking() {
-        // A hypothetical NORMAL base * 0.3 would land at 1200ms; clamp to MIN.
+        // A requested scale below MIN_SCALE (0.5x) is clamped up to 0.5x before
+        // scaling: NORMAL (4000ms) * 0.5 = 2000ms. The scale clamp keeps the
+        // undo window comfortably above the 1500ms MIN_WINDOW_MS floor, so a
+        // tiny requested animation scale can never collapse the window below it.
         long window = SnackbarDurationPolicy.windowFor(
                 SnackbarDurationPolicy.Severity.NORMAL, 0.3f);
-        assertEquals(SnackbarDurationPolicy.MIN_WINDOW_MS, window);
+        assertEquals(2_000L, window);
+        assertTrue(window >= SnackbarDurationPolicy.MIN_WINDOW_MS);
     }
 
     @Test

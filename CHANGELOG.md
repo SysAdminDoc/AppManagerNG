@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Green up the unit-test suite (2026-05-28)
+
+- `PrivilegedRunnerArgValidator` now classifies `\n`/`\r` as
+  `SHELL_METACHARACTER` (command separators) before the generic control-byte
+  check, and rejects a space inside a single argv token as
+  `SHELL_METACHARACTER` (word-splitting / injection signal). This strengthens
+  the privileged-runner gate and matches the validator's own test contract; no
+  behavior change for valid perfetto/simpleperf argv (none contain spaces).
+- Corrected two stale unit tests: the `ApkDuplicateSelector` tie-break test now
+  compares basenames (host-independent — a Windows `getAbsolutePath()` adds a
+  `C:\` drive prefix), and the `SnackbarDurationPolicy` floor test now asserts
+  the documented scale-clamp behavior (a sub-0.5× request clamps to 0.5×, so
+  NORMAL → 2000 ms, above the 1500 ms floor).
+- `:app:testFullDebugUnitTest` is green (1092 tests).
+
 ### Changed - Large-list rendering audit + safe optimizations (T21-I, 2026-05-28)
 
 - App List `RecyclerView` now sets `setHasFixedSize(true)` and
