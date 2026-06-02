@@ -67,11 +67,15 @@ public final class ProviderQueryUtils {
             return null;
         }
         List<String> args = new ArrayList<>();
-        for (String line : text.split("\\r?\\n")) {
-            String arg = line.trim();
-            if (!arg.isEmpty()) {
-                args.add(arg);
-            }
+        // One line == one selection argument. These are VALUES bound positionally
+        // to '?' placeholders, not identifiers, so they must be kept verbatim:
+        // trimming would corrupt a value with significant leading/trailing
+        // whitespace and could drop a whitespace-only value, silently changing
+        // both the matched row and the argument count (tripping the placeholder
+        // parity check). split("\\r?\\n") already handles CRLF and discards a
+        // trailing newline, so a stray final blank line won't add a phantom arg.
+        for (String arg : text.split("\\r?\\n")) {
+            args.add(arg);
         }
         return args.isEmpty() ? null : args.toArray(new String[0]);
     }

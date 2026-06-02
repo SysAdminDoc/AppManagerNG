@@ -165,19 +165,30 @@ public class BackupMetadataV5 implements LocalizedString {
         }
 
         private void verifyCrypto() {
+            // Use real runtime checks, not `assert`: Android's ART never enables
+            // assertions, so the previous asserts were dead no-ops in production.
+            // This is reached from Info(JSONObject) on the deserialization (disk /
+            // untrusted backup) path, where JSONUtils.optString yields "" for an
+            // empty field and HexEncoding.decode("") returns a zero-length array —
+            // so a malformed backup with an empty IV/key slipped past the
+            // requireNonNull guards and only failed later with an opaque cipher
+            // error instead of a clean malformed-backup rejection here.
             switch (crypto) {
                 case CryptoUtils.MODE_OPEN_PGP:
-                    Objects.requireNonNull(keyIds);
-                    assert !keyIds.isEmpty();
+                    if (keyIds == null || keyIds.isEmpty()) {
+                        throw new IllegalArgumentException("Malformed backup: empty OpenPGP key IDs");
+                    }
                     break;
                 case CryptoUtils.MODE_RSA:
                 case CryptoUtils.MODE_ECC:
-                    Objects.requireNonNull(aes);
-                    assert aes.length > 0;
+                    if (aes == null || aes.length == 0) {
+                        throw new IllegalArgumentException("Malformed backup: empty encrypted AES key");
+                    }
                     // Deliberate fallthrough
                 case CryptoUtils.MODE_AES:
-                    Objects.requireNonNull(iv);
-                    assert iv.length > 0;
+                    if (iv == null || iv.length == 0) {
+                        throw new IllegalArgumentException("Malformed backup: empty IV");
+                    }
                     break;
                 case CryptoUtils.MODE_NO_ENCRYPTION:
                 default:

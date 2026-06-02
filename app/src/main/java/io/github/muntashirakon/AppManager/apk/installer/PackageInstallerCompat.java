@@ -976,11 +976,17 @@ public final class PackageInstallerCompat {
     }
 
     private void restoreVerifySettings() {
-        if (mLastVerifyAdbInstallsResult == 1) {
+        // openSession() disables verification for ANY non-zero original value
+        // (the `!= 0` guard) but stores the true original in
+        // mLastVerifyAdbInstallsResult (sentinel -1 = never modified). Restoring
+        // only when it was exactly 1 left ADB-install verification disabled
+        // system-wide if the original value was a non-zero value other than 1.
+        // Mirror the disable condition and restore the actual saved value.
+        if (mLastVerifyAdbInstallsResult > 0) {
             int val = Settings.Global.getInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
-            if (val != 1) {
+            if (val != mLastVerifyAdbInstallsResult) {
                 // Restore value
-                Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
+                Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, mLastVerifyAdbInstallsResult);
             }
         }
     }
@@ -1136,11 +1142,23 @@ public final class PackageInstallerCompat {
     }
 
     private boolean abandon() {
+        // Discard the staged session, not just the local handle. Session.close()
+        // only releases the IPC handle; it leaves the staged session and the
+        // already-written APK bytes on disk until the platform reaper times them
+        // out (and in root/ADB-remote installs cleanOldSessions() is skipped on a
+        // UID mismatch, so they linger). abandonSession() destroys the staged data.
+        if (mPackageInstaller != null && mSessionId >= 0) {
+            try {
+                mPackageInstaller.abandonSession(mSessionId);
+            } catch (Throwable e) {  // RemoteException
+                Log.e(TAG, "Abandon: Failed to abandon session.", e);
+            }
+        }
         if (mSession != null) {
             try {
                 mSession.close();
             } catch (Exception e) {  // RemoteException
-                Log.e(TAG, "Abandon: Failed to abandon session.");
+                Log.e(TAG, "Abandon: Failed to close session.", e);
             }
         }
         return false;

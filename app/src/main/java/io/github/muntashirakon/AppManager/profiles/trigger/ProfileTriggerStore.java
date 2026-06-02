@@ -37,6 +37,17 @@ public final class ProfileTriggerStore {
     private static final String KEY_ALL = "triggers";
     private static final int SCHEMA_VERSION = 1;
 
+    /**
+     * Guards the read-modify-write sequence in every mutator. The class is
+     * {@code @AnyThread} and is invoked concurrently — the {@link RoutineWorker}
+     * background thread calls {@link #setEnabled} while the UI thread adds /
+     * removes / toggles triggers. Each instance wraps the same backing
+     * {@code SharedPreferences}, so the lock must be process-wide (static) for
+     * the whole-list serialise-back in {@link #write} not to clobber a
+     * concurrent writer's change (lost update).
+     */
+    private static final Object LOCK = new Object();
+
     private final SharedPreferences mPrefs;
 
     public ProfileTriggerStore(@NonNull Context context) {
@@ -83,61 +94,71 @@ public final class ProfileTriggerStore {
     /** Insert or replace. Triggers are looked up by their id. */
     @AnyThread
     public void put(@NonNull ProfileTrigger trigger) {
-        Map<String, ProfileTrigger> map = readMap();
-        map.put(trigger.id, trigger);
-        write(map);
+        synchronized (LOCK) {
+            Map<String, ProfileTrigger> map = readMap();
+            map.put(trigger.id, trigger);
+            write(map);
+        }
     }
 
     /** Remove by id; false when the id wasn't present. */
     @AnyThread
     public boolean remove(@NonNull String triggerId) {
-        Map<String, ProfileTrigger> map = readMap();
-        if (map.remove(triggerId) == null) return false;
-        write(map);
-        return true;
+        synchronized (LOCK) {
+            Map<String, ProfileTrigger> map = readMap();
+            if (map.remove(triggerId) == null) return false;
+            write(map);
+            return true;
+        }
     }
 
     /** Remove every trigger attached to {@code profileId}. */
     @AnyThread
     public int removeForProfile(@NonNull String profileId) {
-        Map<String, ProfileTrigger> map = readMap();
-        int removed = 0;
-        java.util.Iterator<Map.Entry<String, ProfileTrigger>> it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, ProfileTrigger> entry = it.next();
-            if (profileId.equals(entry.getValue().profileId)) {
-                it.remove();
-                ++removed;
+        synchronized (LOCK) {
+            Map<String, ProfileTrigger> map = readMap();
+            int removed = 0;
+            java.util.Iterator<Map.Entry<String, ProfileTrigger>> it = map.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, ProfileTrigger> entry = it.next();
+                if (profileId.equals(entry.getValue().profileId)) {
+                    it.remove();
+                    ++removed;
+                }
             }
+            if (removed > 0) write(map);
+            return removed;
         }
-        if (removed > 0) write(map);
-        return removed;
     }
 
     /** Flip the enabled bit on a stored trigger; returns the new state or null when missing. */
     @AnyThread
     @Nullable
     public Boolean toggleEnabled(@NonNull String triggerId) {
-        Map<String, ProfileTrigger> map = readMap();
-        ProfileTrigger existing = map.get(triggerId);
-        if (existing == null) return null;
-        ProfileTrigger flipped = existing.withEnabled(!existing.enabled);
-        map.put(flipped.id, flipped);
-        write(map);
-        return flipped.enabled;
+        synchronized (LOCK) {
+            Map<String, ProfileTrigger> map = readMap();
+            ProfileTrigger existing = map.get(triggerId);
+            if (existing == null) return null;
+            ProfileTrigger flipped = existing.withEnabled(!existing.enabled);
+            map.put(flipped.id, flipped);
+            write(map);
+            return flipped.enabled;
+        }
     }
 
     /** Set the enabled bit on a stored trigger; returns the updated trigger or null when missing. */
     @AnyThread
     @Nullable
     public ProfileTrigger setEnabled(@NonNull String triggerId, boolean enabled) {
-        Map<String, ProfileTrigger> map = readMap();
-        ProfileTrigger existing = map.get(triggerId);
-        if (existing == null) return null;
-        ProfileTrigger updated = existing.withEnabled(enabled);
-        map.put(updated.id, updated);
-        write(map);
-        return updated;
+        synchronized (LOCK) {
+            Map<String, ProfileTrigger> map = readMap();
+            ProfileTrigger existing = map.get(triggerId);
+            if (existing == null) return null;
+            ProfileTrigger updated = existing.withEnabled(enabled);
+            map.put(updated.id, updated);
+            write(map);
+            return updated;
+        }
     }
 
     /** True when at least one stored trigger is enabled. */

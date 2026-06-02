@@ -98,7 +98,13 @@ public final class PerAppRollbackManager {
         List<BatchQueueItem> items = plan.getQueueItems();
         int queuedCount = 0;
         for (int i = 0; i < items.size(); ++i) {
-            if (keep != null && i < keep.length && !keep[i]) continue;
+            // A null mask runs everything; otherwise an item runs only if it is
+            // explicitly selected. An index beyond the mask counts as NOT
+            // selected — the previous `i < keep.length` guard short-circuited to
+            // "run it", so a mask shorter than the plan silently committed every
+            // unselected tail item (the opposite of the intended fail-safe).
+            boolean selected = keep == null || (i < keep.length && keep[i]);
+            if (!selected) continue;
             ContextCompat.startForegroundService(context, BatchOpsService.getServiceIntent(context, items.get(i)));
             ++queuedCount;
         }

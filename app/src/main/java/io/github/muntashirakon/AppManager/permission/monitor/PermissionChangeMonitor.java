@@ -22,6 +22,7 @@ import androidx.core.content.pm.PermissionInfoCompat;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
@@ -51,6 +52,9 @@ import io.github.muntashirakon.AppManager.utils.NotificationUtils;
  */
 public final class PermissionChangeMonitor {
     public static final String TAG = "PermissionChangeMonitor";
+
+    /** Monotonic source of unique PendingIntent request codes (collision-free across packages). */
+    private static final AtomicInteger sRequestCode = new AtomicInteger();
 
     private PermissionChangeMonitor() {
     }
@@ -89,7 +93,13 @@ public final class PermissionChangeMonitor {
         }
         PermissionChangeDiff.Result diff = PermissionChangeDiff.compute(packageName, before, after);
         store.put(packageName, after);
-        if (diff.isInteresting() && after.versionCode >= before.versionCode) {
+        // Notify on any newly-added dangerous permission regardless of the
+        // version-code delta. A re-install/sideload that gains dangerous perms
+        // while keeping or *lowering* its versionCode is the more suspicious
+        // case, not a less suspicious one; gating on versionCode silently
+        // dropped exactly that escalation while still caching the escalated
+        // set (so it never re-surfaced), defeating the monitor.
+        if (diff.isInteresting()) {
             try {
                 postNotification(appContext, packageName, diff);
             } catch (Throwable t) {
@@ -165,7 +175,12 @@ public final class PermissionChangeMonitor {
         String body = appContext.getString(R.string.permission_change_monitor_body,
                 diff.added.size(), shortJoin(diff.added));
         Intent contentIntent = AppDetailsActivity.getIntent(appContext, packageName, 0, true);
-        PendingIntent pi = PendingIntentCompat.getActivity(appContext, packageName.hashCode(),
+        // A unique request code per notification: AppDetailsActivity.getIntent
+        // produces intents that differ only in their extras, and PendingIntent
+        // matching ignores extras, so two packages sharing a request code (e.g.
+        // a String.hashCode collision) under FLAG_UPDATE_CURRENT would alias —
+        // tapping one alert could open the other package's details.
+        PendingIntent pi = PendingIntentCompat.getActivity(appContext, sRequestCode.incrementAndGet(),
                 contentIntent, PendingIntent.FLAG_UPDATE_CURRENT, false);
         NotificationCompat.Builder builder = NotificationUtils.getHighPriorityNotificationBuilder(appContext)
                 .setSmallIcon(R.drawable.ic_security)

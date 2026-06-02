@@ -47,6 +47,23 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
 public final class ComponentUtils {
+    /**
+     * Escape the five XML predefined entities in a value destined for an
+     * attribute or text node. Component and package names that reach the IFW
+     * rule writer can originate from imported/restored rule files (a trust
+     * boundary), so they must be escaped before being concatenated into the
+     * privileged {@code /data/system/ifw/*.xml} rules — otherwise a crafted
+     * name can inject extra XML elements or corrupt the document (fail-open).
+     */
+    @NonNull
+    public static String escapeXml(@NonNull String value) {
+        return value.replace("&", "&amp;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+    }
+
     public static boolean isTracker(String componentName) {
         return StaticDataset.getSearchableTrackerSignatures().search(componentName).length > 0;
     }

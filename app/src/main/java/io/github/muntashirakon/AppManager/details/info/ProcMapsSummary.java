@@ -170,7 +170,11 @@ public final class ProcMapsSummary {
         try {
             long start = Long.parseUnsignedLong(line.substring(0, dashIdx), 16);
             long end = Long.parseUnsignedLong(line.substring(dashIdx + 1, spaceIdx), 16);
-            if (end < start) return -1L;
+            // 64-bit addresses >= 0x8000_0000_0000_0000 parse to a negative
+            // signed long, so a signed `end < start` comparison misjudges
+            // high-half kernel/driver mappings. Compare unsigned; the two's
+            // complement subtraction itself is already correct.
+            if (Long.compareUnsigned(end, start) < 0) return -1L;
             return end - start;
         } catch (NumberFormatException ignored) {
             return -1L;

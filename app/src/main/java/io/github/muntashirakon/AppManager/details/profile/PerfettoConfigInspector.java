@@ -123,11 +123,23 @@ public final class PerfettoConfigInspector {
     @NonNull
     public static String oneLineSummary(@NonNull Inspection inspection) {
         if (!inspection.isValid()) return "Invalid trace config";
-        long durationSec = inspection.durationMillis / 1000L;
-        String pkg = inspection.targetPackages.isEmpty()
-                ? "all apps"
-                : inspection.targetPackages.get(0);
-        return durationSec + "s · " + inspection.bufferKb + " KB ring · "
+        // isValid() guarantees a non-empty target list, so get(0) is safe.
+        String pkg = inspection.targetPackages.get(0);
+        return formatDuration(inspection.durationMillis) + " · " + inspection.bufferKb + " KB ring · "
                 + inspection.ftraceEvents.size() + " ftrace events · " + pkg;
+    }
+
+    /**
+     * Format a millisecond duration for the preview chip, rounded to the
+     * nearest tenth of a second. A plain integer divide rendered any
+     * sub-second config (e.g. the {@code MIN_DURATION_MS} = 500ms floor) as a
+     * misleading {@code "0s"}.
+     */
+    @NonNull
+    static String formatDuration(long durationMillis) {
+        long tenths = (durationMillis + 50L) / 100L; // round to nearest 0.1s
+        long whole = tenths / 10L;
+        long frac = tenths % 10L;
+        return frac == 0L ? whole + "s" : whole + "." + frac + "s";
     }
 }

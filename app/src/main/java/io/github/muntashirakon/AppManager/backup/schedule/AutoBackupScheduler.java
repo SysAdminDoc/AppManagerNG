@@ -77,7 +77,13 @@ public final class AutoBackupScheduler {
     }
 
     public static void cancel(@NonNull Context context) {
-        WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork(UNIQUE_WORK_NAME);
+        // Disabling the schedule should stop ALL scheduled-backup activity, including
+        // a pending/queued "Run now" one-shot enqueued under a separate work name —
+        // otherwise toggling the feature off leaves an in-flight manual run to back
+        // up every due package after the user explicitly disabled it.
+        WorkManager wm = WorkManager.getInstance(context.getApplicationContext());
+        wm.cancelUniqueWork(UNIQUE_WORK_NAME);
+        wm.cancelUniqueWork(MANUAL_WORK_NAME);
     }
 
     public static void enqueueManualRun(@NonNull Context context) {
@@ -200,9 +206,15 @@ public final class AutoBackupScheduler {
         return Math.max(0, Math.min(MAX_MINIMUM_AGE_DAYS, days));
     }
 
-    public static void recordRunStarted(@NonNull String result) {
+    /**
+     * Stamp the start of a run. Deliberately records only the run timestamp and
+     * does NOT overwrite the last terminal result: if the worker is killed
+     * (OOM, foreground-service timeout, reboot) before {@link #recordRunResult},
+     * the previous terminal outcome stays visible rather than the UI being
+     * permanently stuck on the transient "running…" string.
+     */
+    public static void recordRunStarted() {
         Prefs.BackupRestore.setScheduledBackupLastRun(System.currentTimeMillis());
-        Prefs.BackupRestore.setScheduledBackupLastResult(result);
     }
 
     public static void recordRunResult(@NonNull String result) {

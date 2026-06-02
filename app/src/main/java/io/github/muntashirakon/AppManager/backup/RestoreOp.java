@@ -330,7 +330,11 @@ class RestoreOp implements Closeable {
             // The only way to restore is to reinstall the app
             synchronized (sLock) {
                 PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                if (installer.uninstall(mPackageName, mUserId, false)) {
+                // uninstall() returns true on success; the guard was inverted, so it
+                // aborted the restore exactly when the required uninstall SUCCEEDED and
+                // silently continued (re-installing over a still-present, signature-
+                // mismatched package) when it FAILED. Throw only on actual failure.
+                if (!installer.uninstall(mPackageName, mUserId, false)) {
                     throw new BackupException("An uninstallation was necessary but couldn't perform it.");
                 }
             }

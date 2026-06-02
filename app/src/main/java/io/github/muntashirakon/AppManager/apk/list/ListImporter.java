@@ -99,12 +99,19 @@ public final class ListImporter {
                 continue;
             }
             if (c == '.') {
+                // front == true here means the segment before this dot was
+                // empty — i.e. a leading dot, an empty segment from consecutive
+                // dots ("com..x"), or the string started with '.'. Reject it.
+                if (front) {
+                    return false;
+                }
                 hasSep = true;
                 front = true;
                 continue;
             }
             return false;
         }
-        return hasSep;
+        // front == true at the end means a trailing dot (or empty input).
+        return hasSep && !front;
     }
 }

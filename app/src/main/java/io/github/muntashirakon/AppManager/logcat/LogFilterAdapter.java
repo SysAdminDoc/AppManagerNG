@@ -54,15 +54,25 @@ public class LogFilterAdapter extends RecyclerView.Adapter<LogFilterAdapter.View
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         final LogFilter logFilter = mItems.get(position);
         holder.textView.setText(logFilter.name);
+        // Resolve the LIVE adapter position at click time via the ViewHolder rather
+        // than capturing the stale bind-time `position`: after any row is deleted,
+        // notifyItemRemoved only shifts/animates the other rows (it does not rebind
+        // them), so their captured positions go stale — deleting a second row then
+        // removed the wrong element or threw IndexOutOfBoundsException.
         holder.itemView.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
             if (mListener != null) {
-                mListener.onClick(holder.itemView, position, logFilter);
+                mListener.onClick(holder.itemView, pos, mItems.get(pos));
             }
         });
         holder.actionButton.setOnClickListener(v -> {
-            ThreadUtils.postOnBackgroundThread(() -> AppsDb.getInstance().logFilterDao().delete(logFilter));
-            mItems.remove(position);
-            notifyItemRemoved(position);
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
+            LogFilter toDelete = mItems.get(pos);
+            ThreadUtils.postOnBackgroundThread(() -> AppsDb.getInstance().logFilterDao().delete(toDelete));
+            mItems.remove(pos);
+            notifyItemRemoved(pos);
         });
     }
 

@@ -33,10 +33,23 @@ public final class Users {
     public static final String TAG = "Users";
 
     private static final List<UserInfo> sUserInfoList = new ArrayList<>();
+    // Guards the compound check-then-populate (clear()+add()) on sUserInfoList and
+    // the sUnprivilegedMode flip below. Without it, two subsystems on different
+    // threads (e.g. an AppDb worker and the widget-update binder callback) can both
+    // pass the empty/unprivileged guard and mutate the list while a third iterates
+    // it, yielding ConcurrentModificationException or duplicate/partial population.
+    private static final Object sLock = new Object();
     private static boolean sUnprivilegedMode = false;
 
     @NonNull
     public static List<UserInfo> getAllUsers() {
+        synchronized (sLock) {
+            return getAllUsersLocked();
+        }
+    }
+
+    @NonNull
+    private static List<UserInfo> getAllUsersLocked() {
         if (sUserInfoList.isEmpty() || sUnprivilegedMode) {
             int uid = getSelfOrRemoteUid();
             IUserManager userManager = IUserManager.Stub.asInterface(ProxyBinder.getService(Context.USER_SERVICE));
@@ -80,15 +93,17 @@ public final class Users {
                 }
             }
         }
-        return sUserInfoList;
+        // Defensive copy: callers iterate the result, so never hand out the live
+        // mutable field (a concurrent re-population would CME their iteration).
+        return new ArrayList<>(sUserInfoList);
     }
 
     @NonNull
     @UserIdInt
     public static int[] getAllUserIds() {
-        getAllUsers();
+        List<UserInfo> all = getAllUsers();
         List<Integer> users = new ArrayList<>();
-        for (UserInfo userInfo : sUserInfoList) {
+        for (UserInfo userInfo : all) {
             users.add(userInfo.id);
         }
         return ArrayUtils.convertToIntArray(users);
@@ -96,10 +111,10 @@ public final class Users {
 
     @NonNull
     public static List<UserInfo> getUsers() {
-        getAllUsers();
+        List<UserInfo> all = getAllUsers();
         int[] selectedUserIds = Prefs.Misc.getSelectedUsers();
         List<UserInfo> users = new ArrayList<>();
-        for (UserInfo userInfo : sUserInfoList) {
+        for (UserInfo userInfo : all) {
             if (selectedUserIds == null || ArrayUtils.contains(selectedUserIds, userInfo.id)) {
                 users.add(userInfo);
             }
@@ -110,10 +125,10 @@ public final class Users {
     @NonNull
     @UserIdInt
     public static int[] getUsersIds() {
-        getAllUsers();
+        List<UserInfo> all = getAllUsers();
         int[] selectedUserIds = Prefs.Misc.getSelectedUsers();
         List<Integer> users = new ArrayList<>();
-        for (UserInfo userInfo : sUserInfoList) {
+        for (UserInfo userInfo : all) {
             if (selectedUserIds == null || ArrayUtils.contains(selectedUserIds, userInfo.id)) {
                 users.add(userInfo.id);
             }
@@ -123,8 +138,8 @@ public final class Users {
 
     @Nullable
     public static UserHandle getUserHandle(@UserIdInt int userId) {
-        getAllUsers();
-        for (UserInfo userInfo : sUserInfoList) {
+        List<UserInfo> all = getAllUsers();
+        for (UserInfo userInfo : all) {
             if (userInfo.id == userId) {
                 return userInfo.userHandle;
             }
