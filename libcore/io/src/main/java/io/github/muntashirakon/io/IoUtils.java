@@ -24,6 +24,15 @@ public final class IoUtils {
     public static final int DEFAULT_BUFFER_SIZE = 1024 * 50;
 
     /**
+     * Upper bound for a {@code readFully(is, -1, …)} "read the whole stream"
+     * request. A stream larger than this (a multi-GB file, or a small archive
+     * entry that inflates to gigabytes) is rejected with an {@link IOException}
+     * the callers already catch, rather than growing the buffer toward
+     * {@link Integer#MAX_VALUE} and crashing the process with an uncatchable OOM.
+     */
+    public static final int MAX_UNBOUNDED_READ_BYTES = 256 * 1024 * 1024;
+
+    /**
      * Get byte array from an InputStream most efficiently.
      * Taken from sun.misc.IOUtils
      *
@@ -37,9 +46,16 @@ public final class IoUtils {
     public static byte[] readFully(@NonNull InputStream is, int length, boolean readAll)
             throws IOException {
         byte[] output = {};
-        if (length == -1) length = Integer.MAX_VALUE;
+        final boolean unbounded = length == -1;
+        if (unbounded) length = Integer.MAX_VALUE;
         int pos = 0;
         while (pos < length) {
+            if (unbounded && pos > MAX_UNBOUNDED_READ_BYTES) {
+                // Catchable failure instead of an OOM Error on an oversized /
+                // decompression-bomb stream (see MAX_UNBOUNDED_READ_BYTES).
+                throw new IOException("Stream exceeds the maximum allowed length of "
+                        + MAX_UNBOUNDED_READ_BYTES + " bytes");
+            }
             int bytesToRead;
             if (pos >= output.length) {
                 bytesToRead = Math.min(length - pos, output.length + 1024);

@@ -5,6 +5,76 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security - Hardening pass (2026-06-02)
+
+- **Privileged command server bound to all interfaces.** `NetSocketServerImpl`
+  created its listener with `new ServerSocket(port)`, which binds the wildcard
+  address (0.0.0.0). The channel runs arbitrary commands as the root/ADB-shell
+  uid and is gated only by a handshake token, so in ADB-over-TCP/root port mode
+  it was reachable from the LAN. It now binds the IPv4 loopback only, matching
+  the client's connect target (`ServerConfig.getLocalServerHost`).
+- **Low-entropy session token.** The privileged-channel auth token was a 3–5
+  word phrase (~31–51 bits) — brute-forceable by an on-device peer over
+  loopback. Replaced with a 256-bit `SecureRandom` hex token.
+- **Handshake token disclosure + DoS.** `DataTransmission.shakeHands()` read
+  `split[1]` with no length check (a comma-free first packet threw and tore
+  down the listener) and echoed the server's own token into the world-readable
+  FLog on auth failure. Added a length guard and stopped logging the token.
+- **IFW XML injection.** The privileged IFW rule writer concatenated package /
+  component names into `/data/system/ifw/*.xml` without escaping; a name from an
+  imported/restored rule file could inject elements or break the document open.
+  Both writers now share `ComponentUtils.escapeXml`.
+- **Symlink-traversal on restore.** `TarUtils.extract()` created symlinks with
+  an unvalidated target, letting a tampered backup plant a link pointing outside
+  the extraction root during a root/ADB restore. Targets are now contained to
+  the destination (with the `/data/app` shared-library path whitelisted).
+- **Unscrubbed diagnostic export.** The shareable diagnostic ZIP wrote raw
+  logcat and crash logs; it now runs both through the same scrubber the support
+  bundle uses (redacts package names, paths, emails, uid/userId tokens).
+
+### Fixed - Correctness & reliability hardening (2026-06-02)
+
+- **Restore over a signature-mismatched app was inverted.** `RestoreOp` threw
+  "an uninstallation was necessary but couldn't perform it" exactly when the
+  required uninstall *succeeded*, and silently proceeded when it *failed*. The
+  guard now negates the (success-returning) `uninstall()` result.
+- **Crypto metadata validation was dead code.** `BackupMetadataV5.verifyCrypto()`
+  used `assert`, a no-op on Android, so a malformed backup with an empty IV / key
+  reached the cipher as an opaque failure instead of a clean rejection. Now
+  throws `IllegalArgumentException`.
+- **Install-session leak.** `PackageInstallerCompat.abandon()` only closed the
+  session handle; it now calls `abandonSession()` so staged APK bytes are
+  discarded on every failure path. `restoreVerifySettings()` now restores the
+  actual saved verifier value (was only restored when it was exactly `1`).
+- **Concurrency.** `Users.getAllUsers()` populated and returned a shared static
+  list with no lock (CME / partial population); it now populates under a lock
+  and returns a defensive copy. `AppPref` no longer shares one long-lived
+  `Editor` across threads and no longer forces a synchronous `commit()` on the
+  caller (main-thread fsync / ANR risk); each write uses a fresh `apply()`.
+- **Routine triggers.** A force-disabled trigger's best-effort `WorkManager`
+  cancel can no longer abort the disable + result-record (it is now guarded), so
+  the trigger is reliably torn down.
+- **Malformed rule lines.** `RulesImporter` / `RulesStorageManager` now skip an
+  unparseable rule line instead of aborting the whole import/load.
+- **Crash-safety.** `Prefs.getSelectedUsers()` tolerates blank/non-numeric
+  stored tokens (was an unchecked crash reachable via snapshot import);
+  `ServerStatusChangeReceiver` guards a non-numeric UID extra; `Shell` guards a
+  short sentinel line; `LogFilterAdapter` uses the live adapter position
+  (stale-position delete crash); `RunningAppsActivity` guards `DialogFragment`
+  show after state-save.
+- **Snapshot import.** Imported preferences are now applied through the live
+  `SharedPreferences` editor (was overwritten on disk behind the in-process
+  cache, so the import never took effect and was clobbered by the next write).
+  Op-history import is now idempotent (content-keyed dedup) instead of
+  duplicating every row on re-import.
+- **Resource leaks / bounds.** `TBConverter` releases all tar/split/compressor
+  streams on the error path; `IoUtils.readFully(-1)` caps an unbounded read at
+  256 MiB (catchable `IOException` instead of OOM); `AppsDb` adds a destructive
+  fallback for an unfound forward migration.
+- **Scheduled backup.** A failed foreground-service promotion now retries with a
+  distinct message instead of being logged as a generic failure and dropping the
+  daily slot; disabling the schedule also cancels a pending "Run now" one-shot.
+
 ### Added - Perfetto trace config preview (T20-A follow-up, 2026-05-28)
 
 - The "Export Perfetto trace" confirm dialog now shows a one-line preview of

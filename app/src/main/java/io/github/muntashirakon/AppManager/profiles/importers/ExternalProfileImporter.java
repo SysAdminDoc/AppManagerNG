@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -87,11 +88,13 @@ public final class ExternalProfileImporter {
         String trimmed = text.trim();
         // JSON shapes
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-            // UAD-NG: nested map with selected_user_packages_serial key
-            String lower = trimmed.toLowerCase();
+            // UAD-NG: nested map with selected_user_packages_serial key.
+            // Fold with Locale.ROOT — the default locale would mangle ASCII
+            // 'I'/'i' under Turkish/Azeri, misdetecting an otherwise-valid file.
+            String lower = trimmed.toLowerCase(Locale.ROOT);
             if (lower.contains("selected_user_packages_serial")
                     || lower.contains("selected_user_packages")
-                    || displayName.toLowerCase().contains("uad")) {
+                    || displayName.toLowerCase(Locale.ROOT).contains("uad")) {
                 return Format.UAD_NG;
             }
             return Format.CANTA;
@@ -117,7 +120,7 @@ public final class ExternalProfileImporter {
     static String[] parseCanta(@NonNull String text) throws JSONException {
         String trimmed = text.trim();
         if (trimmed.startsWith("[")) {
-            return stringArrayOf(new JSONArray(trimmed));
+            return requireNonEmpty(stringArrayOf(new JSONArray(trimmed)));
         }
         JSONObject root = new JSONObject(trimmed);
         JSONArray arr = root.optJSONArray("packages");
@@ -132,7 +135,20 @@ public final class ExternalProfileImporter {
         if (arr == null) {
             throw new JSONException("Canta preset has no recognisable packages/apps array.");
         }
-        return stringArrayOf(arr);
+        return requireNonEmpty(stringArrayOf(arr));
+    }
+
+    /**
+     * Surface an empty result as a parse failure (matching the UAD-NG path)
+     * rather than silently handing the caller a zero-package profile when the
+     * input array was empty or held only non-package strings.
+     */
+    @NonNull
+    private static String[] requireNonEmpty(@NonNull String[] packages) throws JSONException {
+        if (packages.length == 0) {
+            throw new JSONException("Canta preset contained no recognisable package names.");
+        }
+        return packages;
     }
 
     // -----------------------------------------------------------------------
@@ -149,7 +165,7 @@ public final class ExternalProfileImporter {
     static String[] parseUadNg(@NonNull String text) throws JSONException {
         Object root = parseLenient(text);
         Set<String> packages = new LinkedHashSet<>();
-        collectPackageStrings(root, packages);
+        collectPackageStrings(root, packages, 0);
         if (packages.isEmpty()) {
             throw new JSONException("UAD-NG settings file contained no recognisable package names.");
         }
@@ -163,21 +179,31 @@ public final class ExternalProfileImporter {
         return new JSONObject(trimmed);
     }
 
-    private static void collectPackageStrings(@NonNull Object node, @NonNull Set<String> out) {
+    /** Bound on JSON nesting; a hostile/deeply-nested file cannot overflow the stack. */
+    @VisibleForTesting
+    static final int MAX_JSON_DEPTH = 64;
+
+    private static void collectPackageStrings(@NonNull Object node, @NonNull Set<String> out, int depth) {
+        if (depth > MAX_JSON_DEPTH) {
+            // Deeply nested input (a 16 MB file of nested arrays/objects could be
+            // crafted) would otherwise recurse until StackOverflowError, which is
+            // an Error the importStream contract does not catch. Stop descending.
+            return;
+        }
         if (node instanceof JSONObject) {
             JSONObject obj = (JSONObject) node;
             for (Iterator<String> it = obj.keys(); it.hasNext(); ) {
                 String k = it.next();
                 Object child = obj.opt(k);
                 if (child == null) continue;
-                collectPackageStrings(child, out);
+                collectPackageStrings(child, out, depth + 1);
             }
         } else if (node instanceof JSONArray) {
             JSONArray arr = (JSONArray) node;
             for (int i = 0; i < arr.length(); ++i) {
                 Object child = arr.opt(i);
                 if (child == null) continue;
-                collectPackageStrings(child, out);
+                collectPackageStrings(child, out, depth + 1);
             }
         } else if (node instanceof String) {
             String s = (String) node;

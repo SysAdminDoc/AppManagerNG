@@ -19,10 +19,43 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
 public class ComponentUtilsTest {
     private final ClassLoader classLoader = getClass().getClassLoader();
+
+    @Test
+    public void escapeXmlEscapesAllFivePredefinedEntities() {
+        assertEquals("&amp;", ComponentUtils.escapeXml("&"));
+        assertEquals("&quot;", ComponentUtils.escapeXml("\""));
+        assertEquals("&apos;", ComponentUtils.escapeXml("'"));
+        assertEquals("&lt;", ComponentUtils.escapeXml("<"));
+        assertEquals("&gt;", ComponentUtils.escapeXml(">"));
+    }
+
+    @Test
+    public void escapeXmlLeavesOrdinaryComponentNamesUnchanged() {
+        String name = "com.example.app/com.example.app.MainActivity";
+        assertEquals(name, ComponentUtils.escapeXml(name));
+    }
+
+    @Test
+    public void escapeXmlNeutralizesIfwInjectionPayload() {
+        // A component name crafted to break out of the component-filter attribute
+        // and inject extra IFW elements (the privileged-writer XML-injection bug).
+        String payload = "Main\"/><activity block=\"true\"><component-filter name=\"victim/x";
+        String escaped = ComponentUtils.escapeXml(payload);
+        // No raw angle brackets or quotes survive, so the serialized IFW rules
+        // cannot gain injected elements/attributes from a hostile rule name.
+        assertFalse(escaped.contains("<"));
+        assertFalse(escaped.contains(">"));
+        assertFalse(escaped.contains("\""));
+        assertTrue(escaped.contains("&lt;"));
+        assertTrue(escaped.contains("&gt;"));
+        assertTrue(escaped.contains("&quot;"));
+    }
 
     @Test
     public void getIFWRulesForPackage() {

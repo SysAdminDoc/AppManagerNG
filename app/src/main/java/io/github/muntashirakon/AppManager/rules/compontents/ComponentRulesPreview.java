@@ -44,8 +44,8 @@ public final class ComponentRulesPreview {
             if (rule.toBeRemoved() || !rule.isIfw() || rule.type == RuleType.PROVIDER) {
                 continue;
             }
-            String componentFilter = "  <component-filter name=\"" + escapeXml(packageName)
-                    + "/" + escapeXml(rule.name) + "\"/>\n";
+            String componentFilter = "  <component-filter name=\"" + ComponentUtils.escapeXml(packageName)
+                    + "/" + ComponentUtils.escapeXml(rule.name) + "\"/>\n";
             switch (rule.type) {
                 case ACTIVITY:
                     activities.append(componentFilter);
@@ -74,15 +74,6 @@ public final class ComponentRulesPreview {
             return "";
         }
         return "<" + tag + " block=\"true\" log=\"false\">\n" + body + "</" + tag + ">\n";
-    }
-
-    @NonNull
-    private static String escapeXml(@NonNull String value) {
-        return value.replace("&", "&amp;")
-                .replace("\"", "&quot;")
-                .replace("'", "&apos;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
     }
 
     public static final class Summary {

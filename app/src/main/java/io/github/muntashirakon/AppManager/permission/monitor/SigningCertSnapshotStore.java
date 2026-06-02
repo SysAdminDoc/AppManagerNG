@@ -51,6 +51,9 @@ public final class SigningCertSnapshotStore {
     static final String FILE_NAME = "signing_cert_snapshots.json";
     @VisibleForTesting
     static final int SCHEMA_VERSION = 1;
+    /** Hard ceiling on the on-disk store; see {@code PermissionSnapshotStore#MAX_STORE_BYTES}. */
+    @VisibleForTesting
+    static final long MAX_STORE_BYTES = 16L * 1024L * 1024L;
 
     @NonNull
     private final File mFile;
@@ -95,8 +98,15 @@ public final class SigningCertSnapshotStore {
     @NonNull
     synchronized Map<String, SigningCertSnapshot> readAll() {
         if (!mFile.isFile()) return new HashMap<>();
+        long len = mFile.length();
+        if (len <= 0L || len > MAX_STORE_BYTES) {
+            if (len > MAX_STORE_BYTES) {
+                Log.w(TAG, "Signing-cert snapshot store is implausibly large (" + len + " bytes); treating as empty.");
+            }
+            return new HashMap<>();
+        }
         try (FileInputStream fis = new FileInputStream(mFile)) {
-            byte[] buf = new byte[(int) mFile.length()];
+            byte[] buf = new byte[(int) len];
             int read = 0;
             while (read < buf.length) {
                 int n = fis.read(buf, read, buf.length - read);

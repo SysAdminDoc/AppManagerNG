@@ -108,7 +108,7 @@ public class AutomationReceiver extends BroadcastReceiver {
             throw new IllegalArgumentException("Component automation expects exactly one package");
         }
         IBatchOpOptions options = getOptionsForIntent(intent, action, packages.get(0));
-        if (intent.getBooleanExtra(EXTRA_DRY_RUN, false)) {
+        if (AutomationIntents.readBooleanExtra(intent, EXTRA_DRY_RUN, false)) {
             return;
         }
         BatchQueueItem queueItem = BatchQueueItem.getBatchOpQueue(op, packages, users, options);
@@ -124,23 +124,31 @@ public class AutomationReceiver extends BroadcastReceiver {
         String normalizedProfileId = ProfileManager.getProfileIdCompat(profileId.trim());
         String state = intent.getStringExtra(EXTRA_PROFILE_STATE);
         JSONObject profileOverrides = getProfileOverrides(intent.getStringExtra(EXTRA_PROFILE_OVERRIDES));
-        if (intent.getBooleanExtra(EXTRA_DRY_RUN, false)) {
+        if (AutomationIntents.readBooleanExtra(intent, EXTRA_DRY_RUN, false)) {
             return;
         }
         PendingResult pendingResult = goAsync();
-        ThreadUtils.postOnBackgroundThread(() -> {
-            try {
-                Path profilePath = ProfileManager.findProfilePathById(normalizedProfileId);
-                BaseProfile profile = BaseProfile.fromPath(profilePath);
-                Intent serviceIntent = ProfileApplierService.getIntent(context,
-                        ProfileQueueItem.fromProfile(profile, state, profileOverrides), true);
-                startForegroundService(context, serviceIntent);
-            } catch (IOException | JSONException e) {
-                Log.w(TAG, "Could not dispatch profile automation for " + normalizedProfileId, e);
-            } finally {
-                pendingResult.finish();
-            }
-        });
+        try {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                try {
+                    Path profilePath = ProfileManager.findProfilePathById(normalizedProfileId);
+                    BaseProfile profile = BaseProfile.fromPath(profilePath);
+                    Intent serviceIntent = ProfileApplierService.getIntent(context,
+                            ProfileQueueItem.fromProfile(profile, state, profileOverrides), true);
+                    startForegroundService(context, serviceIntent);
+                } catch (IOException | JSONException e) {
+                    Log.w(TAG, "Could not dispatch profile automation for " + normalizedProfileId, e);
+                } finally {
+                    pendingResult.finish();
+                }
+            });
+        } catch (Throwable th) {
+            // If the task could never be enqueued (executor rejected/shut down) the
+            // Runnable's finally never runs, so finish the PendingResult here to
+            // avoid leaking the receiver past its allowed window.
+            Log.w(TAG, "Could not post profile automation for " + normalizedProfileId, th);
+            pendingResult.finish();
+        }
     }
 
     @Nullable
@@ -157,7 +165,7 @@ public class AutomationReceiver extends BroadcastReceiver {
             throw new IllegalArgumentException("Missing " + EXTRA_URI);
         }
         Uri uri = Uri.parse(uriString.trim());
-        if (intent.getBooleanExtra(EXTRA_DRY_RUN, false)) {
+        if (AutomationIntents.readBooleanExtra(intent, EXTRA_DRY_RUN, false)) {
             return;
         }
         Intent installerIntent = new Intent(context, PackageInstallerActivity.class)
@@ -170,7 +178,7 @@ public class AutomationReceiver extends BroadcastReceiver {
     private void dispatchTrackerScan(@NonNull Context context, @NonNull Intent intent) {
         ArrayList<String> packages = requirePackages(intent);
         ArrayList<Integer> users = getUsers(intent, packages.size());
-        if (intent.getBooleanExtra(EXTRA_DRY_RUN, false)) {
+        if (AutomationIntents.readBooleanExtra(intent, EXTRA_DRY_RUN, false)) {
             return;
         }
         Intent detailsIntent = AppDetailsActivity.getIntentForTrackers(context, packages.get(0), users.get(0))
@@ -192,7 +200,7 @@ public class AutomationReceiver extends BroadcastReceiver {
         }
         if (ACTION_BACKUP.equals(action) || ACTION_RESTORE.equals(action)) {
             int flags = intent.hasExtra(EXTRA_BACKUP_FLAGS)
-                    ? intent.getIntExtra(EXTRA_BACKUP_FLAGS, BackupFlags.BACKUP_NOTHING)
+                    ? AutomationIntents.readIntExtra(intent, EXTRA_BACKUP_FLAGS, BackupFlags.BACKUP_NOTHING)
                     : BackupFlags.fromPref().getFlags();
             String backupName = intent.getStringExtra(EXTRA_BACKUP_NAME);
             String[] backupNames = backupName != null && !backupName.trim().isEmpty()
@@ -208,9 +216,15 @@ public class AutomationReceiver extends BroadcastReceiver {
         ArrayList<String> packages = intent.getStringArrayListExtra(EXTRA_PACKAGES);
         if (packages == null) {
             String[] packageArray = intent.getStringArrayExtra(EXTRA_PACKAGES);
-            packages = packageArray != null
-                    ? new ArrayList<>(Arrays.asList(packageArray))
-                    : new ArrayList<>();
+            if (packageArray != null) {
+                packages = new ArrayList<>(Arrays.asList(packageArray));
+            } else {
+                // Many automation tools can only send string extras, so accept a
+                // comma/newline-separated EXTRA_PACKAGES string too (matching the
+                // am:// URI path) instead of silently ignoring it.
+                packages = new ArrayList<>(AutomationIntents.splitValues(
+                        intent.getStringExtra(EXTRA_PACKAGES)));
+            }
         }
         String packageName = intent.getStringExtra(EXTRA_PACKAGE);
         if (packageName != null) {
@@ -240,10 +254,18 @@ public class AutomationReceiver extends BroadcastReceiver {
                 for (int userId : userArray) {
                     users.add(userId);
                 }
+            } else {
+                // Accept a comma/newline-separated EXTRA_USERS string too.
+                for (String token : AutomationIntents.splitValues(intent.getStringExtra(EXTRA_USERS))) {
+                    try {
+                        users.add(Integer.parseInt(token));
+                    } catch (NumberFormatException ignore) {
+                    }
+                }
             }
         }
         if (users.isEmpty()) {
-            int userId = intent.getIntExtra(EXTRA_USER, UserHandleHidden.myUserId());
+            int userId = AutomationIntents.readIntExtra(intent, EXTRA_USER, UserHandleHidden.myUserId());
             for (int i = 0; i < packageCount; ++i) {
                 users.add(userId);
             }

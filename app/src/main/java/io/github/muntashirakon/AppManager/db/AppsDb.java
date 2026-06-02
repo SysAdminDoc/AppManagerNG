@@ -92,6 +92,13 @@ public abstract class AppsDb extends RoomDatabase {
         if (sAppsDb == null) {
             sAppsDb = Room.databaseBuilder(ContextUtils.getContext(), AppsDb.class, "apps.db")
                     .addMigrations(M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9)
+                    // No M_1_2 migration is registered, so an on-disk v1 apps.db (or any
+                    // other unfound forward path) would otherwise throw an unrecoverable
+                    // IllegalStateException on first access. apps.db is a rebuildable
+                    // cache of installed-app metadata (repopulated by the AppDb refresh
+                    // pass), so recreating it on a missing migration is safe and far
+                    // better than a permanently-broken DB.
+                    .fallbackToDestructiveMigration()
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build();
             try {

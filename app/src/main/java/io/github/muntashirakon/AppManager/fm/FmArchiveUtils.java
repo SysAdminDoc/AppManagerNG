@@ -29,6 +29,8 @@ import io.github.muntashirakon.io.Paths;
 
 final class FmArchiveUtils {
     static final String ZIP_EXTENSION = "zip";
+    /** Upper bound on numbered-collision probing in {@link #findNextBestDisplayName}. */
+    private static final int MAX_NAME_ATTEMPTS = 10_000;
 
     private FmArchiveUtils() {
     }
@@ -207,6 +209,17 @@ final class FmArchiveUtils {
         String displayName = prefix + extension;
         int i = 1;
         while (basePath.hasFile(displayName)) {
+            if (i > MAX_NAME_ATTEMPTS) {
+                // Bound the stat loop: a destination already holding a long run
+                // of "name (1)..name (N)" entries (an attacker-crafted archive
+                // extracting many KEEP_BOTH collisions can amplify this) would
+                // otherwise issue an unbounded number of hasFile() IPC calls on
+                // the worker thread. Fall back to a timestamp-suffixed name that
+                // is effectively unique so extraction always makes progress.
+                displayName = String.format(Locale.ROOT, "%s (%d)%s", prefix,
+                        System.currentTimeMillis(), extension);
+                break;
+            }
             displayName = String.format(Locale.ROOT, "%s (%d)%s", prefix, i, extension);
             ++i;
         }

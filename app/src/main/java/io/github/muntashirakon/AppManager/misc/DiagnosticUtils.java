@@ -75,13 +75,22 @@ public class DiagnosticUtils {
         for (File crashFile : crashFiles) {
             if (!crashFile.isFile()) continue;
             zos.putNextEntry(new ZipEntry("crashes/" + crashFile.getName()));
-            byte[] buf = new byte[8192];
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(crashFile)) {
-                int n;
-                while ((n = fis.read(buf)) != -1) {
-                    zos.write(buf, 0, n);
+            // Scrub before sharing: this ZIP is fired out via ACTION_SEND (email /
+            // issue tracker). A raw crash dump embeds package names, file paths and
+            // uid/userId tokens — exactly the identifiers the SupportInfoBundle
+            // path already strips. Route both surfaces through the same scrubber so
+            // the diagnostic export honours the same privacy guarantee.
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new java.io.FileInputStream(crashFile)))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append('\n');
                 }
             }
+            PrintWriter writer = new PrintWriter(zos);
+            writer.print(SupportInfoBundle.scrubForPublicIssue(sb.toString()));
+            writer.flush();
             zos.closeEntry();
         }
     }
@@ -108,7 +117,8 @@ public class DiagnosticUtils {
             PrintWriter writer = new PrintWriter(zos);
             int start = (count == MAX_LOGCAT_LINES) ? head : 0;
             for (int i = 0; i < count; i++) {
-                writer.println(ringBuf[(start + i) % MAX_LOGCAT_LINES]);
+                // Scrub each line: see writeCrashLogs — the report is shared externally.
+                writer.println(SupportInfoBundle.scrubForPublicIssue(ringBuf[(start + i) % MAX_LOGCAT_LINES]));
             }
             writer.flush();
             zos.closeEntry();

@@ -733,12 +733,26 @@ public final class Prefs {
         public static int[] getSelectedUsers() {
             String usersStr = AppPref.getString(AppPref.PrefKey.PREF_SELECTED_USERS_STR);
             if (usersStr.isEmpty()) return null;
+            // Parse defensively: this value can be set by the snapshot-import
+            // feature (a trust boundary) or hand-edited, so a blank or
+            // non-numeric token must not crash every caller via an unchecked
+            // NumberFormatException (Integer.decode("") threw and propagated out
+            // of Users.getUsers()/getUsersIds() and the backup/list paths). Skip
+            // bad tokens; return null (= "all users") if nothing valid remains.
             String[] usersSplitStr = usersStr.split(",");
-            int[] users = new int[usersSplitStr.length];
-            for (int i = 0; i < users.length; ++i) {
-                users[i] = Integer.decode(usersSplitStr[i]);
+            int[] parsed = new int[usersSplitStr.length];
+            int count = 0;
+            for (String token : usersSplitStr) {
+                String t = token.trim();
+                if (t.isEmpty()) continue;
+                try {
+                    parsed[count++] = Integer.decode(t);
+                } catch (NumberFormatException ignore) {
+                    // skip malformed token
+                }
             }
-            return users;
+            if (count == 0) return null;
+            return count == parsed.length ? parsed : java.util.Arrays.copyOf(parsed, count);
         }
 
         public static void setSelectedUsers(@Nullable int[] users) {

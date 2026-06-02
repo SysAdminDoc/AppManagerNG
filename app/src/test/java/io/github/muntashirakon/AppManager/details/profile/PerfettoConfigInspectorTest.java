@@ -10,6 +10,15 @@ import org.junit.Test;
 
 public class PerfettoConfigInspectorTest {
 
+    @Test
+    public void formatDurationRendersSubSecondInsteadOfZero() {
+        // The MIN_DURATION_MS = 500ms floor used to integer-divide to "0s".
+        assertEquals("0.5s", PerfettoConfigInspector.formatDuration(500L));
+        assertEquals("10s", PerfettoConfigInspector.formatDuration(10_000L));
+        assertEquals("1.5s", PerfettoConfigInspector.formatDuration(1500L));
+        assertEquals("1s", PerfettoConfigInspector.formatDuration(1000L));
+    }
+
     private static String sampleConfig() {
         return "duration_ms: 10000\n"
                 + "buffers: {\n"

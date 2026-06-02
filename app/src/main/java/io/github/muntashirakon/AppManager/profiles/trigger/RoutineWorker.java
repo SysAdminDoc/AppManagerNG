@@ -61,6 +61,12 @@ public class RoutineWorker extends Worker {
             Path profilePath = ProfileManager.findProfilePathById(trigger.profileId);
             if (profilePath == null || !profilePath.exists()) {
                 store.setEnabled(trigger.id, false);
+                // Also tear down the periodic WorkManager job: setEnabled() only
+                // flips the persisted flag, so without this the now-disabled
+                // trigger keeps waking the device on every interval, re-runs this
+                // worker, hits the !enabled branch, and rewrites the same result
+                // forever — store state and scheduled work drift permanently.
+                cancelQuietly(context, trigger);
                 RoutineScheduler.recordRunResult(context, trigger.id,
                         context.getString(R.string.profile_trigger_result_profile_missing));
                 return Result.success();
@@ -76,10 +82,29 @@ public class RoutineWorker extends Worker {
             }
             Log.w(TAG, "Routine trigger failed", th);
             store.setEnabled(trigger.id, false);
+            cancelQuietly(context, trigger);
             String message = th.getMessage() != null ? th.getMessage() : th.getClass().getSimpleName();
             RoutineScheduler.recordRunResult(context, trigger.id,
                     context.getString(R.string.profile_trigger_result_failed_disabled, message));
             return Result.success();
+        }
+    }
+
+    /**
+     * Cancel the trigger's scheduled work as a best-effort cleanup step. This
+     * runs while a trigger is being force-disabled (missing profile, or an
+     * exception while applying it), so a failure here must never prevent the
+     * trigger from actually being disabled and its result recorded — those are
+     * the operation's real outcome, the cancel is only cleanup.
+     * {@code WorkManager.getInstance()} can throw (e.g. if the WorkManager
+     * singleton is unavailable in the current process state), so swallow and
+     * log rather than letting it abort {@link #executeTrigger}.
+     */
+    private static void cancelQuietly(@NonNull Context context, @NonNull ProfileTrigger trigger) {
+        try {
+            RoutineScheduler.cancel(context, trigger);
+        } catch (Throwable th) {
+            Log.w(TAG, "Could not cancel scheduled work for trigger " + trigger.id, th);
         }
     }
 

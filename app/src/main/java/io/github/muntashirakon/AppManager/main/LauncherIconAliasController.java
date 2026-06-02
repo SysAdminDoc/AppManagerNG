@@ -70,12 +70,26 @@ public final class LauncherIconAliasController {
     public static void apply(@NonNull Context context, @NonNull LauncherIconStyle target) {
         PackageManager pm = context.getPackageManager();
         Set<LauncherIconStyle> current = readCurrentlyEnabled(context);
-        for (Change change : LauncherIconAliasPlan.plan(current, target)) {
-            int newState = change.enabled
-                    ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
-            pm.setComponentEnabledSetting(componentFor(context, change.alias), newState,
-                    PackageManager.DONT_KILL_APP);
+        java.util.List<Change> plan = LauncherIconAliasPlan.plan(current, target);
+        // Apply enables BEFORE disables, regardless of the plan's canonical
+        // iteration order. Each setComponentEnabledSetting() is persisted
+        // independently, so applying a disable-then-enable plan in order opens a
+        // real window with zero enabled launcher aliases; if the process is
+        // killed or the second call throws in that window the app disappears
+        // from the launcher (unlaunchable except via system app-info). Enabling
+        // the target first means a mid-sequence failure at worst leaves two
+        // aliases enabled — a benign state resolveCurrent() already tolerates.
+        for (Change change : plan) {
+            if (change.enabled) {
+                pm.setComponentEnabledSetting(componentFor(context, change.alias),
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            }
+        }
+        for (Change change : plan) {
+            if (!change.enabled) {
+                pm.setComponentEnabledSetting(componentFor(context, change.alias),
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            }
         }
     }
 

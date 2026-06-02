@@ -190,6 +190,14 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
             }
         });
         model.observeProcessDetails().observe(this, processItem -> {
+            // The value is delivered via postValue() on a later main-loop turn, so it
+            // can arrive in the STARTED-but-state-already-saved window (between
+            // onSaveInstanceState and onStop). DialogFragment.show() does a
+            // non-state-loss commit that throws IllegalStateException there. Drop the
+            // show on that rare race — the user can simply re-tap the process.
+            if (getSupportFragmentManager().isStateSaved()) {
+                return;
+            }
             RunningAppDetails fragment = RunningAppDetails.getInstance(processItem);
             fragment.show(getSupportFragmentManager(), RunningAppDetails.TAG);
         });
