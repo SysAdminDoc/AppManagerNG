@@ -162,8 +162,17 @@ public final class DataTransmission implements Closeable {
         if (role == Role.Server) {
             FLog.log("DataTransmission#shakeHands: Server protocol: " + PROTOCOL_VERSION);
             String auth = new String(readMessage());  // <protocol-version>,<token>
-            FLog.log("Received authentication: " + auth);
             String[] split = auth.split(",");
+            // The first packet is fully attacker-controlled (readMessage reads a
+            // length-prefixed buffer from the socket). A payload with no comma
+            // produces a 1-element array, so the old split[1] threw an
+            // ArrayIndexOutOfBoundsException — an uncaught RuntimeException that
+            // unwound Server.run() and tore down the privileged listener
+            // (single malformed packet = DoS). Guard the length first.
+            if (split.length < 2) {
+                FLog.log("DataTransmission#shakeHands: Malformed handshake.");
+                throw new IOException("Malformed handshake");
+            }
             String clientToken = split[1];
             // Match tokens
             if (token.equals(clientToken)) {
@@ -171,7 +180,11 @@ public final class DataTransmission implements Closeable {
                 FLog.log("DataTransmission#shakeHands: Authentication successful.");
             } else {
                 FLog.log("DataTransmission#shakeHands: Authentication failed.");
-                throw new IOException("Unauthorized client, token: " + token);
+                // Never echo the token: this exception propagates to FLog, which
+                // writes to a world-readable tmp file and is surfaced by the
+                // diagnostic-dump feature — logging the server's own secret here
+                // disclosed the auth credential for the privileged channel.
+                throw new IOException("Unauthorized client");
             }
             // Check protocol version
             String protocolVersion = split[0];

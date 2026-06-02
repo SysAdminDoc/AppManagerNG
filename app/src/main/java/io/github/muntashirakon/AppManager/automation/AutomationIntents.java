@@ -2,13 +2,19 @@
 
 package io.github.muntashirakon.AppManager.automation;
 
+import android.content.Intent;
+import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -95,6 +101,92 @@ public final class AutomationIntents {
             default:
                 return null;
         }
+    }
+
+    /**
+     * Read an intent extra as a value of any wire type and return it.
+     *
+     * <p>Automation front-ends (Tasker, Automate, {@code adb shell am broadcast},
+     * {@code am://} deep links) very commonly deliver extras as <em>strings</em>
+     * even when the semantic type is boolean/int. {@link Intent#getBooleanExtra}
+     * and {@link Intent#getIntExtra} silently ignore a string-typed extra and
+     * return the fallback, which for {@code EXTRA_DRY_RUN} means a dry-run
+     * request executes for real. The {@link #coerceBoolean}/{@link #coerceInt}
+     * helpers below mirror {@code AutomationRequest}'s coercion so the broadcast
+     * receiver and the URI/activity path agree on how a raw extra is read.
+     */
+    @Nullable
+    static Object getExtra(@NonNull Intent intent, @NonNull String name) {
+        Bundle extras = intent.getExtras();
+        return extras != null ? extras.get(name) : null;
+    }
+
+    /** Read {@code name} as a boolean, accepting boolean or string ("true"/"1"/"yes"/"on"...) values. */
+    static boolean readBooleanExtra(@NonNull Intent intent, @NonNull String name, boolean fallback) {
+        return coerceBoolean(getExtra(intent, name), fallback);
+    }
+
+    /** Read {@code name} as an int, accepting numeric or string ("7") values. */
+    static int readIntExtra(@NonNull Intent intent, @NonNull String name, int fallback) {
+        return coerceInt(getExtra(intent, name), fallback);
+    }
+
+    static boolean coerceBoolean(@Nullable Object value, boolean fallback) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        if (value == null) {
+            return fallback;
+        }
+        String normalized = String.valueOf(value).trim().toLowerCase(Locale.ROOT);
+        if ("1".equals(normalized) || "true".equals(normalized) || "yes".equals(normalized)
+                || "on".equals(normalized)) {
+            return true;
+        }
+        if ("0".equals(normalized) || "false".equals(normalized) || "no".equals(normalized)
+                || "off".equals(normalized)) {
+            return false;
+        }
+        return fallback;
+    }
+
+    static int coerceInt(@Nullable Object value, int fallback) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        } catch (NumberFormatException ignore) {
+            return fallback;
+        }
+    }
+
+    /**
+     * Split a comma/newline-separated string extra into trimmed, non-empty
+     * tokens. Mirrors {@code AutomationRequest.addSplitValues} so a
+     * {@code EXTRA_PACKAGES="a,b,c"} string extra (a common automation-tool
+     * form) is honoured by the broadcast receiver, not silently dropped.
+     */
+    @NonNull
+    static List<String> splitValues(@Nullable String value) {
+        List<String> out = new ArrayList<>();
+        if (value == null) {
+            return out;
+        }
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return out;
+        }
+        for (String part : normalized.split("[,\\n]")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                out.add(trimmed);
+            }
+        }
+        return out;
     }
 
     @VisibleForTesting

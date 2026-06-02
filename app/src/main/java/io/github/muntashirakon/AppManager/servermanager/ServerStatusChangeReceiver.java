@@ -44,7 +44,16 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
             return;
         }
         Log.d(TAG, "onReceive --> %s %s", action, uidString);
-        int uid = Integer.parseInt(uidString);
+        int uid;
+        try {
+            uid = Integer.parseInt(uidString);
+        } catch (NumberFormatException e) {
+            // A non-numeric UID crossing this process boundary would otherwise
+            // throw out of onReceive() and crash the host app process. Fail safe
+            // like the null-check above.
+            Log.w(TAG, "Invalid UID received from the server: %s", uidString);
+            return;
+        }
 
         switch (action) {
             case ServerActions.ACTION_SERVER_STARTED:

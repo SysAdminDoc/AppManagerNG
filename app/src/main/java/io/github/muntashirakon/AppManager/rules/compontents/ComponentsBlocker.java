@@ -322,7 +322,13 @@ public final class ComponentsBlocker extends RulesStorageManager {
         for (ComponentRule component : getAllComponents()) {
             // Ignore components requiring unblocking
             if (!component.isIfw()) continue;
-            String componentFilter = "  <component-filter name=\"" + packageName + "/" + component.name + "\"/>\n";
+            // Escape both halves: a rule imported from an untrusted .tsv (and
+            // for an uninstalled target, validateComponents() is skipped) can
+            // carry XML metacharacters in the name, which would otherwise be
+            // written verbatim into the privileged IFW XML (injection / fail-open).
+            String componentFilter = "  <component-filter name=\""
+                    + ComponentUtils.escapeXml(packageName) + "/" + ComponentUtils.escapeXml(component.name)
+                    + "\"/>\n";
             switch (component.type) {
                 case ACTIVITY:
                     activities.append(componentFilter);

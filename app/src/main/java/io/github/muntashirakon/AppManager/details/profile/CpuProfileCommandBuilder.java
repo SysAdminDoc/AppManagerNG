@@ -159,11 +159,20 @@ public final class CpuProfileCommandBuilder {
     }
 
     /**
-     * Reject paths that contain shell metacharacters, control bytes, or are
-     * absent. simpleperf accepts a single literal path argument; passing
-     * anything that a shell could re-parse - even though we use ProcessBuilder
-     * with a literal argv - is a defense-in-depth measure for the rare runner
-     * implementation that goes through {@code sh -c}.
+     * Reject paths that contain shell metacharacters, control bytes, a space,
+     * a {@code ..} path-traversal segment, or are absent. simpleperf/perfetto
+     * accept a single literal path argument; passing anything that a shell
+     * could re-parse - even though we use ProcessBuilder with a literal argv -
+     * is a defense-in-depth measure for the rare runner implementation that
+     * goes through {@code sh -c}.
+     *
+     * <p>The predicate is deliberately kept in lock-step with
+     * {@link PrivilegedRunnerArgValidator#classifyPath}, which is the gate the
+     * privileged runner applies to the assembled argv: a space is rejected
+     * here (the runner rejects it too, so allowing it in the builder only
+     * produced a confusing late "unsafe argv" failure), and a {@code ..}
+     * segment is rejected so a caller cannot direct the root/Shizuku write
+     * outside the intended directory via traversal.
      */
     public static boolean isSafeOutputPath(@NonNull String path) {
         if (path.isEmpty() || path.length() > 1024) return false;
@@ -186,12 +195,13 @@ public final class CpuProfileCommandBuilder {
                 case '\\':
                 case '\n':
                 case '\r':
+                case ' ':
                     return false;
                 default:
                     break;
             }
         }
-        return true;
+        return !PrivilegedRunnerArgValidator.containsTraversalSegment(path);
     }
 
     /** Read-only view of the events the builder currently honors. */

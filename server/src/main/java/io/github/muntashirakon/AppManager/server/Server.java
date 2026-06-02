@@ -12,6 +12,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -173,7 +174,16 @@ class Server implements Closeable {
         private Socket mSocket;
 
         public NetSocketServerImpl(int port) throws IOException {
-            mServerSocket = new ServerSocket(port);
+            // Bind to the IPv4 loopback only. This is a privileged command
+            // channel (TYPE_SHELL runs arbitrary commands as the root/ADB-shell
+            // uid) whose sole authenticator is a handshake token; the client
+            // always connects via 127.0.0.1 (ServerConfig.getLocalServerHost).
+            // The bare `new ServerSocket(port)` bound the wildcard address
+            // (0.0.0.0), exposing the channel to every interface — reachable
+            // over the LAN whenever the device runs in ADB-over-TCP/root port
+            // mode. Match the client's loopback target and the liveness probe
+            // in LocalServer.alive(); keep the default backlog (50).
+            mServerSocket = new ServerSocket(port, 50, InetAddress.getByName("127.0.0.1"));
         }
 
         @Override

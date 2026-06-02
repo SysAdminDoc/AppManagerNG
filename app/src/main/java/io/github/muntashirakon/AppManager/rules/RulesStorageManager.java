@@ -23,6 +23,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
@@ -45,6 +46,8 @@ import io.github.muntashirakon.io.PathReader;
 import io.github.muntashirakon.io.Paths;
 
 public class RulesStorageManager implements Closeable {
+    private static final String TAG = RulesStorageManager.class.getSimpleName();
+
     @NonNull
     private final ArrayList<RuleEntry> mEntries;
 
@@ -230,7 +233,16 @@ public class RulesStorageManager implements Closeable {
         String dataRow;
         try (BufferedReader TSVFile = new BufferedReader(new PathReader(file))) {
             while ((dataRow = TSVFile.readLine()) != null) {
-                RuleEntry entry = RuleEntry.unflattenFromString(packageName, dataRow, isExternal);
+                RuleEntry entry;
+                try {
+                    entry = RuleEntry.unflattenFromString(packageName, dataRow, isExternal);
+                } catch (IllegalArgumentException e) {
+                    // Skip a single malformed/legacy line rather than truncating the
+                    // rest of the file (fail-unsafe partial load). Mirrors the
+                    // per-entry skip in ComponentUtils.readIFWRules and RulesImporter.
+                    Log.w(TAG, "Skipping malformed rule line for " + packageName + ": " + dataRow, e);
+                    continue;
+                }
                 synchronized (mEntries) {
                     mEntries.add(entry);
                 }

@@ -20,7 +20,6 @@ import java.net.Inet4Address;
 import java.security.SecureRandom;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
-import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.server.common.Constants;
@@ -197,13 +196,22 @@ public final class ServerConfig {
     @AnyThread
     @NonNull
     private static String generateToken() {
-        Context context = ContextUtils.getContext();
-        String[] wordList = context.getResources().getStringArray(R.array.word_list);
+        // The token is the SOLE authenticator for the privileged command
+        // channel (DataTransmission#shakeHands). The previous 3-5 word phrase
+        // drawn from a ~1300-entry word list was only ~31-51 bits of entropy —
+        // brute-forceable by a same-device app that can reach the loopback
+        // listener, since a failed handshake just drops the connection and the
+        // server keeps accepting. Use a 256-bit cryptographically-random hex
+        // token instead. Hex contains no ',' (the handshake splits on comma)
+        // and no whitespace (the token is passed as a shell argument).
         SecureRandom secureRandom = new SecureRandom();
-        String[] tokenItems = new String[3 + secureRandom.nextInt(3)];
-        for (int i = 0; i < tokenItems.length; ++i) {
-            tokenItems[i] = wordList[secureRandom.nextInt(wordList.length)];
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
         }
-        return TextUtils.join("-", tokenItems);
+        return sb.toString();
     }
 }
