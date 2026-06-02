@@ -200,8 +200,21 @@ public final class TarUtils {
                         // There's no need to check if the linkName exists as it may be extracted
                         // after the link has been created
                         // Special check for /data/app
-                        if (linkName.startsWith("/data/app/")) {
+                        boolean dataAppLink = linkName.startsWith("/data/app/");
+                        if (dataAppLink) {
                             linkName = getAbsolutePathToDataApp(linkName, realDataAppPath);
+                        }
+                        // Validate the symlink TARGET, not just the link node location.
+                        // The regular-file branch below already rejects a link whose
+                        // *name* escapes dest, but the target was created verbatim — so a
+                        // tampered/shared backup restored as root/ADB could plant a
+                        // symlink pointing into another app's sandbox (e.g.
+                        // /data/data/com.bank/...), a sandbox-escape / redirection
+                        // primitive. Reject any target resolving outside the extraction
+                        // root, except the whitelisted real /data/app path.
+                        if (!dataAppLink && !isSymlinkTargetContained(linkName, filename, realDestPath)) {
+                            throw new IOException("Symlink traversal vulnerability detected!" +
+                                    "\nLink: " + file + "\nTarget: " + linkName);
                         }
                         file.delete();
                         if (!file.createNewSymbolicLink(linkName)) {
@@ -270,6 +283,40 @@ public final class TarUtils {
             default:
                 throw new IllegalArgumentException("Invalid compression type: " + tarType);
         }
+    }
+
+    /**
+     * Whether a tar symlink entry's target stays within the extraction root.
+     * Absolute targets must canonicalise under {@code realDestPath}; relative
+     * targets are resolved against the link node's parent directory and must not
+     * escape via {@code ..}. The {@code /data/app} shared-library case is handled
+     * (and whitelisted) by the caller before this check.
+     */
+    @VisibleForTesting
+    static boolean isSymlinkTargetContained(@NonNull String linkName,
+                                            @NonNull String entryName,
+                                            @Nullable String realDestPath) {
+        if (linkName.isEmpty()) {
+            return false;
+        }
+        if (linkName.startsWith(Paths.PATH_SEPARATOR)) {
+            // Absolute target: must resolve under the destination root.
+            if (realDestPath == null) {
+                return false;
+            }
+            String normalized = Paths.normalize(linkName);
+            if (normalized == null) {
+                return false;
+            }
+            return normalized.equals(realDestPath)
+                    || normalized.startsWith(realDestPath + Paths.PATH_SEPARATOR);
+        }
+        // Relative target: resolve against the link node's parent directory and
+        // require the result not to climb above the (relative) extraction root.
+        String parent = new File(entryName).getParent();
+        String combined = (parent != null ? parent + Paths.PATH_SEPARATOR : "") + linkName;
+        String normalized = Paths.normalize(combined);
+        return normalized != null && !normalized.equals("..") && !normalized.startsWith("../");
     }
 
     @VisibleForTesting

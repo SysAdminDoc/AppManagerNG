@@ -37,9 +37,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.zip.ZipEntry;
@@ -446,6 +448,18 @@ public final class SnapshotBundle {
             JSONArray entries = root.optJSONArray("entries");
             if (entries == null) return 0;
             int restored = 0;
+            // Make re-import idempotent. OpHistory.id is autoGenerate and is not
+            // exported, so every imported row inserts with id==0 -> SQLite assigns
+            // a fresh rowid and the REPLACE conflict strategy never matches. Without
+            // a content-based guard, re-importing the same bundle duplicates the
+            // entire op-history table each time. Snapshot existing rows' content
+            // keys first, and skip any incoming row already present (or duplicated
+            // within the bundle).
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (OpHistory existingRow : AppsDb.getInstance().opHistoryDao().getAll()) {
+                seen.add(opHistoryKey(existingRow.type, existingRow.status,
+                        existingRow.execTime, existingRow.serializedData, existingRow.serializedExtra));
+            }
             for (int i = 0; i < entries.length(); ++i) {
                 JSONObject obj = entries.optJSONObject(i);
                 if (obj == null) continue;
@@ -459,6 +473,9 @@ public final class SnapshotBundle {
                         : null;
                 if (type == null || status == null || data == null) {
                     continue;
+                }
+                if (!seen.add(opHistoryKey(type, status, execTime, data, extra))) {
+                    continue; // already present (or a duplicate within this bundle)
                 }
                 OpHistory row = new OpHistory();
                 row.type = type;
@@ -478,6 +495,14 @@ public final class SnapshotBundle {
             Log.w(TAG, "Could not parse op-history JSON during snapshot import.", e);
             return 0;
         }
+    }
+
+    /** Content identity for an op-history row (id is autoGenerate and not part of identity). */
+    @NonNull
+    private static String opHistoryKey(@Nullable String type, @Nullable String status, long execTime,
+                                       @Nullable String data, @Nullable String extra) {
+        return type + '\u0000' + status + '\u0000' + execTime + '\u0000'
+                + data + '\u0000' + (extra == null ? "" : extra);
     }
 
     // -----------------------------------------------------------------------
@@ -501,26 +526,95 @@ public final class SnapshotBundle {
         if (!pf.leaf.endsWith(".xml")) return false;
         String prefName = stripXmlSuffix(pf.leaf);
         if (EXCLUDED_PREF_NAMES.contains(prefName)) return false;
-        File prefsDir = sharedPrefsDir(appContext);
-        if (prefsDir == null) return false;
-        //noinspection ResultOfMethodCallIgnored
-        prefsDir.mkdirs();
-        File target = new File(prefsDir, pf.leaf);
-        byte[] bytesToWrite = pf.bytes;
-        if (merge && target.isFile()) {
-            try {
-                bytesToWrite = mergeSharedPreferencesXml(readFileBytes(target), pf.bytes);
-            } catch (IOException | SnapshotImportException e) {
-                Log.w(TAG, "Could not merge preferences from " + pf.leaf + " during snapshot import.", e);
-                return false;
+        // Apply the imported entries THROUGH the live SharedPreferences instance
+        // rather than overwriting the backing XML file. Android caches one
+        // SharedPreferencesImpl per file (and AppPref holds a long-lived reference
+        // to the "preferences" store), so an out-of-band file overwrite was never
+        // picked up by the running process AND was silently clobbered by the next
+        // settings write that flushed the stale in-memory map back to disk. Going
+        // through the editor keeps the in-process cache and the on-disk file
+        // coherent, so the import actually takes effect with no restart required.
+        try {
+            Map<String, Object> entries = parsePrefEntries(pf.bytes);
+            SharedPreferences sp = appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sp.edit();
+            if (!merge) {
+                // Replace semantics: drop existing keys, then load the imported set.
+                editor.clear();
             }
-        }
-        if (!writeBytesTo(target, bytesToWrite)) {
+            for (Map.Entry<String, Object> e : entries.entrySet()) {
+                Object v = e.getValue();
+                if (v instanceof Boolean) editor.putBoolean(e.getKey(), (Boolean) v);
+                else if (v instanceof Integer) editor.putInt(e.getKey(), (Integer) v);
+                else if (v instanceof Long) editor.putLong(e.getKey(), (Long) v);
+                else if (v instanceof Float) editor.putFloat(e.getKey(), (Float) v);
+                else if (v instanceof String) editor.putString(e.getKey(), (String) v);
+                else if (v instanceof Set) {
+                    //noinspection unchecked
+                    editor.putStringSet(e.getKey(), (Set<String>) v);
+                }
+            }
+            // commit() (synchronous) so the restore is durable before we report
+            // success; this runs on the snapshot-import background thread.
+            return editor.commit();
+        } catch (Exception e) {
+            Log.w(TAG, "Could not apply imported preferences from " + pf.leaf + " during snapshot import.", e);
             return false;
         }
-        // Force SharedPreferences to pick up the file on next read.
-        SharedPreferences ignored = appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
-        return ignored != null;
+    }
+
+    /**
+     * Parse a standard Android SharedPreferences {@code <map>} XML document into a
+     * typed key/value map. Unknown element types are skipped; a malformed numeric
+     * value surfaces as an exception the caller treats as an import failure for
+     * that file (rather than silently applying a partial/garbage value).
+     */
+    @NonNull
+    private static Map<String, Object> parsePrefEntries(@NonNull byte[] bytes)
+            throws IOException, ParserConfigurationException, SAXException, SnapshotImportException {
+        Map<String, Object> out = new LinkedHashMap<>();
+        Document doc = parseXmlMap(bytes);
+        Element map = doc.getDocumentElement();
+        if (map == null) return out;
+        NodeList children = map.getChildNodes();
+        for (int i = 0; i < children.getLength(); ++i) {
+            Node node = children.item(i);
+            if (!(node instanceof Element)) continue;
+            Element el = (Element) node;
+            String name = el.getAttribute("name");
+            if (name.isEmpty()) continue;
+            switch (el.getTagName()) {
+                case "boolean":
+                    out.put(name, Boolean.parseBoolean(el.getAttribute("value")));
+                    break;
+                case "int":
+                    out.put(name, Integer.parseInt(el.getAttribute("value")));
+                    break;
+                case "long":
+                    out.put(name, Long.parseLong(el.getAttribute("value")));
+                    break;
+                case "float":
+                    out.put(name, Float.parseFloat(el.getAttribute("value")));
+                    break;
+                case "string":
+                    out.put(name, el.getTextContent());
+                    break;
+                case "set":
+                    Set<String> set = new LinkedHashSet<>();
+                    NodeList items = el.getChildNodes();
+                    for (int j = 0; j < items.getLength(); ++j) {
+                        Node item = items.item(j);
+                        if (item instanceof Element && "string".equals(((Element) item).getTagName())) {
+                            set.add(item.getTextContent());
+                        }
+                    }
+                    out.put(name, set);
+                    break;
+                default:
+                    // Unknown SharedPreferences element type; skip.
+            }
+        }
+        return out;
     }
 
     private static boolean restoreRuleFile(@NonNull File target,

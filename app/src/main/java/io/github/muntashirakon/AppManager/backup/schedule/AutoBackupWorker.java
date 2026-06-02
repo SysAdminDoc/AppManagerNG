@@ -67,9 +67,25 @@ public class AutoBackupWorker extends Worker {
         }
         try {
             String runningMessage = context.getString(R.string.auto_backup_running);
-            setForegroundAsync(createForegroundInfo(context.getString(R.string.auto_backup_notification_title),
-                    runningMessage, 0, 0, true)).get();
-            AutoBackupScheduler.recordRunStarted(runningMessage);
+            try {
+                setForegroundAsync(createForegroundInfo(context.getString(R.string.auto_backup_notification_title),
+                        runningMessage, 0, 0, true)).get();
+            } catch (Throwable fgErr) {
+                // Promoting to a foreground service can fail (background-restricted
+                // app, OEM FGS limits). Surface that distinctly and RETRY rather than
+                // logging it as a generic "backup failed" and dropping this periodic
+                // occurrence — Result.failure() on periodic work waits a full interval.
+                if (fgErr instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                Log.w(TAG, "Auto-backup could not start foreground service", fgErr);
+                String message = context.getString(R.string.auto_backup_result_could_not_start);
+                AutoBackupScheduler.recordRunResult(message);
+                AutoBackupScheduler.refreshDiagnostics(context);
+                postResultNotification(context, message, true);
+                return Result.retry();
+            }
+            AutoBackupScheduler.recordRunStarted();
             List<UserPackagePair> pairs = AutoBackupScheduler.collectInstalledPackages(context);
             if (pairs.isEmpty()) {
                 String message = context.getString(R.string.auto_backup_result_no_apps);

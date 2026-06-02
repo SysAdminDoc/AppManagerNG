@@ -268,6 +268,7 @@ public class TBConverter extends Converter {
             TarArchiveInputStream tis = new TarArchiveInputStream(cis);
             SplitOutputStream intSos = null, extSos = null;
             TarArchiveOutputStream intTos = null, extTos = null;
+            try {
             if (intBackupFilePrefix != null) {
                 intSos = new SplitOutputStream(mBackupItem.getUnencryptedBackupPath(), intBackupFilePrefix, DEFAULT_SPLIT_SIZE);
                 BufferedOutputStream bos = new BufferedOutputStream(intSos);
@@ -329,24 +330,16 @@ public class TBConverter extends Converter {
                     }
                 }
             }
-            // Archiving finished
-            try {
-                tis.close();
-            } catch (Exception ignore) {
-            }
+            // Archiving finished. Finish + close the output tars so the split
+            // files are fully flushed to disk BEFORE the encrypt step reads them.
+            IoUtils.closeQuietly(tis);
             if (intTos != null) {
                 intTos.finish();
-                try {
-                    intTos.close();
-                } catch (Exception ignore) {
-                }
+                IoUtils.closeQuietly(intTos);
             }
             if (extTos != null) {
                 extTos.finish();
-                try {
-                    extTos.close();
-                } catch (Exception ignore) {
-                }
+                IoUtils.closeQuietly(extTos);
             }
 
             // Encrypt created backups and generate checksum
@@ -363,6 +356,18 @@ public class TBConverter extends Converter {
                 for (Path file : newBackupFiles) {
                     mChecksum.add(file.getName(), DigestUtils.getHexDigest(mDestMetadata.info.checksumAlgo, file));
                 }
+            }
+            } finally {
+                // Safety net for the error path: a mid-loop I/O failure (corrupt/
+                // truncated TB tar) otherwise leaked the compressor input stream and
+                // the tar/split output streams, which hold real native provider fds.
+                // closeQuietly is idempotent, so the success-path closes above are
+                // not harmed.
+                IoUtils.closeQuietly(intTos);
+                IoUtils.closeQuietly(extTos);
+                IoUtils.closeQuietly(intSos);
+                IoUtils.closeQuietly(extSos);
+                IoUtils.closeQuietly(tis);
             }
         } catch (IOException e) {
             throw new BackupException("Could not backup data", e);

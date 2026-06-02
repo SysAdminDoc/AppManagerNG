@@ -564,17 +564,31 @@ public class ActivityInterceptor extends BaseActivity {
 
     private void checkAndShowMatchingActivities() {
         if (mMutableIntent == null) return;
-        List<ResolveInfo> resolveInfo = getMatchingActivities();
         mActivitiesHeader.setText(getString(R.string.matching_activities));
         mActivitiesHeader.setVisibility(View.VISIBLE);
-        if (resolveInfo.isEmpty()) {
-            mResendIntentButton.setEnabled(false);
-            mActivitiesEmptyView.setVisibility(View.VISIBLE);
-        } else {
-            mResendIntentButton.setEnabled(true);
-            mActivitiesEmptyView.setVisibility(View.GONE);
-        }
-        mMatchingActivitiesAdapter.setDefaultList(resolveInfo);
+        // Resolve off the UI thread. In root/ADB/cross-user mode
+        // PackageManagerCompat.queryIntentActivities is a synchronous privileged
+        // binder round-trip, and this is reached from the intent-field text
+        // watchers (refreshUI) on every keystroke — a slow/busy privileged server
+        // would otherwise freeze the UI per character and can ANR. Snapshot the
+        // intent so the worker never reads an Intent being mutated concurrently.
+        final Intent snapshot = new Intent(mMutableIntent);
+        final int userHandle = mUserHandle;
+        final boolean useRoot = mUseRoot;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            final List<ResolveInfo> resolveInfo = resolveMatchingActivities(snapshot, userHandle, useRoot);
+            ThreadUtils.postOnMainThread(() -> {
+                if (isDestroyed() || isFinishing()) return;
+                if (resolveInfo.isEmpty()) {
+                    mResendIntentButton.setEnabled(false);
+                    mActivitiesEmptyView.setVisibility(View.VISIBLE);
+                } else {
+                    mResendIntentButton.setEnabled(true);
+                    mActivitiesEmptyView.setVisibility(View.GONE);
+                }
+                mMatchingActivitiesAdapter.setDefaultList(resolveInfo);
+            });
+        });
     }
 
     @NonNull
@@ -582,14 +596,19 @@ public class ActivityInterceptor extends BaseActivity {
         if (mMutableIntent == null) {
             return Collections.emptyList();
         }
-        if (mUseRoot || SelfPermissions.checkCrossUserPermission(mUserHandle, false)) {
+        return resolveMatchingActivities(mMutableIntent, mUserHandle, mUseRoot);
+    }
+
+    @NonNull
+    private List<ResolveInfo> resolveMatchingActivities(@NonNull Intent intent, int userHandle, boolean useRoot) {
+        if (useRoot || SelfPermissions.checkCrossUserPermission(userHandle, false)) {
             try {
-                return PackageManagerCompat.queryIntentActivities(this, mMutableIntent, PackageManager.MATCH_ALL, mUserHandle);
+                return PackageManagerCompat.queryIntentActivities(this, intent, PackageManager.MATCH_ALL, userHandle);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
-        return getPackageManager().queryIntentActivities(mMutableIntent, 0);
+        return getPackageManager().queryIntentActivities(intent, 0);
     }
 
     private void setupVariables() {

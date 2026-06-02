@@ -108,8 +108,16 @@ public class DebloatObject {
 
     @Removal
     public int getRemoval() {
+        // mRemoval comes from a remote-fetched debloat.json whose validator does
+        // not constrain this field. Fail SAFE in the safety sense: a null or
+        // unrecognised value must rate as UNSAFE (the most cautious bucket, and
+        // >= REMOVAL_CAUTION so it still trips the "review first" confirmation),
+        // never silently downgrade an unknown rating to REMOVAL_SAFE and skip
+        // the high-risk guard, and never NPE the whole debloater list build.
+        if (mRemoval == null) {
+            return REMOVAL_UNSAFE;
+        }
         switch (mRemoval) {
-            default:
             case "safe":
                 return REMOVAL_SAFE;
             case "replace":
@@ -117,6 +125,7 @@ public class DebloatObject {
             case "caution":
                 return REMOVAL_CAUTION;
             case "unsafe":
+            default:
                 return REMOVAL_UNSAFE;
         }
     }

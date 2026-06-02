@@ -90,10 +90,23 @@ public final class HexViewerUtils {
 
     @NonNull
     public static byte[] parseHexPattern(@NonNull String rawPattern) {
-        String normalized = rawPattern.trim()
-                .replace("0x", "")
-                .replace("0X", "")
-                .replaceAll("[\\s:_-]+", "");
+        // Strip a "0x"/"0X" prefix only at the START of each separated token,
+        // never globally: a global replace would also delete a "0x" that arises
+        // where one byte token ends in '0' and the next begins with 'x'-adjacent
+        // text, silently dropping bytes and turning a malformed pattern into a
+        // successful-but-wrong search instead of a clean "non-hex" rejection.
+        StringBuilder sb = new StringBuilder();
+        for (String token : rawPattern.trim().split("[\\s:_-]+")) {
+            if (token.isEmpty()) {
+                continue;
+            }
+            if (token.length() >= 2 && token.charAt(0) == '0'
+                    && (token.charAt(1) == 'x' || token.charAt(1) == 'X')) {
+                token = token.substring(2);
+            }
+            sb.append(token);
+        }
+        String normalized = sb.toString();
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Hex search value is required.");
         }

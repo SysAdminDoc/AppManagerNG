@@ -24,10 +24,16 @@ import rikka.shizuku.Shizuku;
 class ShizukuServiceConnectionWrapper {
     private static final String TAG = ShizukuServiceConnectionWrapper.class.getSimpleName();
 
+    // Both fields are written from the Shizuku binder-callback thread
+    // (ServiceConnectionImpl) and read from worker threads (getService /
+    // isBinderActive / bindService). They must be volatile so a worker observes
+    // the callback's write — otherwise a worker can see a stale null after
+    // connect (spurious "Binder not running") or a stale dead binder after
+    // disconnect.
     @Nullable
-    private IBinder mIBinder;
+    private volatile IBinder mIBinder;
     @Nullable
-    private CountDownLatch mServiceBoundWatcher;
+    private volatile CountDownLatch mServiceBoundWatcher;
 
     private class ServiceConnectionImpl implements ServiceConnection {
         @Override
@@ -59,9 +65,18 @@ class ShizukuServiceConnectionWrapper {
         }
 
         private void onResponseReceived() {
-            if (mServiceBoundWatcher != null) {
-                mServiceBoundWatcher.countDown();
-            } else throw new RuntimeException("Service watcher should never be null!");
+            // Read once into a local: the field can be nulled/replaced by a
+            // concurrent bind on another thread.
+            CountDownLatch watcher = mServiceBoundWatcher;
+            if (watcher != null) {
+                watcher.countDown();
+            }
+            // A framework binder callback can legitimately arrive outside an
+            // active bind window — a delayed or duplicate onServiceDisconnected/
+            // onBindingDied, or a callback for a previous bind whose await()
+            // already timed out. That is not a programming error, so never
+            // throw here: this runs on a binder thread and would crash the
+            // whole process.
         }
     }
 

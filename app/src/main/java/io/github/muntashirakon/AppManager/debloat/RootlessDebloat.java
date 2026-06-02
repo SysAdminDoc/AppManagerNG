@@ -48,7 +48,14 @@ public final class RootlessDebloat {
 
         Runner.Result result = Runner.runCommand(command.toArray(new String[0]));
         String output = result.getOutput().trim();
-        boolean success = result.isSuccessful() && output.startsWith("Success");
+        // Match the final "Success" token rather than the start of the blob:
+        // some OEM `pm` implementations print a deprecation/warning line on
+        // stdout before the result, which made startsWith("Success") wrongly
+        // report failure for a package that was actually removed. Mirrors
+        // PackageInstallerCompat.factoryResetUpdatedSystemAppViaShell.
+        boolean success = result.isSuccessful()
+                && output.endsWith("Success")
+                && !output.contains("Failure");
         if (success) {
             BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{pair.getPackageName()});
         }

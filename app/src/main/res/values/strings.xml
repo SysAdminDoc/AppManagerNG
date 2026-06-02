@@ -2989,6 +2989,7 @@
     <string name="auto_backup_result_partial">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed</string>
     <string name="auto_backup_result_partial_with_skipped">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> due apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed; skipped <xliff:g id="skipped" example="3">%4$d</xliff:g> recent backups</string>
     <string name="auto_backup_result_failed">Scheduled backup failed: <xliff:g id="reason" example="No backup volume">%1$s</xliff:g></string>
+    <string name="auto_backup_result_could_not_start">Couldn\'t start scheduled backup (background restricted); will retry.</string>
     <!-- Backup retention policy (T6/Next) -->
     <string name="pref_backup_retention_max_count">Max backups per app</string>
     <string name="pref_backup_retention_max_age">Max backup age</string>

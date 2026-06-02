@@ -48,7 +48,18 @@ public final class RoutineScheduler {
     }
 
     public static void scheduleOrCancel(@NonNull Context context, @NonNull ProfileTrigger trigger) {
-        if (trigger.enabled && trigger.type != ProfileTrigger.TYPE_ON_BOOT) {
+        if (trigger.type == ProfileTrigger.TYPE_ON_BOOT) {
+            // Boot triggers are (re)scheduled as one-time work by
+            // enqueueBootTriggers() on each boot, under the SAME unique work
+            // name. applyAll() must not cancel an *enabled* boot trigger's
+            // pending one-time job (that would silently prevent the boot
+            // profile from applying); only tear down a disabled one.
+            if (!trigger.enabled) {
+                cancel(context, trigger);
+            }
+            return;
+        }
+        if (trigger.enabled) {
             schedule(context, trigger);
         } else {
             cancel(context, trigger);

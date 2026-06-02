@@ -307,28 +307,29 @@ public class AppPref {
 
     @NonNull
     private final SharedPreferences mPreferences;
-    @NonNull
-    private final SharedPreferences.Editor mEditor;
 
     private final Context mContext;
 
-    @SuppressLint("CommitPrefEdits")
     private AppPref(@NonNull Context context) {
         mContext = context;
         mPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        mEditor = mPreferences.edit();
         init();
     }
 
     public void setPref(PrefKey key, Object value) {
         int index = PrefKey.indexOf(key);
-        if (value instanceof Boolean) mEditor.putBoolean(PrefKey.sKeys[index], (Boolean) value);
-        else if (value instanceof Float) mEditor.putFloat(PrefKey.sKeys[index], (Float) value);
-        else if (value instanceof Integer) mEditor.putInt(PrefKey.sKeys[index], (Integer) value);
-        else if (value instanceof Long) mEditor.putLong(PrefKey.sKeys[index], (Long) value);
-        else if (value instanceof String) mEditor.putString(PrefKey.sKeys[index], (String) value);
-        mEditor.apply();
-        mEditor.commit();
+        // Use a fresh editor per write and apply() (never commit()). The old code
+        // mutated one long-lived shared editor from every thread, so a flush also
+        // persisted other threads' pending-but-unflushed puts, and the immediate
+        // commit() after apply() forced a synchronous fsync on the calling thread
+        // (main-thread disk I/O / ANR risk, plus a redundant double flush).
+        SharedPreferences.Editor editor = mPreferences.edit();
+        if (value instanceof Boolean) editor.putBoolean(PrefKey.sKeys[index], (Boolean) value);
+        else if (value instanceof Float) editor.putFloat(PrefKey.sKeys[index], (Float) value);
+        else if (value instanceof Integer) editor.putInt(PrefKey.sKeys[index], (Integer) value);
+        else if (value instanceof Long) editor.putLong(PrefKey.sKeys[index], (Long) value);
+        else if (value instanceof String) editor.putString(PrefKey.sKeys[index], (String) value);
+        editor.apply();
     }
 
     public void setPref(String key, @Nullable Object value) {
@@ -336,13 +337,13 @@ public class AppPref {
         if (index == -1) throw new IllegalArgumentException("Invalid key: " + key);
         // Set default value if the requested value is null
         if (value == null) value = getDefaultValue(PrefKey.sPrefKeyList.get(index));
-        if (value instanceof Boolean) mEditor.putBoolean(key, (Boolean) value);
-        else if (value instanceof Float) mEditor.putFloat(key, (Float) value);
-        else if (value instanceof Integer) mEditor.putInt(key, (Integer) value);
-        else if (value instanceof Long) mEditor.putLong(key, (Long) value);
-        else if (value instanceof String) mEditor.putString(key, (String) value);
-        mEditor.apply();
-        mEditor.commit();
+        SharedPreferences.Editor editor = mPreferences.edit();
+        if (value instanceof Boolean) editor.putBoolean(key, (Boolean) value);
+        else if (value instanceof Float) editor.putFloat(key, (Float) value);
+        else if (value instanceof Integer) editor.putInt(key, (Integer) value);
+        else if (value instanceof Long) editor.putLong(key, (Long) value);
+        else if (value instanceof String) editor.putString(key, (String) value);
+        editor.apply();
     }
 
     @NonNull
@@ -385,27 +386,28 @@ public class AppPref {
     }
 
     private void init() {
+        SharedPreferences.Editor editor = mPreferences.edit();
         for (int i = 0; i < PrefKey.sKeys.length; ++i) {
             if (!mPreferences.contains(PrefKey.sKeys[i])) {
                 switch (PrefKey.sTypes[i]) {
                     case TYPE_BOOLEAN:
-                        mEditor.putBoolean(PrefKey.sKeys[i], (boolean) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                        editor.putBoolean(PrefKey.sKeys[i], (boolean) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
                         break;
                     case TYPE_FLOAT:
-                        mEditor.putFloat(PrefKey.sKeys[i], (float) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                        editor.putFloat(PrefKey.sKeys[i], (float) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
                         break;
                     case TYPE_INTEGER:
-                        mEditor.putInt(PrefKey.sKeys[i], (int) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                        editor.putInt(PrefKey.sKeys[i], (int) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
                         break;
                     case TYPE_LONG:
-                        mEditor.putLong(PrefKey.sKeys[i], (long) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                        editor.putLong(PrefKey.sKeys[i], (long) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
                         break;
                     case TYPE_STRING:
-                        mEditor.putString(PrefKey.sKeys[i], (String) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                        editor.putString(PrefKey.sKeys[i], (String) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
                 }
             }
         }
-        mEditor.apply();
+        editor.apply();
     }
 
     @NonNull

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -33,6 +34,8 @@ import io.github.muntashirakon.io.Path;
  * @see RuleType
  */
 public class RulesImporter implements Closeable {
+    private static final String TAG = RulesImporter.class.getSimpleName();
+
     @NonNull
     private final HashMap<String, ComponentsBlocker>[] mComponentsBlockers;
     @NonNull
@@ -62,18 +65,7 @@ public class RulesImporter implements Closeable {
             try (BufferedReader TSVFile = new BufferedReader(new InputStreamReader(inputStream))) {
                 String dataRow;
                 while ((dataRow = TSVFile.readLine()) != null) {
-                    RuleEntry entry = RuleEntry.unflattenFromString(null, dataRow, true);
-                    // Parse complete, now add the row to CB
-                    for (int i = 0; i < mUserIds.length; ++i) {
-                        if (mComponentsBlockers[i].get(entry.packageName) == null) {
-                            // Get a read-only instance, commit will be called manually
-                            mComponentsBlockers[i].put(entry.packageName, ComponentsBlocker.getInstance(entry.packageName, mUserIds[i]));
-                        }
-                        if (mTypesToImport.contains(entry.type)) {
-                            //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
-                            mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
-                        }
-                    }
+                    importRow(dataRow);
                 }
             }
         }
@@ -84,19 +76,39 @@ public class RulesImporter implements Closeable {
             try (BufferedReader TSVFile = new BufferedReader(new InputStreamReader(inputStream))) {
                 String dataRow;
                 while ((dataRow = TSVFile.readLine()) != null) {
-                    RuleEntry entry = RuleEntry.unflattenFromString(null, dataRow, true);
-                    // Parse complete, now add the row to CB
-                    for (int i = 0; i < mUserIds.length; ++i) {
-                        if (mComponentsBlockers[i].get(entry.packageName) == null) {
-                            // Get a read-only instance, commit will be called manually
-                            mComponentsBlockers[i].put(entry.packageName, ComponentsBlocker.getInstance(entry.packageName, mUserIds[i]));
-                        }
-                        if (mTypesToImport.contains(entry.type)) {
-                            //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
-                            mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
-                        }
-                    }
+                    importRow(dataRow);
                 }
+            }
+        }
+    }
+
+    /**
+     * Parse a single TSV rule line and stage it into every target user's
+     * {@link ComponentsBlocker}. A malformed line (unknown rule type, missing
+     * fields, an entry from a newer/legacy export format) makes
+     * {@link RuleEntry#unflattenFromString} throw {@link IllegalArgumentException};
+     * previously that aborted the whole loop, silently dropping every remaining
+     * (valid) rule — a fail-unsafe partial application, and on the
+     * background-thread import path an uncaught crash. Skip the offending line
+     * and keep importing the rest, matching the per-entry skip pattern already
+     * used by {@code ComponentUtils.readIFWRules}.
+     */
+    private void importRow(@NonNull String dataRow) {
+        RuleEntry entry;
+        try {
+            entry = RuleEntry.unflattenFromString(null, dataRow, true);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "Skipping malformed rule line: " + dataRow, e);
+            return;
+        }
+        for (int i = 0; i < mUserIds.length; ++i) {
+            if (mComponentsBlockers[i].get(entry.packageName) == null) {
+                // Get a read-only instance, commit will be called manually
+                mComponentsBlockers[i].put(entry.packageName, ComponentsBlocker.getInstance(entry.packageName, mUserIds[i]));
+            }
+            if (mTypesToImport.contains(entry.type)) {
+                //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
+                mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
             }
         }
     }

@@ -165,6 +165,12 @@ public class BatchOpsService extends ForegroundService {
             result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler);
         } catch (Throwable th) {
             BatchOpsJournal.markInterrupted(this, th);
+            // Mirror the success-path cleanup: the catch previously left
+            // mJournalPending=true and the Shizuku binder-death listener registered,
+            // leaking the death-watch registration into every subsequent queued op
+            // processed by this still-alive service.
+            mJournalPending = false;
+            unregisterPrivilegedDeathWatch();
             BatchOpsManager.Result interruptedResult = new BatchOpsManager.Result(
                     BatchOpsInfo.fromQueue(item).getPairList(), false);
             batchOpsManager.conclude();

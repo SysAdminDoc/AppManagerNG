@@ -96,9 +96,16 @@ public final class Shell {
                         } catch (NumberFormatException ignored) {
                         }
                         int exitCode = -1;
-                        try {
-                            exitCode = Integer.parseInt(fields[2]);
-                        } catch (NumberFormatException ignored) {
+                        // Only index fields[2] after confirming it exists: the guard
+                        // above checks length >= 2 but this reads index 2 (the 3rd
+                        // field), so a 2-field line threw an ArrayIndexOutOfBounds
+                        // that escaped the NumberFormatException catch and unwound
+                        // readCommand, leaving the command's exit code unset.
+                        if (fields.length >= 3) {
+                            try {
+                                exitCode = Integer.parseInt(fields[2]);
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                         if (id == command.getID()) {
                             command.setExitCode(exitCode);
