@@ -9,6 +9,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -121,11 +124,28 @@ public final class AppMemorySnapshotLoader {
             line(sb, context.getString(R.string.memory_region_dalvik), MemoryFormat.formatBytes(s.dalvikRegionBytes), s.regionSource);
             line(sb, context.getString(R.string.memory_region_native), MemoryFormat.formatBytes(s.nativeRegionBytes), s.regionSource);
             line(sb, context.getString(R.string.memory_region_library), MemoryFormat.formatBytes(s.libraryRegionBytes), s.regionSource);
+            String chart = regionChart(context, s);
+            if (!chart.isEmpty()) {
+                sb.append('\n').append(context.getString(R.string.memory_region_chart)).append('\n')
+                        .append(chart).append('\n');
+            }
         }
         if (s.truncated) {
             sb.append('\n').append(context.getString(R.string.memory_snapshot_truncated));
         }
         return sb.toString().trim();
+    }
+
+    @NonNull
+    private static String regionChart(@NonNull Context context,
+                                      @NonNull MemorySnapshotComposer.AppMemorySnapshot s) {
+        List<MemoryRegionChart.Segment> segments = new ArrayList<>(5);
+        segments.add(new MemoryRegionChart.Segment(context.getString(R.string.memory_region_dalvik), s.dalvikRegionBytes));
+        segments.add(new MemoryRegionChart.Segment(context.getString(R.string.memory_region_native), s.nativeRegionBytes));
+        segments.add(new MemoryRegionChart.Segment(context.getString(R.string.memory_region_stack), s.stackRegionBytes));
+        segments.add(new MemoryRegionChart.Segment(context.getString(R.string.memory_region_code), s.codeRegionBytes));
+        segments.add(new MemoryRegionChart.Segment(context.getString(R.string.memory_region_library), s.libraryRegionBytes));
+        return MemoryRegionChart.render(segments, 24);
     }
 
     private static void line(@NonNull StringBuilder sb, @NonNull String label,

@@ -788,6 +788,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         final String packageName = mPackageName;
+        loadAndShowMemorySnapshot(packageName);
+    }
+
+    private void loadAndShowMemorySnapshot(@NonNull String packageName) {
         showProgressIndicator(true);
         ThreadUtils.postOnBackgroundThread(() -> {
             MemorySnapshotComposer.AppMemorySnapshot snapshot = AppMemorySnapshotLoader.load(packageName);
@@ -796,14 +800,21 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     return;
                 }
                 showProgressIndicator(false);
-                new ScrollableDialogBuilder(mActivity)
-                        .setTitle(R.string.action_memory_snapshot)
-                        .setMessage(AppMemorySnapshotLoader.format(mActivity, snapshot))
-                        .enableAnchors()
-                        .setNegativeButton(R.string.close, null)
-                        .show();
+                showMemorySnapshotDialog(packageName, snapshot);
             });
         });
+    }
+
+    private void showMemorySnapshotDialog(@NonNull String packageName,
+                                          @NonNull MemorySnapshotComposer.AppMemorySnapshot snapshot) {
+        new ScrollableDialogBuilder(mActivity)
+                .setTitle(R.string.action_memory_snapshot)
+                .setMessage(AppMemorySnapshotLoader.format(mActivity, snapshot))
+                .enableAnchors()
+                .setNeutralButton(R.string.refresh, (dialog, which, isChecked) ->
+                        loadAndShowMemorySnapshot(packageName))
+                .setNegativeButton(R.string.close, null)
+                .show();
     }
 
     // T20-A: capture a duration-bounded Perfetto system trace focused on this
