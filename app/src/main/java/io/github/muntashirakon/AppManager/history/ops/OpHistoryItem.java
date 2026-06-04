@@ -63,6 +63,8 @@ public class OpHistoryItem {
                 return context.getString(R.string.profiles);
             case OpHistoryManager.HISTORY_TYPE_CLEANUP:
                 return context.getString(R.string.op_history_type_cleanup);
+            case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
+                return context.getString(R.string.op_history_type_single_app_action);
         }
         throw new IllegalStateException("Invalid type: " + opHistory.type);
     }
@@ -98,6 +100,14 @@ public class OpHistoryItem {
                 }
                 return context.getString(R.string.op_history_type_cleanup);
             }
+            case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION: {
+                String label = JSONUtils.optString(jsonData, "operation_label");
+                if (label != null) {
+                    return label;
+                }
+                String packageName = JSONUtils.optString(jsonData, "package_name");
+                return packageName != null ? packageName : context.getString(R.string.op_history_type_single_app_action);
+            }
         }
         throw new IllegalStateException("Invalid type: " + opHistory.type);
     }
@@ -123,7 +133,8 @@ public class OpHistoryItem {
     }
 
     public boolean isReplayable() {
-        if (OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(getType())) {
+        if (OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(getType())
+                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(getType())) {
             return false;
         }
         return metadata == null || metadata.isReplayable();
@@ -348,17 +359,24 @@ public class OpHistoryItem {
             }
             case OpHistoryManager.HISTORY_TYPE_INSTALLER:
                 return JSONUtils.optString(jsonData, "package_name");
+            case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
+                return JSONUtils.optString(jsonData, "package_name");
             default:
                 return null;
         }
     }
 
     private int getPrimaryUserId() {
-        if (OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(opHistory.type)) {
-            JSONArray users = jsonData.optJSONArray("users");
-            if (users != null && users.length() > 0) {
-                return users.optInt(0, UserHandleHidden.myUserId());
+        switch (opHistory.type) {
+            case OpHistoryManager.HISTORY_TYPE_BATCH_OPS: {
+                JSONArray users = jsonData.optJSONArray("users");
+                if (users != null && users.length() > 0) {
+                    return users.optInt(0, UserHandleHidden.myUserId());
+                }
+                break;
             }
+            case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
+                return jsonData.optInt("user_id", UserHandleHidden.myUserId());
         }
         return UserHandleHidden.myUserId();
     }

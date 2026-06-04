@@ -64,6 +64,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.ApkUtils;
@@ -91,6 +92,9 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionIte
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsServiceItem;
 import io.github.muntashirakon.AppManager.details.components.ReceiverBroadcastUtils;
 import io.github.muntashirakon.AppManager.details.components.ServiceActionUtils;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
+import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView.ChoiceGenerator;
@@ -531,6 +535,80 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return filterType == AdvancedSearchView.SEARCH_TYPE_REGEX ? s : s.toLowerCase(Locale.ROOT);
     }
 
+    @WorkerThread
+    private void recordSingleAppAction(@NonNull String action,
+                                       @NonNull String operationLabel,
+                                       @NonNull String targetLabel,
+                                       @Nullable String detail,
+                                       boolean success,
+                                       @OperationJournalMetadata.Risk int risk,
+                                       boolean reversible,
+                                       @Nullable Throwable failure) {
+        if (mPackageName == null) {
+            return;
+        }
+        try {
+            SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                    action, operationLabel, mPackageName, mUserId, targetLabel, detail);
+            OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
+                    OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
+                            risk, reversible, failure));
+        } catch (Throwable th) {
+            Log.e(TAG, "Could not record single-app operation history.", th);
+        }
+    }
+
+    @WorkerThread
+    private void recordPermissionHistory(@NonNull AppDetailsPermissionItem permissionItem,
+                                         boolean grant,
+                                         boolean success,
+                                         @Nullable Throwable failure) {
+        recordSingleAppAction(grant
+                        ? SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT
+                        : SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE,
+                getApplication().getString(grant
+                        ? R.string.op_history_single_action_grant_permission
+                        : R.string.op_history_single_action_revoke_permission),
+                permissionItem.name,
+                null,
+                success,
+                OperationJournalMetadata.RISK_MEDIUM,
+                false,
+                failure);
+    }
+
+    @WorkerThread
+    private void recordAppOpHistory(int op,
+                                    int mode,
+                                    boolean success,
+                                    @Nullable Throwable failure) {
+        String opName = AppOpsManagerCompat.opToName(op);
+        recordSingleAppAction(SingleAppActionHistoryItem.ACTION_APP_OP_SET,
+                getApplication().getString(R.string.op_history_single_action_set_app_op),
+                opName,
+                AppOpsManagerCompat.modeToName(mode),
+                success,
+                OperationJournalMetadata.RISK_MEDIUM,
+                false,
+                failure);
+    }
+
+    @WorkerThread
+    private void recordComponentRuleHistory(@NonNull String componentName,
+                                            @NonNull RuleType type,
+                                            @NonNull String componentStatus,
+                                            boolean success,
+                                            @Nullable Throwable failure) {
+        recordSingleAppAction(SingleAppActionHistoryItem.ACTION_COMPONENT_RULE,
+                getApplication().getString(R.string.op_history_single_action_component_rule),
+                componentName,
+                type.name() + ":" + componentStatus,
+                success,
+                OperationJournalMetadata.RISK_MEDIUM,
+                true,
+                failure);
+    }
+
     public static final int RULE_APPLIED = 0;
     public static final int RULE_NOT_APPLIED = 1;
     public static final int RULE_NO_RULE = 2;
@@ -586,6 +664,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 setRuleApplicationStatus();
                 // Commit changes
                 mBlocker.commit();
+                recordComponentRuleHistory(componentName, type, componentStatus, true, null);
                 mBlocker.setReadOnly();
                 Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::resumeWatcher);
             }
@@ -615,6 +694,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mBlocker.applyRules(true);
                     setRuleApplicationStatus();
                     mBlocker.commit();
+                    for (AppDetailsComponentItem componentItem : componentItems) {
+                        recordComponentRuleHistory(componentItem.name, type, componentStatus, true, null);
+                    }
                     mBlocker.setReadOnly();
                 } finally {
                     Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::resumeWatcher);
@@ -660,6 +742,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
             setRuleApplicationStatus();
             // Commit changes
             mBlocker.commit();
+            for (RuleEntry entry : entries) {
+                recordComponentRuleHistory(entry.name, entry.type, ComponentRule.COMPONENT_TO_BE_BLOCKED_IFW_DISABLE,
+                        true, null);
+            }
             mBlocker.setReadOnly();
             // Update UI
             reloadComponents();
@@ -689,6 +775,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
             setRuleApplicationStatus();
             // Commit changes
             mBlocker.commit();
+            for (RuleEntry entry : entries) {
+                recordComponentRuleHistory(entry.name, entry.type, ComponentRule.COMPONENT_TO_BE_DEFAULTED, true, null);
+            }
             mBlocker.setReadOnly();
             // Update UI
             reloadComponents();
@@ -701,8 +790,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
+        boolean grant = !permissionItem.isGranted();
         try {
-            if (!permissionItem.isGranted()) {
+            if (grant) {
                 Log.d(TAG, "Granting permission: %s", permissionItem.name);
                 permissionItem.grantPermission(packageInfo, mAppOpsManager);
             } else {
@@ -711,8 +801,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
         } catch (RemoteException | PermissionException e) {
             e.printStackTrace();
+            recordPermissionHistory(permissionItem, grant, false, e);
             return false;
         }
+        recordPermissionHistory(permissionItem, grant, true, null);
         mExecutor.submit(() -> {
             synchronized (mBlockerLocker) {
                 waitForBlockerOrExit();
@@ -742,8 +834,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 try {
                     permissionItem.revokePermission(packageInfo, mAppOpsManager);
                     revokedPermissions.add(permissionItem);
+                    recordPermissionHistory(permissionItem, false, true, null);
                 } catch (RemoteException | PermissionException e) {
                     e.printStackTrace();
+                    recordPermissionHistory(permissionItem, false, false, e);
                     isSuccessful = false;
                 }
             }
@@ -776,6 +870,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         try {
             // Set mode
             PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
+            recordAppOpHistory(op, mode, true, null);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -788,6 +883,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             });
         } catch (PermissionException e) {
             e.printStackTrace();
+            recordAppOpHistory(op, mode, false, e);
             return false;
         }
         return true;
@@ -803,8 +899,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
         for (int op : ops) {
             try {
                 PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
+                recordAppOpHistory(op, mode, true, null);
             } catch (PermissionException e) {
                 e.printStackTrace();
+                recordAppOpHistory(op, mode, false, e);
                 isSuccessful = false;
             }
         }
@@ -836,6 +934,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 appOpItem.allowAppOp(packageInfo, mAppOpsManager);
             }
             setAppOp(appOpItem);
+            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), true, null);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -849,6 +948,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return true;
         } catch (PermissionException e) {
             e.printStackTrace();
+            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), false, e);
             return false;
         }
     }
@@ -862,6 +962,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         try {
             appOpItem.setAppOp(packageInfo, mAppOpsManager, mode);
             setAppOp(appOpItem);
+            recordAppOpHistory(appOpItem.getOp(), mode, true, null);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -875,6 +976,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return true;
         } catch (PermissionException e) {
             e.printStackTrace();
+            recordAppOpHistory(appOpItem.getOp(), mode, false, e);
             return false;
         }
     }

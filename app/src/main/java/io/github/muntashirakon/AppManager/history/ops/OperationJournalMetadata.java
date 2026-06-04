@@ -179,6 +179,30 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    public static OperationJournalMetadata forSingleAppAction(@NonNull Context context,
+                                                              @NonNull SingleAppActionHistoryItem item,
+                                                              boolean success,
+                                                              @Risk int risk,
+                                                              boolean reversible,
+                                                              @Nullable Throwable failure) {
+        Builder builder = builder(context)
+                .setOperationLabel(item.getOperationLabel())
+                .setTargetCount(1)
+                .setFailedCount(success ? 0 : 1)
+                .setExitCode(success ? 0 : 1)
+                .setRequiresRestart(false)
+                .setReplayable(false)
+                .setReversible(reversible)
+                .setRisk(risk)
+                .setRollbackHint(reversible ? ROLLBACK_RUN_INVERSE : ROLLBACK_MANUAL_REAPPLY)
+                .setTargetPreview(item.getTargetPreviewLabel());
+        if (!success && failure != null && failure.getMessage() != null) {
+            builder.setFailureMessage(failure.getMessage());
+        }
+        return builder.build();
+    }
+
+    @NonNull
     private static Builder builder(@NonNull Context context) {
         Builder builder = new Builder()
                 .setModeLabel(Ops.getInferredMode(context).toString())

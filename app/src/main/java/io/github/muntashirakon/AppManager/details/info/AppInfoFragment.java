@@ -147,7 +147,10 @@ import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.PerAppRollbackManager;
+import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.magisk.MagiskDenyList;
 import io.github.muntashirakon.AppManager.magisk.MagiskHide;
@@ -3189,6 +3192,26 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     @WorkerThread
+    private void recordFreezeHistory(boolean freeze, boolean success, @Nullable Throwable failure) {
+        try {
+            Context context = mActivity != null ? mActivity : ContextUtils.getContext();
+            String operationLabel = context.getString(freeze ? R.string.freeze : R.string.unfreeze);
+            SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                    freeze ? SingleAppActionHistoryItem.ACTION_FREEZE : SingleAppActionHistoryItem.ACTION_UNFREEZE,
+                    operationLabel,
+                    mPackageName,
+                    mUserId,
+                    operationLabel,
+                    null);
+            OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
+                    OperationJournalMetadata.forSingleAppAction(context, item, success,
+                            OperationJournalMetadata.RISK_MEDIUM, true, failure));
+        } catch (Throwable th) {
+            Log.e(TAG, "Could not record single-app operation history.", th);
+        }
+    }
+
+    @WorkerThread
     private void doFreeze(@FreezeUtils.FreezeMethod int freezeType, boolean remember) {
         try {
             if (remember) {
@@ -3197,8 +3220,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 FreezeUtils.deleteFreezeMethod(mPackageName);
             }
             FreezeUtils.freeze(mPackageName, mUserId, freezeType);
+            recordFreezeHistory(true, true, null);
         } catch (Throwable th) {
             Log.e(TAG, th);
+            recordFreezeHistory(true, false, th);
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_freeze, mAppLabel));
         }
     }
@@ -3207,8 +3232,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private void doUnfreeze() {
         try {
             FreezeUtils.unfreeze(mPackageName, mUserId);
+            recordFreezeHistory(false, true, null);
         } catch (Throwable th) {
             Log.e(TAG, th);
+            recordFreezeHistory(false, false, th);
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_unfreeze, mAppLabel));
         }
     }
