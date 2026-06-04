@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Scheduled operation-history retention pruning (research quick win, 2026-06-03)
+
+- Added a unique daily WorkManager prune job for operation-history retention.
+  Finite retention values schedule `OpHistoryPruneWorker`; `0` retention cancels
+  and no-ops the worker so "keep forever" stays explicit.
+- Privacy settings, app startup, boot completed, and package-replaced entry
+  points now reconcile the prune schedule, so old `op_history` rows can be
+  removed without opening the History screen.
+- The retention summary now labels `0` as "Keep forever (no scheduled cleanup)".
+
 ### Changed - Weekly OWASP critical-CVE gate (research quick win, 2026-06-03)
 
 - Weekly OWASP Dependency Check now passes `-PdependencyCheckFailBuildOnCvss=9.0`
