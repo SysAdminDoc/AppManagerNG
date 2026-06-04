@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+</manifest>

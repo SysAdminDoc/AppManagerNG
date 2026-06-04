@@ -55,6 +55,8 @@ ext {
 
     // Test dependencies
     androidx_test_core_version = "1.6.1"
+    benchmark_version = "1.4.1"
     junit_version = "4.13.2" // https://github.com/junit-team/junit4
     robolectric_version = "4.16.1" // https://github.com/robolectric/robolectric
+    uiautomator_version = "2.3.0"
 }
