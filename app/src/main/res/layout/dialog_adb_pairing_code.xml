@@ -1,0 +1,57 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="@dimen/padding_medium"
+    android:scrollIndicators="top|bottom"
+    tools:ignore="UnusedAttribute"
+    tools:theme="@style/AppTheme">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingVertical="@dimen/padding_small">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/adb_pairing_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            tools:text="@string/adb_pairing_searching_for_port" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/adb_pairing_port"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            tools:text="Found a service with port 37123" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/adb_pairing_code_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:hint="@string/adb_pairing_pairing_code"
+            app:hintAnimationEnabled="true"
+            app:hintEnabled="true"
+            tools:helperText="@string/adb_pairing_code_waiting_for_port">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/adb_pairing_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="number"
+                android:maxLength="6"
+                android:maxLines="1"
+                tools:text="123456" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

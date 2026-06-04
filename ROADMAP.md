@@ -460,27 +460,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 4 - 2026-06-04)
 
-- [ ] 🔬🤖 P1 — Add an in-app Wireless ADB pairing-code fallback
-  - Why: Quest-style and other non-phone surfaces can show pairing-code UI but
-    may not support notification inline replies. AppManagerNG currently starts
-    wireless pairing through an ongoing notification with `RemoteInput`, so a
-    device that cannot collect inline notification input has no reliable way to
-    enter the discovered port/code from inside the app.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1975;
-    `Ops.pairAdbInput()` starts `AdbPairingService`, and
-    `AdbPairingService.inputPairingCode()` exposes the discovered pairing port
-    only through a notification action with `RemoteInput`.
-  - Touches: `Ops`, `AdbPairingService`, a foreground-safe pairing broker or
-    Activity/dialog, pairing strings, and host-testable pairing input parsing.
-  - Acceptance: when notification inline input is unavailable or the user picks
-    manual in-app entry, AppManagerNG keeps scanning for the pairing port,
-    shows the discovered port in the app, accepts the six-digit code in-app,
-    and calls the same pairing path without relying on notification replies.
-  - Verify: unit tests for port/code handoff and cancellation plus manual
-    Wireless ADB pairing on a normal Android device and Quest/multi-window
-    device where notification replies are not available.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P1 — Wire Debloater "Put back" install-existing restore
   - Why: users can remove system packages for a user from the Debloater, but
     recovery is currently indirect. The UI already contains an `action_put_back`

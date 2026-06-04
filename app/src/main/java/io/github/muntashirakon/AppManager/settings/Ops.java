@@ -38,7 +38,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbConnectionManager;
+import io.github.muntashirakon.AppManager.adb.AdbPairingCodeDialog;
 import io.github.muntashirakon.AppManager.adb.AdbPairingService;
+import io.github.muntashirakon.AppManager.adb.AdbPairingSession;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
@@ -651,27 +653,26 @@ public class Ops {
             displayLocalNetworkPermissionMessage(activity, callback);
             return;
         }
-        Runnable startPairing = () -> {
-            Intent adbPairingServiceIntent = new Intent(activity, AdbPairingService.class)
-                    .setAction(AdbPairingService.ACTION_START_PAIRING);
-            ContextCompat.startForegroundService(activity, adbPairingServiceIntent);
+        Runnable startNotificationPairing = () -> {
+            ContextCompat.startForegroundService(activity, AdbPairingService.getStartSearchingIntent(activity));
             callback.pairAdb();
+        };
+        Runnable startInAppPairing = () -> {
+            ContextCompat.startForegroundService(activity, AdbPairingService.getStartSearchingIntent(activity));
+            callback.pairAdb();
+            AdbPairingCodeDialog.show(activity, null);
         };
         Runnable openDeveloperOptionsAndPair = () -> {
             Intent developerOptionsIntent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             activity.startActivity(developerOptionsIntent);
-            startPairing.run();
+            startNotificationPairing.run();
         };
         new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.wireless_debugging)
                 .setMessage(R.string.adb_pairing_instruction)
                 .setCancelable(false)
-                .setNeutralButton(R.string.action_manual, (dialog, which) ->
-                        NotificationUtils.requestPostNotificationsForWorkflow(activity,
-                                R.string.adb_pairing_notification_permission_title,
-                                R.string.adb_pairing_notification_permission_message,
-                                startPairing))
+                .setNeutralButton(R.string.action_manual, (dialog, which) -> startInAppPairing.run())
                 .setNegativeButton(R.string.cancel, (dialog, which) -> callback.onStatusReceived(STATUS_FAILURE))
                 .setPositiveButton(R.string.go, (dialog, which) ->
                         NotificationUtils.requestPostNotificationsForWorkflow(activity,
@@ -726,7 +727,8 @@ public class Ops {
             }
             if (success) {
                 if (pairingError.get() != null) {
-                    if (ServiceHelper.checkIfServiceIsRunning(context, AdbPairingService.class)) {
+                    boolean serviceRunning = ServiceHelper.checkIfServiceIsRunning(context, AdbPairingService.class);
+                    if (AdbPairingSession.shouldWaitForRetry(AdbPairingSession.getCurrentState(), serviceRunning)) {
                         observerObserver.set(new CountDownLatch(1));
                         continue;
                     }
@@ -737,7 +739,7 @@ public class Ops {
             if (success) {
                 return STATUS_ADB_CONNECT_REQUIRED;
             } else {
-                context.stopService(new Intent(context, AdbPairingService.class));
+                context.stopService(AdbPairingService.getStopSearchingIntent(context));
                 return STATUS_FAILURE;
             }
         }

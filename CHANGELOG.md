@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - In-app Wireless ADB pairing code entry (research P1/#1975, 2026-06-04)
+
+- Wireless ADB pairing now publishes foreground-service scan/pair state to an
+  in-app code dialog that shows the discovered pairing port and validates the
+  six-digit code before submitting through the same pairing service path.
+- Pairing notifications keep the existing inline reply action and add an
+  "Enter in app" action for devices where notification replies are unavailable;
+  cancel and retry states still wake the existing `Ops.pairAdb()` waiter.
+
 ### Fixed - Terminal privilege-provider routing (research P2/#1727, 2026-06-04)
 
 - Terminal startup now labels the active route as local, root, Shizuku, or ADB
