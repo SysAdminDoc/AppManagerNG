@@ -2,7 +2,7 @@
 
 # AppManagerNG Active Roadmap
 
-Last consolidated: 2026-06-03. Baseline: `main` at `397fb8d`, app
+Last consolidated: 2026-06-03. Baseline: `main` at `a54ae5f`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -57,10 +57,10 @@ than by historical priority tier:
   app `Log` and a "reclaimed X" result toast. The review dialog now also has
   an "Export results" action that shares selected rows as TSV. _Data layer:
   `LeftoverScanner` (scan/scanInternalDataStubs/selectOrphans/sizeOnDisk; 15
-  JVM tests) and `LeftoverExportFormatter` (stable TSV + formula-field
-  defusing; 2 JVM tests). **Follow-up: App Details uninstalled-package
-  convenience entry and migrating the audit capture to a dedicated `op_history`
-  DB type (shared with T21-F).**_
+  JVM tests), `LeftoverExportFormatter` (stable TSV + formula-field defusing;
+  2 JVM tests), and `LeftoverCleanupHistoryItem` (cleanup op-history rows with
+  high-risk, non-replayable metadata; 2 focused tests). **Follow-up: App
+  Details uninstalled-package convenience entry.**_
 - [x] **T19-C APK duplicate finder**: One-Click Ops "Find duplicate APK files"
   entry shipped 2026-05-28 — `OneClickOpsViewModel.scanApkDuplicates` walks
   external storage with `ApkFileScanner`, fingerprints each `.apk` via
