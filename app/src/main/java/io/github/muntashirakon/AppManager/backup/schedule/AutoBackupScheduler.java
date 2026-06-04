@@ -14,6 +14,10 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,6 +52,11 @@ public final class AutoBackupScheduler {
     public static final int NETWORK_UNMETERED = 2;
 
     private static final long DAILY_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(1);
+    private static final int MAX_PERSISTED_SKIPPED_PACKAGES = 100;
+    private static final String JSON_PACKAGE = "package";
+    private static final String JSON_USER = "user";
+    private static final String JSON_REASON = "reason";
+    private static final String JSON_LAST_BACKUP = "last_backup";
 
     private AutoBackupScheduler() {
     }
@@ -218,8 +227,15 @@ public final class AutoBackupScheduler {
     }
 
     public static void recordRunResult(@NonNull String result) {
+        recordRunResult(result, Collections.emptyList());
+    }
+
+    public static void recordRunResult(@NonNull String result,
+                                       @NonNull List<SkippedPackage> skippedDetails) {
         Prefs.BackupRestore.setScheduledBackupLastRun(System.currentTimeMillis());
         Prefs.BackupRestore.setScheduledBackupLastResult(result);
+        Prefs.BackupRestore.setScheduledBackupLastSkippedPackages(
+                serializeSkippedDetails(skippedDetails, MAX_PERSISTED_SKIPPED_PACKAGES));
     }
 
     @NonNull
@@ -236,6 +252,70 @@ public final class AutoBackupScheduler {
             Prefs.BackupRestore.setScheduledBackupLastDiagnostics(diagnostics);
             return diagnostics;
         }
+    }
+
+    @NonNull
+    public static List<SkippedPackage> getLastSkippedDetails() {
+        return deserializeSkippedDetails(Prefs.BackupRestore.getScheduledBackupLastSkippedPackages());
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String serializeSkippedDetails(@NonNull List<SkippedPackage> skippedDetails, int maxEntries) {
+        if (skippedDetails.isEmpty() || maxEntries <= 0) {
+            return "";
+        }
+        JSONArray array = new JSONArray();
+        int count = Math.min(skippedDetails.size(), maxEntries);
+        try {
+            for (int i = 0; i < count; ++i) {
+                SkippedPackage skipped = skippedDetails.get(i);
+                JSONObject object = new JSONObject();
+                object.put(JSON_PACKAGE, skipped.packageName);
+                object.put(JSON_USER, skipped.userId);
+                object.put(JSON_REASON, skipped.reason.name());
+                object.put(JSON_LAST_BACKUP, Math.max(0L, skipped.lastBackupMillis));
+                array.put(object);
+            }
+        } catch (JSONException e) {
+            return "";
+        }
+        return array.toString();
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static List<SkippedPackage> deserializeSkippedDetails(@NonNull String serialized) {
+        if (serialized.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        ArrayList<SkippedPackage> skippedDetails = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(serialized);
+            for (int i = 0; i < array.length() && skippedDetails.size() < MAX_PERSISTED_SKIPPED_PACKAGES; ++i) {
+                JSONObject object = array.optJSONObject(i);
+                if (object == null) {
+                    continue;
+                }
+                String packageName = object.optString(JSON_PACKAGE, "");
+                if (packageName.isEmpty()) {
+                    continue;
+                }
+                SkipReason reason;
+                try {
+                    reason = SkipReason.valueOf(object.optString(JSON_REASON, ""));
+                } catch (IllegalArgumentException e) {
+                    continue;
+                }
+                skippedDetails.add(new SkippedPackage(packageName,
+                        object.optInt(JSON_USER, 0),
+                        reason,
+                        Math.max(0L, object.optLong(JSON_LAST_BACKUP, 0L))));
+            }
+        } catch (JSONException e) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(skippedDetails);
     }
 
     @NonNull

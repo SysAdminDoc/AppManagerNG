@@ -2,7 +2,7 @@
 
 # AppManagerNG Active Roadmap
 
-Last consolidated: 2026-05-28. Baseline: `main` at `08239cb`, app
+Last consolidated: 2026-06-03. Baseline: `main` at `072fe2f`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -219,15 +219,15 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   bounded-radius `Widget.AppTheme.Chip.MainFilter` style (no pill backdrops).
   "Needs review" surfaces groups where some requesting app hasn't granted
   (`requested > granted`). compile + aapt2 link + filter tests green.
-- [~] **EI-07 Scheduled-backup "Why did this skip?"**: data-layer capture
-  shipped 2026-05-28 — `AutoBackupScheduler.BackupSelection` now carries
-  `getSkippedDetails()` (a `List<SkippedPackage>` with package, user, `SkipReason`,
-  and the newest existing-backup time) instead of only a count, and
-  `AutoBackupWorker` logs each skipped package + reason (previously the per-package
-  "why" was discarded). 1 new JVM test; `getSkippedPackages()` count preserved.
-  **Open: the interactive bottom sheet on the scheduled-backup settings screen
-  (needs persisting the last run's skip details so the screen can read them — a
-  settings-surface + persistence plumbing follow-up).**
+- [x] **EI-07 Scheduled-backup "Why did this skip?"**: fully shipped
+  2026-06-03 — `AutoBackupScheduler.BackupSelection` carries
+  `getSkippedDetails()` (package, user, `SkipReason`, newest existing-backup
+  time), `AutoBackupWorker` logs skipped packages, terminal results persist a
+  bounded skipped-package JSON payload in `AppPref`, and Settings ->
+  Backup/Restore -> "Schedule status" is selectable with a diagnostics surface
+  that lists package-level skip reasons from the last run. Focused JVM coverage
+  pins selection, round-trip serialization, bounded storage, and malformed-input
+  handling.
 - [ ] **NF-06 Pro Mode hero card**: **blocked on a product/UX decision** (no
   acceptance spec). The onboarding flow is a privilege-*mode* picker
   (Auto/Root/Shizuku/ADB); "Pro Mode" is the orthogonal advanced-features toggle

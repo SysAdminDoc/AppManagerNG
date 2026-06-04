@@ -657,6 +657,10 @@
     <!-- EI-07 Scheduled-backup diagnostics dialog -->
     <string name="pref_backup_schedule_diagnostics_title">Scheduled backup diagnostics</string>
     <string name="pref_backup_schedule_diagnostics_freshness_explainer">Freshness window: %1$s. Packages whose newest backup is younger than this window are skipped and counted as "recent" in the run result.</string>
+    <string name="pref_backup_schedule_skipped_title">Skipped packages from last run</string>
+    <string name="pref_backup_schedule_skipped_none">No package-level skips were recorded for the last run.</string>
+    <string name="pref_backup_schedule_skipped_item"><xliff:g id="package" example="com.example.app">%1$s</xliff:g> (u<xliff:g id="user" example="0">%2$d</xliff:g>) - <xliff:g id="reason" example="Backup is still recent">%3$s</xliff:g> - newest backup: <xliff:g id="last_backup" example="5/18/26, 2:00 AM">%4$s</xliff:g></string>
+    <string name="pref_backup_schedule_skip_reason_backed_up_recently">Backup is still recent</string>
 
     <!-- EI-04 Permission Inspector chip-row filter -->
     <string name="perm_apps_filter_all">All apps</string>
