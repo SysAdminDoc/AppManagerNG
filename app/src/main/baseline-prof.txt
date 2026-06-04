@@ -1,0 +1,6 @@
+HSPLio/github/muntashirakon/AppManager/main/SplashActivity;
+HSPLio/github/muntashirakon/AppManager/main/MainActivity;
+HSPLio/github/muntashirakon/AppManager/AppManager;
+HSPLio/github/muntashirakon/AppManager/settings/Prefs;
+HSPLio/github/muntashirakon/AppManager/main/MainViewModel;
+HSPLio/github/muntashirakon/AppManager/main/ApplicationItem;

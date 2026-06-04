@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+plugins {
+    id('com.android.test')
+}
+
+android {
+    namespace = 'io.github.sysadmindoc.appmanagerng.benchmark'
+    compileSdk = compile_sdk
+    targetProjectPath = ':app'
+
+    defaultConfig {
+        minSdk = 23
+        targetSdk = target_sdk
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+        missingDimensionStrategy 'distribution', 'floss'
+    }
+
+    compileOptions {
+        encoding = 'UTF-8'
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation "androidx.benchmark:benchmark-macro-junit4:${benchmark_version}"
+    implementation "androidx.test:runner:1.6.2"
+    implementation "androidx.test.ext:junit:1.2.1"
+    implementation "androidx.test.uiautomator:uiautomator:${uiautomator_version}"
+    implementation "junit:junit:${junit_version}"
+}

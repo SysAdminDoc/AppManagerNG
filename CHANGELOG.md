@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Benchmark and UIAutomator smoke scaffolding (research P2/O-07-O-08, 2026-06-04)
+
+- Added a `:benchmark` Android test module with AndroidX Macrobenchmark and
+  BaselineProfileRule tests for the AppManagerNG debug cold-start path.
+- Added a checked-in startup seed Baseline Profile under `app/src/main` so the
+  release APK has an app-list path profile artifact while device-generated
+  profile refreshes remain pending.
+- Added a LargeTest UIAutomator app-launch smoke test that verifies the debug
+  app opens to the main app list without joining the existing small connected
+  test lane by default.
+
 ### Added - Privacy API manifest surfaces (research P2/B5-B6, 2026-06-04)
 
 - App Details now shows Health Connect permission declarations from the target
