@@ -57,7 +57,7 @@ final class FmBatchApkInstallUtils {
         return PackageInstallerActivity.getBatchInstallInstance(context, uris);
     }
 
-    private static boolean isSupportedInstallSourceExtension(@Nullable String extension) {
+    static boolean isSupportedInstallSourceExtension(@Nullable String extension) {
         return extension != null && ApkFile.SUPPORTED_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT));
     }
 }

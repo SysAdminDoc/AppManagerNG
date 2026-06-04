@@ -12,6 +12,11 @@
         android:title="@string/install_selected_apks" />
 
     <item
+        android:id="@+id/action_find_duplicate_apks"
+        android:icon="@drawable/ic_file_copy"
+        android:title="@string/find_duplicate_apks" />
+
+    <item
         android:id="@+id/action_rename"
         android:icon="@drawable/ic_form_textbox"
         android:title="@string/rename" />
