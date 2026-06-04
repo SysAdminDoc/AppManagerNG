@@ -2557,6 +2557,9 @@
     <string name="file_cut">Cut</string>
     <string name="fm_always_open_with">Always open</string>
     <string name="fm_open_with_for_this_file_only">Only for this file</string>
+    <string name="fm_open_with_clear_default">Clear default</string>
+    <string name="fm_open_with_default_saved">Open-with default saved.</string>
+    <string name="fm_open_with_default_cleared">Open-with default cleared.</string>
     <string name="file_open_as">Open as…</string>
     <string name="file_open_as_hex">Open as hex</string>
     <string name="file_open_with_custom_activity">Custom</string>
