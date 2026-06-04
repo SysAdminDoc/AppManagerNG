@@ -1656,6 +1656,19 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         memoryTaggingTag.setTextRes(getMemoryTaggingChipTextRes(tagCloud.memoryTaggingInfo))
                 .setColor(getMemoryTaggingChipColor(context, tagCloud.memoryTaggingInfo))
                 .setOnClickListener(v -> showMemoryTaggingDialog(v.getContext(), tagCloud.memoryTaggingInfo));
+        TagItem sdkSandboxTag = new TagItem();
+        tagItems.add(sdkSandboxTag);
+        if (tagCloud.sdkSandboxInfo.hasDeclaredSdkLibraries()) {
+            int sdkLibraryCount = tagCloud.sdkSandboxInfo.declaredSdkLibraries.size();
+            sdkSandboxTag.setText(getResources().getQuantityString(R.plurals.sdk_sandbox_chip_count,
+                    sdkLibraryCount, sdkLibraryCount));
+        } else {
+            sdkSandboxTag.setTextRes(tagCloud.sdkSandboxInfo.isSupported()
+                    ? R.string.sdk_sandbox_chip_none
+                    : R.string.sdk_sandbox_chip_unsupported);
+        }
+        sdkSandboxTag.setColor(getSdkSandboxChipColor(context, tagCloud.sdkSandboxInfo))
+                .setOnClickListener(v -> showSdkSandboxDialog(v.getContext(), tagCloud.sdkSandboxInfo));
         if (tagCloud.warnsCleartextDeprecation) {
             TagItem cleartextTag = new TagItem();
             tagItems.add(cleartextTag);
@@ -2081,6 +2094,36 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 info.sdkInt);
         new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.memory_tagging_dialog_title)
+                .setMessage(body)
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
+    private int getSdkSandboxChipColor(@NonNull Context context, @NonNull SdkSandboxInfo info) {
+        if (!info.isSupported()) {
+            return ColorCodes.getRemovalCautionIndicatorColor(context);
+        }
+        return info.hasDeclaredSdkLibraries()
+                ? ColorCodes.getRemovalCautionIndicatorColor(context)
+                : ColorCodes.getSuccessColor(context);
+    }
+
+    private void showSdkSandboxDialog(@NonNull Context context, @NonNull SdkSandboxInfo info) {
+        String body;
+        if (!info.isSupported()) {
+            body = getString(R.string.sdk_sandbox_dialog_unsupported, info.sdkInt);
+        } else if (!info.hasDeclaredSdkLibraries()) {
+            body = getString(R.string.sdk_sandbox_dialog_none);
+        } else {
+            StringBuilder builder = new StringBuilder(getString(R.string.sdk_sandbox_dialog_header));
+            for (SdkSandboxInfo.SdkLibrary sdkLibrary : info.declaredSdkLibraries) {
+                builder.append("\n  - ").append(sdkLibrary.toDisplayString());
+            }
+            builder.append("\n\n").append(getString(R.string.sdk_sandbox_dialog_scope_note));
+            body = builder.toString();
+        }
+        new ScrollableDialogBuilder(context)
+                .setTitle(R.string.sdk_sandbox_dialog_title)
                 .setMessage(body)
                 .setPositiveButton(R.string.close, null)
                 .show();
