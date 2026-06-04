@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Leftover result-list export (T19-B follow-up, 2026-06-03)
+
+- One-Click Ops -> "Detect leftover folders" review dialog now has an
+  "Export results" action that shares the selected leftover rows as TSV with
+  package, kind, size, and path columns.
+- Added `LeftoverExportFormatter` with JVM coverage for stable column order,
+  formula-like field defusing, and line-break normalization.
+
 ### Added - Scheduled-backup skip details surface (EI-07, 2026-06-03)
 
 - Scheduled backup terminal results now persist a bounded, package-level list of
