@@ -11,6 +11,10 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-03
 
+- [x] **T19-C configured backup-root duplicate APK scanning** — One-Click Ops
+  duplicate-APK scans now include the configured AppManager backup directory
+  when it resolves to a local filesystem root, while `ApkDuplicateScanRoots`
+  deduplicates overlapping roots and canonical file hits.
 - [x] **T19-C File Manager selected duplicate APK cleanup** — File Manager
   multi-select now offers "Find duplicate APK files" for at least two readable
   local APK-like files, scans only that selection, reviews redundant copies with
