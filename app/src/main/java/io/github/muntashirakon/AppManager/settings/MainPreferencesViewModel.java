@@ -151,6 +151,13 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
         });
     }
 
+    public void setModeOfOps(@NonNull @Ops.Mode String mode) {
+        mExecutor.submit(() -> {
+            int status = Ops.init(getApplication(), true, mode);
+            mModeOfOpsStatus.postValue(status);
+        });
+    }
+
     public LiveData<Boolean> getOperationCompletedLiveData() {
         return mOperationCompletedLiveData;
     }

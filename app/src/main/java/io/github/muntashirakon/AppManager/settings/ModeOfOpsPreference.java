@@ -56,7 +56,10 @@ public class ModeOfOpsPreference extends Fragment {
     private MaterialTextView mRemoteServerStatusView;
     private MaterialTextView mRemoteServicesStatusView;
     private MaterialTextView mModeOfOpsView;
+    @Nullable
+    private MaterialButton mChangeModeView;
     private MainPreferencesViewModel mModel;
+    private final ModeOfOpsApplyState mModeApplyState = new ModeOfOpsApplyState();
     private AlertDialog mModeOfOpsAlertDialog;
     private String[] mModes;
     @Ops.Mode
@@ -113,30 +116,27 @@ public class ModeOfOpsPreference extends Fragment {
         mRemoteServicesStatusView = view.findViewById(R.id.remote_services_status);
         mModeOfOpsView = view.findViewById(R.id.op_name);
         bindCapabilities(view);
-        MaterialButton changeModeView = view.findViewById(R.id.action_settings);
+        mChangeModeView = view.findViewById(R.id.action_settings);
         List<String> disabledItems;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Utils.isTv(requireContext())) {
             disabledItems = Collections.singletonList(Ops.MODE_ADB_WIFI);
         } else disabledItems = null;
-        changeModeView.setOnClickListener(v -> new SearchableSingleChoiceDialogBuilder<>(requireActivity(), MODE_NAMES, mModes)
-                .setTitle(R.string.pref_mode_of_operations)
-                .setSelection(mCurrentMode)
-                .addDisabledItems(disabledItems)
-                .setPositiveButton(R.string.apply, (dialog, which, selectedItem) -> {
-                    if (selectedItem != null) {
-                        mCurrentMode = selectedItem;
-                        if (Ops.MODE_ADB_OVER_TCP.equals(mCurrentMode)) {
-                            ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
+        mChangeModeView.setOnClickListener(v -> {
+            if (mModeApplyState.isApplying()) {
+                return;
+            }
+            new SearchableSingleChoiceDialogBuilder<>(requireActivity(), MODE_NAMES, mModes)
+                    .setTitle(R.string.pref_mode_of_operations)
+                    .setSelection(mCurrentMode)
+                    .addDisabledItems(disabledItems)
+                    .setPositiveButton(R.string.apply, (dialog, which, selectedItem) -> {
+                        if (selectedItem != null) {
+                            beginModeApply(selectedItem);
                         }
-                        Ops.setMode(mCurrentMode);
-                        mModeOfOpsAlertDialog.show();
-                        mConnecting = true;
-                        updateViews();
-                        mModel.setModeOfOps();
-                    }
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show());
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+        });
         TextInputTextView customCommand0 = view.findViewById(android.R.id.text1);
         TextInputLayout customCommand0Layout = TextInputLayoutCompat.fromTextInputEditText(customCommand0);
         customCommand0Layout.setEndIconOnClickListener(v -> {
@@ -157,6 +157,9 @@ public class ModeOfOpsPreference extends Fragment {
         updateViews();
         // Mode of ops
         mModel.getModeOfOpsStatus().observe(getViewLifecycleOwner(), status -> {
+            if (!mModeApplyState.isApplying()) {
+                return;
+            }
             switch (status) {
                 case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -195,12 +198,13 @@ public class ModeOfOpsPreference extends Fragment {
                     } // fall-through
                 case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
                     Ops.displayIncompleteUsbDebuggingMessage(requireActivity());
+                    finishModeApply(false, true);
+                    return;
                 case Ops.STATUS_SUCCESS:
+                    finishModeApply(true, false);
+                    return;
                 case Ops.STATUS_FAILURE:
-                    mConnecting = false;
-                    mModeOfOpsAlertDialog.dismiss();
-                    mCurrentMode = Ops.getMode();
-                    updateViews();
+                    finishModeApply(false, true);
             }
         });
         mModel.getCustomCommand0().observe(getViewLifecycleOwner(), customCommand0::setText);
@@ -216,6 +220,82 @@ public class ModeOfOpsPreference extends Fragment {
         // new state on return without having to leave Settings entirely.
         if (getView() != null) {
             bindCapabilities(getView());
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        dismissPendingModeApply();
+        dismissModeProgressDialog();
+        mChangeModeView = null;
+        super.onDestroyView();
+    }
+
+    private void beginModeApply(@NonNull @Ops.Mode String mode) {
+        if (!mModeApplyState.begin(Ops.getMode(), mode)) {
+            return;
+        }
+        mCurrentMode = mode;
+        if (Ops.MODE_ADB_OVER_TCP.equals(mode)) {
+            ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
+        }
+        showModeProgressDialog();
+        mConnecting = true;
+        setModeApplyUiEnabled(false);
+        updateViews();
+        mModel.setModeOfOps(mode);
+    }
+
+    private void finishModeApply(boolean success, boolean showFailure) {
+        mConnecting = false;
+        dismissModeProgressDialog();
+        if (success) {
+            String pendingMode = mModeApplyState.finishSuccess();
+            if (pendingMode != null) {
+                Ops.setMode(pendingMode);
+            }
+        } else {
+            rollbackPendingModeApply(showFailure);
+        }
+        mCurrentMode = Ops.getMode();
+        setModeApplyUiEnabled(true);
+        if (getView() != null) {
+            updateViews();
+        }
+    }
+
+    private void rollbackPendingModeApply(boolean showFailure) {
+        String previousMode = mModeApplyState.finishFailure();
+        if (previousMode != null) {
+            Ops.setMode(previousMode);
+            if (showFailure) {
+                UIUtils.displayLongToast(R.string.mode_of_op_apply_failed_rollback);
+            }
+        }
+    }
+
+    private void dismissPendingModeApply() {
+        String previousMode = mModeApplyState.dismiss();
+        if (previousMode != null) {
+            Ops.setMode(previousMode);
+        }
+    }
+
+    private void showModeProgressDialog() {
+        if (!mModeOfOpsAlertDialog.isShowing()) {
+            mModeOfOpsAlertDialog.show();
+        }
+    }
+
+    private void dismissModeProgressDialog() {
+        if (mModeOfOpsAlertDialog.isShowing()) {
+            mModeOfOpsAlertDialog.dismiss();
+        }
+    }
+
+    private void setModeApplyUiEnabled(boolean enabled) {
+        if (mChangeModeView != null) {
+            mChangeModeView.setEnabled(enabled);
         }
     }
 
@@ -372,19 +452,12 @@ public class ModeOfOpsPreference extends Fragment {
     }
 
     private void switchShizukuToAdbMode() {
-        mCurrentMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+        String nextMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
                 && !Utils.isTv(requireContext())
                 && Utils.isWifiActive(requireContext().getApplicationContext())
                 ? Ops.MODE_ADB_WIFI
                 : Ops.MODE_ADB_OVER_TCP;
-        if (Ops.MODE_ADB_OVER_TCP.equals(mCurrentMode)) {
-            ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
-        }
-        Ops.setMode(mCurrentMode);
-        mModeOfOpsAlertDialog.show();
-        mConnecting = true;
-        updateViews();
-        mModel.setModeOfOps();
+        beginModeApply(nextMode);
     }
 
     private void openShizukuAutoStartSettings() {
