@@ -1639,6 +1639,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                     .setNegativeButton(R.string.close, null)
                                     .show());
         }
+        TagItem memoryTaggingTag = new TagItem();
+        tagItems.add(memoryTaggingTag);
+        memoryTaggingTag.setTextRes(getMemoryTaggingChipTextRes(tagCloud.memoryTaggingInfo))
+                .setColor(getMemoryTaggingChipColor(context, tagCloud.memoryTaggingInfo))
+                .setOnClickListener(v -> showMemoryTaggingDialog(v.getContext(), tagCloud.memoryTaggingInfo));
         if (tagCloud.warnsCleartextDeprecation) {
             TagItem cleartextTag = new TagItem();
             tagItems.add(cleartextTag);
@@ -1945,6 +1950,68 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private static String shortFingerprint(@NonNull String fingerprint) {
         if (fingerprint.length() <= 11) return fingerprint;
         return fingerprint.substring(0, 5) + "…" + fingerprint.substring(fingerprint.length() - 5);
+    }
+
+    @StringRes
+    private int getMemoryTaggingChipTextRes(@NonNull MemoryTaggingInfo info) {
+        switch (info.status) {
+            case MemoryTaggingInfo.STATUS_SYNC:
+                return R.string.memory_tagging_chip_sync;
+            case MemoryTaggingInfo.STATUS_ASYNC:
+                return R.string.memory_tagging_chip_async;
+            case MemoryTaggingInfo.STATUS_OFF:
+                return R.string.memory_tagging_chip_off;
+            case MemoryTaggingInfo.STATUS_DEFAULT:
+                return R.string.memory_tagging_chip_default;
+            case MemoryTaggingInfo.STATUS_UNSUPPORTED:
+            default:
+                return R.string.memory_tagging_chip_unsupported;
+        }
+    }
+
+    @StringRes
+    private int getMemoryTaggingStatusTextRes(@NonNull MemoryTaggingInfo info) {
+        switch (info.status) {
+            case MemoryTaggingInfo.STATUS_SYNC:
+                return R.string.memory_tagging_status_sync;
+            case MemoryTaggingInfo.STATUS_ASYNC:
+                return R.string.memory_tagging_status_async;
+            case MemoryTaggingInfo.STATUS_OFF:
+                return R.string.memory_tagging_status_off;
+            case MemoryTaggingInfo.STATUS_DEFAULT:
+                return R.string.memory_tagging_status_default;
+            case MemoryTaggingInfo.STATUS_UNSUPPORTED:
+            default:
+                return R.string.memory_tagging_status_unsupported;
+        }
+    }
+
+    private int getMemoryTaggingChipColor(@NonNull Context context, @NonNull MemoryTaggingInfo info) {
+        switch (info.status) {
+            case MemoryTaggingInfo.STATUS_SYNC:
+            case MemoryTaggingInfo.STATUS_ASYNC:
+                return ColorCodes.getSuccessColor(context);
+            case MemoryTaggingInfo.STATUS_OFF:
+                return ColorCodes.getFailureColor(context);
+            case MemoryTaggingInfo.STATUS_DEFAULT:
+            case MemoryTaggingInfo.STATUS_UNSUPPORTED:
+            default:
+                return ColorCodes.getRemovalCautionIndicatorColor(context);
+        }
+    }
+
+    private void showMemoryTaggingDialog(@NonNull Context context, @NonNull MemoryTaggingInfo info) {
+        String body = getString(R.string.memory_tagging_dialog_body,
+                getString(getMemoryTaggingStatusTextRes(info)),
+                getString(info.allowsNativeHeapPointerTagging
+                        ? R.string.memory_tagging_pointer_tagging_allowed
+                        : R.string.memory_tagging_pointer_tagging_disabled),
+                info.sdkInt);
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.memory_tagging_dialog_title)
+                .setMessage(body)
+                .setPositiveButton(R.string.close, null)
+                .show();
     }
 
     /**

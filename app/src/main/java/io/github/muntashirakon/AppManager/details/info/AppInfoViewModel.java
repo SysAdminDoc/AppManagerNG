@@ -338,6 +338,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             }
             tagCloud.canWriteAndExecute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                     && applicationInfo.targetSdkVersion < Build.VERSION_CODES.Q;
+            tagCloud.memoryTaggingInfo = MemoryTaggingInfo.from(applicationInfo);
             tagCloud.warnsCleartextDeprecation = shouldWarnCleartextDeprecation(
                     (applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0,
                     ApplicationInfoCompat.getNetworkSecurityConfigRes(applicationInfo));
@@ -597,6 +598,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         @Nullable
         public XposedModuleInfo xposedModuleInfo;
         public boolean canWriteAndExecute;
+        @NonNull
+        public MemoryTaggingInfo memoryTaggingInfo = MemoryTaggingInfo.unsupported(Build.VERSION.SDK_INT);
         public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;

@@ -2606,6 +2606,20 @@
     <string name="app_info_tag_cleartext_deprecated">Cleartext deprecated</string>
     <string name="cleartext_deprecation_android18_title">Cleartext deprecation</string>
     <string name="cleartext_deprecation_android18_message">This app sets android:usesCleartextTraffic=&quot;true&quot; without a network security config. Android 17 warns that manifest-wide cleartext traffic is deprecated for Android 18. A network security config should scope any required HTTP traffic to explicit domains.</string>
+    <string name="memory_tagging_chip_unsupported">MTE: not supported</string>
+    <string name="memory_tagging_chip_default">MTE: default</string>
+    <string name="memory_tagging_chip_off">MTE: off</string>
+    <string name="memory_tagging_chip_async">MTE: async</string>
+    <string name="memory_tagging_chip_sync">MTE: sync</string>
+    <string name="memory_tagging_status_unsupported">Not supported on this Android version</string>
+    <string name="memory_tagging_status_default">Default platform mode</string>
+    <string name="memory_tagging_status_off">Explicitly off</string>
+    <string name="memory_tagging_status_async">Async tagging requested</string>
+    <string name="memory_tagging_status_sync">Sync tagging requested</string>
+    <string name="memory_tagging_pointer_tagging_allowed">Native heap pointer tagging: allowed</string>
+    <string name="memory_tagging_pointer_tagging_disabled">Native heap pointer tagging: disabled</string>
+    <string name="memory_tagging_dialog_title">Memory tagging</string>
+    <string name="memory_tagging_dialog_body">Status: %1$s\n%2$s\nAndroid API: %3$d\n\nAndroid exposes this package\'s manifest/runtime memory-tagging posture through ApplicationInfo. Actual MTE enforcement can still depend on device hardware and runtime policy.</string>
     <string name="title_domains_supported_by_the_app">Supported domains</string>
     <string name="pref_zip_align">Align APK files</string>
     <string name="pref_zip_align_msg">Aligning an APK file reduces its memory usage as the files in the APK can be accessed directly without copying the data to RAM. This step is required if <tt>extractNativeLibs</tt> is set to <tt>true</tt>.</string>

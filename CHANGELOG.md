@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App Info memory-tagging chip (research P2/B4, 2026-06-04)
+
+- App Details now computes each package's Android memory-tagging posture from
+  `ApplicationInfo`: API 30 reads the native-heap pointer-tagging private flag,
+  and API 31+ reads `getMemtagMode()` for default/off/async/sync modes.
+- The App Info tag cloud now shows an MTE chip that degrades to "not supported"
+  below Android 11, colors explicit async/sync modes as hardened signals, and
+  opens a details dialog noting that actual MTE enforcement still depends on
+  device hardware and runtime policy.
+
 ### Fixed - Android libraries submodule tracking (build-host hygiene, 2026-06-04)
 
 - Added the missing `scripts/android-libraries` gitlink at upstream
