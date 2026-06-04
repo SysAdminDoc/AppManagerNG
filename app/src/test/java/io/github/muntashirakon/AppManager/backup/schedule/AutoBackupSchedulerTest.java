@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup.schedule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import androidx.work.NetworkType;
 
@@ -136,6 +137,48 @@ public class AutoBackupSchedulerTest {
         assertEquals(1, selection.getDuePackages().size());
     }
 
+    @Test
+    public void skippedDetailsSerializeRoundTrip() {
+        String serialized = AutoBackupScheduler.serializeSkippedDetails(Arrays.asList(
+                skipped("com.fresh", 0, AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, 1234L),
+                skipped("com.other", 10, AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, 5678L)),
+                10);
+
+        java.util.List<AutoBackupScheduler.SkippedPackage> restored =
+                AutoBackupScheduler.deserializeSkippedDetails(serialized);
+
+        assertEquals(2, restored.size());
+        assertEquals("com.fresh", restored.get(0).packageName);
+        assertEquals(0, restored.get(0).userId);
+        assertEquals(AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, restored.get(0).reason);
+        assertEquals(1234L, restored.get(0).lastBackupMillis);
+        assertEquals("com.other", restored.get(1).packageName);
+        assertEquals(10, restored.get(1).userId);
+        assertEquals(5678L, restored.get(1).lastBackupMillis);
+    }
+
+    @Test
+    public void skippedDetailsSerializationIsBounded() {
+        String serialized = AutoBackupScheduler.serializeSkippedDetails(Arrays.asList(
+                skipped("com.first", 0, AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, 1L),
+                skipped("com.second", 0, AutoBackupScheduler.SkipReason.BACKED_UP_RECENTLY, 2L)),
+                1);
+
+        java.util.List<AutoBackupScheduler.SkippedPackage> restored =
+                AutoBackupScheduler.deserializeSkippedDetails(serialized);
+
+        assertEquals(1, restored.size());
+        assertEquals("com.first", restored.get(0).packageName);
+    }
+
+    @Test
+    public void skippedDetailsParserIgnoresMalformedInput() {
+        assertTrue(AutoBackupScheduler.deserializeSkippedDetails("").isEmpty());
+        assertTrue(AutoBackupScheduler.deserializeSkippedDetails("not json").isEmpty());
+        assertTrue(AutoBackupScheduler.deserializeSkippedDetails(
+                "[{\"package\":\"com.example\",\"reason\":\"UNKNOWN\"}]").isEmpty());
+    }
+
     private static long millis(int year, int month, int day, int hour, int minute) {
         Calendar calendar = Calendar.getInstance(UTC);
         calendar.set(Calendar.YEAR, year);
@@ -159,5 +202,11 @@ public class AutoBackupSchedulerTest {
         backup.backupName = "";
         backup.backupTime = backupTime;
         return backup;
+    }
+
+    private static AutoBackupScheduler.SkippedPackage skipped(String packageName, int userId,
+                                                              AutoBackupScheduler.SkipReason reason,
+                                                              long lastBackupMillis) {
+        return new AutoBackupScheduler.SkippedPackage(packageName, userId, reason, lastBackupMillis);
     }
 }

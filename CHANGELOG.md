@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Scheduled-backup skip details surface (EI-07, 2026-06-03)
+
+- Scheduled backup terminal results now persist a bounded, package-level list of
+  skipped packages in preferences, including package name, user ID, reason, and
+  newest existing-backup time. Runs without skips clear the previous list so the
+  Settings view does not show stale package reasons.
+- Settings -> Backup/Restore -> "Schedule status" is now actually selectable and
+  its diagnostics dialog includes the persisted "Skipped packages from last
+  run" section, turning the previous aggregate "recent backups" count into a
+  concrete "why did this skip?" surface.
+
 ### Security - Hardening pass (2026-06-02)
 
 - **Privileged command server bound to all interfaces.** `NetSocketServerImpl`
@@ -89,9 +100,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `AutoBackupScheduler.BackupSelection.getSkippedDetails()`, instead of only a
   count. `AutoBackupWorker` logs each skipped package + reason, so the
   previously-discarded per-package "why did this skip?" detail is captured.
-- Follow-up: an interactive "Why did this skip?" bottom sheet on the
-  scheduled-backup settings screen (needs persisting the last run's skip
-  details for the screen to read).
+- Completed 2026-06-03 by persisting the last run's skipped-package details and
+  showing them from the scheduled-backup status diagnostics surface.
 
 ### Added - User tag editor in App Details (NF-08 UI, 2026-05-28)
 
