@@ -56,6 +56,29 @@ than by historical priority tier:
 
 ## A. Feature wiring — implementable now
 
+### Build-host hygiene
+
+- [ ] **P1 Repair `scripts/android-libraries` submodule tracking**
+  - Why: `.gitmodules`, `CLAUDE.md`, and `PROJECT_CONTEXT.md` all state that
+    `scripts/android-libraries` and `scripts/android-debloat-list` are required
+    build-time submodules, but the superproject currently tracks only
+    `scripts/android-debloat-list` as a gitlink. A fresh checkout running
+    `git submodule update --init --recursive` will not fetch
+    `scripts/android-libraries`, while this working tree has it only as an
+    untracked local clone at `8fb3919`.
+  - Evidence: `git ls-files scripts/android-libraries scripts/android-debloat-list`
+    returns only `scripts/android-debloat-list`; `git submodule status` returns
+    only `scripts/android-debloat-list`; `.gitmodules` still declares both.
+  - Touches: submodule/gitlink setup for `scripts/android-libraries`; README /
+    BUILDING / project-context wording if the intended source of the library DB
+    changes.
+  - Acceptance: a fresh clone plus `git submodule update --init --recursive`
+    materializes both dataset directories at reviewed commits, or docs and build
+    scripts stop claiming `android-libraries` is a required submodule.
+  - Verify: clone into an empty temp directory, run the documented submodule
+    command, and confirm both `scripts/android-libraries/libs.json` and
+    `scripts/android-debloat-list/*.json` exist without manual cloning.
+
 ### T19 — Package-aware storage analysis
 
 - [x] **T19-B Leftover detection after uninstall**: One-Click Ops "Detect
@@ -297,6 +320,11 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   (current Accrescent policy conflicts with the installer permission +
   non-disability accessibility service) plus allowlisted-account / keystore
   access.
+- [ ] **UAD-NG model/region preinstalled-list ingest** — blocked until
+  `universal-android-preinstalled-lists` publishes machine-readable
+  package/OEM/model/region data. Current upstream has no usable list files as
+  of 2026-06-04, so NG uses bundled debloat metadata plus conservative
+  package/description inference for known-preinstall-OEM chips.
 
 ## C. Blocked on physical-device / OEM verification
 
@@ -475,12 +503,12 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: composer writes `support-info-<device>-<ts>.txt`; crash sink writes local JSON only; redaction + reverse audit work.
   - Verify: `LocalCrashSinkTest` asserts scrubbed local JSON and summary output; `SupportInfoBundleTest` pins package/path/URI/email/UID redaction. Device-only follow-up: manually trigger a crash with the sink enabled and confirm the local JSON share attachment.
   - Complexity: L
-- [ ] P2 — Ingest UAD-NG dependency graph + OEM-provenance + apkscanner signatures (research A1–A3)
+- [x] P2 — Ingest UAD-NG dependency graph + OEM-provenance + apkscanner signatures (research A1–A3)
   - Why: dense `dependencies`/`neededBy` edges enable honest "removing X breaks Y/Z" warnings; OEM provenance powers Finder chips; apkscanner adds ~30–40% library coverage over Exodus.
-  - Evidence: no `dependencies.json` sidecar / `preinstalled.json` / `getKnownPreinstallOems()` in source; debloat defs live under `docs/debloat-definitions/`.
-  - Touches: `tools/import_uad.py` -> sidecar `dependencies.json` (edges only); `preinstalled.json` + `IFilterableAppInfo.getKnownPreinstallOems()`; second tracker-scan asset/pass.
-  - Acceptance: removal UI shows downstream breakage; Finder shows preinstalled-OEM chips; scan flags apkscanner-only signatures. License posture GPL-2.0+/3.0 verified.
-  - Verify: import a known UAD entry with edges; assert the breakage warning renders for a downstream package.
+  - Shipped 2026-06-04: reverified the shipped debloat data path already carries `dependencies` / `required_by` edges from `android-debloat-list`, and Debloater cards/details already render downstream breakage context. Reverified scanner resources already carry the broader android-libraries / LibSmali-style signature set through `libs.xml` alongside tracker signatures. Added `preinstalled_oems` support, `IFilterableAppInfo.getKnownPreinstallOems()`, conservative OEM inference for existing data, Finder known-preinstall-OEM result rows, Debloater OEM chips, and bloatware Finder predicates for OEM labels.
+  - Touches: `DebloatObject`, `PreinstalledOemResolver`, `IFilterableAppInfo`, Finder row binding, `BloatwareDetailsDialog`, `BloatwareOption`, docs.
+  - Acceptance: removal UI shows dependency/required-by breakage context from the bundled debloat graph; Finder shows known-preinstall-OEM rows/chips; scanner library coverage continues to use the bundled android-libraries/LibSmali-style signature resources. Full UAD-NG model/region ingest is parked in the B bucket until upstream publishes machine-readable package/OEM/model/region data.
+  - Verify: `PreinstalledOemResolverTest` pins explicit, package-prefix, and description-context OEM resolution; `BloatwareOptionTest` pins the new OEM predicates.
   - Complexity: L
 - [ ] P2 — Privacy & Security API surfaces (research B1–B7)
   - Why: surface runtime-truth privacy/security signals AM currently can't show.

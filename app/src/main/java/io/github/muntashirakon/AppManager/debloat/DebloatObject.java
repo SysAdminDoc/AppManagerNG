@@ -53,6 +53,9 @@ public class DebloatObject {
     @SerializedName("required_by")
     @Nullable
     private String[] mRequiredBy;
+    @SerializedName("preinstalled_oems")
+    @Nullable
+    private String[] mKnownPreinstallOems;
     // Possible values: aosp, carrier, google, misc, oem, pending
     @SerializedName("type")
     public String type;
@@ -104,6 +107,11 @@ public class DebloatObject {
     @NonNull
     public String[] getRequiredBy() {
         return ArrayUtils.defeatNullable(mRequiredBy);
+    }
+
+    @NonNull
+    public String[] getKnownPreinstallOems() {
+        return PreinstalledOemResolver.resolve(mKnownPreinstallOems, packageName, type, mDescription);
     }
 
     @Removal

@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.filters;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,7 +57,14 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
         holder.item1.setVisibility(View.VISIBLE);
         holder.item1.setText(context.getString(R.string.finder_user_state,
                 appInfo.getUserId(), getPackageStateLabel(context, appInfo)));
-        holder.item2.setVisibility(View.GONE);
+        String[] knownPreinstallOems = appInfo.getKnownPreinstallOems();
+        if (knownPreinstallOems.length > 0) {
+            holder.item2.setVisibility(View.VISIBLE);
+            holder.item2.setText(context.getString(R.string.finder_known_preinstall_oems,
+                    TextUtils.join(", ", knownPreinstallOems)));
+        } else {
+            holder.item2.setVisibility(View.GONE);
+        }
         holder.item3.setVisibility(View.GONE);
         holder.toggleBtn.setVisibility(View.GONE);
         holder.itemView.setStrokeColor(Color.TRANSPARENT);

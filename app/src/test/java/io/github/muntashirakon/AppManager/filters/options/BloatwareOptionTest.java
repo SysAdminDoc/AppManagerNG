@@ -38,4 +38,28 @@ public class BloatwareOptionTest {
         assertFalse(BloatwareOption.matchesDescription(DESCRIPTION,
                 "description_regex", null, Pattern.compile(".*transport card.*")));
     }
+
+    @Test
+    public void knownPreinstallOemMatchersAreCaseInsensitive() {
+        String[] knownPreinstallOems = new String[]{"Samsung", "OPlus family"};
+
+        assertTrue(BloatwareOption.matchesKnownPreinstallOem(knownPreinstallOems,
+                "preinstalled_oem_eq", "samsung", null));
+        assertTrue(BloatwareOption.matchesKnownPreinstallOem(knownPreinstallOems,
+                "preinstalled_oem_contains", "plus", null));
+        assertTrue(BloatwareOption.matchesKnownPreinstallOem(knownPreinstallOems,
+                "preinstalled_oem_starts_with", "oplus", null));
+        assertTrue(BloatwareOption.matchesKnownPreinstallOem(knownPreinstallOems,
+                "preinstalled_oem_ends_with", "family", null));
+        assertFalse(BloatwareOption.matchesKnownPreinstallOem(knownPreinstallOems,
+                "preinstalled_oem_contains", "xiaomi", null));
+    }
+
+    @Test
+    public void knownPreinstallOemRegexUsesUserPattern() {
+        assertTrue(BloatwareOption.matchesKnownPreinstallOem(new String[]{"Xiaomi"},
+                "preinstalled_oem_regex", null, Pattern.compile("Xiao.*")));
+        assertFalse(BloatwareOption.matchesKnownPreinstallOem(new String[]{"Xiaomi"},
+                "preinstalled_oem_regex", null, Pattern.compile("xiaomi")));
+    }
 }

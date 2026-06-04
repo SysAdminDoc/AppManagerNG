@@ -39,6 +39,11 @@ public class BloatwareOption extends FilterOption {
         put("description_starts_with", TYPE_STR_SINGLE);
         put("description_ends_with", TYPE_STR_SINGLE);
         put("description_regex", TYPE_REGEX);
+        put("preinstalled_oem_eq", TYPE_STR_SINGLE);
+        put("preinstalled_oem_contains", TYPE_STR_SINGLE);
+        put("preinstalled_oem_starts_with", TYPE_STR_SINGLE);
+        put("preinstalled_oem_ends_with", TYPE_STR_SINGLE);
+        put("preinstalled_oem_regex", TYPE_REGEX);
     }};
 
     private final Map<Integer, CharSequence> mBloatwareTypeFlags = new LinkedHashMap<Integer, CharSequence>() {{
@@ -97,6 +102,12 @@ public class BloatwareOption extends FilterOption {
             case "description_ends_with":
             case "description_regex":
                 return result.setMatched(matchesDescription(object.getDescription(), key, value, regexValue));
+            case "preinstalled_oem_eq":
+            case "preinstalled_oem_contains":
+            case "preinstalled_oem_starts_with":
+            case "preinstalled_oem_ends_with":
+            case "preinstalled_oem_regex":
+                return result.setMatched(matchesKnownPreinstallOem(object.getKnownPreinstallOems(), key, value, regexValue));
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
@@ -140,6 +151,16 @@ public class BloatwareOption extends FilterOption {
                 return sb.append(" description ends with '").append(value).append("'");
             case "description_regex":
                 return sb.append(" description matches '").append(value).append("'");
+            case "preinstalled_oem_eq":
+                return sb.append(" preinstalled OEM = '").append(value).append("'");
+            case "preinstalled_oem_contains":
+                return sb.append(" preinstalled OEM contains '").append(value).append("'");
+            case "preinstalled_oem_starts_with":
+                return sb.append(" preinstalled OEM starts with '").append(value).append("'");
+            case "preinstalled_oem_ends_with":
+                return sb.append(" preinstalled OEM ends with '").append(value).append("'");
+            case "preinstalled_oem_regex":
+                return sb.append(" preinstalled OEM matches '").append(value).append("'");
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
@@ -171,5 +192,58 @@ public class BloatwareOption extends FilterOption {
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
+    }
+
+    @VisibleForTesting
+    static boolean matchesKnownPreinstallOem(@NonNull String[] knownPreinstallOems, @NonNull String key,
+                                             @Nullable String value, @Nullable Pattern regexValue) {
+        if (knownPreinstallOems.length == 0) {
+            return false;
+        }
+        for (String knownPreinstallOem : knownPreinstallOems) {
+            if (knownPreinstallOem == null) {
+                continue;
+            }
+            String trimmed = knownPreinstallOem.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            switch (key) {
+                case "preinstalled_oem_eq":
+                    if (trimmed.equalsIgnoreCase(Objects.requireNonNull(value).trim())) {
+                        return true;
+                    }
+                    break;
+                case "preinstalled_oem_contains": {
+                    String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                    if (trimmed.toLowerCase(Locale.ROOT).contains(needle)) {
+                        return true;
+                    }
+                    break;
+                }
+                case "preinstalled_oem_starts_with": {
+                    String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                    if (trimmed.toLowerCase(Locale.ROOT).startsWith(needle)) {
+                        return true;
+                    }
+                    break;
+                }
+                case "preinstalled_oem_ends_with": {
+                    String needle = Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
+                    if (trimmed.toLowerCase(Locale.ROOT).endsWith(needle)) {
+                        return true;
+                    }
+                    break;
+                }
+                case "preinstalled_oem_regex":
+                    if (Objects.requireNonNull(regexValue).matcher(trimmed).matches()) {
+                        return true;
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Invalid key " + key);
+            }
+        }
+        return false;
     }
 }
