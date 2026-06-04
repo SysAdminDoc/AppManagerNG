@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
@@ -23,6 +24,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.OpType;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
+import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.util.ParcelUtils;
@@ -112,6 +114,17 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
 
     public void setUsers(@Nullable ArrayList<Integer> users) {
         mUsers = users;
+    }
+
+    @NonNull
+    public BatchQueueItem withTargets(@NonNull List<UserPackagePair> targets) {
+        ArrayList<String> packages = new ArrayList<>(targets.size());
+        ArrayList<Integer> users = new ArrayList<>(targets.size());
+        for (UserPackagePair target : targets) {
+            packages.add(target.getPackageName());
+            users.add(target.getUserId());
+        }
+        return new BatchQueueItem(mTitleRes, mOp, packages, users, mOptions);
     }
 
     @Nullable
