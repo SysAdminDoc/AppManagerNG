@@ -40,6 +40,7 @@ import java.util.concurrent.Future;
 import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
@@ -220,6 +221,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             }
             tagCloud.isSystemApp = ApplicationInfoCompat.isSystemApp(applicationInfo);
             tagCloud.isUpdatedSystemApp = (applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+            tagCloud.isArchived = AppArchiveManager.isArchived(packageInfo);
             String codePath = PackageUtils.getHiddenCodePathOrDefault(packageName, applicationInfo.publicSourceDir);
             tagCloud.isSystemlessPath = !isExternalApk && MagiskUtils.isSystemlessPath(codePath);
             if (!isExternalApk && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -610,6 +612,7 @@ public class AppInfoViewModel extends AndroidViewModel {
         public boolean isSystemApp;
         public boolean isSystemlessPath;
         public boolean isUpdatedSystemApp;
+        public boolean isArchived;
         public boolean canOpenLinks;
         /**
          * Hosts that can be opened by the app (Android 12+). State is one of {@link DomainVerificationUserState#DOMAIN_STATE_NONE},

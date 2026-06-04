@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App Info app archiving action (research P2/B3, 2026-06-04)
+
+- App Details now detects Android 15+ archived packages through package archive
+  timestamps and shows an "Archived" tag in the App Info tag cloud.
+- Current-user, non-system apps on Android 15+ now expose Archive/Unarchive
+  actions that call `PackageInstaller.requestArchive()` and
+  `requestUnarchive()` through a private result receiver.
+- Added JVM coverage for API gating, archive-action eligibility, archived-state
+  mapping, and archive/unarchive result decoding.
+
 ### Added - Domain link conflict finder (research P2/B2, 2026-06-04)
 
 - App Details now annotates the existing "Open links" domain dialog with each
