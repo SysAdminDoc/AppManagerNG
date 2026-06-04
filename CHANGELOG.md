@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Installer final notification wording (research P2/#1805, 2026-06-04)
+
+- Installer completion no longer rewrites the foreground progress notification
+  body to a generic "Done" immediately before posting the result alert.
+- The progress notification and completion alert now share the same concrete
+  final title/body, with status-message details retained in expanded BigText
+  when available.
+
 ### Added - Extended app-list export metadata (research P2/#1773, 2026-06-04)
 
 - App-list export now offers a Basic vs Extended metadata choice after selecting

@@ -27,6 +27,7 @@ import android.os.UserHandleHidden;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
@@ -289,25 +290,43 @@ public class PackageInstallerService extends ForegroundService {
         PendingIntent defaultAction = intent != null ? PendingIntentCompat.getActivity(this, 0, intent,
                 PendingIntent.FLAG_ONE_SHOT, false) : null;
         String subject = getStringFromStatus(this, status, appLabel, blockingPackage);
-        NotificationCompat.Style content = statusMessage != null ? new NotificationCompat.BigTextStyle()
-                .bigText(subject + "\n\n" + statusMessage) : null;
+        CharSequence title = appLabel != null ? appLabel : packageName;
         NotificationInfo notificationInfo = new NotificationInfo()
                 .setAutoCancel(true)
                 .setTime(System.currentTimeMillis())
                 .setOperationName(getText(R.string.package_installer))
-                .setTitle(appLabel)
+                .setTitle(title)
                 .setBody(subject)
-                .setStyle(content)
+                .setStyle(createFinalNotificationStyle(subject, statusMessage))
                 .setDefaultAction(defaultAction);
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
                 OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
-        NotificationInfo progressNotificationInfo = (NotificationInfo) mProgressHandler.getLastMessage();
-        if (progressNotificationInfo != null) {
-            progressNotificationInfo.setBody(getString(R.string.done));
-        }
-        mProgressHandler.setProgressTextInterface(null);
+        prepareFinalProgressNotification(mProgressHandler, title, subject,
+                createFinalNotificationStyle(subject, statusMessage));
         ThreadUtils.postOnMainThread(() -> mProgressHandler.onResult(notificationInfo));
+    }
+
+    @VisibleForTesting
+    static void prepareFinalProgressNotification(@NonNull ProgressHandler progressHandler,
+                                                 @Nullable CharSequence title,
+                                                 @NonNull CharSequence body,
+                                                 @Nullable NotificationCompat.Style style) {
+        Object lastMessage = progressHandler.getLastMessage();
+        if (lastMessage instanceof NotificationInfo) {
+            NotificationInfo progressNotificationInfo = (NotificationInfo) lastMessage;
+            progressNotificationInfo.setTitle(title);
+            progressNotificationInfo.setBody(body);
+            progressNotificationInfo.setStyle(style);
+        }
+        progressHandler.setProgressTextInterface(null);
+    }
+
+    @Nullable
+    private static NotificationCompat.Style createFinalNotificationStyle(@NonNull CharSequence subject,
+                                                                         @Nullable String statusMessage) {
+        return statusMessage != null ? new NotificationCompat.BigTextStyle()
+                .bigText(subject + "\n\n" + statusMessage) : null;
     }
 
     @NonNull
