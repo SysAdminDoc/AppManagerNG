@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research conducted 2026-06-03.
 
-Last consolidated: 2026-06-03. Baseline: `main` at `a71a597`, app
+Last consolidated: 2026-06-03. Baseline: `main` at `800f6b9`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -84,10 +84,9 @@ than by historical priority tier:
   drop set ("file · pkg vN · size · keeping <keeper>"), gates deletion behind
   `ActionAuthGate`, deletes via the privileged `Paths.get(...).delete()` with
   audit logging + a reclaimed-bytes toast. _Data layer: `ApkDuplicateSelector`,
-  `ApkFileScanner`, `ApkBundleHeaderParser`; 39 JVM tests. **Follow-up: base-APK
-  extraction so `.apks`/`.apkm`/`.xapk` bundles (not parseable by
-  `getPackageArchiveInfo`) can be deduped; a File Manager selection action; and
-  scanning configured backup destinations beyond external storage.**_
+  `ApkFileScanner`, `ApkBundleHeaderParser`, `ApkBundleBaseExtractor`; 44 JVM
+  tests. **Follow-up: a File Manager selection action and scanning configured
+  backup destinations beyond external storage.**_
 - [x] **T19-D Backup duplicate cleaner**: One-Click Ops "Delete duplicate
   backups" entry shipped 2026-05-28 — offers "keep newest"/"keep oldest" and
   runs `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
@@ -376,107 +375,144 @@ links touched by the edit.
 
 ## Research-Driven Additions
 
-Candidate rows surfaced from the 2026-06-03 research consolidation
-(see [`RESEARCH_REPORT.md`](RESEARCH_REPORT.md) for full context and sources).
-These are research findings, not yet committed work — promote into the
-appropriate bucket above after scoping each against current code. Items already
-rejected on license/privacy/scope grounds are recorded in
-[`COMPLETED.md`](COMPLETED.md) under *Stale / Obsolete Items*.
+*Research conducted 2026-06-03. Items below are new — not duplicates of Existing
+Planned Work.*
 
-### Privileged-action accountability & reliability
+This section was re-verified against the current code on 2026-06-03 (deep pass).
+The earlier surfaced candidate list was a paper merge of `RESEARCH_REPORT.md`
+without code checks; several of its rows had **already shipped** and were
+removed (recorded in [`COMPLETED.md`](COMPLETED.md) under *Closed during the
+2026-06-03 deep-research pass*). The rows below are split into (1) **code-verified
+net-new** items found by reading the actual implementation, and (2) the
+**still-valid** research candidates that survive a code check. Items already
+rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
+*Stale / Obsolete Items*.
 
-- [ ] P1 — Privileged Op Audit Log (research O-02)
-  - Why: append-only accountability log is the unclaimed differentiator vs. upstream AM; UAD-NG/Magisk/Shizuku log grants, AM logs nothing.
-  - Touches: new SQLite `(ts, mode, op, target, exit_code, signature)` table; viewer screen + JSON export; retention slider.
-  - Acceptance: freeze/unfreeze/uninstall/permission-grant/component-toggle each write a row; viewer + export work; retention prunes.
-  - Source: RESEARCH_REPORT.md §4 (O-02); §3 Stream 1.
-- [ ] P1 — Privileged-shell journal + DeathRecipient replay
-  - Why: today a mid-batch shell death leaves a half-applied batch with no recovery hint — the #1 reliability gap.
-  - Touches: per-op journal (write intent -> execute -> mark done); Shizuku binder `DeathRecipient` + libsu `Shell.isAlive()`; reattach replay UI.
-  - Acceptance: interrupting a batch op surfaces "N ops interrupted, retry?" and replays unfinished entries on reattach.
-  - Source: RESEARCH_REPORT.md §3 Stream 4.
+> **Removed as already-shipped (verified 2026-06-03):** BouncyCastle 1.84 bump
+> (`versions.gradle` line 26 already `1.84`); AGP 9.x bump (`agp_version = '9.2.0'`);
+> `floss`/`full` distribution flavors (`app/build.gradle` `productFlavors`);
+> CI dependency CVE scan (`.github/workflows/dependency-scan.yml`);
+> `docs/sideload-verification.md`; HKDF-from-master backup key derivation
+> (`crypto/AESCrypto` already uses `HmacSHA256` HKDF + `deriveArchiveKey`);
+> the Android 17 static-final-reflection / MessageQueue / keystore-key-cap /
+> implicit-URI-grant audits (`docs/audits/2026-05-*`); the privileged-shell
+> journal + Shizuku `OnBinderDeadListener` replay (`BatchOpsJournal` +
+> `BatchOpsService` death-watch + `MainActivity.maybeShowInterruptedBatchOpRecovery`);
+> and the structured operation log itself (`op_history` + `OperationJournalMetadata`
+> with `mode`/`exit_code`/`reversible`, a viewer, CSV export, and retention) — the
+> "Privileged Op Audit Log (O-02)" was largely built; what remains is the
+> coverage gap captured in the P1 item below.
+
+### Quick Wins (P2/P3, doable <1hr)
+
+- [ ] P2 — Fail the weekly OWASP CVE audit on CRITICAL findings
+  - Why: `dependency-scan.yml` runs `./gradlew dependencyCheckAggregate` with `continue-on-error: true`, so a CRITICAL CVE disclosed against an already-pinned dep (the exact case the weekly job exists to catch) is uploaded as an artifact but **never fails the run** — nobody is paged. The PR-side `dependency-review-action` only fires on dependency *changes*, not on new CVEs against unchanged pins.
+  - Evidence: `.github/workflows/dependency-scan.yml:71` (`continue-on-error: true` on the OWASP step); the SARIF/HTML are upload-only with no threshold gate.
+  - Touches: `.github/workflows/dependency-scan.yml` — set a `failBuildOnCVSS` in the gradle invocation (or a post-step that parses the SARIF and exits non-zero on CRITICAL), keeping `continue-on-error` only long enough to upload the report first.
+  - Acceptance: a seeded CRITICAL CVE turns the weekly job red; HTML/SARIF artifacts still upload.
+  - Verify: dry-run the workflow with a known-vulnerable test dep; confirm red + artifact present.
+  - Complexity: S
+- [ ] P3 — Schedule OpHistory retention prune as a periodic job (not only on screen open)
+  - Why: `OpHistoryManager.pruneHistoryOlderThan(days)` is the only prune path and it is called **only** from `OpHistoryActivity` (manual + on-open). A user who never opens Operation History — and whose retention pref is 0/"keep forever" (the prune early-returns on `days <= 0`) — accumulates an unbounded `op_history` table that ships inside every backup/snapshot bundle.
+  - Evidence: `history/ops/OpHistoryManager.java:121-126` (early-return on `days <= 0`); the only two callers are `OpHistoryActivity.java:1066,1085`.
+  - Touches: a small `WorkManager` periodic worker (or a hook into the existing routine/backup worker tick) calling `pruneHistoryOlderThan(Prefs.Privacy.getOpHistoryRetentionDays())`; document the "0 = keep forever" semantics in the retention-setting summary.
+  - Acceptance: with a finite retention, old rows are pruned without opening the screen; "keep forever" is explicitly labeled.
+  - Verify: seed rows older than the window, advance the worker, assert deletion; assert no-op when retention is 0.
+  - Complexity: S
+
+### Larger Bets (P1/P2 needing design / staged rollout)
+
+- [ ] P0 — Batch-op retry must resume from the failed target, not re-run the whole batch
+  - Why: data-safety. The interrupted-batch recovery dialog re-dispatches the **entire original `BatchQueueItem`**, and `BatchQueueItem` carries only the full package/user list with **no completion cursor**. After a shell death partway through a destructive batch (e.g. clear-data or uninstall on 3 of 10 apps), tapping "Retry" re-applies the operation to the already-completed targets too. `BatchOpsManager.performOp` already computes a `failedPackages`/`failedPkgList` result per op, but that progress is never persisted to the journal, so it cannot drive a resume.
+  - Evidence: `main/MainActivity.java:404-408` (retry re-sends the original `queueItem`); `batchops/BatchQueueItem.java` (no per-target done/failed state — `mPackages`/`mUsers` only); `batchops/BatchOpsManager.java` builds `new Result(failedPackages)` at every op branch, but `BatchOpsService.onHandleIntent` records only `markInterrupted`, not the partial result set.
+  - Touches: persist per-target outcome into `BatchOpsJournal` (extend the entry with completed/failed package sets, written at interrupt from the `BatchOpsManager.Result`); on "Retry", construct a reduced `BatchQueueItem` containing only the not-yet-completed targets; surface "N of M already done — retry the remaining K?" in the recovery dialog.
+  - Acceptance: a batch interrupted after k/N targets retries only the remaining N−k; already-completed destructive ops are never re-applied; idempotent ops are unaffected.
+  - Verify: force `markInterrupted` with a partial result, assert the retry queue equals the unfinished set; add a JVM test on the journal's completed-set round-trip.
+  - Complexity: M
+- [ ] P1 — Extend the operation audit log to single-app App Details privileged actions
+  - Why: NG already has a structured operation log (`op_history` + `OperationJournalMetadata` carrying `mode`/`exit_code`/`targets`/`failures`/`replayable`/`reversible`, a viewer, CSV export, and retention) — but it only records ops that flow through a *queue/service*: `HISTORY_TYPE_BATCH_OPS`, `HISTORY_TYPE_INSTALLER`, `HISTORY_TYPE_PROFILE`, `HISTORY_TYPE_CLEANUP`. A single freeze/unfreeze, a single permission grant, a single AppOp toggle, or a single component block performed **directly from App Details** (not via batch) writes **no audit row**. This is the substance the surfaced "Privileged Op Audit Log (O-02)" candidate asked for — except the table already exists, so the work is closing coverage holes, not building it from scratch.
+  - Evidence: `history/ops/OpHistoryManager.java:40-43` (only four `HISTORY_TYPE_*` constants); `addHistoryItem` callers are `BatchOpsService`, `PackageInstallerService`, `ProfileApplierService`, `OneClickOpsViewModel` only — no App-Details single-action call site. `OperationJournalMetadata` already models `exit_code`/`mode`/`reversible`, so the schema is ready.
+  - Touches: a `HISTORY_TYPE_SINGLE_ACTION` (or per-domain types) + `addHistoryItem` calls at the App Details single-action chokepoints (`AppDetailsViewModel` freeze/AppOp/permission/component paths); reuse `OperationJournalMetadata` builders for mode/exit/reversibility.
+  - Acceptance: a single freeze, a single permission grant, a single AppOp change, and a single component block each write one queryable audit row in Operation History; the per-package "was it me?" reverse audit (research O-12) becomes complete because single-app actions are no longer invisible to it.
+  - Verify: perform each single action under a privileged mode; assert exactly one `op_history` row with correct `op`/`target`/`exit_code`/`reversible`; assert no double-record when the same action is also run via batch.
+  - Complexity: M
 - [ ] P2 — Mode Self-Test "Doctor" active-probe screen (research O-03)
-  - Why: catches "works on Magisk, fails on KernelSU 1.0.4" before users hit it; distinct from the display-only T5 Health-Check.
+  - Why: catches "works on Magisk, fails on KernelSU 1.0.4" before users hit it; distinct from the display-only T5 Health-Check (no active-probe screen exists in source).
+  - Evidence: no `Doctor`/active-probe screen under `settings/`/`adb/`/`ipc/`; mode detection is display-only.
   - Touches: ordered probes (root binary, su grant, Shizuku binder ping, Sui, ADB pairing, ABI/SELinux, KSU API) with pass/fail/cause + fix-it deep-links.
   - Acceptance: each probe reports status + cause; failures deep-link to the relevant settings.
-  - Source: RESEARCH_REPORT.md §4 (O-03); §3 Stream 1.
+  - Verify: run on a device with a deliberately-broken mode; assert the failing probe + deep-link.
+  - Complexity: M
 - [ ] P2 — Support Info Bundle + opt-in local crash sink (research O-01, O-05, O-11, O-12)
-  - Why: matches the dominant privacy-respecting peer pattern (user-initiated support bundle, no remote telemetry).
-  - Touches: one-tap PII-scrubbed support-info composer; ACRA-style local-file crash sink (default OFF, no network); structured log viewer w/ UID/path redaction; per-package "was it me?" reverse audit over the op log.
+  - Why: matches the dominant privacy-respecting peer pattern (user-initiated support bundle, no remote telemetry); the O-12 reverse audit depends on the P1 audit-coverage item above.
+  - Evidence: no `support-info` composer or ACRA-style local crash sink in source.
+  - Touches: one-tap PII-scrubbed support-info composer; local-file crash sink (default OFF, no network); structured log viewer w/ UID/path redaction; per-package "was it me?" reverse audit over the op log.
   - Acceptance: composer writes `support-info-<device>-<ts>.txt`; crash sink writes local JSON only; redaction + reverse audit work.
-  - Source: RESEARCH_REPORT.md §4.
-
-### Datasets feeding debloat / tracker verdicts
-
+  - Verify: trigger a crash with the sink on; assert a local JSON file and no network call; assert redaction.
+  - Complexity: L
 - [ ] P2 — Ingest UAD-NG dependency graph + OEM-provenance + apkscanner signatures (research A1–A3)
   - Why: dense `dependencies`/`neededBy` edges enable honest "removing X breaks Y/Z" warnings; OEM provenance powers Finder chips; apkscanner adds ~30–40% library coverage over Exodus.
+  - Evidence: no `dependencies.json` sidecar / `preinstalled.json` / `getKnownPreinstallOems()` in source; debloat defs live under `docs/debloat-definitions/`.
   - Touches: `tools/import_uad.py` -> sidecar `dependencies.json` (edges only); `preinstalled.json` + `IFilterableAppInfo.getKnownPreinstallOems()`; second tracker-scan asset/pass.
   - Acceptance: removal UI shows downstream breakage; Finder shows preinstalled-OEM chips; scan flags apkscanner-only signatures. License posture GPL-2.0+/3.0 verified.
-  - Source: RESEARCH_REPORT.md §2 Part A.
-
-### Modern Android API exposures
-
+  - Verify: import a known UAD entry with edges; assert the breakage warning renders for a downstream package.
+  - Complexity: L
 - [ ] P2 — Privacy & Security API surfaces (research B1–B7)
   - Why: surface runtime-truth privacy/security signals AM currently can't show.
+  - Evidence: no `getSandboxedSdks`/`DomainVerificationManager`/`requestArchive`/Health-Connect/Credential-Manager call sites in source.
   - Touches: SDK Sandbox row (`getSandboxedSdks`); Domain Verification audit + deep-link-conflict finder; App Archiving action (Active/Frozen/Archived); MTE status chip; Health Connect + Credential Manager Privacy Dashboard; Restricted Settings unlock walkthrough in T5 Health-Check.
   - Acceptance: each surface renders on supported API levels and degrades to "not supported" below; gated correctly.
-  - Source: RESEARCH_REPORT.md §2 Part B.
-- [ ] P3 — MMRL + LSPosed module browser (research B8)
-  - Why: power users manage modules in a separate app; read-only listing is one tab away from existing root detection.
-  - Touches: read `/data/adb/modules/` + `/data/adb/lspd/` `module.prop`; "Modules" entry under Privilege Health-Check, gated on root.
-  - Acceptance: lists installed modules read-only on rooted devices; hidden otherwise.
-  - Source: RESEARCH_REPORT.md §2 Part B (B8).
-
-### Automation, form-factor & migration surfaces
-
+  - Verify: on an API-35 image, assert SDK-sandbox + archiving rows render; on API-30, assert graceful "not supported".
+  - Complexity: L
 - [ ] P2 — In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider
-  - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5).
+  - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5). NG already has the `am://` deep-link contract (`docs/intent-api.md`) these can wrap.
+  - Evidence: no `TileService`/Tasker-plugin `Activity`+`BroadcastReceiver`/`DocumentsProvider` in the manifest.
   - Touches: one `Activity` + one `BroadcastReceiver` for the Tasker plugin; `TileService.requestAddTileService()` for "Run Freeze Profile" + "Force-Stop Pinned App"; DocumentsProvider exposing `am://backups` + `am://profiles`.
   - Acceptance: a Tasker task can run a profile; tiles install + fire; backups/profiles appear in SAF pickers.
-  - Source: RESEARCH_REPORT.md §3 Stream 2.
+  - Verify: add the tile, fire it, assert the profile runs; open a SAF picker, assert backups appear.
+  - Complexity: L
 - [ ] P2 — Snapshot bundle export/import before the applicationId rename
-  - Why: critical data-loss guard — once renamed off `io.github.muntashirakon.AppManager`, NG installs next to upstream and inherits no data.
+  - Why: critical data-loss guard — the install identity is already `io.github.sysadmindoc.AppManagerNG` (`app/build.gradle:15`) while the source namespace stays `io.github.muntashirakon.AppManager`, so an NG install does **not** inherit an upstream AM user's prefs/profiles/tags/history. A one-shot import bundle is the only migration path.
+  - Evidence: `app/build.gradle:9,15` (namespace ≠ applicationId); no `{prefs,profiles,tags,history.db}` bundle export/import in source.
   - Touches: `{prefs/, profiles/, tags/, history.db}` ZIP with a schema-version header; export + import flows; Canta/UAD-NG/Hail importers as cheap add-ons.
-  - Acceptance: a bundle round-trips prefs/profiles/tags/history; ships before the rename.
-  - Source: RESEARCH_REPORT.md §3 Stream 4.
-- [ ] P3 — Large-screen / foldable adaptive scaffolds + Wear OS phone-side companion
-  - Why: table-stakes adaptive layouts keep NG from looking dated on tablets/foldables; a Wear OS phone-side package manager is a no-FOSS-competitor banner feature (effort 4/5).
-  - Touches: `NavigationSuiteScaffold`/`ListDetailPaneScaffold`/`SupportingPaneScaffold`, 5-breakpoint WindowSizeClass incl. XL, `FoldingFeature` posture; ADB-over-WiFi + `WearableListenerService`/`MessageClient` + ~200 KB watch companion.
-  - Acceptance: layouts adapt across COMPACT/MEDIUM/EXPANDED/XL + folded postures; watch packages can be queried/operated from the phone.
-  - Source: RESEARCH_REPORT.md §3 Stream 3.
-
-### Testing, CI & build hardening
-
-- [ ] P2 — Macrobenchmark + Espresso/UI-Automator smoke pack + CVE scan + `floss`/`full` flavors (research O-07–O-10)
-  - Why: pure-local performance + regression coverage with zero privacy cost; keeps the F-Droid listing antifeature-flag-free.
-  - Touches: `:benchmark` module + Baseline Profile (app-list path); `connectedCheck` smoke suite on API 26/30/34/35; `dependency-check-gradle` + `dependency-review-action` (fail on HIGH/CRITICAL); `floss` (no optional network) vs `full` flavors with F-Droid pinned to `floss`.
-  - Acceptance: benchmarks + smoke suite run in CI; PRs fail on HIGH/CRITICAL CVEs; F-Droid build uses `floss`.
-  - Source: RESEARCH_REPORT.md §4 (O-07–O-10); §3 Stream 1.
-
-### Android 17 / dependency compliance (from iter-20 delta)
-
-- [ ] P0 — Android 17 (target SDK 37) compliance audit
-  - Why: several behavior changes are hard breaks before targeting SDK 37.
-  - Touches: reflection-on-static-final audit (every `Field.setAccessible(true)` vs a static-final target); BAL allow-flag migration (profile-trigger Activity-launch-from-Service -> `_ALLOW_IF_VISIBLE` or a BroadcastReceiver); HKDF-from-master backup key derivation (Keystore 50k-key limit, audit `crypto/AESCrypto`); explicit `FLAG_GRANT_READ_URI_PERMISSION` + `grantUriPermission()` on Save-APK/Share-backup before the Android 18 cliff; remove `screenOrientation` locks on sw>=600dp paths.
-  - Acceptance: each item verified on an Android 17 image before bumping `targetSdk` to 37.
-  - Source: RESEARCH_REPORT.md §5 (Android 17).
-- [ ] P0 — BouncyCastle 1.83 -> 1.84 dependency bump
-  - Why: closes 4 CVEs incl. the PGP AEAD chunk DoS (CVE-2026-3505) relevant to GPG-encrypted backups.
-  - Touches: `bouncyCastleVersion = 1.84` in `libs.versions.toml`; GPG backup smoke test.
-  - Acceptance: bump lands, GPG backup smoke test green.
-  - Source: RESEARCH_REPORT.md §5 (deps).
-- [ ] P1 — AGP 8.13 -> 9.x bump before the next major release
-  - Why: AGP 10 (mid-2026) removes the old `BaseExtension` DSL; there is no AGP 8.14.
-  - Touches: AGP version + any deprecated DSL usage.
-  - Acceptance: build green on AGP 9.x.
-  - Source: RESEARCH_REPORT.md §5 (deps).
+  - Acceptance: a bundle round-trips prefs/profiles/tags/history; ships before any further rename churn.
+  - Verify: export on one install, import on a fresh install, assert profiles/tags/history present.
+  - Complexity: L
+- [ ] P2 — Macrobenchmark module + Baseline Profile + Espresso/UI-Automator smoke pack (research O-07, O-08)
+  - Why: pure-local performance + regression coverage with zero privacy cost; cold-start is dominated by `PackageManager` enumeration on the app-list path. (The CVE-scan and `floss`/`full` halves of the original O-07–O-10 row are already shipped — see the removed-as-shipped note above — so only the benchmark + smoke-test work remains.)
+  - Evidence: no `:benchmark` module (`settings.gradle` includes none) and no Baseline Profile under `app/src`; the only "baseline" match is `HiddenApiDescriptorBaselineTest`, unrelated.
+  - Touches: `:benchmark` module + Baseline Profile (app-list path); `connectedCheck` smoke suite (open list, freeze/unfreeze, component blocker, one-shot rule) on API 26/30/34/35.
+  - Acceptance: benchmarks + smoke suite run in CI; a Baseline Profile ships in the release APK.
+  - Verify: run the macrobenchmark locally, assert it records cold-start; run the smoke suite on an emulator matrix.
+  - Complexity: L
 - [ ] P2 — Upstream-issue fixes carried into NG (iter-20)
-  - Why: high-signal upstream bug reports map to concrete NG actions.
+  - Why: high-signal upstream bug reports map to concrete NG actions; several are also Android-16/17 hard breaks.
+  - Evidence: tracked per-issue in `RESEARCH_REPORT.md` §5; not yet individually scoped against current source (some may already be partially addressed — scope each before promoting).
   - Touches: `ProfileApplierReceiver` w/ `extra_pkg` (#1968); KernelSU detect + force-re-grant (#1967); App Info popup restructure (#1966); `pm clear --user N` fallback + disk-delta (#1965); File Manager search (#1964); shortcut-target CI lint + missing `<activity-alias>` (#1963); Android 16 compat `IBinder` API-gating (#1961/#1962); squashfs writer validation (#1957); OS-revert banner for battery-optimization (#1956).
   - Acceptance: each mapped fix lands with a regression test where applicable.
-  - Source: RESEARCH_REPORT.md §5 (upstream issues).
-- [ ] P3 — `docs/SIDELOAD_VERIFICATION.md` position document
-  - Why: preempt user confusion as Google Developer Verification for sideloading rolls out.
-  - Touches: new doc explaining what AppManagerNG does/doesn't do re: verification.
-  - Acceptance: doc published and linked from the README/release notes.
-  - Source: RESEARCH_REPORT.md §5 (strategic).
+  - Verify: per-issue — scope against current source first, then test the specific fix.
+  - Complexity: L
+- [ ] P0 — Android 17 (target SDK 37) pre-bump compliance gate
+  - Why: the individual Android 17 audits are written (`docs/audits/2026-05-*`) and the HKDF + reflection items are already implemented, but the **bump itself** (`compile_sdk`/`target_sdk` 36 -> 37) has not landed and needs a final on-image gate before flipping. This row is the bump checklist, not the (now-shipped) per-item audits.
+  - Evidence: `versions.gradle:8-9` still `compile_sdk = 36` / `target_sdk = 36`; the audit docs exist but the bump is gated on an Android 17 image run.
+  - Touches: `versions.gradle` `compile_sdk`/`target_sdk` -> 37 after the BAL allow-flag + explicit-URI-grant items are device-confirmed; re-run the `android17-emulator.yml` matrix on an API-37 image.
+  - Acceptance: each audited behavior change passes on an Android 17 image before `targetSdk` flips to 37.
+  - Verify: `android17-emulator.yml` green on API-37 with the bumped SDK.
+  - Complexity: L
+
+### Novelty (P3, no FOSS competitor)
+
+- [ ] P3 — MMRL + LSPosed module browser (research B8)
+  - Why: power users manage modules in a separate app; read-only listing is one tab away from existing root detection.
+  - Evidence: no `/data/adb/modules/` reader in source.
+  - Touches: read `/data/adb/modules/` + `/data/adb/lspd/` `module.prop`; "Modules" entry under Privilege Health-Check, gated on root.
+  - Acceptance: lists installed modules read-only on rooted devices; hidden otherwise.
+  - Verify: on a rooted device with a Magisk module, assert the module appears read-only.
+  - Complexity: M
+- [ ] P3 — Wear OS phone-side companion + foldable posture awareness
+  - Why: a Wear OS phone-side package manager is a no-FOSS-competitor banner feature (effort 4/5). (Note: the View-based tablet two-pane work is already tracked as **T21-H** in Existing Planned Work; this row is the *additive* Wear OS companion + foldable-posture awareness only, not the phone two-pane.)
+  - Evidence: T21-H covers `SlidingPaneLayout` two-pane for phone/tablet; no `WearableListenerService`/`MessageClient`/watch companion in source.
+  - Touches: ADB-over-WiFi + `WearableListenerService`/`MessageClient` + ~200 KB watch companion; `FoldingFeature` posture awareness layered on the T21-H panes.
+  - Acceptance: watch packages can be queried/operated from the phone; folded postures are handled.
+  - Verify: pair a watch emulator, list its packages from the phone, run one op.
+  - Complexity: XL
