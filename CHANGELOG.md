@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Generic manifest metadata explorer (research P2/#1766, 2026-06-04)
+
+- App Info now shows a "Manifest metadata" tag when an APK declares arbitrary
+  application, activity, service, receiver, or provider `<meta-data>` rows.
+- The metadata dialog groups rows by declaring owner, labels string, boolean,
+  integer, and resource-reference values, and copies a tab-separated
+  owner/name/value/type export.
+- The binary manifest parser now exposes typed metadata records and includes
+  parser/formatter coverage for real resource-backed manifest metadata.
+
 ### Changed - Backup Extras restore coverage (2026-06-04)
 
 - Backup/Restore Extras now explains the concrete data it covers and adds a
