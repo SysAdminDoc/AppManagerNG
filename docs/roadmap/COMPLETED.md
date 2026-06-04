@@ -11,6 +11,15 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 optional extended metadata for app-list exports** — App-list export
+  now keeps the legacy CSV/JSON/XML/Markdown shapes by default while an explicit
+  "Extended" choice adds user id, system/disabled/hidden/suspended/stopped
+  state, requested/granted permission counts, split count, installer, and
+  source/public source paths where the format supports them. The export dialog
+  offers Basic vs Extended after the format choice, and importer compatibility is
+  preserved because the richer JSON fields remain optional. Focused
+  verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.list.ListExporterTest`.
 - [x] **P2 generic manifest `<meta-data>` explorer** — App Info now surfaces a
   "Manifest metadata" tag when the target APK declares arbitrary application,
   activity, service, receiver, or provider `<meta-data>` rows. The dialog
