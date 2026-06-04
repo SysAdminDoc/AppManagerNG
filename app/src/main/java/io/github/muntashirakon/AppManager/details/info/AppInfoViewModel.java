@@ -344,6 +344,9 @@ public class AppInfoViewModel extends AndroidViewModel {
                     && applicationInfo.targetSdkVersion < Build.VERSION_CODES.Q;
             tagCloud.memoryTaggingInfo = MemoryTaggingInfo.from(applicationInfo);
             tagCloud.sdkSandboxInfo = SdkSandboxInfo.from(applicationInfo);
+            tagCloud.healthConnectInfo = HealthConnectInfo.from(packageInfo);
+            tagCloud.credentialProviderManifestInfo = CredentialProviderManifestInfo.from(applicationInfo,
+                    packageInfo.services);
             tagCloud.warnsCleartextDeprecation = shouldWarnCleartextDeprecation(
                     (applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0,
                     ApplicationInfoCompat.getNetworkSecurityConfigRes(applicationInfo));
@@ -648,6 +651,11 @@ public class AppInfoViewModel extends AndroidViewModel {
         public MemoryTaggingInfo memoryTaggingInfo = MemoryTaggingInfo.unsupported(Build.VERSION.SDK_INT);
         @NonNull
         public SdkSandboxInfo sdkSandboxInfo = SdkSandboxInfo.unsupported(Build.VERSION.SDK_INT);
+        @NonNull
+        public HealthConnectInfo healthConnectInfo = HealthConnectInfo.unsupported(Build.VERSION.SDK_INT);
+        @NonNull
+        public CredentialProviderManifestInfo credentialProviderManifestInfo =
+                CredentialProviderManifestInfo.unsupported(Build.VERSION.SDK_INT);
         public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;
