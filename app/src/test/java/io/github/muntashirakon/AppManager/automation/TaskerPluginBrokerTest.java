@@ -17,6 +17,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
+
 @RunWith(RobolectricTestRunner.class)
 public class TaskerPluginBrokerTest {
     private static final String SECRET = "fixed-test-secret";
@@ -57,6 +59,25 @@ public class TaskerPluginBrokerTest {
         bundle.putString("io.github.sysadmindoc.AppManagerNG.tasker.URI", "am://unfreeze/com.example.app");
 
         assertNull(TaskerPluginBroker.getSignedAutomationIntent(context, bundle, SECRET));
+    }
+
+    @Test
+    public void signedProfileBundleAcceptsFireTimeExtraPkg() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        Bundle bundle = TaskerPluginBroker.buildPluginBundle(
+                "am://profile/nightly/run?state=on", SECRET);
+        Intent fireIntent = new Intent(TaskerPluginBroker.ACTION_FIRE_SETTING)
+                .putExtra(TaskerPluginBroker.EXTRA_BUNDLE, bundle)
+                .putExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE, "com.example.dynamic");
+
+        Intent intent = TaskerPluginBroker.getSignedAutomationIntent(context, fireIntent, SECRET);
+
+        assertNotNull(intent);
+        assertEquals(AutomationIntents.ACTION_RUN_PROFILE, intent.getAction());
+        assertEquals("nightly", intent.getStringExtra(AutomationIntents.EXTRA_PROFILE_ID));
+        assertEquals("on", intent.getStringExtra(AutomationIntents.EXTRA_PROFILE_STATE));
+        assertTrue(intent.getStringExtra(AutomationIntents.EXTRA_PROFILE_OVERRIDES)
+                .contains("com.example.dynamic"));
     }
 
     @Test
