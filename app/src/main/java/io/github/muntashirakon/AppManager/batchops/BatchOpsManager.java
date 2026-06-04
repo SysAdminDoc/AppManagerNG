@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer
 import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptOptions;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptimizer;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.backup.BackupException;
 import io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelper;
@@ -56,6 +57,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchNetPolicyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchPermissionOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
+import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
@@ -88,6 +90,7 @@ public class BatchOpsManager {
     @IntDef(value = {
             OP_NONE,
             OP_ADVANCED_FREEZE,
+            OP_ARCHIVE,
             OP_BACKUP_APK,
             OP_BACKUP,
             OP_BLOCK_COMPONENTS,
@@ -109,6 +112,7 @@ public class BatchOpsManager {
             OP_UNBLOCK_COMPONENTS,
             OP_UNBLOCK_TRACKERS,
             OP_UNINSTALL,
+            OP_UNARCHIVE,
             OP_UNFREEZE,
     })
     @Retention(RetentionPolicy.SOURCE)
@@ -139,6 +143,8 @@ public class BatchOpsManager {
     public static final int OP_NET_POLICY = 20;
     public static final int OP_DEXOPT = 21;
     public static final int OP_ADVANCED_FREEZE = 22;
+    public static final int OP_ARCHIVE = 23;
+    public static final int OP_UNARCHIVE = 24;
 
     private static final String GROUP_ID = BuildConfig.APPLICATION_ID + ".notification_group.BATCH_OPS";
 
@@ -248,6 +254,8 @@ public class BatchOpsManager {
         switch (info.op) {
             case OP_ADVANCED_FREEZE:
                 return opFreeze(info);
+            case OP_ARCHIVE:
+                return opArchiveUnarchive(info, true);
             case OP_BACKUP_APK:
                 return opBackupApk(info);
             case OP_BACKUP:
@@ -272,6 +280,8 @@ public class BatchOpsManager {
                 return opBackupRestore(info, BackupRestoreDialogFragment.MODE_RESTORE);
             case OP_UNINSTALL:
                 return opUninstall(info);
+            case OP_UNARCHIVE:
+                return opArchiveUnarchive(info, false);
             case OP_UNBLOCK_TRACKERS:
                 return opUnblockTrackers(info);
             case OP_BLOCK_COMPONENTS:
@@ -299,6 +309,48 @@ public class BatchOpsManager {
                 break;
         }
         return new Result(info.getPairList());
+    }
+
+    @NonNull
+    private Result opArchiveUnarchive(@NonNull BatchOpsInfo info, boolean archive) {
+        if (!AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
+            return new Result(info.getPairList(), false);
+        }
+        List<UserPackagePair> failedPackages = new ArrayList<>();
+        Context context = ContextUtils.getContext();
+        PackageManager pm = context.getPackageManager();
+        int currentUserId = UserHandleHidden.myUserId();
+        float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
+        int max = info.size();
+        for (int i = 0; i < max; ++i) {
+            updateProgress(lastProgress, i + 1);
+            UserPackagePair pair = info.getPair(i);
+            boolean failed = false;
+            try {
+                ApplicationInfo applicationInfo = PackageManagerCompat.getApplicationInfo(pair.getPackageName(),
+                        PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES
+                                | PackageManagerCompat.MATCH_DISABLED_COMPONENTS,
+                        pair.getUserId());
+                boolean isSystemOrUpdatedSystemApp = (applicationInfo.flags
+                        & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
+                boolean canArchive = AppArchiveManager.canShowArchiveAction(Build.VERSION.SDK_INT, pair.getUserId(),
+                        currentUserId, (applicationInfo.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0,
+                        ApplicationInfoCompat.isStaticSharedLibrary(applicationInfo), isSystemOrUpdatedSystemApp,
+                        pair.getPackageName());
+                if (!canArchive) {
+                    throw new PackageManager.NameNotFoundException("App archiving is unavailable for " + pair);
+                }
+                CharSequence appLabel = PackageUtils.getPackageLabel(pm, pair.getPackageName(), pair.getUserId());
+                AppArchiveManager.request(context, pair.getPackageName(), appLabel,
+                        archive ? AppArchiveManager.OP_ARCHIVE : AppArchiveManager.OP_UNARCHIVE);
+            } catch (Throwable e) {
+                failed = true;
+                log("====> op=APP_ARCHIVE, pkg=" + pair + ", archive = " + archive, e);
+                failedPackages.add(pair);
+            }
+            recordTargetFinished(pair, failed);
+        }
+        return new Result(failedPackages);
     }
 
     public void conclude() {

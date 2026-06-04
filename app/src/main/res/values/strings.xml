@@ -374,6 +374,7 @@
     <string name="uninstalled_successfully"><xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been uninstalled.</string>
     <string name="archive_app">Archive app</string>
     <string name="unarchive_app">Unarchive app</string>
+    <string name="batch_archive_unarchive">Archive/unarchive</string>
     <string name="archive_app_message">Archive this app? Android will reclaim storage by removing app code while keeping user data for later restore.</string>
     <string name="unarchive_app_message">Unarchive this app? Android will restore the app package so it can launch again.</string>
     <string name="archive_app_requested">Archive requested for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
@@ -382,6 +383,7 @@
     <string name="unarchived_successfully"><xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been unarchived.</string>
     <string name="failed_to_archive_app">Could not archive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="failed_to_unarchive_app">Could not unarchive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="app_archiving_not_supported">App archiving is available on Android 15 and later.</string>
     <string name="uninstall_system_app_message">This is a system app. Are you sure want to uninstall this app?</string>
     <string name="stopped">Stopped</string>
     <string name="disable">Disable</string>
@@ -749,6 +751,14 @@
     <plurals name="alert_succeeded_unfreeze">
         <item quantity="one">Unfroze %1$d app</item>
         <item quantity="other">Unfroze %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_archive_request">
+        <item quantity="one">Requested archive for %1$d app</item>
+        <item quantity="other">Requested archive for %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_unarchive_request">
+        <item quantity="one">Requested unarchive for %1$d app</item>
+        <item quantity="other">Requested unarchive for %1$d apps</item>
     </plurals>
     <plurals name="alert_succeeded_force_stop">
         <item quantity="one">Force-stopped %1$d app</item>
@@ -1372,6 +1382,8 @@
     <string name="batch_tracker_dialog_message">Apply tracker component changes to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.\n\nBlock disables known ad, analytics, and tracking components. Unblock restores those tracker components if an app stops working correctly.</string>
     <string name="batch_clear_dialog_title">Clear selected app storage?</string>
     <string name="batch_clear_dialog_message">Choose the reset level for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.\n\nClear cache removes temporary files. Clear data resets app state, accounts, databases, and settings and cannot be undone from AppManagerNG.</string>
+    <string name="batch_archive_dialog_title">Archive selected apps?</string>
+    <string name="batch_archive_dialog_message">Request Android app archiving for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.\n\nArchive removes app code to reclaim storage while keeping user data. Unarchive asks Android to restore archived packages. Android may require a confirmation dialog for each app.</string>
     <string name="shizuku_clear_data_batch_warning">One or more selected apps use Shizuku or store Shizuku authorization state. Clearing data may revoke Shizuku access; re-authorize affected apps if privileged actions stop working.</string>
     <string name="batch_disable_background_dialog_title">Prevent background operation?</string>
     <string name="batch_disable_background_dialog_message">Apply background limits to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> by setting RUN_IN_BACKGROUND and RUN_ANY_IN_BACKGROUND to Ignore. Apps may stop syncing or sending notifications until you change this back.</string>
@@ -2418,6 +2430,14 @@
     <plurals name="alert_failed_to_unfreeze">
         <item quantity="one">Could not unfreeze %1$d app</item>
         <item quantity="other">Could not unfreeze %1$d apps</item>
+    </plurals>
+    <plurals name="alert_failed_to_archive">
+        <item quantity="one">Could not request archive for %1$d app</item>
+        <item quantity="other">Could not request archive for %1$d apps</item>
+    </plurals>
+    <plurals name="alert_failed_to_unarchive">
+        <item quantity="one">Could not request unarchive for %1$d app</item>
+        <item quantity="other">Could not request unarchive for %1$d apps</item>
     </plurals>
     <string name="suspend_app_description">This is the weakest freezing method. A suspended app may still appear in the launcher but will be grayed out and cannot be launched.</string>
     <string name="disable_app_description">Recommended freezing method. It disables the app and along with all its components, but all the shortcuts will be lost.</string>

@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Batch app archiving and Finder state (research P2/B3, 2026-06-04)
+
+- The main selection toolbar now offers Archive/Unarchive for selected apps on
+  Android 15+ through the existing batch operation flow.
+- Batch archive operations request `PackageInstaller.requestArchive()` or
+  `requestUnarchive()` per eligible current-user, non-system app and report
+  request success/failure without claiming the asynchronous restore completed.
+- Finder's app-state filter now includes active and archived predicates backed
+  by `PackageInfo` archive timestamps.
+
 ### Added - App Info app archiving action (research P2/B3, 2026-06-04)
 
 - App Details now detects Android 15+ archived packages through package archive
