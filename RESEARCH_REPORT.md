@@ -110,10 +110,10 @@ Decision log (NOT ingesting — see STALE in COMPLETED): DDG Tracker Radar
 
 **Part B — Modern Android API exposures (candidate rows):**
 
-- **B1. Privacy Sandbox / SDK Runtime enumeration** — `SdkSandboxManager.getSandboxedSdks()` (API 34+); runtime-truth "SDK Sandbox" row in the Trackers tab.
+- **B1. Privacy Sandbox / SDK Runtime enumeration** — `SdkSandboxManager.getSandboxedSdks()` (API 34+); runtime-truth "SDK Sandbox" row in the Trackers tab. Follow-up caveat from the 2026-06-04 implementation pass: the public manager reports SDKs for the calling app, so per-target package auditing needs a truthful data source before this should be shown for arbitrary apps.
 - **B2. Domain Verification audit** — `DomainVerificationManager.getDomainVerificationUserState()` (API 31+); per-domain verified/declined/unverified + deep-link hijack inspector; system-wide "Deep Link Conflicts" finder as follow-up.
 - **B3. App Archiving** — `PackageInstaller.requestArchive()/requestUnarchive()` (API 35+); third app state (Active/Frozen/Archived), zero-privilege storage reclaim; App Info action + batch entry.
-- **B4. Memory Tagging Extension (MTE) status** — manifest `allowNativeHeapPointerTagging` + runtime MTE state; security chip in the App Info tag cloud.
+- **B4. Memory Tagging Extension (MTE) status** — manifest `allowNativeHeapPointerTagging` + runtime MTE state; security chip in the App Info tag cloud. Shipped 2026-06-04 as `MemoryTaggingInfo`: API 30 reads native-heap pointer-tagging from `ApplicationInfo` private flags, API 31+ reads `getMemtagMode()`, and the App Info chip/dialog avoids overclaiming device hardware enforcement.
 - **B5. Health Connect dashboard** — `HealthConnectClient.getGrantedPermissions()` (API 34); "which apps read my heart rate / sleep / steps?".
 - **B6. Credential Manager audit** — passkey/password/federated-identity provider registration; pairs with B5 as a Privacy Dashboard tab.
 - **B7. Restricted Settings unlock walkthrough** — first-run wizard detecting the Android 13+ restriction and deep-linking to the right Settings screen (the #1 sideload support question); fold into the T5 Privilege Health-Check screen.
