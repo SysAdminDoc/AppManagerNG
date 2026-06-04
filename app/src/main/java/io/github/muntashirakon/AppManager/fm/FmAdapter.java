@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.fm;
 
+import android.content.Intent;
+import android.os.UserHandleHidden;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -31,6 +33,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.RenameDialogFragment;
 import io.github.muntashirakon.AppManager.fm.hex.HexViewerActivity;
@@ -95,9 +98,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
                     AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
                     return;
                 }
-                // TODO: 16/11/22 Retrieve default open with from DB and open the file with it
-                OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(item.path);
-                fragment.show(mFmActivity.getSupportFragmentManager(), OpenWithDialogFragment.TAG);
+                openFile(item.path);
             });
         }
         // Symbolic link
@@ -138,6 +139,20 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
             return true;
         });
         super.onBindViewHolder(holder, position);
+    }
+
+    private void openFile(@NonNull Path path) {
+        Intent defaultIntent = FmOpenWithDefaults.getDefaultIntent(mFmActivity, path);
+        if (defaultIntent != null) {
+            try {
+                ActivityManagerCompat.startActivity(defaultIntent, UserHandleHidden.myUserId());
+                return;
+            } catch (SecurityException e) {
+                UIUtils.displayLongToast("Failed: " + e.getMessage());
+            }
+        }
+        OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(path);
+        fragment.show(mFmActivity.getSupportFragmentManager(), OpenWithDialogFragment.TAG);
     }
 
     private void cacheAndLoadAttributes(@NonNull ViewHolder holder, @NonNull FmItem item) {
@@ -243,6 +258,8 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         boolean canWrite = item.path.canWrite();
         boolean isSupportedArchive = canRead && FmArchiveUtils.isSupportedZip(item.path);
         openWithAction.setEnabled(canRead);
+        openWithAction.setTitle(FmOpenWithDefaults.hasDefault(mFmActivity, item.path)
+                ? R.string.file_change_open_with : R.string.file_open_with);
         openAsHexAction.setEnabled(canRead && !item.isDirectory);
         openAsHexAction.setVisible(!item.isDirectory);
         extractArchiveAction.setEnabled(isSupportedArchive);

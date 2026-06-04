@@ -11,6 +11,17 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P3 File Manager Open with defaults and keyboard focus** — File Manager
+  now stores Open with handlers per extension or per file, routes file-row taps
+  through a saved handler when available, labels the context action as "Change
+  open with" when a default exists, exposes the previously hidden Always open /
+  Only for this file controls, and adds a Clear default dialog action while
+  keeping the OS chooser icon as a fallback. The search control now starts
+  iconified and cleared so the picker does not request keyboard focus on open.
+  Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmOpenWithDefaultsTest`.
+  Manual Android open/repeat/reset and soft-keyboard walkthrough remains
+  device-gated.
 - [x] **P2 installer notification final-state wording** — installer completion
   now applies the same concrete final title/body to the foreground progress
   notification and the completion alert instead of mutating the last progress

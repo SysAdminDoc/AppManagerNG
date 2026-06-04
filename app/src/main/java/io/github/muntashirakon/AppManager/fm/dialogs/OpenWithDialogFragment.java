@@ -43,7 +43,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.fm.FmUtils;
-import io.github.muntashirakon.AppManager.fm.FmProvider;
+import io.github.muntashirakon.AppManager.fm.FmOpenWithDefaults;
 import io.github.muntashirakon.AppManager.fm.hex.HexViewerActivity;
 import io.github.muntashirakon.AppManager.intercept.ActivityInterceptor;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -139,6 +139,8 @@ public class OpenWithDialogFragment extends DialogFragment {
     private boolean mCloseActivity;
     private View mDialogView;
     private SearchView mSearchView;
+    private CheckBox mAlwaysOpen;
+    private CheckBox mOpenForThisFileOnly;
     private OpenWithViewModel mViewModel;
     private MatchingActivitiesRecyclerViewAdapter mAdapter;
 
@@ -149,10 +151,11 @@ public class OpenWithDialogFragment extends DialogFragment {
         mPath = Paths.get(Objects.requireNonNull(BundleCompat.getParcelable(requireArguments(), ARG_PATH, Uri.class)));
         mCustomType = requireArguments().getString(ARG_TYPE, null);
         mCloseActivity = requireArguments().getBoolean(ARG_CLOSE_ACTIVITY, false);
-        mAdapter = new MatchingActivitiesRecyclerViewAdapter(mViewModel, requireActivity());
-        mAdapter.setIntent(getIntent(mPath, mCustomType));
+        mAdapter = new MatchingActivitiesRecyclerViewAdapter(mViewModel, requireActivity(), this::openResolvedActivity);
+        mAdapter.setIntent(FmOpenWithDefaults.buildViewIntent(mPath, mCustomType));
         mDialogView = View.inflate(requireActivity(), R.layout.dialog_open_with, null);
         mSearchView = mDialogView.findViewById(io.github.muntashirakon.ui.R.id.action_search);
+        configureSearchViewForClosedKeyboard(mSearchView);
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -168,11 +171,17 @@ public class OpenWithDialogFragment extends DialogFragment {
         RecyclerView matchingActivitiesView = mDialogView.findViewById(R.id.intent_matching_activities);
         matchingActivitiesView.setLayoutManager(new LinearLayoutManager(requireContext()));
         matchingActivitiesView.setAdapter(mAdapter);
-        // TODO: 19/11/22 Add support for always open and only for this file
-        CheckBox alwaysOpen = mDialogView.findViewById(R.id.always_open);
-        CheckBox openForThisFileOnly = mDialogView.findViewById(R.id.only_for_this_file);
-        alwaysOpen.setVisibility(View.GONE);
-        openForThisFileOnly.setVisibility(View.GONE);
+        mAlwaysOpen = mDialogView.findViewById(R.id.always_open);
+        mOpenForThisFileOnly = mDialogView.findViewById(R.id.only_for_this_file);
+        mAlwaysOpen.setVisibility(View.VISIBLE);
+        mOpenForThisFileOnly.setVisibility(View.VISIBLE);
+        mOpenForThisFileOnly.setEnabled(false);
+        mAlwaysOpen.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            mOpenForThisFileOnly.setEnabled(isChecked);
+            if (!isChecked) {
+                mOpenForThisFileOnly.setChecked(false);
+            }
+        });
         DialogTitleBuilder titleBuilder = new DialogTitleBuilder(requireActivity())
                 .setTitle(R.string.file_open_with)
                 .setSubtitle(mPath.getName())
@@ -188,11 +197,19 @@ public class OpenWithDialogFragment extends DialogFragment {
                 .setCustomTitle(titleBuilder.build())
                 .setView(mDialogView)
                 .setPositiveButton(R.string.file_open_as, null)
+                .setNegativeButton(R.string.fm_open_with_clear_default, null)
                 .setNeutralButton(R.string.file_open_as_hex, null)
                 .create();
         alertDialog.setOnShowListener(dialog -> {
             Button fileOpenAsButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button clearDefaultButton = alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
             Button hexButton = alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+            updateClearDefaultButton(clearDefaultButton);
+            clearDefaultButton.setOnClickListener(v -> {
+                FmOpenWithDefaults.clearDefaults(requireContext(), mPath);
+                UIUtils.displayShortToast(R.string.fm_open_with_default_cleared);
+                updateClearDefaultButton(clearDefaultButton);
+            });
             fileOpenAsButton.setOnClickListener(v -> {
                 String[] customTypes = requireContext().getResources().getStringArray(R.array.file_open_as_option_types);
                 new SearchableItemsDialogBuilder<>(requireActivity(), R.array.file_open_as_options)
@@ -201,7 +218,7 @@ public class OpenWithDialogFragment extends DialogFragment {
                         .setOnItemClickListener((dialog1, which, item) -> {
                             mCustomType = customTypes[which];
                             if (mAdapter != null) {
-                                mAdapter.setIntent(getIntent(mPath, mCustomType));
+                                mAdapter.setIntent(FmOpenWithDefaults.buildViewIntent(mPath, mCustomType));
                                 if (mViewModel != null) {
                                     // Reload activities
                                     mViewModel.loadMatchingActivities(mAdapter.getIntent());
@@ -235,10 +252,11 @@ public class OpenWithDialogFragment extends DialogFragment {
                 mAdapter.setDefaultList(matchingActivities);
                 // Don't display search bar if items are less than 6
                 mSearchView.setVisibility(matchingActivities.size() < 6 ? View.GONE : View.VISIBLE);
+                configureSearchViewForClosedKeyboard(mSearchView);
             });
             mViewModel.getPathContentInfoLiveData().observe(getViewLifecycleOwner(), pathContentInfo -> {
                 if (mAdapter != null) {
-                    mAdapter.setIntent(getIntent(mPath, pathContentInfo.getMimeType()));
+                    mAdapter.setIntent(FmOpenWithDefaults.buildViewIntent(mPath, pathContentInfo.getMimeType()));
                     if (mViewModel != null) {
                         // Reload activities
                         mViewModel.loadMatchingActivities(mAdapter.getIntent());
@@ -271,19 +289,26 @@ public class OpenWithDialogFragment extends DialogFragment {
         }
     }
 
-    @NonNull
-    private Intent getIntent(@NonNull Path path, @Nullable String customType) {
-        int flags = Intent.FLAG_ACTIVITY_NEW_TASK;
-        if (path.canRead()) {
-            flags |= Intent.FLAG_GRANT_READ_URI_PERMISSION;
+    private void updateClearDefaultButton(@NonNull Button clearDefaultButton) {
+        boolean hasDefault = FmOpenWithDefaults.hasDefault(requireContext(), mPath);
+        clearDefaultButton.setEnabled(hasDefault);
+        clearDefaultButton.setVisibility(hasDefault ? View.VISIBLE : View.GONE);
+    }
+
+    private void openResolvedActivity(@NonNull Intent intent, @NonNull ResolvedActivityInfo resolvedInfo) {
+        if (mAlwaysOpen != null && mAlwaysOpen.isChecked()) {
+            boolean fileOnly = mOpenForThisFileOnly != null && mOpenForThisFileOnly.isChecked();
+            FmOpenWithDefaults.setDefault(requireContext(), mPath,
+                    new FmOpenWithDefaults.OpenWithHandler(resolvedInfo.packageName, resolvedInfo.name), fileOnly);
+            UIUtils.displayShortToast(R.string.fm_open_with_default_saved);
         }
-        if (path.canWrite()) {
-            flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-        }
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(FmProvider.getContentUri(path), customType != null ? customType : path.getType());
-        intent.setFlags(flags);
-        return intent;
+        mViewModel.openIntent(intent);
+    }
+
+    private static void configureSearchViewForClosedKeyboard(@NonNull SearchView searchView) {
+        searchView.setIconifiedByDefault(true);
+        searchView.setIconified(true);
+        searchView.clearFocus();
     }
 
     private static class MatchingActivitiesRecyclerViewAdapter extends RecyclerView.Adapter<MatchingActivitiesRecyclerViewAdapter.ViewHolder> {
@@ -293,15 +318,18 @@ public class OpenWithDialogFragment extends DialogFragment {
         private final ArrayList<Integer> mFilteredItems = new ArrayList<>();
         private final Activity mActivity;
         private final OpenWithViewModel mViewModel;
+        private final OnOpenWithSelectionListener mSelectionListener;
         private final ImageLoader mImageLoader = ImageLoader.getInstance();
 
         private Intent mIntent;
         @Nullable
         private String mConstraint;
 
-        public MatchingActivitiesRecyclerViewAdapter(OpenWithViewModel viewModel, Activity activity) {
+        public MatchingActivitiesRecyclerViewAdapter(OpenWithViewModel viewModel, Activity activity,
+                                                    OnOpenWithSelectionListener selectionListener) {
             mViewModel = viewModel;
             mActivity = activity;
+            mSelectionListener = selectionListener;
         }
 
         public Intent getIntent() {
@@ -362,7 +390,7 @@ public class OpenWithDialogFragment extends DialogFragment {
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(mIntent);
                 intent.setClassName(resolvedInfo.packageName, activityName);
-                mViewModel.openIntent(intent);
+                mSelectionListener.onOpenWithSelection(intent, resolvedInfo);
             });
             holder.itemView.setOnLongClickListener(v -> {
                 if (!FeatureController.isInterceptorEnabled()) {
@@ -397,6 +425,10 @@ public class OpenWithDialogFragment extends DialogFragment {
                 icon.setContentDescription(itemView.getContext().getString(R.string.icon));
             }
         }
+    }
+
+    private interface OnOpenWithSelectionListener {
+        void onOpenWithSelection(@NonNull Intent intent, @NonNull ResolvedActivityInfo resolvedInfo);
     }
 
     public static class OpenWithViewModel extends AndroidViewModel {

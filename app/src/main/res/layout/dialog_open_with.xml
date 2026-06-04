@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="@dimen/padding_medium"
-        app:iconifiedByDefault="false" />
+        app:iconifiedByDefault="true" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/intent_matching_activities"

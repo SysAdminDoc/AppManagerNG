@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - File Manager Open with defaults (research P3/#1810, 2026-06-04)
+
+- File Manager can now remember Open with handlers per file extension or per
+  individual file, and row taps use the saved handler when it is still
+  resolvable.
+- The Open with dialog exposes Always open / Only for this file controls, adds a
+  Clear default action, keeps the OS chooser fallback icon, and starts the
+  search view iconified so opening the dialog does not request keyboard focus.
+
 ### Fixed - Installer final notification wording (research P2/#1805, 2026-06-04)
 
 - Installer completion no longer rewrites the foreground progress notification
