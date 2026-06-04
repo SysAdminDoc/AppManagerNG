@@ -37,6 +37,7 @@ public class KernelSuDiagnosticsTest {
         assertEquals(3, result.appProfile.groups.size());
         assertEquals("u:r:ksu:s0", result.appProfile.selinuxContext);
         assertTrue(result.appProfile.missingExpectedCapabilities.isEmpty());
+        assertEquals(KernelSuDiagnostics.RecoveryAction.NONE, result.recoveryAction);
     }
 
     @Test
@@ -59,6 +60,7 @@ public class KernelSuDiagnosticsTest {
 
         assertEquals(KernelSuDiagnostics.State.UNKNOWN, result.state);
         assertEquals("missing Seccomp", result.error);
+        assertEquals(KernelSuDiagnostics.RecoveryAction.REQUEST_ROOT_GRANT, result.recoveryAction);
     }
 
     @Test
@@ -79,6 +81,7 @@ public class KernelSuDiagnosticsTest {
         assertEquals(2000, result.appProfile.gid);
         assertTrue(result.appProfile.missingExpectedCapabilities.contains("CAP_SYS_ADMIN"));
         assertTrue(result.appProfile.missingExpectedCapabilities.contains("CAP_DAC_READ_SEARCH"));
+        assertEquals(KernelSuDiagnostics.RecoveryAction.REVIEW_APP_PROFILE, result.recoveryAction);
     }
 
     @Test
