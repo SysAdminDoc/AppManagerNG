@@ -40,14 +40,21 @@ import java.util.concurrent.Executors;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ProcessCompat;
+import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
 
 // TODO: 11/9/23 Replace it with an actual terminal
 public class TermActivity extends BaseActivity {
     public static final String TAG = TermActivity.class.getSimpleName();
+    private static final String[] SHELL_COMMAND = new String[]{"sh", "-i"};
+    private static final String[] SHELL_ENV = new String[]{"TERM=xterm-256color", "HOME=/"};
+
     private final Object mLock = new Object();
     private AppCompatEditText mCommandInput;
+    private AppCompatTextView mRouteStatusView;
     private AppCompatTextView mCommandOutput;
     private Process mProc;
     private OutputStream mProcessOutputStream;
@@ -62,6 +69,7 @@ public class TermActivity extends BaseActivity {
         setContentView(R.layout.activity_term);
         setSupportActionBar(findViewById(R.id.toolbar));
         mCommandInput = findViewById(R.id.command_input);
+        mRouteStatusView = findViewById(R.id.route_status);
         mCommandOutput = findViewById(R.id.command_output);
         mCommandOutput.setText("", TextView.BufferType.EDITABLE);
         mDefaultForegroundColor = mCommandInput.getCurrentTextColor();
@@ -126,6 +134,9 @@ public class TermActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         CpuUtils.releaseWakeLock(mWakeLock);
+        if (mProc != null) {
+            mProc.destroy();
+        }
         mExecutor.shutdownNow();
         super.onDestroy();
     }
@@ -134,8 +145,10 @@ public class TermActivity extends BaseActivity {
         mWakeLock = CpuUtils.getPartialWakeLock("term");
         mWakeLock.acquire();
         mExecutor.submit(() -> {
+            TerminalRoute route = resolveRoute();
             try {
-                mProc = ProcessCompat.exec(new String[]{"sh", "-i"}, new String[]{"TERM=xterm-256color", "HOME=/"});
+                route = startShell(route);
+                TerminalRoute processRoute = route;
                 mProcessOutputStream = new BufferedOutputStream(mProc.getOutputStream());
                 mExecutor.submit(() -> {
                     try (InputStream in = mProc.getInputStream()) {
@@ -166,13 +179,72 @@ public class TermActivity extends BaseActivity {
                     }
                 });
                 // TODO: 7/21/25 Support init script
-                mProc.waitFor();
-                runOnUiThread(this::finishAndRemoveTask);
+                int exitCode = mProc.waitFor();
+                TerminalRoute finalRoute = processRoute;
+                runOnUiThread(() -> {
+                    appendOutput("\n" + finalRoute.getProcessEndedText(this, exitCode) + "\n");
+                    mCommandInput.setEnabled(false);
+                });
             } catch (Throwable e) {
-                e.printStackTrace();
-                // TODO: 23/1/23 Handle error
+                Log.e(TAG, e);
+                TerminalRoute finalRoute = route;
+                runOnUiThread(() -> {
+                    appendOutput("\n" + getString(R.string.terminal_process_start_failed,
+                            finalRoute.getLabel(this), TerminalRoute.getThrowableMessage(e)) + "\n");
+                    mCommandInput.setEnabled(false);
+                });
             }
         });
+    }
+
+    @NonNull
+    private TerminalRoute resolveRoute() {
+        TerminalRoute route = TerminalRoute.resolve(LocalServices.alive(), Ops.isDirectRoot(), Ops.isShizuku(),
+                Ops.isAdb(), Users.getSelfOrRemoteUid());
+        if (route.isLocalFallback()) {
+            try {
+                LocalServices.bindServicesIfNotAlready();
+                route = TerminalRoute.resolve(LocalServices.alive(), Ops.isDirectRoot(), Ops.isShizuku(),
+                        Ops.isAdb(), Users.getSelfOrRemoteUid());
+            } catch (Throwable e) {
+                Log.e(TAG, e);
+            }
+        }
+        TerminalRoute finalRoute = route;
+        runOnUiThread(() -> updateRouteStatus(finalRoute));
+        return route;
+    }
+
+    @NonNull
+    private TerminalRoute startShell(@NonNull TerminalRoute route) throws Exception {
+        if (route.usesLocalProcess()) {
+            if (route.isLocalFallback()) {
+                TerminalRoute fallbackRoute = route;
+                runOnUiThread(() -> appendOutput(getString(R.string.terminal_route_status_fallback,
+                        fallbackRoute.getUnavailableLabel(this)) + "\n"));
+            }
+            mProc = ProcessCompat.execLocal(SHELL_COMMAND, SHELL_ENV, null);
+            return route;
+        }
+        try {
+            mProc = ProcessCompat.exec(SHELL_COMMAND, SHELL_ENV);
+            return route;
+        } catch (Throwable e) {
+            Log.e(TAG, e);
+            TerminalRoute fallbackRoute = route.withLocalFallback();
+            runOnUiThread(() -> {
+                updateRouteStatus(fallbackRoute);
+                appendOutput(getString(R.string.terminal_remote_fallback_notice,
+                        route.getLabel(this), TerminalRoute.getThrowableMessage(e)) + "\n");
+            });
+            mProc = ProcessCompat.execLocal(SHELL_COMMAND, SHELL_ENV, null);
+            return fallbackRoute;
+        }
+    }
+
+    @UiThread
+    private void updateRouteStatus(@NonNull TerminalRoute route) {
+        mRouteStatusView.setText(route.getStatusText(this));
     }
 
     static class AnsiState {
@@ -483,6 +555,7 @@ public class TermActivity extends BaseActivity {
         if (mProcessOutputStream != null) {
             if (!ProcessCompat.isAlive(mProc)) {
                 // Process is dead
+                appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n");
                 return false;
             }
             try {
@@ -492,7 +565,8 @@ public class TermActivity extends BaseActivity {
                 }
                 mProcessOutputStream.flush();
             } catch (Throwable e) {
-                e.printStackTrace();
+                Log.e(TAG, e);
+                appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n");
             }
         }
         return true;

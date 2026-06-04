@@ -30,6 +30,21 @@
         app:fastScrollerEnabled="true"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/route_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="16dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Route: Local" />
+
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/command_output"
                 android:layout_width="match_parent"
@@ -40,6 +55,8 @@
                 android:fontFamily="monospace"
                 android:textSize="12sp"
                 tools:text="Command output" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
     </io.github.muntashirakon.widget.NestedScrollView>
 

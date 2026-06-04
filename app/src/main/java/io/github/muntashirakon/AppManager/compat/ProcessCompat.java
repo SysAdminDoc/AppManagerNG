@@ -57,6 +57,10 @@ public final class ProcessCompat {
                 throw new IOException(e);
             }
         }
+        return execLocal(cmd, env, dir);
+    }
+
+    public static Process execLocal(@Nullable String[] cmd, @Nullable String[] env, @Nullable File dir) throws IOException {
         return new RemoteProcess(new RemoteProcessImpl(Runtime.getRuntime().exec(cmd, env, dir)));
     }
 

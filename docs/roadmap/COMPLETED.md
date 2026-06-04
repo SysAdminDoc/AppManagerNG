@@ -11,6 +11,15 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 Terminal active privilege-provider routing** — Terminal startup now
+  resolves and labels the current shell route as local, root, Shizuku, or ADB,
+  attempts to bind the active LocalServices-backed provider before falling back,
+  and keeps the local `sh -i` process as an explicit fallback instead of a
+  silent substitute. Startup failures, route fallbacks, process exits, and
+  dead-process writes are surfaced in the Terminal UI. Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.terminal.TerminalRouteTest`.
+  Manual local, root/Shizuku, and wireless-ADB command walkthroughs remain
+  device-gated.
 - [x] **P2 Mode of Operation lifecycle-safe apply and rollback** — Settings ->
   Mode of Operation now runs a single guarded apply transaction: the selected
   mode is initialized as a candidate without first writing the stored
