@@ -292,9 +292,19 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
             return this;
         }
 
+        @Nullable
+        public CharSequence getTitle() {
+            return title;
+        }
+
         public NotificationInfo setBody(@Nullable CharSequence body) {
             this.body = body;
             return this;
+        }
+
+        @Nullable
+        public CharSequence getBody() {
+            return body;
         }
 
         public NotificationInfo setStatusBarText(@Nullable CharSequence statusBarText) {
@@ -315,6 +325,11 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
         public NotificationInfo setStyle(@Nullable NotificationCompat.Style style) {
             this.style = style;
             return this;
+        }
+
+        @Nullable
+        public NotificationCompat.Style getStyle() {
+            return style;
         }
 
         public NotificationInfo setAutoCancel(boolean autoCancel) {
