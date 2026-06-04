@@ -273,3 +273,180 @@ upstream releases, CVE advisories, or adjacent-project drops. Recorded so the
 research cadence has a documented null result. Next full Phase 1–5 cycle triggers
 on: upstream v4.1.0/v4.0.x publish, an Android 17 Developer Preview drop, a major
 adjacent-project release, a new BouncyCastle CVE, or 14 days elapsed.
+
+---
+
+## 7. Deep-Research Pass — code-verified delta (2026-06-03)
+
+This section is the result of a code-reading pass run **after** the 2026-06-03
+consolidation. The consolidation produced an honest paper merge of sections 1–6
+but surfaced its candidate rows into `ROADMAP.md` without checking the current
+implementation. Reading the actual source showed that a large share of those
+candidates had **already shipped**, and surfaced a small set of precise,
+evidence-tied net-new items that the paper merge could not see. Every non-obvious
+claim below is labelled `[Verified]` (read in source/CI this pass),
+`[Likely]`, `[Assumption]`, or `[Needs validation]`.
+
+### Executive Summary
+
+AppManagerNG is a mature Java/Kotlin fork of `MuntashirAkon/AppManager`
+(`versionName 0.5.0`, `versionCode 7`, minSdk 21, compileSdk/targetSdk 36, AGP
+9.2.0) with an unusually complete operational layer for its category: a
+structured operation log with exit codes / reversibility metadata, a
+privileged-shell death journal with a retry/clear recovery dialog, reproducible
+double-build release CI, an OWASP + dependency-review CVE pipeline, CodeQL, a
+`floss`/`full` flavour split, and a full slate of Android 17 behaviour-change
+audits. The headline finding of this pass is that the operational backlog the
+research framed as "to build" is mostly **built** — so the remaining value is in
+*coverage* and *correctness* of those systems, not in net-new subsystems. Top
+opportunities, one line each:
+
+1. `[Verified]` Batch-op "Retry" re-runs the **whole** batch, re-applying already-completed destructive ops (no completion cursor in `BatchQueueItem`). **P0 data-safety.**
+2. `[Verified]` The operation audit log misses **single-app App Details** privileged actions (only batch/installer/profile/cleanup are recorded). **P1 coverage hole.**
+3. `[Verified]` The weekly OWASP CVE job uses `continue-on-error: true` — a CRITICAL CVE against an unchanged pinned dep never fails the run. **P2 hardening.**
+4. `[Verified]` `op_history` retention prune runs only when the history screen is opened, and early-returns when retention is 0 — unbounded growth for users who never visit it. **P3.**
+5. `[Verified]` `compile_sdk`/`target_sdk` are still 36; the Android 17 per-item audits are written and HKDF/reflection items implemented, so the open work is the bump-gate, not the audits. **P0 (gated).**
+6. `[Verified]` No `:benchmark` module / Baseline Profile exists; the CVE-scan and flavour halves of the old "O-07–O-10" row already shipped, leaving only the perf/smoke half. **P2.**
+7. `[Likely]` Snapshot bundle export/import is still absent and is the only migration path off the already-divergent `applicationId`. **P2 data-loss guard.**
+
+### Evidence Reviewed
+
+- **Key files / dirs (read this pass):** `versions.gradle`; `app/build.gradle`
+  (flavours, applicationId, splits); `settings.gradle`;
+  `app/src/main/java/.../batchops/{BatchOpsService,BatchOpsJournal,BatchQueueItem,BatchOpsManager}.java`;
+  `app/src/main/java/.../main/MainActivity.java` (`maybeShowInterruptedBatchOpRecovery`);
+  `app/src/main/java/.../history/ops/{OpHistoryManager,OperationJournalMetadata,OperationHistoryExporter,OpHistoryItem,OpHistoryActivity}.java`;
+  `app/src/main/java/.../db/entity/OpHistory.java`, `db/dao/OpHistoryDao.java`;
+  `app/src/main/java/.../crypto/AESCrypto.java`;
+  `.github/workflows/{dependency-scan,release,android17-emulator}.yml`;
+  `docs/audits/` (Android 17 set), `docs/distribution/build-flavors.md`,
+  `docs/sideload-verification.md`.
+- **Git range:** `7c08171` (consolidation) → `800f6b9` (current `main`; a
+  parallel agent shipped T19-B/T19-C follow-ups + `ApkBundleBaseExtractor`
+  during this pass). `git log -30 --oneline` reviewed.
+- **External sources:**
+  [Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)
+  (static-final reflection → `IllegalAccessException`; lock-free `MessageQueue`),
+  [Android 16 QPR2](https://developer.android.com/about/versions/16/qpr2),
+  [Inure App Manager](https://github.com/Hamza417/Inure),
+  [Shizuku releases](https://github.com/RikkaApps/Shizuku/releases). These
+  corroborate the existing Android-17 audit set and the competitor framing; they
+  did not surface new candidates.
+- **Unverifiable on a CI host `[Needs validation]`:** all device-gated rows
+  (T21-H two-pane, the accessibility audits, Android-17 on-image behaviour, the
+  batch-retry resume on a real interrupted shell). These are correctly parked in
+  ROADMAP buckets C / device-gated.
+
+### Current Product Map
+
+A privilege-mode (Auto/Root/Shizuku/ADB) Android package-operation cockpit:
+App List → App Details (components, permissions, AppOps, signing, overlays,
+profiling capture) · Batch Ops + One-Click Ops (debloat/cleanup/duplicate
+finders) · Profiles + Routine scheduler · Backup/Restore (encrypted, scheduled)
+· Operation History (structured, exportable) · Finder/Scanner · File Manager ·
+Code/Dex/Hex viewers · Settings (appearance, privacy, glossary, health-check).
+Release path: tag-triggered reproducible double-build signed APK with SHA-256
+sidecar.
+
+### Feature Inventory (delta — systems touched this pass)
+
+- **Operation log** `[Verified]` — `op_history` Room table + `OperationJournalMetadata`
+  (`mode`/`exit_code`/`targets`/`failures`/`replayable`/`reversible`), viewer
+  (`OpHistoryActivity`), CSV export (`OperationHistoryExporter`), retention prune.
+  Maturity: complete for **queued** ops; **incomplete** for single-app actions.
+- **Batch reliability** `[Verified]` — `BatchOpsJournal` (intent→executing→interrupted),
+  Shizuku `OnBinderDeadListener` death-watch, `MainActivity` retry/clear dialog,
+  `BatchOpsJournalTest`. Maturity: recovery exists; **resume granularity missing**.
+- **Backup crypto** `[Verified]` — `AESCrypto` HKDF (`HmacSHA256`) +
+  `deriveArchiveKey`; the Android-17 keystore-key-cap mitigation is already in.
+- **CI/security** `[Verified]` — reproducible release, OWASP + dependency-review,
+  CodeQL, `android17-emulator.yml` (page-alignment + hidden-API + migration tests).
+  Gap: the OWASP job is non-gating.
+- **Distribution** `[Verified]` — `floss`/`full` flavours with
+  `ALLOW_OPTIONAL_NETWORK_FEATURES`; F-Droid/Izzy/Accrescent listing packets;
+  `docs/sideload-verification.md` already published.
+
+### Competitive Landscape
+
+- **Inure (Hamza417)** `[Verified]` — Root+Shizuku, terminal, analytics,
+  VirusTotal, debloat, custom theme engine, reproducible build. *Learn:* the
+  reproducible-build + custom-theme polish bar. *Avoid:* bundling VirusTotal as a
+  default (network/privacy cost — NG correctly gates this behind `full`).
+- **Canta** `[Verified]` — single-purpose debloat. *Learn:* the one-tap
+  recommendation UX. *Avoid:* no operation log / no rollback (NG's differentiator).
+- **Universal Android Debloater-NG (UAD-NG)** — dataset source (A1–A3); dense
+  dependency graph. *Learn:* "removing X breaks Y/Z" edges. *Avoid:* desktop-ADB-only flow.
+- **Hail / Shelter / SD Maid SE / Neo Backup** — freeze, work-profile isolation,
+  storage cleanup, backup. *Learn:* per-feature focus. *Avoid:* fragmentation —
+  NG's "cockpit" thesis is the counter-position.
+- **Shizuku ecosystem** `[Verified]` (Shizuku ≥13.x, Android-16 QPR support) —
+  the rootless privilege substrate NG already targets via `shizuku_version 13.1.5`.
+- **Standards:** Android platform behaviour changes (16 QPR2 / 17 API-37), F-Droid
+  inclusion + antifeature policy (drives the `floss` split), WCAG 2.2 AA (the
+  parked accessibility audits).
+
+### Quality & Friction Findings
+
+- **Critical** — Batch "Retry" re-applies completed destructive ops → roadmap
+  *P0 Batch-op retry must resume from the failed target*. `[Verified]`
+- **Major** — Single-app App Details privileged actions are invisible to the
+  audit log and to the "was it me?" reverse audit → roadmap *P1 Extend the
+  operation audit log to single-app App Details actions*. `[Verified]`
+- **Major** — Weekly CVE audit cannot fail the build → roadmap *P2 Fail the
+  weekly OWASP CVE audit on CRITICAL*. `[Verified]`
+- **Minor** — `op_history` prune is screen-open-only and no-ops at retention 0 →
+  roadmap *P3 Schedule OpHistory retention prune as a periodic job*. `[Verified]`
+- **Minor** — `applicationId` already diverged from upstream with no import path
+  → roadmap *P2 Snapshot bundle export/import*. `[Verified]` (divergence)
+  / `[Likely]` (no importer in source).
+- **Cosmetic** — Two committed audit docs + `PROJECT_CONTEXT.md` retain stale
+  relative links into the moved `docs/research/` paths (flagged by the
+  consolidation pass; left for a follow-up since edits are scoped to planning docs).
+
+### Architecture & Technical Findings
+
+- `[Verified]` `BatchQueueItem` is the single source of batch scope and is a flat
+  `(packages, users, options)` carrier — no completion state — so any resume
+  feature must persist progress in `BatchOpsJournal`, not in the queue item.
+- `[Verified]` `BatchOpsManager.performOp` already returns a `failedPackages`
+  result per op branch; the data needed for a resume exists at runtime but is
+  discarded at the service boundary.
+- `[Verified]` The audit log's coverage is determined by *where* `addHistoryItem`
+  is called — four service/VM call sites — making "extend coverage" a
+  call-site-insertion task, not a schema change.
+- `[Verified]` Dependency health is current: BouncyCastle 1.84, AGP 9.2.0, Gson
+  2.14.0, Room 2.7.2; minSdk-21 ceiling deps (material 1.13, work 2.10.x,
+  biometric 1.4.0-alpha04) are pinned with documented reasons in `versions.gradle`.
+- `[Verified]` No `:benchmark` module in `settings.gradle`; no Baseline Profile
+  in `app/src` (only `HiddenApiDescriptorBaselineTest`, unrelated).
+
+### Security / Privacy / Data Safety
+
+- `[Verified]` Privacy posture is intact: `floss` strips optional network; no
+  Firebase/GMS; CVE pipeline present. The one weakness is the **non-gating**
+  weekly OWASP step (detection without enforcement).
+- `[Verified]` Data-safety: the batch-retry re-application is the highest-impact
+  issue this pass — it can repeat irreversible operations on user data.
+- `[Likely]` The absent snapshot bundle is a latent data-loss path for upstream
+  AM users migrating to NG (already-diverged `applicationId`).
+
+### Explicit Non-Goals (rejected, unchanged this pass)
+
+Full local-VPN per-app firewall; any remote telemetry (Firebase/Sentry/anonymous
+counters/Play signals); DDG Tracker Radar / TrackerControl DB ingest
+(licence-tainted); Android Automotive / Android Auto; Compose migration (NG is
+View-based). All recorded in `COMPLETED.md` *Stale / Obsolete Items*; this pass
+found no reason to revisit them.
+
+### Open Questions (genuine blockers only)
+
+- `[Needs validation]` Does any single-app App Details action *already* route
+  through a batch/queue path (and thus already log)? The call-site survey says no,
+  but a runtime trace on each action would confirm before wiring `addHistoryItem`
+  to avoid a double-record. Blocks final scoping of the P1 audit-coverage item.
+- `[Needs validation]` Is the `op_history` retention pref default finite or
+  "keep forever" (0)? Determines whether the P3 periodic-prune item is a latent
+  unbounded-growth bug or only a convenience. Pref default not read this pass.
+- `[Needs validation]` On-image Android 17 behaviour for the BAL allow-flag +
+  explicit-URI-grant paths before flipping `targetSdk` to 37 — device/emulator
+  gated, not resolvable on the build host.
