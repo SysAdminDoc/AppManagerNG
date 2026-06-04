@@ -29,6 +29,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -136,10 +137,10 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             mFutureResult.cancel(true);
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
-            List<java.io.File> apkFiles = ApkFileScanner.scan(
+            List<File> apkFiles = ApkFileScanner.scan(
                     Environment.getExternalStorageDirectory(), null);
             List<ApkDuplicateSelector.Candidate> candidates = new ArrayList<>(apkFiles.size());
-            for (java.io.File apk : apkFiles) {
+            for (File apk : apkFiles) {
                 if (ThreadUtils.isInterrupted()) {
                     return;
                 }
@@ -153,26 +154,37 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     }
 
     /**
-     * Parse a single {@code .apk} into a duplicate-finder candidate. Bundle
-     * formats ({@code .apks}/{@code .apkm}/{@code .xapk}) are not parseable by
-     * {@code getPackageArchiveInfo} and return {@code null} here; their
-     * base-APK extraction stays on the T19-C follow-up.
+     * Parse a single APK-like file into a duplicate-finder candidate. Plain
+     * {@code .apk} files are parsed directly. Split/bundle formats
+     * ({@code .apks}/{@code .apkm}/{@code .xapk}) first extract a temporary
+     * base APK so {@code getPackageArchiveInfo} and apksig can read the
+     * install identity, while the returned candidate still points at the
+     * original bundle file for deletion/reclaim accounting.
      */
     @Nullable
-    private ApkDuplicateSelector.Candidate buildApkCandidate(@NonNull java.io.File apk) {
+    private ApkDuplicateSelector.Candidate buildApkCandidate(@NonNull File apk) {
+        File parseTarget = apk;
+        File extractedBase = null;
         try {
+            if (!isPlainApk(apk)) {
+                extractedBase = ApkBundleBaseExtractor.extractBaseApk(apk, getApplication().getCacheDir());
+                if (extractedBase == null) {
+                    return null;
+                }
+                parseTarget = extractedBase;
+            }
             int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
                     ? PackageManager.GET_SIGNING_CERTIFICATES
                     : PackageManager.GET_SIGNATURES;
-            PackageInfo packageInfo = mPm.getPackageArchiveInfo(apk.getAbsolutePath(), flags);
+            PackageInfo packageInfo = mPm.getPackageArchiveInfo(parseTarget.getAbsolutePath(), flags);
             if (packageInfo == null || packageInfo.packageName == null
                     || packageInfo.applicationInfo == null) {
                 return null;
             }
             // getSignerInfo(..., isExternal=true) re-derives the cert from the
             // APK path via apksig, so point the archive info at the real file.
-            packageInfo.applicationInfo.sourceDir = apk.getAbsolutePath();
-            packageInfo.applicationInfo.publicSourceDir = apk.getAbsolutePath();
+            packageInfo.applicationInfo.sourceDir = parseTarget.getAbsolutePath();
+            packageInfo.applicationInfo.publicSourceDir = parseTarget.getAbsolutePath();
             long versionCode = PackageInfoCompat.getLongVersionCode(packageInfo);
             String cert = null;
             String[] certs = PackageUtils.getSigningCertSha256Checksum(packageInfo, true);
@@ -184,7 +196,15 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         } catch (Throwable th) {
             Log.w(TAG, "Failed to parse APK candidate: " + apk, th);
             return null;
+        } finally {
+            if (extractedBase != null && !extractedBase.delete()) {
+                extractedBase.deleteOnExit();
+            }
         }
+    }
+
+    private static boolean isPlainApk(@NonNull File apk) {
+        return apk.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".apk");
     }
 
     /**
