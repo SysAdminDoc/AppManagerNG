@@ -71,6 +71,10 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
         }
     }
 
+    public void notifyPairingCancelled() {
+        mPairingObserver.postValue(new Exception("Pairing cancelled"));
+    }
+
     @NonNull
     @Override
     protected PrivateKey getPrivateKey() {
