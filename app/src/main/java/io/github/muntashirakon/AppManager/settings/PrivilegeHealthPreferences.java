@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.KernelSuDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
+import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
@@ -527,13 +528,42 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 .setNeutralButton(R.string.copy, (dialog, which) ->
                         Utils.copyToClipboard(context, "KernelSU diagnostics", message));
         Intent managerIntent = getKernelSuManagerIntent(context);
-        if (managerIntent != null) {
+        if (result.recoveryAction == KernelSuDiagnostics.RecoveryAction.REQUEST_ROOT_GRANT) {
+            builder.setPositiveButton(R.string.privilege_health_kernelsu_request_root_grant,
+                    (dialog, which) -> requestKernelSuRootGrant(context));
+            if (managerIntent != null) {
+                builder.setNegativeButton(R.string.open, (dialog, which) -> launchSettingsIntent(managerIntent));
+            } else {
+                builder.setNegativeButton(R.string.close, null);
+            }
+        } else if (managerIntent != null) {
             builder.setPositiveButton(R.string.open, (dialog, which) -> launchSettingsIntent(managerIntent))
                     .setNegativeButton(R.string.close, null);
         } else {
             builder.setPositiveButton(R.string.close, null);
         }
         builder.show();
+    }
+
+    private void requestKernelSuRootGrant(@NonNull Context context) {
+        Context appContext = context.getApplicationContext();
+        Toast.makeText(context, R.string.privilege_health_kernelsu_regrant_started, Toast.LENGTH_SHORT).show();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Boolean granted = RunnerUtils.isAppGrantedRoot();
+            if (Boolean.TRUE.equals(granted)) {
+                Ops.init(appContext, true);
+            }
+            KernelSuDiagnostics.Result result = KernelSuDiagnostics.probe(appContext);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                bindKernelSu(result);
+                Toast.makeText(requireContext(),
+                        Boolean.TRUE.equals(granted)
+                                ? R.string.privilege_health_kernelsu_regrant_success
+                                : R.string.privilege_health_kernelsu_regrant_failed,
+                        Toast.LENGTH_LONG).show();
+            });
+        });
     }
 
     private void launchSettingsIntent(@NonNull Intent intent) {
@@ -638,6 +668,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_app_profile,
                 getKernelSuAppProfileSummary(result)));
         appendKernelSuAppProfileDetails(message, result.appProfile);
+        if (result.recoveryAction != KernelSuDiagnostics.RecoveryAction.NONE) {
+            message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_recovery,
+                    getKernelSuRecoveryHint(result.recoveryAction)));
+        }
         if (result.error != null) {
             message.append('\n').append(getString(R.string.privilege_health_kernelsu_details_error,
                     result.error));
@@ -649,6 +683,19 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             }
         }
         return message.toString();
+    }
+
+    @NonNull
+    private String getKernelSuRecoveryHint(@NonNull KernelSuDiagnostics.RecoveryAction action) {
+        switch (action) {
+            case REQUEST_ROOT_GRANT:
+                return getString(R.string.privilege_health_kernelsu_recovery_request_root);
+            case REVIEW_APP_PROFILE:
+                return getString(R.string.privilege_health_kernelsu_recovery_review_profile);
+            case NONE:
+            default:
+                return getString(R.string.state_unknown);
+        }
     }
 
     private void appendKernelSuAppProfileDetails(@NonNull StringBuilder message,
