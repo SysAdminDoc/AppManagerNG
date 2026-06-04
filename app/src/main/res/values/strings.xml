@@ -3133,6 +3133,11 @@
     <string name="op_history_status_success">Succeeded</string>
     <string name="op_history_status_failure">Failed</string>
     <string name="op_history_type_cleanup">Cleanup</string>
+    <string name="op_history_type_single_app_action">App details</string>
+    <string name="op_history_single_action_grant_permission">Grant permission</string>
+    <string name="op_history_single_action_revoke_permission">Revoke permission</string>
+    <string name="op_history_single_action_set_app_op">Set app op</string>
+    <string name="op_history_single_action_component_rule">Set component rule</string>
     <string name="op_history_risk_low">Low risk</string>
     <string name="op_history_risk_medium">Medium risk</string>
     <string name="op_history_risk_high">High risk</string>
