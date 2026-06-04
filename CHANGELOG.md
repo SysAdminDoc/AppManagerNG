@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App Details single-action audit history (research P1, 2026-06-03)
+
+- App Details direct privileged actions now write `single_app_action`
+  Operation History rows for freeze/unfreeze, permission grant/revoke, AppOp
+  mode changes, and component-rule changes without double-recording batch
+  operations.
+- Single-action audit rows carry package/user, target preview, exit code,
+  failure count, risk, replayability, reversibility, and optional failure
+  message metadata through `OperationJournalMetadata`.
+- Operation History includes an "App details" filter/type, and per-package
+  rollback planning now includes single-action rows with runnable inverses for
+  freeze/unfreeze and permission grant/revoke.
+
 ### Fixed - Interrupted batch retry target reduction (research P0, 2026-06-03)
 
 - Interrupted batch-operation journal entries now persist completed and failed

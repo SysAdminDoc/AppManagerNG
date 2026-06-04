@@ -95,6 +95,7 @@ public class OpHistoryActivity extends BaseActivity {
     private Chip mChipBatch;
     private Chip mChipInstaller;
     private Chip mChipProfiles;
+    private Chip mChipSingleAppAction;
     private Chip mChipCleanup;
     private Chip mChipRoot;
     private Chip mChipAdb;
@@ -221,6 +222,7 @@ public class OpHistoryActivity extends BaseActivity {
         mChipBatch = bindFilterChip(R.id.chip_history_batch);
         mChipInstaller = bindFilterChip(R.id.chip_history_installer);
         mChipProfiles = bindFilterChip(R.id.chip_history_profiles);
+        mChipSingleAppAction = bindFilterChip(R.id.chip_history_single_app_action);
         mChipCleanup = bindFilterChip(R.id.chip_history_cleanup_type);
         mChipRoot = bindFilterChip(R.id.chip_history_root);
         mChipAdb = bindFilterChip(R.id.chip_history_adb);
@@ -387,14 +389,16 @@ public class OpHistoryActivity extends BaseActivity {
         boolean batchChecked = mChipBatch.isChecked();
         boolean installerChecked = mChipInstaller.isChecked();
         boolean profilesChecked = mChipProfiles.isChecked();
+        boolean singleAppActionChecked = mChipSingleAppAction.isChecked();
         boolean cleanupChecked = mChipCleanup.isChecked();
-        if (!batchChecked && !installerChecked && !profilesChecked && !cleanupChecked) {
+        if (!batchChecked && !installerChecked && !profilesChecked && !singleAppActionChecked && !cleanupChecked) {
             return true;
         }
         String type = history.getType();
         return (batchChecked && OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(type))
                 || (installerChecked && OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(type))
                 || (profilesChecked && OpHistoryManager.HISTORY_TYPE_PROFILE.equals(type))
+                || (singleAppActionChecked && OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(type))
                 || (cleanupChecked && OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(type));
     }
 

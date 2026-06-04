@@ -45,14 +45,29 @@ public final class PerAppRollbackManager {
         int matchedHistoryCount = 0;
         int manualReviewCount = 0;
         for (OpHistory row : sortedRows) {
-            if (!OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(row.type)
-                    || !OpHistoryManager.STATUS_SUCCESS.equals(row.status)) {
+            if (!OpHistoryManager.STATUS_SUCCESS.equals(row.status)) {
                 continue;
             }
             JSONObject sourceJson;
             try {
                 sourceJson = new JSONObject(row.serializedData);
             } catch (JSONException e) {
+                continue;
+            }
+            if (OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(row.type)) {
+                if (!targetsSingleAppAction(sourceJson, packageName, userId)) {
+                    continue;
+                }
+                ++matchedHistoryCount;
+                BatchQueueItem inverseItem = getInverseSingleAppAction(sourceJson);
+                if (inverseItem != null) {
+                    inverseQueueItems.add(inverseItem);
+                } else {
+                    ++manualReviewCount;
+                }
+                continue;
+            }
+            if (!OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(row.type)) {
                 continue;
             }
             try {
@@ -125,6 +140,13 @@ public final class PerAppRollbackManager {
         return false;
     }
 
+    private static boolean targetsSingleAppAction(@NonNull JSONObject jsonObject,
+                                                  @NonNull String packageName,
+                                                  int userId) {
+        return packageName.equals(jsonObject.optString("package_name"))
+                && userId == jsonObject.optInt("user_id", userId);
+    }
+
     private static int indexOf(@NonNull BatchQueueItem item, @NonNull String packageName, int userId) {
         List<String> packages = item.getPackages();
         List<Integer> users = item.getUsers();
@@ -135,6 +157,37 @@ public final class PerAppRollbackManager {
             }
         }
         return -1;
+    }
+
+    @Nullable
+    private static BatchQueueItem getInverseSingleAppAction(@NonNull JSONObject jsonObject) {
+        String packageName = jsonObject.optString("package_name");
+        if (packageName.isEmpty()) {
+            return null;
+        }
+        int userId = jsonObject.optInt("user_id", 0);
+        String action = jsonObject.optString("action");
+        String target = jsonObject.optString("target_label");
+        switch (action) {
+            case SingleAppActionHistoryItem.ACTION_FREEZE:
+                return singleTargetQueue(BatchOpsManager.OP_UNFREEZE, packageName, userId, null);
+            case SingleAppActionHistoryItem.ACTION_UNFREEZE:
+                return singleTargetQueue(BatchOpsManager.OP_FREEZE, packageName, userId, null);
+            case SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT:
+                if (target.isEmpty()) {
+                    return null;
+                }
+                return singleTargetQueue(BatchOpsManager.OP_REVOKE_PERMISSIONS, packageName, userId,
+                        new BatchPermissionOptions(new String[]{target}));
+            case SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE:
+                if (target.isEmpty()) {
+                    return null;
+                }
+                return singleTargetQueue(BatchOpsManager.OP_GRANT_PERMISSIONS, packageName, userId,
+                        new BatchPermissionOptions(new String[]{target}));
+            default:
+                return null;
+        }
     }
 
     @Nullable
@@ -223,10 +276,19 @@ public final class PerAppRollbackManager {
                                                     @NonNull BatchQueueItem sourceItem,
                                                     int targetIndex,
                                                     @Nullable IBatchOpOptions options) {
+        return singleTargetQueue(op, sourceItem.getPackages().get(targetIndex), sourceItem.getUsers().get(targetIndex),
+                options);
+    }
+
+    @NonNull
+    private static BatchQueueItem singleTargetQueue(@BatchOpsManager.OpType int op,
+                                                    @NonNull String packageName,
+                                                    int userId,
+                                                    @Nullable IBatchOpOptions options) {
         ArrayList<String> packages = new ArrayList<>(1);
-        packages.add(sourceItem.getPackages().get(targetIndex));
+        packages.add(packageName);
         ArrayList<Integer> users = new ArrayList<>(1);
-        users.add(sourceItem.getUsers().get(targetIndex));
+        users.add(userId);
         return BatchQueueItem.getBatchOpQueue(op, packages, users, options);
     }
 
