@@ -2660,6 +2660,17 @@
     <string name="memory_tagging_pointer_tagging_disabled">Native heap pointer tagging: disabled</string>
     <string name="memory_tagging_dialog_title">Memory tagging</string>
     <string name="memory_tagging_dialog_body">Status: %1$s\n%2$s\nAndroid API: %3$d\n\nAndroid exposes this package\'s manifest/runtime memory-tagging posture through ApplicationInfo. Actual MTE enforcement can still depend on device hardware and runtime policy.</string>
+    <string name="sdk_sandbox_chip_unsupported">SDK Runtime: not supported</string>
+    <string name="sdk_sandbox_chip_none">SDK Runtime: none</string>
+    <plurals name="sdk_sandbox_chip_count">
+        <item quantity="one">SDK Runtime: %1$d SDK</item>
+        <item quantity="other">SDK Runtime: %1$d SDKs</item>
+    </plurals>
+    <string name="sdk_sandbox_dialog_title">SDK Runtime</string>
+    <string name="sdk_sandbox_dialog_unsupported">Android exposes target SDK Runtime package metadata starting with Android 14. This device is API %1$d.</string>
+    <string name="sdk_sandbox_dialog_none">No manifest SDK Runtime library dependencies were found for this package.\n\nThis is target package metadata, not a live list of loaded sandboxed SDKs. Android\'s public getSandboxedSdks() call is scoped to the caller, so AppManagerNG does not use it to audit other apps.</string>
+    <string name="sdk_sandbox_dialog_header">Manifest SDK Runtime libraries:</string>
+    <string name="sdk_sandbox_dialog_scope_note">This is target package metadata, not a live list of loaded sandboxed SDKs. Android\'s public getSandboxedSdks() call is scoped to the caller, so AppManagerNG does not use it to audit other apps.</string>
     <string name="title_domains_supported_by_the_app">Supported domains</string>
     <string name="domain_verification_state">State: %1$s</string>
     <string name="domain_verification_state_verified">verified</string>

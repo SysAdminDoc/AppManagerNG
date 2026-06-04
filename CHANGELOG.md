@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - SDK Runtime manifest declarations (research P2/B1, 2026-06-04)
+
+- App Details now shows an SDK Runtime chip sourced from the target APK's
+  manifest `uses-sdk-library` declarations, including a count and dialog list.
+- The dialog explicitly separates target package metadata from live loaded SDK
+  Sandbox state because Android's public `getSandboxedSdks()` API is scoped to
+  the caller package.
+- Added JVM coverage for Android-version gating, manifest declaration mapping,
+  and chip display text.
+
 ### Added - Batch app archiving and Finder state (research P2/B3, 2026-06-04)
 
 - The main selection toolbar now offers Archive/Unarchive for selected apps on

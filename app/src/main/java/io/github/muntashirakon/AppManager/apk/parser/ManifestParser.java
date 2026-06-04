@@ -30,6 +30,10 @@ public class ManifestParser {
     private static final String ATTR_MANIFEST_PACKAGE = "package";
     // manifest -> application
     private static final String TAG_APPLICATION = "application";
+    // manifest -> uses-sdk-library
+    private static final String TAG_USES_SDK_LIBRARY = "uses-sdk-library";
+    private static final String ATTR_VERSION_MAJOR = "versionMajor"; // android:versionMajor
+    private static final String ATTR_CERT_DIGEST = "certDigest"; // android:certDigest
     // manifest -> application -> activity|activity-alias|service|receiver|provider
     private static final String TAG_ACTIVITY = "activity";
     private static final String TAG_ACTIVITY_ALIAS = "activity-alias";
@@ -54,6 +58,31 @@ public class ManifestParser {
 
     public ManifestParser(@NonNull ByteBuffer manifestBytes) {
         mManifestBytes = manifestBytes;
+    }
+
+    @NonNull
+    public List<ManifestSdkLibrary> parseUsesSdkLibraries() throws IOException {
+        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
+            ResXmlDocument xmlBlock = new ResXmlDocument();
+            xmlBlock.readBytes(reader);
+            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
+            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
+            if (!TAG_MANIFEST.equals(resManifestElement.getName())) {
+                throw new IOException("\"manifest\" tag not found.");
+            }
+            List<ManifestSdkLibrary> sdkLibraries = new ArrayList<>();
+            Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_USES_SDK_LIBRARY);
+            while (resXmlElementIt.hasNext()) {
+                ResXmlElement elem = resXmlElementIt.next();
+                String name = getAttributeValue(elem, ATTR_NAME);
+                if (name == null || name.trim().isEmpty()) {
+                    continue;
+                }
+                sdkLibraries.add(new ManifestSdkLibrary(name, getLongAttributeValue(elem, ATTR_VERSION_MAJOR, -1),
+                        getAttributeValue(elem, ATTR_CERT_DIGEST)));
+            }
+            return sdkLibraries;
+        }
     }
 
     public List<ManifestComponent> parseComponents() throws IOException {
@@ -195,5 +224,17 @@ public class ManifestParser {
             }
         }
         return null;
+    }
+
+    private long getLongAttributeValue(@NonNull ResXmlElement element, @NonNull String attrName, long defaultValue) {
+        String value = getAttributeValue(element, attrName);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ignore) {
+            return defaultValue;
+        }
     }
 }
