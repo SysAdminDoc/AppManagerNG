@@ -1188,6 +1188,10 @@ public class ActivityInterceptor extends BaseActivity {
             return clone;
         } catch (URISyntaxException e) {
             e.printStackTrace();
+        } catch (RuntimeException e) {
+            // Intent.parseUri can throw BadParcelableException or other runtime
+            // exceptions on malformed URIs with unresolvable Parcelable class names.
+            Log.w(TAG, "cloneIntent: malformed intent URI", e);
         }
         return null;
     }

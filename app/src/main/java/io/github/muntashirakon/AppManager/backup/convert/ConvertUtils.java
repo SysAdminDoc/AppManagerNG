@@ -93,7 +93,8 @@ public final class ConvertUtils {
         for (Path inputFile : files) {
             Path parent = backupItem.requireUnencryptedBackupPath();
             String filename = inputFile.getName();
-            String outputFilename = filename.substring(0, filename.lastIndexOf(ext));
+            int extIdx = filename.lastIndexOf(ext);
+            String outputFilename = extIdx > 0 ? filename.substring(0, extIdx) : filename;
             Path outputPath = parent.createNewFile(outputFilename, null);
             newFileList.add(outputPath);
             Log.i(TAG, "Input: %s\nOutput: %s", inputFile, outputPath);
@@ -155,26 +156,35 @@ public final class ConvertUtils {
     static String[] getChecksumsFromApk(@NonNull Path apkFile, @DigestUtils.Algorithm String algo)
             throws IOException, ApkFormatException, NoSuchAlgorithmException, CertificateEncodingException {
         // Since we can't directly work with ProxyFile, we need to cache it and read the signature
+        RandomAccessFile raf = null;
         FileChannel fileChannel;
         try {
             fileChannel = apkFile.openFileChannel(FileSystemManager.MODE_READ_ONLY);
         } catch (IOException e) {
             File cachedFile = FileCache.getGlobalFileCache().getCachedFile(apkFile);
-            fileChannel = new RandomAccessFile(cachedFile, "r").getChannel();
+            raf = new RandomAccessFile(cachedFile, "r");
+            fileChannel = raf.getChannel();
         }
-        DataSource dataSource = DataSources.asDataSource(fileChannel);
-        List<String> checksums = new ArrayList<>(1);
-        ApkVerifier verifier = new ApkVerifier.Builder(dataSource)
-                .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
-                .build();
-        ApkVerifier.Result apkVerifierResult = verifier.verify();
-        // Get signer certificates
-        List<X509Certificate> certificates = apkVerifierResult.getSignerCertificates();
-        if (certificates != null && !certificates.isEmpty()) {
-            for (X509Certificate certificate : certificates) {
-                checksums.add(DigestUtils.getHexDigest(algo, certificate.getEncoded()));
+        try {
+            DataSource dataSource = DataSources.asDataSource(fileChannel);
+            List<String> checksums = new ArrayList<>(1);
+            ApkVerifier verifier = new ApkVerifier.Builder(dataSource)
+                    .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
+                    .build();
+            ApkVerifier.Result apkVerifierResult = verifier.verify();
+            // Get signer certificates
+            List<X509Certificate> certificates = apkVerifierResult.getSignerCertificates();
+            if (certificates != null && !certificates.isEmpty()) {
+                for (X509Certificate certificate : certificates) {
+                    checksums.add(DigestUtils.getHexDigest(algo, certificate.getEncoded()));
+                }
+            }
+            return checksums.toArray(new String[0]);
+        } finally {
+            fileChannel.close();
+            if (raf != null) {
+                raf.close();
             }
         }
-        return checksums.toArray(new String[0]);
     }
 }
