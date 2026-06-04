@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -48,6 +49,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.batchops.BatchKeepOpenHint;
@@ -543,6 +545,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             showClearDataCacheDialog();
         } else if (id == R.id.action_freeze_unfreeze) {
             showFreezeUnfreezeDialog(Prefs.Blocking.getDefaultFreezingMethod());
+        } else if (id == R.id.action_archive_unarchive) {
+            showArchiveBatchDialog();
         } else if (id == R.id.action_disable_background) {
             showDisableBackgroundDialog();
         } else if (id == R.id.action_net_policy) {
@@ -1066,6 +1070,23 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 .setNegativeButton(R.string.cancel, null)
                 .setNeutralButton(R.string.unblock, (dialog, which) ->
                         handleBatchOp(BatchOpsManager.OP_UNBLOCK_TRACKERS))
+                .show();
+    }
+
+    private void showArchiveBatchDialog() {
+        if (!AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
+            UIUtils.displayLongToast(R.string.app_archiving_not_supported);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_archive)
+                .setTitle(R.string.batch_archive_dialog_title)
+                .setMessage(getString(R.string.batch_archive_dialog_message, getSelectedAppCountLabel()))
+                .setPositiveButton(R.string.archive_app, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_ARCHIVE))
+                .setNegativeButton(R.string.cancel, null)
+                .setNeutralButton(R.string.unarchive_app, (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_UNARCHIVE))
                 .show();
     }
 

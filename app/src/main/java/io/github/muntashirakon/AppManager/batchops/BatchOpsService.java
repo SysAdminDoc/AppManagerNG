@@ -363,6 +363,10 @@ public class BatchOpsService extends ForegroundService {
     public static String getDesiredOpTitle(@NonNull Context context,
                                            @BatchOpsManager.OpType int op) {
         switch (op) {
+            case BatchOpsManager.OP_ARCHIVE:
+                return context.getString(R.string.archive_app);
+            case BatchOpsManager.OP_UNARCHIVE:
+                return context.getString(R.string.unarchive_app);
             case BatchOpsManager.OP_BACKUP:
             case BatchOpsManager.OP_DELETE_BACKUP:
             case BatchOpsManager.OP_RESTORE_BACKUP:
@@ -419,6 +423,10 @@ public class BatchOpsService extends ForegroundService {
             case BatchOpsManager.OP_EXPORT_RULES:
             case BatchOpsManager.OP_NONE:
                 break;
+            case BatchOpsManager.OP_ARCHIVE:
+                return getResources().getQuantityString(R.plurals.alert_failed_to_archive, failedCount, failedCount);
+            case BatchOpsManager.OP_UNARCHIVE:
+                return getResources().getQuantityString(R.plurals.alert_failed_to_unarchive, failedCount, failedCount);
             case BatchOpsManager.OP_BACKUP_APK:
                 return getResources().getQuantityString(R.plurals.failed_to_backup_some_apk_files, failedCount, failedCount);
             case BatchOpsManager.OP_BLOCK_TRACKERS:
@@ -466,6 +474,10 @@ public class BatchOpsService extends ForegroundService {
     private String getDesiredSuccessString(int op, int successCount) {
         if (successCount <= 0) return null;
         switch (op) {
+            case BatchOpsManager.OP_ARCHIVE:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_archive_request, successCount, successCount);
+            case BatchOpsManager.OP_UNARCHIVE:
+                return getResources().getQuantityString(R.plurals.alert_succeeded_unarchive_request, successCount, successCount);
             case BatchOpsManager.OP_BACKUP:
                 return getResources().getQuantityString(R.plurals.alert_succeeded_backup, successCount, successCount);
             case BatchOpsManager.OP_BACKUP_APK:

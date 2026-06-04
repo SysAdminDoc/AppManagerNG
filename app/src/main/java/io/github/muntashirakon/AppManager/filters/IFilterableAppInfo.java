@@ -83,6 +83,10 @@ public interface IFilterableAppInfo {
 
     boolean isFrozen();
 
+    default boolean isArchived() {
+        return false;
+    }
+
     int getFreezeFlags();
 
     boolean isStopped();
