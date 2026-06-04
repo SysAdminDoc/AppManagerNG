@@ -123,6 +123,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     MainBatchOpsHandler mBatchOpsHandler;
     private boolean mBatchOpsRecoveryShown;
     private boolean mExportVisibleAppList;
+    private boolean mExportAppListExtended;
 
     /** Async breakdown computation; cancelled when superseded by a new list. */
     @Nullable
@@ -173,7 +174,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_CSV, Paths.get(uri), mExportVisibleAppList);
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_CSV, Paths.get(uri),
+                        mExportVisibleAppList, mExportAppListExtended);
             });
     private final ActivityResultLauncher<String> mExportAppListJson = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
@@ -183,7 +185,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_JSON, Paths.get(uri), mExportVisibleAppList);
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_JSON, Paths.get(uri),
+                        mExportVisibleAppList, mExportAppListExtended);
             });
     private final ActivityResultLauncher<String> mExportAppListXml = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("text/xml"),
@@ -193,7 +196,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_XML, Paths.get(uri), mExportVisibleAppList);
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_XML, Paths.get(uri),
+                        mExportVisibleAppList, mExportAppListExtended);
             });
     private final ActivityResultLauncher<String> mExportAppListMarkdown = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("text/markdown"),
@@ -203,7 +207,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     return;
                 }
                 mProgressIndicator.show();
-                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_MARKDOWN, Paths.get(uri), mExportVisibleAppList);
+                viewModel.saveExportedAppList(ListExporter.EXPORT_TYPE_MARKDOWN, Paths.get(uri),
+                        mExportVisibleAppList, mExportAppListExtended);
             });
     private final ActivityResultLauncher<String[]> mImportAppListJson = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -607,26 +612,44 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     if (!isChecked) {
                         return;
                     }
-                    mExportVisibleAppList = visibleList;
-                    String filename = "app_manager_app_list-"
-                            + DateUtils.formatLongDateTime(this, System.currentTimeMillis()) + ".am";
-                    switch (item1) {
-                        case ListExporter.EXPORT_TYPE_CSV:
-                            mExportAppListCsv.launch(filename + ".csv");
-                            break;
-                        case ListExporter.EXPORT_TYPE_JSON:
-                            mExportAppListJson.launch(filename + ".json");
-                            break;
-                        case ListExporter.EXPORT_TYPE_XML:
-                            mExportAppListXml.launch(filename + ".xml");
-                            break;
-                        case ListExporter.EXPORT_TYPE_MARKDOWN:
-                            mExportAppListMarkdown.launch(filename + ".md");
-                            break;
-                    }
+                    showAppListExportMetadataDialog(item1, visibleList);
                 })
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    private void showAppListExportMetadataDialog(@ListExporter.ExportType int exportType, boolean visibleList) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.export_app_list_select_metadata)
+                .setMessage(R.string.export_app_list_select_metadata_message)
+                .setPositiveButton(R.string.export_app_list_extended, (dialog, which) ->
+                        launchAppListExport(exportType, visibleList, true))
+                .setNegativeButton(R.string.export_app_list_basic, (dialog, which) ->
+                        launchAppListExport(exportType, visibleList, false))
+                .setNeutralButton(R.string.close, null)
+                .show();
+    }
+
+    private void launchAppListExport(@ListExporter.ExportType int exportType, boolean visibleList,
+                                     boolean includeExtendedMetadata) {
+        mExportVisibleAppList = visibleList;
+        mExportAppListExtended = includeExtendedMetadata;
+        String filename = "app_manager_app_list-"
+                + DateUtils.formatLongDateTime(this, System.currentTimeMillis()) + ".am";
+        switch (exportType) {
+            case ListExporter.EXPORT_TYPE_CSV:
+                mExportAppListCsv.launch(filename + ".csv");
+                break;
+            case ListExporter.EXPORT_TYPE_JSON:
+                mExportAppListJson.launch(filename + ".json");
+                break;
+            case ListExporter.EXPORT_TYPE_XML:
+                mExportAppListXml.launch(filename + ".xml");
+                break;
+            case ListExporter.EXPORT_TYPE_MARKDOWN:
+                mExportAppListMarkdown.launch(filename + ".md");
+                break;
+        }
     }
 
     @Override

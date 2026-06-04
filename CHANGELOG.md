@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Extended app-list export metadata (research P2/#1773, 2026-06-04)
+
+- App-list export now offers a Basic vs Extended metadata choice after selecting
+  CSV, JSON, XML, or Markdown.
+- Basic preserves the legacy export columns/keys by default; Extended adds
+  operational fields such as user id, system/disabled/hidden/suspended/stopped
+  state, requested/granted permission counts, split count, installer, and
+  source/public source paths where the format supports them.
+- Exporter coverage now pins legacy compatibility and extended output for
+  state, installer, and permission-count metadata.
+
 ### Added - Generic manifest metadata explorer (research P2/#1766, 2026-06-04)
 
 - App Info now shows a "Manifest metadata" tag when an APK declares arbitrary
