@@ -570,3 +570,47 @@ No build/test was run because this was a documentation-only research cycle.
 - **Wireless-debugging pairing on Quest (#1975)** overlaps the existing
   Shizuku/ADB and Android-device verification lanes and appears device-specific;
   no planning row was added without hardware evidence. [Needs validation]
+
+---
+
+## 10. Research Refresh — mode and terminal delta (2026-06-04 Cycle 3)
+
+This pass re-synced `main` at `3d4c4f3`, scanned current source TODO/FIXME
+clusters, reviewed recently updated upstream AppManager issues, and checked the
+live roadmap/completed ledger to avoid re-adding shipped NF-28/NF-29 component
+actions. No build/test was run because this was a documentation-only research
+cycle.
+
+### Promoted to `ROADMAP.md`
+
+- **P1 — DexOpt root-only option sanitization.** Issue #1733 shows ADB-mode
+  DexOpt reaching `clearApplicationProfileData()` and failing with the platform
+  root/system-only SecurityException. NG's dialog disables that checkbox for
+  non-root/system UIDs, but `BatchOpsManager.opPerformDexOpt()` trusts the
+  serialized option and runs the root-only call whenever the flag is true. The
+  roadmap now asks for worker-side sanitization and clear skipped-suboperation
+  reporting. [Verified, external]
+- **P2 — Mode picker lifecycle and rollback safety.** Issue #1817 reports a
+  crash when closing the Mode of Operation picker while pressing Apply.
+  `ModeOfOpsPreference` persists the selected mode before async initialization
+  finishes, then relies on later callbacks/progress-dialog dismissal. The
+  roadmap now scopes a single-flight lifecycle guard and rollback-on-failure
+  contract. [Verified, external]
+- **P2 — Terminal active-provider routing.** Issue #1727 reports Terminal doing
+  nothing in wireless debugging mode. NG ships `TermActivity`, but it starts a
+  local `sh -i` process and carries TODOs for an actual terminal and error
+  handling. The roadmap now asks for explicit local/root/Shizuku/ADB route
+  selection, failure surfacing, and session tests. [Verified, external]
+
+### Checked but not promoted
+
+- **Assistant trampoline for ADB services/broadcasts (#1973).** The request is
+  accepted upstream, but NG already records NF-28 Receivers send broadcast,
+  NF-29 Services start/stop, and the Hail-style assistant action as completed
+  work. The exact Android-16 assistant-trampoline trick may deserve a future
+  implementation spike, but this pass did not add a duplicate row until a source
+  gap is proven against the shipped component actions. [Needs validation]
+- **File Manager current-directory filter (#1964).** Already shipped and
+  reverified in the active roadmap: toolbar search, recursive matching, active
+  chips, whole-volume scan warning, hidden-file handling, and
+  `FmSearchUtilsTest` coverage. No new row. [Verified]
