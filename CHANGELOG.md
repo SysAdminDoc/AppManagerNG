@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Backup archive format contract (upstream #1957, 2026-06-04)
+
+- Added JVM contract coverage that proves current NG backup archive extensions
+  remain tar-family (`.tar.gz`, `.tar.bz2`, `.tar.zst`) and do not advertise
+  SquashFS output.
+- Added a production source/build scan gate so a future SquashFS backend cannot
+  appear without adding a real header fixture and external-tool round-trip test.
+
 ### Changed - Android 16 binder transaction compat (upstream #1961/#1962, 2026-06-04)
 
 - Added `Android16BinderCompat` as the shared transaction path for raw
