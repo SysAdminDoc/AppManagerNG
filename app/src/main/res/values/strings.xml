@@ -2650,6 +2650,16 @@
     <string name="tracker_window_close">Close UI tracker</string>
     <string name="open_in_app_store">Open in app store</string>
     <string name="title_terminal_emulator">Terminal</string>
+    <string name="terminal_route_status">Route: <xliff:g id="route" example="ADB">%1$s</xliff:g></string>
+    <string name="terminal_route_status_fallback">Route: Local fallback (<xliff:g id="route" example="ADB">%1$s</xliff:g> unavailable)</string>
+    <string name="terminal_route_local">Local</string>
+    <string name="terminal_route_root">Root</string>
+    <string name="terminal_route_shizuku">Shizuku</string>
+    <string name="terminal_route_adb">ADB</string>
+    <string name="terminal_remote_fallback_notice">Could not start <xliff:g id="route" example="ADB">%1$s</xliff:g> terminal. Falling back to local shell: <xliff:g id="reason" example="binder died">%2$s</xliff:g></string>
+    <string name="terminal_process_start_failed">Could not start terminal via <xliff:g id="route" example="Local">%1$s</xliff:g>: <xliff:g id="reason" example="permission denied">%2$s</xliff:g></string>
+    <string name="terminal_process_ended">Terminal process ended via <xliff:g id="route" example="ADB">%1$s</xliff:g> (exit <xliff:g id="exit_code" example="0">%2$d</xliff:g>).</string>
+    <string name="terminal_process_not_running">Terminal process is not running.</string>
     <string name="title_labs_activity">Labs</string>
     <string name="select_a_dex2oat_compiler_filter"><tt>dex2oat</tt> compiler filter</string>
     <string name="optimize_option_compile_layouts">Compile layout resources</string>

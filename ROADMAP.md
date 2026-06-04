@@ -458,26 +458,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 3 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Route Terminal through the active privilege provider
-  - Why: NG exposes a Terminal activity, but it is still a local `sh -i`
-    process with TODOs to replace it with an actual terminal and to handle
-    errors. Upstream reports terminal commands not executing in wireless
-    debugging mode, which matches the local implementation not routing through
-    the ADB/Shizuku/root `Runner`/`LocalServices` privilege stack.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1727;
-    `app/src/main/java/io/github/muntashirakon/AppManager/terminal/TermActivity.java`
-    starts `ProcessCompat.exec(new String[]{"sh", "-i"}, ...)` and has TODOs
-    for an actual terminal, history/completion/init script, and error handling.
-  - Touches: `TermActivity`, `Runner`/`PrivilegedShell` or a PTY-backed adapter,
-    terminal lifecycle/error UI, and terminal parser/session tests.
-  - Acceptance: Terminal clearly labels the current shell route (local, root,
-    Shizuku, ADB), uses the active privileged provider when available, surfaces
-    connection or process-death failures in the UI, and keeps local shell as an
-    explicit fallback rather than a silent substitute.
-  - Verify: unit tests for route selection and dead-process handling plus manual
-    local, root/Shizuku, and wireless-ADB command execution.
-  - Complexity: L.
-
 ### Researcher Queue (Cycle 4 - 2026-06-04)
 
 - [ ] 🔬🤖 P1 — Add an in-app Wireless ADB pairing-code fallback
