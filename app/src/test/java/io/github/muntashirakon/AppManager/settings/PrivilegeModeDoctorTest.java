@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -29,5 +30,20 @@ public class PrivilegeModeDoctorTest {
         assertTrue(report.contains("PASS - Mode selection: configured=auto"));
         assertTrue(report.contains("WARN - Shizuku binder: binder=false"));
         assertTrue(report.contains("Fix: Start Shizuku."));
+    }
+
+    @Test
+    public void reportKeepsStructuredFixTargetsForProbeRows() {
+        Context context = RuntimeEnvironment.getApplication();
+        PrivilegeModeDoctor.Probe shizuku = PrivilegeModeDoctor.Probe.warn("Shizuku binder",
+                "binder=false", "Start Shizuku.", PrivilegeModeDoctor.FixTarget.SHIZUKU_SETTINGS);
+        PrivilegeModeDoctor.Report report = new PrivilegeModeDoctor.Report(context, Ops.MODE_SHIZUKU,
+                Ops.MODE_NO_ROOT, 10345, Arrays.asList(shizuku));
+
+        assertEquals(1, report.probes.size());
+        assertEquals(PrivilegeModeDoctor.FixTarget.SHIZUKU_SETTINGS, report.probes.get(0).fixTarget);
+        assertTrue(report.text.contains("WARN - Shizuku binder: binder=false"));
+        assertTrue(PrivilegeModeDoctor.buildSupportPreamble(report.text)
+                .startsWith("Mode Doctor probe\n=================\nAppManagerNG mode doctor"));
     }
 }

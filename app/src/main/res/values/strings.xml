@@ -2208,6 +2208,16 @@
     <string name="privilege_health_mode_doctor_title">Mode doctor</string>
     <string name="privilege_health_mode_doctor_summary">Run active root, Shizuku, ADB, LocalServer, SELinux, and ABI probes.</string>
     <string name="privilege_health_mode_doctor_running">Running mode doctor...</string>
+    <string name="privilege_health_mode_doctor_complete">Last run complete. Tap Refresh to rerun.</string>
+    <string name="privilege_health_mode_doctor_copy_summary">Copy the latest probe report to the clipboard.</string>
+    <string name="privilege_health_mode_doctor_share_summary">Create a support info bundle with this probe report.</string>
+    <string name="privilege_health_mode_doctor_results_category">Probe results</string>
+    <string name="privilege_health_mode_doctor_tap_to_open">Tap to open: <xliff:g id="target" example="Developer options">%1$s</xliff:g></string>
+    <string name="privilege_health_mode_doctor_action_mode_settings">Mode of operation</string>
+    <string name="privilege_health_mode_doctor_action_root_manager">Root manager</string>
+    <string name="privilege_health_mode_doctor_action_shizuku_settings">Shizuku settings</string>
+    <string name="privilege_health_mode_doctor_action_shizuku_archive">Shizuku pinned archive</string>
+    <string name="privilege_health_mode_doctor_action_dhizuku_settings">Dhizuku settings</string>
     <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
     <string name="os_revert_snackbar_message">OS reverted your change - see why</string>
     <string name="os_revert_see_why">See why</string>

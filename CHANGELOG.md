@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Mode Doctor fix-it probe screen (research P2, 2026-06-03)
+
+- Settings -> Privileges -> Mode doctor now opens a dedicated active-probe
+  screen instead of a report-only dialog, with one status/details/fix row per
+  root, Shizuku, Dhizuku, ADB, LocalServer, SELinux, ABI, and restricted-settings
+  probe.
+- Warning/failure rows now retain structured fix targets and tap through to the
+  relevant mode picker, root manager, Shizuku manager/archive, Dhizuku,
+  Developer options, App info restricted-settings unlock, bootstrap smoke test,
+  or support-bundle share flow.
+- The text report remains available for clipboard copy and support-info bundle
+  sharing from the Doctor screen.
+
 ### Added - App Details single-action audit history (research P1, 2026-06-03)
 
 - App Details direct privileged actions now write `single_app_action`

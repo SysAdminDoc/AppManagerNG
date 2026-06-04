@@ -460,12 +460,13 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: a single freeze, a single permission grant, a single AppOp change, and a single component block each write one queryable audit row in Operation History; the per-package "was it me?" reverse audit (research O-12) becomes complete because single-app actions are no longer invisible to it.
   - Verify: perform each single action under a privileged mode; assert exactly one `op_history` row with correct `op`/`target`/`exit_code`/`reversible`; assert no double-record when the same action is also run via batch.
   - Complexity: M
-- [ ] P2 — Mode Self-Test "Doctor" active-probe screen (research O-03)
+- [x] P2 — Mode Self-Test "Doctor" active-probe screen (research O-03)
   - Why: catches "works on Magisk, fails on KernelSU 1.0.4" before users hit it; distinct from the display-only T5 Health-Check (no active-probe screen exists in source).
   - Evidence: no `Doctor`/active-probe screen under `settings/`/`adb/`/`ipc/`; mode detection is display-only.
+  - Shipped 2026-06-03: Settings -> Privileges -> Mode doctor now opens a dedicated active-probe screen instead of a report-only dialog. The screen reruns the root, root-manager/Sui, Shizuku, Dhizuku, ADB, Restricted Settings, LocalServer, SELinux, and ABI probes, renders one status/details/fix row per probe, keeps copy and support-bundle share actions, and attaches fix-it targets to actionable rows (mode picker, root manager, Shizuku manager/archive, Dhizuku, Developer options, App info restricted-settings unlock, LocalServer bootstrap smoke test, or support bundle).
   - Touches: ordered probes (root binary, su grant, Shizuku binder ping, Sui, ADB pairing, ABI/SELinux, KSU API) with pass/fail/cause + fix-it deep-links.
   - Acceptance: each probe reports status + cause; failures deep-link to the relevant settings.
-  - Verify: run on a device with a deliberately-broken mode; assert the failing probe + deep-link.
+  - Verify: `PrivilegeModeDoctorTest` pins status/fix report text and structured fix-target retention; compile/test graph covers the dynamic settings fragment and resource wiring. Device verification with a deliberately-broken mode remains recommended for the actual external settings targets.
   - Complexity: M
 - [ ] P2 — Support Info Bundle + opt-in local crash sink (research O-01, O-05, O-11, O-12)
   - Why: matches the dominant privacy-respecting peer pattern (user-initiated support bundle, no remote telemetry); the O-12 reverse audit depends on the P1 audit-coverage item above.
