@@ -162,21 +162,44 @@ public class AppInfoViewModel extends AndroidViewModel {
     private static void populateSigningCertInfo(@NonNull TagCloud tagCloud,
                                                 @NonNull PackageInfo packageInfo,
                                                 boolean isExternalApk) {
+        SigningCertInfo certInfo = loadSigningCertInfo(packageInfo, isExternalApk);
+        if (certInfo == null) return;
+        tagCloud.signingCertSha256 = certInfo.sha256;
+        tagCloud.signingCertSubject = certInfo.subject;
+        tagCloud.signingCertIssuer = certInfo.issuer;
+    }
+
+    @WorkerThread
+    private static void populateSigningCertInfo(@NonNull AppInfo appInfo,
+                                                @NonNull PackageInfo packageInfo,
+                                                boolean isExternalApk) {
+        SigningCertInfo certInfo = loadSigningCertInfo(packageInfo, isExternalApk);
+        if (certInfo == null) return;
+        appInfo.signingCertSha256 = certInfo.sha256;
+        appInfo.signingCertSubject = certInfo.subject;
+        appInfo.signingCertIssuer = certInfo.issuer;
+    }
+
+    @WorkerThread
+    @Nullable
+    private static SigningCertInfo loadSigningCertInfo(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
         try {
             SignerInfo signerInfo = PackageUtils.getSignerInfo(packageInfo, isExternalApk);
-            if (signerInfo == null) return;
+            if (signerInfo == null) return null;
             X509Certificate[] certs = signerInfo.getCurrentSignerCerts();
             // Multi-signer APKs are rare; surfacing only the single-signer case
             // keeps the tag chip unambiguous. Multi-signer details are reachable
             // through the icon-tap verify flow.
-            if (certs == null || certs.length != 1) return;
+            if (certs == null || certs.length != 1) return null;
             X509Certificate cert = certs[0];
             String hex = DigestUtils.getHexDigest(DigestUtils.SHA_256, cert.getEncoded());
-            tagCloud.signingCertSha256 = colonifyHex(hex);
-            tagCloud.signingCertSubject = cert.getSubjectX500Principal().getName();
-            tagCloud.signingCertIssuer = cert.getIssuerX500Principal().getName();
+            String sha256 = colonifyHex(hex);
+            if (sha256 == null) return null;
+            return new SigningCertInfo(sha256,
+                    cert.getSubjectX500Principal().getName(),
+                    cert.getIssuerX500Principal().getName());
         } catch (Throwable t) {
-            // Leave all three fields null; the cert chip simply won't appear.
+            return null;
         }
     }
 
@@ -572,6 +595,8 @@ public class AppInfoViewModel extends AndroidViewModel {
                 // hiddenApiEnforcementPolicy
                 appInfo.hiddenApiEnforcementPolicy = ApplicationInfoCompat.getHiddenApiEnforcementPolicy(applicationInfo);
             }
+            appInfo.sdkSandboxInfo = SdkSandboxInfo.from(applicationInfo);
+            populateSigningCertInfo(appInfo, packageInfo, isExternalApk);
             mAppInfo.postValue(appInfo);
         } catch (Throwable th) {
             // Unknown behaviour
@@ -604,6 +629,21 @@ public class AppInfoViewModel extends AndroidViewModel {
             });
             installer.installExisting(packageName, userId);
         });
+    }
+
+    private static final class SigningCertInfo {
+        @NonNull
+        final String sha256;
+        @NonNull
+        final String subject;
+        @NonNull
+        final String issuer;
+
+        private SigningCertInfo(@NonNull String sha256, @NonNull String subject, @NonNull String issuer) {
+            this.sha256 = sha256;
+            this.subject = subject;
+            this.issuer = issuer;
+        }
     }
 
     public static class TagCloud {
@@ -738,5 +778,13 @@ public class AppInfoViewModel extends AndroidViewModel {
         @Nullable
         public String zygotePreloadName;
         public int hiddenApiEnforcementPolicy;
+        @NonNull
+        public SdkSandboxInfo sdkSandboxInfo = SdkSandboxInfo.unsupported(Build.VERSION.SDK_INT);
+        @Nullable
+        public String signingCertSha256;
+        @Nullable
+        public String signingCertSubject;
+        @Nullable
+        public String signingCertIssuer;
     }
 }

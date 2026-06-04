@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - App Info identity block density (upstream #1966, 2026-06-04)
+
+- App Info now starts its vertical metadata with a compact App identity block
+  for SDK bounds, SDK Runtime manifest state, and the current signing
+  certificate identity.
+- The signing certificate row exposes SHA-256, Subject, and Issuer at the top
+  of App Info while keeping the full copyable certificate dialog one tap away.
+
 ### Added - KernelSU root re-grant recovery (upstream #1967, 2026-06-04)
 
 - KernelSU diagnostics now classify package-only, unknown, and restricted App
