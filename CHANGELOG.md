@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Backup Extras restore coverage (2026-06-04)
+
+- Backup/Restore Extras now explains the concrete data it covers and adds a
+  compact current-mode coverage summary directly in the flag-selection row.
+- Restore now records bounded per-extra skip/failure warnings for unsupported
+  Extras subtypes, and Operation History detail/export metadata preserves those
+  warnings without marking the whole restore failed.
+
 ### Fixed - Deep audit hardening pass 2 (2026-06-04)
 
 - **Backup (HIGH):** Fixed `StringIndexOutOfBoundsException` crash in

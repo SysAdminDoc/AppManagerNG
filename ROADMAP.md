@@ -456,23 +456,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 2 - 2026-06-04)
 
-- [ ] 🔬🤖 P1 — Explain and audit backup Extras restore coverage
-  - Why: upstream users still cannot tell what "Extras" covers or why some
-    extras restore in one mode but not another. The current dialog string lists
-    permissions, battery/data-saving options, MagiskHide status, SSAID, and
-    similar data, then only warns that some extras may not restore depending on
-    permissions.
-  - Evidence: `app/src/main/res/values/strings.xml` `backup_extras_description`;
-    https://github.com/MuntashirAkon/AppManager/issues/1980
-  - Touches: backup option dialog copy, restore-result/audit metadata,
-    `BackupFlags`, and backup documentation.
-  - Acceptance: the backup UI has a compact details surface showing what Extras
-    includes and what the current mode can restore; restore results record each
-    skipped extra with a short reason.
-  - Verify: formatter/unit coverage for skip reasons plus manual no-root,
-    ADB/Shizuku, and root restore checks.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Add a generic manifest `<meta-data>` explorer
   - Why: NG now exposes several selected Privacy & Security API manifest
     signals, but it still lacks a generic way to inspect app, activity, service,
