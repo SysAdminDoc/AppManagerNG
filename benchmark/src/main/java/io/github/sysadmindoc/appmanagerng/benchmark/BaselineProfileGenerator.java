@@ -19,17 +19,20 @@ public class BaselineProfileGenerator {
     public final BaselineProfileRule baselineProfileRule = new BaselineProfileRule();
 
     @Test
-    public void generateStartupProfile() {
+    public void generateCoreJourneyProfile() {
         baselineProfileRule.collect(BenchmarkConfig.TARGET_PACKAGE,
                 10,
                 3,
-                "appmanagerng-startup",
+                "appmanagerng-core-journeys",
                 true,
                 false,
                 rule -> rule.contains("Lio/github/muntashirakon/AppManager/"),
                 scope -> {
+                    BenchmarkJourneys.launchMainList(scope);
+                    BenchmarkJourneys.scrollMainList(scope.getDevice());
                     scope.pressHome();
-                    scope.startActivityAndWait();
+                    scope.startActivityAndWait(BenchmarkJourneys.backupSettingsIntent());
+                    BenchmarkJourneys.waitForBackupSettings(scope.getDevice());
                     return Unit.INSTANCE;
                 });
     }
