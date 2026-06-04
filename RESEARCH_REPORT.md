@@ -149,8 +149,10 @@ no app in the AM space ships a Tasker plugin, a QS-tile suite, or a Wear OS
 companion. Tasker plugin can live in-app via one Activity + one
 BroadcastReceiver (~120 KB, effort 2/5, novelty 5/5). QS tiles via
 `TileService.requestAddTileService()`: ship "Run Freeze Profile" + "Force-Stop
-Pinned App". DocumentsProvider exposing `am://backups` + `am://profiles` makes
-backups/profiles first-class SAF citizens.
+Pinned App". The 2026-06-04 DocumentsProvider slice now exposes AppManagerNG
+backup/profile roots through the standard `${applicationId}.documents` SAF
+authority; remaining integration work is the true Tasker plugin broker,
+one-tap QS install affordance, and "Force-Stop Pinned App" tile.
 
 **Stream 3 — Non-Phone Form Factors:**
 killer addition is a Wear OS phone-side package manager (no FOSS app does this;
