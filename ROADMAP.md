@@ -142,10 +142,14 @@ than by historical priority tier:
   `MemorySnapshotComposer`, and `format()` renders a provenance-tagged
   ("via /proc/maps · virtual", "via /proc/status") scrollable block using
   `MemoryFormat`. The action is gated on root/Shizuku/ADB and degrades
-  gracefully when the app is not running or a source is truncated. _Data layer:
-  the four parsers + composer + `MemoryFormat`; 50+ JVM tests, plus 11 new tests
-  for `firstPid`/`provenanceFor`. **Follow-up: streaming/refresh and a richer
-  per-region chart beyond the point-in-time text snapshot.**_
+  gracefully when the app is not running or a source is truncated. Follow-up
+  refresh/chart shipped 2026-06-03: the dialog now offers a Refresh action that
+  reloads the snapshot for the same package and the formatted output includes a
+  per-region proportional text chart for Dalvik, native, stack, code, and
+  library virtual-memory buckets. _Data layer: the four parsers + composer +
+  `MemoryFormat` + `MemoryRegionChart`; 50+ JVM tests, plus focused chart and
+  `firstPid`/`provenanceFor` coverage. **Follow-up: true live streaming /
+  auto-refresh remains device-verified.**_
 
 ### T21 — UI/design polish and premium feel
 
