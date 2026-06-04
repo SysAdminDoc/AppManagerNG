@@ -14,6 +14,10 @@
         android:icon="@drawable/ic_snowflake"
         android:title="@string/freeze_unfreeze" />
     <item
+        android:id="@+id/action_archive_unarchive"
+        android:icon="@drawable/ic_archive"
+        android:title="@string/batch_archive_unarchive" />
+    <item
         android:id="@+id/action_force_stop"
         android:title="@string/force_stop"
         android:icon="@drawable/ic_power_settings" />

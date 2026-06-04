@@ -21,6 +21,8 @@ public class FreezeOption extends FilterOption {
 
     private final Map<String, Integer> mKeysWithType = new LinkedHashMap<String, Integer>() {{
         put(KEY_ALL, TYPE_NONE);
+        put("active", TYPE_NONE);
+        put("archived", TYPE_NONE);
         put("frozen", TYPE_NONE);
         put("unfrozen", TYPE_NONE);
         put("with_flags", TYPE_INT_FLAGS);
@@ -56,18 +58,25 @@ public class FreezeOption extends FilterOption {
     @NonNull
     @Override
     public TestResult test(@NonNull IFilterableAppInfo info, @NonNull TestResult result) {
-        int freezeFlags = info.getFreezeFlags();
+        return result.setMatched(matches(info.getFreezeFlags(), info.isArchived(), key, intValue));
+    }
+
+    static boolean matches(int freezeFlags, boolean archived, @NonNull String key, int intValue) {
         switch (key) {
             case KEY_ALL:
-                return result.setMatched(true);
+                return true;
+            case "active":
+                return freezeFlags == 0 && !archived;
+            case "archived":
+                return archived;
             case "frozen":
-                return result.setMatched(freezeFlags != 0);
+                return freezeFlags != 0;
             case "unfrozen":
-                return result.setMatched(freezeFlags == 0);
+                return freezeFlags == 0;
             case "with_flags":
-                return result.setMatched((freezeFlags & intValue) == intValue);
+                return (freezeFlags & intValue) == intValue;
             case "without_flags":
-                return result.setMatched((freezeFlags & intValue) != intValue);
+                return (freezeFlags & intValue) != intValue;
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
@@ -78,7 +87,11 @@ public class FreezeOption extends FilterOption {
     public CharSequence toLocalizedString(@NonNull Context context) {
         switch (key) {
             case KEY_ALL:
-                return "Frozen" + getSeparatorString() + " any";
+                return "App state" + getSeparatorString() + " any";
+            case "active":
+                return "Active apps only";
+            case "archived":
+                return "Archived apps only";
             case "frozen":
                 return "Frozen apps only";
             case "unfrozen":

@@ -37,6 +37,7 @@ import java.util.Set;
 
 import aosp.libcore.util.EmptyArray;
 import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
@@ -333,6 +334,11 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     @Override
     public boolean isFrozen() {
         return !isEnabled() || isSuspended() || isHidden();
+    }
+
+    @Override
+    public boolean isArchived() {
+        return AppArchiveManager.isArchived(mPackageInfo);
     }
 
     @Override
