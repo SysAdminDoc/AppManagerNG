@@ -252,6 +252,7 @@
     <string name="main_list_tracker_count_partial_a11y"><xliff:g id="blocked" example="3">%1$d</xliff:g> of <xliff:g id="total" example="27">%2$d</xliff:g> trackers blocked</string>
     <string name="main_list_perm_count_a11y"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
     <string name="main_list_perm_badge_label"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> perms</string>
+    <string name="main_list_tag_badge_a11y">Tags: <xliff:g id="tags" example="work, review">%1$s</xliff:g></string>
     <plurals name="tracker_and_classes">
         <item quantity="one">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> class</item>
         <item quantity="other">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> classes</item>
