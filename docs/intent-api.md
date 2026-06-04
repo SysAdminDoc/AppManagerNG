@@ -1,12 +1,13 @@
 # AppManagerNG Intent / URI Schema
 
-**Status:** v0.4.x. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17; public user-confirmed `am://` automation actions and Tasker-style activity intents shipped 2026-05-18.
+**Status:** v0.4.x. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17; public user-confirmed `am://` automation actions and Tasker-style activity intents shipped 2026-05-18; read-only SAF documents provider shipped 2026-06-04.
 
-This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive AppManagerNG. Three surfaces:
+This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive or browse AppManagerNG. Four surfaces:
 
 1. **URI deep links** (`app-manager://`, `am://`) — public, dispatched via the launcher. Anyone with the link can fire them; treat them as user-initiated UI navigation.
 2. **Public automation activity** ([`AutomationUriActivity`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/AutomationUriActivity.java)) — accepts `am://` operation URIs and `startActivity` intents using the same action constants as the broadcast API. It requires AppManagerNG authentication and a confirmation dialog before privileged work starts.
 3. **Broadcast actions** (`io.github.sysadmindoc.AppManagerNG.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate, or an in-app broker, can fire them without the public confirmation UI.
+4. **SAF documents provider** (`${applicationId}.documents`) — read-only Android file-picker roots for AppManagerNG-managed backups and profiles.
 
 ---
 
@@ -140,6 +141,19 @@ Use either:
 3. The in-app pinned-shortcut flow for launcher-native shortcuts.
 
 The public Activity path is intentionally confirmation-gated. The signature broadcast receiver remains reserved for NG-signed companions or future plugin/broker components that provide their own trusted setup UI.
+
+---
+
+## SAF documents provider *(shipped 2026-06-04)*
+
+`AppManagerDocumentsProvider` exposes AppManagerNG-managed files to Android's Storage Access Framework under authority `io.github.sysadmindoc.AppManagerNG.documents` for the default build.
+
+| Root | Contents | Notes |
+|------|----------|-------|
+| `backups` | Configured local AppManagerNG backup volume. | SAF/network backup destinations are not re-exported as local files. |
+| `profiles` | App-private profile JSON directory. | Read-only; profile edits still go through AppManagerNG. |
+
+The provider rejects write modes, hidden children, unknown roots, and document IDs that resolve outside their canonical root. Consumers should use standard SAF picker or `DocumentsContract` APIs rather than `am://` URIs for this surface.
 
 ---
 
