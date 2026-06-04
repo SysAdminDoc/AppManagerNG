@@ -175,6 +175,8 @@
         android:name="${applicationId}.permission.AUTOMATION"
         android:protectionLevel="signature" />
 
+    <uses-permission android:name="${applicationId}.permission.AUTOMATION" />
+
     <application
         android:name=".AppManager"
         android:allowBackup="true"
@@ -1327,6 +1329,22 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".automation.TaskerPluginEditActivity"
+            android:enableOnBackInvokedCallback="false"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/tasker_plugin_label"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:taskAffinity=".automation.TaskerPluginEditActivity"
+            android:theme="@style/AppTheme.TransparentBackground">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".main.SplashActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="true"
@@ -1652,6 +1670,14 @@
                 <action android:name="${applicationId}.action.RUN_PROFILE" />
                 <action android:name="${applicationId}.action.INSTALL_FROM_URI" />
                 <action android:name="${applicationId}.action.SCAN_TRACKERS" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".automation.TaskerPluginFireReceiver"
+            android:exported="true"
+            android:label="@string/tasker_plugin_label">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
             </intent-filter>
         </receiver>
         <receiver
