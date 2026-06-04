@@ -26,6 +26,7 @@ rejected on license/privacy/scope grounds are recorded as STALE in
 9. Research Refresh - upstream issue delta (2026-06-04 Cycle 2)
 10. Research Refresh - mode and terminal delta (2026-06-04 Cycle 3)
 11. Research Refresh - recovery and headset pairing delta (2026-06-04 Cycle 4)
+12. Research Refresh - release trust and overlay/profile delta (2026-06-04 Cycle 5)
 
 ---
 
@@ -844,3 +845,233 @@ Top opportunities:
 - Should App Info action order be user-customizable immediately, or should the
   first pass only ship a smarter default priority order? The upstream feedback
   points to a larger overhaul, but the source change can be staged.
+
+---
+
+## 12. Research Refresh - release trust and overlay/profile delta (2026-06-04 Cycle 5)
+
+This pass re-synced `main` at `889ecd1`, re-read the live roadmap/completed
+ledger, scanned the repo for release trust controls, overlay/profile/AppOps
+surfaces, and refreshed upstream AppManager, Shizuku, UAD-NG, Canta, Android,
+Gradle, GitHub Actions, F-Droid, Accrescent, CycloneDX, SPDX, SLSA, and
+OpenSSF source material. No feature code was changed; the output is a planning
+delta promoted to `ROADMAP.md`.
+
+### Executive Summary
+
+AppManagerNG already closed the most visible June 4 upstream issue deltas:
+Wireless ADB pairing fallback, Debloater Put back, App Info action rail,
+KernelSU diagnostics, File Manager search, clear-data fallback, and AppOps
+revert monitoring are documented as shipped or represented by device gates. The
+remaining net-new opportunity is to improve trust and edge-case honesty around
+the app rather than add another large feature surface.
+
+Promoted opportunities:
+
+1. `[Promoted P1]` Add Gradle dependency verification and dependency locking.
+2. `[Promoted P2]` Publish release SBOM and provenance attestation.
+3. `[Promoted P1]` Harden the foreground UI tracker overlay against
+   device-freeze reports.
+4. `[Promoted P2]` Add Private Space/profile visibility diagnostics.
+5. `[Promoted P2]` Add profile membership inverse filters.
+
+### Evidence Reviewed
+
+- **Local files and code paths:** `ROADMAP.md`, `COMPLETED.md`,
+  `RESEARCH_REPORT.md`, `README.md`, `PROJECT_CONTEXT.md`, `versions.gradle`,
+  `build.gradle`, `settings.gradle`, `gradle/wrapper/gradle-wrapper.properties`,
+  `.github/workflows/release.yml`, `.github/workflows/tests.yml`,
+  `.github/workflows/dependency-scan.yml`,
+  `docs/distribution/reproducible-builds.md`,
+  `app/src/main/AndroidManifest.xml`, `users/Users.java`,
+  `compat/PackageManagerCompat.java`, `compat/AppOpsManagerCompat.java`,
+  `filters/options/AppOpsOption.java`, `main/MainListOptions.java`,
+  `main/MainViewModel.java`, `accessibility/NoRootAccessibilityService.java`,
+  and `accessibility/activity/TrackerWindow.java`.
+- **Git history:** `rtk git log -10` from `889ecd1` back through the Wear OS
+  blocker, root module inventory, benchmark smoke journeys, device-gate splits,
+  Material/card transitions, and Android 17 blocker refresh.
+- **Local source-truth deltas:** Gradle wrapper distribution checksum exists,
+  OWASP dependency checking exists, and release reproducibility exists; no
+  `gradle/verification-metadata.xml`, dependency lockfile, SBOM release asset,
+  or provenance attestation workflow step was found. [Verified]
+- **Could not verify:** physical-device overlay freeze behavior, Android 15+
+  Private Space locked/hidden profile behavior, release attestation after a real
+  tag, and any external store submission state. These remain device/external
+  gates.
+
+### External Source Register
+
+Primary and project-source material reviewed or rechecked:
+
+1. https://docs.gradle.org/current/userguide/dependency_verification.html
+2. https://docs.gradle.org/current/userguide/dependency_locking.html
+3. https://docs.gradle.org/current/userguide/gradle_wrapper.html
+4. https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+5. https://github.com/actions/attest
+6. https://github.com/actions/attest-build-provenance
+7. https://slsa.dev/spec/v1.0/provenance
+8. https://github.com/slsa-framework/slsa-github-generator
+9. https://github.com/CycloneDX/cyclonedx-gradle-plugin
+10. https://cyclonedx.org/docs/
+11. https://spdx.dev/learn/areas-of-interest/software-bill-of-materials/
+12. https://docs.github.com/en/rest/dependency-graph/dependency-submission
+13. https://securityscorecards.dev/
+14. https://github.com/ossf/scorecard
+15. https://f-droid.org/docs/Reproducible_Builds/
+16. https://f-droid.org/docs/All_our_APIs/
+17. https://accrescent.app/docs/
+18. https://accrescent.app/features
+19. https://accrescent.app/docs/guide/getting-started/new-app.html
+20. https://developer.android.com/developer-verification
+21. https://developer.android.com/about/versions/17/behavior-changes-17
+22. https://developer.android.com/about/versions/17/setup-sdk
+23. https://developer.android.com/about/versions/15/behavior-changes-all#private-space
+24. https://source.android.com/docs/security/features/private-space
+25. https://developer.android.com/reference/android/Manifest.permission#ACCESS_HIDDEN_PROFILES
+26. https://developer.android.com/reference/android/os/UserManager
+27. https://developer.android.com/reference/android/content/pm/LauncherApps
+28. https://developer.android.com/training/package-visibility
+29. https://developer.android.com/reference/android/view/WindowManager.LayoutParams
+30. https://developer.android.com/about/versions/12/behavior-changes-all#untrusted-touch-events
+31. https://developer.android.com/topic/security/risks/tapjacking
+32. https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
+33. https://developer.android.com/reference/android/app/AppOpsManager
+34. https://developer.android.com/reference/android/content/pm/PackageInstaller
+35. https://github.com/MuntashirAkon/AppManager/issues/1848
+36. https://github.com/MuntashirAkon/AppManager/issues/1755
+37. https://github.com/MuntashirAkon/AppManager/issues/1863
+38. https://github.com/MuntashirAkon/AppManager/issues/1948
+39. https://github.com/MuntashirAkon/AppManager/issues/1980
+40. https://github.com/MuntashirAkon/AppManager/issues/1975
+41. https://github.com/MuntashirAkon/AppManager/issues/1969
+42. https://github.com/RikkaApps/Shizuku/releases/tag/v13.6.0
+43. https://github.com/RikkaApps/Shizuku/issues/2095
+44. https://github.com/RikkaApps/Shizuku/issues/2114
+45. https://github.com/RikkaApps/Shizuku/issues/2128
+46. https://github.com/RikkaApps/Shizuku/issues/2136
+47. https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases/tag/v1.2.0
+48. https://github.com/samolego/Canta/releases/tag/3.2.2
+49. https://github.com/ImranR98/Obtainium
+
+### Current Feature Inventory Delta
+
+- **Release integrity:** `scripts/verify_reproducible_release.sh` and
+  `.github/workflows/release.yml` already perform two signed builds and compare
+  APK bytes. Release assets are APKs plus `.sha256` sidecars. This is strong
+  reproducibility, but it is not component inventory or provenance. [Verified]
+- **Dependency integrity:** the wrapper has a distribution SHA-256, and OWASP
+  dependency-check can fail scheduled audits on high CVSS findings. The build
+  still resolves dependencies from three remote repositories without Gradle
+  verification metadata or locks, so malicious or unexpected artifact drift can
+  be detected only after resolution, not blocked by known-good checksums.
+  [Verified]
+- **Foreground UI Tracker:** `TrackerWindow` is constructed inside an
+  accessibility-service flow but uses `TYPE_APPLICATION_OVERLAY` on Android O+
+  and `FLAG_LAYOUT_NO_LIMITS`. The window width uses a fixed display-width
+  expression, and add/remove/update calls are direct. The existing accessibility
+  label tests prove action text, not device/OEM overlay safety. [Verified]
+- **Private/profile visibility:** the app declares `ACCESS_HIDDEN_PROFILES`,
+  falls back to `UserManager.getProfiles()`, and uses `LauncherApps` for launch
+  checks. No source-visible Private Space type/quiet/hidden diagnostic path was
+  found. [Verified]
+- **Profile filtering:** selecting a profile in `MainListOptions` stores one
+  filter profile name, and `MainViewModel` expands that into positive include
+  filters for package-list or filter-based profiles. No inverse membership state
+  was found. [Verified]
+- **AppOps:** `AppOpsOption` already supports mode predicates, and
+  `AppOpsManagerCompat` merges UID/package ops for reads and chooses
+  `setUidMode()` vs `setMode()` for writes, with unit tests around
+  `usesUidModeForSetMode()`. Upstream #1863 is therefore not promoted as a
+  fresh roadmap item until a narrower UI source gap is proven. [Verified]
+
+### Promoted Roadmap Items
+
+- **P1 - Gradle dependency verification and dependency locking**
+  - Why: blocks remote artifact/checksum drift before build use.
+  - Evidence: `gradle/wrapper/gradle-wrapper.properties:3`,
+    `build.gradle:24-29`, `build.gradle:52-68`, plus Gradle dependency
+    verification and locking docs.
+  - Verification: metadata bootstrap, lock generation, normal test task, and a
+    seeded temporary mismatch failure.
+
+- **P2 - Release SBOM and provenance attestation**
+  - Why: turns reproducible APK bytes into externally inspectable release trust
+    artifacts.
+  - Evidence: `.github/workflows/release.yml:1-4`, `:19-20`, `:73-94`,
+    `docs/distribution/reproducible-builds.md:5-8`, `:23-41`, plus GitHub
+    attestation and CycloneDX Gradle plugin docs.
+  - Verification: SBOM schema validation, workflow lint/dry-run, and
+    `gh attestation verify` after a real tag release.
+
+- **P1 - Foreground UI tracker overlay safety**
+  - Why: an upstream device-freeze report maps to local no-limit application
+    overlay behavior.
+  - Evidence: upstream #1848 plus `TrackerWindow.java:73-84`, `:183-186`,
+    `:225`, `:269-271`, Android `WindowManager.LayoutParams`, and Android 12
+    untrusted-touch docs.
+  - Verification: host policy tests plus manual Android 11/12+/current-target
+    tracker walkthroughs.
+
+- **P2 - Private Space/profile visibility diagnostics**
+  - Why: hidden/private profile visibility needs explicit user-facing honesty in
+    a package-management app that already declares the hidden-profile permission.
+  - Evidence: `AndroidManifest.xml:15`, `Users.java:89-93`,
+    `PackageManagerCompat.java:345-355`, AOSP Private Space docs, Android 15
+    Private Space behavior docs, `UserManager`, and `LauncherApps`.
+  - Verification: profile label/state tests plus Android 15+ Private Space
+    locked/unlocked/hidden manual pass.
+
+- **P2 - Profile membership inverse filters**
+  - Why: lets users find apps not covered by a selected profile without exporting
+    or manually diffing package lists.
+  - Evidence: upstream #1755, `MainListOptions.java:250-258`, and
+    `MainViewModel.java:617-632`.
+  - Verification: static AppsProfile and filter-profile include/exclude tests.
+
+### Checked but Not Promoted
+
+- **AppOps per-UID/package issue (#1863):** source already merges UID/package op
+  reads and chooses UID-mode writes where required. Do not add a duplicate until
+  a specific UI/operation mismatch is reproduced in NG. [Verified]
+- **Upstream #1980, #1975, #1969, #1967, #1964, #1963, #1958, #1956, and
+  #1953:** already shipped or represented in `COMPLETED.md` / the active
+  roadmap. [Verified]
+- **Shizuku v13.6.0 and issues #2095/#2114/#2128/#2136:** reinforce existing
+  Android 17, Shizuku/ADB, Quest/wireless pairing, and device-gated validation
+  rows; no duplicate source item was promoted. [Verified, external]
+- **UAD-NG v1.2.0 and Canta v3.2.2 releases:** no new machine-readable
+  package/model/region data source changed the existing UAD external blocker.
+  [Verified, external]
+- **F-Droid/Accrescent/Android developer verification:** current distribution
+  rows already cover external submission/developer verification. The only new
+  release-trust work promoted here is SBOM/provenance, not another store row.
+  [Verified, external]
+
+### Quality, Security, Accessibility, and Operations Notes
+
+- Dependency verification and locks should cover production, test, benchmark,
+  plugin, and build-logic configurations. JitPack deserves explicit review
+  notes because it builds artifacts from upstream repositories rather than from a
+  central signed publication flow.
+- SBOM/provenance work should preserve existing two-build reproducibility. It
+  adds release evidence; it must not weaken byte-for-byte comparison or release
+  signing.
+- Tracker overlay work should prefer smaller extracted policy helpers so bounds,
+  throttle, and failure behavior can be host-tested without needing a live
+  WindowManager.
+- Private Space diagnostics must avoid false certainty. If a profile is hidden,
+  quiet, locked, or inaccessible from the current privilege mode, the UI should
+  say that plainly rather than claiming all apps were scanned.
+- Profile inverse filters are safe as app-list filtering only. They must not
+  change profile apply/import/export semantics unless that is separately scoped.
+
+### Explicit Non-Goals
+
+- Do not bump `compile_sdk`/`target_sdk` to 37 in this cycle; the existing
+  Android 17 pre-bump gate remains blocked on an API 37 SDK/image/device.
+- Do not add new AppOps mode-filter rows; mode predicates and UID-mode write
+  handling are already present in source/tests.
+- Do not replace the reproducible release workflow. SBOM and provenance are
+  additive release assets.
+- Do not implement feature code from this report in the research lane.
