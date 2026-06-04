@@ -26,6 +26,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.compat.BinderCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.server.common.IRootServiceManager;
+import io.github.muntashirakon.compat.android16.Android16BinderCompat;
 import io.github.muntashirakon.compat.os.ParcelCompat2;
 
 // Copyright 2020 Rikka
@@ -139,14 +140,14 @@ public class ProxyBinder implements IBinder {
                 newData.writeInt(flags);
                 newData.appendFrom(data, 0, data.dataSize());
                 // Transact via AMService
-                targetBinder.transact(PROXY_BINDER_TRANSACTION, newData, reply, 0);
+                Android16BinderCompat.transact(targetBinder, PROXY_BINDER_TRANSACTION, newData, reply, 0);
             } finally {
                 newData.recycle();
             }
             return true;
         }
         // Run unprivileged code as a fallback method
-        return mOriginal.transact(code, data, reply, flags);
+        return Android16BinderCompat.transact(mOriginal, code, data, reply, flags);
     }
 
     @Nullable

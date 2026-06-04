@@ -24,6 +24,7 @@ import io.github.muntashirakon.AppManager.IRemoteShell;
 import io.github.muntashirakon.AppManager.ipc.ps.ProcessEntry;
 import io.github.muntashirakon.AppManager.ipc.ps.Ps;
 import io.github.muntashirakon.AppManager.server.common.IRootServiceManager;
+import io.github.muntashirakon.compat.android16.Android16BinderCompat;
 import io.github.muntashirakon.compat.os.ParcelCompat2;
 
 public class AMService extends RootService {
@@ -98,8 +99,11 @@ public class AMService extends RootService {
             try {
                 newData.appendFrom(data, data.dataPosition(), data.dataAvail());
                 long id = Binder.clearCallingIdentity();
-                targetBinder.transact(targetCode, newData, reply, targetFlags);
-                Binder.restoreCallingIdentity(id);
+                try {
+                    Android16BinderCompat.transact(targetBinder, targetCode, newData, reply, targetFlags);
+                } finally {
+                    Binder.restoreCallingIdentity(id);
+                }
             } catch (RemoteException e) {
                 throw e;
             } catch (Throwable th) {
