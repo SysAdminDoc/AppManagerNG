@@ -16,6 +16,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_customize_action_rail"
+        android:icon="@drawable/ic_sort"
+        android:title="@string/app_info_action_rail_customize"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_view_settings"
         android:icon="@drawable/ic_settings"
         android:title="@string/view_in_settings"
