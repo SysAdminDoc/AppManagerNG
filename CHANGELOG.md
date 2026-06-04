@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Privacy/security API roadmap reconciliation (2026-06-04)
+
+- Closed the host-verifiable privacy/security API row in the completed ledgers:
+  SDK Runtime manifest declarations, Domain Verification conflicts,
+  archived-package state/actions, MTE posture, Health Connect manifest posture,
+  Credential Manager provider declarations, and Restricted Settings diagnostics
+  are already implemented and covered by focused tests.
+- Left only explicit gated follow-ups in the active roadmap: Android 15/API-35
+  archive/unarchive user-action verification, plus source proof before any
+  SDK Runtime, Health Connect, or Credential Manager live-state implementation
+  that would otherwise be caller-scoped.
+
 ### Added - App Info action rail priority controls (research P2/#1953, 2026-06-04)
 
 - App Info horizontal actions now use stable action IDs and a resolver that
