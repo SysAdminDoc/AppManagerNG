@@ -46,12 +46,14 @@ allprojects {
 // so GitHub upload steps get both human + machine readable artifacts. ROADMAP iter-22 [S274].
 apply plugin: 'org.owasp.dependencycheck'
 
+def dependencyCheckFailBuildOnCvss = Float.parseFloat(
+        (findProperty('dependencyCheckFailBuildOnCvss') ?: '11.0').toString())
+
 dependencyCheck {
     formats = ['HTML', 'SARIF']
-    // Fail-fast threshold for local runs; CI uses `continue-on-error: true` and surfaces the
-    // report as a build artifact instead of failing the job — that way a single new CVE doesn't
-    // block the entire weekly cadence while we triage.
-    failBuildOnCVSS = 11.0f
+    // Local runs default to report-only (11.0); weekly CI passes 9.0 so CRITICAL
+    // CVEs make the scheduled audit fail while the upload steps still publish artifacts.
+    failBuildOnCVSS = dependencyCheckFailBuildOnCvss
     // Suppress vendored-AAR false positives via XML at this path; create on first audit pass.
     suppressionFile = file('config/owasp-suppressions.xml').exists()
             ? file('config/owasp-suppressions.xml').toString()
