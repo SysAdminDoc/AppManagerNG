@@ -144,6 +144,16 @@ trail. Long-form historical context is under
   `QuickFreezeTileControllerTest`, `QuickFreezeTileServiceTest`,
   `ForceStopTileControllerTest`, and `ForceStopTileServiceTest`; runtime
   Tasker/QS/SAF walkthroughs are tracked in the device bucket.
+- [x] **P2 Macrobenchmark module + Baseline Profile + UIAutomator smoke pack**
+  — the benchmark module now covers cold startup, main-list scroll frame timing,
+  and Backup settings time-to-interactive through shared UIAutomator journeys.
+  Baseline Profile generation records startup, list-scroll, and Backup settings
+  paths; the androidTest smoke pack now verifies main launch, batch-selection
+  surface entry for freeze/backup/component actions, and One-Click Ops
+  rule/backup surface launch. Focused verification:
+  `:benchmark:compileDebugJavaWithJavac :app:compileFullDebugAndroidTestJavaWithJavac`.
+  Online macrobenchmark/profile generation and API 26/30/34/35 smoke execution
+  remain device-gated.
 
 ## Closed on 2026-06-03
 
