@@ -611,6 +611,7 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 - [ ] P3 — Wear OS phone-side companion + foldable posture awareness
   - Why: a Wear OS phone-side package manager is a no-FOSS-competitor banner feature (effort 4/5). (Note: the View-based tablet two-pane work is already tracked as **T21-H** in Existing Planned Work; this row is the *additive* Wear OS companion + foldable-posture awareness only, not the phone two-pane.)
   - Evidence: T21-H covers `SlidingPaneLayout` two-pane for phone/tablet; no `WearableListenerService`/`MessageClient`/watch companion in source.
+  - Blocker rechecked 2026-06-04: the host has only the `Medium_Phone_API_36.1` AVD, no Wear OS system images, and no connected Android devices (`adb devices` empty). Do not scaffold this blind; acceptance requires a paired watch emulator/device plus at least one package query/operation from the phone.
   - Touches: ADB-over-WiFi + `WearableListenerService`/`MessageClient` + ~200 KB watch companion; `FoldingFeature` posture awareness layered on the T21-H panes.
   - Acceptance: watch packages can be queried/operated from the phone; folded postures are handled.
   - Verify: pair a watch emulator, list its packages from the phone, run one op.

@@ -15,6 +15,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Focused JVM coverage pins parser fallback behavior, source/status
   normalization, empty results, and display formatting.
 
+### Changed - Wear OS roadmap blocker recheck (2026-06-04)
+
+- Rechecked the Wear OS phone-side companion row against the local Android SDK:
+  the host has no Wear OS AVD/system image and no connected device, so the row
+  remains blocked until a paired watch emulator/device is available for the
+  required package-query and operation walkthrough.
+
 ### Changed - Privacy/security API roadmap reconciliation (2026-06-04)
 
 - Closed the host-verifiable privacy/security API row in the completed ledgers:
