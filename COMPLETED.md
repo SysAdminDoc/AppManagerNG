@@ -14,6 +14,7 @@ historical context and the previous ledger are under
 
 ### Closed on 2026-06-03
 
+- [x] **P1 App Details single-action audit history** — direct App Details freeze/unfreeze, permission grant/revoke, AppOp mode, and component-rule actions now write `single_app_action` Operation History rows with package/user target metadata, exit/failure status, risk, replayability, and reversibility; Operation History exposes an App details filter and per-package rollback planning includes runnable inverses for freeze/unfreeze and permission grant/revoke. — *Source: ROADMAP.md*
 - [x] **P0 interrupted batch retry target reduction** — batch operations now persist completed/failed package-user targets as each target finishes, interrupted recovery builds a reduced retry queue for unfinished targets only, and the recovery dialog surfaces completed/remaining progress. Interruptions with no recorded target progress conservatively retry the original queue. — *Source: ROADMAP.md*
 - [x] **P3 scheduled operation-history retention pruning** — finite Operation History retention values now schedule a unique daily WorkManager worker that prunes old `op_history` rows without opening the screen, while `0` is labeled and enforced as keep forever/no scheduled cleanup. — *Source: ROADMAP.md*
 - [x] **P2 weekly OWASP critical-CVE gate** — root OWASP Dependency Check keeps local runs report-only by default while the weekly scheduled workflow passes a CVSS 9.0 fail threshold and stops masking Gradle failures, with HTML/SARIF uploads retained under `if: always()`. — *Source: ROADMAP.md*

@@ -81,6 +81,28 @@ public class PerAppRollbackManagerTest {
     }
 
     @Test
+    public void buildPlanIncludesSingleAppActionRows() throws Exception {
+        OpHistory freeze = singleAction(1, 100, SingleAppActionHistoryItem.ACTION_FREEZE,
+                "com.example.app", 0, "Freeze");
+        OpHistory grantPermission = singleAction(2, 200, SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT,
+                "com.example.app", 0, "android.permission.POST_NOTIFICATIONS");
+        OpHistory appOp = singleAction(3, 300, SingleAppActionHistoryItem.ACTION_APP_OP_SET,
+                "com.example.app", 0, "RUN_IN_BACKGROUND");
+
+        PerAppRollbackManager.RollbackPlan plan = PerAppRollbackManager.buildPlan(
+                Arrays.asList(freeze, grantPermission, appOp), "com.example.app", 0);
+
+        assertEquals(3, plan.getMatchedHistoryCount());
+        assertEquals(1, plan.getManualReviewCount());
+        assertEquals(2, plan.getRunnableCount());
+        assertEquals(BatchOpsManager.OP_REVOKE_PERMISSIONS, plan.getQueueItems().get(0).getOp());
+        BatchPermissionOptions permissionOptions =
+                (BatchPermissionOptions) plan.getQueueItems().get(0).getOptions();
+        assertEquals("android.permission.POST_NOTIFICATIONS", permissionOptions.getPermissions()[0]);
+        assertEquals(BatchOpsManager.OP_UNFREEZE, plan.getQueueItems().get(1).getOp());
+    }
+
+    @Test
     public void buildPlanSkipsUnrelatedAndManualOnlyRows() throws Exception {
         OpHistory uninstall = history(1, 100, BatchOpsManager.OP_UNINSTALL, null,
                 "com.example.app", 0);
@@ -141,6 +163,23 @@ public class PerAppRollbackManagerTest {
         history.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
         history.status = OpHistoryManager.STATUS_SUCCESS;
         history.serializedData = item.serializeToJson().toString();
+        return history;
+    }
+
+    private static OpHistory singleAction(long id, long time, String action, String packageName, int userId,
+                                          String targetLabel) throws Exception {
+        OpHistory history = new OpHistory();
+        history.id = id;
+        history.execTime = time;
+        history.type = OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION;
+        history.status = OpHistoryManager.STATUS_SUCCESS;
+        history.serializedData = new JSONObject()
+                .put("action", action)
+                .put("operation_label", action)
+                .put("package_name", packageName)
+                .put("user_id", userId)
+                .put("target_label", targetLabel)
+                .toString();
         return history;
     }
 }
