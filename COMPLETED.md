@@ -12,6 +12,10 @@ historical context and the previous ledger are under
 
 ## Shipped Features
 
+### Closed on 2026-06-04
+
+- [x] **P2 Support Info Bundle + opt-in local crash sink** — Support-info bundles now include local crash-sink state and recent scrubbed crash summaries, while uncaught crashes persist bounded private JSON files only when Settings -> Privacy -> Local crash sink is explicitly enabled; crash notifications remain user-initiated shares and no network telemetry path is introduced. — *Source: ROADMAP.md*
+
 ### Closed on 2026-06-03
 
 - [x] **P2 Mode Doctor active-probe screen** — Settings -> Privileges -> Mode doctor now opens a dedicated active-probe screen with one status/details/fix row per privilege probe, copy and support-bundle share actions, and tap-through fix targets for mode settings, root/Shizuku/Dhizuku managers, Developer options, restricted-settings App info, LocalServer bootstrap smoke test, or support bundle. — *Source: ROADMAP.md*

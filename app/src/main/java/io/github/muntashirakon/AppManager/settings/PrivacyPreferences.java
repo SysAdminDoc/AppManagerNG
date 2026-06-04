@@ -208,6 +208,13 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
             return true;
         });
+        // Local crash sink
+        SwitchPreferenceCompat localCrashSink = requirePreference("local_crash_sink_enabled");
+        localCrashSink.setChecked(Prefs.Privacy.isLocalCrashSinkEnabled());
+        localCrashSink.setOnPreferenceChangeListener((preference, newValue) -> {
+            Prefs.Privacy.setLocalCrashSinkEnabled((boolean) newValue);
+            return true;
+        });
         // Snapshot Bundle (export / import)
         requirePreference("snapshot_export").setOnPreferenceClickListener(preference -> {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
