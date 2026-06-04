@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - DexOpt root-only option sanitization (research P1/#1733, 2026-06-04)
+
+- DexOpt batch execution now rechecks root/system-only flags after loading
+  serialized options and before expanding the package loop.
+- Non-root/ADB/Shizuku runs strip stale profile-reset and immediate force-dexopt
+  requests, log a clear skipped-root-only-options reason, and avoid noisy raw
+  PackageManager `SecurityException` failures for every package.
+- Normal compiler-filter, layout compilation, profile-check, and force-compile
+  options continue to flow through the sanitized execution copy.
+
 ### Added - File Manager Open with defaults (research P3/#1810, 2026-06-04)
 
 - File Manager can now remember Open with handlers per file extension or per

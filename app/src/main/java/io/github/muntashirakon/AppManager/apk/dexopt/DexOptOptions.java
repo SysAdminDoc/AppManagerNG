@@ -13,11 +13,19 @@ import androidx.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
+import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
 public class DexOptOptions implements Parcelable, IJsonSerializer {
+    public static final String ROOT_ONLY_CLEAR_PROFILE_DATA = "clear_profile_data";
+    public static final String ROOT_ONLY_FORCE_DEX_OPT = "force_dex_opt";
+
     @NonNull
     public static DexOptOptions getDefault() {
         DexOptOptions options = new DexOptOptions();
@@ -84,6 +92,41 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     public static final JsonDeserializer.Creator<DexOptOptions> DESERIALIZER = DexOptOptions::new;
 
     @NonNull
+    public SanitizationResult sanitizeForExecution(boolean rootOrSystem) {
+        DexOptOptions options = copy();
+        List<String> skippedRootOnlyOptions = new ArrayList<>(2);
+        if (!rootOrSystem) {
+            if (options.clearProfileData) {
+                options.clearProfileData = false;
+                skippedRootOnlyOptions.add(ROOT_ONLY_CLEAR_PROFILE_DATA);
+            }
+            if (options.forceDexOpt) {
+                options.forceDexOpt = false;
+                skippedRootOnlyOptions.add(ROOT_ONLY_FORCE_DEX_OPT);
+            }
+        }
+        return new SanitizationResult(options, skippedRootOnlyOptions);
+    }
+
+    public static boolean canUseRootOnlyOptions(int uid) {
+        return uid == Ops.ROOT_UID || uid == Ops.SYSTEM_UID;
+    }
+
+    @NonNull
+    private DexOptOptions copy() {
+        DexOptOptions options = new DexOptOptions();
+        options.packages = packages != null ? packages.clone() : null;
+        options.compilerFiler = compilerFiler;
+        options.compileLayouts = compileLayouts;
+        options.clearProfileData = clearProfileData;
+        options.checkProfiles = checkProfiles;
+        options.bootComplete = bootComplete;
+        options.forceCompilation = forceCompilation;
+        options.forceDexOpt = forceDexOpt;
+        return options;
+    }
+
+    @NonNull
     @Override
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
@@ -133,5 +176,27 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
             return "speed";
         }
         return profile;
+    }
+
+    public static final class SanitizationResult {
+        @NonNull
+        public final DexOptOptions options;
+        @NonNull
+        public final List<String> skippedRootOnlyOptions;
+
+        private SanitizationResult(@NonNull DexOptOptions options,
+                                   @NonNull List<String> skippedRootOnlyOptions) {
+            this.options = options;
+            this.skippedRootOnlyOptions = Collections.unmodifiableList(skippedRootOnlyOptions);
+        }
+
+        public boolean hasSkippedRootOnlyOptions() {
+            return !skippedRootOnlyOptions.isEmpty();
+        }
+
+        @NonNull
+        public String getSkippedRootOnlyOptionsSummary() {
+            return TextUtils.join(", ", skippedRootOnlyOptions);
+        }
     }
 }
