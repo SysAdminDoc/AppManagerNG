@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
+import android.content.pm.verify.domain.DomainVerificationUserState;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.RemoteException;
@@ -42,6 +43,7 @@ import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
+import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
@@ -49,6 +51,7 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
+import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
 import io.github.muntashirakon.AppManager.filters.options.ComponentsOption;
 import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
@@ -98,6 +101,10 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     private Boolean mBatteryOptEnabled = null;
     private Boolean mHasKeystoreItems = null;
     private Integer mRulesCount = null;
+    @Nullable
+    private Map<String, Integer> mDomainVerificationHosts;
+    @NonNull
+    private Map<String, List<DomainLinkConflictDetector.Conflict>> mDomainLinkConflicts = Collections.emptyMap();
 
     public FilterableAppInfo(@NonNull PackageInfo packageInfo, @Nullable PackageUsageInfo packageUsageInfo) {
         mPackageInfo = packageInfo;
@@ -490,6 +497,39 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     @Override
     public boolean hasDomainUrls() {
         return ApplicationInfoCompat.hasDomainUrls(mApplicationInfo);
+    }
+
+    @Override
+    @NonNull
+    public Map<String, Integer> getDomainVerificationHosts() {
+        if (mDomainVerificationHosts != null) {
+            return mDomainVerificationHosts;
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !isInstalled() || !hasDomainUrls()) {
+            mDomainVerificationHosts = Collections.emptyMap();
+            return mDomainVerificationHosts;
+        }
+        DomainVerificationUserState userState = DomainVerificationManagerCompat
+                .getDomainVerificationUserState(getPackageName(), getUserId());
+        if (userState == null || userState.getHostToStateMap().isEmpty()) {
+            mDomainVerificationHosts = Collections.emptyMap();
+        } else {
+            mDomainVerificationHosts = new LinkedHashMap<>(userState.getHostToStateMap());
+        }
+        return mDomainVerificationHosts;
+    }
+
+    @Override
+    @NonNull
+    public Map<String, List<DomainLinkConflictDetector.Conflict>> getDomainLinkConflicts() {
+        return mDomainLinkConflicts;
+    }
+
+    public void setDomainLinkConflicts(
+            @NonNull Map<String, List<DomainLinkConflictDetector.Conflict>> domainLinkConflicts) {
+        mDomainLinkConflicts = domainLinkConflicts.isEmpty()
+                ? Collections.emptyMap()
+                : new LinkedHashMap<>(domainLinkConflicts);
     }
 
     @Override

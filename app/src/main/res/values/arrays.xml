@@ -266,6 +266,7 @@
         <item>components</item>
         <item>data_size</item>
         <item>data_usage</item>
+        <item>domain_links</item>
         <item>freeze_unfreeze</item>
         <item>installed</item>
         <item>install_date</item>

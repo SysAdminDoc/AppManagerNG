@@ -20,6 +20,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
+import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
 
 public interface IFilterableAppInfo {
@@ -133,6 +134,16 @@ public interface IFilterableAppInfo {
     String getSsaid();
 
     boolean hasDomainUrls();
+
+    @NonNull
+    default Map<String, Integer> getDomainVerificationHosts() {
+        return Collections.emptyMap();
+    }
+
+    @NonNull
+    default Map<String, List<DomainLinkConflictDetector.Conflict>> getDomainLinkConflicts() {
+        return Collections.emptyMap();
+    }
 
     boolean hasStaticSharedLibrary();
 
