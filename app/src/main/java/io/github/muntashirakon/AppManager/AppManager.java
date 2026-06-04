@@ -19,6 +19,7 @@ import java.security.Security;
 
 import dalvik.system.ZipPathValidator;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -48,6 +49,7 @@ public class AppManager extends Application {
         Security.addProvider(new BouncyCastleProvider());
         ProfilingTriggerHelper.registerTriggersIfSupported(this);
         DebloatDefinitionsUpdater.scheduleUpdateIfAllowed(this);
+        OpHistoryPruneScheduler.scheduleOrCancel(this);
     }
 
     private void configureActivityEmbeddingSplits() {

@@ -14,6 +14,7 @@ historical context and the previous ledger are under
 
 ### Closed on 2026-06-03
 
+- [x] **P3 scheduled operation-history retention pruning** — finite Operation History retention values now schedule a unique daily WorkManager worker that prunes old `op_history` rows without opening the screen, while `0` is labeled and enforced as keep forever/no scheduled cleanup. — *Source: ROADMAP.md*
 - [x] **P2 weekly OWASP critical-CVE gate** — root OWASP Dependency Check keeps local runs report-only by default while the weekly scheduled workflow passes a CVSS 9.0 fail threshold and stops masking Gradle failures, with HTML/SARIF uploads retained under `if: always()`. — *Source: ROADMAP.md*
 - [x] **T19-C configured backup-root duplicate APK scanning** — One-Click Ops duplicate-APK scans now include the configured AppManager backup directory when it resolves to a local filesystem root, while `ApkDuplicateScanRoots` deduplicates overlapping roots and canonical file hits. — *Source: docs/roadmap/COMPLETED.md*
 - [x] **T19-C File Manager selected duplicate APK cleanup** — File Manager multi-select now offers "Find duplicate APK files" for at least two readable local APK-like files, scans only that selection, reviews redundant copies with the existing duplicate labels, authenticates deletion, and deletes through the shared `ApkDuplicateOperations`/`Paths` cleanup path. — *Source: docs/roadmap/COMPLETED.md*
