@@ -152,6 +152,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     public int openCount = 0;
     public Long screenTime = 0L;
     public Long lastUsageTime = 0L;
+    @NonNull
+    public List<String> userTags = Collections.emptyList();
     /**
      * Whether the item is a user app (or system app)
      */
@@ -386,6 +388,14 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
 
     public void setPackageUsageInfo(@Nullable PackageUsageInfo packageUsageInfo) {
         mPackageUsageInfo = packageUsageInfo;
+    }
+
+    public void setUserTags(@Nullable Set<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            userTags = Collections.emptyList();
+            return;
+        }
+        userTags = Collections.unmodifiableList(new ArrayList<>(tags));
     }
 
     private void fetchPackageInfo() {
