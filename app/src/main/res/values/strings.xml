@@ -3088,7 +3088,7 @@
     <string name="op_history_recovery_guidance_title">Recovery guidance</string>
     <string name="op_history_retention_title">Operation history retention</string>
     <string name="op_history_retention_summary">Automatically delete operation history older than <xliff:g id="retention" example="30 days">%1$s</xliff:g>.</string>
-    <string name="op_history_retention_never">Never delete automatically</string>
+    <string name="op_history_retention_never">Keep forever (no scheduled cleanup)</string>
     <string name="op_history_retention_7d">7 days</string>
     <string name="op_history_retention_30d">30 days</string>
     <string name="op_history_retention_90d">90 days</string>

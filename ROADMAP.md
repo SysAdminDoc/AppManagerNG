@@ -434,12 +434,12 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: a seeded CRITICAL CVE turns the weekly job red; HTML/SARIF artifacts still upload.
   - Verify: Gradle config parses with `-PdependencyCheckFailBuildOnCvss=9.0`; dry-run the workflow with a known-vulnerable test dep before relying on the first real alert.
   - Complexity: S
-- [ ] P3 — Schedule OpHistory retention prune as a periodic job (not only on screen open)
+- [x] P3 — Schedule OpHistory retention prune as a periodic job (not only on screen open)
   - Why: `OpHistoryManager.pruneHistoryOlderThan(days)` is the only prune path and it is called **only** from `OpHistoryActivity` (manual + on-open). A user who never opens Operation History — and whose retention pref is 0/"keep forever" (the prune early-returns on `days <= 0`) — accumulates an unbounded `op_history` table that ships inside every backup/snapshot bundle.
-  - Evidence: `history/ops/OpHistoryManager.java:121-126` (early-return on `days <= 0`); the only two callers are `OpHistoryActivity.java:1066,1085`.
-  - Touches: a small `WorkManager` periodic worker (or a hook into the existing routine/backup worker tick) calling `pruneHistoryOlderThan(Prefs.Privacy.getOpHistoryRetentionDays())`; document the "0 = keep forever" semantics in the retention-setting summary.
+  - Shipped 2026-06-03: `OpHistoryPruneScheduler` owns a unique daily WorkManager job and `OpHistoryPruneWorker` calls `pruneHistoryOlderThan(Prefs.Privacy.getOpHistoryRetentionDays())`; App startup, boot/package-replace, and Privacy retention changes reconcile schedule/cancel state.
+  - Evidence: `0` retention now reads "Keep forever (no scheduled cleanup)" and the worker cancels/no-ops if the live preference is disabled.
   - Acceptance: with a finite retention, old rows are pruned without opening the screen; "keep forever" is explicitly labeled.
-  - Verify: seed rows older than the window, advance the worker, assert deletion; assert no-op when retention is 0.
+  - Verify: `OpHistoryPruneSchedulerTest`; compile `OpHistoryPruneWorker`/Privacy settings path.
   - Complexity: S
 
 ### Larger Bets (P1/P2 needing design / staged rollout)
