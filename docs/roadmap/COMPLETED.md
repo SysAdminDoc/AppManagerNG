@@ -11,6 +11,15 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 installer notification final-state wording** — installer completion
+  now applies the same concrete final title/body to the foreground progress
+  notification and the completion alert instead of mutating the last progress
+  body to a generic "Done". Success and failure subjects still come from the
+  existing installer status formatter, and failure details remain available
+  through the expanded BigText body when present. Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.PackageInstallerServiceTest`.
+  Manual background install success/failure notification walkthrough remains
+  device-gated.
 - [x] **P2 optional extended metadata for app-list exports** — App-list export
   now keeps the legacy CSV/JSON/XML/Markdown shapes by default while an explicit
   "Extended" choice adds user id, system/disabled/hidden/suspended/stopped
