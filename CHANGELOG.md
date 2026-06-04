@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - AppManagerNG SAF documents provider (research P2, 2026-06-04)
+
+- Added a read-only `DocumentsProvider` at `${applicationId}.documents` so
+  Android SAF pickers can browse AppManagerNG-managed backup and profile roots.
+- The provider exposes the configured local backup volume and app-private
+  profiles directory, rejects write modes, filters hidden children, and refuses
+  document IDs that escape their canonical root.
+- Added JVM coverage for document-id round-tripping, traversal rejection,
+  unknown-root rejection, and deterministic directory-before-file child sorting.
+
 ### Added - App Info memory-tagging chip (research P2/B4, 2026-06-04)
 
 - App Details now computes each package's Android memory-tagging posture from
