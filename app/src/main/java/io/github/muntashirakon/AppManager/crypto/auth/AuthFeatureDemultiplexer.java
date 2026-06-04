@@ -12,6 +12,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity;
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
 
 public class AuthFeatureDemultiplexer extends BaseActivity {
     public static final String EXTRA_FEATURE = "feature";
@@ -58,7 +59,15 @@ public class AuthFeatureDemultiplexer extends BaseActivity {
 
     public void launchProfile(@NonNull Intent intent) {
         String profileId = intent.getStringExtra(ProfileApplierActivity.EXTRA_PROFILE_ID);
+        if (profileId == null || profileId.trim().isEmpty()) {
+            return;
+        }
         String state = intent.getStringExtra(ProfileApplierActivity.EXTRA_STATE);
-        startActivity(ProfileApplierActivity.getAutomationIntent(getApplicationContext(), profileId, state));
+        Intent receiverIntent = ProfileApplierReceiver.getAutomationIntent(getApplicationContext(), profileId, state);
+        String runtimePackage = intent.getStringExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE);
+        if (runtimePackage != null) {
+            receiverIntent.putExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE, runtimePackage);
+        }
+        sendBroadcast(receiverIntent);
     }
 }

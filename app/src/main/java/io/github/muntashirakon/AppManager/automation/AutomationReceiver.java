@@ -50,6 +50,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchComponentOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierService;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
@@ -124,6 +125,9 @@ public class AutomationReceiver extends BroadcastReceiver {
         String normalizedProfileId = ProfileManager.getProfileIdCompat(profileId.trim());
         String state = intent.getStringExtra(EXTRA_PROFILE_STATE);
         JSONObject profileOverrides = getProfileOverrides(intent.getStringExtra(EXTRA_PROFILE_OVERRIDES));
+        profileOverrides = ProfileApplierReceiver.mergeRuntimePackageOverride(profileOverrides,
+                intent.getStringExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE));
+        final JSONObject mergedProfileOverrides = profileOverrides;
         if (AutomationIntents.readBooleanExtra(intent, EXTRA_DRY_RUN, false)) {
             return;
         }
@@ -134,7 +138,7 @@ public class AutomationReceiver extends BroadcastReceiver {
                     Path profilePath = ProfileManager.findProfilePathById(normalizedProfileId);
                     BaseProfile profile = BaseProfile.fromPath(profilePath);
                     Intent serviceIntent = ProfileApplierService.getIntent(context,
-                            ProfileQueueItem.fromProfile(profile, state, profileOverrides), true);
+                            ProfileQueueItem.fromProfile(profile, state, mergedProfileOverrides), true);
                     startForegroundService(context, serviceIntent);
                 } catch (IOException | JSONException e) {
                     Log.w(TAG, "Could not dispatch profile automation for " + normalizedProfileId, e);

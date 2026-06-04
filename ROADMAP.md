@@ -582,10 +582,11 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Complexity: L
 - [ ] P2 — Upstream-issue fixes carried into NG (iter-20)
   - Why: high-signal upstream bug reports map to concrete NG actions; several are also Android-16/17 hard breaks.
-  - Evidence: tracked per-issue in `RESEARCH_REPORT.md` §5; not yet individually scoped against current source (some may already be partially addressed — scope each before promoting).
-  - Touches: `ProfileApplierReceiver` w/ `extra_pkg` (#1968); KernelSU detect + force-re-grant (#1967); App Info popup restructure (#1966); `pm clear --user N` fallback + disk-delta (#1965); File Manager search (#1964); shortcut-target CI lint + missing `<activity-alias>` (#1963); Android 16 compat `IBinder` API-gating (#1961/#1962); squashfs writer validation (#1957); OS-revert banner for battery-optimization (#1956).
+  - Shipped 2026-06-04 (#1968 slice): `ProfileApplierReceiver` now converts authenticated automatic profile triggers into the existing automation receiver instead of starting `ProfileApplierActivity`; profile automation accepts `extra_pkg` as a one-shot package override; the signed Locale/Tasker plugin can merge `extra_pkg` at fire time so Tasker variables do not invalidate the configured URI signature.
+  - Evidence: tracked per-issue in `RESEARCH_REPORT.md` §5; #1968 is scoped and shipped, the remaining issue fixes still need source-specific scoping before promotion.
+  - Touches remaining: KernelSU detect + force-re-grant (#1967); App Info popup restructure (#1966); `pm clear --user N` fallback + disk-delta (#1965); File Manager search (#1964); shortcut-target CI lint + missing `<activity-alias>` (#1963); Android 16 compat `IBinder` API-gating (#1961/#1962); squashfs writer validation (#1957); OS-revert banner for battery-optimization (#1956).
   - Acceptance: each mapped fix lands with a regression test where applicable.
-  - Verify: per-issue — scope against current source first, then test the specific fix.
+  - Verify: per-issue — scope against current source first, then test the specific fix. #1968 host gate: `AutomationRequestTest`, `AutomationIntentsTest`, `TaskerPluginBrokerTest`, and `ProfileApplierReceiverTest`.
   - Complexity: L
 - [ ] P0 — Android 17 (target SDK 37) pre-bump compliance gate
   - Why: the individual Android 17 audits are written (`docs/audits/2026-05-*`) and the HKDF + reflection items are already implemented, but the **bump itself** (`compile_sdk`/`target_sdk` 36 -> 37) has not landed and needs a final on-image gate before flipping. This row is the bump checklist, not the (now-shipped) per-item audits.

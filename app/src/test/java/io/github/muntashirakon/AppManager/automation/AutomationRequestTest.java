@@ -15,6 +15,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
+
 @RunWith(RobolectricTestRunner.class)
 public class AutomationRequestTest {
     @Test
@@ -77,6 +79,22 @@ public class AutomationRequestTest {
         assertEquals(AutomationIntents.ACTION_RUN_PROFILE, request.action);
         assertEquals("nightly", request.profileId);
         assertEquals("on", request.profileState);
+    }
+
+    @Test
+    public void mapsExtraPkgProfileIntentToPackageOverride() throws Exception {
+        Intent intent = new Intent(AutomationIntents.ACTION_RUN_PROFILE)
+                .putExtra(AutomationIntents.EXTRA_PROFILE_ID, "nightly")
+                .putExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE, "com.example.dynamic");
+
+        AutomationRequest request = AutomationRequest.fromIntent(intent);
+
+        assertNotNull(request);
+        assertEquals(AutomationIntents.ACTION_RUN_PROFILE, request.action);
+        assertEquals("nightly", request.profileId);
+        assertNotNull(request.profileOverrides);
+        assertEquals("com.example.dynamic",
+                request.profileOverrides.getJSONArray("packages").getString(0));
     }
 
     @Test
