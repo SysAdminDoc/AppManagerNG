@@ -185,6 +185,9 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         mFlowLayout.removeAllViews();
         addTag(mFlowLayout, debloatObject.type);
         addTag(mFlowLayout, removalRes, removalColor);
+        for (String knownPreinstallOem : debloatObject.getKnownPreinstallOems()) {
+            addTag(mFlowLayout, requireContext().getString(R.string.debloat_known_preinstall_oem, knownPreinstallOem));
+        }
     }
 
     /**

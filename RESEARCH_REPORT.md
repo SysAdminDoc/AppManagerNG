@@ -21,6 +21,8 @@ rejected on license/privacy/scope grounds are recorded as STALE in
 4. Observability, Telemetry & Testing Audit (2026-05-09)
 5. iter-20 Research Delta — issues, competitors, Android 17, CVEs, deps (2026-04-15 to 2026-05-08)
 6. iter-6 Delta — null-result research-cycle note (2026-05-01)
+7. Deep-Research Pass — code-verified delta (2026-06-03)
+8. Freshness Refresh — submodule and dependency delta (2026-06-04)
 
 ---
 
@@ -450,3 +452,49 @@ found no reason to revisit them.
 - `[Needs validation]` On-image Android 17 behaviour for the BAL allow-flag +
   explicit-URI-grant paths before flipping `targetSdk` to 37 — device/emulator
   gated, not resolvable on the build host.
+
+---
+
+## 8. Freshness Refresh — submodule and dependency delta (2026-06-04)
+
+This pass re-read the current `main` checkout at `c43601d`, the live roadmap,
+`versions.gradle`, `.gitmodules`, and the initialized dataset directories. It
+also checked current Maven/Google metadata for the pinned toolchain and ceiling
+dependencies.
+
+### New Finding
+
+- **Major — Required `android-libraries` dataset is not tracked as a submodule.**
+  `.gitmodules`, `CLAUDE.md`, and `PROJECT_CONTEXT.md` say both
+  `scripts/android-libraries` and `scripts/android-debloat-list` are fetched by
+  `git submodule update --init --recursive`, but the superproject only tracks
+  `scripts/android-debloat-list`. The working tree contains an untracked local
+  `scripts/android-libraries` clone at `8fb3919`, so this host can see
+  `libs.json`, but a fresh checkout will not fetch it from the superproject.
+  This was promoted to `ROADMAP.md` as a P1 build-host hygiene item. [Verified]
+
+### Current Checks
+
+- **Dependency/toolchain metadata:** AGP `9.2.0` has newer alpha metadata
+  (`9.3.0-alpha09`); Material Components `1.13.0`, Activity `1.11.0`, Room
+  `2.7.2`, Work `2.10.5`, and WebKit-related ceiling pins all remain governed by
+  the documented minSdk-21 policy. Current metadata shows newer versions for
+  several of those lines (`material 1.14.0`, `activity 1.13.0`, `room 2.8.4`,
+  `work 2.11.2`), but the repo already documents that these lines drop API
+  21-22 support or need coordinated ceiling decisions. BouncyCastle `1.84`,
+  Robolectric `4.16.1`, and OWASP dependency-check `10.0.3` are current. [Verified]
+- **Already-closed research rows stayed closed:** weekly OWASP critical-CVE
+  gating now passes `-PdependencyCheckFailBuildOnCvss=9.0`; operation-history
+  pruning is scheduled through WorkManager; batch retry, single-app audit
+  coverage, Mode Doctor, and the opt-in local crash sink are documented as
+  shipped in the live roadmap. [Verified]
+- **External source refresh:** official Android developer-verification docs now
+  describe the 2026 rollout and Android Developer Console registration path for
+  apps distributed outside Play. That keeps `docs/sideload-verification.md` and
+  the distribution-verification posture current; it did not create a new row.
+  [Verified, external]
+- **Validation boundary:** no Gradle build/test was run on this PC because
+  `local.properties` points at `C:\Users\--\AppData\Local\Android\Sdk` and no
+  Android SDK exists under the usual local paths. This mirrors the NovaCut host
+  limitation and should be resolved with a real SDK or an NTFS verification
+  mirror before compile/test claims are made. [Needs validation]

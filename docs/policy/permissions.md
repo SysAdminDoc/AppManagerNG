@@ -156,7 +156,11 @@ build clean of:
 - `Tracking` — no analytics SDK; no telemetry network calls.
 - `NonFreeNet` — no proprietary network service is hit by the floss flavor.
 - `NonFreeAdd` — no commercial in-app upgrades.
-- `NonFreeAssets` — the bundled tracker dataset is εxodus (CC-BY-SA-4.0, GPL-3.0-compatible); the debloat dataset is `android-debloat-list` (CC-BY-SA-4.0, GPL-3.0-compatible).
+- `NonFreeAssets` — bundled scanner datasets are generated from the
+  `android-libraries` source data (Exodus / IzzyOnDroid / LibSmali-style
+  signature inputs, GPL-compatible for NG redistribution); the debloat dataset
+  is `android-debloat-list` (CC-BY-SA-4.0, GPL-3.0-compatible). No scanner or
+  debloat verdict requires a runtime remote service.
 
 `UpstreamNonFree` would only apply if the upstream MuntashirAkon/AppManager
 fork shipped a non-FOSS component, which it doesn't.
