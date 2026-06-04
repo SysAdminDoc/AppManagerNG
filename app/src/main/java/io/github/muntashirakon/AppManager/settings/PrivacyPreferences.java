@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotBundle;
@@ -141,6 +142,7 @@ public class PrivacyPreferences extends PreferenceFragment {
                     .setTitle(R.string.op_history_retention_title)
                     .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
                         Prefs.Privacy.setOpHistoryRetentionDays(values[which]);
+                        OpHistoryPruneScheduler.scheduleOrCancel(requireContext(), values[which]);
                         updateOpHistoryRetentionSummary(opHistoryRetention);
                         dialog.dismiss();
                     })

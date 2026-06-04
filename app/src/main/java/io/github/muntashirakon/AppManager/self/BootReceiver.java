@@ -8,6 +8,7 @@ import android.content.Intent;
 
 import androidx.core.content.ContextCompat;
 
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.self.filecache.InternalCacheCleanerService;
 import io.github.muntashirakon.AppManager.servermanager.WifiWaitService;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -27,8 +28,10 @@ public class BootReceiver extends BroadcastReceiver {
             InternalCacheCleanerService.scheduleAlarm(context.getApplicationContext());
             RoutineScheduler.applyAll(context);
             RoutineScheduler.enqueueBootTriggers(context);
+            OpHistoryPruneScheduler.scheduleOrCancel(context);
         } else if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             RoutineScheduler.applyAll(context);
+            OpHistoryPruneScheduler.scheduleOrCancel(context);
         }
     }
 }
