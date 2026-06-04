@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Tasker/Locale automation plugin broker (research P2, 2026-06-04)
+
+- Added an in-app Locale-compatible Tasker plugin edit Activity and fire
+  receiver. The setup UI stores a signed `am://` automation URI bundle with a
+  short blurb, and runtime fire calls are rejected if the bundle is missing,
+  unsigned, tampered, or no longer parses as a supported automation URI.
+- Valid plugin fires are translated into the existing signature-gated
+  `AutomationReceiver` contract so Tasker can run the same freeze, force-stop,
+  clear, backup/restore, component, install, tracker-scan, and profile actions
+  without exposing the privileged receiver to arbitrary external broadcasts.
+- Added JVM coverage for Locale bundle/blurb construction, signature tamper
+  rejection, receiver-intent mapping, and profile package override handling.
+
 ### Added - Quick Settings tile install and force-stop tile (research P2, 2026-06-04)
 
 - Freeze-profile selection now requests the Android 13+ one-tap Quick Settings
