@@ -201,8 +201,8 @@ Net-new candidate rows:
 - **O-04 OEM Quirk Panel** (effort 3) — detect Knox/MIUI/EMUI/OxygenOS/ColorOS/OneUI/HyperOS at runtime; surface known limitations + workaround page.
 - **O-05 Opt-In Local Crash Sink (ACRA-style)** (effort 2) — write crash JSON to `Documents/AppManagerNG/crashes/`, no network, default OFF; shared via O-01.
 - **O-06 LocalServer Bootstrap Smoke Test** (effort 2) — run bootstrap end-to-end against the current mode and print the failure-signature line on success too.
-- **O-07 Macrobenchmark module** (effort 4) — `:benchmark` measuring cold-start / list-scroll jank / Backups TTI; nightly device CI; Baseline Profile for the app-list path.
-- **O-08 Espresso + UI Automator smoke pack** (effort 4) — headless device suite (open list, freeze/unfreeze, component blocker, one-shot rule) in `connectedCheck` on API 26/30/34/35.
+- **O-07 Macrobenchmark module** (effort 4) — `:benchmark` measuring cold-start / list-scroll jank / Backups TTI; nightly device CI; Baseline Profile for the app-list path. Partial scaffold shipped 2026-06-04: `:benchmark` compiles cold-start Macrobenchmark and BaselineProfileRule startup tests against the debug app, and a seed startup profile is checked in under `app/src/main`.
+- **O-08 Espresso + UI Automator smoke pack** (effort 4) — headless device suite (open list, freeze/unfreeze, component blocker, one-shot rule) in `connectedCheck` on API 26/30/34/35. Partial scaffold shipped 2026-06-04: app androidTest has a LargeTest UIAutomator launch smoke for the main app list; privileged smoke flows and device-matrix CI remain open.
 - **O-09 CI dependency CVE scan** (effort 2) — `dependency-check-gradle` + `dependency-review-action`; fail PR on HIGH/CRITICAL.
 - **O-10 "F-Droid clean" build flavor** (effort 3) — `floss` (no optional network) vs `full` (ACRA file sink, update check, MOTD); F-Droid pinned to `floss`.
 - **O-11 In-app log viewer w/ severity filter + redaction** (effort 2) — structured viewer, one-tap "redact UIDs/paths", "copy line".
@@ -311,7 +311,7 @@ opportunities, one line each:
 3. `[Verified]` The weekly OWASP CVE job uses `continue-on-error: true` — a CRITICAL CVE against an unchanged pinned dep never fails the run. **P2 hardening.**
 4. `[Verified]` `op_history` retention prune runs only when the history screen is opened, and early-returns when retention is 0 — unbounded growth for users who never visit it. **P3.**
 5. `[Verified]` `compile_sdk`/`target_sdk` are still 36; the Android 17 per-item audits are written and HKDF/reflection items implemented, so the open work is the bump-gate, not the audits. **P0 (gated).**
-6. `[Verified]` No `:benchmark` module / Baseline Profile exists; the CVE-scan and flavour halves of the old "O-07–O-10" row already shipped, leaving only the perf/smoke half. **P2.**
+6. `[Updated 2026-06-04]` `:benchmark`, a seed Baseline Profile, and a LargeTest UIAutomator launch smoke now exist; the remaining O-07/O-08 work is device execution, list-scroll / Backups TTI coverage, privileged smoke flows, and CI wiring. **P2.**
 7. `[Likely]` Snapshot bundle export/import is still absent and is the only migration path off the already-divergent `applicationId`. **P2 data-loss guard.**
 
 ### Evidence Reviewed
@@ -422,8 +422,10 @@ sidecar.
 - `[Verified]` Dependency health is current: BouncyCastle 1.84, AGP 9.2.0, Gson
   2.14.0, Room 2.7.2; minSdk-21 ceiling deps (material 1.13, work 2.10.x,
   biometric 1.4.0-alpha04) are pinned with documented reasons in `versions.gradle`.
-- `[Verified]` No `:benchmark` module in `settings.gradle`; no Baseline Profile
-  in `app/src` (only `HiddenApiDescriptorBaselineTest`, unrelated).
+- `[Updated 2026-06-04]` `settings.gradle` includes `:benchmark`;
+  `app/src/main/baseline-prof.txt` carries a seed startup Baseline Profile.
+  Device-generated profile refresh and emulator-matrix execution remain
+  open.
 
 ### Security / Privacy / Data Safety
 
