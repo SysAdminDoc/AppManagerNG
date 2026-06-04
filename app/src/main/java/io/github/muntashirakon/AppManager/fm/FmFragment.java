@@ -3,16 +3,19 @@
 package io.github.muntashirakon.AppManager.fm;
 
 import static io.github.muntashirakon.AppManager.fm.FmTasks.FmTask.TYPE_CUT;
+import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -29,6 +32,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.LinearLayoutCompat;
@@ -36,6 +40,7 @@ import androidx.appcompat.widget.SearchView;
 import androidx.core.content.ContextCompat;
 import androidx.core.os.BundleCompat;
 import androidx.core.provider.DocumentsContractCompat;
+import androidx.core.util.Pair;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
@@ -49,6 +54,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.ref.WeakReference;
@@ -64,11 +70,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.NewFileDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.NewFolderDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.NewSymbolicLinkDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.RenameDialogFragment;
+import io.github.muntashirakon.AppManager.oneclickops.ApkDuplicateOperations;
+import io.github.muntashirakon.AppManager.oneclickops.ApkDuplicateSelector;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
@@ -76,6 +85,7 @@ import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
+import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -610,6 +620,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             mModel.shareFiles(selectedFiles);
         } else if (id == R.id.action_install_selected_apks) {
             startBatchApkInstall(selectedFiles);
+        } else if (id == R.id.action_find_duplicate_apks) {
+            startSelectedApkDuplicateScan(selectedFiles);
         } else if (id == R.id.action_rename) {
             RenameDialogFragment dialog = RenameDialogFragment.getInstance(null, (prefix, extension) ->
                     showBatchRenamePreview(new ArrayList<>(selectedFiles), prefix, extension));
@@ -655,6 +667,143 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         if (mMultiSelectionView != null) {
             mMultiSelectionView.cancel();
         }
+    }
+
+    private void startSelectedApkDuplicateScan(@NonNull List<Path> selectedFiles) {
+        if (!FmDuplicateApkSelectionUtils.canOfferDuplicateScan(selectedFiles)) {
+            UIUtils.displayShortToast(R.string.no_duplicate_apk_files_selected);
+            return;
+        }
+        List<File> apkFiles = FmDuplicateApkSelectionUtils.toLocalFiles(selectedFiles);
+        if (mMultiSelectionView != null) {
+            mMultiSelectionView.cancel();
+        }
+        PackageManager packageManager = requireContext().getPackageManager();
+        File cacheDir = requireContext().getCacheDir();
+        AtomicReference<Future<?>> scanThread = new AtomicReference<>();
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.find_duplicate_apks)
+                .setMessage(R.string.scan_selected_duplicate_apks)
+                .setPositiveButton(R.string.action_stop_service, (dialog, which) -> {
+                    Future<?> future = scanThread.get();
+                    if (future != null) {
+                        future.cancel(true);
+                    }
+                })
+                .setCancelable(false)
+                .show();
+        scanThread.set(ThreadUtils.postOnBackgroundThread(() -> {
+            List<ApkDuplicateSelector.DuplicateGroup> groups = Collections.emptyList();
+            boolean cancelled = false;
+            try {
+                List<ApkDuplicateSelector.Candidate> candidates = new ArrayList<>(apkFiles.size());
+                for (File apkFile : apkFiles) {
+                    if (ThreadUtils.isInterrupted()) {
+                        cancelled = true;
+                        break;
+                    }
+                    ApkDuplicateSelector.Candidate candidate = ApkDuplicateOperations.buildCandidate(
+                            packageManager, cacheDir, apkFile);
+                    if (candidate != null) {
+                        candidates.add(candidate);
+                    }
+                }
+                if (!cancelled && !ThreadUtils.isInterrupted()) {
+                    groups = ApkDuplicateSelector.selectDuplicates(candidates,
+                            ApkDuplicateSelector.KeepStrategy.LARGEST);
+                } else {
+                    cancelled = true;
+                }
+            } finally {
+                List<ApkDuplicateSelector.DuplicateGroup> finalGroups = groups;
+                boolean finalCancelled = cancelled || ThreadUtils.isInterrupted();
+                ThreadUtils.postOnMainThread(() -> {
+                    progressDialog.dismiss();
+                    if (!isAdded()) {
+                        return;
+                    }
+                    if (!finalCancelled) {
+                        reviewSelectedApkDuplicates(finalGroups);
+                    }
+                });
+            }
+        }));
+    }
+
+    private void reviewSelectedApkDuplicates(@Nullable List<ApkDuplicateSelector.DuplicateGroup> groups) {
+        if (groups == null || groups.isEmpty()) {
+            showSelectedApkDuplicateInfo(R.string.find_duplicate_apks, R.string.no_duplicate_apks_found_message);
+            return;
+        }
+        final ArrayList<ApkDuplicateSelector.Candidate> drops = new ArrayList<>();
+        final ArrayList<Integer> indices = new ArrayList<>();
+        final List<CharSequence> labels = new ArrayList<>();
+        for (ApkDuplicateSelector.DuplicateGroup group : groups) {
+            for (ApkDuplicateSelector.Candidate drop : group.drop) {
+                indices.add(drops.size());
+                drops.add(drop);
+                labels.add(new SpannableStringBuilder(drop.path.getName())
+                        .append("\n").append(getSmallerText(drop.packageName + " v" + drop.versionCode
+                                + " · " + Formatter.formatShortFileSize(requireContext(), drop.sizeBytes)
+                                + " · " + getString(R.string.apk_duplicate_keeping, group.keeper.path.getName()))));
+            }
+        }
+        new SearchableMultiChoiceDialogBuilder<>(requireContext(), indices, labels)
+                .addSelections(indices)
+                .setTitle(R.string.duplicate_apks_review_title)
+                .setPositiveButton(R.string.delete, (dialog, which, selectedIndices) -> {
+                    if (selectedIndices.isEmpty()) {
+                        UIUtils.displayShortToast(R.string.no_duplicate_apk_delete_selection);
+                        return;
+                    }
+                    List<ApkDuplicateSelector.Candidate> selected = new ArrayList<>(selectedIndices.size());
+                    for (Integer index : selectedIndices) {
+                        selected.add(drops.get(index));
+                    }
+                    confirmDeleteSelectedApkDuplicates(selected);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmDeleteSelectedApkDuplicates(@NonNull List<ApkDuplicateSelector.Candidate> dropFiles) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.find_duplicate_apks)
+                .setMessage(R.string.delete_duplicate_apks_confirm)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_clear_data,
+                                () -> deleteSelectedApkDuplicates(dropFiles)))
+                .show();
+    }
+
+    private void deleteSelectedApkDuplicates(@NonNull List<ApkDuplicateSelector.Candidate> dropFiles) {
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.find_duplicate_apks)
+                .setMessage(R.string.loading)
+                .setCancelable(false)
+                .show();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Pair<Integer, Long> result = ApkDuplicateOperations.deleteCandidates(dropFiles);
+            ThreadUtils.postOnMainThread(() -> {
+                progressDialog.dismiss();
+                if (!isAdded()) {
+                    return;
+                }
+                UIUtils.displayLongToast(getString(R.string.duplicate_apks_deleted, result.first,
+                        Formatter.formatShortFileSize(requireContext(), result.second)));
+                mModel.reload();
+            });
+        });
+    }
+
+    private void showSelectedApkDuplicateInfo(@StringRes int titleRes, @StringRes int messageRes) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setIcon(R.drawable.ic_information_circle)
+                .setTitle(titleRes)
+                .setMessage(messageRes)
+                .setPositiveButton(R.string.ok, null)
+                .show();
     }
 
     @Override
@@ -1598,6 +1747,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private class BatchOpsHandler implements MultiSelectionView.OnSelectionChangeListener {
         private final MenuItem mShareMenu;
         private final MenuItem mInstallApksMenu;
+        private final MenuItem mFindDuplicateApksMenu;
         private final MenuItem mRenameMenu;
         private final MenuItem mDeleteMenu;
         private final MenuItem mCutMenu;
@@ -1610,6 +1760,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             Menu menu = multiSelectionView.getMenu();
             mShareMenu = menu.findItem(R.id.action_share);
             mInstallApksMenu = menu.findItem(R.id.action_install_selected_apks);
+            mFindDuplicateApksMenu = menu.findItem(R.id.action_find_duplicate_apks);
             mRenameMenu = menu.findItem(R.id.action_rename);
             mDeleteMenu = menu.findItem(R.id.action_delete);
             mCutMenu = menu.findItem(R.id.action_cut);
@@ -1637,8 +1788,11 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     && canWrite
                     && FmArchiveUtils.isSupportedZip(selectedItems.get(0));
             boolean canInstallApks = canRead && FmBatchApkInstallUtils.canOfferInstall(selectedItems);
+            boolean canFindDuplicateApks = canRead && canWrite
+                    && FmDuplicateApkSelectionUtils.canOfferDuplicateScan(selectedItems);
             mShareMenu.setEnabled(nonZeroSelection && canRead);
             mInstallApksMenu.setEnabled(canInstallApks);
+            mFindDuplicateApksMenu.setEnabled(canFindDuplicateApks);
             mRenameMenu.setEnabled(nonZeroSelection && canWrite);
             mDeleteMenu.setEnabled(nonZeroSelection && canWrite);
             mCutMenu.setEnabled(nonZeroSelection && canWrite);
