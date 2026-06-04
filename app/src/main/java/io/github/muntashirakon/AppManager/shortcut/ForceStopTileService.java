@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package io.github.muntashirakon.AppManager.profiles;
+package io.github.muntashirakon.AppManager.shortcut;
 
 import android.app.PendingIntent;
 import android.app.StatusBarManager;
@@ -17,17 +17,18 @@ import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 
-import org.json.JSONException;
-
-import java.io.IOException;
-
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
-import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.main.SplashActivity;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
-public class QuickFreezeTileService extends TileService {
-    private static final String TAG = QuickFreezeTileService.class.getSimpleName();
+public class ForceStopTileService extends TileService {
+    private static final String TAG = ForceStopTileService.class.getSimpleName();
 
     public static void requestTileStateUpdate(@NonNull Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -36,7 +37,7 @@ public class QuickFreezeTileService extends TileService {
         try {
             TileService.requestListeningState(context, getTileComponentName(context));
         } catch (RuntimeException e) {
-            Log.w(TAG, "Could not request quick freeze tile state update.", e);
+            Log.w(TAG, "Could not request force-stop tile state update.", e);
         }
     }
 
@@ -52,12 +53,12 @@ public class QuickFreezeTileService extends TileService {
                 return;
             }
             statusBarManager.requestAddTileService(getTileComponentName(context),
-                    context.getString(R.string.quick_freeze_tile_label),
-                    Icon.createWithResource(context, R.drawable.ic_snowflake),
+                    context.getString(R.string.force_stop_tile_label),
+                    Icon.createWithResource(context, R.drawable.ic_stop),
                     ContextCompat.getMainExecutor(context),
                     result -> requestTileStateUpdate(context));
         } catch (RuntimeException e) {
-            Log.w(TAG, "Could not request quick freeze tile installation.", e);
+            Log.w(TAG, "Could not request force-stop tile installation.", e);
             requestTileStateUpdate(context);
         }
     }
@@ -70,7 +71,7 @@ public class QuickFreezeTileService extends TileService {
     @NonNull
     @VisibleForTesting
     static ComponentName getTileComponentName(@NonNull Context context) {
-        return new ComponentName(context, QuickFreezeTileService.class);
+        return new ComponentName(context, ForceStopTileService.class);
     }
 
     @Override
@@ -83,40 +84,43 @@ public class QuickFreezeTileService extends TileService {
     public void onClick() {
         super.onClick();
         if (isLocked()) {
-            unlockAndRun(this::runSelectedFreezeProfile);
+            unlockAndRun(this::runSelectedTarget);
             return;
         }
-        runSelectedFreezeProfile();
+        runSelectedTarget();
     }
 
-    private void runSelectedFreezeProfile() {
-        BaseProfile profile;
-        try {
-            profile = QuickFreezeTileController.loadSelectedProfile();
-        } catch (IOException | JSONException e) {
-            Log.e(TAG, "Could not load quick freeze profile.", e);
+    private void runSelectedTarget() {
+        ForceStopTileController.Target target = ForceStopTileController.getSelectedTarget();
+        if (target == null) {
             updateTile(Tile.STATE_UNAVAILABLE);
-            UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_missing);
-            openProfilesAndCollapse();
+            UIUtils.displayShortToast(R.string.force_stop_tile_no_app);
+            openLauncherAndCollapse();
             return;
         }
-        if (profile == null) {
+        if (!SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)) {
             updateTile(Tile.STATE_UNAVAILABLE);
-            UIUtils.displayShortToast(R.string.quick_freeze_tile_no_profile);
-            openProfilesAndCollapse();
-            return;
-        }
-        if (!QuickFreezeTileController.isProfileEligible(profile)) {
-            updateTile(Tile.STATE_UNAVAILABLE);
-            UIUtils.displayShortToast(R.string.quick_freeze_tile_requires_freeze);
-            openProfilesAndCollapse();
+            UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
             return;
         }
         updateTile(Tile.STATE_ACTIVE);
-        Intent intent = ProfileApplierService.getIntent(this,
-                ProfileQueueItem.fromProfile(profile, BaseProfile.STATE_ON), true);
-        ContextCompat.startForegroundService(this, intent);
-        UIUtils.displayShortToast(R.string.quick_freeze_tile_started, profile.name);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                PackageManagerCompat.forceStopPackage(target.packageName, target.userId);
+                String label = PackageUtils.getPackageLabel(getPackageManager(), target.packageName, target.userId)
+                        .toString();
+                ThreadUtils.postOnMainThread(() -> {
+                    updateTile(Tile.STATE_INACTIVE);
+                    UIUtils.displayShortToast(R.string.force_stop_tile_done, label);
+                });
+            } catch (Throwable th) {
+                Log.e(TAG, th);
+                ThreadUtils.postOnMainThread(() -> {
+                    updateTile(Tile.STATE_INACTIVE);
+                    UIUtils.displayShortToast(R.string.failed);
+                });
+            }
+        });
     }
 
     private void updateTile(int configuredState) {
@@ -124,8 +128,12 @@ public class QuickFreezeTileService extends TileService {
         if (tile == null) {
             return;
         }
-        tile.setLabel(getString(R.string.quick_freeze_tile_label));
-        if (QuickFreezeTileController.getSelectedProfileId() == null) {
+        tile.setLabel(getString(R.string.force_stop_tile_label));
+        ForceStopTileController.Target target = ForceStopTileController.getSelectedTarget();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.setSubtitle(target != null ? target.packageName : null);
+        }
+        if (target == null || !SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)) {
             tile.setState(Tile.STATE_UNAVAILABLE);
         } else {
             tile.setState(configuredState);
@@ -134,8 +142,8 @@ public class QuickFreezeTileService extends TileService {
     }
 
     @SuppressWarnings("deprecation")
-    private void openProfilesAndCollapse() {
-        Intent intent = new Intent(this, ProfilesActivity.class)
+    private void openLauncherAndCollapse() {
+        Intent intent = new Intent(this, SplashActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             PendingIntent pendingIntent = PendingIntentCompat.getActivity(this, 0, intent,

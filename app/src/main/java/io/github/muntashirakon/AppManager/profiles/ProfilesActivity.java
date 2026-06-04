@@ -507,7 +507,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                         UIUtils.displayShortToast(R.string.quick_freeze_tile_requires_freeze);
                     } else {
                         QuickFreezeTileController.setSelectedProfile(profile.profileId);
-                        QuickFreezeTileService.requestTileStateUpdate(mActivity);
+                        QuickFreezeTileService.requestAddTile(mActivity);
                         UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_set, profile.name);
                     }
                 } else if (id == R.id.action_shortcut) {
