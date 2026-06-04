@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Privacy API manifest surfaces (research P2/B5-B6, 2026-06-04)
+
+- App Details now shows Health Connect permission declarations from the target
+  manifest, including read/write counts and a Health Connect permission
+  management deep link on supported Android versions.
+- App Details now shows Credential Manager provider service declarations from
+  the target manifest, including system-provider actions and missing
+  `BIND_CREDENTIAL_PROVIDER_SERVICE` warnings.
+- Both dialogs label the result as target package manifest metadata, not live
+  Health Connect grant state, stored credential contents, or enabled provider
+  state.
+- Added JVM coverage for Health Connect permission filtering/counting and
+  Credential Provider service/action/bind-permission detection.
+
 ### Added - SDK Runtime manifest declarations (research P2/B1, 2026-06-04)
 
 - App Details now shows an SDK Runtime chip sourced from the target APK's

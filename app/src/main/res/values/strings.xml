@@ -2671,6 +2671,32 @@
     <string name="sdk_sandbox_dialog_none">No manifest SDK Runtime library dependencies were found for this package.\n\nThis is target package metadata, not a live list of loaded sandboxed SDKs. Android\'s public getSandboxedSdks() call is scoped to the caller, so AppManagerNG does not use it to audit other apps.</string>
     <string name="sdk_sandbox_dialog_header">Manifest SDK Runtime libraries:</string>
     <string name="sdk_sandbox_dialog_scope_note">This is target package metadata, not a live list of loaded sandboxed SDKs. Android\'s public getSandboxedSdks() call is scoped to the caller, so AppManagerNG does not use it to audit other apps.</string>
+    <string name="health_connect_chip_unsupported">Health Connect: not supported</string>
+    <string name="health_connect_chip_none">Health Connect: none</string>
+    <plurals name="health_connect_chip_count">
+        <item quantity="one">Health Connect: %1$d permission</item>
+        <item quantity="other">Health Connect: %1$d permissions</item>
+    </plurals>
+    <string name="health_connect_dialog_title">Health Connect</string>
+    <string name="health_connect_dialog_unsupported">Android exposes platform Health Connect permission management starting with Android 14. This device is API %1$d.</string>
+    <string name="health_connect_dialog_none">No manifest Health Connect permission requests were found for this package.</string>
+    <string name="health_connect_dialog_header">Manifest Health Connect permissions (read: %1$d, write: %2$d):</string>
+    <string name="health_connect_dialog_scope_note">This is target package manifest metadata, not a live granted-permission list or stored health-data audit.</string>
+    <string name="health_connect_open_permissions">Open permissions</string>
+    <string name="health_connect_permissions_unavailable">Cannot open Health Connect permissions on this device.</string>
+    <string name="credential_provider_chip_unsupported">Credential provider: not supported</string>
+    <string name="credential_provider_chip_none">Credential provider: none</string>
+    <plurals name="credential_provider_chip_count">
+        <item quantity="one">Credential provider: %1$d service</item>
+        <item quantity="other">Credential provider: %1$d services</item>
+    </plurals>
+    <string name="credential_provider_dialog_title">Credential provider</string>
+    <string name="credential_provider_dialog_unsupported">Android exposes Credential Manager providers starting with Android 14. This device is API %1$d.</string>
+    <string name="credential_provider_dialog_none">No manifest Credential Manager provider services were found for this package.</string>
+    <string name="credential_provider_dialog_header">Manifest Credential Manager provider services: %1$d total, %2$d system-provider action(s).</string>
+    <string name="credential_provider_dialog_scope_note">This is target package manifest metadata. It does not reveal saved credentials, passkeys, passwords, federated accounts, or whether this provider is enabled for the current user.</string>
+    <string name="credential_provider_open_settings">Open credential settings</string>
+    <string name="credential_provider_settings_unavailable">Cannot open Credential Manager settings on this device.</string>
     <string name="title_domains_supported_by_the_app">Supported domains</string>
     <string name="domain_verification_state">State: %1$s</string>
     <string name="domain_verification_state_verified">verified</string>
