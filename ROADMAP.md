@@ -468,12 +468,12 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: each probe reports status + cause; failures deep-link to the relevant settings.
   - Verify: `PrivilegeModeDoctorTest` pins status/fix report text and structured fix-target retention; compile/test graph covers the dynamic settings fragment and resource wiring. Device verification with a deliberately-broken mode remains recommended for the actual external settings targets.
   - Complexity: M
-- [ ] P2 — Support Info Bundle + opt-in local crash sink (research O-01, O-05, O-11, O-12)
+- [x] P2 — Support Info Bundle + opt-in local crash sink (research O-01, O-05, O-11, O-12)
   - Why: matches the dominant privacy-respecting peer pattern (user-initiated support bundle, no remote telemetry); the O-12 reverse audit depends on the P1 audit-coverage item above.
-  - Evidence: no `support-info` composer or ACRA-style local crash sink in source.
-  - Touches: one-tap PII-scrubbed support-info composer; local-file crash sink (default OFF, no network); structured log viewer w/ UID/path redaction; per-package "was it me?" reverse audit over the op log.
+  - Shipped 2026-06-04: the existing `SupportInfoBundle` composer writes `support-info-<device>-<ts>.txt` bundles and now includes an opt-in local-crash-sink section with recent scrubbed JSON crash summaries. `AMExceptionHandler` no longer persists crash reports by default; private on-disk crash JSON is written only when Settings -> Privacy -> Local crash sink is enabled, and the notification share remains user-initiated. `LocalCrashSink` writes bounded local JSON files only, with no network path, using the existing support-info scrubber for thread names, messages, stack frames, cause messages, and embedded report text. The P1 App Details single-action audit work closed the per-package "was it me?" reverse-audit gap, while existing diagnostic/logcat exports continue to scrub UID/path/package/email data.
+  - Touches: `LocalCrashSink`, `AMExceptionHandler`, Privacy settings key/toggle, support-info bundle crash summary, and redaction tests.
   - Acceptance: composer writes `support-info-<device>-<ts>.txt`; crash sink writes local JSON only; redaction + reverse audit work.
-  - Verify: trigger a crash with the sink on; assert a local JSON file and no network call; assert redaction.
+  - Verify: `LocalCrashSinkTest` asserts scrubbed local JSON and summary output; `SupportInfoBundleTest` pins package/path/URI/email/UID redaction. Device-only follow-up: manually trigger a crash with the sink enabled and confirm the local JSON share attachment.
   - Complexity: L
 - [ ] P2 — Ingest UAD-NG dependency graph + OEM-provenance + apkscanner signatures (research A1–A3)
   - Why: dense `dependencies`/`neededBy` edges enable honest "removing X breaks Y/Z" warnings; OEM provenance powers Finder chips; apkscanner adds ~30–40% library coverage over Exodus.

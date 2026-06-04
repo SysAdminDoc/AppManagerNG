@@ -861,6 +861,14 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_SIGNING_CERT_CHANGE_MONITOR_BOOL, enabled);
         }
 
+        public static boolean isLocalCrashSinkEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_LOCAL_CRASH_SINK_ENABLED_BOOL);
+        }
+
+        public static void setLocalCrashSinkEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_LOCAL_CRASH_SINK_ENABLED_BOOL, enabled);
+        }
+
         public static int getOpHistoryRetentionDays() {
             return AppPref.getInt(AppPref.PrefKey.PREF_OP_HISTORY_RETENTION_DAYS_INT);
         }
