@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Interrupted batch retry target reduction (research P0, 2026-06-03)
+
+- Interrupted batch-operation journal entries now persist completed and failed
+  package/user targets as each target finishes, so a later service/process
+  interruption preserves a retry cursor even when no final result is available.
+- The recovery dialog now builds a reduced retry queue from the unfinished
+  targets, shows completed/remaining progress, and avoids re-running already
+  completed destructive targets.
+- Interruptions with no recorded target progress still retry the original queue,
+  so recovery remains conservative when the service cannot prove completion.
+
 ### Added - Scheduled operation-history retention pruning (research quick win, 2026-06-03)
 
 - Added a unique daily WorkManager prune job for operation-history retention.
@@ -14,6 +25,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   points now reconcile the prune schedule, so old `op_history` rows can be
   removed without opening the History screen.
 - The retention summary now labels `0` as "Keep forever (no scheduled cleanup)".
+- The prune scheduler now no-ops with a warning when WorkManager is unavailable
+  during early startup or host-side tests instead of crashing unrelated flows.
 
 ### Changed - Weekly OWASP critical-CVE gate (research quick win, 2026-06-03)
 
