@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-04. Baseline: `main` at `1f4b32e`, app
+Last consolidated: 2026-06-04. Baseline: `main` at `889ecd1`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 4 - 2026-06-04.
+> Last researched: Cycle 5 - 2026-06-04.
 
 ## Implementer Instructions
 
@@ -487,6 +487,138 @@ links touched by the edit.
 ### Researcher Queue (Cycle 3 - 2026-06-04)
 
 ### Researcher Queue (Cycle 4 - 2026-06-04)
+
+### Researcher Queue (Cycle 5 - 2026-06-04)
+
+- [x] 🔬 `release-trust-overlay-profile-gap-refresh-2026-06-04` - rechecked
+  current `main`, release/distribution workflows, Gradle supply-chain controls,
+  upstream AppManager issue deltas, Android Private Space/profile docs, overlay
+  security docs, Shizuku/UAD/Canta release state, and the completed ledger. Five
+  net-new rows were promoted; AppOps UID/mode handling and recent upstream
+  recovery/action-rail issues were not duplicated because they are already
+  shipped or represented by existing gates.
+
+### Cycle 5 Promoted Items (2026-06-04)
+
+- [ ] P1 - Add Gradle dependency verification and dependency locking
+  - Why: AppManagerNG pins the Gradle wrapper hash and runs OWASP CVE audits, but
+    plugin/application/test/benchmark artifacts still resolve from Google Maven,
+    Maven Central, and JitPack without checked dependency metadata or lockfiles.
+    A privacy/security package manager should fail closed on unreviewed binary
+    drift, not only on known CVEs after resolution succeeds.
+  - Evidence URL or file:line:
+    `gradle/wrapper/gradle-wrapper.properties:3`, `build.gradle:24-29`,
+    `build.gradle:52-68`;
+    https://docs.gradle.org/current/userguide/dependency_verification.html and
+    https://docs.gradle.org/current/userguide/dependency_locking.html.
+  - Touches: Gradle verification metadata, dependency lockfiles for root/app/
+    benchmark/test configurations, JitPack dependency review notes, CI
+    dependency jobs, and distribution docs.
+  - Acceptance: normal CI fails on missing/changed artifact checksums or
+    unreviewed lock drift; all production, test, benchmark, plugin, and build
+    logic dependencies are covered; the update process is documented so
+    maintainers can intentionally refresh metadata.
+  - Verify: bootstrap metadata with
+    `./gradlew --write-verification-metadata sha256,pgp help`, write locks,
+    rerun `./gradlew test` or the repo's equivalent host test suite, then seed a
+    temporary bad checksum/lock in a throwaway copy and confirm the build fails.
+
+- [ ] P2 - Publish release SBOM and provenance attestation
+  - Why: the release workflow performs a strong two-build reproducibility check
+    and publishes `.sha256` sidecars, but release consumers still lack a
+    machine-readable SBOM and a provenance attestation tying each APK digest to
+    the tag, workflow, and repository state.
+  - Evidence URL or file:line: `.github/workflows/release.yml:1-4`,
+    `.github/workflows/release.yml:19-20`,
+    `.github/workflows/release.yml:73-94`,
+    `docs/distribution/reproducible-builds.md:5-8`,
+    `docs/distribution/reproducible-builds.md:23-41`;
+    https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations,
+    https://github.com/actions/attest, and
+    https://github.com/CycloneDX/cyclonedx-gradle-plugin.
+  - Touches: release workflow permissions (`id-token: write`), SBOM generation
+    task/plugin or init-script path, release asset upload list, provenance
+    attestation step, reproducible-build docs, and verification instructions.
+  - Acceptance: every tag release publishes APKs, `.sha256` files, a named SBOM
+    for each shipped flavor or a clear aggregate, and a verifiable provenance
+    attestation for each APK digest; docs show how to verify the checksum,
+    attestation, and SBOM.
+  - Verify: run the SBOM task locally, lint the workflow, dry-run release asset
+    discovery where possible, and after a real tag verify an APK with
+    `gh attestation verify` plus SBOM schema validation.
+
+- [ ] P1 - Harden the foreground UI tracker overlay against device-freeze reports
+  - Why: upstream reports the UI Tracker window freezing a rooted Android 11
+    OnePlus device. NG's tracker is driven from an accessibility service but
+    creates an application overlay/phone window with no-limit layout, a large
+    fixed width calculation, and direct add/update calls. That combination needs
+    a conservative bounds/throttle/failsafe pass before treating the tracker as
+    safe across OEMs.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1848,
+    `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java:73-84`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java:183-186`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java:225`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java:269-271`;
+    https://developer.android.com/reference/android/view/WindowManager.LayoutParams
+    and
+    https://developer.android.com/about/versions/12/behavior-changes-all#untrusted-touch-events.
+  - Touches: `TrackerWindow`, `NoRootAccessibilityService`, tracker settings/
+    copy, extracted overlay layout policy helpers, and accessibility/overlay
+    regression tests.
+  - Acceptance: tracker windows use the accessibility-service-appropriate window
+    type when available, clamp size/position through current window metrics, keep
+    a visible pause/dismiss affordance, throttle update storms, degrade to
+    disabled-with-explanation after repeated add/update failures, and do not
+    block unrelated app touches outside the intended handle/content bounds.
+  - Verify: host tests for layout clamp/throttle/failure policy, plus manual
+    Android 11, Android 12+, and current-target walkthroughs enabling tracker,
+    dragging/iconifying, interacting with underlying apps, and checking logcat
+    for blocked untrusted-touch or WindowManager failures.
+
+- [ ] P2 - Add Private Space/profile visibility diagnostics
+  - Why: the manifest declares `ACCESS_HIDDEN_PROFILES`, and package-management
+    users need honest visibility across personal, work, hidden, locked, and
+    private profiles. Current profile discovery falls back to `UserManager`
+    profile lists and `LauncherApps` launchability without source-visible labels
+    or unavailable-state diagnostics for Private Space.
+  - Evidence URL or file:line: `app/src/main/AndroidManifest.xml:15`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/users/Users.java:89-93`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java:345-355`;
+    https://source.android.com/docs/security/features/private-space,
+    https://developer.android.com/about/versions/15/behavior-changes-all#private-space,
+    https://developer.android.com/reference/android/os/UserManager, and
+    https://developer.android.com/reference/android/content/pm/LauncherApps.
+  - Touches: `Users`, user/profile labels, package-loading summaries, main-list
+    user/profile selector copy, privilege/mode diagnostics, and Private Space
+    device-verification notes.
+  - Acceptance: when platform APIs expose the state, private/hidden/quiet/locked
+    profiles are labeled distinctly; inaccessible profiles produce a clear
+    "not visible from current mode/state" diagnostic instead of implying the app
+    list is complete; normal work-profile behavior and unprivileged fallback are
+    preserved.
+  - Verify: JVM tests for profile label/state mapping, source-level manifest/API
+    guards, and manual Android 15+ Private Space locked/unlocked/hidden
+    walkthrough on a device or image that exposes the feature.
+
+- [ ] P2 - Add profile membership inverse filters
+  - Why: the current app-list profile picker turns a selected Apps profile into
+    positive include filters only. Users auditing backup/debloat/profile coverage
+    also need "not in this profile" to find omissions, stale profile membership,
+    and apps excluded from an automated set.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1755,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainListOptions.java:250-258`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:617-632`.
+  - Touches: `MainListOptions`, `MainViewModel`, profile filter state, Finder/
+    filter option model if reused, strings, and focused filter tests.
+  - Acceptance: users can filter apps included in a selected profile and apps not
+    included in that profile; both static package-list profiles and filter-based
+    profiles behave correctly; active-filter labels distinguish include vs
+    exclude; the feature does not change existing profile apply behavior.
+  - Verify: unit tests for static AppsProfile include/exclude, filter-profile
+    include/exclude, empty/missing profile behavior, and compile of the app-list
+    options UI path.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
