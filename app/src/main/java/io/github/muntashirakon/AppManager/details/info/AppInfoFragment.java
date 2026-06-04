@@ -29,6 +29,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.pm.verify.domain.DomainVerificationUserState;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -94,6 +95,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Future;
@@ -1548,10 +1550,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             TagItem openLinksTag = new TagItem();
             tagItems.add(openLinksTag);
             openLinksTag.setTextRes(R.string.app_info_tag_open_links)
-                    .setColor(tagCloud.canOpenLinks ? ColorCodes.getFailureColor(context)
+                    .setColor(!tagCloud.domainLinkConflicts.isEmpty() ? ColorCodes.getRemovalCautionIndicatorColor(context)
+                            : tagCloud.canOpenLinks ? ColorCodes.getFailureColor(context)
                             : ColorCodes.getSuccessColor(context))
                     .setOnClickListener(v -> {
-                        SearchableItemsDialogBuilder<String> builder = new SearchableItemsDialogBuilder<>(v.getContext(), new ArrayList<>(tagCloud.hostsToOpen.keySet()))
+                        SearchableItemsDialogBuilder<CharSequence> builder = new SearchableItemsDialogBuilder<>(
+                                v.getContext(), buildDomainDialogRows(v.getContext(), tagCloud))
                                 .setTitle(R.string.title_domains_supported_by_the_app)
                                 .setNegativeButton(R.string.close, null);
                         if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.UPDATE_DOMAIN_VERIFICATION_USER_SELECTION)) {
@@ -1910,6 +1914,66 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
         }
         return tagItems;
+    }
+
+    @NonNull
+    private List<CharSequence> buildDomainDialogRows(@NonNull Context context,
+                                                     @NonNull AppInfoViewModel.TagCloud tagCloud) {
+        List<CharSequence> rows = new ArrayList<>(tagCloud.hostsToOpen.size());
+        for (Map.Entry<String, Integer> entry : tagCloud.hostsToOpen.entrySet()) {
+            String host = entry.getKey();
+            SpannableStringBuilder row = new SpannableStringBuilder(host)
+                    .append(getSmallerText("\n" + getString(R.string.domain_verification_state,
+                            getDomainStateLabel(context, entry.getValue()))));
+            List<DomainLinkConflictDetector.Conflict> conflicts = tagCloud.domainLinkConflicts.get(normalizeDomainHost(host));
+            if (conflicts != null && !conflicts.isEmpty()) {
+                row.append(getSmallerText("\n" + context.getResources().getQuantityString(
+                        R.plurals.domain_link_conflict_count, conflicts.size(), conflicts.size())
+                        + ": " + summarizeDomainConflicts(conflicts)));
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    @NonNull
+    private String normalizeDomainHost(@NonNull String host) {
+        String normalized = host.trim().toLowerCase(Locale.ROOT);
+        while (normalized.endsWith(".")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
+    }
+
+    @NonNull
+    private String getDomainStateLabel(@NonNull Context context, int state) {
+        switch (state) {
+            case DomainVerificationUserState.DOMAIN_STATE_VERIFIED:
+                return context.getString(R.string.domain_verification_state_verified);
+            case DomainVerificationUserState.DOMAIN_STATE_SELECTED:
+                return context.getString(R.string.domain_verification_state_selected);
+            case DomainVerificationUserState.DOMAIN_STATE_NONE:
+                return context.getString(R.string.domain_verification_state_unverified);
+            default:
+                return context.getString(R.string.domain_verification_state_unknown, state);
+        }
+    }
+
+    @NonNull
+    private String summarizeDomainConflicts(@NonNull List<DomainLinkConflictDetector.Conflict> conflicts) {
+        StringBuilder sb = new StringBuilder();
+        int limit = Math.min(conflicts.size(), 3);
+        for (int i = 0; i < limit; ++i) {
+            DomainLinkConflictDetector.Conflict conflict = conflicts.get(i);
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(conflict.label).append(" (").append(conflict.packageName).append(")");
+        }
+        if (conflicts.size() > limit) {
+            sb.append(", +").append(conflicts.size() - limit);
+        }
+        return sb.toString();
     }
 
     /**

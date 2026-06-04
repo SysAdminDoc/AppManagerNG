@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Domain link conflict finder (research P2/B2, 2026-06-04)
+
+- App Details now annotates the existing "Open links" domain dialog with each
+  host's Android domain-verification state and any other installed apps for the
+  same user that claim the same host.
+- Finder gained a `domain_links` predicate family for apps that claim web
+  domains, apps with deep-link conflicts, host text/regex matching, and
+  conflicting-package matching.
+- Added JVM coverage for host normalization, per-user conflict grouping, and
+  the new Finder predicates.
+
 ### Added - Tasker/Locale automation plugin broker (research P2, 2026-06-04)
 
 - Added an in-app Locale-compatible Tasker plugin edit Activity and fire

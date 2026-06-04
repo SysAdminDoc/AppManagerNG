@@ -46,7 +46,8 @@ public class AppsFilterProfile extends AppsBaseProfile {
     public ProfileApplierResult apply(@NonNull String state, @Nullable ProfileLogger logger, @Nullable ProgressHandler progressHandler) {
         // Filter results
         int[] users = this.users == null ? Users.getUsersIds() : this.users;
-        List<FilterableAppInfo> filterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users);
+        List<FilterableAppInfo> filterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users, false,
+                mFilterItem.hasFilterOptionType("domain_links"));
         List<FilterItem.FilteredItemInfo<FilterableAppInfo>> filteredList = mFilterItem.getFilteredList(filterableAppInfoList);
         if (filteredList.isEmpty()) {
             return ProfileApplierResult.EMPTY_RESULT;
