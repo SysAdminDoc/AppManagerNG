@@ -471,7 +471,9 @@ dependencies.
   `scripts/android-debloat-list`. The working tree contains an untracked local
   `scripts/android-libraries` clone at `8fb3919`, so this host can see
   `libs.json`, but a fresh checkout will not fetch it from the superproject.
-  This was promoted to `ROADMAP.md` as a P1 build-host hygiene item. [Verified]
+  This was promoted to `ROADMAP.md` as a P1 build-host hygiene item. Resolved
+  2026-06-04 by tracking `scripts/android-libraries` as a gitlink at
+  `8fb3919828e9c9f6e75faaaa322c5af59c6d05fa`. [Verified]
 
 ### Current Checks
 
