@@ -140,6 +140,7 @@ import io.github.muntashirakon.AppManager.details.profile.CpuProfileCommandBuild
 import io.github.muntashirakon.AppManager.details.profile.PerfettoCommandBuilder;
 import io.github.muntashirakon.AppManager.details.profile.PerfettoConfigInspector;
 import io.github.muntashirakon.AppManager.details.profile.PerfettoTraceConfigBuilder;
+import io.github.muntashirakon.AppManager.details.profile.ProfileCaptureOptionCatalog;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
@@ -196,6 +197,7 @@ import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
+import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -828,12 +830,34 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         final String packageName = mPackageName;
+        showPerfettoTraceOptions(packageName);
+    }
+
+    private void showPerfettoTraceOptions(@NonNull String packageName) {
+        List<String> durationLabels = ProfileCaptureOptionCatalog.durationLabels();
+        new TextInputDropdownDialogBuilder(mActivity, R.string.profile_capture_duration)
+                .setTitle(R.string.action_export_trace)
+                .setDropdownItems(durationLabels,
+                        ProfileCaptureOptionCatalog.indexOfDuration(
+                                (int) (PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS / 1000L)),
+                        false)
+                .setHelperText(R.string.profile_capture_duration_helper)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.action_continue, (dialog, which, inputText, isChecked) -> {
+                    int durationSeconds = ProfileCaptureOptionCatalog.durationFromLabel(inputText,
+                            (int) (PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS / 1000L));
+                    confirmPerfettoTraceCapture(packageName, durationSeconds * 1000L);
+                })
+                .show();
+    }
+
+    private void confirmPerfettoTraceCapture(@NonNull String packageName, long durationMillis) {
         // T20-A: preview the exact trace config the capture will use, parsed
         // back from the generated text-proto via PerfettoConfigInspector.
         String configPreview = PerfettoConfigInspector.oneLineSummary(PerfettoConfigInspector.inspect(
-                PerfettoTraceConfigBuilder.buildTextProto(packageName,
-                        PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS)));
-        CharSequence confirmMessage = getString(R.string.perfetto_trace_confirm)
+                PerfettoTraceConfigBuilder.buildTextProto(packageName, durationMillis)));
+        String durationLabel = ProfileCaptureOptionCatalog.formatDurationSeconds((int) (durationMillis / 1000L));
+        CharSequence confirmMessage = getString(R.string.perfetto_trace_confirm_with_duration, durationLabel)
                 + "\n\n" + getString(R.string.perfetto_trace_preview, configPreview);
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.action_export_trace)
@@ -845,7 +869,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     displayShortToast(R.string.profile_capturing);
                     ThreadUtils.postOnBackgroundThread(() -> {
                         AppProfileCapture.Result result = AppProfileCapture.capturePerfettoTrace(
-                                packageName, PerfettoTraceConfigBuilder.DEFAULT_DURATION_MS, outputPath);
+                                packageName, durationMillis, outputPath);
                         ThreadUtils.postOnMainThread(() -> {
                             if (!isAdded()) {
                                 return;
@@ -885,9 +909,42 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         final String packageName = mPackageName;
+        showCpuProfileOptions(packageName);
+    }
+
+    private void showCpuProfileOptions(@NonNull String packageName) {
+        List<String> durationLabels = ProfileCaptureOptionCatalog.durationLabels();
+        List<String> events = ProfileCaptureOptionCatalog.cpuEventsForDevice(Build.VERSION.SDK_INT, Build.SUPPORTED_ABIS);
+        String defaultEvent = ProfileCaptureOptionCatalog.eventFromLabel(CpuProfileCommandBuilder.DEFAULT_EVENT, events);
+        int defaultEventIndex = Math.max(0, events.indexOf(defaultEvent));
+        TextInputDropdownDialogBuilder builder = new TextInputDropdownDialogBuilder(
+                mActivity, R.string.profile_capture_duration);
+        builder.setTitle(R.string.action_record_cpu_profile)
+                .setDropdownItems(durationLabels,
+                        ProfileCaptureOptionCatalog.indexOfDuration(CpuProfileCommandBuilder.DEFAULT_DURATION_SECONDS),
+                        false)
+                .setHelperText(R.string.profile_capture_duration_helper)
+                .setAuxiliaryInput(getString(R.string.profile_capture_event),
+                        getString(R.string.cpu_profile_event_helper),
+                        events.get(defaultEventIndex),
+                        events,
+                        false)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.action_continue, (dialog, which, inputText, isChecked) -> {
+                    int durationSeconds = ProfileCaptureOptionCatalog.durationFromLabel(inputText,
+                            CpuProfileCommandBuilder.DEFAULT_DURATION_SECONDS);
+                    String event = ProfileCaptureOptionCatalog.eventFromLabel(builder.getAuxiliaryInput(), events);
+                    confirmCpuProfileCapture(packageName, durationSeconds, event);
+                })
+                .show();
+    }
+
+    private void confirmCpuProfileCapture(@NonNull String packageName, int durationSeconds,
+                                          @NonNull String event) {
+        String durationLabel = ProfileCaptureOptionCatalog.formatDurationSeconds(durationSeconds);
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.action_record_cpu_profile)
-                .setMessage(R.string.cpu_profile_confirm)
+                .setMessage(getString(R.string.cpu_profile_confirm_with_options, durationLabel, event))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.action_continue, (d, w) -> {
                     String outputPath = profileOutputPath(packageName, ".perf.data");
@@ -895,7 +952,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     displayShortToast(R.string.profile_capturing);
                     ThreadUtils.postOnBackgroundThread(() -> {
                         AppProfileCapture.Result result = AppProfileCapture.captureCpuProfile(
-                                packageName, CpuProfileCommandBuilder.DEFAULT_DURATION_SECONDS, null, outputPath);
+                                packageName, durationSeconds, event, outputPath);
                         ThreadUtils.postOnMainThread(() -> {
                             if (!isAdded()) {
                                 return;
