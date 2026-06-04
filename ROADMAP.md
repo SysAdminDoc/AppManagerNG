@@ -527,12 +527,12 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: a Tasker task can run a profile; tiles install + fire; backups/profiles appear in SAF pickers.
   - Verify: add the tile, fire it, assert the profile runs; open a SAF picker, assert backups appear.
   - Complexity: L
-- [ ] P2 — Snapshot bundle export/import before the applicationId rename
+- [x] P2 — Snapshot bundle export/import before the applicationId rename
   - Why: critical data-loss guard — the install identity is already `io.github.sysadmindoc.AppManagerNG` (`app/build.gradle:15`) while the source namespace stays `io.github.muntashirakon.AppManager`, so an NG install does **not** inherit an upstream AM user's prefs/profiles/tags/history. A one-shot import bundle is the only migration path.
-  - Evidence: `app/build.gradle:9,15` (namespace ≠ applicationId); no `{prefs,profiles,tags,history.db}` bundle export/import in source.
-  - Touches: `{prefs/, profiles/, tags/, history.db}` ZIP with a schema-version header; export + import flows; Canta/UAD-NG/Hail importers as cheap add-ons.
-  - Acceptance: a bundle round-trips prefs/profiles/tags/history; ships before any further rename churn.
-  - Verify: export on one install, import on a fresh install, assert profiles/tags/history present.
+  - Shipped before this active-roadmap reconciliation and reverified 2026-06-04: `snapshot/SnapshotBundle` writes a schema-versioned ZIP of shared preferences (excluding `keystore`), profiles, rule TSVs, optional tags, and operation-history JSON; Settings -> Privacy exposes SAF export/import with a pre-import confirmation; `profiles/importers/ExternalProfileImporter` imports Canta JSON, UAD-NG settings JSON, and Hail line lists into profiles.
+  - Evidence: `SnapshotBundle`, `SnapshotImportException`, `PrivacyPreferences`, `preferences_privacy.xml`, `ExternalProfileImporter`; archived ledger entries iter-64, iter-65, and iter-106 already recorded this as shipped.
+  - Acceptance: bundle round-trips prefs/profiles/tags/history/rules with schema guardrails and path-traversal/size defenses; Canta/UAD-NG/Hail importers create App profiles.
+  - Verify: `SnapshotBundleTest` and `ExternalProfileImporterTest`.
   - Complexity: L
 - [ ] P2 — Macrobenchmark module + Baseline Profile + Espresso/UI-Automator smoke pack (research O-07, O-08)
   - Why: pure-local performance + regression coverage with zero privacy cost; cold-start is dominated by `PackageManager` enumeration on the app-list path. (The CVE-scan and `floss`/`full` halves of the original O-07–O-10 row are already shipped — see the removed-as-shipped note above — so only the benchmark + smoke-test work remains.)
