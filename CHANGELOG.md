@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Debloater Put back install-existing restore (research P1/#1977, 2026-06-04)
+
+- Debloater selection mode now offers Put back for selected removed rows and
+  confirms how many packages will be restored while skipping selections that
+  are already installed.
+- Batch operations now include an install-existing op that calls the existing
+  privileged `PackageInstallerCompat.installExisting()` path per package/user,
+  records operation-history metadata, and posts restored/failed result text.
+- Focused JVM coverage now pins selected-row eligibility, confirmation skip
+  text, and batch result notification wording; the remove-for-user -> put-back
+  device round trip remains device-gated.
+
 ### Added - In-app Wireless ADB pairing code entry (research P1/#1975, 2026-06-04)
 
 - Wireless ADB pairing now publishes foreground-service scan/pair state to an

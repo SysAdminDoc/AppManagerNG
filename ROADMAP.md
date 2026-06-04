@@ -460,29 +460,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 4 - 2026-06-04)
 
-- [ ] 🔬🤖 P1 — Wire Debloater "Put back" install-existing restore
-  - Why: users can remove system packages for a user from the Debloater, but
-    recovery is currently indirect. The UI already contains an `action_put_back`
-    branch with a 2022 TODO, and the confirmation copy says system packages can
-    usually be restored with Install existing, but there is no Debloater batch
-    action for selected removed packages.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1977 and
-    https://github.com/MuntashirAkon/AppManager/issues/1969;
-    `DebloaterActivity.onNavigationItemSelected()` has an empty
-    `R.id.action_put_back` branch, `PackageInstallerCompat.installExisting()`
-    and `PackageInstallerService` already support install-existing, and
-    `BatchOpsManager` has no install-existing op.
-  - Touches: `DebloaterActivity`, `DebloaterViewModel`,
-    `BatchOpsManager`/`BatchOpsService` or a small Debloater restore worker,
-    operation-history metadata, result notifications, and restore strings.
-  - Acceptance: selected uninstalled system/debloat rows offer Put back,
-    preflight unsupported packages/users, call install-existing through the
-    existing installer/privileged path, record an audit row, and report per-app
-    restored/skipped/failed results.
-  - Verify: JVM tests for selected-row eligibility and result formatting plus a
-    manual remove-for-user -> put-back round trip on a removable system package.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Make the App Info action rail priority-aware/customizable
   - Why: the fixed horizontal App Info action rail hides high-frequency actions
     such as Force-stop behind earlier actions on narrow screens. Reordering
