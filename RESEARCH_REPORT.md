@@ -23,6 +23,9 @@ rejected on license/privacy/scope grounds are recorded as STALE in
 6. iter-6 Delta — null-result research-cycle note (2026-05-01)
 7. Deep-Research Pass — code-verified delta (2026-06-03)
 8. Freshness Refresh — submodule and dependency delta (2026-06-04)
+9. Research Refresh - upstream issue delta (2026-06-04 Cycle 2)
+10. Research Refresh - mode and terminal delta (2026-06-04 Cycle 3)
+11. Research Refresh - recovery and headset pairing delta (2026-06-04 Cycle 4)
 
 ---
 
@@ -614,3 +617,230 @@ cycle.
   reverified in the active roadmap: toolbar search, recursive matching, active
   chips, whole-volume scan warning, hidden-file handling, and
   `FmSearchUtilsTest` coverage. No new row. [Verified]
+
+---
+
+## 11. Research Refresh - recovery and headset pairing delta (2026-06-04 Cycle 4)
+
+This pass re-synced `main` at `1f4b32e`, re-read the active roadmap and current
+App Details / Debloater / Wireless ADB source, checked the latest upstream
+AppManager issue list through #1980, and refreshed relevant Android platform
+documentation. No code was changed; the output is a planning delta promoted to
+`ROADMAP.md`.
+
+### Executive Summary
+
+AppManagerNG's strongest current shape is an operational package-management
+cockpit: rich App Details actions, debloat/remove-for-user workflows, rootless
+ADB/Shizuku setup, structured operation history, and recovery surfaces. The
+highest-value direction from this refresh is not a new subsystem; it is closing
+three workflow completion gaps where the engine already exists but the user path
+is incomplete: Wireless ADB pairing on surfaces without notification inline
+reply, Debloater recovery for removed system packages, and the fixed App Info
+action rail pushing common actions off-screen.
+
+Top opportunities:
+
+1. `[Promoted P1]` Add in-app Wireless ADB pairing-code fallback for Quest and
+   other no-inline-reply surfaces.
+2. `[Promoted P1]` Wire Debloater "Put back" to existing install-existing
+   support for removed system packages.
+3. `[Promoted P2]` Make the App Info action rail priority-aware/customizable.
+4. `[Checked]` Android 16 foreground-service special-use crash is already
+   addressed in NG by manifest permission and service types.
+5. `[Checked]` Material/Monet widget theming is already addressed in NG through
+   `AppWidgetThemeUtils`.
+
+### Evidence Reviewed
+
+- **Local files and code paths:** `ROADMAP.md`, `RESEARCH_REPORT.md`,
+  `CHANGELOG.md`, `versions.gradle`, `app/build.gradle`,
+  `app/src/main/AndroidManifest.xml`, `settings/Ops.java`,
+  `adb/AdbPairingService.java`, `debloat/DebloaterActivity.java`,
+  `batchops/BatchOpsManager.java`, `apk/installer/PackageInstallerCompat.java`,
+  `apk/installer/PackageInstallerService.java`,
+  `details/info/AppInfoFragment.java`, `details/info/ActionItem.java`,
+  `res/layout/pager_app_info.xml`, and `utils/appearance/AppWidgetThemeUtils.java`.
+- **Git history:** `rtk git log -10` from `1f4b32e` back through the pass-2
+  audit, upstream issue refresh, Android 16/17 binder gate, and backup archive
+  contract work.
+- **External sources:** upstream issues
+  [#1975](https://github.com/MuntashirAkon/AppManager/issues/1975),
+  [#1977](https://github.com/MuntashirAkon/AppManager/issues/1977),
+  [#1969](https://github.com/MuntashirAkon/AppManager/issues/1969),
+  [#1953](https://github.com/MuntashirAkon/AppManager/issues/1953),
+  [#1978](https://github.com/MuntashirAkon/AppManager/issues/1978),
+  [#1944](https://github.com/MuntashirAkon/AppManager/issues/1944),
+  [#1954](https://github.com/MuntashirAkon/AppManager/issues/1954),
+  [#1974](https://github.com/MuntashirAkon/AppManager/issues/1974),
+  [#1959](https://github.com/MuntashirAkon/AppManager/issues/1959);
+  Android docs for
+  [wireless ADB pairing](https://developer.android.com/guide/developing/tools/adb.html),
+  [RemoteInput](https://developer.android.com/reference/android/app/RemoteInput),
+  [PackageInstaller.installExistingPackage](https://developer.android.com/reference/android/content/pm/PackageInstaller),
+  [foreground service types](https://developer.android.com/develop/background-work/services/fgs/service-types),
+  and [widget dynamic colors](https://developer.android.com/develop/ui/views/appwidgets/enhance).
+- **Could not verify:** Quest 3 notification reply behavior, actual Wireless
+  ADB pairing completion on headset hardware, and install-existing restore
+  behavior on a removed OEM/system package. These remain manual/device gates.
+
+### Current Product Map Delta
+
+- **Wireless ADB setup** already has a foreground pairing service and mDNS port
+  discovery. The current input path is notification `RemoteInput` only after a
+  port is found.
+- **Debloater** already lists uninstalled apps, supports remove-for-user with
+  OEM-safe fallback, and warns that system packages can usually be restored
+  through Install existing. The selected action branch for `action_put_back` is
+  still empty.
+- **Installer internals** already support install-existing through
+  `PackageInstallerCompat.installExisting()` and `PackageInstallerService`; that
+  capability is not exposed as a Debloater batch recovery action.
+- **App Info actions** are created in fixed source order into a horizontal
+  strip, not an adapter with stable action IDs or a user-order model.
+
+### Feature Inventory Delta
+
+- **Wireless ADB pairing**
+  - User value: rootless privileged mode without a PC after first pairing.
+  - Entry point: Settings/Onboarding mode selection -> `Ops.pairAdbInput()`.
+  - Main code: `Ops`, `AdbPairingService`, `ServerConfig`, `AdbMdns`.
+  - Maturity: partial for non-phone surfaces; notification inline input is a
+    single input channel.
+  - Improvement: in-app port/code fallback that reuses the same pairing path.
+
+- **Debloater removed-package recovery**
+  - User value: undo a remove-for-user debloat mistake without hunting through
+    Android shell commands.
+  - Entry point: Debloater selection action `action_put_back`.
+  - Main code: `DebloaterActivity`, `PackageInstallerCompat`, `PackageInstallerService`.
+  - Maturity: hidden/stale; TODO exists, install-existing engine exists, no UI
+    or batch op connects them.
+  - Improvement: selected-row Put back with per-package results and audit rows.
+
+- **App Info action rail**
+  - User value: keep frequent actions reachable on phone-width screens.
+  - Entry point: App Details -> Info tab horizontal actions.
+  - Main code: `AppInfoFragment.getHorizontalActions()`, `ActionItem`,
+    `pager_app_info.xml`.
+  - Maturity: complete but rigid.
+  - Improvement: stable action IDs, priority/default order, and user reset/reorder.
+
+### Competitive and Ecosystem Research
+
+- **Permission Manager X / Quest pairing workaround** was cited in upstream
+  #1975 as using an in-app pairing prompt rather than notification reply. This
+  fits NG because it keeps all ADB credentials local and still uses the existing
+  mDNS/ADB pairing engine. Avoid making it Quest-only; expose it as a generic
+  fallback for surfaces where `RemoteInput` cannot collect text.
+- **Android platform wireless debugging** requires QR or pairing-code pairing.
+  NG's in-app fallback should therefore collect only the same host/port/code
+  tuple the platform already expects, not invent a separate credential model.
+- **PackageInstaller install-existing** is a platform-supported operation for a
+  package that already exists on-device for the target user. NG already wraps
+  it; Debloater recovery should reuse that support instead of shell-building
+  bespoke commands where the installer path works.
+- **App Info action density** mirrors the upstream complaint in #1953. The
+  maintainer's response points to a broader action-surface overhaul, so NG's
+  scoped version should prioritize common actions and customization without
+  adding another large redesign layer.
+
+### Promoted Roadmap Items
+
+- **P1 - In-app Wireless ADB pairing-code fallback**
+  - Evidence: #1975 plus `AdbPairingService.inputPairingCode()` RemoteInput-only
+    port/code collection.
+  - Verification: host tests for port/code handoff and cancellation; manual
+    pairing on a normal device plus Quest/multi-window hardware.
+
+- **P1 - Debloater "Put back" install-existing restore**
+  - Evidence: #1977/#1969 plus `DebloaterActivity` `action_put_back` TODO and
+    existing `PackageInstallerCompat.installExisting()`.
+  - Verification: eligibility/result tests plus remove-for-user -> put-back on
+    a known restorable system package.
+
+- **P2 - App Info action rail priority/customization**
+  - Evidence: #1953 plus fixed action append order in
+    `AppInfoFragment.getHorizontalActions()`.
+  - Verification: order-resolution tests and phone-width App Info checks across
+    force-stop/frozen/archived/data-only states.
+
+### Reliability, Security, Privacy, and Data Safety
+
+- Wireless pairing fallback should keep pairing code handling ephemeral: no
+  persistence beyond existing `ServerConfig` host/port state, no logs containing
+  the code, and cancellation must stop mDNS scanning/foreground service state.
+- Debloater Put back is a data-safety/recovery feature. It should clearly
+  distinguish "package base still exists for this user/device" from "cannot be
+  restored without an APK/backup" and should not imply private app data is
+  restored by install-existing alone.
+- App Info action customization must not weaken existing destructive-action
+  confirmations/auth gates; it only changes ordering/visibility.
+
+### UX, Accessibility, and Trust
+
+- Wireless pairing should not require users to leave the app to reply to a
+  notification when the device UI does not support that pattern.
+- Debloater recovery belongs near the same selection context that removed the
+  package. A per-package result list should tell the user exactly what was
+  restored or skipped.
+- App Info action order should keep high-frequency actions reachable while
+  preserving TalkBack labels and predictable reset defaults.
+
+### Architecture and Maintainability
+
+- Pairing fallback should avoid duplicating pairing logic: expose a small
+  service/broker method that accepts `(port, code)` and keeps
+  `AdbConnectionManager.pairLiveData()` as the single execution path.
+- Debloater Put back can either add a new `BatchOpsManager` op or a narrowly
+  scoped Debloater worker; if it needs operation history and notifications, the
+  batch path is likely cleaner.
+- App Info action ordering needs stable action IDs in `ActionItem`; relying on
+  string/icon pairs will make preference migration brittle.
+
+### Quick Wins
+
+- Add tests around `AdbPairingService` input parsing and cancellation before the
+  UI fallback.
+- Wire `action_put_back` to an eligibility dialog first, even before broad batch
+  polish.
+- Give `ActionItem` stable IDs and a default priority table; customization can
+  layer on top.
+
+### Larger Bets
+
+- Full App Details action-surface overhaul after T21-H two-pane work, including
+  adaptive primary actions on large screens.
+- A broader recovery center that merges Debloater Put back, per-app rollback,
+  install-existing, and backup restore into one review surface.
+
+### Explicit Non-Goals
+
+- **Split APK to monolithic APK conversion (#1954):** upstream rejected it as a
+  destructive resigning process with no guarantee the output works. NG should
+  keep native split-session install and split backup/export paths instead.
+- **Duplicate APK verification row (#1974):** NG already exposes certificate and
+  installer verification surfaces; no new row without a source gap.
+- **Duplicate per-app rollback row (#1959):** App Details already has
+  "Revert AppManager changes" and operation-history-backed rollback planning.
+- **Duplicate Android 17 app-list row (#1948):** covered by the active Android
+  17 target SDK 37 pre-bump/device gate.
+- **Duplicate widget dynamic-color row (#1944):** NG already uses
+  `AppWidgetThemeUtils` on Screen Time, Data Usage, Clear Cache, and log
+  recording widgets.
+- **Foreground-service crash duplicate (#1978):** NG already declares
+  `FOREGROUND_SERVICE_SPECIAL_USE` and service foreground types. Play-specific
+  subtype review properties can be folded into a future Play/distribution
+  checklist if AppManagerNG ever targets Play.
+
+### Open Questions
+
+- Does Quest 3 expose enough multi-window support for an in-app pairing dialog
+  to stay visible while the platform pairing code is displayed? Issue #1975
+  says yes, but NG still needs device verification.
+- Should Debloater Put back go through `BatchOpsManager` or a Debloater-local
+  worker? The answer depends on whether maintainers want op-history/retry
+  semantics identical to other batch operations.
+- Should App Info action order be user-customizable immediately, or should the
+  first pass only ship a smarter default priority order? The upstream feedback
+  points to a larger overhaul, but the source change can be staged.

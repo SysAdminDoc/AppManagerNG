@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-04. Baseline: `main` at `3d4c4f3`, app
+Last consolidated: 2026-06-04. Baseline: `main` at `1f4b32e`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 3 - 2026-06-04.
+> Last researched: Cycle 4 - 2026-06-04.
 
 ## Implementer Instructions
 
@@ -601,6 +601,74 @@ links touched by the edit.
   - Verify: unit tests for route selection and dead-process handling plus manual
     local, root/Shizuku, and wireless-ADB command execution.
   - Complexity: L.
+
+### Researcher Queue (Cycle 4 - 2026-06-04)
+
+- [ ] 🔬🤖 P1 — Add an in-app Wireless ADB pairing-code fallback
+  - Why: Quest-style and other non-phone surfaces can show pairing-code UI but
+    may not support notification inline replies. AppManagerNG currently starts
+    wireless pairing through an ongoing notification with `RemoteInput`, so a
+    device that cannot collect inline notification input has no reliable way to
+    enter the discovered port/code from inside the app.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1975;
+    `Ops.pairAdbInput()` starts `AdbPairingService`, and
+    `AdbPairingService.inputPairingCode()` exposes the discovered pairing port
+    only through a notification action with `RemoteInput`.
+  - Touches: `Ops`, `AdbPairingService`, a foreground-safe pairing broker or
+    Activity/dialog, pairing strings, and host-testable pairing input parsing.
+  - Acceptance: when notification inline input is unavailable or the user picks
+    manual in-app entry, AppManagerNG keeps scanning for the pairing port,
+    shows the discovered port in the app, accepts the six-digit code in-app,
+    and calls the same pairing path without relying on notification replies.
+  - Verify: unit tests for port/code handoff and cancellation plus manual
+    Wireless ADB pairing on a normal Android device and Quest/multi-window
+    device where notification replies are not available.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P1 — Wire Debloater "Put back" install-existing restore
+  - Why: users can remove system packages for a user from the Debloater, but
+    recovery is currently indirect. The UI already contains an `action_put_back`
+    branch with a 2022 TODO, and the confirmation copy says system packages can
+    usually be restored with Install existing, but there is no Debloater batch
+    action for selected removed packages.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1977 and
+    https://github.com/MuntashirAkon/AppManager/issues/1969;
+    `DebloaterActivity.onNavigationItemSelected()` has an empty
+    `R.id.action_put_back` branch, `PackageInstallerCompat.installExisting()`
+    and `PackageInstallerService` already support install-existing, and
+    `BatchOpsManager` has no install-existing op.
+  - Touches: `DebloaterActivity`, `DebloaterViewModel`,
+    `BatchOpsManager`/`BatchOpsService` or a small Debloater restore worker,
+    operation-history metadata, result notifications, and restore strings.
+  - Acceptance: selected uninstalled system/debloat rows offer Put back,
+    preflight unsupported packages/users, call install-existing through the
+    existing installer/privileged path, record an audit row, and report per-app
+    restored/skipped/failed results.
+  - Verify: JVM tests for selected-row eligibility and result formatting plus a
+    manual remove-for-user -> put-back round trip on a removable system package.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Make the App Info action rail priority-aware/customizable
+  - Why: the fixed horizontal App Info action rail hides high-frequency actions
+    such as Force-stop behind earlier actions on narrow screens. Reordering
+    alone is useful, but the real fix is a priority model that can keep common
+    safe actions visible while demoting rare or destructive actions behind a
+    customization/default-order surface.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1953;
+    `pager_app_info.xml` hosts a horizontal `RoundedFirstAndLastChildViewGroup`,
+    and `AppInfoFragment.getHorizontalActions()` appends actions in a fixed
+    Launch/Freeze/Hide/Archive/Uninstall/Unfreeze/Force-stop/Clear-data order.
+  - Touches: `ActionItem` stable action IDs, `AppInfoFragment`
+    `getHorizontalActions()`, an action-order preference store, reset-defaults
+    UI, and accessibility labels for reordered buttons.
+  - Acceptance: users can restore defaults and optionally prioritize/reorder
+    App Info actions; default order keeps Launch/Freeze/Force-stop reachable on
+    phone-width screens while destructive actions stay guarded by existing
+    confirmations/auth.
+  - Verify: unit coverage for order resolution and missing/unsupported action
+    pruning plus manual phone-width App Info checks with force-stop, frozen,
+    archived, and data-only packages.
+  - Complexity: M.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
