@@ -458,28 +458,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 3 - 2026-06-04)
 
-- [ ] 🔬🤖 P1 — Sanitize DexOpt root-only options at execution time
-  - Why: the DexOpt dialog disables profile-reset and immediate force-dexopt
-    when the active mode is not root/system, but the batch worker trusts the
-    serialized `DexOptOptions` it receives. Upstream ADB-mode logs show
-    `clearApplicationProfileData()` still reaching PackageManager and failing
-    with "Only the system can clear all profile data."
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1733;
-    `DexOptDialog` gates the checkboxes by `Users.getSelfOrRemoteUid()`, while
-    `BatchOpsManager.opPerformDexOpt()` calls `clearApplicationProfileData()`
-    whenever `options.clearProfileData` is true.
-  - Touches: `DexOptOptions` sanitization/helper, `DexOptDialog`,
-    `BatchOpsManager.opPerformDexOpt`, DexOpt result messages, and focused
-    options tests.
-  - Acceptance: root/system-only DexOpt flags are rechecked in the worker before
-    any package loop starts; non-root/ADB/Shizuku runs skip or downgrade
-    unsupported sub-operations with a clear result reason instead of reporting a
-    raw SecurityException per package.
-  - Verify: JVM tests for root/system vs ADB/Shizuku option sanitization plus a
-    manual ADB DexOpt run with profile reset selected from a stale/serialized
-    queue item.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Make Mode of Operation apply lifecycle-safe and rollbackable
   - Why: upstream reports a crash when the mode picker is closed while Apply is
     pressed. The current picker persists `Ops.setMode(mCurrentMode)` before the

@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import io.github.muntashirakon.AppManager.settings.Ops;
+
 @RunWith(RobolectricTestRunner.class)
 public class DexOptOptionsTest {
     @Test
@@ -28,5 +30,39 @@ public class DexOptOptionsTest {
         assertEquals(dexOptOptions.bootComplete, dexOptOptions2.bootComplete);
         assertEquals(dexOptOptions.forceCompilation, dexOptOptions2.forceCompilation);
         assertEquals(dexOptOptions.forceDexOpt, dexOptOptions2.forceDexOpt);
+    }
+
+    @Test
+    public void sanitizeForExecutionKeepsRootOnlyOptionsForRootOrSystem() {
+        DexOptOptions dexOptOptions = DexOptOptions.getDefault();
+        dexOptOptions.clearProfileData = true;
+        dexOptOptions.forceDexOpt = true;
+
+        DexOptOptions.SanitizationResult result = dexOptOptions.sanitizeForExecution(true);
+
+        assertTrue(result.options.clearProfileData);
+        assertTrue(result.options.forceDexOpt);
+        assertFalse(result.hasSkippedRootOnlyOptions());
+        assertTrue(DexOptOptions.canUseRootOnlyOptions(Ops.ROOT_UID));
+        assertTrue(DexOptOptions.canUseRootOnlyOptions(Ops.SYSTEM_UID));
+    }
+
+    @Test
+    public void sanitizeForExecutionStripsRootOnlyOptionsForAdbOrShizuku() {
+        DexOptOptions dexOptOptions = DexOptOptions.getDefault();
+        dexOptOptions.compileLayouts = true;
+        dexOptOptions.clearProfileData = true;
+        dexOptOptions.forceCompilation = true;
+        dexOptOptions.forceDexOpt = true;
+
+        DexOptOptions.SanitizationResult result = dexOptOptions.sanitizeForExecution(false);
+
+        assertTrue(result.options.compileLayouts);
+        assertTrue(result.options.forceCompilation);
+        assertFalse(result.options.clearProfileData);
+        assertFalse(result.options.forceDexOpt);
+        assertTrue(result.hasSkippedRootOnlyOptions());
+        assertEquals("clear_profile_data, force_dex_opt", result.getSkippedRootOnlyOptionsSummary());
+        assertFalse(DexOptOptions.canUseRootOnlyOptions(Ops.SHELL_UID));
     }
 }

@@ -1022,7 +1022,13 @@ public class BatchOpsManager {
     private Result opPerformDexOpt(@NonNull BatchOpsInfo info) {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         IPackageManager pm = PackageManagerCompat.getPackageManager();
-        DexOptOptions options = ((BatchDexOptOptions) Objects.requireNonNull(info.options)).getDexOptOptions();
+        DexOptOptions rawOptions = ((BatchDexOptOptions) Objects.requireNonNull(info.options)).getDexOptOptions();
+        DexOptOptions.SanitizationResult sanitizationResult = rawOptions.sanitizeForExecution(SelfPermissions.isSystemOrRoot());
+        DexOptOptions options = sanitizationResult.options;
+        if (sanitizationResult.hasSkippedRootOnlyOptions()) {
+            log("====> op=DEXOPT, skipped-root-only-options="
+                    + sanitizationResult.getSkippedRootOnlyOptionsSummary());
+        }
         if (info.size() > 0) {
             // Override options.packages with this list
             Set<String> packages = new HashSet<>(info.size());
