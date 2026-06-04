@@ -5,6 +5,31 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Deep audit hardening pass (2026-06-04)
+
+- **Native (CRITICAL):** Fixed heap overread in `CpuUtils.getCpuModel()` — the
+  48-byte CPUID buffer was passed to `NewStringUTF` without null termination on
+  x86/x86_64 emulators.
+- **Native:** Fixed stale-errno false-positive in 7 OsCompat JNI functions
+  (`setgrent`, `setpwent`, `getgrent`, `getpwent`, `endgrent`, `endpwent`,
+  `utimensat`) where a non-zero errno from a prior call could spuriously throw
+  `ErrnoException`.
+- **UI:** Fixed ViewPager2 callback leak in AppDetailsActivity — the anonymous
+  page-change callback was never unregistered, leaking the Activity on every
+  configuration change.
+- **UI:** Fixed potential NPE in AppDetailsActivity when `getSupportActionBar()`
+  returned null inside the user-info LiveData observer.
+- **UI:** Added `isDestroyed()` guards to PermissionInspectorActivity's recovery
+  executor callbacks to prevent posting to a dead Activity.
+- **CI:** Fixed release workflow heredoc that wrote leading whitespace into
+  `keystore.properties`, producing malformed property keys.
+- **Data:** Added `getFD().sync()` to DebloatDefinitionsUpdater's atomic write
+  so cached definitions survive unclean shutdown.
+- **Build:** Removed dead commented-out Espresso/LeakCanary dependency lines.
+- **Build:** Fixed "percelable" → "Parcelable" typo in ProGuard rules.
+- **Build:** Removed redundant `toLowerCase()` on already-lowercase hex output
+  in DebloatDefinitionsUpdater.
+
 ### Added - AppOps revert banner contract (upstream #1956/#1960, 2026-06-04)
 
 - Added JVM coverage for the AppOps OS-revert banner so a permission/app-op
