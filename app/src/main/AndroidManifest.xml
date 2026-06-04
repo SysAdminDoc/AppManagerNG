@@ -220,6 +220,13 @@
             android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/one_click_ops" />
+        <activity
+            android:name=".adb.AdbPairingInputActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.TransparentBackground" />
         <!--
             Trampoline for static launcher shortcuts. See
             io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java for the
