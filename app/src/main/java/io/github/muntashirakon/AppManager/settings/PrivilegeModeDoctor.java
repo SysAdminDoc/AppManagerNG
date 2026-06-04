@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
@@ -32,14 +33,17 @@ public final class PrivilegeModeDoctor {
 
     @NonNull
     public static String run(@NonNull Context context) {
+        return runReport(context).text;
+    }
+
+    @NonNull
+    static Report runReport(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
         List<Probe> probes = new ArrayList<>();
         String configuredMode = Ops.getMode();
         String inferredMode = String.valueOf(Ops.getInferredMode(appContext));
         int workingUid = Users.getSelfOrRemoteUid();
-        probes.add(Probe.pass("Mode selection",
-                "configured=" + configuredMode + ", inferred=" + inferredMode + ", uid=" + workingUid,
-                "Change Settings > Operating mode if the inferred mode is not what you intended."));
+        probes.add(probeModeSelection(configuredMode, inferredMode, workingUid));
         probes.add(probeRootBinary());
         RootManagerInfo rootManagerInfo = RootManagerInfo.detect(appContext);
         probes.add(probeRootManager(rootManagerInfo));
@@ -51,7 +55,19 @@ public final class PrivilegeModeDoctor {
         probes.add(probeLocalServer());
         probes.add(probeSelinux());
         probes.add(probeAbi());
-        return buildReport(appContext, configuredMode, inferredMode, workingUid, probes);
+        return new Report(appContext, configuredMode, inferredMode, workingUid, probes);
+    }
+
+    @NonNull
+    private static Probe probeModeSelection(@NonNull String configuredMode,
+                                            @NonNull String inferredMode,
+                                            int workingUid) {
+        String details = "configured=" + configuredMode + ", inferred=" + inferredMode + ", uid=" + workingUid;
+        String fix = "Change Settings > Operating mode if the inferred mode is not what you intended.";
+        if (!isModeHealthy(configuredMode, workingUid)) {
+            return Probe.warn("Mode selection", details, fix, FixTarget.MODE_SETTINGS);
+        }
+        return Probe.pass("Mode selection", details, fix);
     }
 
     @NonNull
@@ -64,17 +80,20 @@ public final class PrivilegeModeDoctor {
                     return Probe.pass("Root grant", "su granted; id -u=0", "No action needed.");
                 }
                 return Probe.warn("Root grant", "su granted but id -u returned " + summarize(id),
-                        "Re-open the root manager and verify AppManagerNG still has root access.");
+                        "Re-open the root manager and verify AppManagerNG still has root access.",
+                        FixTarget.ROOT_MANAGER);
             }
             if (rootGrant == null) {
                 return Probe.warn("Root binary", "su exists but AppManagerNG is not granted root",
-                        "Open your root manager and grant AppManagerNG, or use Shizuku/ADB mode.");
+                        "Open your root manager and grant AppManagerNG, or use Shizuku/ADB mode.",
+                        FixTarget.ROOT_MANAGER);
             }
             return Probe.skip("Root binary", "no executable su binary detected",
                     "Use Shizuku or ADB mode on non-rooted devices.");
         } catch (Throwable th) {
             return Probe.fail("Root grant", summarize(th),
-                    "Check the root manager prompt/logs, then rerun the doctor.");
+                    "Check the root manager prompt/logs, then rerun the doctor.",
+                    FixTarget.ROOT_MANAGER);
         }
     }
 
@@ -85,17 +104,21 @@ public final class PrivilegeModeDoctor {
             return Probe.skip("Root manager", "none detected by shell marker or package fallback",
                     "Install/configure Magisk, KernelSU, or APatch if root mode is expected.");
         }
+        if (info.source == RootManagerInfo.Source.PACKAGE) {
+            return Probe.warn("Root manager", name + " via " + info.source,
+                    "Package fallback only; grant root and rerun to confirm /data/adb markers.",
+                    FixTarget.ROOT_MANAGER);
+        }
         return Probe.pass("Root manager", name + " via " + info.source,
-                info.source == RootManagerInfo.Source.PACKAGE
-                        ? "Package fallback only; grant root and rerun to confirm /data/adb markers."
-                        : "No action needed.");
+                "No action needed.");
     }
 
     @NonNull
     private static Probe probeSui(@NonNull RootManagerInfo info) {
         if (info.suiPresent) {
             return Probe.pass("Sui marker", "Magisk-module Sui marker detected",
-                    "Use Shizuku mode if you want Sui-backed binder operations.");
+                    "Use Shizuku mode if you want Sui-backed binder operations.",
+                    FixTarget.MODE_SETTINGS);
         }
         return Probe.skip("Sui marker", "not detected", "No action needed unless this device should be using Sui.");
     }
@@ -115,24 +138,29 @@ public final class PrivilegeModeDoctor {
         if (ShizukuBridge.isRootBacked()) {
             return Probe.warn("Shizuku root-backed", details,
                     context.getString(R.string.privilege_health_shizuku_root_backed_warning)
-                            + " " + context.getString(R.string.mode_of_op_shizuku_root_backed_tooltip));
+                            + " " + context.getString(R.string.mode_of_op_shizuku_root_backed_tooltip),
+                    FixTarget.MODE_SETTINGS);
         }
         ShizukuBridge.OemCompatibilityWarning oemWarning = ShizukuBridge.getOemCompatibilityWarning(context);
         if (oemWarning != null) {
             return Probe.warn("Shizuku OEM compatibility", details + ", oemRisk=" + oemWarning.reasonCode,
                     context.getString(oemWarning.summaryTextRes, oemWarning.fallbackVersion)
-                            + " Archive: " + oemWarning.archiveUrl);
+                            + " Archive: " + oemWarning.archiveUrl,
+                    FixTarget.SHIZUKU_ARCHIVE);
         }
         if (binderAlive && supportsUserService && hasPermission) {
             return Probe.pass("Shizuku binder", details, "No action needed.");
         }
         if (!binderAlive) {
-            return Probe.warn("Shizuku binder", details, "Start Shizuku/Sui, then rerun the doctor.");
+            return Probe.warn("Shizuku binder", details, "Start Shizuku/Sui, then rerun the doctor.",
+                    FixTarget.SHIZUKU_SETTINGS);
         }
         if (!supportsUserService) {
-            return Probe.fail("Shizuku UserService", details, "Update Shizuku to a version with UserService support.");
+            return Probe.fail("Shizuku UserService", details, "Update Shizuku to a version with UserService support.",
+                    FixTarget.SHIZUKU_SETTINGS);
         }
-        return Probe.warn("Shizuku permission", details, "Authorize AppManagerNG in Shizuku, then rerun the doctor.");
+        return Probe.warn("Shizuku permission", details, "Authorize AppManagerNG in Shizuku, then rerun the doctor.",
+                FixTarget.SHIZUKU_SETTINGS);
     }
 
     @NonNull
@@ -155,15 +183,18 @@ public final class PrivilegeModeDoctor {
         if (!result.isOfficialOwner()) {
             return Probe.warn("Dhizuku", details,
                     "Dhizuku is installed but is not the device/profile owner. Activation command: "
-                            + DhizukuBridge.ACTIVATION_COMMAND);
+                            + DhizukuBridge.ACTIVATION_COMMAND,
+                    FixTarget.DHIZUKU_SETTINGS);
         }
         if (!result.providerVisible) {
             return Probe.warn("Dhizuku", details,
-                    "Dhizuku is owner, but its API provider is not visible to AppManagerNG.");
+                    "Dhizuku is owner, but its API provider is not visible to AppManagerNG.",
+                    FixTarget.DHIZUKU_SETTINGS);
         }
         if (!result.apiPermissionGranted) {
             return Probe.warn("Dhizuku", details,
-                    "Grant AppManagerNG Dhizuku API permission before DPM operations are enabled.");
+                    "Grant AppManagerNG Dhizuku API permission before DPM operations are enabled.",
+                    FixTarget.DHIZUKU_SETTINGS);
         }
         return Probe.pass("Dhizuku", details,
                 "Provider detected. AppManagerNG still needs the separate DPM operation integration slice.");
@@ -182,10 +213,12 @@ public final class PrivilegeModeDoctor {
         }
         if (usbDebugging || wirelessDebugging || paired) {
             return Probe.warn("ADB reachability", details,
-                    "Enable both USB debugging and Wireless debugging, or reconnect ADB over TCP.");
+                    "Enable both USB debugging and Wireless debugging, or reconnect ADB over TCP.",
+                    FixTarget.DEVELOPER_OPTIONS);
         }
         return Probe.skip("ADB reachability", details,
-                "Enable Developer options > USB debugging / Wireless debugging for ADB modes.");
+                "Enable Developer options > USB debugging / Wireless debugging for ADB modes.",
+                FixTarget.DEVELOPER_OPTIONS);
     }
 
     @NonNull
@@ -207,14 +240,17 @@ public final class PrivilegeModeDoctor {
                         "No action needed unless Accessibility, notification listener, or device-admin toggles are disabled.");
             case RestrictedSettingsDiagnostics.STATUS_LIKELY_RESTRICTED:
                 return Probe.warn("Restricted Settings", details,
-                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix),
+                        FixTarget.RESTRICTED_APP_INFO);
             case RestrictedSettingsDiagnostics.STATUS_UNKNOWN_SOURCE:
                 return Probe.warn("Restricted Settings", details,
-                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix),
+                        FixTarget.RESTRICTED_APP_INFO);
             case RestrictedSettingsDiagnostics.STATUS_REVIEW_RECOMMENDED:
             default:
                 return Probe.warn("Restricted Settings", details,
-                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix));
+                        context.getString(R.string.privilege_health_restricted_settings_mode_doctor_fix),
+                        FixTarget.RESTRICTED_APP_INFO);
         }
     }
 
@@ -232,10 +268,12 @@ public final class PrivilegeModeDoctor {
             }
             return Probe.fail("LocalServer command", "exit=" + result.getStatusCode()
                             + ", output=" + output,
-                    "Rerun the LocalServer bootstrap smoke test and share the support info bundle.");
+                    "Rerun the LocalServer bootstrap smoke test and share the support info bundle.",
+                    FixTarget.BOOTSTRAP_SMOKE_TEST);
         } catch (Throwable th) {
             return Probe.fail("LocalServer command", summarize(th),
-                    "Rerun the LocalServer bootstrap smoke test and share the support info bundle.");
+                    "Rerun the LocalServer bootstrap smoke test and share the support info bundle.",
+                    FixTarget.BOOTSTRAP_SMOKE_TEST);
         }
     }
 
@@ -247,10 +285,12 @@ public final class PrivilegeModeDoctor {
                 return Probe.pass("SELinux domain", result.getOutput().trim(), "No action needed.");
             }
             return Probe.warn("SELinux domain", summarize(result),
-                    "Expected on some ROMs; include support info if privileged calls fail.");
+                    "Expected on some ROMs; include support info if privileged calls fail.",
+                    FixTarget.SUPPORT_BUNDLE);
         } catch (Throwable th) {
             return Probe.warn("SELinux domain", summarize(th),
-                    "Expected on some ROMs; include support info if privileged calls fail.");
+                    "Expected on some ROMs; include support info if privileged calls fail.",
+                    FixTarget.SUPPORT_BUNDLE);
         }
     }
 
@@ -260,7 +300,9 @@ public final class PrivilegeModeDoctor {
         if (supportedAbis != null && supportedAbis.length > 0) {
             return Probe.pass("ABI", Arrays.toString(supportedAbis), "No action needed.");
         }
-        return Probe.fail("ABI", "Build.SUPPORTED_ABIS is empty", "This ROM is not reporting supported ABIs correctly.");
+        return Probe.fail("ABI", "Build.SUPPORTED_ABIS is empty",
+                "This ROM is not reporting supported ABIs correctly.",
+                FixTarget.SUPPORT_BUNDLE);
     }
 
     @NonNull
@@ -288,6 +330,11 @@ public final class PrivilegeModeDoctor {
             }
         }
         return report.toString();
+    }
+
+    @NonNull
+    static String buildSupportPreamble(@NonNull String modeDoctorReport) {
+        return "Mode Doctor probe\n=================\n" + modeDoctorReport;
     }
 
     @NonNull
@@ -327,6 +374,50 @@ public final class PrivilegeModeDoctor {
         }
     }
 
+    private static boolean isModeHealthy(@NonNull String mode, int uid) {
+        switch (mode) {
+            case Ops.MODE_ROOT:
+                return uid == Ops.ROOT_UID;
+            case Ops.MODE_SHIZUKU:
+                return uid == Ops.ROOT_UID || uid == Ops.SYSTEM_UID || uid == Ops.SHELL_UID;
+            case Ops.MODE_ADB_OVER_TCP:
+            case Ops.MODE_ADB_WIFI:
+                return uid <= Ops.SHELL_UID;
+            case Ops.MODE_AUTO:
+            case Ops.MODE_NO_ROOT:
+            default:
+                return true;
+        }
+    }
+
+    enum FixTarget {
+        MODE_SETTINGS,
+        ROOT_MANAGER,
+        SHIZUKU_SETTINGS,
+        SHIZUKU_ARCHIVE,
+        DHIZUKU_SETTINGS,
+        DEVELOPER_OPTIONS,
+        RESTRICTED_APP_INFO,
+        BOOTSTRAP_SMOKE_TEST,
+        SUPPORT_BUNDLE,
+    }
+
+    static final class Report {
+        @NonNull
+        final String text;
+        @NonNull
+        final List<Probe> probes;
+
+        Report(@NonNull Context context,
+               @NonNull String configuredMode,
+               @NonNull String inferredMode,
+               int workingUid,
+               @NonNull List<Probe> probes) {
+            this.probes = Collections.unmodifiableList(new ArrayList<>(probes));
+            text = buildReport(context, configuredMode, inferredMode, workingUid, this.probes);
+        }
+    }
+
     static final class Probe {
         @NonNull
         final String status;
@@ -336,33 +427,61 @@ public final class PrivilegeModeDoctor {
         final String details;
         @Nullable
         final String fix;
+        @Nullable
+        final FixTarget fixTarget;
 
         private Probe(@NonNull String status, @NonNull String name,
-                      @NonNull String details, @Nullable String fix) {
+                      @NonNull String details, @Nullable String fix,
+                      @Nullable FixTarget fixTarget) {
             this.status = status;
             this.name = name;
             this.details = details;
             this.fix = fix;
+            this.fixTarget = fixTarget;
         }
 
         @NonNull
         static Probe pass(@NonNull String name, @NonNull String details, @Nullable String fix) {
-            return new Probe("PASS", name, details, fix);
+            return pass(name, details, fix, null);
+        }
+
+        @NonNull
+        static Probe pass(@NonNull String name, @NonNull String details, @Nullable String fix,
+                          @Nullable FixTarget fixTarget) {
+            return new Probe("PASS", name, details, fix, fixTarget);
         }
 
         @NonNull
         static Probe warn(@NonNull String name, @NonNull String details, @Nullable String fix) {
-            return new Probe("WARN", name, details, fix);
+            return warn(name, details, fix, null);
+        }
+
+        @NonNull
+        static Probe warn(@NonNull String name, @NonNull String details, @Nullable String fix,
+                          @Nullable FixTarget fixTarget) {
+            return new Probe("WARN", name, details, fix, fixTarget);
         }
 
         @NonNull
         static Probe fail(@NonNull String name, @NonNull String details, @Nullable String fix) {
-            return new Probe("FAIL", name, details, fix);
+            return fail(name, details, fix, null);
+        }
+
+        @NonNull
+        static Probe fail(@NonNull String name, @NonNull String details, @Nullable String fix,
+                          @Nullable FixTarget fixTarget) {
+            return new Probe("FAIL", name, details, fix, fixTarget);
         }
 
         @NonNull
         static Probe skip(@NonNull String name, @NonNull String details, @Nullable String fix) {
-            return new Probe("SKIP", name, details, fix);
+            return skip(name, details, fix, null);
+        }
+
+        @NonNull
+        static Probe skip(@NonNull String name, @NonNull String details, @Nullable String fix,
+                          @Nullable FixTarget fixTarget) {
+            return new Probe("SKIP", name, details, fix, fixTarget);
         }
     }
 }
