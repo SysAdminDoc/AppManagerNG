@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App Details leftover-data cleanup action (T19-B follow-up, 2026-06-03)
+
+- App Details now accepts packages returned only through
+  `MATCH_UNINSTALLED_PACKAGES` after uninstall-with-data, preserves that
+  data-only package state, and avoids resolving a missing APK path for it.
+- The App Info action strip now shows a guarded "Clear data" action for those
+  uninstalled packages, using the same uninstall-without-keep-data cleanup path
+  as the main list. App Info also tolerates missing source APK paths while still
+  showing data directories.
+- Added `ApplicationInfoCompatTest` coverage for installed, data-only, and
+  retained-system-source package-state classification.
+
 ### Added - Leftover cleanup operation-history rows (T19-B follow-up, 2026-06-03)
 
 - Leftover-folder deletion now writes a `cleanup` operation-history row with

@@ -146,6 +146,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @Nullable
     private ApkFile mApkFile;
     private int mUserId;
+    private boolean mDataOnlyPackage = false;
     @AppDetailsFragment.SortOrder
     private int mSortOrderComponents = Prefs.AppDetailsPage.getComponentsSortOrder();
     @AppDetailsFragment.SortOrder
@@ -213,6 +214,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     public LiveData<PackageInfo> setPackage(@NonNull ApkSource apkSource) {
         mApkSource = apkSource;
         mExternalApk = true;
+        mDataOnlyPackage = false;
         mExecutor.submit(() -> {
             try {
                 Log.d(TAG, "Package Uri is being set");
@@ -237,16 +239,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @NonNull
     public LiveData<PackageInfo> setPackage(@NonNull String packageName) {
         mExternalApk = false;
+        mDataOnlyPackage = false;
         mExecutor.submit(() -> {
             try {
                 Log.d(TAG, "Package name is being set");
                 setPackageName(packageName);
-                // TODO: 23/5/21 The app could be “data only”
                 setPackageInfo(false);
                 PackageInfo pi = getPackageInfo();
                 if (pi == null) throw new ApkFile.ApkFileException("Package not installed.");
-                mApkSource = ApkSource.getApkSource(pi.applicationInfo);
-                mApkFile = mApkSource.resolve();
+                if (!mDataOnlyPackage) {
+                    mApkSource = ApkSource.getApkSource(pi.applicationInfo);
+                    mApkFile = mApkSource.resolve();
+                }
                 mPackageInfoLiveData.postValue(pi);
             } catch (Throwable th) {
                 Log.e(TAG, "Could not fetch package info.", th);
@@ -1120,6 +1124,11 @@ public class AppDetailsViewModel extends AndroidViewModel {
     }
 
     @AnyThread
+    public boolean isDataOnlyPackage() {
+        return mDataOnlyPackage;
+    }
+
+    @AnyThread
     public int getSplitCount() {
         if (mApkFile != null && mApkFile.isSplit()) {
             return mApkFile.getEntries().size() - 1;
@@ -1166,19 +1175,26 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (!reload && mPackageInfo != null) return;
         try {
             try {
-                mInstalledPackageInfo = PackageManagerCompat.getPackageInfo(mPackageName, PackageManager.GET_META_DATA
+                PackageInfo installedPackageInfo = PackageManagerCompat.getPackageInfo(mPackageName, PackageManager.GET_META_DATA
                                 | PackageManager.GET_PERMISSIONS | PackageManager.GET_ACTIVITIES | MATCH_DISABLED_COMPONENTS
                                 | PackageManager.GET_RECEIVERS | PackageManager.GET_PROVIDERS | MATCH_UNINSTALLED_PACKAGES
                                 | PackageManager.GET_SERVICES | PackageManager.GET_CONFIGURATIONS | GET_SIGNING_CERTIFICATES
                                 | PackageManager.GET_SHARED_LIBRARY_FILES | PackageManager.GET_URI_PERMISSION_PATTERNS
                                 | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES,
                         mUserId);
-                if (!ApplicationInfoCompat.isInstalled(mInstalledPackageInfo.applicationInfo)) {
+                if (ApplicationInfoCompat.isInstalled(installedPackageInfo.applicationInfo)) {
+                    mInstalledPackageInfo = installedPackageInfo;
+                    mDataOnlyPackage = false;
+                } else if (ApplicationInfoCompat.isOnlyDataInstalled(installedPackageInfo.applicationInfo)) {
+                    mInstalledPackageInfo = mExternalApk ? null : installedPackageInfo;
+                    mDataOnlyPackage = !mExternalApk;
+                } else {
                     throw new ApkFile.ApkFileException("App not installed. It only has data.");
                 }
             } catch (Throwable e) {
                 Log.e(TAG, e);
                 mInstalledPackageInfo = null;
+                mDataOnlyPackage = false;
             }
             if (mExternalApk) {
                 // Do not get signatures via Android framework as it will simply return NULL without any clarifications.
@@ -1206,6 +1222,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             mIsPackageExistLiveData.postValue(mIsPackageExist = true);
         } catch (PackageManager.NameNotFoundException e) {
             Log.e(TAG, e);
+            mDataOnlyPackage = false;
             mIsPackageExistLiveData.postValue(mIsPackageExist = false);
         } catch (Throwable e) {
             Log.e(TAG, e);

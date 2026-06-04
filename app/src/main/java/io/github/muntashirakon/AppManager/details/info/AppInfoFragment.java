@@ -245,6 +245,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private Future<?> mMenuPreparationResult;
 
     private boolean mIsExternalApk;
+    private boolean mIsDataOnlyPackage;
     private int mLoadedItemCount;
 
     @GuardedBy("mListItems")
@@ -319,6 +320,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mUserId = mMainModel.getUserId();
             mInstalledPackageInfo = mMainModel.getInstalledPackageInfo();
             mIsExternalApk = mMainModel.isExternalApk();
+            mIsDataOnlyPackage = mMainModel.isDataOnlyPackage();
             if (!mIsExternalApk) {
                 mInstallerPackageName = PackageManagerCompat.getInstallerPackageName(mPackageName, mUserId);
             }
@@ -2171,6 +2173,19 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private List<ActionItem> getHorizontalActions() {
         Objects.requireNonNull(mMainModel);
         List<ActionItem> actionItems = new LinkedList<>();
+        if (!mIsExternalApk && mIsDataOnlyPackage) {
+            ActionItem clearDataAction = new ActionItem(R.string.clear_data, R.drawable.ic_clear_data);
+            actionItems.add(clearDataAction);
+            clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
+                    .setTitle(mAppLabel)
+                    .setMessage(getResources().getQuantityString(
+                            R.plurals.clear_uninstalled_app_data_confirmation, 1, 1))
+                    .setPositiveButton(R.string.clear, (dialog, which) -> ActionAuthGate.authenticate(mActivity,
+                            R.string.authenticate_to_clear_data, this::clearDataOnlyPackage))
+                    .setNegativeButton(R.string.cancel, null)
+                    .show());
+            return actionItems;
+        }
         if (!mIsExternalApk) {
             boolean isStaticSharedLib = ApplicationInfoCompat.isStaticSharedLibrary(mApplicationInfo);
             boolean isFrozen = FreezeUtils.isFrozen(mApplicationInfo);
@@ -2561,6 +2576,22 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } catch (PackageManager.NameNotFoundException ignored) {
         }
         return actionItems;
+    }
+
+    private void clearDataOnlyPackage() {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+            installer.setAppLabel(mAppLabel);
+            boolean uninstalled = installer.uninstall(mPackageName, mUserId, false);
+            ThreadUtils.postOnMainThread(() -> {
+                if (uninstalled) {
+                    displayLongToast(R.string.uninstalled_successfully, mAppLabel);
+                    mActivity.finish();
+                } else {
+                    displayLongToast(R.string.failed_to_uninstall, mAppLabel);
+                }
+            });
+        });
     }
 
     @NonNull
