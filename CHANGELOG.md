@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Android libraries submodule tracking (build-host hygiene, 2026-06-04)
+
+- Added the missing `scripts/android-libraries` gitlink at upstream
+  `8fb3919828e9c9f6e75faaaa322c5af59c6d05fa`, matching the existing
+  `.gitmodules` entry so fresh checkouts can fetch both scanner/debloat dataset
+  directories with `git submodule update --init --recursive`.
+
 ### Added - Debloat OEM provenance surfaces (research P2, 2026-06-04)
 
 - Debloat objects now accept a future `preinstalled_oems` field and infer
