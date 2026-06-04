@@ -849,6 +849,9 @@
     <string name="leftover_files_export_subject">AppManagerNG leftover folders</string>
     <string name="find_duplicate_apks">Find duplicate APK files</string>
     <string name="find_duplicate_apks_description">Scan storage for repeated <tt>.apk</tt> copies of the same app version and reclaim space.</string>
+    <string name="scan_selected_duplicate_apks">Scanning selected APK files...</string>
+    <string name="no_duplicate_apk_files_selected">Select at least two readable APK files.</string>
+    <string name="no_duplicate_apk_delete_selection">Select at least one duplicate APK file.</string>
     <string name="no_duplicate_apks_found_message">No duplicate APK files were found.</string>
     <string name="duplicate_apks_review_title">Review duplicate APKs</string>
     <string name="apk_duplicate_keeping">keeping <xliff:g id="name" example="base.apk">%1$s</xliff:g></string>

@@ -23,7 +23,6 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.content.pm.PackageInfoCompat;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -144,67 +143,14 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                 if (ThreadUtils.isInterrupted()) {
                     return;
                 }
-                ApkDuplicateSelector.Candidate candidate = buildApkCandidate(apk);
+                ApkDuplicateSelector.Candidate candidate = ApkDuplicateOperations.buildCandidate(
+                        mPm, getApplication().getCacheDir(), apk);
                 if (candidate != null) {
                     candidates.add(candidate);
                 }
             }
             mApkDuplicates.postValue(ApkDuplicateSelector.selectDuplicates(candidates, strategy));
         });
-    }
-
-    /**
-     * Parse a single APK-like file into a duplicate-finder candidate. Plain
-     * {@code .apk} files are parsed directly. Split/bundle formats
-     * ({@code .apks}/{@code .apkm}/{@code .xapk}) first extract a temporary
-     * base APK so {@code getPackageArchiveInfo} and apksig can read the
-     * install identity, while the returned candidate still points at the
-     * original bundle file for deletion/reclaim accounting.
-     */
-    @Nullable
-    private ApkDuplicateSelector.Candidate buildApkCandidate(@NonNull File apk) {
-        File parseTarget = apk;
-        File extractedBase = null;
-        try {
-            if (!isPlainApk(apk)) {
-                extractedBase = ApkBundleBaseExtractor.extractBaseApk(apk, getApplication().getCacheDir());
-                if (extractedBase == null) {
-                    return null;
-                }
-                parseTarget = extractedBase;
-            }
-            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-                    ? PackageManager.GET_SIGNING_CERTIFICATES
-                    : PackageManager.GET_SIGNATURES;
-            PackageInfo packageInfo = mPm.getPackageArchiveInfo(parseTarget.getAbsolutePath(), flags);
-            if (packageInfo == null || packageInfo.packageName == null
-                    || packageInfo.applicationInfo == null) {
-                return null;
-            }
-            // getSignerInfo(..., isExternal=true) re-derives the cert from the
-            // APK path via apksig, so point the archive info at the real file.
-            packageInfo.applicationInfo.sourceDir = parseTarget.getAbsolutePath();
-            packageInfo.applicationInfo.publicSourceDir = parseTarget.getAbsolutePath();
-            long versionCode = PackageInfoCompat.getLongVersionCode(packageInfo);
-            String cert = null;
-            String[] certs = PackageUtils.getSigningCertSha256Checksum(packageInfo, true);
-            if (certs.length > 0) {
-                cert = certs[0];
-            }
-            return new ApkDuplicateSelector.Candidate(apk, packageInfo.packageName, versionCode,
-                    cert, apk.length());
-        } catch (Throwable th) {
-            Log.w(TAG, "Failed to parse APK candidate: " + apk, th);
-            return null;
-        } finally {
-            if (extractedBase != null && !extractedBase.delete()) {
-                extractedBase.deleteOnExit();
-            }
-        }
-    }
-
-    private static boolean isPlainApk(@NonNull File apk) {
-        return apk.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".apk");
     }
 
     /**
@@ -218,31 +164,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             mFutureResult.cancel(true);
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
-            int deleted = 0;
-            long reclaimed = 0L;
-            for (ApkDuplicateSelector.Candidate candidate : dropFiles) {
-                if (ThreadUtils.isInterrupted()) {
-                    break;
-                }
-                try {
-                    if (Paths.get(candidate.path).delete()) {
-                        ++deleted;
-                        if (candidate.sizeBytes > 0) {
-                            reclaimed += candidate.sizeBytes;
-                        }
-                        io.github.muntashirakon.AppManager.logs.Log.i(TAG, "Deleted duplicate APK "
-                                + candidate.packageName + " v" + candidate.versionCode + ": "
-                                + candidate.path);
-                    } else {
-                        io.github.muntashirakon.AppManager.logs.Log.w(TAG,
-                                "Failed to delete duplicate APK: " + candidate.path);
-                    }
-                } catch (Throwable th) {
-                    io.github.muntashirakon.AppManager.logs.Log.w(TAG,
-                            "Error deleting duplicate APK: " + candidate.path, th);
-                }
-            }
-            mApkDuplicateDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+            Pair<Integer, Long> result = ApkDuplicateOperations.deleteCandidates(dropFiles);
+            mApkDuplicateDeleteResult.postValue(result);
         });
     }
 
