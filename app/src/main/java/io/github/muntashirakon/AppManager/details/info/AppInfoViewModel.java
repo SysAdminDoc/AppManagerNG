@@ -229,6 +229,8 @@ public class AppInfoViewModel extends AndroidViewModel {
                     tagCloud.canOpenLinks = userState.isLinkHandlingAllowed();
                     if (!userState.getHostToStateMap().isEmpty()) {
                         tagCloud.hostsToOpen = userState.getHostToStateMap();
+                        tagCloud.domainLinkConflicts = loadDomainLinkConflicts(packageName, userId,
+                                userState.getHostToStateMap());
                     }
                 }
             }
@@ -425,6 +427,44 @@ public class AppInfoViewModel extends AndroidViewModel {
         return usesCleartextTraffic && networkSecurityConfigRes == 0;
     }
 
+    @NonNull
+    @WorkerThread
+    private Map<String, List<DomainLinkConflictDetector.Conflict>> loadDomainLinkConflicts(
+            @NonNull String packageName, int userId, @NonNull Map<String, Integer> hostStates) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || hostStates.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<DomainLinkConflictDetector.AppDomainClaims> claims = new ArrayList<>();
+        CharSequence appLabel = mAppLabel.getValue();
+        claims.add(DomainLinkConflictDetector.claim(packageName,
+                appLabel != null ? appLabel.toString() : packageName, userId, hostStates));
+        List<PackageInfo> packageInfoList = PackageManagerCompat.getInstalledPackages(PackageManager.GET_META_DATA, userId);
+        PackageManager packageManager = getApplication().getPackageManager();
+        for (PackageInfo packageInfo : packageInfoList) {
+            if (ThreadUtils.isInterrupted()) {
+                return Collections.emptyMap();
+            }
+            if (packageInfo.packageName.equals(packageName)) {
+                continue;
+            }
+            DomainVerificationUserState userState = DomainVerificationManagerCompat
+                    .getDomainVerificationUserState(packageInfo.packageName, userId);
+            if (userState == null || userState.getHostToStateMap().isEmpty()) {
+                continue;
+            }
+            String label = packageInfo.applicationInfo != null
+                    ? packageInfo.applicationInfo.loadLabel(packageManager).toString()
+                    : packageInfo.packageName;
+            claims.add(DomainLinkConflictDetector.claim(packageInfo.packageName, label, userId,
+                    userState.getHostToStateMap()));
+        }
+        Map<String, Map<String, List<DomainLinkConflictDetector.Conflict>>> conflicts =
+                DomainLinkConflictDetector.findConflictsByPackageUser(claims);
+        Map<String, List<DomainLinkConflictDetector.Conflict>> packageConflicts = conflicts.get(
+                DomainLinkConflictDetector.packageUserKey(packageName, userId));
+        return packageConflicts != null ? packageConflicts : Collections.emptyMap();
+    }
+
     @AnyThread
     public void loadAppInfo(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
         if (mAppInfoFuture != null) {
@@ -576,6 +616,8 @@ public class AppInfoViewModel extends AndroidViewModel {
          * {@link DomainVerificationUserState#DOMAIN_STATE_SELECTED}, {@link DomainVerificationUserState#DOMAIN_STATE_VERIFIED}.
          */
         public Map<String, Integer> hostsToOpen;
+        @NonNull
+        public Map<String, List<DomainLinkConflictDetector.Conflict>> domainLinkConflicts = Collections.emptyMap();
         public int splitCount;
         public boolean isDebuggable;
         public boolean isTestOnly;

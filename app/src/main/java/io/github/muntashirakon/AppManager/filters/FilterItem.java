@@ -188,6 +188,15 @@ public class FilterItem implements IJsonSerializer, Parcelable {
         return new ArrayList<>(mFilterOptions.values());
     }
 
+    public boolean hasFilterOptionType(@NonNull String type) {
+        for (FilterOption option : mFilterOptions.values()) {
+            if (option.type.equals(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Nullable
     public FilterOption getFilterOptionForId(int id) {
         return mFilterOptions.get(id);

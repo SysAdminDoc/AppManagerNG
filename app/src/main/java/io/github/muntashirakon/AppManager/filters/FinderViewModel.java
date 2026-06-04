@@ -83,6 +83,6 @@ public class FinderViewModel extends AndroidViewModel {
 
     @WorkerThread
     private void loadAppList() {
-        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(Users.getUsersIds(), true);
+        mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(Users.getUsersIds(), true, true);
     }
 }
