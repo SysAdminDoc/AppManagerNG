@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Duplicate APK backup-root scanning (T19-C follow-up, 2026-06-03)
+
+- One-Click Ops duplicate-APK scans now include the configured AppManager
+  backup directory when it resolves to a local filesystem root, so saved APKs
+  on a configured backup volume are considered even when that directory is
+  outside primary external storage.
+- Added `ApkDuplicateScanRoots` to deduplicate overlapping scan roots and
+  canonical file hits, with focused JVM coverage for external-storage overlap
+  and configured-root-only APK discovery.
+
 ### Added - File Manager selected duplicate APK cleanup (T19-C follow-up, 2026-06-03)
 
 - File Manager multi-select now offers "Find duplicate APK files" when the

@@ -85,11 +85,13 @@ than by historical priority tier:
   `ActionAuthGate`, deletes via the privileged `Paths.get(...).delete()` with
   audit logging + a reclaimed-bytes toast. _Data layer: `ApkDuplicateSelector`,
   `ApkFileScanner`, `ApkBundleHeaderParser`, `ApkBundleBaseExtractor`,
-  `ApkDuplicateOperations`, `FmDuplicateApkSelectionUtils`; 49 JVM tests.
+  `ApkDuplicateOperations`, `ApkDuplicateScanRoots`,
+  `FmDuplicateApkSelectionUtils`; 53 JVM tests.
   File Manager multi-select also offers "Find duplicate APK files" for at
   least two readable local APK-like files and reuses the same parse/review/
-  authenticated-delete path. **Follow-up: scanning configured backup
-  destinations beyond external storage.**_
+  authenticated-delete path. One-Click Ops also scans the configured
+  AppManager backup directory when it resolves to a local filesystem root,
+  deduplicating overlap with external storage._
 - [x] **T19-D Backup duplicate cleaner**: One-Click Ops "Delete duplicate
   backups" entry shipped 2026-05-28 — offers "keep newest"/"keep oldest" and
   runs `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
