@@ -39,10 +39,14 @@ import java.util.concurrent.Future;
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
+import io.github.muntashirakon.AppManager.backup.BackupRetentionPolicy;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.StorageManagerCompat;
+import io.github.muntashirakon.AppManager.db.AppsDb;
+import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
@@ -67,6 +71,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     private final MutableLiveData<Pair<Integer, Long>> mLeftoverDeleteResult = new MutableLiveData<>();
     private final MutableLiveData<List<ApkDuplicateSelector.DuplicateGroup>> mApkDuplicates = new MutableLiveData<>();
     private final MutableLiveData<Pair<Integer, Long>> mApkDuplicateDeleteResult = new MutableLiveData<>();
+    private final MutableLiveData<DuplicateBackupPlan> mDuplicateBackupPlan = new MutableLiveData<>();
+    private final MutableLiveData<Pair<Integer, Long>> mDuplicateBackupDeleteResult = new MutableLiveData<>();
 
     @Nullable
     private Future<?> mFutureResult;
@@ -122,6 +128,14 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     public LiveData<Pair<Integer, Long>> watchApkDuplicateDeleteResult() {
         return mApkDuplicateDeleteResult;
+    }
+
+    public LiveData<DuplicateBackupPlan> watchDuplicateBackupPlan() {
+        return mDuplicateBackupPlan;
+    }
+
+    public LiveData<Pair<Integer, Long>> watchDuplicateBackupDeleteResult() {
+        return mDuplicateBackupDeleteResult;
     }
 
     /**
@@ -181,6 +195,102 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             this.leftover = leftover;
             this.size = size;
         }
+    }
+
+    public static class DuplicateBackupEntry {
+        @NonNull
+        public final Backup backup;
+        public final long size;
+
+        public DuplicateBackupEntry(@NonNull Backup backup, long size) {
+            this.backup = backup;
+            this.size = size;
+        }
+    }
+
+    public static class DuplicateBackupPlan {
+        @NonNull
+        public final BackupRetentionPolicy.DuplicateKeepStrategy strategy;
+        @NonNull
+        public final List<DuplicateBackupEntry> entries;
+        public final long reclaimableBytes;
+
+        public DuplicateBackupPlan(@NonNull BackupRetentionPolicy.DuplicateKeepStrategy strategy,
+                                   @NonNull List<DuplicateBackupEntry> entries,
+                                   long reclaimableBytes) {
+            this.strategy = strategy;
+            this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
+            this.reclaimableBytes = reclaimableBytes;
+        }
+
+        public boolean isEmpty() {
+            return entries.isEmpty();
+        }
+    }
+
+    @AnyThread
+    public void scanDuplicateBackups(@NonNull BackupRetentionPolicy.DuplicateKeepStrategy strategy) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            BackupRetentionPolicy.BackupSizeResolver sizeResolver = BackupRetentionPolicy.backupItemSizeResolver();
+            try {
+                List<Backup> all = AppsDb.getInstance().backupDao().getAll();
+                List<Backup> duplicates = BackupRetentionPolicy.selectVersionDuplicates(all, strategy, sizeResolver);
+                List<DuplicateBackupEntry> entries = new ArrayList<>(duplicates.size());
+                long reclaimable = 0L;
+                for (Backup backup : duplicates) {
+                    if (ThreadUtils.isInterrupted()) {
+                        return;
+                    }
+                    long size = sizeResolver.sizeOnDisk(backup);
+                    entries.add(new DuplicateBackupEntry(backup, size));
+                    if (size > 0L) {
+                        reclaimable += size;
+                    }
+                }
+                mDuplicateBackupPlan.postValue(new DuplicateBackupPlan(strategy, entries, reclaimable));
+            } catch (Throwable th) {
+                io.github.muntashirakon.AppManager.logs.Log.w(TAG, "Duplicate backup scan failed", th);
+                mDuplicateBackupPlan.postValue(new DuplicateBackupPlan(strategy, Collections.emptyList(), 0L));
+            }
+        });
+    }
+
+    @AnyThread
+    public void deleteDuplicateBackups(@NonNull DuplicateBackupPlan plan) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+            int deleted = 0;
+            long reclaimed = 0L;
+            for (DuplicateBackupEntry entry : plan.entries) {
+                if (ThreadUtils.isInterrupted()) {
+                    break;
+                }
+                try {
+                    BackupItems.BackupItem item = entry.backup.getItem();
+                    if (item != null && item.delete()) {
+                        ++deleted;
+                        if (entry.size > 0L) {
+                            reclaimed += entry.size;
+                        }
+                        io.github.muntashirakon.AppManager.logs.Log.i(TAG, "Deleted duplicate backup "
+                                + entry.backup.relativeDir + " (" + entry.size + " bytes)");
+                    } else {
+                        io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                                "Failed to delete duplicate backup: " + entry.backup.relativeDir);
+                    }
+                } catch (Throwable th) {
+                    io.github.muntashirakon.AppManager.logs.Log.w(TAG,
+                            "Error deleting duplicate backup: " + entry.backup.relativeDir, th);
+                }
+            }
+            recordDuplicateBackupCleanupHistory(plan, deleted, reclaimed);
+            mDuplicateBackupDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+        });
     }
 
     /**
@@ -275,6 +385,19 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                 failed == 0,
                 OperationJournalMetadata.forOneClickCleanup(application, operationLabel,
                         entries.size(), failed, historyItem.getTargetPreview()));
+    }
+
+    private void recordDuplicateBackupCleanupHistory(@NonNull DuplicateBackupPlan plan, int deleted, long reclaimed) {
+        Application application = getApplication();
+        String operationLabel = application.getString(R.string.delete_duplicate_backups);
+        DuplicateBackupCleanupHistoryItem historyItem = new DuplicateBackupCleanupHistoryItem(
+                operationLabel, plan.strategy, plan.entries, deleted, reclaimed);
+        int failed = Math.max(0, plan.entries.size() - deleted);
+        OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_CLEANUP,
+                historyItem,
+                failed == 0,
+                OperationJournalMetadata.forOneClickCleanup(application, operationLabel,
+                        plan.entries.size(), failed, historyItem.getTargetPreview()));
     }
 
     @AnyThread

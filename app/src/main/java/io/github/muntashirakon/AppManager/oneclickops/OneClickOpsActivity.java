@@ -132,6 +132,13 @@ public class OneClickOpsActivity extends BaseActivity {
             UIUtils.displayLongToast(getString(R.string.duplicate_apks_deleted, result.first,
                     Formatter.formatShortFileSize(this, result.second)));
         });
+        mViewModel.watchDuplicateBackupPlan().observe(this, this::reviewDuplicateBackups);
+        mViewModel.watchDuplicateBackupDeleteResult().observe(this, result -> {
+            CpuUtils.releaseWakeLock(wakeLock);
+            setBusy(false);
+            UIUtils.displayLongToast(getString(R.string.duplicate_backups_pruned_with_reclaim, result.first,
+                    Formatter.formatShortFileSize(this, result.second)));
+        });
     }
 
     private void initItemContainers() {
@@ -311,35 +318,29 @@ public class OneClickOpsActivity extends BaseActivity {
                 });
         // T19-D: collapse same-version duplicate backups (a package backed up
         // more than once at the same versionCode across backup folders/names)
-        // down to a single copy, keeping the newest or oldest per the user's
-        // choice. Backed by the shared BackupRetentionPolicy duplicate engine.
+        // down to a single copy, keeping the largest/newest/oldest per the
+        // user's choice. The ViewModel first builds a reclaimable-size plan.
         mMaintenanceItemCreator.addItemWithTitleSubtitle(getString(R.string.delete_duplicate_backups),
                         getString(R.string.delete_duplicate_backups_description), R.drawable.ic_trash_can)
                 .setOnClickListener(v -> {
                     CharSequence[] labels = {
+                            getString(R.string.delete_duplicate_backups_keep_largest),
                             getString(R.string.delete_duplicate_backups_keep_newest),
                             getString(R.string.delete_duplicate_backups_keep_oldest),
                     };
                     final BackupRetentionPolicy.DuplicateKeepStrategy[] strategies = {
+                            BackupRetentionPolicy.DuplicateKeepStrategy.LARGEST_THEN_NEWEST,
                             BackupRetentionPolicy.DuplicateKeepStrategy.NEWEST,
                             BackupRetentionPolicy.DuplicateKeepStrategy.OLDEST,
                     };
                     new MaterialAlertDialogBuilder(this)
                             .setTitle(R.string.delete_duplicate_backups)
                             .setItems(labels, (dialog, which) -> {
-                                final BackupRetentionPolicy.DuplicateKeepStrategy strategy = strategies[which];
-                                new MaterialAlertDialogBuilder(this)
-                                        .setTitle(R.string.delete_duplicate_backups)
-                                        .setMessage(R.string.delete_duplicate_backups_confirm)
-                                        .setPositiveButton(R.string.action_continue, (d, w) ->
-                                                io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnBackgroundThread(() -> {
-                                                    int deleted = BackupRetentionPolicy.pruneVersionDuplicates(strategy);
-                                                    io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
-                                                            UIUtils.displayLongToast(getString(
-                                                                    R.string.duplicate_backups_pruned, deleted)));
-                                                }))
-                                        .setNegativeButton(R.string.cancel, null)
-                                        .show();
+                                setBusy(true);
+                                if (!wakeLock.isHeld()) {
+                                    wakeLock.acquire();
+                                }
+                                mViewModel.scanDuplicateBackups(strategies[which]);
                             })
                             .setNegativeButton(R.string.cancel, null)
                             .show();
@@ -651,6 +652,30 @@ public class OneClickOpsActivity extends BaseActivity {
                                 wakeLock.acquire();
                             }
                             mViewModel.deleteApkDuplicates(dropFiles);
+                        }))
+                .show();
+    }
+
+    private void reviewDuplicateBackups(@Nullable OneClickOpsViewModel.DuplicateBackupPlan plan) {
+        CpuUtils.releaseWakeLock(wakeLock);
+        setBusy(false);
+        if (plan == null || plan.isEmpty()) {
+            showInfoDialog(R.string.delete_duplicate_backups, R.string.no_duplicate_backups_found_message);
+            return;
+        }
+        String reclaimable = Formatter.formatShortFileSize(this, plan.reclaimableBytes);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.delete_duplicate_backups)
+                .setMessage(getString(R.string.delete_duplicate_backups_confirm_with_reclaim,
+                        plan.entries.size(), reclaimable))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(this, R.string.authenticate_to_delete_backups, () -> {
+                            setBusy(true);
+                            if (!wakeLock.isHeld()) {
+                                wakeLock.acquire();
+                            }
+                            mViewModel.deleteDuplicateBackups(plan);
                         }))
                 .show();
     }
