@@ -59,12 +59,13 @@ jobs:
 
       - name: Write keystore.properties
         run: |
-          cat > app/keystore.properties <<EOF
+          cat > app/keystore.properties <<PROPS
           storeFile=AppManagerNG-release.jks
           storePassword=${{ secrets.SIGNING_STORE_PASSWORD }}
           keyAlias=${{ secrets.SIGNING_KEY_ALIAS }}
           keyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
-          EOF
+          PROPS
+          sed -i 's/^[[:space:]]*//' app/keystore.properties
 
       - name: Grant Gradle execute permission
         run: chmod +x gradlew

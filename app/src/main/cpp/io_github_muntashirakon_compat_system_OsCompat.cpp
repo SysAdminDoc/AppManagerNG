@@ -268,6 +268,7 @@ static struct timespec javaStructTimespecToTimespec(JNIEnv *env, jobject obj) {
 
 JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_setgrent
   (JNIEnv *env, jclass clazz) {
+    errno = 0;
     TEMP_FAILURE_RETRY_V(setgrent());
     if (errno) {
         throwErrnoException(env, "setgrent");
@@ -276,6 +277,7 @@ JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_setgr
 
 JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_setpwent
   (JNIEnv *env, jclass clazz) {
+    errno = 0;
     TEMP_FAILURE_RETRY_V(setpwent());
     if (errno) {
         throwErrnoException(env, "setpwent");
@@ -285,6 +287,7 @@ JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_setpw
 JNIEXPORT jobject JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_getgrent
   (JNIEnv *env, jclass clazz) {
     while (true) {
+        errno = 0;
         struct group *group = TEMP_FAILURE_RETRY_N(getgrent());
         if (errno) {
             throwErrnoException(env, "getgrent");
@@ -312,6 +315,7 @@ JNIEXPORT jobject JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_ge
 JNIEXPORT jobject JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_getpwent
   (JNIEnv *env, jclass clazz) {
     while (true) {
+        errno = 0;
         struct passwd *passwd = TEMP_FAILURE_RETRY_N(getpwent());
         if (errno) {
             throwErrnoException(env, "getpwent");
@@ -333,6 +337,7 @@ JNIEXPORT jobject JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_ge
 
 JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_endgrent
   (JNIEnv *env, jclass clazz) {
+    errno = 0;
     TEMP_FAILURE_RETRY_V(endgrent());
     if (errno) {
         throwErrnoException(env, "endgrent");
@@ -341,6 +346,7 @@ JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_endgr
 
 JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_endpwent
   (JNIEnv *env, jclass clazz) {
+    errno = 0;
     TEMP_FAILURE_RETRY_V(endpwent());
     if (errno) {
         throwErrnoException(env, "endpwent");
@@ -353,6 +359,7 @@ JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_utime
     struct timespec times[2];
     times[0] = javaStructTimespecToTimespec(env, atime);
     times[1] = javaStructTimespecToTimespec(env, mtime);
+    errno = 0;
     TEMP_FAILURE_RETRY_V(utimensat(dirfd, path, times, flags));
     env->ReleaseStringUTFChars(pathname, path);
     if (errno) {

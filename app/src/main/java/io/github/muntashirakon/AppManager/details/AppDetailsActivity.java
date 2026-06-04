@@ -137,6 +137,8 @@ public class AppDetailsActivity extends BaseActivity {
     public AdvancedSearchView searchView;
 
     private ViewPager2 mViewPager;
+    @Nullable
+    private ViewPager2.OnPageChangeCallback mPageChangeCallback;
     private TypedArray mTabTitleIds;
     private Fragment[] mTabFragments;
     private boolean[] mLoadedTabs;
@@ -210,12 +212,13 @@ public class AppDetailsActivity extends BaseActivity {
         mViewPager.setAdapter(new AppDetailsFragmentPagerAdapter(this));
         new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> tab.setText(mTabTitleIds.getString(position)))
                 .attach();
-        mViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+        mPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 loadSelectedTab(false);
             }
-        });
+        };
+        mViewPager.registerOnPageChangeCallback(mPageChangeCallback);
         // Apply incoming deep-link hints (initial tab + tracker sort) only on the first
         // creation; on rotation/restoration the user's last tab/sort selection wins.
         if (savedInstanceState == null) {
@@ -261,8 +264,12 @@ public class AppDetailsActivity extends BaseActivity {
             }
         });
         // Set subtitle as the username if more than one user exists
-        model.getUserInfo().observe(this, userInfo -> getSupportActionBar()
-                .setSubtitle(getString(R.string.user_profile_with_id, userInfo.name, userInfo.id)));
+        model.getUserInfo().observe(this, userInfo -> {
+            ActionBar ab = getSupportActionBar();
+            if (ab != null) {
+                ab.setSubtitle(getString(R.string.user_profile_with_id, userInfo.name, userInfo.id));
+            }
+        });
         // Check for package changes
         model.isPackageChanged().observe(this, isPackageChanged -> {
             if (isPackageChanged && model.isPackageExist()) {
@@ -360,6 +367,14 @@ public class AppDetailsActivity extends BaseActivity {
             outState.putParcelable("ss", ss);
         }
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mViewPager != null && mPageChangeCallback != null) {
+            mViewPager.unregisterOnPageChangeCallback(mPageChangeCallback);
+        }
+        super.onDestroy();
     }
 
     @Override
