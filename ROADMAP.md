@@ -522,10 +522,12 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Complexity: L
 - [ ] P2 — In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider
   - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5). NG already has the `am://` deep-link contract (`docs/intent-api.md`) these can wrap.
-  - Evidence: no `TileService`/Tasker-plugin `Activity`+`BroadcastReceiver`/`DocumentsProvider` in the manifest.
-  - Touches: one `Activity` + one `BroadcastReceiver` for the Tasker plugin; `TileService.requestAddTileService()` for "Run Freeze Profile" + "Force-Stop Pinned App"; DocumentsProvider exposing `am://backups` + `am://profiles`.
+  - Shipped before active-roadmap reconciliation: public confirmation-gated `AutomationUriActivity`, signature-gated `AutomationReceiver`, and `QuickFreezeTileService` for running the selected freeze profile.
+  - Shipped 2026-06-04 (DocumentsProvider slice): `AppManagerDocumentsProvider` is registered at `${applicationId}.documents` and exposes read-only SAF roots for the configured local backup volume plus app-private profiles, with canonical-root traversal guards and deterministic child ordering.
+  - Evidence: `AutomationUriActivity`, `AutomationReceiver`, and `QuickFreezeTileService` are in the manifest; `AppManagerDocumentsProviderTest`, `AutomationRequestTest`, `AutomationIntentsTest`, and `QuickFreezeTileControllerTest` cover the host-verifiable contract.
+  - Remaining touches: true Locale/Tasker plugin broker if the confirmation-gated public Activity is not enough; `TileService.requestAddTileService()` one-tap install affordance; "Force-Stop Pinned App" tile; device SAF/QS manual verification.
   - Acceptance: a Tasker task can run a profile; tiles install + fire; backups/profiles appear in SAF pickers.
-  - Verify: add the tile, fire it, assert the profile runs; open a SAF picker, assert backups appear.
+  - Verify: add the tile, fire it, assert the profile runs; open a SAF picker, assert backups/profiles appear; run `AppManagerDocumentsProviderTest`, `AutomationRequestTest`, `AutomationIntentsTest`, and `QuickFreezeTileControllerTest`.
   - Complexity: L
 - [x] P2 — Snapshot bundle export/import before the applicationId rename
   - Why: critical data-loss guard — the install identity is already `io.github.sysadmindoc.AppManagerNG` (`app/build.gradle:15`) while the source namespace stays `io.github.muntashirakon.AppManager`, so an NG install does **not** inherit an upstream AM user's prefs/profiles/tags/history. A one-shot import bundle is the only migration path.

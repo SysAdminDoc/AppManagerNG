@@ -1739,6 +1739,16 @@
             android:authorities="${applicationId}.file"
             android:exported="false"
             android:grantUriPermissions="true" />
+        <provider
+            android:name=".fm.AppManagerDocumentsProvider"
+            android:authorities="${applicationId}.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
 
         <!--
             AppLocalesMetadataHolderService — back-ports per-app locale storage to API 26-32.

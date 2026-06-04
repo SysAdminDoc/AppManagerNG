@@ -148,8 +148,6 @@ public class FmProvider extends ContentProvider {
                     }
                     row.add(filePath);
                     break;
-                // TODO: We should actually implement a DocumentsProvider since we are handling
-                //  ACTION_OPEN_DOCUMENT.
                 case DocumentsContract.Document.COLUMN_MIME_TYPE:
                     row.add(path.isDirectory() ? DocumentsContract.Document.MIME_TYPE_DIR : path.getType());
                     break;
