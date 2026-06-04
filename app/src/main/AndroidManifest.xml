@@ -212,6 +212,9 @@
             android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/finder_title" />
+        <receiver
+            android:name=".apk.installer.AppArchiveResultReceiver"
+            android:exported="false" />
         <activity
             android:name=".oneclickops.OneClickOpsActivity"
             android:enableOnBackInvokedCallback="true"

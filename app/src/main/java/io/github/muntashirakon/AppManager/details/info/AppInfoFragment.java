@@ -110,6 +110,7 @@ import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreezeShortcutInfo;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
@@ -1502,6 +1503,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (tagCloud.isTestOnly) {
             tagItems.add(new TagItem().setTextRes(R.string.test_only));
         }
+        if (tagCloud.isArchived) {
+            tagItems.add(new TagItem()
+                    .setTextRes(R.string.archived_app)
+                    .setColor(ColorCodes.getRemovalCautionIndicatorColor(context)));
+        }
         if (!tagCloud.hasCode) {
             tagItems.add(new TagItem().setTextRes(R.string.no_code));
         }
@@ -2394,6 +2400,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             boolean isStaticSharedLib = ApplicationInfoCompat.isStaticSharedLibrary(mApplicationInfo);
             boolean isFrozen = FreezeUtils.isFrozen(mApplicationInfo);
             boolean isHidden = ApplicationInfoCompat.isHidden(mApplicationInfo);
+            boolean isArchived = AppArchiveManager.isArchived(mPackageInfo);
             boolean canFreeze = !isStaticSharedLib && SelfPermissions.canFreezeUnfreezePackages();
             boolean canHide = !isStaticSharedLib
                     && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS);
@@ -2442,6 +2449,21 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                 .show();
                     } else hide(!isHidden);
                 });
+            }
+            boolean isSystemOrUpdatedSystemApp = (mApplicationInfo.flags
+                    & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
+            if (AppArchiveManager.canShowArchiveAction(Build.VERSION.SDK_INT, mUserId, UserHandleHidden.myUserId(),
+                    mIsExternalApk, isStaticSharedLib, isSystemOrUpdatedSystemApp, mPackageName)) {
+                ActionItem archiveAction = new ActionItem(isArchived ? R.string.unarchive_app : R.string.archive_app,
+                        R.drawable.ic_archive);
+                actionItems.add(archiveAction);
+                archiveAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
+                        .setTitle(mAppLabel)
+                        .setMessage(isArchived ? R.string.unarchive_app_message : R.string.archive_app_message)
+                        .setPositiveButton(isArchived ? R.string.unarchive_app : R.string.archive_app,
+                                (dialog, which) -> requestAppArchive(!isArchived))
+                        .setNegativeButton(R.string.cancel, null)
+                        .show());
             }
             // Set uninstall
             ActionItem uninstallAction = new ActionItem(R.string.uninstall, R.drawable.ic_trash_can);
@@ -2794,6 +2816,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     displayLongToast(R.string.failed_to_uninstall, mAppLabel);
                 }
             });
+        });
+    }
+
+    private void requestAppArchive(boolean archive) {
+        String packageName = mPackageName;
+        CharSequence appLabel = mAppLabel;
+        Context appContext = mActivity.getApplicationContext();
+        @AppArchiveManager.Operation int operation = archive
+                ? AppArchiveManager.OP_ARCHIVE
+                : AppArchiveManager.OP_UNARCHIVE;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    AppArchiveManager.request(appContext, packageName, appLabel, operation);
+                }
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(archive
+                        ? R.string.archive_app_requested
+                        : R.string.unarchive_app_requested, appLabel));
+            } catch (Throwable th) {
+                Log.e(TAG, "Could not request app archive operation.", th);
+                ThreadUtils.postOnMainThread(() -> displayLongToast(archive
+                        ? R.string.failed_to_archive_app
+                        : R.string.failed_to_unarchive_app, appLabel));
+            }
         });
     }
 

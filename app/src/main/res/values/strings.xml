@@ -327,6 +327,7 @@
     <string name="native_library_dir">Native JNI library directory</string>
     <string name="process_name">Process name</string>
     <string name="no_code">No code</string>
+    <string name="archived_app">Archived</string>
     <string name="requested_large_heap">Large heap</string>
     <string name="updated_app">Updated</string>
     <string name="debuggable">Debuggable</string>
@@ -371,6 +372,16 @@
     <string name="failed_to_uninstall">Could not uninstall <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="failed_to_uninstall_app">Uninstallation failed</string>
     <string name="uninstalled_successfully"><xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been uninstalled.</string>
+    <string name="archive_app">Archive app</string>
+    <string name="unarchive_app">Unarchive app</string>
+    <string name="archive_app_message">Archive this app? Android will reclaim storage by removing app code while keeping user data for later restore.</string>
+    <string name="unarchive_app_message">Unarchive this app? Android will restore the app package so it can launch again.</string>
+    <string name="archive_app_requested">Archive requested for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="unarchive_app_requested">Unarchive requested for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="archived_successfully"><xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been archived.</string>
+    <string name="unarchived_successfully"><xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been unarchived.</string>
+    <string name="failed_to_archive_app">Could not archive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
+    <string name="failed_to_unarchive_app">Could not unarchive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="uninstall_system_app_message">This is a system app. Are you sure want to uninstall this app?</string>
     <string name="stopped">Stopped</string>
     <string name="disable">Disable</string>
