@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-04. Baseline: `main` at `3bb0a78`, app
+Last consolidated: 2026-06-04. Baseline: `main` at `3d4c4f3`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 2 - 2026-06-04.
+> Last researched: Cycle 3 - 2026-06-04.
 
 ## Implementer Instructions
 
@@ -538,6 +538,69 @@ links touched by the edit.
   - Verify: fragment focus coverage where feasible plus manual open, repeat
     open, and reset-default checks.
   - Complexity: M.
+
+### Researcher Queue (Cycle 3 - 2026-06-04)
+
+- [ ] 🔬🤖 P1 — Sanitize DexOpt root-only options at execution time
+  - Why: the DexOpt dialog disables profile-reset and immediate force-dexopt
+    when the active mode is not root/system, but the batch worker trusts the
+    serialized `DexOptOptions` it receives. Upstream ADB-mode logs show
+    `clearApplicationProfileData()` still reaching PackageManager and failing
+    with "Only the system can clear all profile data."
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1733;
+    `DexOptDialog` gates the checkboxes by `Users.getSelfOrRemoteUid()`, while
+    `BatchOpsManager.opPerformDexOpt()` calls `clearApplicationProfileData()`
+    whenever `options.clearProfileData` is true.
+  - Touches: `DexOptOptions` sanitization/helper, `DexOptDialog`,
+    `BatchOpsManager.opPerformDexOpt`, DexOpt result messages, and focused
+    options tests.
+  - Acceptance: root/system-only DexOpt flags are rechecked in the worker before
+    any package loop starts; non-root/ADB/Shizuku runs skip or downgrade
+    unsupported sub-operations with a clear result reason instead of reporting a
+    raw SecurityException per package.
+  - Verify: JVM tests for root/system vs ADB/Shizuku option sanitization plus a
+    manual ADB DexOpt run with profile reset selected from a stale/serialized
+    queue item.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Make Mode of Operation apply lifecycle-safe and rollbackable
+  - Why: upstream reports a crash when the mode picker is closed while Apply is
+    pressed. The current picker persists `Ops.setMode(mCurrentMode)` before the
+    asynchronous `Ops.init()` result returns, shows a progress dialog tied to
+    the fragment activity, and has no obvious stale-callback or destroyed-view
+    guard around the apply flow.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1817;
+    `ModeOfOpsPreference` `setPositiveButton(R.string.apply, ...)` mutates the
+    stored mode immediately and then waits for `MainPreferencesViewModel` status
+    callbacks.
+  - Touches: `ModeOfOpsPreference`, `MainPreferencesViewModel`,
+    `SecurityAndOpsViewModel` if the same flow is shared, and lifecycle tests.
+  - Acceptance: Apply is single-flight, disabled after the first tap, ignored
+    after dialog/fragment dismissal, and commits the selected mode only after a
+    successful init or rolls back to the previous mode with a visible failure.
+  - Verify: Robolectric/lifecycle test for dismiss-then-apply and double-apply,
+    plus manual ADB and Shizuku mode switches.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Route Terminal through the active privilege provider
+  - Why: NG exposes a Terminal activity, but it is still a local `sh -i`
+    process with TODOs to replace it with an actual terminal and to handle
+    errors. Upstream reports terminal commands not executing in wireless
+    debugging mode, which matches the local implementation not routing through
+    the ADB/Shizuku/root `Runner`/`LocalServices` privilege stack.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1727;
+    `app/src/main/java/io/github/muntashirakon/AppManager/terminal/TermActivity.java`
+    starts `ProcessCompat.exec(new String[]{"sh", "-i"}, ...)` and has TODOs
+    for an actual terminal, history/completion/init script, and error handling.
+  - Touches: `TermActivity`, `Runner`/`PrivilegedShell` or a PTY-backed adapter,
+    terminal lifecycle/error UI, and terminal parser/session tests.
+  - Acceptance: Terminal clearly labels the current shell route (local, root,
+    Shizuku, ADB), uses the active privileged provider when available, surfaces
+    connection or process-death failures in the UI, and keeps local shell as an
+    explicit fallback rather than a silent substitute.
+  - Verify: unit tests for route selection and dead-process handling plus manual
+    local, root/Shizuku, and wireless-ADB command execution.
+  - Complexity: L.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
