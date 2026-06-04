@@ -14,6 +14,7 @@ historical context and the previous ledger are under
 
 ### Closed on 2026-06-03
 
+- [x] **T19-C base-APK extraction for APK bundles** — One-Click Ops duplicate-APK scanning now extracts a temporary base APK from `.apks`/`.apkm`/`.xapk` bundles for package/version/signing-certificate metadata, while retaining the original bundle path and size for deletion/reclaim decisions. — *Source: docs/roadmap/COMPLETED.md*
 - [x] **T19-B App Details uninstalled-package convenience entry** — App Details now opens data-only `MATCH_UNINSTALLED_PACKAGES` records without resolving a missing APK, and App Info exposes a guarded Clear data action to complete leftover-data cleanup from the details screen. — *Source: docs/roadmap/COMPLETED.md*
 - [x] **T19-B dedicated `op_history` cleanup audit type** — leftover-folder deletion now records one high-risk, non-replayable Cleanup history row with selected/deleted counts, reclaimed bytes, and target previews; Operation History includes a Cleanup filter chip. — *Source: docs/roadmap/COMPLETED.md*
 - [x] **T19-B result-list export action** — One-Click Ops leftover-folder review now has an "Export results" action that shares selected rows as TSV (package, kind, size bytes, path), backed by `LeftoverExportFormatter` tests for stable columns and formula-like field defusing. — *Source: docs/roadmap/COMPLETED.md*

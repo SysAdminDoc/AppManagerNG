@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - APK bundle duplicate metadata extraction (T19-C follow-up, 2026-06-03)
+
+- One-Click Ops duplicate-APK scanning now handles `.apks`, `.apkm`, and
+  `.xapk` bundles by extracting a temporary base APK before calling
+  `PackageManager.getPackageArchiveInfo` and apksig. Duplicate decisions still
+  keep/delete the original bundle file and account for the bundle's on-disk
+  size.
+- Added `ApkBundleBaseExtractor` with JVM coverage for root `base.apk`,
+  XAPK-style package APK fallback, split-only rejection, and unsafe entry-name
+  rejection.
+
 ### Added - App Details leftover-data cleanup action (T19-B follow-up, 2026-06-03)
 
 - App Details now accepts packages returned only through
