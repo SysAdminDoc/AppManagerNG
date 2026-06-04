@@ -3074,6 +3074,79 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     @GuardedBy("mListItems")
+    private void setAppIdentity(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        synchronized (mListItems) {
+            mListItems.add(ListItem.newGroupStart(getString(R.string.app_identity)));
+            mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.sdk), getSdkSummary()));
+
+            ListItem sdkRuntimeItem = ListItem.newSelectableRegularItem(getString(R.string.sdk_sandbox_dialog_title),
+                    getSdkSandboxSummary(appInfo.sdkSandboxInfo),
+                    v -> showSdkSandboxDialog(v.getContext(), appInfo.sdkSandboxInfo));
+            sdkRuntimeItem.setActionIcon(R.drawable.ic_information_circle);
+            sdkRuntimeItem.setActionContentDescription(R.string.more_info);
+            mListItems.add(sdkRuntimeItem);
+
+            String signingCertSha256 = appInfo.signingCertSha256;
+            if (signingCertSha256 != null) {
+                ListItem certItem = ListItem.newSelectableRegularItem(
+                        getString(R.string.app_info_signing_certificate),
+                        getSigningCertificateSummary(appInfo),
+                        v -> showCertFingerprintDialog(v.getContext(), signingCertSha256,
+                                appInfo.signingCertSubject, appInfo.signingCertIssuer));
+                certItem.setActionIcon(R.drawable.ic_information_circle);
+                certItem.setActionContentDescription(R.string.more_info);
+                mListItems.add(certItem);
+            }
+        }
+    }
+
+    @NonNull
+    private CharSequence getSdkSummary() {
+        StringBuilder sdk = new StringBuilder();
+        sdk.append(getString(R.string.sdk_max)).append(LangUtils.getSeparatorString()).append(String.format(Locale.getDefault(), "%d",
+                mApplicationInfo.targetSdkVersion));
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            sdk.append(", ").append(getString(R.string.sdk_min)).append(LangUtils.getSeparatorString())
+                    .append(String.format(Locale.getDefault(), "%d", mApplicationInfo.minSdkVersion));
+        }
+        return sdk;
+    }
+
+    @NonNull
+    private CharSequence getSdkSandboxSummary(@NonNull SdkSandboxInfo info) {
+        if (info.hasDeclaredSdkLibraries()) {
+            int sdkLibraryCount = info.declaredSdkLibraries.size();
+            return getResources().getQuantityString(R.plurals.sdk_sandbox_chip_count,
+                    sdkLibraryCount, sdkLibraryCount);
+        }
+        return getString(info.isSupported()
+                ? R.string.sdk_sandbox_chip_none
+                : R.string.sdk_sandbox_chip_unsupported);
+    }
+
+    @NonNull
+    private CharSequence getSigningCertificateSummary(@NonNull AppInfoViewModel.AppInfo appInfo) {
+        String fingerprint = Objects.requireNonNull(appInfo.signingCertSha256);
+        StringBuilder builder = new StringBuilder();
+        builder.append(getString(R.string.cert_fingerprint_dialog_sha256_header))
+                .append(LangUtils.getSeparatorString())
+                .append(shortFingerprint(fingerprint));
+        if (appInfo.signingCertSubject != null) {
+            builder.append('\n')
+                    .append(getString(R.string.cert_fingerprint_dialog_subject_header))
+                    .append(LangUtils.getSeparatorString())
+                    .append(appInfo.signingCertSubject);
+        }
+        if (appInfo.signingCertIssuer != null) {
+            builder.append('\n')
+                    .append(getString(R.string.cert_fingerprint_dialog_issuer_header))
+                    .append(LangUtils.getSeparatorString())
+                    .append(appInfo.signingCertIssuer);
+        }
+        return builder;
+    }
+
+    @GuardedBy("mListItems")
     private void setPathsAndDirectories(@NonNull AppInfoViewModel.AppInfo appInfo) {
         synchronized (mListItems) {
             // Paths and directories
@@ -3144,16 +3217,6 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 listItem.setActionContentDescription(R.string.app_info);
                 mListItems.add(listItem);
             }
-
-            // SDK
-            final StringBuilder sdk = new StringBuilder();
-            sdk.append(getString(R.string.sdk_max)).append(LangUtils.getSeparatorString()).append(String.format(Locale.getDefault(), "%d",
-                    mApplicationInfo.targetSdkVersion));
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-                sdk.append(", ").append(getString(R.string.sdk_min)).append(LangUtils.getSeparatorString())
-                        .append(String.format(Locale.getDefault(), "%d", mApplicationInfo.minSdkVersion));
-            }
-            mListItems.add(ListItem.newSelectableRegularItem(getString(R.string.sdk), sdk.toString()));
 
             // Set Flags
             final StringBuilder flags = new StringBuilder();
@@ -3410,6 +3473,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mListFuture = ThreadUtils.postOnBackgroundThread(() -> {
             synchronized (mListItems) {
                 mListItems.clear();
+                setAppIdentity(appInfo);
                 if (!mIsExternalApk) {
                     setPathsAndDirectories(appInfo);
                     setDataUsage(appInfo);
