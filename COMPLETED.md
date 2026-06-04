@@ -14,6 +14,7 @@ historical context and the previous ledger are under
 
 ### Closed on 2026-06-04
 
+- [x] **P1 `scripts/android-libraries` submodule tracking** — the superproject now tracks `scripts/android-libraries` as a gitlink at upstream `8fb3919828e9c9f6e75faaaa322c5af59c6d05fa`, matching `.gitmodules` so fresh checkouts can fetch both scanner/debloat dataset directories with the documented submodule command. — *Source: ROADMAP.md*
 - [x] **P2 Debloat OEM provenance surfaces** — `DebloatObject` now accepts future `preinstalled_oems` data and infers conservative known-preinstall-OEM labels from existing package/description metadata; Finder rows, Debloater detail chips, and bloatware Finder predicates expose the same signal. Dependency/required-by debloat edges and android-libraries/LibSmali-style scanner signatures were reverified as already shipped; full UAD-NG model/region ingest is parked as an external-data blocker. — *Source: ROADMAP.md*
 - [x] **P2 Support Info Bundle + opt-in local crash sink** — Support-info bundles now include local crash-sink state and recent scrubbed crash summaries, while uncaught crashes persist bounded private JSON files only when Settings -> Privacy -> Local crash sink is explicitly enabled; crash notifications remain user-initiated shares and no network telemetry path is introduced. — *Source: ROADMAP.md*
 
