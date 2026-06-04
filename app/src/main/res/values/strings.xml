@@ -2181,6 +2181,12 @@
     <string name="privilege_health_kernelsu_unavailable">KernelSU was detected via <xliff:g id="source" example="installed package">%1$s</xliff:g>, but root-marker access is not available. Grant root and refresh to read sulog and seccomp status.</string>
     <string name="privilege_health_kernelsu_summary">Seccomp: <xliff:g id="seccomp" example="filter (2)">%1$s</xliff:g>. Sulog: <xliff:g id="sulog" example="2 recent denial(s)">%2$s</xliff:g>. App profile: <xliff:g id="profile" example="root UID/GID with expected capabilities">%3$s</xliff:g>.</string>
     <string name="privilege_health_kernelsu_unknown">KernelSU probe failed: <xliff:g id="reason" example="missing Seccomp">%1$s</xliff:g>.</string>
+    <string name="privilege_health_kernelsu_request_root_grant">Request root grant</string>
+    <string name="privilege_health_kernelsu_regrant_started">Requesting a fresh KernelSU root grant…</string>
+    <string name="privilege_health_kernelsu_regrant_success">Root grant is active. KernelSU diagnostics refreshed.</string>
+    <string name="privilege_health_kernelsu_regrant_failed">Root is still unavailable. Open KernelSU Manager and re-grant AppManagerNG.</string>
+    <string name="privilege_health_kernelsu_recovery_request_root">Request a fresh root grant, then refresh diagnostics.</string>
+    <string name="privilege_health_kernelsu_recovery_review_profile">Open KernelSU Manager and review AppManagerNG\'s App Profile or root policy.</string>
     <string name="privilege_health_kernelsu_sulog_no_denials">readable, no recent denials</string>
     <string name="privilege_health_kernelsu_sulog_denials"><xliff:g id="count" example="2">%1$d</xliff:g> recent denial(s)</string>
     <string name="privilege_health_kernelsu_sulog_missing">sulog not readable</string>
@@ -2200,6 +2206,7 @@
     <string name="privilege_health_kernelsu_details_profile_cap_eff">Profile CapEff: <xliff:g id="cap_eff" example="0000003fffffffff">%1$s</xliff:g></string>
     <string name="privilege_health_kernelsu_details_profile_missing_caps">Missing expected capabilities: <xliff:g id="capabilities" example="CAP_DAC_READ_SEARCH, CAP_SYS_ADMIN">%1$s</xliff:g></string>
     <string name="privilege_health_kernelsu_details_profile_raw_id">Raw id: <xliff:g id="raw_id" example="uid=0(root) gid=0(root) groups=0(root) context=u:r:ksu:s0">%1$s</xliff:g></string>
+    <string name="privilege_health_kernelsu_details_recovery">Recovery: <xliff:g id="hint" example="Request a fresh root grant">%1$s</xliff:g></string>
     <string name="privilege_health_kernelsu_details_error">Error: <xliff:g id="error" example="missing Seccomp">%1$s</xliff:g></string>
     <string name="privilege_health_kernelsu_details_recent_denials">Recent sulog denials:</string>
     <string name="privilege_health_shizuku_title">Shizuku</string>
