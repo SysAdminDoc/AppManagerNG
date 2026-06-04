@@ -271,6 +271,7 @@ public final class DebloatDefinitionsUpdater {
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             outputStream.write(bytes);
             outputStream.flush();
+            outputStream.getFD().sync();
         }
         if (target.exists() && !target.delete()) {
             throw new IOException("Could not replace " + target);
@@ -294,7 +295,7 @@ public final class DebloatDefinitionsUpdater {
             out[i * 2] = hex[value >>> 4];
             out[i * 2 + 1] = hex[value & 0x0f];
         }
-        return new String(out).toLowerCase(Locale.ROOT);
+        return new String(out);
     }
 
     static final class UpdateResult {
