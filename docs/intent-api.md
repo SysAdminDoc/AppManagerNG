@@ -144,6 +144,13 @@ Use either:
 
 The public Activity path is intentionally confirmation-gated. The plugin path is the confirmation-free Tasker path because the setup UI runs inside AppManagerNG, stores Tasker's `com.twofortyfouram.locale.intent.extra.BUNDLE`, and signs the configured URI before Tasker can fire it later.
 
+For profile plugin actions, Tasker may pass `extra_pkg=<package.name>` at fire
+time. AppManagerNG validates that package name and merges it into
+`EXTRA_PROFILE_OVERRIDES` for this run only, replacing the profile's package
+list without modifying the saved profile. This is the supported way to use
+Tasker variables for "run this profile against the current package" because the
+configured URI remains signed while the runtime package stays dynamic.
+
 Locale plugin protocol details:
 
 | Constant | Value |
@@ -153,7 +160,7 @@ Locale plugin protocol details:
 | Bundle extra | `com.twofortyfouram.locale.intent.extra.BUNDLE` |
 | Blurb extra | `com.twofortyfouram.locale.intent.extra.BLURB` |
 
-Do not hand-craft the bundle. `TaskerPluginEditActivity` writes a private signed bundle containing the automation URI and a short blurb; `TaskerPluginFireReceiver` rejects missing, unsigned, tampered, or unsupported bundles before handing the request to `AutomationReceiver`. The signature broadcast receiver remains reserved for NG-signed companions and this in-app broker.
+Do not hand-craft the bundle. `TaskerPluginEditActivity` writes a private signed bundle containing the automation URI and a short blurb; `TaskerPluginFireReceiver` rejects missing, unsigned, tampered, or unsupported bundles before handing the request to `AutomationReceiver`. `ProfileApplierReceiver` is an internal bridge for authenticated profile triggers and `extra_pkg` translation. The signature broadcast receiver remains reserved for NG-signed companions and this in-app broker.
 
 ---
 

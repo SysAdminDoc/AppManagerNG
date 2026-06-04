@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Profile receiver runtime package override (upstream #1968, 2026-06-04)
+
+- Added an internal `ProfileApplierReceiver` path for authenticated automatic
+  profile runs so those triggers no longer start the transparent applier
+  Activity.
+- Profile automation now accepts Tasker-style `extra_pkg` values and merges
+  them into one-shot profile package overrides without changing the saved
+  profile.
+- The Locale-compatible Tasker plugin can apply `extra_pkg` at fire time after
+  validating the signed configured URI, allowing dynamic package variables
+  without invalidating the plugin bundle signature.
+
 ### Added - Benchmark and UIAutomator smoke scaffolding (research P2/O-07-O-08, 2026-06-04)
 
 - Added a `:benchmark` Android test module with AndroidX Macrobenchmark and
