@@ -103,8 +103,8 @@ public class BatchOpsService extends ForegroundService {
     private QueuedProgressHandler mProgressHandler;
     private NotificationProgressHandler.NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
-    private boolean mJournalPending;
-    private boolean mShizukuBinderDeadListenerRegistered;
+    private volatile boolean mJournalPending;
+    private volatile boolean mShizukuBinderDeadListenerRegistered;
     private final Shizuku.OnBinderDeadListener mShizukuBinderDeadListener =
             () -> BatchOpsJournal.markInterrupted(getApplicationContext(),
                     new IllegalStateException("Shizuku binder died while batch operation was running"));
