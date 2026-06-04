@@ -2607,6 +2607,10 @@
     <string name="export_visible_app_list">Export visible app list</string>
     <string name="import_app_list">Import app list</string>
     <string name="export_app_list_select_format">Select format for exporting app list</string>
+    <string name="export_app_list_select_metadata">Export metadata</string>
+    <string name="export_app_list_select_metadata_message">Basic exports keep the legacy column set. Extended exports append user, app-state, permission-count, split-count, and source-path metadata.</string>
+    <string name="export_app_list_basic">Basic</string>
+    <string name="export_app_list_extended">Extended</string>
     <plurals name="import_app_list_selected_count">
         <item quantity="one">Selected %1$d imported app.</item>
         <item quantity="other">Selected %1$d imported apps.</item>
