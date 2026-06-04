@@ -119,6 +119,18 @@ trail. Long-form historical context is under
   Operation History export/detail metadata instead of silently no-oping
   unsupported Extras subtypes. Focused verification:
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupExtrasCoverageTest --tests io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadataTest`.
+- [x] **P2 Privacy & Security API surfaces** — App Info now exposes SDK Runtime
+  manifest declarations, Domain Verification and same-user deep-link conflicts,
+  archived-package state plus Archive/Unarchive requests, MTE/memory-tagging
+  posture, Health Connect manifest permission posture, Credential Manager
+  provider declarations, and Restricted Settings diagnostics through
+  target-scoped sources. Focused evidence remains `SdkSandboxInfoTest`,
+  `DomainLinkConflictDetectorTest`, `DomainLinksOptionTest`,
+  `AppArchiveManagerTest`, `FreezeOptionTest`, `MemoryTaggingInfoTest`,
+  `HealthConnectInfoTest`, `CredentialProviderManifestInfoTest`, and
+  `RestrictedSettingsDiagnosticsTest`. API-35 archiving walkthroughs and
+  non-caller-scoped live-state source proof are tracked in the gated roadmap
+  buckets.
 
 ## Closed on 2026-06-03
 
