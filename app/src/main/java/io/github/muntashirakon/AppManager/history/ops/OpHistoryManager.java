@@ -40,9 +40,10 @@ public final class OpHistoryManager {
     public static final String HISTORY_TYPE_BATCH_OPS = "batch_ops";
     public static final String HISTORY_TYPE_INSTALLER = "installer";
     public static final String HISTORY_TYPE_PROFILE = "profile";
+    public static final String HISTORY_TYPE_CLEANUP = "cleanup";
 
     @Retention(RetentionPolicy.SOURCE)
-    @StringDef({HISTORY_TYPE_BATCH_OPS, HISTORY_TYPE_INSTALLER, HISTORY_TYPE_PROFILE})
+    @StringDef({HISTORY_TYPE_BATCH_OPS, HISTORY_TYPE_INSTALLER, HISTORY_TYPE_PROFILE, HISTORY_TYPE_CLEANUP})
     public @interface HistoryType {
     }
 

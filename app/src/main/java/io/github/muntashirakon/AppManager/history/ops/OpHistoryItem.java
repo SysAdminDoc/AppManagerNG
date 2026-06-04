@@ -61,6 +61,8 @@ public class OpHistoryItem {
                 return context.getString(R.string.installer);
             case OpHistoryManager.HISTORY_TYPE_PROFILE:
                 return context.getString(R.string.profiles);
+            case OpHistoryManager.HISTORY_TYPE_CLEANUP:
+                return context.getString(R.string.op_history_type_cleanup);
         }
         throw new IllegalStateException("Invalid type: " + opHistory.type);
     }
@@ -89,6 +91,13 @@ public class OpHistoryItem {
                 }
                 return context.getString(R.string.state_unknown);
             }
+            case OpHistoryManager.HISTORY_TYPE_CLEANUP: {
+                String label = JSONUtils.optString(jsonData, "label");
+                if (label != null) {
+                    return label;
+                }
+                return context.getString(R.string.op_history_type_cleanup);
+            }
         }
         throw new IllegalStateException("Invalid type: " + opHistory.type);
     }
@@ -114,6 +123,9 @@ public class OpHistoryItem {
     }
 
     public boolean isReplayable() {
+        if (OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(getType())) {
+            return false;
+        }
         return metadata == null || metadata.isReplayable();
     }
 
