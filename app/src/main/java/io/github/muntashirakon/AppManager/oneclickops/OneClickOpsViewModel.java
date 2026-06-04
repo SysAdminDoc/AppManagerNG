@@ -136,8 +136,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             mFutureResult.cancel(true);
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
-            List<File> apkFiles = ApkFileScanner.scan(
-                    Environment.getExternalStorageDirectory(), null);
+            List<File> apkFiles = ApkDuplicateScanRoots.scanDefaultRoots(null);
             List<ApkDuplicateSelector.Candidate> candidates = new ArrayList<>(apkFiles.size());
             for (File apk : apkFiles) {
                 if (ThreadUtils.isInterrupted()) {
