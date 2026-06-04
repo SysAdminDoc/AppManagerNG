@@ -227,7 +227,7 @@ the original carries the full per-issue source URLs.
 
 - #1968 Automating Save APK — shipped 2026-06-04: authenticated automatic profile triggers route through `ProfileApplierReceiver` instead of `ProfileApplierActivity`, and profile automation accepts Tasker-style `extra_pkg` as a one-shot package override, including signed Locale plugin fire-time variables.
 - #1967 Root not detected after reinstall on KernelSU — shipped 2026-06-04: KernelSU diagnostics classify package-only, unknown, and restricted App Profile states into recovery actions; the details dialog can request a fresh root grant, reinitialize root ops on success, refresh diagnostics, and direct restricted profiles back to KernelSU Manager policy review.
-- #1966 App Info popup density / SDK row position — restructure `app_info_card.xml` (SDK row up, two-column trackers/SDK, expose cert Subject, max-height 92%).
+- #1966 App Info popup density / SDK row position — shipped 2026-06-04 as an NG-specific App Info pager fix: the first vertical metadata group now surfaces SDK bounds, SDK Runtime manifest state, and signing certificate SHA-256/Subject/Issuer identity, with full SDK Runtime and certificate dialogs still one tap away. Upstream's `app_info_card.xml` popup does not exist in NG.
 - #1965 Clear-data no-op on Android 16 QPR2 — add fallback `pm clear --user N` shell path + post-call disk-usage delta as ground truth.
 - #1964 File Manager search/filter — SearchView on `FmActivity` + debounced recursive filter on `FmAdapter`.
 - #1963 `ActivityNotFoundException: DebloaterActivity` (moto g22) — add CI lint that resolves every shortcut/launcher target on minSdk; register the missing `<activity-alias>`.
