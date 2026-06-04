@@ -514,10 +514,11 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Complexity: L
 - [ ] P2 — Privacy & Security API surfaces (research B1–B7)
   - Why: surface runtime-truth privacy/security signals AM currently can't show.
-  - Evidence: no `getSandboxedSdks`/`DomainVerificationManager`/`requestArchive`/Health-Connect/Credential-Manager call sites in source.
-  - Touches: SDK Sandbox row (`getSandboxedSdks`); Domain Verification audit + deep-link-conflict finder; App Archiving action (Active/Frozen/Archived); MTE status chip; Health Connect + Credential Manager Privacy Dashboard; Restricted Settings unlock walkthrough in T5 Health-Check.
-  - Acceptance: each surface renders on supported API levels and degrades to "not supported" below; gated correctly.
-  - Verify: on an API-35 image, assert SDK-sandbox + archiving rows render; on API-30, assert graceful "not supported".
+  - Shipped 2026-06-04 (B4 slice): App Details now surfaces an MTE/memory-tagging chip from `ApplicationInfo`. API 30 reads the native-heap pointer-tagging private flag; API 31+ reads `getMemtagMode()` for default/off/async/sync; below Android 11 degrades to "not supported". `MemoryTaggingInfoTest` pins the API-level mapping.
+  - Evidence: Domain Verification user-state/link-handling is already shipped in App Details via `DomainVerificationManagerCompat`; no `getSandboxedSdks`/`requestArchive`/Health-Connect/Credential-Manager call sites in source, and no deep-link-conflict finder.
+  - Remaining touches: SDK Sandbox row (public `getSandboxedSdks` is calling-app scoped, so do not misreport arbitrary target packages); Domain Verification deep-link-conflict finder; App Archiving action (Active/Frozen/Archived); Health Connect + Credential Manager Privacy Dashboard; Restricted Settings unlock walkthrough in T5 Health-Check.
+  - Acceptance: each remaining surface renders on supported API levels and degrades to "not supported" below; gated correctly.
+  - Verify: on an API-35 image, assert archiving rows render; on API-30, assert graceful "not supported"; SDK Sandbox work must first prove a truthful per-target data source or be scoped to self/app-owned SDKs only.
   - Complexity: L
 - [ ] P2 — In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider
   - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5). NG already has the `am://` deep-link contract (`docs/intent-api.md`) these can wrap.
