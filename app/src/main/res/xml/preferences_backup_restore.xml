@@ -92,7 +92,6 @@
     <Preference
         app:key="backup_schedule_status"
         app:title="@string/pref_backup_schedule_status"
-        app:selectable="false"
         app:iconSpaceReserved="false" />
 
     <Preference

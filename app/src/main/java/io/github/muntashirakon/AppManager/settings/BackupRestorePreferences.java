@@ -66,6 +66,7 @@ import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
+import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Paths;
 
@@ -801,12 +802,6 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 .putExtra("android.provider.extra.INITIAL_URI", Paths.getPrimaryPath(path).getUri());
     }
 
-    /**
-     * EI-07 — show the full scheduled-backup diagnostics in a scrollable dialog
-     * so users can see the freshness-window reason behind aggregate skip
-     * counts that wouldn't fit in the preference summary. "Run scheduled
-     * backup now" deep-links to the existing button.
-     */
     private void showScheduledBackupDiagnosticsDialog() {
         Context context = getContext();
         if (context == null) return;
@@ -834,11 +829,45 @@ public class BackupRestorePreferences extends PreferenceFragment {
         body.append(diagnostics == null || diagnostics.isEmpty()
                 ? getString(R.string.auto_backup_diagnostics_unknown)
                 : diagnostics);
-        new io.github.muntashirakon.dialog.ScrollableDialogBuilder(requireActivity())
+        appendScheduledBackupSkippedDetails(body);
+        new ScrollableDialogBuilder(requireActivity())
                 .setTitle(R.string.pref_backup_schedule_diagnostics_title)
                 .setMessage(body.toString())
                 .enableAnchors()
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    private void appendScheduledBackupSkippedDetails(@NonNull StringBuilder body) {
+        List<AutoBackupScheduler.SkippedPackage> skippedDetails = AutoBackupScheduler.getLastSkippedDetails();
+        body.append("\n\n").append(getString(R.string.pref_backup_schedule_skipped_title));
+        body.append('\n');
+        if (skippedDetails.isEmpty()) {
+            body.append(getString(R.string.pref_backup_schedule_skipped_none));
+            return;
+        }
+        for (int i = 0; i < skippedDetails.size(); ++i) {
+            AutoBackupScheduler.SkippedPackage skipped = skippedDetails.get(i);
+            if (i > 0) {
+                body.append('\n');
+            }
+            body.append(getString(R.string.pref_backup_schedule_skipped_item,
+                    skipped.packageName,
+                    skipped.userId,
+                    getScheduledBackupSkipReasonLabel(skipped.reason),
+                    skipped.lastBackupMillis > 0
+                            ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                                    .format(new java.util.Date(skipped.lastBackupMillis))
+                            : getString(R.string.state_unknown)));
+        }
+    }
+
+    @NonNull
+    private String getScheduledBackupSkipReasonLabel(@NonNull AutoBackupScheduler.SkipReason reason) {
+        switch (reason) {
+            case BACKED_UP_RECENTLY:
+            default:
+                return getString(R.string.pref_backup_schedule_skip_reason_backed_up_recently);
+        }
     }
 }
