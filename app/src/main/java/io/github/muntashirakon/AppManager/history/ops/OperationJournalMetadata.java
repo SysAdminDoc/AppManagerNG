@@ -33,6 +33,7 @@ import io.github.muntashirakon.AppManager.utils.JSONUtils;
 public final class OperationJournalMetadata implements IJsonSerializer {
     private static final int SCHEMA_VERSION = 1;
     private static final int MAX_TARGET_PREVIEW = 8;
+    private static final int MAX_WARNINGS = 24;
 
     private static final String KEY_SCHEMA_VERSION = "schema_version";
     private static final String KEY_MODE_LABEL = "mode_label";
@@ -48,6 +49,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String KEY_TARGET_PREVIEW = "target_preview";
     private static final String KEY_FAILURE_MESSAGE = "failure_message";
     private static final String KEY_BOOTSTRAP_SIGNATURE = "bootstrap_signature";
+    private static final String KEY_WARNINGS = "warnings";
 
     public static final int RISK_LOW = 0;
     public static final int RISK_MEDIUM = 1;
@@ -100,6 +102,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setRisk(getRiskForBatchOp(op))
                 .setRollbackHint(getRollbackHintForBatchOp(op))
                 .setTargetPreview(item.getPackages())
+                .setWarnings(result.getWarnings())
                 .build();
     }
 
@@ -338,6 +341,22 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         return JSONUtils.optString(mJsonObject, KEY_FAILURE_MESSAGE);
     }
 
+    @NonNull
+    public List<String> getWarnings() {
+        JSONArray warnings = mJsonObject.optJSONArray(KEY_WARNINGS);
+        List<String> result = new ArrayList<>();
+        if (warnings == null) {
+            return result;
+        }
+        for (int i = 0; i < warnings.length(); ++i) {
+            String warning = warnings.optString(i, null);
+            if (warning != null) {
+                result.add(warning);
+            }
+        }
+        return result;
+    }
+
     @Nullable
     public String getBootstrapSignature() {
         return JSONUtils.optString(mJsonObject, KEY_BOOTSTRAP_SIGNATURE);
@@ -501,6 +520,24 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         @NonNull
         Builder setFailureMessage(@NonNull String failureMessage) {
             put(KEY_FAILURE_MESSAGE, failureMessage);
+            return this;
+        }
+
+        @NonNull
+        Builder setWarnings(@Nullable List<String> warnings) {
+            JSONArray warningArray = new JSONArray();
+            if (warnings != null) {
+                int count = Math.min(warnings.size(), MAX_WARNINGS);
+                for (int i = 0; i < count; ++i) {
+                    String warning = warnings.get(i);
+                    if (warning != null && !warning.isEmpty()) {
+                        warningArray.put(warning);
+                    }
+                }
+            }
+            if (warningArray.length() > 0) {
+                put(KEY_WARNINGS, warningArray);
+            }
             return this;
         }
 
