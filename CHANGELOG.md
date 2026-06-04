@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - AppOps revert banner contract (upstream #1956/#1960, 2026-06-04)
+
+- Added JVM coverage for the AppOps OS-revert banner so a permission/app-op
+  change that falls back from `allow` to `ignore` names the target package,
+  AppOp, expected mode, current mode, and AppOps revert hint.
+- Added a source contract proving `AppOpsManagerCompat.setMode()` continues to
+  schedule `OsRevertMonitor.watchAppOp()` after every AppOps write. Reconciled
+  upstream #1960 as already covered by NG's existing Shizuku mode support.
+
 ### Added - Backup archive format contract (upstream #1957, 2026-06-04)
 
 - Added JVM contract coverage that proves current NG backup archive extensions
