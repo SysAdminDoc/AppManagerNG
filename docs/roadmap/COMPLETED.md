@@ -11,6 +11,14 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 generic manifest `<meta-data>` explorer** — App Info now surfaces a
+  "Manifest metadata" tag when the target APK declares arbitrary application,
+  activity, service, receiver, or provider `<meta-data>` rows. The dialog
+  groups rows by declaring owner, formats string/boolean/integer/resource
+  values safely, and copies a tab-separated owner/name/value/type export. The
+  binary manifest parser now preserves typed metadata rows, including
+  resource-backed references. Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.parser.ManifestParserTest --tests io.github.muntashirakon.AppManager.details.info.ManifestMetadataInfoTest`.
 - [x] **P1 Backup Extras restore coverage audit** — the Backup/Restore Extras
   row now expands into a compact current-mode coverage summary for runtime
   permissions, app-ops, data/battery policy, MagiskHide/DenyList,
