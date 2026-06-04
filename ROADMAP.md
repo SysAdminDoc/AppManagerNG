@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research conducted 2026-06-03.
 
-Last consolidated: 2026-06-03. Baseline: `main` at `800f6b9`, app
+Last consolidated: 2026-06-04. Baseline: `main` at `9cdbb22`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -16,6 +16,25 @@ is in [`CHANGELOG.md`](CHANGELOG.md); consolidated research is in
 are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
+
+> Last researched: Cycle 1 - 2026-06-04.
+
+## Implementer Instructions
+
+- Treat this roadmap as the only active checklist. Shipped items belong in
+  `COMPLETED.md` / `docs/roadmap/COMPLETED.md` and release prose belongs in
+  `CHANGELOG.md`; do not add new unchecked work to root research files.
+- Preserve the GPL-3.0-or-later / REUSE posture: keep SPDX headers, `COPYING`,
+  and `LICENSES/` intact, and use GPL-compatible assets/dependencies only.
+- Respect the minSdk 21 ceiling. Material 1.14.0, Activity 1.12+, Room 2.8+,
+  Work 2.11+, and similar dependency bumps are coordinated product decisions,
+  not routine freshness churn.
+- Prefer host-verifiable work from bucket A first. Device/manual rows stay open
+  until SAF, Quick Settings, Tasker, accessibility, tablet, or Android 17 image
+  behavior is actually exercised.
+- Researcher-queue ownership tags: `🤖` means implementer-actionable, `🔧`
+  means user/external/manual gated, `🔬` means researcher-added this cycle, and
+  `✅` means implemented/closed by the build lane.
 
 ## Existing Planned Work
 
@@ -426,6 +445,14 @@ links touched by the edit.
 ---
 
 ## Research-Driven Additions
+
+### Researcher Queue (Cycle 1 - 2026-06-04)
+
+- [x] 🔬 `toolchain-ceiling-device-gate-refresh-2026-06-04` - rechecked the
+  post-Tasker/SAF/QS `main` state, Android/Google Maven metadata, and the
+  minSdk-21 ceiling pins. The active queue is now mostly device/manual gated;
+  Material 1.14.0 and other newer AndroidX lines stay behind the documented API
+  21-22 ceiling, so no new dependency row was promoted.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
