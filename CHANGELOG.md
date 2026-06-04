@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - File Manager selected duplicate APK cleanup (T19-C follow-up, 2026-06-03)
+
+- File Manager multi-select now offers "Find duplicate APK files" when the
+  selection contains at least two readable local `.apk`/`.apks`/`.apkm`/`.xapk`
+  files. The action scans only the selected files, reviews redundant copies with
+  the existing duplicate-APK labels, authenticates deletion, deletes through the
+  privileged `Paths` layer, and refreshes the folder after cleanup.
+- Extracted shared `ApkDuplicateOperations` parse/delete glue so One-Click Ops
+  and File Manager selected-file cleanup use the same bundle-aware metadata and
+  deletion behavior.
+- Added focused Robolectric/JVM coverage for File Manager selection eligibility
+  and duplicate-APK deletion accounting.
+
 ### Added - APK bundle duplicate metadata extraction (T19-C follow-up, 2026-06-03)
 
 - One-Click Ops duplicate-APK scanning now handles `.apks`, `.apkm`, and
