@@ -600,6 +600,7 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 - [ ] P0 — Android 17 (target SDK 37) pre-bump compliance gate
   - Why: the individual Android 17 audits are written (`docs/audits/2026-05-*`) and the HKDF + reflection items are already implemented, but the **bump itself** (`compile_sdk`/`target_sdk` 36 -> 37) has not landed and needs a final on-image gate before flipping. This row is the bump checklist, not the (now-shipped) per-item audits.
   - Evidence: `versions.gradle:8-9` still `compile_sdk = 36` / `target_sdk = 36`; the audit docs exist but the bump is gated on an Android 17 image run.
+  - Blocker rechecked 2026-06-04: connected emulator is API 36 / Android 16 (`sdk_gphone64_x86_64`), local SDK platforms are `android-34`, `android-35`, `android-36`, and `android-36.1`, no `android-37` platform or system image is installed, and no `sdkmanager.bat` exists under `%LOCALAPPDATA%\Android\Sdk`. Do not bump until an API 37 platform + emulator/device image is available and the workflow can run.
   - Touches: `versions.gradle` `compile_sdk`/`target_sdk` -> 37 after the BAL allow-flag + explicit-URI-grant items are device-confirmed; re-run the `android17-emulator.yml` matrix on an API-37 image.
   - Acceptance: each audited behavior change passes on an Android 17 image before `targetSdk` flips to 37.
   - Verify: `android17-emulator.yml` green on API-37 with the bumped SDK.
