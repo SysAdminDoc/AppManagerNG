@@ -26,6 +26,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Left the runtime Tasker fire, tile add/fire, privileged force-stop, and SAF
   picker walkthroughs in the physical-device verification bucket.
 
+### Added - Macrobenchmark and smoke-test journeys (research P2/O-07, O-08, 2026-06-04)
+
+- Macrobenchmark coverage now includes main-list scroll frame timing and Backup
+  settings time-to-interactive in addition to cold startup, with shared
+  UIAutomator journeys for stable resource-id waits.
+- Baseline Profile collection now records the startup, app-list scroll, and
+  Backup settings paths under a single core-journeys profile run.
+- The androidTest smoke pack now covers main launch, batch-selection surface
+  entry for freeze/backup/component actions, and One-Click Ops rule/backup
+  surface launch without committing privileged or destructive operations.
+
 ### Added - App Info action rail priority controls (research P2/#1953, 2026-06-04)
 
 - App Info horizontal actions now use stable action IDs and a resolver that
