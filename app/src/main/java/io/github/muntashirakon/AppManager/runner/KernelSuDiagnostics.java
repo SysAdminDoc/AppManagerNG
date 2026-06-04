@@ -77,6 +77,12 @@ public final class KernelSuDiagnostics {
         UNKNOWN,
     }
 
+    public enum RecoveryAction {
+        NONE,
+        REQUEST_ROOT_GRANT,
+        REVIEW_APP_PROFILE,
+    }
+
     public static final class ExpectedCapability {
         @NonNull
         public final String name;
@@ -138,6 +144,8 @@ public final class KernelSuDiagnostics {
         public final List<String> sulogDenials;
         @NonNull
         public final AppProfile appProfile;
+        @NonNull
+        public final RecoveryAction recoveryAction;
         @Nullable
         public final String error;
 
@@ -151,6 +159,7 @@ public final class KernelSuDiagnostics {
             this.sulogState = sulogState;
             this.sulogDenials = Collections.unmodifiableList(new ArrayList<>(sulogDenials));
             this.appProfile = appProfile;
+            this.recoveryAction = getRecoveryAction(state, source, appProfile);
             this.error = error;
         }
     }
@@ -230,6 +239,23 @@ public final class KernelSuDiagnostics {
             return new Result(State.UNKNOWN, source, null, sulogState, denials, appProfile, "missing Seccomp");
         }
         return new Result(State.ACTIVE, source, seccompMode, sulogState, denials, appProfile, null);
+    }
+
+    @NonNull
+    private static RecoveryAction getRecoveryAction(@NonNull State state,
+                                                    @NonNull RootManagerInfo.Source source,
+                                                    @NonNull AppProfile appProfile) {
+        if (state == State.UNAVAILABLE && source == RootManagerInfo.Source.PACKAGE) {
+            return RecoveryAction.REQUEST_ROOT_GRANT;
+        }
+        if (state == State.UNKNOWN) {
+            return RecoveryAction.REQUEST_ROOT_GRANT;
+        }
+        if (state == State.ACTIVE && (appProfile.state == AppProfileState.RESTRICTED
+                || appProfile.state == AppProfileState.UNKNOWN)) {
+            return RecoveryAction.REVIEW_APP_PROFILE;
+        }
+        return RecoveryAction.NONE;
     }
 
     @VisibleForTesting

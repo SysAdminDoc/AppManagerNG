@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - KernelSU root re-grant recovery (upstream #1967, 2026-06-04)
+
+- KernelSU diagnostics now classify package-only, unknown, and restricted App
+  Profile states into recovery actions instead of only displaying passive probe
+  results.
+- The KernelSU details dialog can request a fresh root grant, reinitialize root
+  ops on success, refresh diagnostics, and direct users to KernelSU Manager when
+  policy review is still required.
+
 ### Added - Profile receiver runtime package override (upstream #1968, 2026-06-04)
 
 - Added an internal `ProfileApplierReceiver` path for authenticated automatic
