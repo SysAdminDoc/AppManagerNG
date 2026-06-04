@@ -370,6 +370,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.healthConnectInfo = HealthConnectInfo.from(packageInfo);
             tagCloud.credentialProviderManifestInfo = CredentialProviderManifestInfo.from(applicationInfo,
                     packageInfo.services);
+            tagCloud.manifestMetadataInfo = ManifestMetadataInfo.from(applicationInfo);
             tagCloud.warnsCleartextDeprecation = shouldWarnCleartextDeprecation(
                     (applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0,
                     ApplicationInfoCompat.getNetworkSecurityConfigRes(applicationInfo));
@@ -696,6 +697,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         @NonNull
         public CredentialProviderManifestInfo credentialProviderManifestInfo =
                 CredentialProviderManifestInfo.unsupported(Build.VERSION.SDK_INT);
+        @NonNull
+        public ManifestMetadataInfo manifestMetadataInfo = ManifestMetadataInfo.empty();
         public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;

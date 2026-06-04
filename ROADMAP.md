@@ -456,24 +456,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 2 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Add a generic manifest `<meta-data>` explorer
-  - Why: NG now exposes several selected Privacy & Security API manifest
-    signals, but it still lacks a generic way to inspect app, activity, service,
-    receiver, and provider `<meta-data>` entries. That leaves API keys, provider
-    configuration flags, SDK module flags, and vendor integrations hidden unless
-    users export and inspect manifests manually.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1766; local
-    fixture manifests already contain many `<meta-data>` samples, while the App
-    Details component surfaces do not show arbitrary `metaData` bundles.
-  - Touches: manifest parser/view model, App Details Info or Components tabs,
-    copy/export affordances, and resource-reference formatting.
-  - Acceptance: component details group manifest metadata by owner
-    (application/activity/service/receiver/provider), display string/boolean/
-    integer/resource values safely, and let users copy rows.
-  - Verify: parser tests with typed and resource-backed metadata plus manual
-    inspection of an app containing application and component metadata.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Add optional extended metadata to app-list exports
   - Why: the shipped app-list exporter preserves identity/version/signature/
     install-time/installer fields, but users are asking for richer export data.
