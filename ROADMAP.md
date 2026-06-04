@@ -456,21 +456,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 2 - 2026-06-04)
 
-- [ ] 🔬🤖 P3 — Stabilize File Manager "Open with" defaults and keyboard focus
-  - Why: the File Manager picker still behaves as a one-shot chooser. The code
-    has hidden TODO controls for "always open" / "only this file", and upstream
-    reports the search box can summon the soft keyboard when the dialog opens.
-  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/OpenWithDialogFragment.java`;
-    https://github.com/MuntashirAkon/AppManager/issues/1810
-  - Touches: `OpenWithDialogFragment`, a small default-handler store, File
-    Manager launch routing, reset-defaults UI, and fragment focus tests.
-  - Acceptance: the dialog opens without keyboard focus unless the user taps
-    search; users can set/reset per-extension or per-file defaults while keeping
-    an OS chooser fallback.
-  - Verify: fragment focus coverage where feasible plus manual open, repeat
-    open, and reset-default checks.
-  - Complexity: M.
-
 ### Researcher Queue (Cycle 3 - 2026-06-04)
 
 - [ ] 🔬🤖 P1 — Sanitize DexOpt root-only options at execution time
