@@ -326,13 +326,15 @@ public class AppInfoViewModel extends AndroidViewModel {
                     && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_SENSORS)) {
                 tagCloud.sensorsEnabled = SensorServiceCompat.isSensorEnabled(packageName, userId);
             } else tagCloud.sensorsEnabled = true;
-            try (ZipFile zipFile = new ZipFile(applicationInfo.publicSourceDir)) {
-                Boolean isXposedModule = XposedModuleInfo.isXposedModule(applicationInfo, zipFile);
-                if (!Boolean.FALSE.equals(isXposedModule)) {
-                    tagCloud.xposedModuleInfo = new XposedModuleInfo(applicationInfo, isXposedModule == null ? null : zipFile);
+            if (!TextUtils.isEmpty(applicationInfo.publicSourceDir)) {
+                try (ZipFile zipFile = new ZipFile(applicationInfo.publicSourceDir)) {
+                    Boolean isXposedModule = XposedModuleInfo.isXposedModule(applicationInfo, zipFile);
+                    if (!Boolean.FALSE.equals(isXposedModule)) {
+                        tagCloud.xposedModuleInfo = new XposedModuleInfo(applicationInfo, isXposedModule == null ? null : zipFile);
+                    }
+                } catch (Throwable th) {
+                    th.printStackTrace();
                 }
-            } catch (Throwable th) {
-                th.printStackTrace();
             }
             tagCloud.canWriteAndExecute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                     && applicationInfo.targetSdkVersion < Build.VERSION_CODES.Q;
@@ -439,8 +441,11 @@ public class AppInfoViewModel extends AndroidViewModel {
         AppInfo appInfo = new AppInfo();
         try {
             if (!isExternalApk) {
+                boolean hasSourcePath = !TextUtils.isEmpty(applicationInfo.publicSourceDir);
                 // Set source dir
-                appInfo.sourceDir = new File(applicationInfo.publicSourceDir).getParent();
+                if (hasSourcePath) {
+                    appInfo.sourceDir = new File(applicationInfo.publicSourceDir).getParent();
+                }
                 // Set data dirs
                 appInfo.dataDir = applicationInfo.dataDir;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -503,7 +508,9 @@ public class AppInfoViewModel extends AndroidViewModel {
                 // SELinux
                 appInfo.seInfo = ApplicationInfoCompat.getSeInfo(applicationInfo);
                 appInfo.dataDirSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.dataDir);
-                appInfo.sourceFileSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.publicSourceDir);
+                if (hasSourcePath) {
+                    appInfo.sourceFileSelinuxContext = AppSelinuxContexts.readFileContext(applicationInfo.publicSourceDir);
+                }
                 appInfo.processSelinuxContexts = AppSelinuxContexts.collectProcessContexts(packageName,
                         ActivityManagerCompat.getRunningAppProcesses(), AppSelinuxContexts::readProcAttrCurrent);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU

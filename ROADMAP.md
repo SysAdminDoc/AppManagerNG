@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research conducted 2026-06-03.
 
-Last consolidated: 2026-06-03. Baseline: `main` at `a54ae5f`, app
+Last consolidated: 2026-06-03. Baseline: `main` at `a71a597`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -67,12 +67,14 @@ than by historical priority tier:
   `ActionAuthGate`, and `deleteLeftovers` removes each folder via the privileged
   `Paths.get(...).delete()` (recursive) with per-folder audit lines through the
   app `Log` and a "reclaimed X" result toast. The review dialog now also has
-  an "Export results" action that shares selected rows as TSV. _Data layer:
-  `LeftoverScanner` (scan/scanInternalDataStubs/selectOrphans/sizeOnDisk; 15
-  JVM tests), `LeftoverExportFormatter` (stable TSV + formula-field defusing;
-  2 JVM tests), and `LeftoverCleanupHistoryItem` (cleanup op-history rows with
-  high-risk, non-replayable metadata; 2 focused tests). **Follow-up: App
-  Details uninstalled-package convenience entry.**_
+  an "Export results" action that shares selected rows as TSV; App Details now
+  opens data-only PackageManager records and offers a guarded Clear data action
+  for the same leftover-data cleanup path. _Data layer: `LeftoverScanner`
+  (scan/scanInternalDataStubs/selectOrphans/sizeOnDisk; 15 JVM tests),
+  `LeftoverExportFormatter` (stable TSV + formula-field defusing; 2 JVM tests),
+  `LeftoverCleanupHistoryItem` (cleanup op-history rows with high-risk,
+  non-replayable metadata; 2 focused tests), and `ApplicationInfoCompatTest`
+  package-state coverage._
 - [x] **T19-C APK duplicate finder**: One-Click Ops "Find duplicate APK files"
   entry shipped 2026-05-28 — `OneClickOpsViewModel.scanApkDuplicates` walks
   external storage with `ApkFileScanner`, fingerprints each `.apk` via
