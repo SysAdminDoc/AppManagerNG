@@ -7,8 +7,8 @@
 #   1. dependency-review-action — runs on every PR; fails the PR if a HIGH/CRITICAL CVE is
 #      introduced by a dependency change. Catches regressions at review time.
 #   2. OWASP dependency-check (gradle plugin) — runs on a weekly schedule and on workflow_dispatch;
-#      produces a full HTML/SARIF report uploaded as artifact. Catches CVEs disclosed *after*
-#      the dependency landed.
+#      fails on CRITICAL findings while still uploading full HTML/SARIF reports. Catches CVEs
+#      disclosed *after* the dependency landed.
 #
 # ROADMAP iter-22 [S274] — CI Dependency CVE Scan (T4 Now, Effort 2/5).
 name: "Dependency CVE Scan"
@@ -65,10 +65,10 @@ jobs:
           cache: 'gradle'
       # OWASP dependency-check Gradle plugin runs against the configured runtimeClasspath
       # configurations across all modules. The first run downloads the NVD CVE database
-      # (~700 MB); subsequent runs hit the GitHub Actions Gradle cache.
+      # (~700 MB); subsequent runs hit the GitHub Actions Gradle cache. The root build
+      # defaults to report-only for local runs; this weekly audit fails on CVSS >= 9.0.
       - name: Run OWASP Dependency Check
-        run: ./gradlew dependencyCheckAggregate --info
-        continue-on-error: true
+        run: ./gradlew dependencyCheckAggregate --info -PdependencyCheckFailBuildOnCvss=9.0
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4

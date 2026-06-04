@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Weekly OWASP critical-CVE gate (research quick win, 2026-06-03)
+
+- Weekly OWASP Dependency Check now passes `-PdependencyCheckFailBuildOnCvss=9.0`
+  and no longer masks the Gradle failure with `continue-on-error`, so CRITICAL
+  CVEs disclosed against already-pinned dependencies turn the scheduled audit
+  red.
+- Local OWASP runs remain report-only by default through the root
+  `dependencyCheckFailBuildOnCvss` Gradle property defaulting to `11.0`, and
+  the workflow still uploads HTML/SARIF reports with `if: always()` for failed
+  audit triage.
+
 ### Added - Main-list tag chips (NF-08 follow-up, 2026-06-03)
 
 - Main App List rows now show assigned user tags as a compact display-only chip
