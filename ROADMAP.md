@@ -346,6 +346,11 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   package/OEM/model/region data. Current upstream has no usable list files as
   of 2026-06-04, so NG uses bundled debloat metadata plus conservative
   package/description inference for known-preinstall-OEM chips.
+- [ ] **Privacy/security target-scoped live-state sources** — blocked until a
+  public or privileged per-target source is proven for SDK Runtime loaded-SDK
+  state, Health Connect granted-permission state, or Credential Manager
+  enabled-provider state. The shipped App Info surfaces intentionally stay on
+  target-scoped manifest metadata where platform APIs are caller-scoped.
 
 ## C. Blocked on physical-device / OEM verification
 
@@ -377,6 +382,11 @@ walkthrough remains open for each.
 - [ ] **Material You dynamic-color manual device walkthrough** — source audit is
   clean and guarded (`DynamicColorContractTest`); only the on-device check
   remains.
+- [ ] **App Archiving API-35 user-action walkthrough** — App Info and batch
+  Archive/Unarchive requests are implemented and guarded by
+  `AppArchiveManagerTest` / `FreezeOptionTest`; manual verification on an
+  Android 15/API-35 image remains open for the pending-user-action flow and
+  archived-state refresh.
 
 ## D. Parked (needs explicit owner sign-off)
 
@@ -544,20 +554,6 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Touches: `DebloatObject`, `PreinstalledOemResolver`, `IFilterableAppInfo`, Finder row binding, `BloatwareDetailsDialog`, `BloatwareOption`, docs.
   - Acceptance: removal UI shows dependency/required-by breakage context from the bundled debloat graph; Finder shows known-preinstall-OEM rows/chips; scanner library coverage continues to use the bundled android-libraries/LibSmali-style signature resources. Full UAD-NG model/region ingest is parked in the B bucket until upstream publishes machine-readable package/OEM/model/region data.
   - Verify: `PreinstalledOemResolverTest` pins explicit, package-prefix, and description-context OEM resolution; `BloatwareOptionTest` pins the new OEM predicates.
-  - Complexity: L
-- [ ] P2 — Privacy & Security API surfaces (research B1–B7)
-  - Why: surface runtime-truth privacy/security signals AM currently can't show.
-  - Shipped 2026-06-04 (B4 slice): App Details now surfaces an MTE/memory-tagging chip from `ApplicationInfo`. API 30 reads the native-heap pointer-tagging private flag; API 31+ reads `getMemtagMode()` for default/off/async/sync; below Android 11 degrades to "not supported". `MemoryTaggingInfoTest` pins the API-level mapping.
-  - Shipped 2026-06-04 (B1 manifest slice): App Details now surfaces target-scoped SDK Runtime manifest declarations by parsing the base APK `uses-sdk-library` rows, shows unsupported/none/count chip states, and explains that this is not a live loaded-SDK list because public `SdkSandboxManager.getSandboxedSdks()` is caller-scoped.
-  - Shipped 2026-06-04 (B2 slice): App Details now shows per-host Domain Verification state plus same-user deep-link conflicts in the "Open links" dialog, and Finder gained a `domain_links` predicate family for claimed domains, conflicted hosts, host matching, and conflicting-package matching.
-  - Shipped 2026-06-04 (B3 App Info slice): App Details now detects archived packages via `PackageInfo.getArchiveTimeMillis()`, shows an Archived tag, and gates Archive/Unarchive actions to Android 15+ current-user, non-system, non-static-library apps. The action dispatches `PackageInstaller.requestArchive()`/`requestUnarchive()` through a private result receiver, starts pending-user-action intents, and reports success/failure.
-  - Shipped 2026-06-04 (B3 batch/listing slice): main-list multi-select now exposes Archive/Unarchive batch requests on Android 15+, runs each eligible current-user, non-system package through the same `AppArchiveManager` request path, and Finder's app-state filter gained active/archived predicates backed by package archive timestamps.
-  - Shipped 2026-06-04 (B5/B6 manifest slice): App Details now surfaces Health Connect `android.permission.health.*` manifest requests with read/write counts and a package-scoped Health Connect permissions deep link, plus Credential Manager provider service declarations for `android.service.credentials.CredentialProviderService` / system-provider actions with missing `BIND_CREDENTIAL_PROVIDER_SERVICE` warnings. Both dialogs label the data as manifest metadata rather than live grants, stored credentials, or enabled-provider state.
-  - Shipped before active-roadmap reconciliation and reverified 2026-06-04 (B7): Restricted Settings diagnostics are already folded into the privilege health/mode-doctor path through `RestrictedSettingsDiagnostics`, `PrivilegeHealthPreferences`, and `PrivilegeModeDoctor` fix targets.
-  - Evidence: SDK Runtime manifest declarations are covered by `ManifestParser.parseUsesSdkLibraries`, `SdkSandboxInfo`, and `SdkSandboxInfoTest`; no target-scoped live loaded-SDK source is currently used. Domain Verification user-state/link-handling is shipped in App Details via `DomainVerificationManagerCompat`; `DomainLinkConflictDetector`, `DomainLinksOption`, and `FilteringUtils.attachDomainLinkConflicts` cover the deep-link-conflict finder path. `AppArchiveManager`, `AppArchiveResultReceiver`, and `AppArchiveManagerTest` cover the App Info archiving slice; `BatchOpsManager.OP_ARCHIVE` / `OP_UNARCHIVE`, `activity_main_selection_actions`, `FreezeOption`, and `FreezeOptionTest` cover the batch/listing slice. Health Connect/Credential Manager manifest posture is covered by `HealthConnectInfo`, `CredentialProviderManifestInfo`, `HealthConnectInfoTest`, and `CredentialProviderManifestInfoTest`. Restricted Settings is covered by `RestrictedSettingsDiagnosticsTest`.
-  - Remaining touches: SDK Sandbox live loaded-SDK state only if a truthful target-scoped source is found; App Archiving API-35 device verification; Health Connect live granted-permission state and Credential Manager enabled-provider state only if truthful target-scoped or privileged sources are found.
-  - Acceptance: each remaining surface renders on supported API levels and degrades to "not supported" below; gated correctly.
-  - Verify: `MemoryTaggingInfoTest`, `SdkSandboxInfoTest`, `DomainLinkConflictDetectorTest`, `DomainLinksOptionTest`, `AppArchiveManagerTest`, `FreezeOptionTest`, `HealthConnectInfoTest`, `CredentialProviderManifestInfoTest`, and `RestrictedSettingsDiagnosticsTest`; on an API-35 image, assert archive/unarchive rows render and complete the user-action flow; on API-30, assert graceful "not supported"; SDK Sandbox / Health Connect / Credential Manager live-state work must first prove a truthful per-target data source or be scoped to self/app-owned state only.
   - Complexity: L
 - [ ] P2 — In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider
   - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5). NG already has the `am://` deep-link contract (`docs/intent-api.md`) these can wrap.
