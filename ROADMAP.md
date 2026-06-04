@@ -456,22 +456,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 2 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Fix installer notification final-state wording
-  - Why: upstream reports that collapsed installer notifications can end at a
-    generic "Done" body instead of the concrete success/failure result. The
-    current result handoff still mutates the last progress notification body to
-    `R.string.done` immediately before delivering the final notification.
-  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerService.java`;
-    https://github.com/MuntashirAkon/AppManager/issues/1805
-  - Touches: `PackageInstallerService`, `NotificationProgressHandler`, and
-    installer notification test/fake surfaces.
-  - Acceptance: collapsed and expanded final installer notifications show the
-    same concrete subject, such as installed, blocked, or failed with reason;
-    no stale intermediate "Done" remains visible after completion.
-  - Verify: fake progress-handler test records final title/body plus manual
-    background install success and failure checks.
-  - Complexity: S.
-
 - [ ] 🔬🤖 P3 — Stabilize File Manager "Open with" defaults and keyboard focus
   - Why: the File Manager picker still behaves as a one-shot chooser. The code
     has hidden TODO controls for "always open" / "only this file", and upstream
