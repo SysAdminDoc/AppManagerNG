@@ -456,23 +456,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 2 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Add optional extended metadata to app-list exports
-  - Why: the shipped app-list exporter preserves identity/version/signature/
-    install-time/installer fields, but users are asking for richer export data.
-    NG already computes useful list facts such as user/system state, disabled or
-    hidden/frozen state, tracker and dangerous-permission counts, split/source
-    details, tags, and multi-user ownership, yet exports omit them.
-  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/apk/list/ListExporter.java`;
-    https://github.com/MuntashirAkon/AppManager/issues/1773
-  - Touches: `ListExporter`, export options UI, `AppListItem` enrichment, and
-    importer compatibility if JSON gains optional fields.
-  - Acceptance: default exports stay backward-compatible, while an explicit
-    extended mode adds selected operational metadata to JSON/CSV/XML/Markdown
-    without breaking existing import behavior.
-  - Verify: exporter tests assert the legacy column set by default and extended
-    output for at least disabled/system/installer/permission-count fields.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Fix installer notification final-state wording
   - Why: upstream reports that collapsed installer notifications can end at a
     generic "Done" body instead of the concrete success/failure result. The

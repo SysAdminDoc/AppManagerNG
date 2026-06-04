@@ -451,7 +451,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     public void saveExportedAppList(@ListExporter.ExportType int exportType,
                                     @NonNull Path path,
-                                    boolean visibleList) {
+                                    boolean visibleList,
+                                    boolean includeExtendedMetadata) {
         List<ApplicationItem> exportItems = visibleList
                 ? getVisibleApplicationItemsSnapshot()
                 : getSelectedApplicationItemsSnapshot();
@@ -462,7 +463,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     mOperationStatus.postValue(false);
                     return;
                 }
-                ListExporter.export(getApplication(), writer, exportType, packageInfoList);
+                ListExporter.export(getApplication(), writer, exportType, packageInfoList, includeExtendedMetadata);
                 mOperationStatus.postValue(true);
             } catch (IOException | RemoteException e) {
                 e.printStackTrace();

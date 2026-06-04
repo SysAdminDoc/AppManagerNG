@@ -22,6 +22,20 @@ public class ListImporterTest {
     }
 
     @Test
+    public void readPackageNamesIgnoresExtendedExportMetadata() throws Exception {
+        Set<String> packageNames = ListImporter.readPackageNames(new StringReader("[{"
+                + "\"name\":\"com.example.alpha\","
+                + "\"userId\":10,"
+                + "\"system\":true,"
+                + "\"disabled\":false,"
+                + "\"requestedPermissionCount\":3,"
+                + "\"grantedPermissionCount\":2"
+                + "}]"));
+
+        assertArrayEquals(new String[]{"com.example.alpha"}, packageNames.toArray(new String[0]));
+    }
+
+    @Test
     public void readPackageNamesAcceptsWrappedAndStringEntries() throws Exception {
         Set<String> packageNames = ListImporter.readPackageNames(new StringReader("{\"packages\":["
                 + "\"com.example.alpha\","
