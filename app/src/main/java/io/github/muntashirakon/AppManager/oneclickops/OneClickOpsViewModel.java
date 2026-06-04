@@ -38,10 +38,13 @@ import java.util.concurrent.Future;
 
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.StorageManagerCompat;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -232,7 +235,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         public final LeftoverScanner.Leftover leftover;
         public final long size;
 
-        LeftoverEntry(@NonNull LeftoverScanner.Leftover leftover, long size) {
+        public LeftoverEntry(@NonNull LeftoverScanner.Leftover leftover, long size) {
             this.leftover = leftover;
             this.size = size;
         }
@@ -314,8 +317,22 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                             "Error deleting leftover folder: " + entry.leftover.path, th);
                 }
             }
+            recordLeftoverCleanupHistory(entries, deleted, reclaimed);
             mLeftoverDeleteResult.postValue(new Pair<>(deleted, reclaimed));
         });
+    }
+
+    private void recordLeftoverCleanupHistory(@NonNull List<LeftoverEntry> entries, int deleted, long reclaimed) {
+        Application application = getApplication();
+        String operationLabel = application.getString(R.string.detect_leftover_files);
+        LeftoverCleanupHistoryItem historyItem = new LeftoverCleanupHistoryItem(
+                operationLabel, entries, deleted, reclaimed);
+        int failed = Math.max(0, entries.size() - deleted);
+        OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_CLEANUP,
+                historyItem,
+                failed == 0,
+                OperationJournalMetadata.forOneClickCleanup(application, operationLabel,
+                        entries.size(), failed, historyItem.getTargetPreview()));
     }
 
     @AnyThread

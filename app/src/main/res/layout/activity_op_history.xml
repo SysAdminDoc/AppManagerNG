@@ -159,6 +159,14 @@
                     android:text="@string/profiles" />
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_history_cleanup_type"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/op_history_type_cleanup" />
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chip_history_root"
                     style="@style/Widget.AppTheme.Chip.MainFilter"
                     android:layout_width="wrap_content"
