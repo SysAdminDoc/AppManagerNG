@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Shortcut target manifest contract (upstream #1963, 2026-06-04)
+
+- Added a JVM manifest/shortcuts contract test that verifies every static
+  launcher shortcut target resolves to an exported manifest component and that
+  trampoline actions are declared.
+- Locked the Debloater exported alias contract so pre-Android-13 shortcut
+  callers keep a stable component without adding a duplicate launcher icon.
+
 ### Added - Clear-data fallback regression coverage (upstream #1965, 2026-06-04)
 
 - Added focused JVM tests for the Android 16 QPR2 clear-data guard that falls
