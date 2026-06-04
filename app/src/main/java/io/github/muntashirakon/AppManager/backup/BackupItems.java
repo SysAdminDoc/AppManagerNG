@@ -258,6 +258,10 @@ public class BackupItems {
             return mBackupMode ? mTempBackupPath : mBackupPath;
         }
 
+        public long getTotalSize() {
+            return Paths.size(getBackupPath());
+        }
+
         public Path getUnencryptedBackupPath() throws IOException {
             if (mCrypto == null) {
                 // Use real path for unencrypted backups

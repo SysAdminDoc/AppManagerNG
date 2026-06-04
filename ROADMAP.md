@@ -93,14 +93,18 @@ than by historical priority tier:
   AppManager backup directory when it resolves to a local filesystem root,
   deduplicating overlap with external storage._
 - [x] **T19-D Backup duplicate cleaner**: One-Click Ops "Delete duplicate
-  backups" entry shipped 2026-05-28 — offers "keep newest"/"keep oldest" and
-  runs `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
-  thread, reporting the removed count. Same-version duplicates across backup
-  folders/names collapse to one copy per package. _Data layer:
+  backups" entry shipped 2026-05-28 and follow-up closed 2026-06-03 — offers
+  "keep largest", "keep newest", and "keep oldest". The ViewModel now builds a
+  size-aware duplicate plan, confirms with an estimated reclaimable-byte hint,
+  gates deletion behind `ActionAuthGate`, records a dedicated cleanup
+  `op_history` payload, and reports deleted-count + reclaimed-bytes toasts.
+  Same-version duplicates across backup folders/names collapse to one copy per
+  package. _Data layer:
   `selectVersionDuplicates`/`pruneVersionDuplicates` (NEWEST/OLDEST/LARGEST/
-  LARGEST_THEN_NEWEST), `BackupSizeResolver`, `reclaimableBytes`; 11 JVM tests.
-  **Follow-up: "keep largest" needs a backup-size accessor on `BackupItem`;
-  reclaimable-bytes hint and a dedicated `op_history` DB type remain.**_
+  LARGEST_THEN_NEWEST), `BackupItem.getTotalSize()`,
+  `backupItemSizeResolver`, `reclaimableBytes`,
+  `DuplicateBackupCleanupHistoryItem`; focused JVM coverage pins selector,
+  size, reclaimable-byte, and cleanup-history serialization behavior._
 
 ### T20 — Performance and profiling (system-level)
 
