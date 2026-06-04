@@ -106,6 +106,7 @@ public class BatchOpsManager {
             OP_FREEZE,
             OP_GRANT_PERMISSIONS,
             OP_IMPORT_BACKUPS,
+            OP_INSTALL_EXISTING,
             OP_NET_POLICY,
             OP_REVOKE_PERMISSIONS,
             OP_RESTORE_BACKUP,
@@ -146,6 +147,7 @@ public class BatchOpsManager {
     public static final int OP_ADVANCED_FREEZE = 22;
     public static final int OP_ARCHIVE = 23;
     public static final int OP_UNARCHIVE = 24;
+    public static final int OP_INSTALL_EXISTING = 25;
 
     private static final String GROUP_ID = BuildConfig.APPLICATION_ID + ".notification_group.BATCH_OPS";
 
@@ -299,6 +301,8 @@ public class BatchOpsManager {
                 return opGrantOrRevokePermissions(info, false);
             case OP_IMPORT_BACKUPS:
                 return opImportBackups(info);
+            case OP_INSTALL_EXISTING:
+                return opInstallExisting(info);
             case OP_NET_POLICY:
                 return opNetPolicy(info);
             case OP_DEXOPT:
@@ -1014,6 +1018,31 @@ public class BatchOpsManager {
             recordTargetFinished(pair, !uninstalled);
         }
         accessibility.enableUninstall(false);
+        return new Result(failedPackages);
+    }
+
+    @NonNull
+    private Result opInstallExisting(@NonNull BatchOpsInfo info) {
+        List<UserPackagePair> failedPackages = new ArrayList<>();
+        float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
+        int max = info.size();
+        for (int i = 0; i < max; ++i) {
+            updateProgress(lastProgress, i + 1);
+            UserPackagePair pair = info.getPair(i);
+            boolean installed;
+            try {
+                PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                installed = installer.installExisting(pair.getPackageName(), pair.getUserId());
+            } catch (Throwable th) {
+                installed = false;
+                log("====> op=INSTALL_EXISTING, pkg=" + pair, th);
+            }
+            if (!installed) {
+                log("====> op=INSTALL_EXISTING, pkg=" + pair);
+                failedPackages.add(pair);
+            }
+            recordTargetFinished(pair, !installed);
+        }
         return new Result(failedPackages);
     }
 

@@ -306,7 +306,7 @@ public class BatchOpsService extends ForegroundService {
                 // generic "successful" string ([S112]).
                 int successCount = queueItem != null ? queueItem.getPackages().size() : 0;
                 int successOp = queueItem != null ? queueItem.getOp() : BatchOpsManager.OP_NONE;
-                String successMessage = getDesiredSuccessString(successOp, successCount);
+                String successMessage = getDesiredSuccessString(this, successOp, successCount);
                 notificationInfo.setBody(successMessage != null
                         ? successMessage
                         : getString(R.string.the_operation_was_successful));
@@ -317,7 +317,7 @@ public class BatchOpsService extends ForegroundService {
                 queueItem.setPackages(opResult.getFailedPackages());
                 queueItem.setUsers(opResult.getAssociatedUsers());
                 String detailsMessage = getString(R.string.full_stop_tap_to_see_details);
-                String message = getDesiredErrorString(queueItem.getOp(), opResult.getFailedPackages().size());
+                String message = getDesiredErrorString(this, queueItem.getOp(), opResult.getFailedPackages().size());
                 Intent intent = new Intent(this, BatchOpsResultsActivity.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     intent.setIdentifier(String.valueOf(System.currentTimeMillis()));
@@ -404,6 +404,8 @@ public class BatchOpsService extends ForegroundService {
                 return context.getString(R.string.set_mode_for_app_ops_dots);
             case BatchOpsManager.OP_IMPORT_BACKUPS:
                 return context.getString(R.string.pref_import_backups);
+            case BatchOpsManager.OP_INSTALL_EXISTING:
+                return context.getString(R.string.system_app_put_back);
             case BatchOpsManager.OP_DEXOPT:
                 return context.getString(R.string.batch_ops_runtime_optimization);
             case BatchOpsManager.OP_NONE:
@@ -412,52 +414,54 @@ public class BatchOpsService extends ForegroundService {
         return context.getString(R.string.batch_ops);
     }
 
-    private String getDesiredErrorString(int op, int failedCount) {
+    static String getDesiredErrorString(@NonNull Context context, int op, int failedCount) {
         switch (op) {
             case BatchOpsManager.OP_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_backup, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_backup, failedCount, failedCount);
             case BatchOpsManager.OP_DELETE_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_delete_backup, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_delete_backup, failedCount, failedCount);
             case BatchOpsManager.OP_RESTORE_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_restore, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_restore, failedCount, failedCount);
             case BatchOpsManager.OP_EXPORT_RULES:
             case BatchOpsManager.OP_NONE:
                 break;
             case BatchOpsManager.OP_ARCHIVE:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_archive, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_archive, failedCount, failedCount);
             case BatchOpsManager.OP_UNARCHIVE:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_unarchive, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_unarchive, failedCount, failedCount);
             case BatchOpsManager.OP_BACKUP_APK:
-                return getResources().getQuantityString(R.plurals.failed_to_backup_some_apk_files, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.failed_to_backup_some_apk_files, failedCount, failedCount);
             case BatchOpsManager.OP_BLOCK_TRACKERS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_disable_trackers, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_disable_trackers, failedCount, failedCount);
             case BatchOpsManager.OP_CLEAR_DATA:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_clear_data, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_clear_data, failedCount, failedCount);
             case BatchOpsManager.OP_FREEZE:
             case BatchOpsManager.OP_ADVANCED_FREEZE:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_freeze, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_freeze, failedCount, failedCount);
             case BatchOpsManager.OP_UNFREEZE:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_unfreeze, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_unfreeze, failedCount, failedCount);
             case BatchOpsManager.OP_DISABLE_BACKGROUND:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_disable_background, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_disable_background, failedCount, failedCount);
             case BatchOpsManager.OP_FORCE_STOP:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_force_stop, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_force_stop, failedCount, failedCount);
             case BatchOpsManager.OP_UNINSTALL:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_uninstall, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_uninstall, failedCount, failedCount);
             case BatchOpsManager.OP_UNBLOCK_TRACKERS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_unblock_trackers, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_unblock_trackers, failedCount, failedCount);
             case BatchOpsManager.OP_BLOCK_COMPONENTS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_block_components, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_block_components, failedCount, failedCount);
             case BatchOpsManager.OP_UNBLOCK_COMPONENTS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_unblock_components, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_unblock_components, failedCount, failedCount);
             case BatchOpsManager.OP_SET_APP_OPS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_set_app_ops, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_set_app_ops, failedCount, failedCount);
             case BatchOpsManager.OP_IMPORT_BACKUPS:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_import_backups, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_import_backups, failedCount, failedCount);
+            case BatchOpsManager.OP_INSTALL_EXISTING:
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_install_existing, failedCount, failedCount);
             case BatchOpsManager.OP_DEXOPT:
-                return getResources().getQuantityString(R.plurals.alert_failed_to_optimize_apps, failedCount, failedCount);
+                return context.getResources().getQuantityString(R.plurals.alert_failed_to_optimize_apps, failedCount, failedCount);
         }
-        return getString(R.string.error);
+        return context.getString(R.string.error);
     }
 
     /**
@@ -471,42 +475,44 @@ public class BatchOpsService extends ForegroundService {
      * ([S112]).
      */
     @Nullable
-    private String getDesiredSuccessString(int op, int successCount) {
+    static String getDesiredSuccessString(@NonNull Context context, int op, int successCount) {
         if (successCount <= 0) return null;
         switch (op) {
             case BatchOpsManager.OP_ARCHIVE:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_archive_request, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_archive_request, successCount, successCount);
             case BatchOpsManager.OP_UNARCHIVE:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_unarchive_request, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_unarchive_request, successCount, successCount);
             case BatchOpsManager.OP_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_backup, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_backup, successCount, successCount);
             case BatchOpsManager.OP_BACKUP_APK:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_backup_apk, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_backup_apk, successCount, successCount);
             case BatchOpsManager.OP_RESTORE_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_restore, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_restore, successCount, successCount);
             case BatchOpsManager.OP_DELETE_BACKUP:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_delete_backup, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_delete_backup, successCount, successCount);
             case BatchOpsManager.OP_IMPORT_BACKUPS:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_import_backups, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_import_backups, successCount, successCount);
+            case BatchOpsManager.OP_INSTALL_EXISTING:
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_install_existing, successCount, successCount);
             case BatchOpsManager.OP_FREEZE:
             case BatchOpsManager.OP_ADVANCED_FREEZE:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_freeze, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_freeze, successCount, successCount);
             case BatchOpsManager.OP_UNFREEZE:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_unfreeze, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_unfreeze, successCount, successCount);
             case BatchOpsManager.OP_FORCE_STOP:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_force_stop, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_force_stop, successCount, successCount);
             case BatchOpsManager.OP_CLEAR_DATA:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_clear_data, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_clear_data, successCount, successCount);
             case BatchOpsManager.OP_CLEAR_CACHE:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_clear_cache, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_clear_cache, successCount, successCount);
             case BatchOpsManager.OP_BLOCK_TRACKERS:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_block_trackers, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_block_trackers, successCount, successCount);
             case BatchOpsManager.OP_UNBLOCK_TRACKERS:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_unblock_trackers, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_unblock_trackers, successCount, successCount);
             case BatchOpsManager.OP_UNINSTALL:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_uninstall, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_uninstall, successCount, successCount);
             case BatchOpsManager.OP_DEXOPT:
-                return getResources().getQuantityString(R.plurals.alert_succeeded_dexopt, successCount, successCount);
+                return context.getResources().getQuantityString(R.plurals.alert_succeeded_dexopt, successCount, successCount);
             default:
                 return null;
         }

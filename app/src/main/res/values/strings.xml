@@ -489,6 +489,10 @@
         <item quantity="one">Could not uninstall %1$d app</item>
         <item quantity="other">Could not uninstall %1$d apps</item>
     </plurals>
+    <plurals name="alert_failed_to_install_existing">
+        <item quantity="one">Could not put back %1$d app</item>
+        <item quantity="other">Could not put back %1$d apps</item>
+    </plurals>
     <plurals name="alert_failed_to_disable_background">
         <item quantity="one">Could not prevent %1$d app from running in the background</item>
         <item quantity="other">Could not prevent %1$d apps from running in the background</item>
@@ -783,6 +787,10 @@
     <plurals name="alert_succeeded_uninstall">
         <item quantity="one">Uninstalled %1$d app</item>
         <item quantity="other">Uninstalled %1$d apps</item>
+    </plurals>
+    <plurals name="alert_succeeded_install_existing">
+        <item quantity="one">Put back %1$d app</item>
+        <item quantity="other">Put back %1$d apps</item>
     </plurals>
     <plurals name="alert_succeeded_dexopt">
         <item quantity="one">Optimised %1$d app</item>
@@ -2860,6 +2868,16 @@
     <string name="debloat_oem_safe_action">Apply OEM-safe actions</string>
     <string name="remove_for_user">Remove for user</string>
     <string name="system_app_put_back">Put back</string>
+    <plurals name="debloat_put_back_confirmation">
+        <item quantity="one">Put back %1$d removed app for the selected user profile? AppManagerNG will call Android\'s Install existing path, which only works while the base system package remains on the device.</item>
+        <item quantity="other">Put back %1$d removed apps for the selected user profiles? AppManagerNG will call Android\'s Install existing path, which only works while the base system packages remain on the device.</item>
+    </plurals>
+    <plurals name="debloat_put_back_skip_installed">
+        <item quantity="one">%1$d selected app is already installed and will be skipped: %2$s.</item>
+        <item quantity="other">%1$d selected apps are already installed and will be skipped: %2$s.</item>
+    </plurals>
+    <string name="debloat_put_back_no_restorable_selection">No selected removed apps can be put back.</string>
+    <string name="debloat_put_back_requires_privileged_mode">Put back requires root, Shizuku, or ADB mode with install-existing permission.</string>
     <string name="debloater_title">Debloater</string>
     <string name="debloat_list_aosp">AOSP</string>
     <string name="debloat_list_oem">OEM</string>

@@ -233,6 +233,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
             case BatchOpsManager.OP_BACKUP_APK:
             case BatchOpsManager.OP_CLEAR_CACHE:
             case BatchOpsManager.OP_EXPORT_RULES:
+            case BatchOpsManager.OP_INSTALL_EXISTING:
                 return RISK_LOW;
             case BatchOpsManager.OP_CLEAR_DATA:
             case BatchOpsManager.OP_DELETE_BACKUP:
