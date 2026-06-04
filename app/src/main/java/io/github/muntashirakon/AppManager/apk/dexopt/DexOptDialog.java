@@ -30,7 +30,6 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchDexOptOptions;
-import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.adapters.AnyFilterArrayAdapter;
 
@@ -77,7 +76,7 @@ public class DexOptDialog extends DialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         mOptions.packages = requireArguments().getStringArray(ARG_PACKAGES);
         int uid = Users.getSelfOrRemoteUid();
-        boolean isRootOrSystem = uid == Ops.SYSTEM_UID || uid == Ops.ROOT_UID;
+        boolean isRootOrSystem = DexOptOptions.canUseRootOnlyOptions(uid);
         // Inflate view
         View view = View.inflate(requireContext(), R.layout.dialog_dexopt, null);
         String[] packages = mOptions.packages;

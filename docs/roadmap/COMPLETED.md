@@ -11,6 +11,17 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P1 DexOpt root-only execution sanitization** — DexOpt batch execution
+  now clones and sanitizes serialized `DexOptOptions` before expanding the
+  package loop, preserving root/system behavior while stripping stale
+  profile-reset and immediate force-dexopt requests for non-root/ADB/Shizuku
+  runs. The worker records a single skipped-root-only-options reason instead of
+  surfacing raw per-package PackageManager `SecurityException` failures, and the
+  dialog uses the same root/system helper for checkbox gating. Focused
+  verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.dexopt.DexOptOptionsTest`.
+  Manual ADB DexOpt replay with a stale serialized profile-reset option remains
+  device-gated.
 - [x] **P3 File Manager Open with defaults and keyboard focus** — File Manager
   now stores Open with handlers per extension or per file, routes file-row taps
   through a saved handler when available, labels the context action as "Change
