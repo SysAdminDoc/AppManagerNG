@@ -14,6 +14,7 @@ import android.os.RemoteException;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -196,6 +197,11 @@ public class DebloatObject {
 
     public boolean isInstalled() {
         return mInstalled;
+    }
+
+    @VisibleForTesting
+    void setInstalledForTesting(boolean installed) {
+        mInstalled = installed;
     }
 
     public boolean isSystemApp() {

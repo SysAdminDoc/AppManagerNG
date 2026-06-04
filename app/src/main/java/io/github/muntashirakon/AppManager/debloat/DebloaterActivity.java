@@ -40,6 +40,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
@@ -58,6 +59,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     private DebloaterRecyclerViewAdapter mAdapter;
     private AdvancedSearchView mSearchView;
     private MaterialTextView mListSummaryView;
+    @Nullable
+    private Menu mSelectionMenu;
     private View mEmptyState;
     private TextView mEmptyStateTitle;
     private TextView mEmptyStateSummary;
@@ -119,6 +122,7 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         mMultiSelectionView.setOnItemSelectedListener(this);
         mMultiSelectionView.setOnSelectionModeChangeListener(this);
         mMultiSelectionView.setOnSelectionChangeListener(this);
+        mSelectionMenu = mMultiSelectionView.getMenu();
 
         viewModel.getDebloatObjectListLiveData().observe(this, debloatObjects -> {
             mProgressIndicator.hide();
@@ -185,8 +189,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
 
     @Override
     public boolean onSelectionChange(int selectionCount) {
-        // TODO: 7/8/22
-        return false;
+        updateSelectionActions();
+        return true;
     }
 
     @Override
@@ -195,7 +199,7 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         if (id == R.id.action_uninstall) {
             showDebloatUninstallDialog();
         } else if (id == R.id.action_put_back) {
-            // TODO: 8/8/22
+            showDebloatPutBackDialog();
         } else if (id == R.id.action_freeze_unfreeze) {
             showFreezeUnfreezeDialog(Prefs.Blocking.getDefaultFreezingMethod());
         } else if (id == R.id.action_save_apk) {
@@ -276,6 +280,16 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             mEmptyStateAction.setText(R.string.refresh);
             mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
         }
+    }
+
+    private void updateSelectionActions() {
+        if (mSelectionMenu == null || viewModel == null) {
+            return;
+        }
+        DebloaterPutBackPlan putBackPlan = DebloaterPutBackPlan.fromSelection(viewModel.getSelectedDebloatObjects());
+        MenuItem putBackItem = mSelectionMenu.findItem(R.id.action_put_back);
+        putBackItem.setVisible(putBackPlan.hasRestorableTargets());
+        putBackItem.setEnabled(putBackPlan.hasRestorableTargets() && SelfPermissions.canInstallExistingPackages());
     }
 
     private void handleEmptyStateAction() {
@@ -429,6 +443,29 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                     (dialog, which) -> handleBatchOp(BatchOpsManager.OP_UNINSTALL));
         }
         builder.show();
+    }
+
+    private void showDebloatPutBackDialog() {
+        if (viewModel == null) return;
+        DebloaterPutBackPlan putBackPlan = DebloaterPutBackPlan.fromSelection(viewModel.getSelectedDebloatObjects());
+        if (!putBackPlan.hasRestorableTargets()) {
+            UIUtils.displayShortToast(R.string.debloat_put_back_no_restorable_selection);
+            return;
+        }
+        if (!SelfPermissions.canInstallExistingPackages()) {
+            UIUtils.displayShortToast(R.string.debloat_put_back_requires_privileged_mode);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.system_app_put_back)
+                .setMessage(putBackPlan.buildConfirmationMessage(this))
+                .setPositiveButton(R.string.system_app_put_back, (dialog, which) -> {
+                    startBatchOp(BatchOpsManager.OP_INSTALL_EXISTING,
+                            viewModel.getPackagesWithUsers(putBackPlan.getRestorableObjects()), null);
+                    mMultiSelectionView.cancel();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     @NonNull
