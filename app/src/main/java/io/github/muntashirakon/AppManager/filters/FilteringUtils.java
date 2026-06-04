@@ -9,6 +9,7 @@ import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MAT
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -28,6 +29,7 @@ import java.util.Set;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
+import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
@@ -42,12 +44,19 @@ public final class FilteringUtils {
     @NonNull
     @WorkerThread
     public static List<FilterableAppInfo> loadFilterableAppInfo(@NonNull int[] userIds) {
-        return loadFilterableAppInfo(userIds, false);
+        return loadFilterableAppInfo(userIds, false, false);
     }
 
     @NonNull
     @WorkerThread
     public static List<FilterableAppInfo> loadFilterableAppInfo(@NonNull int[] userIds, boolean includeBackupOnlyApps) {
+        return loadFilterableAppInfo(userIds, includeBackupOnlyApps, false);
+    }
+
+    @NonNull
+    @WorkerThread
+    public static List<FilterableAppInfo> loadFilterableAppInfo(@NonNull int[] userIds, boolean includeBackupOnlyApps,
+                                                                boolean includeDomainLinkConflicts) {
         List<FilterableAppInfo> filterableAppInfoList = new ArrayList<>();
         boolean hasUsageAccess = FeatureController.isUsageAccessEnabled() && SelfPermissions.checkUsageStatsPermission();
         for (int userId : userIds) {
@@ -89,7 +98,33 @@ public final class FilteringUtils {
         if (includeBackupOnlyApps) {
             addBackupOnlyFilterableAppInfo(filterableAppInfoList, userIds);
         }
+        if (includeDomainLinkConflicts) {
+            attachDomainLinkConflicts(filterableAppInfoList);
+        }
         return filterableAppInfoList;
+    }
+
+    @WorkerThread
+    private static void attachDomainLinkConflicts(@NonNull List<FilterableAppInfo> filterableAppInfoList) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || filterableAppInfoList.isEmpty()) {
+            return;
+        }
+        List<DomainLinkConflictDetector.AppDomainClaims> claims = new ArrayList<>();
+        for (FilterableAppInfo info : filterableAppInfoList) {
+            if (ThreadUtils.isInterrupted()) return;
+            Map<String, Integer> hostStates = info.getDomainVerificationHosts();
+            if (!hostStates.isEmpty()) {
+                claims.add(DomainLinkConflictDetector.claim(info.getPackageName(), info.getAppLabel(),
+                        info.getUserId(), hostStates));
+            }
+        }
+        Map<String, Map<String, List<DomainLinkConflictDetector.Conflict>>> conflictsByPackageUser =
+                DomainLinkConflictDetector.findConflictsByPackageUser(claims);
+        for (FilterableAppInfo info : filterableAppInfoList) {
+            Map<String, List<DomainLinkConflictDetector.Conflict>> conflicts = conflictsByPackageUser.get(
+                    DomainLinkConflictDetector.packageUserKey(info.getPackageName(), info.getUserId()));
+            info.setDomainLinkConflicts(conflicts != null ? conflicts : Collections.emptyMap());
+        }
     }
 
     @WorkerThread

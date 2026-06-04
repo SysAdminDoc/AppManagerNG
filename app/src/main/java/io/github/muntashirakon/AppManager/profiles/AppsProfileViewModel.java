@@ -545,7 +545,8 @@ public class AppsProfileViewModel extends AndroidViewModel {
     private ArrayList<AppsFragment.AppsFragmentItem> loadAppsFilteredPackages(@NonNull AppsFilterProfile profile) {
         int[] users = profile.users != null ? profile.users : Users.getUsersIds();
         if (mFilterableAppInfoList == null) {
-            mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users);
+            mFilterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users, false,
+                    profile.getFilterItem().hasFilterOptionType("domain_links"));
         }
         List<FilterItem.FilteredItemInfo<FilterableAppInfo>> filteredItems = profile.getFilterItem().getFilteredList(mFilterableAppInfoList);
         ArrayList<AppsFragment.AppsFragmentItem> items = new ArrayList<>(filteredItems.size());

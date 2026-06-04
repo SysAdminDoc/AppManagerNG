@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
 import io.github.muntashirakon.AppManager.filters.options.FilterOption;
 
 public final class FinderRelevanceScorer {
@@ -119,7 +120,8 @@ public final class FinderRelevanceScorer {
         if (componentScore < NO_MATCH_SCORE) {
             componentScore += COMPONENT_MATCH_PENALTY;
         }
-        return Math.min(packageScore, componentScore);
+        int domainScore = bestDomainScore(item.info, searchTerms.domainTerms);
+        return Math.min(Math.min(packageScore, componentScore), domainScore);
     }
 
     private static int bestScore(@Nullable String candidate, @NonNull List<String> queries) {
@@ -149,6 +151,23 @@ public final class FinderRelevanceScorer {
         int bestScore = NO_MATCH_SCORE;
         for (ComponentInfo component : components.keySet()) {
             bestScore = Math.min(bestScore, bestScore(component.name, queries));
+        }
+        return bestScore;
+    }
+
+    private static int bestDomainScore(@NonNull IFilterableAppInfo info, @NonNull List<String> queries) {
+        if (queries.isEmpty()) {
+            return NO_MATCH_SCORE;
+        }
+        int bestScore = NO_MATCH_SCORE;
+        for (String host : info.getDomainVerificationHosts().keySet()) {
+            bestScore = Math.min(bestScore, bestScore(host, queries));
+        }
+        for (List<DomainLinkConflictDetector.Conflict> conflicts : info.getDomainLinkConflicts().values()) {
+            for (DomainLinkConflictDetector.Conflict conflict : conflicts) {
+                bestScore = Math.min(bestScore, bestScore(conflict.packageName, queries));
+                bestScore = Math.min(bestScore, bestScore(conflict.label, queries));
+            }
         }
         return bestScore;
     }
@@ -192,9 +211,11 @@ public final class FinderRelevanceScorer {
         final List<String> packageTerms = new ArrayList<>();
         @NonNull
         final List<String> componentTerms = new ArrayList<>();
+        @NonNull
+        final List<String> domainTerms = new ArrayList<>();
 
         boolean isEmpty() {
-            return packageTerms.isEmpty() && componentTerms.isEmpty();
+            return packageTerms.isEmpty() && componentTerms.isEmpty() && domainTerms.isEmpty();
         }
 
         @NonNull
@@ -212,6 +233,8 @@ public final class FinderRelevanceScorer {
                     addTerms(searchTerms.componentTerms, value);
                 } else if (option.type.equals("trackers") && isTrackerNameSearchKey(key)) {
                     addTerms(searchTerms.componentTerms, value);
+                } else if (option.type.equals("domain_links") && isDomainSearchKey(key)) {
+                    addTerms(searchTerms.domainTerms, value);
                 }
             }
             return searchTerms;
@@ -230,6 +253,11 @@ public final class FinderRelevanceScorer {
         private static boolean isTrackerNameSearchKey(@NonNull String key) {
             return key.equals("name_eq") || key.equals("name_contains")
                     || key.equals("name_starts_with") || key.equals("name_ends_with");
+        }
+
+        private static boolean isDomainSearchKey(@NonNull String key) {
+            return key.equals("host_eq") || key.equals("host_contains")
+                    || key.equals("conflict_package_contains");
         }
 
         private static void addTerms(@NonNull List<String> terms, @NonNull String rawValue) {
