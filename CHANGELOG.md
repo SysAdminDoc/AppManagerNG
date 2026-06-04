@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Debloat OEM provenance surfaces (research P2, 2026-06-04)
+
+- Debloat objects now accept a future `preinstalled_oems` field and infer
+  conservative known-preinstall-OEM labels from existing package names and
+  provenance descriptions when the bundled data has no explicit field.
+- Finder result rows and Debloater details now surface those known OEM labels,
+  and the bloatware Finder option gained `preinstalled_oem_*` predicates for
+  saved searches.
+- Reconciled the research row against the current data path: dependency /
+  required-by edges already render from the bundled debloat graph, scanner
+  library signatures already come from the broader android-libraries data, and
+  full UAD-NG model/region ingest is parked until upstream publishes
+  machine-readable list data.
+
 ### Added - Opt-in local crash sink for support bundles (research P2, 2026-06-04)
 
 - Privacy settings now expose a default-off "Local crash sink" switch. When it

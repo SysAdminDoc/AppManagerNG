@@ -184,4 +184,10 @@ public interface IFilterableAppInfo {
 
     @Nullable
     DebloatObject getBloatwareInfo();
+
+    @NonNull
+    default String[] getKnownPreinstallOems() {
+        DebloatObject object = getBloatwareInfo();
+        return object != null ? object.getKnownPreinstallOems() : new String[0];
+    }
 }
