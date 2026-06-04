@@ -1700,6 +1700,15 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         credentialProviderTag.setColor(getCredentialProviderChipColor(context, tagCloud.credentialProviderManifestInfo))
                 .setOnClickListener(v -> showCredentialProviderDialog(v.getContext(),
                         tagCloud.credentialProviderManifestInfo));
+        if (tagCloud.manifestMetadataInfo.hasMetadata()) {
+            int metadataCount = tagCloud.manifestMetadataInfo.getMetadataCount();
+            TagItem manifestMetadataTag = new TagItem();
+            tagItems.add(manifestMetadataTag);
+            manifestMetadataTag.setText(getResources().getQuantityString(R.plurals.manifest_metadata_chip_count,
+                            metadataCount, metadataCount))
+                    .setOnClickListener(v -> showManifestMetadataDialog(v.getContext(),
+                            tagCloud.manifestMetadataInfo));
+        }
         if (tagCloud.warnsCleartextDeprecation) {
             TagItem cleartextTag = new TagItem();
             tagItems.add(cleartextTag);
@@ -2246,6 +2255,23 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     (dialog, which, isChecked) -> openCredentialProviderSettings(context));
         }
         builder.show();
+    }
+
+    private void showManifestMetadataDialog(@NonNull Context context, @NonNull ManifestMetadataInfo info) {
+        String body;
+        if (!info.hasMetadata()) {
+            body = getString(R.string.manifest_metadata_dialog_none);
+        } else {
+            body = info.toDisplayString() + "\n\n" + getString(R.string.manifest_metadata_dialog_scope_note);
+        }
+        new ScrollableDialogBuilder(context)
+                .setTitle(R.string.manifest_metadata_dialog_title)
+                .setMessage(body)
+                .setNeutralButton(R.string.copy, (dialog, which, isChecked) ->
+                        ClipboardUtils.copyToClipboard(context,
+                                getString(R.string.manifest_metadata_dialog_title), info.toCopyText()))
+                .setPositiveButton(R.string.close, null)
+                .show();
     }
 
     private void openCredentialProviderSettings(@NonNull Context context) {

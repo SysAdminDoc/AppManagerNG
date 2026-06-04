@@ -2727,6 +2727,13 @@
     <string name="credential_provider_dialog_scope_note">This is target package manifest metadata. It does not reveal saved credentials, passkeys, passwords, federated accounts, or whether this provider is enabled for the current user.</string>
     <string name="credential_provider_open_settings">Open credential settings</string>
     <string name="credential_provider_settings_unavailable">Cannot open Credential Manager settings on this device.</string>
+    <plurals name="manifest_metadata_chip_count">
+        <item quantity="one">Manifest metadata: %1$d row</item>
+        <item quantity="other">Manifest metadata: %1$d rows</item>
+    </plurals>
+    <string name="manifest_metadata_dialog_title">Manifest metadata</string>
+    <string name="manifest_metadata_dialog_none">No manifest &lt;meta-data&gt; rows were found for this package.</string>
+    <string name="manifest_metadata_dialog_scope_note">Rows are read from the target APK manifest and grouped by declaring owner. Resource values are shown as manifest references, not resolved localized resource text.</string>
     <string name="title_domains_supported_by_the_app">Supported domains</string>
     <string name="domain_verification_state">State: %1$s</string>
     <string name="domain_verification_state_verified">verified</string>

@@ -11,6 +11,7 @@ import com.reandroid.arsc.chunk.xml.ResXmlAttribute;
 import com.reandroid.arsc.chunk.xml.ResXmlDocument;
 import com.reandroid.arsc.chunk.xml.ResXmlElement;
 import com.reandroid.arsc.io.BlockReader;
+import com.reandroid.arsc.value.ValueType;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,6 +42,10 @@ public class ManifestParser {
     private static final String TAG_RECEIVER = "receiver";
     private static final String TAG_PROVIDER = "provider";
     private static final String ATTR_NAME = "name"; // android:name
+    // manifest -> application|component -> meta-data
+    private static final String TAG_META_DATA = "meta-data";
+    private static final String ATTR_VALUE = "value"; // android:value
+    private static final String ATTR_RESOURCE = "resource"; // android:resource
     // manifest -> application -> (component) -> intent-filter
     private static final String TAG_INTENT_FILTER = "intent-filter";
     private static final String ATTR_PRIORITY = "priority"; // android:priority
@@ -137,6 +142,61 @@ public class ManifestParser {
     }
 
     @NonNull
+    public List<ManifestMetadata> parseMetadata() throws IOException {
+        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
+            ResXmlDocument xmlBlock = new ResXmlDocument();
+            xmlBlock.readBytes(reader);
+            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
+            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
+            if (!TAG_MANIFEST.equals(resManifestElement.getName())) {
+                throw new IOException("\"manifest\" tag not found.");
+            }
+            String packageName = getAttributeValue(resManifestElement, ATTR_MANIFEST_PACKAGE);
+            if (packageName == null) {
+                throw new IOException("\"manifest\" does not have required attribute \"package\".");
+            }
+            mPackageName = packageName;
+            ResXmlElement resApplicationElement = null;
+            Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_APPLICATION);
+            if (resXmlElementIt.hasNext()) {
+                resApplicationElement = resXmlElementIt.next();
+            }
+            if (resXmlElementIt.hasNext()) {
+                throw new IOException("\"manifest\" has duplicate \"application\" tags.");
+            }
+            if (resApplicationElement == null) {
+                Log.i(TAG, "package %s does not have \"application\" tag.", mPackageName);
+                return Collections.emptyList();
+            }
+
+            List<ManifestMetadata> metadata = new ArrayList<>(resApplicationElement.getElementsCount());
+            collectMetadata(resApplicationElement, ManifestMetadata.OWNER_APPLICATION, mPackageName, metadata);
+            resXmlElementIt = resApplicationElement.getElements();
+            while (resXmlElementIt.hasNext()) {
+                ResXmlElement elem = resXmlElementIt.next();
+                String tagName = elem.getName();
+                if (tagName == null) {
+                    continue;
+                }
+                switch (tagName) {
+                    case TAG_ACTIVITY:
+                    case TAG_ACTIVITY_ALIAS:
+                    case TAG_SERVICE:
+                    case TAG_RECEIVER:
+                    case TAG_PROVIDER:
+                        String componentName = getAttributeValue(elem, ATTR_NAME);
+                        if (componentName != null) {
+                            collectMetadata(elem, tagName,
+                                    new ComponentName(mPackageName, componentName).flattenToShortString(), metadata);
+                        }
+                        break;
+                }
+            }
+            return metadata;
+        }
+    }
+
+    @NonNull
     private ManifestComponent parseComponentInfo(@NonNull ResXmlElement componentElement,
                                                  @NonNull String componentType) throws IOException {
         String componentName = getAttributeValue(componentElement, ATTR_NAME);
@@ -214,13 +274,64 @@ public class ManifestParser {
         return data;
     }
 
+    private void collectMetadata(@NonNull ResXmlElement ownerElement, @NonNull String ownerType,
+                                 @Nullable String ownerName, @NonNull List<ManifestMetadata> out) {
+        Iterator<ResXmlElement> resXmlElementIt = ownerElement.getElements(TAG_META_DATA);
+        while (resXmlElementIt.hasNext()) {
+            ManifestMetadata metadata = parseMetadata(ownerType, ownerName, resXmlElementIt.next());
+            if (metadata != null) {
+                out.add(metadata);
+            }
+        }
+    }
+
+    @Nullable
+    private ManifestMetadata parseMetadata(@NonNull String ownerType, @Nullable String ownerName,
+                                           @NonNull ResXmlElement metadataElement) {
+        String name = getAttributeValue(metadataElement, ATTR_NAME);
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        ResXmlAttribute resourceAttribute = getAttribute(metadataElement, ATTR_RESOURCE);
+        if (resourceAttribute != null) {
+            return buildMetadata(ownerType, ownerName, name, resourceAttribute, true);
+        }
+        ResXmlAttribute valueAttribute = getAttribute(metadataElement, ATTR_VALUE);
+        return buildMetadata(ownerType, ownerName, name, valueAttribute, false);
+    }
+
+    @NonNull
+    private ManifestMetadata buildMetadata(@NonNull String ownerType, @Nullable String ownerName,
+                                           @NonNull String name, @Nullable ResXmlAttribute valueAttribute,
+                                           boolean resource) {
+        String value = null;
+        String valueType = null;
+        if (valueAttribute != null) {
+            value = valueAttribute.getValueAsString();
+            if (value == null) {
+                value = valueAttribute.decodeValue();
+            }
+            ValueType type = valueAttribute.getValueType();
+            if (type != null) {
+                valueType = type.name();
+            }
+        }
+        return new ManifestMetadata(ownerType, ownerName, name, value, valueType, resource);
+    }
+
     @Nullable
     private String getAttributeValue(@NonNull ResXmlElement element, @NonNull String attrName) {
+        ResXmlAttribute attribute = getAttribute(element, attrName);
+        return attribute != null ? attribute.getValueAsString() : null;
+    }
+
+    @Nullable
+    private ResXmlAttribute getAttribute(@NonNull ResXmlElement element, @NonNull String attrName) {
         ResXmlAttribute attribute;
         for (int i = 0; i < element.getAttributeCount(); ++i) {
             attribute = element.getAttributeAt(i);
             if (attribute.equalsName(attrName)) {
-                return attribute.getValueAsString();
+                return attribute;
             }
         }
         return null;
