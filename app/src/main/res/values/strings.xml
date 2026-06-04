@@ -3036,9 +3036,14 @@
     <string name="adb_pairing_searching_for_port">Searching…</string>
     <string name="adb_pairing_stop_searching">Stop</string>
     <string name="adb_pairing_input_pairing_code">Pairing code</string>
+    <string name="adb_pairing_input_code_in_app">Enter in app</string>
     <string name="adb_pairing_pairing_code">Pairing code</string>
+    <string name="adb_pairing_code_waiting_for_port">Waiting for the pairing port.</string>
+    <string name="adb_pairing_code_helper">Enter the six-digit code for port %d.</string>
+    <string name="adb_pairing_code_invalid">Enter a six-digit pairing code.</string>
     <string name="adb_pairing_found_pairing_service_with_port">Found a service with port %d</string>
     <string name="adb_pairing_pairing_in_progress">Pairing…</string>
+    <string name="adb_pairing_failed_retry_in_app">Pairing failed. Check the code and try again.</string>
     <string name="adb_pairing_retry_pairing">Retry</string>
     <string name="mode_of_op_custom_command_title">Custom command</string>
     <string name="mode_of_op_custom_command">If you are unable to use any of the modes, you can run the following command in any supported shell to run App Manager in privileged mode:</string>

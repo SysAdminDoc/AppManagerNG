@@ -11,6 +11,18 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P1 in-app Wireless ADB pairing-code fallback** — Wireless ADB pairing
+  now keeps the foreground service as the single mDNS scan/pairing owner while
+  publishing a shared pairing state for in-app UI. The Manual path opens an
+  in-app code dialog that shows the discovered pairing port, validates a
+  six-digit code, submits it through the same service action as notification
+  `RemoteInput`, and keeps retry/cancel semantics connected to the existing
+  `Ops.pairAdb()` waiter. Pairing notifications also expose an "Enter in app"
+  action for devices where inline notification replies are unavailable. Focused
+  verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.adb.AdbPairingRequestTest`.
+  Manual normal-device and Quest/multi-window Wireless ADB walkthroughs remain
+  device-gated.
 - [x] **P2 Terminal active privilege-provider routing** — Terminal startup now
   resolves and labels the current shell route as local, root, Shizuku, or ADB,
   attempts to bind the active LocalServices-backed provider before falling back,
