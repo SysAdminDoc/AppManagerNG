@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Quick Settings tile install and force-stop tile (research P2, 2026-06-04)
+
+- Freeze-profile selection now requests the Android 13+ one-tap Quick Settings
+  tile add flow through `StatusBarManager.requestAddTileService()`, with older
+  devices falling back to the existing tile-state refresh.
+- Added a "Force-stop app" Quick Settings tile that stores a pinned
+  package/user target from the App Details force-stop long-press menu, unlocks
+  before running, and executes through the privileged `FORCE_STOP_PACKAGES`
+  path.
+- The force-stop tile reports unavailable until both a target and privileged
+  force-stop capability are present, and JVM coverage now pins target parsing
+  plus both QS tile component/SDK-gating helpers.
+
 ### Added - AppManagerNG SAF documents provider (research P2, 2026-06-04)
 
 - Added a read-only `DocumentsProvider` at `${applicationId}.documents` so

@@ -3,14 +3,17 @@
 package io.github.muntashirakon.AppManager.profiles;
 
 import android.app.PendingIntent;
+import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 
@@ -31,11 +34,43 @@ public class QuickFreezeTileService extends TileService {
             return;
         }
         try {
-            TileService.requestListeningState(context,
-                    new ComponentName(context, QuickFreezeTileService.class));
+            TileService.requestListeningState(context, getTileComponentName(context));
         } catch (RuntimeException e) {
             Log.w(TAG, "Could not request quick freeze tile state update.", e);
         }
+    }
+
+    public static void requestAddTile(@NonNull Context context) {
+        if (!supportsRequestAddTile(Build.VERSION.SDK_INT)) {
+            requestTileStateUpdate(context);
+            return;
+        }
+        try {
+            StatusBarManager statusBarManager = context.getSystemService(StatusBarManager.class);
+            if (statusBarManager == null) {
+                requestTileStateUpdate(context);
+                return;
+            }
+            statusBarManager.requestAddTileService(getTileComponentName(context),
+                    context.getString(R.string.quick_freeze_tile_label),
+                    Icon.createWithResource(context, R.drawable.ic_snowflake),
+                    ContextCompat.getMainExecutor(context),
+                    result -> requestTileStateUpdate(context));
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not request quick freeze tile installation.", e);
+            requestTileStateUpdate(context);
+        }
+    }
+
+    @VisibleForTesting
+    static boolean supportsRequestAddTile(int sdkInt) {
+        return sdkInt >= Build.VERSION_CODES.TIRAMISU;
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static ComponentName getTileComponentName(@NonNull Context context) {
+        return new ComponentName(context, QuickFreezeTileService.class);
     }
 
     @Override

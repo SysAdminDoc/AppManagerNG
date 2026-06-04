@@ -170,6 +170,8 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutInfo;
+import io.github.muntashirakon.AppManager.shortcut.ForceStopTileController;
+import io.github.muntashirakon.AppManager.shortcut.ForceStopTileService;
 import io.github.muntashirakon.AppManager.sharedpref.SharedPrefsActivity;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.ssaid.ChangeSsaidDialog;
@@ -2476,8 +2478,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                     });
                         }
                     }).setOnLongClickListener(v -> {
-                        createAppActionShortcut(AppActionShortcutInfo.ACTION_FORCE_STOP,
-                                R.string.shortcut_force_stop_app, R.drawable.ic_stop);
+                        showForceStopShortcutOptions();
                         return true;
                     });
                 }
@@ -3361,6 +3362,25 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         shortcutInfo.setIcon(icon != null ? getBitmapFromDrawable(icon) : getBitmapFromDrawable(mIconView.getDrawable()));
         CreateShortcutDialogFragment dialog = CreateShortcutDialogFragment.getInstance(shortcutInfo);
         dialog.show(getChildFragmentManager(), CreateShortcutDialogFragment.TAG);
+    }
+
+    private void showForceStopShortcutOptions() {
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(getString(R.string.shortcut_force_stop_app, mAppLabel))
+                .setItems(new CharSequence[]{
+                        getString(R.string.create_shortcut),
+                        getString(R.string.force_stop_tile_set_app)
+                }, (dialog, which) -> {
+                    if (which == 0) {
+                        createAppActionShortcut(AppActionShortcutInfo.ACTION_FORCE_STOP,
+                                R.string.shortcut_force_stop_app, R.drawable.ic_stop);
+                    } else {
+                        ForceStopTileController.setSelectedTarget(mPackageName, mUserId);
+                        ForceStopTileService.requestAddTile(mActivity);
+                        UIUtils.displayShortToast(R.string.force_stop_tile_app_set, mAppLabel);
+                    }
+                })
+                .show();
     }
 
     private void displayInstallerDialog(@NonNull InstallSourceInfoCompat installSource) {
