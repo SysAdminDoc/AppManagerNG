@@ -11,6 +11,16 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 App Info action rail priority controls** — App Info horizontal
+  actions now use stable IDs and resolve through a default priority model that
+  keeps Launch, Freeze/Unfreeze, and Force-stop ahead of rare or destructive
+  actions while pruning unsupported actions. The overflow menu adds "Customize
+  action rail" so users can pin available actions to the front or reset to
+  defaults, and action buttons now expose explicit content descriptions.
+  Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.details.info.AppInfoActionOrderResolverTest`.
+  Manual phone-width checks with force-stop, frozen, archived, and data-only
+  packages remain device-gated.
 - [x] **P1 Debloater Put back install-existing restore** — Debloater selection
   mode now exposes Put back for selected removed debloat/system rows, shows a
   restore confirmation with already-installed selections reported as skips, and
