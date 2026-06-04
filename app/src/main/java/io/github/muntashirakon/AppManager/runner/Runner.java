@@ -90,7 +90,7 @@ public abstract class Runner {
     }
 
     @NonNull
-    static Runner getRootInstance() {
+    static synchronized Runner getRootInstance() {
         if (sRootShell == null) {
             sRootShell = new NormalShell(true);
             Log.d(TAG, "RootShell");
@@ -99,7 +99,7 @@ public abstract class Runner {
     }
 
     @NonNull
-    private static Runner getPrivilegedInstance() {
+    private static synchronized Runner getPrivilegedInstance() {
         if (sPrivilegedShell == null) {
             sPrivilegedShell = new PrivilegedShell();
             Log.d(TAG, "PrivilegedShell");
@@ -107,7 +107,7 @@ public abstract class Runner {
         return sPrivilegedShell;
     }
 
-    private static Runner getNoRootInstance() {
+    private static synchronized Runner getNoRootInstance() {
         if (sNoRootShell == null) {
             sNoRootShell = new NormalShell(false);
             Log.d(TAG, "NoRootShell");
