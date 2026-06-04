@@ -3,9 +3,9 @@
 # AppManagerNG Active Roadmap
 
 > Single source of truth for all planned work. Items above the `---` are
-> existing plans; items below are research conducted 2026-06-03.
+> existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-04. Baseline: `main` at `9cdbb22`, app
+Last consolidated: 2026-06-04. Baseline: `main` at `3bb0a78`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 1 - 2026-06-04.
+> Last researched: Cycle 2 - 2026-06-04.
 
 ## Implementer Instructions
 
@@ -453,6 +453,91 @@ links touched by the edit.
   minSdk-21 ceiling pins. The active queue is now mostly device/manual gated;
   Material 1.14.0 and other newer AndroidX lines stay behind the documented API
   21-22 ceiling, so no new dependency row was promoted.
+
+### Researcher Queue (Cycle 2 - 2026-06-04)
+
+- [ ] 🔬🤖 P1 — Explain and audit backup Extras restore coverage
+  - Why: upstream users still cannot tell what "Extras" covers or why some
+    extras restore in one mode but not another. The current dialog string lists
+    permissions, battery/data-saving options, MagiskHide status, SSAID, and
+    similar data, then only warns that some extras may not restore depending on
+    permissions.
+  - Evidence: `app/src/main/res/values/strings.xml` `backup_extras_description`;
+    https://github.com/MuntashirAkon/AppManager/issues/1980
+  - Touches: backup option dialog copy, restore-result/audit metadata,
+    `BackupFlags`, and backup documentation.
+  - Acceptance: the backup UI has a compact details surface showing what Extras
+    includes and what the current mode can restore; restore results record each
+    skipped extra with a short reason.
+  - Verify: formatter/unit coverage for skip reasons plus manual no-root,
+    ADB/Shizuku, and root restore checks.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Add a generic manifest `<meta-data>` explorer
+  - Why: NG now exposes several selected Privacy & Security API manifest
+    signals, but it still lacks a generic way to inspect app, activity, service,
+    receiver, and provider `<meta-data>` entries. That leaves API keys, provider
+    configuration flags, SDK module flags, and vendor integrations hidden unless
+    users export and inspect manifests manually.
+  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1766; local
+    fixture manifests already contain many `<meta-data>` samples, while the App
+    Details component surfaces do not show arbitrary `metaData` bundles.
+  - Touches: manifest parser/view model, App Details Info or Components tabs,
+    copy/export affordances, and resource-reference formatting.
+  - Acceptance: component details group manifest metadata by owner
+    (application/activity/service/receiver/provider), display string/boolean/
+    integer/resource values safely, and let users copy rows.
+  - Verify: parser tests with typed and resource-backed metadata plus manual
+    inspection of an app containing application and component metadata.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Add optional extended metadata to app-list exports
+  - Why: the shipped app-list exporter preserves identity/version/signature/
+    install-time/installer fields, but users are asking for richer export data.
+    NG already computes useful list facts such as user/system state, disabled or
+    hidden/frozen state, tracker and dangerous-permission counts, split/source
+    details, tags, and multi-user ownership, yet exports omit them.
+  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/apk/list/ListExporter.java`;
+    https://github.com/MuntashirAkon/AppManager/issues/1773
+  - Touches: `ListExporter`, export options UI, `AppListItem` enrichment, and
+    importer compatibility if JSON gains optional fields.
+  - Acceptance: default exports stay backward-compatible, while an explicit
+    extended mode adds selected operational metadata to JSON/CSV/XML/Markdown
+    without breaking existing import behavior.
+  - Verify: exporter tests assert the legacy column set by default and extended
+    output for at least disabled/system/installer/permission-count fields.
+  - Complexity: M.
+
+- [ ] 🔬🤖 P2 — Fix installer notification final-state wording
+  - Why: upstream reports that collapsed installer notifications can end at a
+    generic "Done" body instead of the concrete success/failure result. The
+    current result handoff still mutates the last progress notification body to
+    `R.string.done` immediately before delivering the final notification.
+  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerService.java`;
+    https://github.com/MuntashirAkon/AppManager/issues/1805
+  - Touches: `PackageInstallerService`, `NotificationProgressHandler`, and
+    installer notification test/fake surfaces.
+  - Acceptance: collapsed and expanded final installer notifications show the
+    same concrete subject, such as installed, blocked, or failed with reason;
+    no stale intermediate "Done" remains visible after completion.
+  - Verify: fake progress-handler test records final title/body plus manual
+    background install success and failure checks.
+  - Complexity: S.
+
+- [ ] 🔬🤖 P3 — Stabilize File Manager "Open with" defaults and keyboard focus
+  - Why: the File Manager picker still behaves as a one-shot chooser. The code
+    has hidden TODO controls for "always open" / "only this file", and upstream
+    reports the search box can summon the soft keyboard when the dialog opens.
+  - Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/OpenWithDialogFragment.java`;
+    https://github.com/MuntashirAkon/AppManager/issues/1810
+  - Touches: `OpenWithDialogFragment`, a small default-handler store, File
+    Manager launch routing, reset-defaults UI, and fragment focus tests.
+  - Acceptance: the dialog opens without keyboard focus unless the user taps
+    search; users can set/reset per-extension or per-file defaults while keeping
+    an OS chooser fallback.
+  - Verify: fragment focus coverage where feasible plus manual open, repeat
+    open, and reset-default checks.
+  - Complexity: M.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
