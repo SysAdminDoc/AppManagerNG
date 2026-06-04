@@ -458,25 +458,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 3 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Make Mode of Operation apply lifecycle-safe and rollbackable
-  - Why: upstream reports a crash when the mode picker is closed while Apply is
-    pressed. The current picker persists `Ops.setMode(mCurrentMode)` before the
-    asynchronous `Ops.init()` result returns, shows a progress dialog tied to
-    the fragment activity, and has no obvious stale-callback or destroyed-view
-    guard around the apply flow.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1817;
-    `ModeOfOpsPreference` `setPositiveButton(R.string.apply, ...)` mutates the
-    stored mode immediately and then waits for `MainPreferencesViewModel` status
-    callbacks.
-  - Touches: `ModeOfOpsPreference`, `MainPreferencesViewModel`,
-    `SecurityAndOpsViewModel` if the same flow is shared, and lifecycle tests.
-  - Acceptance: Apply is single-flight, disabled after the first tap, ignored
-    after dialog/fragment dismissal, and commits the selected mode only after a
-    successful init or rolls back to the previous mode with a visible failure.
-  - Verify: Robolectric/lifecycle test for dismiss-then-apply and double-apply,
-    plus manual ADB and Shizuku mode switches.
-  - Complexity: M.
-
 - [ ] 🔬🤖 P2 — Route Terminal through the active privilege provider
   - Why: NG exposes a Terminal activity, but it is still a local `sh -i`
     process with TODOs to replace it with an actual terminal and to handle

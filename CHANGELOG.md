@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Mode of Operation apply lifecycle and rollback (research P2/#1817, 2026-06-04)
+
+- Settings -> Mode of Operation now initializes a selected mode as a candidate
+  and writes the stored preference only after a terminal successful init.
+- Apply is single-flight while a mode switch is pending; fragment destruction
+  clears the pending transaction so late callbacks cannot commit a dismissed
+  flow.
+- Failed mode switches restore the previous mode and show a rollback toast, and
+  the root-backed Shizuku "Switch to ADB mode" shortcut uses the same guarded
+  apply path.
+
 ### Fixed - DexOpt root-only option sanitization (research P1/#1733, 2026-06-04)
 
 - DexOpt batch execution now rechecks root/system-only flags after loading
