@@ -58,7 +58,7 @@ than by historical priority tier:
 
 ### Build-host hygiene
 
-- [ ] **P1 Repair `scripts/android-libraries` submodule tracking**
+- [x] **P1 Repair `scripts/android-libraries` submodule tracking**
   - Why: `.gitmodules`, `CLAUDE.md`, and `PROJECT_CONTEXT.md` all state that
     `scripts/android-libraries` and `scripts/android-debloat-list` are required
     build-time submodules, but the superproject currently tracks only
@@ -66,15 +66,17 @@ than by historical priority tier:
     `git submodule update --init --recursive` will not fetch
     `scripts/android-libraries`, while this working tree has it only as an
     untracked local clone at `8fb3919`.
+  - Shipped 2026-06-04: added the missing `scripts/android-libraries` gitlink
+    at upstream `8fb3919828e9c9f6e75faaaa322c5af59c6d05fa` so the existing
+    `.gitmodules` entry materializes the scanner library dataset from a fresh
+    checkout.
   - Evidence: `git ls-files scripts/android-libraries scripts/android-debloat-list`
-    returns only `scripts/android-debloat-list`; `git submodule status` returns
-    only `scripts/android-debloat-list`; `.gitmodules` still declares both.
+    returns both gitlinks; `.gitmodules` declares both.
   - Touches: submodule/gitlink setup for `scripts/android-libraries`; README /
     BUILDING / project-context wording if the intended source of the library DB
     changes.
   - Acceptance: a fresh clone plus `git submodule update --init --recursive`
-    materializes both dataset directories at reviewed commits, or docs and build
-    scripts stop claiming `android-libraries` is a required submodule.
+    materializes both dataset directories at reviewed commits.
   - Verify: clone into an empty temp directory, run the documented submodule
     command, and confirm both `scripts/android-libraries/libs.json` and
     `scripts/android-debloat-list/*.json` exist without manual cloning.
