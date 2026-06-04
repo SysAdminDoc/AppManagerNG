@@ -131,6 +131,19 @@ trail. Long-form historical context is under
   `RestrictedSettingsDiagnosticsTest`. API-35 archiving walkthroughs and
   non-caller-scoped live-state source proof are tracked in the gated roadmap
   buckets.
+- [x] **P2 In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider**
+  — `AutomationUriActivity`, signature-gated `AutomationReceiver`, the
+  Locale-compatible `TaskerPluginEditActivity` / `TaskerPluginFireReceiver`,
+  `QuickFreezeTileService`, `ForceStopTileService`, and
+  `AppManagerDocumentsProvider` are registered and host-covered. The plug-in
+  signs and verifies `am://` automation bundles, the QS suite supports Android
+  13+ one-tap add flows for freeze-profile and pinned force-stop actions, and
+  the read-only SAF provider exposes backup/profile roots with traversal guards.
+  Focused evidence remains `AppManagerDocumentsProviderTest`,
+  `AutomationRequestTest`, `AutomationIntentsTest`, `TaskerPluginBrokerTest`,
+  `QuickFreezeTileControllerTest`, `QuickFreezeTileServiceTest`,
+  `ForceStopTileControllerTest`, and `ForceStopTileServiceTest`; runtime
+  Tasker/QS/SAF walkthroughs are tracked in the device bucket.
 
 ## Closed on 2026-06-03
 
