@@ -328,6 +328,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   deduped, a File Manager selection action, and scanning configured backup
   destinations beyond external storage remain on the T19-C roadmap row.
 
+### Added - Backup duplicate cleaner keep-largest review (T19-D follow-up, 2026-06-03)
+
+- The One-Click Ops duplicate-backup cleaner now offers "keep the largest
+  copy" as the default choice, backed by a real `BackupItem.getTotalSize()`
+  accessor and the shared `BackupRetentionPolicy.backupItemSizeResolver()`.
+- Duplicate-backup scans now build a ViewModel plan before deletion, surface
+  the estimated reclaimable bytes in the confirmation dialog, and report both
+  deleted count and reclaimed size in the completion toast.
+- Duplicate-backup deletes now record dedicated cleanup `op_history` payloads
+  with the keep strategy, backup rows, selected/deleted counts, and reclaimed
+  bytes through `DuplicateBackupCleanupHistoryItem`.
+
 ### Added - Duplicate backup cleaner in One-Click Ops (T19-D UI, 2026-05-28)
 
 - One-Click Ops -> Maintenance now has a "Delete duplicate backups" entry
@@ -336,9 +348,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   newest copy" or "keep the oldest copy"; the action runs
   `BackupRetentionPolicy.pruneVersionDuplicates(strategy)` on a worker
   thread and reports the number of removed duplicates.
-- Follow-up: a "keep largest" option needs an on-disk size accessor on
-  `BackupItem`; the reclaimable-bytes hint and a dedicated `op_history`
-  DB type remain on the T19-D roadmap row.
+- Follow-up closed 2026-06-03: keep-largest, reclaimable-byte confirmation,
+  and dedicated cleanup `op_history` rows are shipped.
 
 ### Added - Leftover folder detection in One-Click Ops (T19-B UI, 2026-05-28)
 

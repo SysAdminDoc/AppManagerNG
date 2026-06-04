@@ -260,6 +260,22 @@ public final class BackupRetentionPolicy {
     }
 
     @NonNull
+    public static BackupSizeResolver backupItemSizeResolver() {
+        return BackupRetentionPolicy::resolveBackupSize;
+    }
+
+    @VisibleForTesting
+    static long resolveBackupSize(@NonNull Backup backup) {
+        try {
+            BackupItems.BackupItem item = backup.getItem();
+            return item != null ? item.getTotalSize() : -1L;
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to resolve backup size " + backup.relativeDir, t);
+            return -1L;
+        }
+    }
+
+    @NonNull
     private static Comparator<Backup> comparatorFor(@NonNull DuplicateKeepStrategy strategy,
                                                     @Nullable BackupSizeResolver sizeResolver) {
         switch (strategy) {
@@ -305,7 +321,11 @@ public final class BackupRetentionPolicy {
      */
     @WorkerThread
     public static int pruneVersionDuplicates(@NonNull DuplicateKeepStrategy strategy) {
-        return pruneVersionDuplicates(strategy, null);
+        BackupSizeResolver sizeResolver = strategy == DuplicateKeepStrategy.LARGEST
+                || strategy == DuplicateKeepStrategy.LARGEST_THEN_NEWEST
+                ? backupItemSizeResolver()
+                : null;
+        return pruneVersionDuplicates(strategy, sizeResolver);
     }
 
     /**
