@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - App Info action rail priority controls (research P2/#1953, 2026-06-04)
+
+- App Info horizontal actions now use stable action IDs and a resolver that
+  keeps Launch, Freeze/Unfreeze, and Force-stop ahead of rare or destructive
+  actions by default while pruning unsupported actions.
+- The App Info overflow menu adds "Customize action rail", where users can pin
+  available actions to the front of the rail or reset back to the default
+  priority model.
+- Rail buttons now carry explicit action content descriptions, and focused JVM
+  coverage pins default ordering plus duplicate/unsupported priority pruning.
+
 ### Added - Debloater Put back install-existing restore (research P1/#1977, 2026-06-04)
 
 - Debloater selection mode now offers Put back for selected removed rows and

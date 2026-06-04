@@ -460,28 +460,6 @@ links touched by the edit.
 
 ### Researcher Queue (Cycle 4 - 2026-06-04)
 
-- [ ] 🔬🤖 P2 — Make the App Info action rail priority-aware/customizable
-  - Why: the fixed horizontal App Info action rail hides high-frequency actions
-    such as Force-stop behind earlier actions on narrow screens. Reordering
-    alone is useful, but the real fix is a priority model that can keep common
-    safe actions visible while demoting rare or destructive actions behind a
-    customization/default-order surface.
-  - Evidence: https://github.com/MuntashirAkon/AppManager/issues/1953;
-    `pager_app_info.xml` hosts a horizontal `RoundedFirstAndLastChildViewGroup`,
-    and `AppInfoFragment.getHorizontalActions()` appends actions in a fixed
-    Launch/Freeze/Hide/Archive/Uninstall/Unfreeze/Force-stop/Clear-data order.
-  - Touches: `ActionItem` stable action IDs, `AppInfoFragment`
-    `getHorizontalActions()`, an action-order preference store, reset-defaults
-    UI, and accessibility labels for reordered buttons.
-  - Acceptance: users can restore defaults and optionally prioritize/reorder
-    App Info actions; default order keeps Launch/Freeze/Force-stop reachable on
-    phone-width screens while destructive actions stay guarded by existing
-    confirmations/auth.
-  - Verify: unit coverage for order resolution and missing/unsupported action
-    pruning plus manual phone-width App Info checks with force-stop, frozen,
-    archived, and data-only packages.
-  - Complexity: M.
-
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
 

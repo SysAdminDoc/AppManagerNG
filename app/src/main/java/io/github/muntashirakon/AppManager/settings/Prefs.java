@@ -24,6 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -36,6 +37,7 @@ import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
+import io.github.muntashirakon.AppManager.details.info.AppInfoActionOrderResolver;
 import io.github.muntashirakon.AppManager.fm.FmActivity;
 import io.github.muntashirakon.AppManager.fm.FmListOptions;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
@@ -102,6 +104,17 @@ public final class Prefs {
 
         public static void setOverlaysSortOrder(@AppDetailsFragment.SortOrder int sortOrder) {
             AppPref.set(AppPref.PrefKey.PREF_OVERLAYS_SORT_ORDER_INT, sortOrder);
+        }
+
+        @NonNull
+        public static List<String> getActionRailPriorityIds() {
+            return AppInfoActionOrderResolver.parsePriority(
+                    AppPref.getString(AppPref.PrefKey.PREF_APP_INFO_ACTION_RAIL_PRIORITY_STR));
+        }
+
+        public static void setActionRailPriorityIds(@Nullable List<String> actionIds) {
+            AppPref.set(AppPref.PrefKey.PREF_APP_INFO_ACTION_RAIL_PRIORITY_STR,
+                    AppInfoActionOrderResolver.serializePriority(actionIds));
         }
     }
 

@@ -914,6 +914,9 @@
     <!-- T20-A Perfetto trace export / T20-B simpleperf CPU profile (App Details) -->
     <string name="action_export_trace">Export Perfetto trace</string>
     <string name="action_record_cpu_profile">Record CPU profile</string>
+    <string name="app_info_action_rail_customize">Customize action rail</string>
+    <string name="app_info_action_rail_customize_message">Checked actions are shown first when they are available. Unchecked actions keep the default order.</string>
+    <string name="app_info_action_button_content_description">App Info action: %1$s</string>
     <string name="profile_capture_permission_required">Profiling needs root, Shizuku, or ADB access.</string>
     <string name="perfetto_trace_confirm">Capture a ~10-second Perfetto system trace focused on this app? The <tt>.perfetto-trace</tt> file is saved to Downloads.</string>
     <string name="perfetto_trace_confirm_with_duration">Capture a <xliff:g id="duration" example="30s">%1$s</xliff:g> Perfetto system trace focused on this app? The <tt>.perfetto-trace</tt> file is saved to Downloads.</string>
