@@ -168,6 +168,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-filtered simpleperf event options JVM-testable. Device-only follow-ups
   still remain for true mid-capture cancellation and flame-graph SVG export.
 
+### Added - Memory snapshot refresh and region chart (T20-C follow-up, 2026-06-03)
+
+- App Details -> "Memory snapshot" dialogs now include a Refresh action that
+  reruns the snapshot loader for the same package and replaces the dialog
+  contents with fresh data.
+- The formatted snapshot now includes a proportional per-region text chart for
+  Dalvik, native, stack, code, and library virtual-memory buckets, backed by the
+  new `MemoryRegionChart` helper.
+- Added JVM coverage for chart scaling, empty-region filtering, and all-empty
+  snapshots. True live streaming / automatic refresh remains a device-verified
+  follow-up.
+
 ### Added - Scheduled-backup skip-reason capture (EI-07 data layer, 2026-05-28)
 
 - The scheduled-backup selector now records *why* each package was skipped
