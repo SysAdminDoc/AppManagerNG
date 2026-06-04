@@ -40,7 +40,6 @@ import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.BackupCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
-import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.CryptoException;
@@ -105,6 +104,8 @@ class RestoreOp implements Closeable {
     private boolean mRequiresRestart;
     @NonNull
     private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
+    @NonNull
+    private final ArrayList<String> mRestoreExtraWarnings = new ArrayList<>();
 
     RestoreOp(@NonNull String packageName, @NonNull BackupFlags requestedFlags,
               @NonNull BackupItems.BackupItem backupItem, int userId) throws BackupException {
@@ -223,6 +224,11 @@ class RestoreOp implements Closeable {
     @NonNull
     public List<DefaultAppRoleBackupHelper.RoleRebindRequest> getPendingDefaultRoleRebindRequests() {
         return new ArrayList<>(mPendingDefaultRoleRebindRequests);
+    }
+
+    @NonNull
+    public List<String> getRestoreExtraWarnings() {
+        return new ArrayList<>(mRestoreExtraWarnings);
     }
 
     private void restoreDefaultAppRoles() {
@@ -694,6 +700,7 @@ class RestoreOp implements Closeable {
         if (!mIsInstalled) {
             throw new BackupException("Misc restore is requested but the app isn't installed.");
         }
+        mRestoreExtraWarnings.clear();
         PseudoRules rules = new PseudoRules(mPackageName, mUserId);
         // Backward compatibility for restoring permissions
         loadMiscRules(rules);
@@ -702,77 +709,109 @@ class RestoreOp implements Closeable {
         AppOpsManagerCompat appOpsManager = new AppOpsManagerCompat();
         INotificationManager notificationManager = INotificationManager.Stub.asInterface(ProxyBinder.getService(Context.NOTIFICATION_SERVICE));
         boolean magiskHideAvailable = MagiskHide.available();
-        boolean canModifyAppOpMode = SelfPermissions.canModifyAppOpMode();
-        boolean canChangeNetPolicy = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_NETWORK_POLICY);
+        boolean magiskDenyListAvailable = MagiskDenyList.available();
+        BackupExtrasCoverage.RestoreCapabilities baseCapabilities = BackupExtrasCoverage.fromCurrentMode(false);
+        BackupExtrasCoverage.RestoreCapabilities capabilities = new BackupExtrasCoverage.RestoreCapabilities(
+                baseCapabilities.canRestorePermissions,
+                baseCapabilities.canRestoreAppOps,
+                baseCapabilities.canRestoreNetworkPolicy,
+                baseCapabilities.canRestoreBatteryOptimization,
+                baseCapabilities.canRestoreNotificationListeners,
+                baseCapabilities.canRestoreUriGrants,
+                baseCapabilities.canRestoreSsaid,
+                magiskHideAvailable || magiskDenyListAvailable);
         for (RuleEntry entry : entries) {
             try {
                 switch (entry.type) {
                     case APP_OP:
-                        if (canModifyAppOpMode) {
+                        if (capabilities.canRestoreAppOps) {
                             appOpsManager.setMode(Integer.parseInt(entry.name), mUid, mPackageName,
                                     ((AppOpRule) entry).getMode());
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     case NET_POLICY:
-                        if (canChangeNetPolicy) {
+                        if (capabilities.canRestoreNetworkPolicy) {
                             NetworkPolicyManagerCompat.setUidPolicy(mUid,
                                     ((NetPolicyRule) entry).getPolicies());
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     case PERMISSION: {
-                        PermissionRule permissionRule = (PermissionRule) entry;
-                        Permission permission = permissionRule.getPermission(true);
-                        permission.setAppOpAllowed(permission.getAppOp() != AppOpsManagerCompat.OP_NONE && appOpsManager
-                                .checkOperation(permission.getAppOp(), mUid, mPackageName) == AppOpsManager.MODE_ALLOWED);
-                        if (permissionRule.isGranted()) {
-                            PermUtils.grantPermission(mPackageInfo, permission, appOpsManager, true, true);
+                        if (capabilities.canRestorePermissions) {
+                            PermissionRule permissionRule = (PermissionRule) entry;
+                            Permission permission = permissionRule.getPermission(true);
+                            permission.setAppOpAllowed(permission.getAppOp() != AppOpsManagerCompat.OP_NONE && appOpsManager
+                                    .checkOperation(permission.getAppOp(), mUid, mPackageName) == AppOpsManager.MODE_ALLOWED);
+                            if (permissionRule.isGranted()) {
+                                PermUtils.grantPermission(mPackageInfo, permission, appOpsManager, true, true);
+                            } else {
+                                PermUtils.revokePermission(mPackageInfo, permission, appOpsManager, true);
+                            }
                         } else {
-                            PermUtils.revokePermission(mPackageInfo, permission, appOpsManager, true);
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     }
                     case BATTERY_OPT:
-                        if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.DEVICE_POWER)) {
+                        if (capabilities.canRestoreBatteryOptimization) {
                             DeviceIdleManagerCompat.disableBatteryOptimization(mPackageName);
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     case MAGISK_HIDE: {
                         MagiskHideRule magiskHideRule = (MagiskHideRule) entry;
                         if (magiskHideAvailable) {
                             MagiskHide.apply(magiskHideRule.getMagiskProcess(), false);
-                        } else {
+                        } else if (magiskDenyListAvailable) {
                             // Fall-back to Magisk DenyList
                             MagiskDenyList.apply(magiskHideRule.getMagiskProcess(), false);
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     }
                     case MAGISK_DENY_LIST: {
-                        MagiskDenyList.apply(((MagiskDenyListRule) entry).getMagiskProcess(), false);
+                        if (magiskDenyListAvailable) {
+                            MagiskDenyList.apply(((MagiskDenyListRule) entry).getMagiskProcess(), false);
+                        } else {
+                            recordExtraSkip(entry, capabilities);
+                        }
                         break;
                     }
                     case NOTIFICATION:
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
-                                && SelfPermissions.checkNotificationListenerAccess()) {
+                        if (capabilities.canRestoreNotificationListeners) {
                             notificationManager.setNotificationListenerAccessGrantedForUser(
                                     new ComponentName(mPackageName, entry.name), mUserId, true);
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     case URI_GRANT:
-                        UriManager.UriGrant uriGrant = ((UriGrantRule) entry).getUriGrant();
-                        UriManager.UriGrant newUriGrant = new UriManager.UriGrant(
-                                uriGrant.sourceUserId, mUserId, uriGrant.userHandle,
-                                uriGrant.sourcePkg, uriGrant.targetPkg, uriGrant.uri,
-                                uriGrant.prefix, uriGrant.modeFlags, uriGrant.createdTime);
-                        UriManager uriManager = new UriManager();
-                        uriManager.grantUri(newUriGrant);
-                        uriManager.writeGrantedUriPermissions();
-                        mRequiresRestart = true;
+                        if (capabilities.canRestoreUriGrants) {
+                            UriManager.UriGrant uriGrant = ((UriGrantRule) entry).getUriGrant();
+                            UriManager.UriGrant newUriGrant = new UriManager.UriGrant(
+                                    uriGrant.sourceUserId, mUserId, uriGrant.userHandle,
+                                    uriGrant.sourcePkg, uriGrant.targetPkg, uriGrant.uri,
+                                    uriGrant.prefix, uriGrant.modeFlags, uriGrant.createdTime);
+                            UriManager uriManager = new UriManager();
+                            uriManager.grantUri(newUriGrant);
+                            uriManager.writeGrantedUriPermissions();
+                            mRequiresRestart = true;
+                        } else {
+                            recordExtraSkip(entry, capabilities);
+                        }
                         break;
                     case SSAID:
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (capabilities.canRestoreSsaid) {
                             new SsaidSettings(mUserId).setSsaid(mPackageName, mUid,
                                     ((SsaidRule) entry).getSsaid());
                             mRequiresRestart = true;
+                        } else {
+                            recordExtraSkip(entry, capabilities);
                         }
                         break;
                     case FREEZE:
@@ -784,8 +823,26 @@ class RestoreOp implements Closeable {
                 // There are several reason restoring these things go wrong, especially when
                 // downgrading from an Android to another. It's better to simply suppress these
                 // exceptions instead of causing a failure or worse, a crash
+                recordExtraFailure(entry, e);
                 Log.e(TAG, e);
             }
+        }
+    }
+
+    private void recordExtraSkip(@NonNull RuleEntry entry,
+                                 @NonNull BackupExtrasCoverage.RestoreCapabilities capabilities) {
+        addRestoreExtraWarning(BackupExtrasCoverage.formatAuditWarning(entry, capabilities));
+    }
+
+    private void recordExtraFailure(@NonNull RuleEntry entry, @NonNull Throwable error) {
+        addRestoreExtraWarning(BackupExtrasCoverage.formatAuditWarning(entry, error));
+    }
+
+    private void addRestoreExtraWarning(@NonNull String warning) {
+        if (mRestoreExtraWarnings.size() < BackupExtrasCoverage.MAX_AUDIT_WARNINGS) {
+            mRestoreExtraWarnings.add(warning);
+        } else if (mRestoreExtraWarnings.size() == BackupExtrasCoverage.MAX_AUDIT_WARNINGS) {
+            mRestoreExtraWarnings.add("Additional Extras restore warnings omitted.");
         }
     }
 
