@@ -876,7 +876,10 @@
     <string name="memory_frame_p99">Frame latency p99</string>
     <string name="memory_region_dalvik">Dalvik (virtual)</string>
     <string name="memory_region_native">Native (virtual)</string>
+    <string name="memory_region_stack">Stack (virtual)</string>
+    <string name="memory_region_code">Code (virtual)</string>
     <string name="memory_region_library">Libraries (virtual)</string>
+    <string name="memory_region_chart">Region chart</string>
     <!-- T20-A Perfetto trace export / T20-B simpleperf CPU profile (App Details) -->
     <string name="action_export_trace">Export Perfetto trace</string>
     <string name="action_record_cpu_profile">Record CPU profile</string>
