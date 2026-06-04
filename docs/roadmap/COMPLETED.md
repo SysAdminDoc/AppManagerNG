@@ -11,6 +11,16 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P1 Debloater Put back install-existing restore** — Debloater selection
+  mode now exposes Put back for selected removed debloat/system rows, shows a
+  restore confirmation with already-installed selections reported as skips, and
+  starts a new `OP_INSTALL_EXISTING` batch op for the restorable package/user
+  targets. The batch worker invokes `PackageInstallerCompat.installExisting()`
+  through the existing privileged installer path, records low-risk
+  operation-history metadata, and surfaces restored/failed result
+  notifications. Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.debloat.DebloaterPutBackPlanTest --tests io.github.muntashirakon.AppManager.batchops.BatchOpsInstallExistingTextTest`.
+  Manual remove-for-user -> put-back round trip remains device-gated.
 - [x] **P1 in-app Wireless ADB pairing-code fallback** — Wireless ADB pairing
   now keeps the foreground service as the single mDNS scan/pairing owner while
   publishing a shared pairing state for in-app UI. The Manual path opens an
