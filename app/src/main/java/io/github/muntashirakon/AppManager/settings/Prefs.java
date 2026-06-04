@@ -802,6 +802,19 @@ public final class Prefs {
         public static void setForceStopTileTarget(@Nullable String target) {
             AppPref.set(AppPref.PrefKey.PREF_FORCE_STOP_TILE_TARGET_STR, target == null ? "" : target);
         }
+
+        @Nullable
+        public static String getTaskerPluginSigningSecret() {
+            String secret = AppPref.getString(AppPref.PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR);
+            if (TextUtils.isEmpty(secret)) {
+                return null;
+            }
+            return secret;
+        }
+
+        public static void setTaskerPluginSigningSecret(@Nullable String secret) {
+            AppPref.set(AppPref.PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR, secret == null ? "" : secret);
+        }
     }
 
     public static final class RunningApps {

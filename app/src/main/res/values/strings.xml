@@ -976,6 +976,10 @@
     <string name="automation_request_install_target">Source: %1$s</string>
     <string name="automation_request_component_target">%1$s / %2$s</string>
     <string name="automation_request_user_current">Current user</string>
+    <string name="tasker_plugin_label">AppManagerNG automation</string>
+    <string name="tasker_plugin_uri_label">Automation URI</string>
+    <string name="tasker_plugin_uri_helper">Example: am://profile/nightly/run?state=on</string>
+    <string name="tasker_plugin_invalid_uri">Invalid automation URI</string>
     <plurals name="automation_request_package_count">
         <item quantity="one">%1$d package</item>
         <item quantity="other">%1$d packages</item>
