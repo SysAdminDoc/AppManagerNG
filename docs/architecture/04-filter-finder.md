@@ -27,8 +27,9 @@ IFilterableAppInfo  ──▶  FilterOption.test(info, result)  ──▶  TestR
 
 - **`IFilterableAppInfo`** is the contract every filter consumer sees. It exposes
   `getPackageName()`, `getApplicationLabel()`, `usesPlayAppSigning()`,
-  `getMobileDataUsage()` / `getWifiDataUsage()`, `getAllPermissionDetails()`,
-  installed-user buckets, backup metadata, and ~40 other accessors. Two
+  `getMobileDataUsage()` / `getWifiDataUsage()`, `getKnownPreinstallOems()`,
+  `getAllPermissionDetails()`, installed-user buckets, backup metadata, and
+  ~40 other accessors. Two
   implementations exist:
   - **`FilterableAppInfo`** — full live read from PackageManager + usage / backup
     DB; used by Finder.
@@ -170,7 +171,10 @@ query, not just Finder.
 - The Debloater list does **not** use this substrate — it has its own
   `BloatwareFilter` over the `DebloatObject` dataset because the predicates
   there are over a different model (`removalType`, `dependencies`,
-  `requiredBy`, OEM-protected flag).
+  `requiredBy`, OEM-protected flag). Finder's `BloatwareOption` still reads
+  `DebloatObject` through `IFilterableAppInfo.getBloatwareInfo()` and supports
+  debloat description plus `preinstalled_oem_*` predicates for cross-app
+  searches.
 - The Permission Inspector apps-screen filter (iter-144 EI-04) similarly
   rolls its own three-chip filter (`All` / `User apps` / `Granted`) directly
   in `PermissionAppsViewModel.applyFilter()` because the model is a flat

@@ -111,6 +111,7 @@
     <string name="package_user_state_short">u%1$d %2$s</string>
     <string name="package_user_state_dialog_label">%1$s - %2$s</string>
     <string name="finder_user_state">User %1$d: %2$s</string>
+    <string name="finder_known_preinstall_oems">Known preinstall OEMs: <xliff:g id="oems" example="Samsung, Xiaomi">%1$s</xliff:g></string>
     <string name="main_list_open_app">Open <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="main_list_select_app">Select <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="select_visible">Select all visible</string>
@@ -2707,6 +2708,7 @@
     <string name="debloater_title">Debloater</string>
     <string name="debloat_list_aosp">AOSP</string>
     <string name="debloat_list_oem">OEM</string>
+    <string name="debloat_known_preinstall_oem">OEM: <xliff:g id="oem" example="Samsung">%1$s</xliff:g></string>
     <string name="debloat_list_carrier">Carrier/ISP</string>
     <string name="debloat_list_google">Google</string>
     <string name="debloat_list_misc">Miscellany</string>
