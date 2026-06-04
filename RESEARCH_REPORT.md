@@ -480,6 +480,11 @@ dependencies.
 
 ### Current Checks
 
+- **Cycle 1 handoff check:** current `main` is `9cdbb22` after the Tasker plugin
+  broker slice. The remaining AppManagerNG rows are primarily device/manual
+  verification or external-submission gated: SAF DocumentsProvider picker
+  behavior, Quick Settings tile install/fire, Tasker plugin fire, large-screen /
+  accessibility walkthroughs, and Android 17 image compliance. [Verified]
 - **Dependency/toolchain metadata:** AGP `9.2.0` has newer alpha metadata
   (`9.3.0-alpha09`); Material Components `1.13.0`, Activity `1.11.0`, Room
   `2.7.2`, Work `2.10.5`, and WebKit-related ceiling pins all remain governed by
