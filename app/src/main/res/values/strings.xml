@@ -2359,6 +2359,8 @@
     <string name="pref_support_info_bundle_msg">Create a scrubbed support-info text file with device, privilege, feature, LocalServer, and recent logcat context.</string>
     <string name="support_info_bundle_subject">AppManagerNG support info</string>
     <string name="support_info_bundle_share_title">Share support info</string>
+    <string name="pref_local_crash_sink">Local crash sink</string>
+    <string name="pref_local_crash_sink_msg">Off by default. When enabled, crashes are saved as private scrubbed JSON files and included only in support info you choose to share.</string>
     <string name="privilege_health_mode_doctor_share_with_bundle">Share with bundle</string>
     <string name="privilege_health_mode_doctor_share_preparing">Preparing support info bundle…</string>
     <string name="no_apps_to_handle">No app available to handle this action.</string>
