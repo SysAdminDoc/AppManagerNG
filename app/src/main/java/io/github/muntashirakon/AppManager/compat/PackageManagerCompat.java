@@ -557,7 +557,7 @@ public final class PackageManagerCompat {
             shouldFallback = true;
         } else if (preSize >= 0) {
             long postSize = queryAppDataBytesQuietly(pair);
-            shouldFallback = postSize >= 0 && postSize > preSize - DATA_DROP_TOLERANCE_BYTES;
+            shouldFallback = shouldFallbackToShellAfterClearData(preSize, postSize);
             if (shouldFallback) {
                 Log.w(TAG, "clearApplicationUserData: IPC reported success for " + pair
                         + " but data size " + postSize + "B did not drop from " + preSize + "B"
@@ -607,11 +607,18 @@ public final class PackageManagerCompat {
                 "--user", String.valueOf(pair.getUserId()),
                 pair.getPackageName(),
         });
-        if (!r.isSuccessful()) return false;
-        String output = r.getOutput() == null ? "" : r.getOutput().trim();
+        return r.isSuccessful() && isSuccessfulPmClearOutput(r.getOutput());
+    }
+
+    static boolean shouldFallbackToShellAfterClearData(long preSize, long postSize) {
+        return preSize >= 0 && postSize >= 0 && postSize > preSize - DATA_DROP_TOLERANCE_BYTES;
+    }
+
+    static boolean isSuccessfulPmClearOutput(@Nullable String output) {
+        if (output == null) return false;
         // Older Android: "Success" on success, "Failed" on failure.
         // Android 12+ : same. Use a startsWith check so trailing newline doesn't trip us.
-        return output.startsWith("Success");
+        return output.trim().startsWith("Success");
     }
 
     /**

@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Clear-data fallback regression coverage (upstream #1965, 2026-06-04)
+
+- Added focused JVM tests for the Android 16 QPR2 clear-data guard that falls
+  back to `pm clear --user` when post-clear storage stats do not drop past the
+  tolerance window.
+- Covered `pm clear` shell-output parsing so only success-prefixed output is
+  accepted by the fallback path.
+
 ### Changed - App Info identity block density (upstream #1966, 2026-06-04)
 
 - App Info now starts its vertical metadata with a compact App identity block
