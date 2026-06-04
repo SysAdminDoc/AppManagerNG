@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Leftover cleanup operation-history rows (T19-B follow-up, 2026-06-03)
+
+- Leftover-folder deletion now writes a `cleanup` operation-history row with
+  selected/deleted counts, reclaimed bytes, target preview, and high-risk
+  non-replayable metadata.
+- Operation History gained a Cleanup type filter chip, and focused JVM/
+  Robolectric coverage pins cleanup row serialization and labels.
+
 ### Added - Leftover result-list export (T19-B follow-up, 2026-06-03)
 
 - One-Click Ops -> "Detect leftover folders" review dialog now has an

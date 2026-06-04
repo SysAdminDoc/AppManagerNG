@@ -11,6 +11,10 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-03
 
+- [x] **T19-B dedicated `op_history` cleanup audit type** — leftover-folder
+  deletion now records one high-risk, non-replayable Cleanup history row with
+  selected/deleted counts, reclaimed bytes, and target previews; Operation
+  History includes a Cleanup filter chip.
 - [x] **T19-B result-list export action** — One-Click Ops leftover-folder
   review now has an "Export results" action that shares selected rows as TSV
   (package, kind, size bytes, path), backed by `LeftoverExportFormatter` tests

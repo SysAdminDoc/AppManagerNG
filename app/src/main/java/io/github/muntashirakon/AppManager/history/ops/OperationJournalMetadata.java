@@ -159,6 +159,26 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    public static OperationJournalMetadata forOneClickCleanup(@NonNull Context context,
+                                                              @NonNull String operationLabel,
+                                                              int targetCount,
+                                                              int failedCount,
+                                                              @NonNull List<String> targetPreview) {
+        return builder(context)
+                .setOperationLabel(operationLabel)
+                .setTargetCount(targetCount)
+                .setFailedCount(failedCount)
+                .setExitCode(failedCount == 0 ? 0 : 1)
+                .setRequiresRestart(false)
+                .setReplayable(false)
+                .setReversible(false)
+                .setRisk(RISK_HIGH)
+                .setRollbackHint(ROLLBACK_NONE)
+                .setTargetPreview(targetPreview)
+                .build();
+    }
+
+    @NonNull
     private static Builder builder(@NonNull Context context) {
         Builder builder = new Builder()
                 .setModeLabel(Ops.getInferredMode(context).toString())
