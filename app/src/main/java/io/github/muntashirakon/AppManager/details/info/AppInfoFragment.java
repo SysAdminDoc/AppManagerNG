@@ -215,6 +215,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     public static final String TAG = "AppInfoFragment";
 
     private static final String PACKAGE_NAME_AURORA_STORE = "com.aurora.store";
+    private static final String ACTION_MANAGE_HEALTH_PERMISSIONS =
+            "android.health.connect.action.MANAGE_HEALTH_PERMISSIONS";
+    private static final String ACTION_CREDENTIAL_PROVIDER_SETTINGS =
+            "android.settings.CREDENTIAL_PROVIDER";
 
     private PackageManager mPackageManager;
     private String mPackageName;
@@ -1669,6 +1673,33 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         sdkSandboxTag.setColor(getSdkSandboxChipColor(context, tagCloud.sdkSandboxInfo))
                 .setOnClickListener(v -> showSdkSandboxDialog(v.getContext(), tagCloud.sdkSandboxInfo));
+        TagItem healthConnectTag = new TagItem();
+        tagItems.add(healthConnectTag);
+        if (tagCloud.healthConnectInfo.hasRequestedHealthPermissions()) {
+            int permissionCount = tagCloud.healthConnectInfo.requestedPermissions.size();
+            healthConnectTag.setText(getResources().getQuantityString(R.plurals.health_connect_chip_count,
+                    permissionCount, permissionCount));
+        } else {
+            healthConnectTag.setTextRes(tagCloud.healthConnectInfo.isSupported()
+                    ? R.string.health_connect_chip_none
+                    : R.string.health_connect_chip_unsupported);
+        }
+        healthConnectTag.setColor(getHealthConnectChipColor(context, tagCloud.healthConnectInfo))
+                .setOnClickListener(v -> showHealthConnectDialog(v.getContext(), tagCloud.healthConnectInfo));
+        TagItem credentialProviderTag = new TagItem();
+        tagItems.add(credentialProviderTag);
+        if (tagCloud.credentialProviderManifestInfo.hasProviderServices()) {
+            int serviceCount = tagCloud.credentialProviderManifestInfo.providerServices.size();
+            credentialProviderTag.setText(getResources().getQuantityString(R.plurals.credential_provider_chip_count,
+                    serviceCount, serviceCount));
+        } else {
+            credentialProviderTag.setTextRes(tagCloud.credentialProviderManifestInfo.isSupported()
+                    ? R.string.credential_provider_chip_none
+                    : R.string.credential_provider_chip_unsupported);
+        }
+        credentialProviderTag.setColor(getCredentialProviderChipColor(context, tagCloud.credentialProviderManifestInfo))
+                .setOnClickListener(v -> showCredentialProviderDialog(v.getContext(),
+                        tagCloud.credentialProviderManifestInfo));
         if (tagCloud.warnsCleartextDeprecation) {
             TagItem cleartextTag = new TagItem();
             tagItems.add(cleartextTag);
@@ -2127,6 +2158,102 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 .setMessage(body)
                 .setPositiveButton(R.string.close, null)
                 .show();
+    }
+
+    private int getHealthConnectChipColor(@NonNull Context context, @NonNull HealthConnectInfo info) {
+        if (!info.isSupported()) {
+            return ColorCodes.getRemovalCautionIndicatorColor(context);
+        }
+        return info.hasRequestedHealthPermissions()
+                ? ColorCodes.getRemovalCautionIndicatorColor(context)
+                : ColorCodes.getSuccessColor(context);
+    }
+
+    private void showHealthConnectDialog(@NonNull Context context, @NonNull HealthConnectInfo info) {
+        String body;
+        if (!info.isSupported()) {
+            body = getString(R.string.health_connect_dialog_unsupported, info.sdkInt);
+        } else if (!info.hasRequestedHealthPermissions()) {
+            body = getString(R.string.health_connect_dialog_none);
+        } else {
+            StringBuilder builder = new StringBuilder(getString(R.string.health_connect_dialog_header,
+                    info.readPermissionCount, info.writePermissionCount));
+            for (HealthConnectInfo.HealthPermission permission : info.requestedPermissions) {
+                builder.append("\n  - ").append(permission.toDisplayString());
+            }
+            builder.append("\n\n").append(getString(R.string.health_connect_dialog_scope_note));
+            body = builder.toString();
+        }
+        ScrollableDialogBuilder builder = new ScrollableDialogBuilder(context)
+                .setTitle(R.string.health_connect_dialog_title)
+                .setMessage(body)
+                .setPositiveButton(R.string.close, null);
+        if (info.isSupported()) {
+            builder.setNeutralButton(R.string.health_connect_open_permissions,
+                    (dialog, which, isChecked) -> openHealthConnectPermissions(context));
+        }
+        builder.show();
+    }
+
+    private void openHealthConnectPermissions(@NonNull Context context) {
+        try {
+            Intent intent = new Intent(ACTION_MANAGE_HEALTH_PERMISSIONS)
+                    .putExtra(Intent.EXTRA_PACKAGE_NAME, mPackageName);
+            context.startActivity(intent);
+        } catch (Throwable th) {
+            displayShortToast(R.string.health_connect_permissions_unavailable);
+        }
+    }
+
+    private int getCredentialProviderChipColor(@NonNull Context context,
+                                               @NonNull CredentialProviderManifestInfo info) {
+        if (!info.isSupported()) {
+            return ColorCodes.getRemovalCautionIndicatorColor(context);
+        }
+        if (!info.hasProviderServices()) {
+            return ColorCodes.getSuccessColor(context);
+        }
+        for (CredentialProviderManifestInfo.ServiceDeclaration service : info.providerServices) {
+            if (!service.hasRequiredBindPermission) {
+                return ColorCodes.getFailureColor(context);
+            }
+        }
+        return ColorCodes.getRemovalCautionIndicatorColor(context);
+    }
+
+    private void showCredentialProviderDialog(@NonNull Context context,
+                                              @NonNull CredentialProviderManifestInfo info) {
+        String body;
+        if (!info.isSupported()) {
+            body = getString(R.string.credential_provider_dialog_unsupported, info.sdkInt);
+        } else if (!info.hasProviderServices()) {
+            body = getString(R.string.credential_provider_dialog_none);
+        } else {
+            StringBuilder builder = new StringBuilder(getString(R.string.credential_provider_dialog_header,
+                    info.providerServices.size(), info.getSystemProviderServiceCount()));
+            for (CredentialProviderManifestInfo.ServiceDeclaration service : info.providerServices) {
+                builder.append("\n  - ").append(service.toDisplayString());
+            }
+            builder.append("\n\n").append(getString(R.string.credential_provider_dialog_scope_note));
+            body = builder.toString();
+        }
+        ScrollableDialogBuilder builder = new ScrollableDialogBuilder(context)
+                .setTitle(R.string.credential_provider_dialog_title)
+                .setMessage(body)
+                .setPositiveButton(R.string.close, null);
+        if (info.isSupported()) {
+            builder.setNeutralButton(R.string.credential_provider_open_settings,
+                    (dialog, which, isChecked) -> openCredentialProviderSettings(context));
+        }
+        builder.show();
+    }
+
+    private void openCredentialProviderSettings(@NonNull Context context) {
+        try {
+            context.startActivity(new Intent(ACTION_CREDENTIAL_PROVIDER_SETTINGS));
+        } catch (Throwable th) {
+            displayShortToast(R.string.credential_provider_settings_unavailable);
+        }
     }
 
     /**
