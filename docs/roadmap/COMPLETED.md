@@ -11,6 +11,17 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-04
 
+- [x] **P2 Mode of Operation lifecycle-safe apply and rollback** — Settings ->
+  Mode of Operation now runs a single guarded apply transaction: the selected
+  mode is initialized as a candidate without first writing the stored
+  preference, Apply is ignored while a switch is in flight, terminal success
+  commits the candidate, terminal failure restores the previous mode with a
+  visible rollback toast, and fragment destruction clears the pending
+  transaction so late callbacks cannot commit a dismissed flow. The root-backed
+  Shizuku "Switch to ADB mode" shortcut uses the same guarded path. Focused
+  verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.ModeOfOpsApplyStateTest`.
+  Manual ADB and Shizuku mode-switch walkthroughs remain device-gated.
 - [x] **P1 DexOpt root-only execution sanitization** — DexOpt batch execution
   now clones and sanitizes serialized `DexOptOptions` before expanding the
   package loop, preserving root/system behavior while stripping stale

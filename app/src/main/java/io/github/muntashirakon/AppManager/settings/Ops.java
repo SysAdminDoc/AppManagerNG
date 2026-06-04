@@ -294,10 +294,24 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     @Status
     public static int init(@NonNull Context context, boolean force) {
-        String mode = getMode();
+        return init(context, force, getMode(), true);
+    }
+
+    @WorkerThread
+    @NoOps // Although we've used Ops checks, its overall usage does not affect anything
+    @Status
+    public static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode) {
+        return init(context, force, mode, false);
+    }
+
+    @WorkerThread
+    @NoOps // Although we've used Ops checks, its overall usage does not affect anything
+    @Status
+    private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,
+                            boolean persistAutoDetectedMode) {
         sDirectRoot = hasRoot();
         if (MODE_AUTO.equals(mode)) {
-            autoDetectRootSystemOrAdbAndPersist(context);
+            autoDetectRootSystemOrAdb(context, persistAutoDetectedMode);
             return sIsAdb ? STATUS_SUCCESS : initPermissionsWithSuccess();
         }
         if (MODE_NO_ROOT.equals(mode)) {
@@ -384,11 +398,11 @@ public class Ops {
 
     @WorkerThread
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
-    private static void autoDetectRootSystemOrAdbAndPersist(@NonNull Context context) {
+    private static void autoDetectRootSystemOrAdb(@NonNull Context context, boolean persistDetectedMode) {
         sIsRoot = sDirectRoot;
         if (sDirectRoot) {
             // Root permission was granted
-            setMode(MODE_ROOT);
+            setDetectedMode(MODE_ROOT, persistDetectedMode);
             // Disable remote server
             ExUtils.exceptionAsIgnored(() -> {
                 if (LocalServer.alive(context)) {
@@ -434,7 +448,7 @@ public class Ops {
         }
         // Root was not working/granted; Shizuku/Sui is the next best rootless privileged path.
         if (shizukuUsable && !skipRootBackedShizuku) {
-            setMode(MODE_SHIZUKU);
+            setDetectedMode(MODE_SHIZUKU, persistDetectedMode);
             sDirectRoot = false;
             sIsRoot = sIsSystem = sIsAdb = false;
             sIsShizuku = true;
@@ -456,7 +470,7 @@ public class Ops {
         }
         // Root was not working/granted, but check for AM service just in case
         if (LocalServices.alive()) {
-            setMode(MODE_ADB_OVER_TCP);
+            setDetectedMode(MODE_ADB_OVER_TCP, persistDetectedMode);
             sIsShizuku = false;
             int uid = Users.getSelfOrRemoteUid();
             if (uid == ROOT_UID) {
@@ -479,7 +493,7 @@ public class Ops {
         // Root not granted
         if (!SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET)) {
             // INTERNET permission is not granted
-            setMode(MODE_NO_ROOT);
+            setDetectedMode(MODE_NO_ROOT, persistDetectedMode);
             // Skip checking for ADB
             sIsAdb = sIsShizuku = false;
             return;
@@ -487,7 +501,7 @@ public class Ops {
         // Check for ADB
         if (!adbAvailableForAutoMode) {
             // ADB not running. In auto mode, we do not attempt to enable it either
-            setMode(MODE_NO_ROOT);
+            setDetectedMode(MODE_NO_ROOT, persistDetectedMode);
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
             return;
         }
@@ -505,7 +519,14 @@ public class Ops {
             // Any message produced by the method below is just a helpful message.
             checkRootOrIncompleteUsbDebuggingInAdb();
         }
-        setMode(getWorkingUid() != Process.myUid() ? MODE_ADB_OVER_TCP : MODE_NO_ROOT);
+        setDetectedMode(getWorkingUid() != Process.myUid() ? MODE_ADB_OVER_TCP : MODE_NO_ROOT,
+                persistDetectedMode);
+    }
+
+    private static void setDetectedMode(@NonNull @Mode String mode, boolean persistDetectedMode) {
+        if (persistDetectedMode) {
+            setMode(mode);
+        }
     }
 
     private static boolean isAdbAvailableForAutoMode() {
