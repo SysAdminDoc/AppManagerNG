@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.apk.dexopt.DexOptOptions;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptimizer;
 import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
+import io.github.muntashirakon.AppManager.backup.BackupExtrasCoverage;
 import io.github.muntashirakon.AppManager.backup.BackupException;
 import io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelper;
 import io.github.muntashirakon.AppManager.backup.BackupManager;
@@ -451,6 +452,7 @@ public class BatchOpsManager {
         AtomicBoolean requiresRestart = new AtomicBoolean();
         List<DefaultAppRoleBackupHelper.RoleRebindRequest> pendingDefaultRoleRebindRequests =
                 Collections.synchronizedList(new ArrayList<>());
+        List<String> restoreExtraWarnings = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger count = new AtomicInteger(0);
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         try {
@@ -472,6 +474,7 @@ public class BatchOpsManager {
                         backupManager.restore(options.getRestoreOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
                         requiresRestart.set(requiresRestart.get() | backupManager.requiresRestart());
                         pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
+                        restoreExtraWarnings.addAll(backupManager.getRestoreExtraWarnings());
                     } catch (Throwable e) {
                         failed = true;
                         log("====> op=BACKUP_RESTORE, mode=RESTORE pkg=" + pair, e);
@@ -490,6 +493,7 @@ public class BatchOpsManager {
         Result result = new Result(failedPackages);
         result.setRequiresRestart(requiresRestart.get());
         result.addPendingDefaultRoleRebindRequests(pendingDefaultRoleRebindRequests);
+        result.addWarnings(restoreExtraWarnings);
         return result;
     }
 
@@ -1162,6 +1166,8 @@ public class BatchOpsManager {
         private boolean mRequiresRestart;
         @NonNull
         private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
+        @NonNull
+        private final ArrayList<String> mWarnings = new ArrayList<>();
 
         public Result(@NonNull List<UserPackagePair> failedUserPackagePairs) {
             this(failedUserPackagePairs, failedUserPackagePairs.isEmpty());
@@ -1197,6 +1203,25 @@ public class BatchOpsManager {
         @NonNull
         public ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> getPendingDefaultRoleRebindRequests() {
             return new ArrayList<>(mPendingDefaultRoleRebindRequests);
+        }
+
+        public void addWarnings(@NonNull List<String> warnings) {
+            for (String warning : warnings) {
+                if (warning == null || warning.isEmpty()) {
+                    continue;
+                }
+                if (mWarnings.size() < BackupExtrasCoverage.MAX_AUDIT_WARNINGS) {
+                    mWarnings.add(warning);
+                } else if (mWarnings.size() == BackupExtrasCoverage.MAX_AUDIT_WARNINGS) {
+                    mWarnings.add("Additional operation warnings omitted.");
+                    break;
+                }
+            }
+        }
+
+        @NonNull
+        public ArrayList<String> getWarnings() {
+            return new ArrayList<>(mWarnings);
         }
 
         public boolean isSuccessful() {

@@ -167,10 +167,16 @@ public final class BackupFlags {
         CharSequence[] flagNames = new CharSequence[backupFlags.size()];
         for (int i = 0; i < flagNames.length; ++i) {
             Pair<Integer, Integer> flagNamePair = Objects.requireNonNull(sBackupFlagsMap.get(backupFlags.get(i)));
+            SpannableStringBuilder description = new SpannableStringBuilder(context.getText(flagNamePair.second));
+            if (backupFlags.get(i) == BACKUP_EXTRAS) {
+                description.append("\n")
+                        .append(BackupExtrasCoverage.formatDialogDetails(context,
+                                BackupExtrasCoverage.fromCurrentMode(false)));
+            }
             flagNames[i] = new SpannableStringBuilder()
                     .append(context.getText(flagNamePair.first))
                     .append("\n")
-                    .append(getSmallerText(context.getText(flagNamePair.second)));
+                    .append(getSmallerText(description));
         }
         return flagNames;
     }

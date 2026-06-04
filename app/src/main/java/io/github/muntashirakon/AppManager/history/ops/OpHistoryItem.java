@@ -15,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -275,6 +276,13 @@ public class OpHistoryItem {
         if (failureMessage != null) {
             entry.put("failure_message", failureMessage);
         }
+        JSONArray warnings = new JSONArray();
+        for (String warning : metadata != null ? metadata.getWarnings() : Collections.<String>emptyList()) {
+            warnings.put(warning);
+        }
+        if (warnings.length() > 0) {
+            entry.put("warnings", warnings);
+        }
         String bootstrapSignature = getBootstrapSignature();
         if (bootstrapSignature != null) {
             entry.put("bootstrap_signature", bootstrapSignature);
@@ -337,6 +345,10 @@ public class OpHistoryItem {
         String failureMessage = metadata.getFailureMessage();
         if (failureMessage != null) {
             appendLine(context, detail, R.string.op_history_detail_failure_message, failureMessage);
+        }
+        List<String> warnings = metadata.getWarnings();
+        if (!warnings.isEmpty()) {
+            appendLine(context, detail, R.string.op_history_detail_warnings, TextUtils.join("\n", warnings));
         }
         return detail.toString();
     }

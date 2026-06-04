@@ -9,6 +9,17 @@ roadmap holds only open work. Full per-release prose lives in
 trail. Long-form historical context is under
 [`archive/`](archive/).
 
+## Closed on 2026-06-04
+
+- [x] **P1 Backup Extras restore coverage audit** — the Backup/Restore Extras
+  row now expands into a compact current-mode coverage summary for runtime
+  permissions, app-ops, data/battery policy, MagiskHide/DenyList,
+  notification-listener grants, URI grants, SSAID, and freeze method. Restore
+  now records bounded per-extra skip/failure warnings into batch results and
+  Operation History export/detail metadata instead of silently no-oping
+  unsupported Extras subtypes. Focused verification:
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupExtrasCoverageTest --tests io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadataTest`.
+
 ## Closed on 2026-06-03
 
 - [x] **T19-C configured backup-root duplicate APK scanning** — One-Click Ops
