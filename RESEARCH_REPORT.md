@@ -513,3 +513,60 @@ dependencies.
   Android SDK exists under the usual local paths. This mirrors the NovaCut host
   limitation and should be resolved with a real SDK or an NTFS verification
   mirror before compile/test claims are made. [Needs validation]
+
+---
+
+## 9. Research Refresh — upstream issue delta (2026-06-04 Cycle 2)
+
+This pass re-synced `main` at `3bb0a78`, re-read the live roadmap after the
+pass-2 audit commits, checked AppManager v4.0.5 release notes, Shizuku v13.6.0
+release notes, and searched recently updated upstream AppManager/Shizuku issues.
+No build/test was run because this was a documentation-only research cycle.
+
+### Promoted to `ROADMAP.md`
+
+- **P1 — Backup Extras restore clarity and audit trail.** Upstream issue #1980
+  asks what "Depending on permissions, not all extras can be restored" means.
+  The current string in `res/values/strings.xml` lists broad examples but does
+  not tell users which extra was skipped or why. The roadmap now asks for a
+  compact capability/details surface and per-extra restore skip reasons.
+  [Verified, external]
+- **P2 — Generic manifest `<meta-data>` explorer.** Upstream issue #1766 asks
+  for a view of `<meta-data>` entries. NG has targeted manifest/privacy surfaces
+  and test fixture manifests with metadata, but no generic App Details metadata
+  group for application or component bundles. [Verified, external]
+- **P2 — Optional extended metadata in app-list exports.** Upstream issue #1773
+  asks for more exported metadata. `ListExporter` currently writes stable
+  identity/version/signature/install-time/installer fields only; the roadmap now
+  scopes an opt-in extended mode so legacy imports remain compatible.
+  [Verified, external]
+- **P2 — Installer notification final-state wording.** Upstream issue #1805
+  reports a collapsed "Done" notification. `PackageInstallerService` still sets
+  the last progress body to `R.string.done` during result handoff, so the
+  roadmap now calls for the concrete final subject to survive in collapsed and
+  expanded views. [Verified, external]
+- **P3 — File Manager "Open with" defaults and keyboard focus.** Upstream issue
+  #1810 plus local TODOs in `OpenWithDialogFragment` show the dialog still needs
+  no-keyboard initial focus and first-class per-file/per-extension defaults.
+  [Verified, external]
+
+### Checked but not promoted
+
+- **AppManager v4.0.5 release notes** mention reproducible releases, uninstalled
+  app data clearing, installer options, terminal visual fixes, and accessibility
+  action labels. Current NG roadmap/source already has distribution,
+  terminal/accessibility, installer, and data-operation lanes; no unique new row
+  was promoted from the release text alone. [Likely]
+- **Shizuku v13.6.0 release notes and recent Android 16/17 issue searches**
+  point at Android 16 QPR1 support, copyable start commands, trusted-WLAN
+  auto-start, pairing failures, and Android 17 visibility limits. NG already has
+  device-gated Android 17, Shizuku/ADB verification, and Mode Doctor rows; this
+  pass did not duplicate them. [Likely]
+- **Dex optimization profile reset in ADB mode (#1733)** maps to existing
+  DexOpt code that disables clear-profile/force-dexopt outside root or system
+  privilege. This may need user-facing explanation if implementers touch DexOpt,
+  but it was not promoted as a separate row until current-mode intent is
+  confirmed. [Needs validation]
+- **Wireless-debugging pairing on Quest (#1975)** overlaps the existing
+  Shizuku/ADB and Android-device verification lanes and appears device-specific;
+  no planning row was added without hardware evidence. [Needs validation]
