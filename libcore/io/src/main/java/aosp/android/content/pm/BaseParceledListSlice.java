@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.muntashirakon.compat.android16.Android16BinderCompat;
 import io.github.muntashirakon.compat.os.ParcelCompat2;
 import io.github.muntashirakon.io.IoUtils;
 
@@ -91,7 +92,7 @@ abstract class BaseParceledListSlice<T> implements Parcelable {
             Parcel reply = ParcelCompat2.obtain(retriever);
             data.writeInt(i);
             try {
-                retriever.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, 0);
+                Android16BinderCompat.transact(retriever, IBinder.FIRST_CALL_TRANSACTION, data, reply, 0);
             } catch (RemoteException e) {
                 Log.w(TAG, "Failure retrieving array; only received " + i + " of " + N, e);
                 return;

@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Android 16 binder transaction compat (upstream #1961/#1962, 2026-06-04)
+
+- Added `Android16BinderCompat` as the shared transaction path for raw
+  `IBinder.transact()` calls, preserving direct behavior below Android 16 and
+  attempting a reflective fallback on Android 16+ runtime/linkage failures.
+- Routed proxy binder, remote AM service, and large list-slice retriever
+  transactions through the compat helper.
+- Restored the AM service caller identity in a `finally` block around remote
+  binder transactions so transaction failures cannot leave the identity cleared.
+- Added a JVM contract test that covers the Android 16 fallback gate and fails
+  if new raw binder transaction call sites bypass the compat helper.
+
 ### Added - Shortcut target manifest contract (upstream #1963, 2026-06-04)
 
 - Added a JVM manifest/shortcuts contract test that verifies every static
