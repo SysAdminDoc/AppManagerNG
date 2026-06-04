@@ -387,6 +387,12 @@ walkthrough remains open for each.
   `AppArchiveManagerTest` / `FreezeOptionTest`; manual verification on an
   Android 15/API-35 image remains open for the pending-user-action flow and
   archived-state refresh.
+- [ ] **Tasker / Quick Settings / SAF manual walkthrough** — the in-app Locale
+  plug-in, freeze-profile and force-stop Quick Settings tiles, and
+  read-only `DocumentsProvider` roots are implemented and covered by host tests.
+  Manual verification remains open for a real Tasker fire, tile add/fire flows,
+  privileged force-stop behavior, and SAF picker visibility for backups and
+  profiles.
 
 ## D. Parked (needs explicit owner sign-off)
 
@@ -554,17 +560,6 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Touches: `DebloatObject`, `PreinstalledOemResolver`, `IFilterableAppInfo`, Finder row binding, `BloatwareDetailsDialog`, `BloatwareOption`, docs.
   - Acceptance: removal UI shows dependency/required-by breakage context from the bundled debloat graph; Finder shows known-preinstall-OEM rows/chips; scanner library coverage continues to use the bundled android-libraries/LibSmali-style signature resources. Full UAD-NG model/region ingest is parked in the B bucket until upstream publishes machine-readable package/OEM/model/region data.
   - Verify: `PreinstalledOemResolverTest` pins explicit, package-prefix, and description-context OEM resolution; `BloatwareOptionTest` pins the new OEM predicates.
-  - Complexity: L
-- [ ] P2 — In-app Tasker plugin + Quick Settings tile suite + DocumentsProvider
-  - Why: no app in the AM space ships these; leapfrog opportunity at low cost (Tasker plugin ~120 KB, in-app, effort 2/5). NG already has the `am://` deep-link contract (`docs/intent-api.md`) these can wrap.
-  - Shipped before active-roadmap reconciliation: public confirmation-gated `AutomationUriActivity`, signature-gated `AutomationReceiver`, and `QuickFreezeTileService` for running the selected freeze profile.
-  - Shipped 2026-06-04 (DocumentsProvider slice): `AppManagerDocumentsProvider` is registered at `${applicationId}.documents` and exposes read-only SAF roots for the configured local backup volume plus app-private profiles, with canonical-root traversal guards and deterministic child ordering.
-  - Shipped 2026-06-04 (Quick Settings tile suite slice): freeze-profile selection now requests the Android 13+ `StatusBarManager.requestAddTileService()` one-tap add flow, and `ForceStopTileService` adds a "Force-stop app" QS tile whose pinned package/user target is set from the App Details force-stop long-press menu.
-  - Shipped 2026-06-04 (Tasker/Locale plugin slice): `TaskerPluginEditActivity` and `TaskerPluginFireReceiver` implement the Locale plug-in edit/fire protocol, store signed `am://` automation bundles, reject unsigned/tampered runtime calls, and hand trusted plugin fires to the signature-gated in-app `AutomationReceiver`.
-  - Evidence: `AutomationUriActivity`, `AutomationReceiver`, `TaskerPluginEditActivity`, `TaskerPluginFireReceiver`, `QuickFreezeTileService`, `ForceStopTileService`, and `AppManagerDocumentsProvider` are in the manifest; `AppManagerDocumentsProviderTest`, `AutomationRequestTest`, `AutomationIntentsTest`, `TaskerPluginBrokerTest`, `QuickFreezeTileControllerTest`, `QuickFreezeTileServiceTest`, `ForceStopTileControllerTest`, and `ForceStopTileServiceTest` cover the host-verifiable contract.
-  - Remaining touches: device SAF/QS/Tasker manual verification.
-  - Acceptance: a Tasker task can run a profile; tiles install + fire; backups/profiles appear in SAF pickers.
-  - Verify: configure and fire the AppManagerNG Tasker plugin, add both tiles, fire them, assert the profile runs and the pinned force-stop target stops under a privileged mode; open a SAF picker, assert backups/profiles appear; run `AppManagerDocumentsProviderTest`, `AutomationRequestTest`, `AutomationIntentsTest`, `TaskerPluginBrokerTest`, `QuickFreezeTileControllerTest`, `QuickFreezeTileServiceTest`, `ForceStopTileControllerTest`, and `ForceStopTileServiceTest`.
   - Complexity: L
 - [x] P2 — Snapshot bundle export/import before the applicationId rename
   - Why: critical data-loss guard — the install identity is already `io.github.sysadmindoc.AppManagerNG` (`app/build.gradle:15`) while the source namespace stays `io.github.muntashirakon.AppManager`, so an NG install does **not** inherit an upstream AM user's prefs/profiles/tags/history. A one-shot import bundle is the only migration path.
