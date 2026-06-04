@@ -17,7 +17,7 @@ JNIEXPORT jstring JNICALL
 Java_io_github_muntashirakon_AppManager_utils_CpuUtils_getCpuModel(JNIEnv *env, jclass) {
 #if defined(__x86_64__) || defined(__i386__)
     unsigned int eax, ebx, ecx, edx;
-    char cpuModel[48];
+    char cpuModel[49];
 
     // Call CPUID with EAX=0x80000002, 0x80000003, 0x80000004 to get the CPU model
     for (int i = 0; i < 3; i++) {
@@ -29,6 +29,7 @@ Java_io_github_muntashirakon_AppManager_utils_CpuUtils_getCpuModel(JNIEnv *env, 
         memcpy(cpuModel + i * 16 + 8, &ecx, 4);
         memcpy(cpuModel + i * 16 + 12, &edx, 4);
     }
+    cpuModel[48] = '\0';
     return env->NewStringUTF(cpuModel);
 #else
     return 0;
