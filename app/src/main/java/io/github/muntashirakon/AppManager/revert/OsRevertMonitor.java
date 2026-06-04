@@ -109,13 +109,7 @@ public final class OsRevertMonitor {
             if (appOpModeMatches(expectedMode, currentMode)) {
                 return null;
             }
-            String opName = AppOpsManagerCompat.opToName(op);
-            return buildEvent(appContext,
-                    appContext.getString(R.string.os_revert_operation_appop, opName),
-                    packageName,
-                    appOpModeLabel(expectedMode),
-                    appOpModeLabel(currentMode),
-                    appContext.getString(R.string.os_revert_appop_detail));
+            return buildAppOpRevertEvent(appContext, packageName, op, expectedMode, currentMode);
         });
     }
 
@@ -153,6 +147,22 @@ public final class OsRevertMonitor {
                 context.getString(R.string.os_revert_snackbar_message),
                 context.getString(R.string.os_revert_details_message,
                         target, operationLabel, expectedState, currentState, hint));
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static RevertEvent buildAppOpRevertEvent(@NonNull Context context,
+                                             @NonNull String packageName,
+                                             int op,
+                                             @AppOpsManagerCompat.Mode int expectedMode,
+                                             @AppOpsManagerCompat.Mode int currentMode) {
+        String opName = AppOpsManagerCompat.opToName(op);
+        return buildEvent(context,
+                context.getString(R.string.os_revert_operation_appop, opName),
+                packageName,
+                appOpModeLabel(expectedMode),
+                appOpModeLabel(currentMode),
+                context.getString(R.string.os_revert_appop_detail));
     }
 
     @NonNull
