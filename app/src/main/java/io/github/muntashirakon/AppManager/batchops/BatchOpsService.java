@@ -162,8 +162,11 @@ public class BatchOpsService extends ForegroundService {
         BatchOpsManager batchOpsManager = new BatchOpsManager();
         BatchOpsManager.Result result;
         try {
-            result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler);
+            result = batchOpsManager.performOp(BatchOpsInfo.fromQueue(item), mProgressHandler,
+                    (pair, failed) -> BatchOpsJournal.recordTargetFinished(this, pair, failed));
         } catch (Throwable th) {
+            BatchOpsManager.Result interruptedResult = new BatchOpsManager.Result(
+                    BatchOpsInfo.fromQueue(item).getPairList(), false);
             BatchOpsJournal.markInterrupted(this, th);
             // Mirror the success-path cleanup: the catch previously left
             // mJournalPending=true and the Shizuku binder-death listener registered,
@@ -171,8 +174,6 @@ public class BatchOpsService extends ForegroundService {
             // processed by this still-alive service.
             mJournalPending = false;
             unregisterPrivilegedDeathWatch();
-            BatchOpsManager.Result interruptedResult = new BatchOpsManager.Result(
-                    BatchOpsInfo.fromQueue(item).getPairList(), false);
             batchOpsManager.conclude();
             sendResults(Activity.RESULT_FIRST_USER, item, interruptedResult);
             return;

@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.history.ops;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
@@ -12,9 +13,12 @@ import androidx.work.WorkManager;
 
 import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 public final class OpHistoryPruneScheduler {
+    private static final String TAG = OpHistoryPruneScheduler.class.getSimpleName();
+
     public static final String UNIQUE_WORK_NAME = "op_history_retention_prune";
     public static final String WORK_TAG = "op_history_retention";
     public static final long DAILY_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(1);
@@ -35,12 +39,30 @@ public final class OpHistoryPruneScheduler {
     }
 
     public static void schedule(@NonNull Context context) {
-        WorkManager.getInstance(context.getApplicationContext()).enqueueUniquePeriodicWork(
-                UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, buildPeriodicRequest());
+        WorkManager workManager = getWorkManager(context);
+        if (workManager == null) {
+            return;
+        }
+        workManager.enqueueUniquePeriodicWork(UNIQUE_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE, buildPeriodicRequest());
     }
 
     public static void cancel(@NonNull Context context) {
-        WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork(UNIQUE_WORK_NAME);
+        WorkManager workManager = getWorkManager(context);
+        if (workManager == null) {
+            return;
+        }
+        workManager.cancelUniqueWork(UNIQUE_WORK_NAME);
+    }
+
+    @Nullable
+    private static WorkManager getWorkManager(@NonNull Context context) {
+        try {
+            return WorkManager.getInstance(context.getApplicationContext());
+        } catch (IllegalStateException e) {
+            Log.w(TAG, "WorkManager is unavailable for operation history pruning.", e);
+            return null;
+        }
     }
 
     @NonNull

@@ -14,6 +14,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import java.util.ArrayList;
+import java.util.Collections;
+
+import io.github.muntashirakon.AppManager.types.UserPackagePair;
 
 @RunWith(RobolectricTestRunner.class)
 public class BatchOpsJournalTest {
@@ -57,6 +60,60 @@ public class BatchOpsJournalTest {
 
         assertNotNull(entry);
         assertEquals("IllegalStateException: binder died while running", entry.getReason());
+    }
+
+    @Test
+    public void interruptedOperationBuildsRetryQueueFromUnfinishedTargets() {
+        Context context = RuntimeEnvironment.getApplication();
+        BatchOpsJournal.dismissInterrupted(context);
+
+        BatchOpsJournal.recordExecuting(context, createQueueItem());
+        BatchOpsJournal.markInterrupted(context, null, new BatchOpsManager.Result(
+                Collections.singletonList(new UserPackagePair("com.example.two", 0)), false));
+        BatchOpsJournal.Entry entry = BatchOpsJournal.getInterruptedOperation(context, false);
+
+        assertNotNull(entry);
+        assertEquals(1, entry.getFailedTargetCount());
+        assertEquals(1, entry.getCompletedTargetCount());
+        assertEquals(1, entry.getRetryTargetCount());
+        BatchQueueItem retryQueue = entry.getRetryQueueItem();
+        assertEquals(1, retryQueue.getPackages().size());
+        assertEquals("com.example.two", retryQueue.getPackages().get(0));
+        assertEquals(Integer.valueOf(0), retryQueue.getUsers().get(0));
+    }
+
+    @Test
+    public void recordedTargetProgressSurvivesInterruptionWithoutResult() {
+        Context context = RuntimeEnvironment.getApplication();
+        BatchOpsJournal.dismissInterrupted(context);
+
+        BatchOpsJournal.recordExecuting(context, createQueueItem());
+        BatchOpsJournal.recordTargetFinished(context, new UserPackagePair("com.example.one", 0), false);
+        BatchOpsJournal.markInterrupted(context, null);
+        BatchOpsJournal.Entry entry = BatchOpsJournal.getInterruptedOperation(context, false);
+
+        assertNotNull(entry);
+        assertEquals(1, entry.getCompletedTargetCount());
+        assertEquals(0, entry.getFailedTargetCount());
+        assertEquals(1, entry.getRetryTargetCount());
+        BatchQueueItem retryQueue = entry.getRetryQueueItem();
+        assertEquals("com.example.two", retryQueue.getPackages().get(0));
+    }
+
+    @Test
+    public void noResultInterruptionRetriesOriginalQueue() {
+        Context context = RuntimeEnvironment.getApplication();
+        BatchOpsJournal.dismissInterrupted(context);
+        BatchQueueItem queueItem = createQueueItem();
+
+        BatchOpsJournal.recordExecuting(context, queueItem);
+        BatchOpsJournal.markInterrupted(context, null);
+        BatchOpsJournal.Entry entry = BatchOpsJournal.getInterruptedOperation(context, false);
+
+        assertNotNull(entry);
+        assertEquals(0, entry.getCompletedTargetCount());
+        assertEquals(0, entry.getFailedTargetCount());
+        assertEquals(queueItem.getPackages().size(), entry.getRetryTargetCount());
     }
 
     private static BatchQueueItem createQueueItem() {

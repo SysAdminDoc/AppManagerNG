@@ -396,18 +396,25 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         if (reason != null) {
             message += "\n\n" + getString(R.string.batch_ops_journal_recovery_reason, reason);
         }
-        new MaterialAlertDialogBuilder(this)
+        if (entry.hasPartialOutcome()) {
+            message += "\n\n" + getString(R.string.batch_ops_journal_recovery_progress,
+                    entry.getCompletedTargetCount(), entry.getTargetCount(), entry.getRetryTargetCount());
+        }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.batch_ops_journal_recovery_title)
                 .setMessage(message)
                 .setNegativeButton(R.string.not_now, null)
-                .setNeutralButton(R.string.clear, (dialog, which) -> BatchOpsJournal.dismissInterrupted(this))
-                .setPositiveButton(R.string.batch_ops_journal_retry, (dialog, which) -> {
-                    BatchOpsJournal.dismissInterrupted(this);
-                    ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, queueItem));
-                    UIUtils.displayShortToast(R.string.batch_results_retry_started);
-                    BatchKeepOpenHint.show(this);
-                })
-                .show();
+                .setNeutralButton(R.string.clear, (dialog, which) -> BatchOpsJournal.dismissInterrupted(this));
+        BatchQueueItem retryQueueItem = entry.getRetryQueueItem();
+        if (!retryQueueItem.getPackages().isEmpty()) {
+            builder.setPositiveButton(R.string.batch_ops_journal_retry, (dialog, which) -> {
+                BatchOpsJournal.dismissInterrupted(this);
+                ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, retryQueueItem));
+                UIUtils.displayShortToast(R.string.batch_results_retry_started);
+                BatchKeepOpenHint.show(this);
+            });
+        }
+        builder.show();
     }
 
     @Override
