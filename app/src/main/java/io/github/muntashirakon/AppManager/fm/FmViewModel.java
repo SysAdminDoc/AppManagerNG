@@ -319,7 +319,8 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
             handleError(e, uri);
             return;
         }
-        while (currentPath.isSymbolicLink()) {
+        int symlinkDepth = 0;
+        while (currentPath.isSymbolicLink() && symlinkDepth < 40) {
             try {
                 Path realPath = currentPath.getRealPath();
                 if (realPath == null || realPath.equals(currentPath)) {
@@ -328,6 +329,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
                 }
                 currentPath = realPath;
                 mCurrentUri = realPath.getUri();
+                ++symlinkDepth;
             } catch (IOException ignore) {
                 // Since we couldn't resolve the path, try currentPath instead
             }

@@ -326,7 +326,8 @@ public class BackupItems {
                 for (Path inputFile : files) {
                     Path parent = getUnencryptedBackupPath();
                     String filename = inputFile.getName();
-                    String outputFilename = filename.substring(0, filename.lastIndexOf(ext));
+                    int extIdx = filename.lastIndexOf(ext);
+                    String outputFilename = extIdx > 0 ? filename.substring(0, extIdx) : filename;
                     Path outputPath = parent.createNewFile(outputFilename, null);
                     newFileList.add(outputPath);
                     Log.i(TAG, "Input: %s\nOutput: %s", inputFile, outputPath);
