@@ -789,6 +789,21 @@ public final class Prefs {
         }
     }
 
+    public static final class AppActions {
+        @Nullable
+        public static String getForceStopTileTarget() {
+            String target = AppPref.getString(AppPref.PrefKey.PREF_FORCE_STOP_TILE_TARGET_STR);
+            if (TextUtils.isEmpty(target)) {
+                return null;
+            }
+            return target;
+        }
+
+        public static void setForceStopTileTarget(@Nullable String target) {
+            AppPref.set(AppPref.PrefKey.PREF_FORCE_STOP_TILE_TARGET_STR, target == null ? "" : target);
+        }
+    }
+
     public static final class RunningApps {
         @RunningAppsActivity.SortOrder
         public static int getSortOrder() {

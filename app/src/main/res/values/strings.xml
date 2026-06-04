@@ -1159,6 +1159,11 @@
     <string name="quick_freeze_tile_no_profile">Choose a freeze profile before using this tile.</string>
     <string name="quick_freeze_tile_profile_missing">The selected freeze profile is missing. Choose another profile.</string>
     <string name="quick_freeze_tile_started">Started freeze profile: %1$s</string>
+    <string name="force_stop_tile_label">Force-stop app</string>
+    <string name="force_stop_tile_set_app">Use for Quick Settings force-stop tile</string>
+    <string name="force_stop_tile_app_set">Quick Settings force-stop tile will stop %1$s.</string>
+    <string name="force_stop_tile_no_app">Choose an app before using this tile.</string>
+    <string name="force_stop_tile_done">Force-stopped %1$s.</string>
     <string name="quick_assist_title">Quick assist</string>
     <string name="quick_assist_title_for_app">Quick assist: <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="quick_assist_target_message">Target package: <xliff:g id="package_name" example="com.example.app">%1$s</xliff:g></string>
