@@ -348,6 +348,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_DIAGNOSTICS_STR, diagnostics);
         }
 
+        @NonNull
+        public static String getScheduledBackupLastSkippedPackages() {
+            return AppPref.getString(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_SKIPPED_STR);
+        }
+
+        public static void setScheduledBackupLastSkippedPackages(@NonNull String skippedPackages) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_SKIPPED_STR, skippedPackages);
+        }
+
         public static boolean backupDirectoryExists() {
             Uri uri = Storage.getVolumePath();
             Path path;

@@ -101,9 +101,6 @@ public class AutoBackupWorker extends Worker {
                     System.currentTimeMillis());
             pairs = selection.getDuePackages();
             int skipped = selection.getSkippedPackages();
-            // EI-07: capture the per-package "why did this skip?" detail the
-            // worker previously discarded (only a count was kept). Logged so the
-            // reason is retrievable; an interactive bottom sheet is a follow-up.
             for (AutoBackupScheduler.SkippedPackage sp : selection.getSkippedDetails()) {
                 Log.i(TAG, "Auto-backup skipped " + sp.packageName + " (u" + sp.userId + "): "
                         + sp.reason + "; last backup at " + sp.lastBackupMillis);
@@ -111,7 +108,7 @@ public class AutoBackupWorker extends Worker {
             if (pairs.isEmpty()) {
                 String message = context.getResources().getQuantityString(
                         R.plurals.auto_backup_result_all_recent, skipped, skipped);
-                AutoBackupScheduler.recordRunResult(message);
+                AutoBackupScheduler.recordRunResult(message, selection.getSkippedDetails());
                 AutoBackupScheduler.refreshDiagnostics(context);
                 postResultNotification(context, message, false);
                 return Result.success(new Data.Builder()
@@ -131,7 +128,7 @@ public class AutoBackupWorker extends Worker {
             int failed = result.getFailedPackages().size();
             int success = Math.max(0, pairs.size() - failed);
             String message = buildResultMessage(context, success, pairs.size(), failed, skipped);
-            AutoBackupScheduler.recordRunResult(message);
+            AutoBackupScheduler.recordRunResult(message, selection.getSkippedDetails());
             AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, failed > 0);
             return Result.success(new Data.Builder()

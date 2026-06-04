@@ -9,6 +9,15 @@ roadmap holds only open work. Full per-release prose lives in
 trail. Long-form historical context is under
 [`archive/`](archive/).
 
+## Closed on 2026-06-03
+
+- [x] **EI-07 Scheduled-backup "Why did this skip?"** — terminal
+  scheduled-backup results persist a bounded last-run skipped-package detail
+  payload (package, user, reason, newest existing-backup time), and Settings ->
+  Backup/Restore -> "Schedule status" now opens a diagnostics surface with the
+  concrete package-level skip reasons instead of only the aggregate recent-skip
+  count.
+
 ## Closed in the 2026-05-26 consolidation pass
 
 ### P0 — Old TODO Cliff
