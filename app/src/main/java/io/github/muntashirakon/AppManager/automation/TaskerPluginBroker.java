@@ -34,6 +34,7 @@ import java.security.SecureRandom;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 final class TaskerPluginBroker {
@@ -81,7 +82,28 @@ final class TaskerPluginBroker {
         if (secret == null) {
             return null;
         }
-        return getSignedAutomationIntent(context, fireIntent.getBundleExtra(EXTRA_BUNDLE), secret);
+        return getSignedAutomationIntent(context, fireIntent, secret);
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static Intent getSignedAutomationIntent(@NonNull Context context,
+                                            @Nullable Intent fireIntent,
+                                            @NonNull String secret) {
+        if (fireIntent == null) {
+            return null;
+        }
+        Intent automationIntent = getSignedAutomationIntent(context, fireIntent.getBundleExtra(EXTRA_BUNDLE), secret);
+        if (automationIntent == null) {
+            return null;
+        }
+        try {
+            ProfileApplierReceiver.applyRuntimePackageOverride(automationIntent,
+                    fireIntent.getStringExtra(ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE));
+        } catch (JSONException | RuntimeException e) {
+            return null;
+        }
+        return automationIntent;
     }
 
     @Nullable

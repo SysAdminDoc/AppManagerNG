@@ -225,7 +225,7 @@ the original carries the full per-issue source URLs.
 
 **Upstream MuntashirAkon/AppManager issues (NG actions):**
 
-- #1968 Automating Save APK — replace/extend the Activity profile launcher with a `ProfileApplierReceiver` accepting `extra_pkg` template substitution (also fixes the Recents-foregrounding complaint and the Android 17 BAL deprecation).
+- #1968 Automating Save APK — shipped 2026-06-04: authenticated automatic profile triggers route through `ProfileApplierReceiver` instead of `ProfileApplierActivity`, and profile automation accepts Tasker-style `extra_pkg` as a one-shot package override, including signed Locale plugin fire-time variables.
 - #1967 Root not detected after reinstall on KernelSU — audit `RootSession`/`Ops.java` KernelSU probe order; add a "force re-grant" recovery flow.
 - #1966 App Info popup density / SDK row position — restructure `app_info_card.xml` (SDK row up, two-column trackers/SDK, expose cert Subject, max-height 92%).
 - #1965 Clear-data no-op on Android 16 QPR2 — add fallback `pm clear --user N` shell path + post-call disk-usage delta as ground truth.

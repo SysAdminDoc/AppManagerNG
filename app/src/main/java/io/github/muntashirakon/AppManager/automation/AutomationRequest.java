@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.self.SelfUriManager;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -126,13 +127,18 @@ final class AutomationRequest {
         if (ACTION_BACKUP.equals(action) && packages.isEmpty() && profileId != null) {
             action = ACTION_RUN_PROFILE;
         }
+        JSONObject profileOverrides = getProfileOverrides(getStringExtra(intent, EXTRA_PROFILE_OVERRIDES));
+        if (ACTION_RUN_PROFILE.equals(action)) {
+            profileOverrides = ProfileApplierReceiver.mergeRuntimePackageOverride(profileOverrides,
+                    getStringExtra(intent, ProfileApplierReceiver.EXTRA_RUNTIME_PACKAGE));
+        }
         return new AutomationRequest(action,
                 packages,
                 users,
                 getStringExtra(intent, EXTRA_COMPONENT),
                 profileId,
                 getStringExtra(intent, EXTRA_PROFILE_STATE),
-                getProfileOverrides(getStringExtra(intent, EXTRA_PROFILE_OVERRIDES)),
+                profileOverrides,
                 getStringExtra(intent, EXTRA_BACKUP_NAME),
                 getIntExtra(intent, EXTRA_BACKUP_FLAGS, BackupFlags.BACKUP_NOTHING),
                 hasExtra(intent, EXTRA_BACKUP_FLAGS),
