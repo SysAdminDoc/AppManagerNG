@@ -70,6 +70,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisher;
+import io.github.muntashirakon.AppManager.tags.AppTagStore;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
@@ -547,6 +548,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         mFilterResult = executor.submit(() -> {
             List<ApplicationItem> updatedApplicationItems = PackageUtils
                     .getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
+            attachUserTags(updatedApplicationItems);
             synchronized (mApplicationItems) {
                 mApplicationItems.clear();
                 mApplicationItems.addAll(updatedApplicationItems);
@@ -559,6 +561,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             }
             AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
         });
+    }
+
+    @WorkerThread
+    private void attachUserTags(@NonNull List<ApplicationItem> items) {
+        Map<String, Set<String>> tagsByPackage = new AppTagStore(getApplication()).snapshot();
+        for (ApplicationItem item : items) {
+            item.setUserTags(tagsByPackage.get(item.packageName));
+        }
     }
 
     private void cancelIfRunning() {
@@ -1037,6 +1047,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         if (item.packageName == null) {
             return null;
         }
+        item.setUserTags(new AppTagStore(getApplication()).getTags(item.packageName));
         return item;
     }
 

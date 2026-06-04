@@ -86,7 +86,7 @@ historical context and the previous ledger are under
 - [x] **T21-G Attention badges on app list rows** — severity-tinted true-circle dot overlay bound via `AttentionBadgeSource`, count/reason in `contentDescription` for TalkBack; OS-revert wiring via `OsRevertCountTracker` process-wide singleton. — *Source: ROADMAP.md*
 - [x] **T21-J** Material You dynamic-color audit — source-path audit clean; regression guard `DynamicColorContractTest`; manual device walkthrough tracked under device-verification in the active roadmap. — *Source: docs/roadmap/COMPLETED.md*
 - [x] **EI-04 Permission Inspector chip-row filter** — single-selection chip row (All / Requested / Granted / Needs review) backed by `PermissionInspectorFilter` (4 JVM tests), reusing the bounded-radius chip style. — *Source: ROADMAP.md*
-- [x] **NF-08 tag UI follow-up** — App Details overflow -> "Edit tags" via `SearchableMultiChoiceDialogBuilder` over known + current tags, "New tag" creation validated by `AppTagStore.isValidTag`; user tags render in the App Info tag cloud. — *Source: ROADMAP.md*
+- [x] **NF-08 tag UI follow-up** — App Details overflow -> "Edit tags" via `SearchableMultiChoiceDialogBuilder` over known + current tags, "New tag" creation validated by `AppTagStore.isValidTag`; user tags render in the App Info tag cloud and as compact display-only main-list chips. — *Source: ROADMAP.md*
 
 ### v0.5.0 plan-ID closure (iter-143, 2026-05-25)
 
