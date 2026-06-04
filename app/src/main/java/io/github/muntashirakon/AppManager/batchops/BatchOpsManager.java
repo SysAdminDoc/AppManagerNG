@@ -213,6 +213,12 @@ public class BatchOpsManager {
 
     @Nullable
     private ProgressHandler mProgressHandler;
+    @Nullable
+    private TargetProgressListener mTargetProgressListener;
+
+    public interface TargetProgressListener {
+        void onTargetFinished(@NonNull UserPackagePair pair, boolean failed);
+    }
 
     public BatchOpsManager() {
         mCustomLogger = false;
@@ -225,7 +231,14 @@ public class BatchOpsManager {
     }
 
     public Result performOp(@NonNull BatchOpsInfo info, @Nullable ProgressHandler progressHandler) {
+        return performOp(info, progressHandler, null);
+    }
+
+    public Result performOp(@NonNull BatchOpsInfo info,
+                            @Nullable ProgressHandler progressHandler,
+                            @Nullable TargetProgressListener targetProgressListener) {
         mProgressHandler = progressHandler;
+        mTargetProgressListener = targetProgressListener;
         return performOp(info);
     }
 
@@ -306,12 +319,15 @@ public class BatchOpsManager {
             pair = info.getPair(i);
             updateProgress(lastProgress, i + 1);
             // Do operation
+            boolean failed = false;
             try {
                 ApkUtils.backupApk(context, pair.getPackageName(), pair.getUserId());
             } catch (Exception e) {
+                failed = true;
                 failedPackages.add(pair);
                 log("====> op=BACKUP_APK, pkg=" + pair, e);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -352,12 +368,15 @@ public class BatchOpsManager {
                     CharSequence appLabel = PackageUtils.getPackageLabel(pm, pair.getPackageName(), pair.getUserId());
                     CharSequence title = context.getString(R.string.backing_up_app, appLabel);
                     ProgressHandler subProgressHandler = newSubProgress(operationName, title);
+                    boolean failed = false;
                     try {
                         backupManager.backup(options.getBackupOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
                     } catch (BackupException e) {
+                        failed = true;
                         log("====> op=BACKUP_RESTORE, mode=BACKUP pkg=" + pair, e);
                         failedPackages.add(pair);
                     }
+                    recordTargetFinished(pair, failed);
                     if (subProgressHandler != null) {
                         ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
                     }
@@ -395,15 +414,18 @@ public class BatchOpsManager {
                     CharSequence appLabel = PackageUtils.getPackageLabel(pm, pair.getPackageName(), pair.getUserId());
                     CharSequence title = context.getString(R.string.restoring_app, appLabel);
                     ProgressHandler subProgressHandler = newSubProgress(operationName, title);
+                    boolean failed = false;
                     try {
                         BackupManager backupManager = new BackupManager();
                         backupManager.restore(options.getRestoreOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
                         requiresRestart.set(requiresRestart.get() | backupManager.requiresRestart());
                         pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
                     } catch (Throwable e) {
+                        failed = true;
                         log("====> op=BACKUP_RESTORE, mode=RESTORE pkg=" + pair, e);
                         failedPackages.add(pair);
                     }
+                    recordTargetFinished(pair, failed);
                     if (subProgressHandler != null) {
                         ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
                     }
@@ -431,12 +453,15 @@ public class BatchOpsManager {
             for (int i = 0; i < max; ++i) {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
+                boolean failed = false;
                 try {
                     backupManager.deleteBackup(options.getDeleteOpOptions(pair.getPackageName(), pair.getUserId()));
                 } catch (BackupException e) {
+                    failed = true;
                     log("====> op=BACKUP_RESTORE, mode=DELETE pkg=" + pair, e);
                     failedPackages.add(pair);
                 }
+                recordTargetFinished(pair, failed);
             }
         } catch (Throwable th) {
             log("====> op=BACKUP_RESTORE, mode=DELETE", th);
@@ -497,12 +522,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 ComponentUtils.blockFilteredComponents(pair, options.getSignatures());
             } catch (Exception e) {
+                failed = true;
                 log("====> op=BLOCK_COMPONENTS, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -518,12 +546,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 ComponentUtils.blockTrackingComponents(pair, intensity);
             } catch (Exception e) {
+                failed = true;
                 log("====> op=BLOCK_TRACKERS, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -541,12 +572,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 PackageManagerCompat.deleteApplicationCacheFilesAsUser(pair);
             } catch (Exception e) {
+                failed = true;
                 log("====> op=CLEAR_CACHE, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -578,6 +612,7 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 PackageManagerCompat.clearApplicationUserData(pair);
                 if (!reportedShizukuPermissionRevoked
@@ -587,9 +622,11 @@ public class BatchOpsManager {
                     reportedShizukuPermissionRevoked = true;
                 }
             } catch (Exception e) {
+                failed = true;
                 log("====> op=CLEAR_DATA, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -609,12 +646,15 @@ public class BatchOpsManager {
                 type = Optional.ofNullable(FreezeUtils.loadFreezeMethod(pair.getPackageName()))
                         .orElse(options.getType());
             } else type = options.getType();
+            boolean failed = false;
             try {
                 FreezeUtils.freeze(pair.getPackageName(), pair.getUserId(), type);
             } catch (Throwable e) {
+                failed = true;
                 log("====> op=ADVANCED_FREEZE, pkg=" + pair + ", type = " + type, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -628,6 +668,7 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 if (freeze) {
                     FreezeUtils.freeze(pair.getPackageName(), pair.getUserId());
@@ -635,9 +676,11 @@ public class BatchOpsManager {
                     FreezeUtils.unfreeze(pair.getPackageName(), pair.getUserId());
                 }
             } catch (Throwable e) {
+                failed = true;
                 log("====> op=APP_FREEZE, pkg=" + pair + ", freeze = " + freeze, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -655,8 +698,10 @@ public class BatchOpsManager {
             int uid = PackageUtils.getAppUid(pair);
             if (uid == -1) {
                 failedPackages.add(pair);
+                recordTargetFinished(pair, true);
                 continue;
             }
+            boolean failed = false;
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     appOpsManager.setMode(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND, uid,
@@ -675,9 +720,11 @@ public class BatchOpsManager {
                     }
                 }
             } catch (Throwable e) {
+                failed = true;
                 log("====> op=DISABLE_BACKGROUND, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -695,9 +742,13 @@ public class BatchOpsManager {
             for (int i = 0; i < max; ++i) {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
+                boolean failed = false;
                 try {
                     permissions = PackageUtils.getPermissionsForPackage(pair.getPackageName(), pair.getUserId());
-                    if (permissions == null) continue;
+                    if (permissions == null) {
+                        recordTargetFinished(pair, false);
+                        continue;
+                    }
                     for (String permission : permissions) {
                         if (isGrant) {
                             PermissionCompat.grantPermission(pair.getPackageName(), permission, pair.getUserId());
@@ -706,14 +757,17 @@ public class BatchOpsManager {
                         }
                     }
                 } catch (Throwable e) {
+                    failed = true;
                     log("====> op=GRANT_OR_REVOKE_PERMISSIONS, pkg=" + pair, e);
                     failedPackages.add(pair);
                 }
+                recordTargetFinished(pair, failed);
             }
         } else {
             for (int i = 0; i < max; ++i) {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
+                boolean failed = false;
                 for (String permission : permissions) {
                     try {
                         if (isGrant) {
@@ -722,10 +776,12 @@ public class BatchOpsManager {
                             PermissionCompat.revokePermission(pair.getPackageName(), permission, pair.getUserId());
                         }
                     } catch (Throwable e) {
+                        failed = true;
                         log("====> op=GRANT_OR_REVOKE_PERMISSIONS, pkg=" + pair, e);
                         failedPackages.add(pair);
                     }
                 }
+                recordTargetFinished(pair, failed);
             }
         }
         return new Result(failedPackages);
@@ -740,12 +796,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 PackageManagerCompat.forceStopPackage(pair.getPackageName(), pair.getUserId());
             } catch (Throwable e) {
+                failed = true;
                 log("====> op=FORCE_STOP, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -760,13 +819,16 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 int uid = PackageUtils.getAppUid(pair);
                 NetworkPolicyManagerCompat.setUidPolicy(uid, options.getPolicies());
             } catch (Throwable e) {
+                failed = true;
                 log("====> op=NET_POLICY, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -785,6 +847,7 @@ public class BatchOpsManager {
             for (int i = 0; i < max; ++i) {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
+                boolean failed = false;
                 try {
                     List<Integer> appOpList = new ArrayList<>();
                     ApplicationInfo applicationInfo = PackageManagerCompat.getApplicationInfo(pair.getPackageName(),
@@ -797,20 +860,25 @@ public class BatchOpsManager {
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair,
                             ArrayUtils.convertToIntArray(appOpList), options.getMode());
                 } catch (Exception e) {
+                    failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
                     failedPkgList.add(pair);
                 }
+                recordTargetFinished(pair, failed);
             }
         } else {
             for (int i = 0; i < max; ++i) {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
+                boolean failed = false;
                 try {
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair, appOps, options.getMode());
                 } catch (RemoteException e) {
+                    failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
                     failedPkgList.add(pair);
                 }
+                recordTargetFinished(pair, failed);
             }
         }
         return new Result(failedPkgList);
@@ -826,12 +894,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 ComponentUtils.unblockFilteredComponents(pair, options.getSignatures());
             } catch (Throwable th) {
+                failed = true;
                 log("====> op=UNBLOCK_COMPONENTS, pkg=" + pair, th);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -845,12 +916,15 @@ public class BatchOpsManager {
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
+            boolean failed = false;
             try {
                 ComponentUtils.unblockTrackingComponents(pair);
             } catch (Throwable th) {
+                failed = true;
                 log("====> op=UNBLOCK_TRACKERS, pkg=" + pair, th);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -881,6 +955,7 @@ public class BatchOpsManager {
                 log("====> op=UNINSTALL, pkg=" + pair);
                 failedPackages.add(pair);
             }
+            recordTargetFinished(pair, !uninstalled);
         }
         accessibility.enableUninstall(false);
         return new Result(failedPackages);
@@ -911,10 +986,13 @@ public class BatchOpsManager {
         int i = 0;
         for (String packageName : options.packages) {
             updateProgress(lastProgress, ++i);
+            UserPackagePair pair = new UserPackagePair(packageName, 0);
             if (packageName.equals(BuildConfig.APPLICATION_ID)) {
                 // Ignore App Manager
+                recordTargetFinished(pair, false);
                 continue;
             }
+            boolean failed = false;
             DexOptimizer dexOptimizer = new DexOptimizer(pm, packageName);
             if (options.compilerFiler != null) {
                 boolean result = true;
@@ -925,7 +1003,9 @@ public class BatchOpsManager {
                         options.forceCompilation, options.bootComplete, null);
                 if (!result) {
                     log("====> op=DEXOPT, pkg=" + packageName + ", failed=dexopt-mode", dexOptimizer.getLastError());
-                    failedPackages.add(new UserPackagePair(packageName, 0));
+                    failed = true;
+                    failedPackages.add(pair);
+                    recordTargetFinished(pair, true);
                     continue;
                 }
             }
@@ -937,16 +1017,20 @@ public class BatchOpsManager {
                 result &= dexOptimizer.compileLayouts();
                 if (!result) {
                     log("====> op=DEXOPT, pkg=" + packageName + ", failed=compile-layouts", dexOptimizer.getLastError());
-                    failedPackages.add(new UserPackagePair(packageName, 0));
+                    failed = true;
+                    failedPackages.add(pair);
+                    recordTargetFinished(pair, true);
                     continue;
                 }
             }
             if (options.forceDexOpt) {
                 if (!dexOptimizer.forceDexOpt()) {
                     log("====> op=DEXOPT, pkg=" + packageName + ", failed=force-dexopt", dexOptimizer.getLastError());
-                    failedPackages.add(new UserPackagePair(packageName, 0));
+                    failed = true;
+                    failedPackages.add(pair);
                 }
             }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -960,6 +1044,17 @@ public class BatchOpsManager {
     private void log(@Nullable String message) {
         if (mLogger != null) {
             mLogger.println(message);
+        }
+    }
+
+    private void recordTargetFinished(@NonNull UserPackagePair pair, boolean failed) {
+        if (mTargetProgressListener == null) {
+            return;
+        }
+        try {
+            mTargetProgressListener.onTargetFinished(pair, failed);
+        } catch (Throwable th) {
+            log("====> op=TARGET_PROGRESS, pkg=" + pair, th);
         }
     }
 
@@ -1065,6 +1160,15 @@ public class BatchOpsManager {
         @UserIdInt
         public ArrayList<Integer> getAssociatedUsers() {
             return mAssociatedUsers;
+        }
+
+        @NonNull
+        public List<UserPackagePair> getFailedUserPackagePairs() {
+            ArrayList<UserPackagePair> pairs = new ArrayList<>(mFailedPackages.size());
+            for (int i = 0; i < mFailedPackages.size(); ++i) {
+                pairs.add(new UserPackagePair(mFailedPackages.get(i), mAssociatedUsers.get(i)));
+            }
+            return pairs;
         }
     }
 }
