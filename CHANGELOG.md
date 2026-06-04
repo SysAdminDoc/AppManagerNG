@@ -5,6 +5,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Deep audit hardening pass 2 (2026-06-04)
+
+- **Backup (HIGH):** Fixed `StringIndexOutOfBoundsException` crash in
+  `BackupItems.decrypt()` and `ConvertUtils.decryptSourceFiles()` when an
+  encrypted-file extension is missing from the filename (corrupted backup or
+  manual rename).
+- **Backup (HIGH):** Fixed `RandomAccessFile` and `FileChannel` resource leak in
+  `ConvertUtils.getChecksumsFromApk()` — the APK signature verification
+  fallback path never closed either handle.
+- **Thread safety:** Made `BatchOpsService.mJournalPending` and
+  `mShizukuBinderDeadListenerRegistered` volatile — both are written on the
+  worker thread and read from `onDestroy()` on the main thread.
+- **Thread safety:** Synchronized the three `Runner` shell-singleton factory
+  methods to prevent duplicate shell creation from concurrent callers.
+- **File Manager:** Capped symlink-follow depth at 40 in `FmViewModel` to
+  prevent infinite loops on circular symlink chains.
+- **Activity Interceptor:** Added `RuntimeException` catch to `cloneIntent()`
+  so `BadParcelableException` from malformed intent URIs doesn't crash the
+  interceptor screen.
+
 ### Fixed - Deep audit hardening pass (2026-06-04)
 
 - **Native (CRITICAL):** Fixed heap overread in `CpuUtils.getCpuModel()` — the
