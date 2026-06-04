@@ -17,6 +17,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   SDK Runtime, Health Connect, or Credential Manager live-state implementation
   that would otherwise be caller-scoped.
 
+### Changed - Tasker/QS/SAF roadmap reconciliation (2026-06-04)
+
+- Closed the host-verifiable Tasker, Quick Settings, and DocumentsProvider row
+  in the completed ledgers after source/test confirmation of the registered
+  automation activities/receivers, freeze-profile and force-stop tiles, and
+  read-only SAF backup/profile roots.
+- Left the runtime Tasker fire, tile add/fire, privileged force-stop, and SAF
+  picker walkthroughs in the physical-device verification bucket.
+
 ### Added - App Info action rail priority controls (research P2/#1953, 2026-06-04)
 
 - App Info horizontal actions now use stable action IDs and a resolver that
