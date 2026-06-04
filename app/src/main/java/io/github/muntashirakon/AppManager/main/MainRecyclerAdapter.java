@@ -475,6 +475,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.permIndicator.setClickable(false);
             }
         }
+        bindTagIndicator(context, holder, item);
         // Set version (along with HW accelerated, debug and test only flags)
         holder.version.setText(item.versionTag);
         // Set version color to dark cyan if the app is inactive
@@ -530,9 +531,38 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         String installedState = context.getString(item.isInstalled
                 ? R.string.main_list_installed_state : R.string.main_list_uninstalled_state);
         String sdkState = item.sdkString != null ? item.sdkString : "-";
-        cardView.setContentDescription(context.getString(R.string.main_list_app_content_description,
-                item.label, installedState, item.packageName, item.versionTag, sdkState));
+        String contentDescription = context.getString(R.string.main_list_app_content_description,
+                item.label, installedState, item.packageName, item.versionTag, sdkState);
+        if (!item.userTags.isEmpty()) {
+            contentDescription += " " + context.getString(R.string.main_list_tag_badge_a11y,
+                    MainListTagChipFormatter.summaryFor(item.userTags));
+        }
+        cardView.setContentDescription(contentDescription);
         super.onBindViewHolder(holder, position);
+    }
+
+    private void bindTagIndicator(@NonNull Context context, @NonNull ViewHolder holder,
+                                  @NonNull ApplicationItem item) {
+        if (holder.tagIndicator == null) {
+            return;
+        }
+        if (item.userTags.isEmpty()) {
+            holder.tagIndicator.setVisibility(View.GONE);
+            holder.tagIndicator.setText("");
+            holder.tagIndicator.setContentDescription(null);
+            holder.tagIndicator.setOnClickListener(null);
+            holder.tagIndicator.setClickable(false);
+            holder.tagIndicator.setFocusable(false);
+            return;
+        }
+        String summary = MainListTagChipFormatter.summaryFor(item.userTags);
+        holder.tagIndicator.setVisibility(View.VISIBLE);
+        holder.tagIndicator.setText(MainListTagChipFormatter.labelFor(item.userTags));
+        holder.tagIndicator.setContentDescription(context.getString(R.string.main_list_tag_badge_a11y, summary));
+        holder.tagIndicator.setOnClickListener(null);
+        holder.tagIndicator.setClickable(false);
+        holder.tagIndicator.setFocusable(false);
+        applyBadgeStyle(holder.tagIndicator, mColorSelectedStroke);
     }
 
     @Nullable
@@ -918,6 +948,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         TextView backupInfoExt;
         TextView trackerIndicator;
         TextView permIndicator;
+        TextView tagIndicator;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -939,6 +970,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             backupInfoExt = itemView.findViewById(R.id.backup_info_ext);
             trackerIndicator = itemView.findViewById(R.id.tracker_indicator);
             permIndicator = itemView.findViewById(R.id.perm_indicator);
+            tagIndicator = itemView.findViewById(R.id.tag_indicator);
         }
     }
 }

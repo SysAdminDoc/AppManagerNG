@@ -277,8 +277,11 @@ but were dropped from the 2026-05-26 consolidation. Folded back in here.
   `AppTagStore.isValidTag`) to create one. This closes the loop so the Finder
   "Tags" filter (`TagsOption`) finally has a way to create the tags it matches.
   User tags now also render in the App Info tag cloud (tappable -> editor),
-  shipped 2026-05-28. compile + aapt2 link green. **Follow-up: a main-list tag
-  chip (display only; creation/filtering/App-Details-display now work).**
+  shipped 2026-05-28. Main-list tag chips shipped 2026-06-03: list loads attach
+  the `AppTagStore` snapshot once per refresh, rows show a compact display-only
+  first-tag + remainder-count chip, and the row accessibility label includes the
+  full tag list. compile + aapt2 link green. _Data layer/display formatter:
+  `AppTagStore`, `MainListTagChipFormatter`; focused JVM coverage._
 
 ## B. Blocked on maintainer / external trackers
 

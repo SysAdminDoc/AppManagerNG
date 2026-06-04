@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Main-list tag chips (NF-08 follow-up, 2026-06-03)
+
+- Main App List rows now show assigned user tags as a compact display-only chip
+  using the first tag plus a `+N` remainder count when multiple tags are
+  attached.
+- Main list loading attaches the `AppTagStore` snapshot once per refresh, so
+  tag display does not read preferences per row bind. Row accessibility text
+  includes the full tag list.
+- The status-badge row now uses the existing `FlowLayout` wrapper so backup,
+  tracker, permission, and tag chips can wrap instead of overflowing narrow
+  rows.
+
 ### Added - Duplicate APK backup-root scanning (T19-C follow-up, 2026-06-03)
 
 - One-Click Ops duplicate-APK scans now include the configured AppManager
