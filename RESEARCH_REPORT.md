@@ -151,8 +151,9 @@ BroadcastReceiver (~120 KB, effort 2/5, novelty 5/5). QS tiles via
 `StatusBarManager.requestAddTileService()`: host-side code now ships "Run
 Freeze Profile" plus "Force-Stop Pinned App". The 2026-06-04 DocumentsProvider
 slice exposes AppManagerNG backup/profile roots through the standard
-`${applicationId}.documents` SAF authority; remaining integration work is the
-true Tasker plugin broker plus device SAF/QS manual verification.
+`${applicationId}.documents` SAF authority. The 2026-06-04 Locale/Tasker plugin
+slice adds signed in-app edit/fire brokers for `am://` automation URIs;
+remaining integration work is device SAF/QS/Tasker manual verification.
 
 **Stream 3 — Non-Phone Form Factors:**
 killer addition is a Wear OS phone-side package manager (no FOSS app does this;

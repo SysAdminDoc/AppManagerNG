@@ -1,13 +1,14 @@
 # AppManagerNG Intent / URI Schema
 
-**Status:** v0.4.x. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17; public user-confirmed `am://` automation actions and Tasker-style activity intents shipped 2026-05-18; read-only SAF documents provider shipped 2026-06-04.
+**Status:** v0.4.x. App-Info short alias `am://app/<pkg>` shipped 2026-05-09; signature-gated broadcast-intent automation surface (`io.github.sysadmindoc.AppManagerNG.action.*`) shipped 2026-05-17; public user-confirmed `am://` automation actions and Tasker-style activity intents shipped 2026-05-18; read-only SAF documents provider and Locale-compatible Tasker plugin broker shipped 2026-06-04.
 
-This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive or browse AppManagerNG. Four surfaces:
+This file documents how external apps (Tasker, MacroDroid, launcher pinned shortcuts, KDE Connect, custom URLs) should drive or browse AppManagerNG. Five surfaces:
 
 1. **URI deep links** (`app-manager://`, `am://`) — public, dispatched via the launcher. Anyone with the link can fire them; treat them as user-initiated UI navigation.
 2. **Public automation activity** ([`AutomationUriActivity`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/AutomationUriActivity.java)) — accepts `am://` operation URIs and `startActivity` intents using the same action constants as the broadcast API. It requires AppManagerNG authentication and a confirmation dialog before privileged work starts.
 3. **Broadcast actions** (`io.github.sysadmindoc.AppManagerNG.action.*`) — gated behind a signature-protected permission. Only callers signed with the AppManagerNG release certificate, or an in-app broker, can fire them without the public confirmation UI.
-4. **SAF documents provider** (`${applicationId}.documents`) — read-only Android file-picker roots for AppManagerNG-managed backups and profiles.
+4. **Locale-compatible plugin broker** ([`TaskerPluginEditActivity`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/TaskerPluginEditActivity.java) + [`TaskerPluginFireReceiver`](../app/src/main/java/io/github/muntashirakon/AppManager/automation/TaskerPluginFireReceiver.java)) — Tasker/Locale edit/fire integration that stores signed `am://` automation bundles and routes trusted fires to the in-app receiver.
+5. **SAF documents provider** (`${applicationId}.documents`) — read-only Android file-picker roots for AppManagerNG-managed backups and profiles.
 
 ---
 
@@ -132,15 +133,27 @@ Authorization: the manifest declares `io.github.sysadmindoc.AppManagerNG.permiss
 
 ---
 
-## Tasker / MacroDroid integration
+## Tasker / MacroDroid integration *(plugin broker shipped 2026-06-04)*
 
 Use either:
 
 1. A public URI, for example `am://freeze/com.example.app?user=0`.
 2. A Tasker/MacroDroid **Start Activity** intent with action `io.github.sysadmindoc.AppManagerNG.action.FREEZE` and extra `EXTRA_PACKAGE=com.example.app`.
-3. The in-app pinned-shortcut flow for launcher-native shortcuts.
+3. The Locale-compatible AppManagerNG plugin action for Tasker. Configure the action with any supported `am://` automation URI, for example `am://profile/nightly/run?state=on`.
+4. The in-app pinned-shortcut flow for launcher-native shortcuts.
 
-The public Activity path is intentionally confirmation-gated. The signature broadcast receiver remains reserved for NG-signed companions or future plugin/broker components that provide their own trusted setup UI.
+The public Activity path is intentionally confirmation-gated. The plugin path is the confirmation-free Tasker path because the setup UI runs inside AppManagerNG, stores Tasker's `com.twofortyfouram.locale.intent.extra.BUNDLE`, and signs the configured URI before Tasker can fire it later.
+
+Locale plugin protocol details:
+
+| Constant | Value |
+|----------|-------|
+| Edit action | `com.twofortyfouram.locale.intent.action.EDIT_SETTING` |
+| Fire action | `com.twofortyfouram.locale.intent.action.FIRE_SETTING` |
+| Bundle extra | `com.twofortyfouram.locale.intent.extra.BUNDLE` |
+| Blurb extra | `com.twofortyfouram.locale.intent.extra.BLURB` |
+
+Do not hand-craft the bundle. `TaskerPluginEditActivity` writes a private signed bundle containing the automation URI and a short blurb; `TaskerPluginFireReceiver` rejects missing, unsigned, tampered, or unsupported bundles before handing the request to `AutomationReceiver`. The signature broadcast receiver remains reserved for NG-signed companions and this in-app broker.
 
 ---
 
