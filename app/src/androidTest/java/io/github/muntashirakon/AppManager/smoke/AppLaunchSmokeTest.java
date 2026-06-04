@@ -2,41 +2,60 @@
 
 package io.github.muntashirakon.AppManager.smoke;
 
-import android.content.Context;
-import android.content.Intent;
-
-import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
-import androidx.test.uiautomator.Until;
+import androidx.test.uiautomator.UiObject2;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class AppLaunchSmokeTest {
-    private static final String TARGET_PACKAGE = "io.github.sysadmindoc.AppManagerNG.debug";
-    private static final long LAUNCH_TIMEOUT_MILLIS = 15_000L;
+    private static final String ONE_CLICK_OPS_ACTIVITY =
+            "io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity";
 
     @Test
     public void mainAppListLaunches() {
-        Context context = ApplicationProvider.getApplicationContext();
-        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(TARGET_PACKAGE);
-        Assert.assertNotNull("Launch intent must resolve for AppManagerNG debug.", launchIntent);
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        UiDevice device = SmokeTestUtils.device();
+        SmokeTestUtils.launchMain(device);
 
-        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        device.pressHome();
-        context.startActivity(launchIntent);
+        SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "item_list"),
+                "main app list RecyclerView");
+    }
 
-        Assert.assertTrue("AppManagerNG did not open its main window.",
-                device.wait(Until.hasObject(By.pkg(TARGET_PACKAGE).depth(0)), LAUNCH_TIMEOUT_MILLIS));
-        Assert.assertNotNull("Main app list RecyclerView was not present.",
-                device.wait(Until.findObject(By.res(TARGET_PACKAGE, "item_list")), LAUNCH_TIMEOUT_MILLIS));
+    @Test
+    public void mainBatchSelectionSurfaceLaunches() {
+        UiDevice device = SmokeTestUtils.device();
+        SmokeTestUtils.launchMain(device);
+        UiObject2 appList = SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "item_list"),
+                "main app list RecyclerView");
+        UiObject2 firstRow = SmokeTestUtils.waitForFirstChild(appList, "first app-list row");
+
+        firstRow.longClick();
+
+        SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "selection_view"),
+                "batch selection action surface");
+    }
+
+    @Test
+    public void oneClickOpsRuleAndBackupSurfaceLaunches() {
+        UiDevice device = SmokeTestUtils.device();
+        SmokeTestUtils.launchTargetActivity(device, ONE_CLICK_OPS_ACTIVITY);
+
+        SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "scrollView"),
+                "one-click operations scroll surface");
+        SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "one_click_ops_notice"),
+                "one-click operations notice");
+        SmokeTestUtils.waitForObject(device,
+                By.res(SmokeTestUtils.TARGET_PACKAGE, "container"),
+                "one-click operations action container");
     }
 }

@@ -393,6 +393,12 @@ walkthrough remains open for each.
   Manual verification remains open for a real Tasker fire, tile add/fire flows,
   privileged force-stop behavior, and SAF picker visibility for backups and
   profiles.
+- [ ] **Macrobenchmark/profile/smoke device matrix** — list-scroll and Backup
+  settings TTI macrobenchmarks, core-journey Baseline Profile collection, and
+  app-list/selection/One-Click Ops UIAutomator smoke scaffolds are implemented.
+  Remaining work is running the benchmark/profile generation on an online
+  device and running the smoke suite across API 26/30/34/35 before enabling a
+  device CI lane.
 
 ## D. Parked (needs explicit owner sign-off)
 
@@ -567,15 +573,6 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Evidence: `SnapshotBundle`, `SnapshotImportException`, `PrivacyPreferences`, `preferences_privacy.xml`, `ExternalProfileImporter`; archived ledger entries iter-64, iter-65, and iter-106 already recorded this as shipped.
   - Acceptance: bundle round-trips prefs/profiles/tags/history/rules with schema guardrails and path-traversal/size defenses; Canta/UAD-NG/Hail importers create App profiles.
   - Verify: `SnapshotBundleTest` and `ExternalProfileImporterTest`.
-  - Complexity: L
-- [ ] P2 — Macrobenchmark module + Baseline Profile + Espresso/UI-Automator smoke pack (research O-07, O-08)
-  - Why: pure-local performance + regression coverage with zero privacy cost; cold-start is dominated by `PackageManager` enumeration on the app-list path. (The CVE-scan and `floss`/`full` halves of the original O-07–O-10 row are already shipped — see the removed-as-shipped note above — so only the benchmark + smoke-test work remains.)
-  - Shipped 2026-06-04 (host-verifiable scaffold slice): `settings.gradle` now includes `:benchmark`; the module compiles AndroidX Macrobenchmark cold-start and BaselineProfileRule startup tests against `io.github.sysadmindoc.AppManagerNG.debug`; `app/src/main/baseline-prof.txt` carries a seed startup Baseline Profile; app androidTest now has a LargeTest UIAutomator launch smoke test for the main app list.
-  - Evidence: `:benchmark:compileDebugJavaWithJavac` and `:app:compileFullDebugAndroidTestJavaWithJavac` pass on the host JDK 21 toolchain. AndroidX Baseline Profile Gradle plugin wiring was tested but is not compatible with the current AGP 9.2.0 module model in this checkout, so the shipped slice uses plain benchmark rules plus a checked-in seed profile.
-  - Touches: `:benchmark` module + Baseline Profile (app-list path); `connectedCheck` smoke suite (open list, freeze/unfreeze, component blocker, one-shot rule) on API 26/30/34/35.
-  - Remaining touches: run macrobenchmark/profile generation on an online device; add list-scroll and Backups TTI benchmarks; expand smoke coverage from app-launch to freeze/unfreeze, component blocker, and one-shot rule flows; wire a device CI lane once the emulator matrix is available.
-  - Acceptance: benchmarks + smoke suite run in CI; a Baseline Profile ships in the release APK.
-  - Verify: run the macrobenchmark locally, assert it records cold-start and refreshes the profile; run the smoke suite on API 26/30/34/35 emulators. Host compile gates: `:benchmark:compileDebugJavaWithJavac`, `:app:compileFullDebugAndroidTestJavaWithJavac`, `:benchmark:assembleDebug`, `:app:assembleFullDebugAndroidTest`, and `:app:mergeFlossReleaseArtProfile`.
   - Complexity: L
 - [x] P2 — Upstream-issue fixes carried into NG (iter-20)
   - Why: high-signal upstream bug reports map to concrete NG actions; several are also Android-16/17 hard breaks.
