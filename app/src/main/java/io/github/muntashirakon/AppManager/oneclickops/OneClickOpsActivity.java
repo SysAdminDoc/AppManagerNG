@@ -564,8 +564,28 @@ public class OneClickOpsActivity extends BaseActivity {
                     }
                     confirmDeleteLeftovers(selected);
                 })
+                .setNeutralButton(R.string.leftover_files_export_results, (dialog, which, selectedIndices) -> {
+                    if (!requirePackageSelection(selectedIndices)) return;
+                    List<OneClickOpsViewModel.LeftoverEntry> selected = new ArrayList<>(selectedIndices.size());
+                    for (Integer index : selectedIndices) {
+                        selected.add(entries.get(index));
+                    }
+                    shareLeftoverList(selected);
+                })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void shareLeftoverList(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND)
+                .setType("text/tab-separated-values")
+                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.leftover_files_export_subject))
+                .putExtra(Intent.EXTRA_TEXT, LeftoverExportFormatter.toTsv(entries));
+        try {
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.leftover_files_export_results)));
+        } catch (Throwable throwable) {
+            UIUtils.displayLongToast(R.string.export_failed);
+        }
     }
 
     private void confirmDeleteLeftovers(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries) {
