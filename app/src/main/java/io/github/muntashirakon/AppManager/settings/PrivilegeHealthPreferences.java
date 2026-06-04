@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.KernelSuDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
+import io.github.muntashirakon.AppManager.runner.RootModuleInfo;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.server.common.Shell;
@@ -52,6 +53,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mModePref;
     private Preference mSelfTestPref;
     private Preference mRootManagerPref;
+    private Preference mRootModulesPref;
     private Preference mCapabilityDroppingPref;
     private Preference mKernelSuPref;
     private Preference mShizukuPref;
@@ -63,6 +65,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mBootstrapSmokeTestPref;
     @Nullable
     private KernelSuDiagnostics.Result mKernelSuLastResult;
+    @Nullable
+    private RootModuleInfo.Result mRootModulesLastResult;
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -71,6 +75,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mModePref = requirePreference("privilege_health_mode");
         mSelfTestPref = requirePreference("privilege_health_self_test");
         mRootManagerPref = requirePreference("privilege_health_root_manager");
+        mRootModulesPref = requirePreference("privilege_health_modules");
         mCapabilityDroppingPref = requirePreference("privilege_health_capability_dropping");
         mKernelSuPref = requirePreference("privilege_health_kernelsu");
         mShizukuPref = requirePreference("privilege_health_shizuku");
@@ -86,6 +91,10 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         });
         mKernelSuPref.setOnPreferenceClickListener(preference -> {
             showKernelSuDetails();
+            return true;
+        });
+        mRootModulesPref.setOnPreferenceClickListener(preference -> {
+            showRootModulesDetails();
             return true;
         });
         mBootstrapSmokeTestPref.setOnPreferenceClickListener(preference -> {
@@ -138,6 +147,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindBatteryOptimization(context);
         bindRestrictedSettings(context);
         bindRootManagerAsync(context.getApplicationContext());
+        bindRootModulesAsync();
         bindCapabilityDroppingAsync();
         bindKernelSuAsync(context.getApplicationContext());
     }
@@ -179,6 +189,43 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         }
         mRootManagerPref.setSummary(getString(R.string.privilege_health_root_manager_summary,
                 name, getRootManagerSourceLabel(info.source), extras));
+    }
+
+    private void bindRootModulesAsync() {
+        mRootModulesPref.setVisible(false);
+        mRootModulesPref.setEnabled(false);
+        mRootModulesPref.setSummary(R.string.privilege_health_modules_loading);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            RootModuleInfo.Result result = RootModuleInfo.probe();
+            ThreadUtils.postOnMainThread(() -> bindRootModules(result));
+        });
+    }
+
+    private void bindRootModules(@NonNull RootModuleInfo.Result result) {
+        if (!isAdded()) return;
+        mRootModulesLastResult = result;
+        if (result.state == RootModuleInfo.State.UNAVAILABLE) {
+            mRootModulesPref.setVisible(false);
+            return;
+        }
+        mRootModulesPref.setVisible(true);
+        switch (result.state) {
+            case ACTIVE:
+                mRootModulesPref.setEnabled(true);
+                mRootModulesPref.setSummary(getString(R.string.privilege_health_modules_summary,
+                        result.modules.size(), getRootModuleSummary(result.modules)));
+                break;
+            case EMPTY:
+                mRootModulesPref.setEnabled(false);
+                mRootModulesPref.setSummary(R.string.privilege_health_modules_empty);
+                break;
+            case UNKNOWN:
+            default:
+                mRootModulesPref.setEnabled(false);
+                mRootModulesPref.setSummary(getString(R.string.privilege_health_modules_unknown,
+                        result.error != null ? result.error : getString(R.string.state_unknown)));
+                break;
+        }
     }
 
     private void bindCapabilityDroppingAsync() {
@@ -545,6 +592,23 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         builder.show();
     }
 
+    private void showRootModulesDetails() {
+        Context context = getContext();
+        RootModuleInfo.Result result = mRootModulesLastResult;
+        if (context == null || result == null || result.modules.isEmpty()) {
+            bindRootModulesAsync();
+            return;
+        }
+        String message = RootModuleInfo.formatForDisplay(result.modules);
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.privilege_health_modules_dialog_title)
+                .setMessage(message)
+                .setNeutralButton(R.string.copy, (dialog, which) ->
+                        Utils.copyToClipboard(context, "Root modules", message))
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
     private void requestKernelSuRootGrant(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
         Toast.makeText(context, R.string.privilege_health_kernelsu_regrant_started, Toast.LENGTH_SHORT).show();
@@ -617,6 +681,22 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             return getString(R.string.state_unknown) + " (" + result.error + ")";
         }
         return getString(R.string.state_unknown);
+    }
+
+    @NonNull
+    private String getRootModuleSummary(@NonNull List<RootModuleInfo.Module> modules) {
+        StringBuilder summary = new StringBuilder();
+        int limit = Math.min(modules.size(), 3);
+        for (int i = 0; i < limit; ++i) {
+            if (summary.length() > 0) {
+                summary.append(", ");
+            }
+            summary.append(modules.get(i).label());
+        }
+        if (modules.size() > limit) {
+            summary.append(", +").append(modules.size() - limit);
+        }
+        return summary.toString();
     }
 
     @NonNull

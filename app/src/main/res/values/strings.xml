@@ -2196,6 +2196,12 @@
     <string name="privilege_health_root_source_none">no signal</string>
     <string name="privilege_health_root_extra_zygisk_next"> + ZygiskNext</string>
     <string name="privilege_health_root_extra_sui"> + Sui</string>
+    <string name="privilege_health_modules_title">Modules</string>
+    <string name="privilege_health_modules_loading">Loading module list…</string>
+    <string name="privilege_health_modules_empty">No Magisk/MMRL or LSPosed modules found.</string>
+    <string name="privilege_health_modules_summary"><xliff:g id="count" example="3">%1$d</xliff:g> module(s): <xliff:g id="modules" example="Zygisk - LSPosed, Sui">%2$s</xliff:g></string>
+    <string name="privilege_health_modules_unknown">Could not read module metadata: <xliff:g id="error" example="permission denied">%1$s</xliff:g></string>
+    <string name="privilege_health_modules_dialog_title">Installed modules</string>
     <string name="privilege_health_capability_dropping_title">Capability dropping (--drop-cap)</string>
     <string name="privilege_health_capability_dropping_unavailable">No active privileged shell is available. Reconnect root, ADB, or Shizuku, then refresh to test the current shell.</string>
     <string name="privilege_health_capability_dropping_root">Active shell is UID 0; root capabilities are expected (CapEff: <xliff:g id="cap_eff" example="0000003fffffffff">%1$s</xliff:g>). --drop-cap applies to non-root privileged UIDs.</string>

@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Root module inventory (research P3/B8, 2026-06-04)
+
+- Settings -> Privileges now exposes a root-gated Modules row for read-only
+  Magisk/MMRL and LSPosed module metadata.
+- The module dialog shows name, version, source, status markers, author,
+  description, and `module.prop` path with a copy action, and stays hidden
+  when no privileged shell is available.
+- Focused JVM coverage pins parser fallback behavior, source/status
+  normalization, empty results, and display formatting.
+
 ### Changed - Privacy/security API roadmap reconciliation (2026-06-04)
 
 - Closed the host-verifiable privacy/security API row in the completed ledgers:
