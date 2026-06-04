@@ -481,6 +481,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         int itemId = item.getItemId();
         if (itemId == R.id.action_refresh_detail) {
             refreshDetails();
+        } else if (itemId == R.id.action_customize_action_rail) {
+            showActionRailPreferenceDialog();
         } else if (itemId == R.id.action_share_apk) {
             showProgressIndicator(true);
             ThreadUtils.postOnBackgroundThread(() -> {
@@ -756,6 +758,40 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }
                 })
                 .setNeutralButton(R.string.new_tag, (dialog, which, selectedItems) -> promptNewTag(store))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showActionRailPreferenceDialog() {
+        String[] actionIds = AppInfoActionOrderResolver.getCustomizableActionIds();
+        CharSequence[] actionLabels = new CharSequence[actionIds.length];
+        boolean[] prioritized = new boolean[actionIds.length];
+        Set<String> prioritySet = new HashSet<>(Prefs.AppDetailsPage.getActionRailPriorityIds());
+        for (int i = 0; i < actionIds.length; ++i) {
+            actionLabels[i] = getString(AppInfoActionOrderResolver.getLabelRes(actionIds[i]));
+            prioritized[i] = prioritySet.contains(actionIds[i]);
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.app_info_action_rail_customize)
+                .setMessage(R.string.app_info_action_rail_customize_message)
+                .setMultiChoiceItems(actionLabels, prioritized,
+                        (dialog, which, isChecked) -> prioritized[which] = isChecked)
+                .setPositiveButton(R.string.save, (dialog, which) -> {
+                    ArrayList<String> selectedPriority = new ArrayList<>();
+                    for (int i = 0; i < actionIds.length; ++i) {
+                        if (prioritized[i]) {
+                            selectedPriority.add(actionIds[i]);
+                        }
+                    }
+                    Prefs.AppDetailsPage.setActionRailPriorityIds(selectedPriority);
+                    setupHorizontalActions();
+                    displayShortToast(R.string.done);
+                })
+                .setNeutralButton(R.string.reset_to_default, (dialog, which) -> {
+                    Prefs.AppDetailsPage.setActionRailPriorityIds(Collections.emptyList());
+                    setupHorizontalActions();
+                    displayShortToast(R.string.done);
+                })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
@@ -2580,7 +2616,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         Objects.requireNonNull(mMainModel);
         List<ActionItem> actionItems = new LinkedList<>();
         if (!mIsExternalApk && mIsDataOnlyPackage) {
-            ActionItem clearDataAction = new ActionItem(R.string.clear_data, R.drawable.ic_clear_data);
+            ActionItem clearDataAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_DATA,
+                    R.string.clear_data, R.drawable.ic_clear_data);
             actionItems.add(clearDataAction);
             clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(mAppLabel)
@@ -2590,7 +2627,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             R.string.authenticate_to_clear_data, this::clearDataOnlyPackage))
                     .setNegativeButton(R.string.cancel, null)
                     .show());
-            return actionItems;
+            return AppInfoActionOrderResolver.resolve(actionItems, Prefs.AppDetailsPage.getActionRailPriorityIds());
         }
         if (!mIsExternalApk) {
             boolean isStaticSharedLib = ApplicationInfoCompat.isStaticSharedLibrary(mApplicationInfo);
@@ -2603,7 +2640,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             // Set open
             Intent launchIntent = PackageManagerCompat.getLaunchIntentForPackage(mPackageName, mUserId);
             if (launchIntent != null && !isFrozen) {
-                ActionItem launchAction = new ActionItem(R.string.launch_app, R.drawable.ic_open_in_new);
+                ActionItem launchAction = new ActionItem(AppInfoActionOrderResolver.ACTION_LAUNCH,
+                        R.string.launch_app, R.drawable.ic_open_in_new);
                 actionItems.add(launchAction);
                 launchAction.setOnClickListener(v -> {
                     try {
@@ -2615,7 +2653,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
             // Set freeze/unfreeze
             if (canFreeze && !isFrozen) {
-                ActionItem freezeAction = new ActionItem(R.string.freeze, R.drawable.ic_snowflake);
+                ActionItem freezeAction = new ActionItem(AppInfoActionOrderResolver.ACTION_FREEZE,
+                        R.string.freeze, R.drawable.ic_snowflake);
                 actionItems.add(freezeAction);
                 freezeAction.setOnClickListener(v -> {
                             if (BuildConfig.APPLICATION_ID.equals(mPackageName)) {
@@ -2633,7 +2672,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
             // Set hide/unhide using pm hide, independent of the saved freeze method.
             if (canHide) {
-                ActionItem hideAction = new ActionItem(isHidden ? R.string.quick_unhide_app : R.string.quick_hide_app,
+                ActionItem hideAction = new ActionItem(AppInfoActionOrderResolver.ACTION_HIDE,
+                        isHidden ? R.string.quick_unhide_app : R.string.quick_hide_app,
                         isHidden ? R.drawable.ic_eye : R.drawable.ic_block);
                 actionItems.add(hideAction);
                 hideAction.setOnClickListener(v -> {
@@ -2650,7 +2690,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
             if (AppArchiveManager.canShowArchiveAction(Build.VERSION.SDK_INT, mUserId, UserHandleHidden.myUserId(),
                     mIsExternalApk, isStaticSharedLib, isSystemOrUpdatedSystemApp, mPackageName)) {
-                ActionItem archiveAction = new ActionItem(isArchived ? R.string.unarchive_app : R.string.archive_app,
+                ActionItem archiveAction = new ActionItem(AppInfoActionOrderResolver.ACTION_ARCHIVE,
+                        isArchived ? R.string.unarchive_app : R.string.archive_app,
                         R.drawable.ic_archive);
                 actionItems.add(archiveAction);
                 archiveAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
@@ -2662,7 +2703,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         .show());
             }
             // Set uninstall
-            ActionItem uninstallAction = new ActionItem(R.string.uninstall, R.drawable.ic_trash_can);
+            ActionItem uninstallAction = new ActionItem(AppInfoActionOrderResolver.ACTION_UNINSTALL,
+                    R.string.uninstall, R.drawable.ic_trash_can);
             actionItems.add(uninstallAction);
             uninstallAction.setOnClickListener(v -> {
                 if (mUserId != UserHandleHidden.myUserId() && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
@@ -2722,7 +2764,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             // Enable/disable app (root/ADB only)
             if (canFreeze && isFrozen) {
                 // Enable app
-                ActionItem unfreezeAction = new ActionItem(R.string.unfreeze, R.drawable.ic_snowflake_off);
+                ActionItem unfreezeAction = new ActionItem(AppInfoActionOrderResolver.ACTION_FREEZE,
+                        R.string.unfreeze, R.drawable.ic_snowflake_off);
                 actionItems.add(unfreezeAction);
                 unfreezeAction.setOnClickListener(v -> freeze(false))
                         .setOnLongClickListener(v -> {
@@ -2738,7 +2781,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 if (!ApplicationInfoCompat.isStopped(mApplicationInfo) &&
                         (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)
                                 || accessibilityServiceRunning)) {
-                    ActionItem forceStopAction = new ActionItem(R.string.force_stop, R.drawable.ic_power_settings);
+                    ActionItem forceStopAction = new ActionItem(AppInfoActionOrderResolver.ACTION_FORCE_STOP,
+                            R.string.force_stop, R.drawable.ic_power_settings);
                     actionItems.add(forceStopAction);
                     forceStopAction.setOnClickListener(v -> {
                         if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)) {
@@ -2768,7 +2812,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             if (!isStaticSharedLib && (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
                     || accessibilityServiceRunning)) {
                 // Clear data
-                ActionItem clearDataAction = new ActionItem(R.string.clear_data, R.drawable.ic_clear_data);
+                ActionItem clearDataAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_DATA,
+                        R.string.clear_data, R.drawable.ic_clear_data);
                 actionItems.add(clearDataAction);
                 clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
                         .setTitle(mAppLabel)
@@ -2808,7 +2853,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
             if (!isStaticSharedLib && (SelfPermissions.canClearAppCache() || accessibilityServiceRunning)) {
                 // Clear cache
-                ActionItem clearCacheAction = new ActionItem(R.string.clear_cache, R.drawable.ic_clear_cache);
+                ActionItem clearCacheAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_CACHE,
+                        R.string.clear_cache, R.drawable.ic_clear_cache);
                 actionItems.add(clearCacheAction);
                 clearCacheAction.setOnClickListener(v -> {
                     if (SelfPermissions.canClearAppCache()) {
@@ -2839,7 +2885,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 });
             } else {
                 // Display Android settings button
-                ActionItem settingAction = new ActionItem(R.string.view_in_settings, R.drawable.ic_settings);
+                ActionItem settingAction = new ActionItem(AppInfoActionOrderResolver.ACTION_SETTINGS,
+                        R.string.view_in_settings, R.drawable.ic_settings);
                 actionItems.add(settingAction);
                 settingAction.setOnClickListener(v -> {
                     try {
@@ -2852,7 +2899,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } else if (FeatureController.isInstallerEnabled()) {
             if (mInstalledPackageInfo == null) {
                 // App not installed
-                ActionItem installAction = new ActionItem(R.string.install, R.drawable.ic_get_app);
+                ActionItem installAction = new ActionItem(AppInfoActionOrderResolver.ACTION_INSTALL,
+                        R.string.install, R.drawable.ic_get_app);
                 actionItems.add(installAction);
                 installAction.setOnClickListener(v -> install());
             } else {
@@ -2861,24 +2909,28 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 long thisVersionCode = PackageInfoCompat.getLongVersionCode(mPackageInfo);
                 if (installedVersionCode < thisVersionCode) {
                     // Needs update
-                    ActionItem whatsNewAction = new ActionItem(R.string.whats_new, io.github.muntashirakon.ui.R.drawable.ic_information);
+                    ActionItem whatsNewAction = new ActionItem(AppInfoActionOrderResolver.ACTION_WHATS_NEW,
+                            R.string.whats_new, io.github.muntashirakon.ui.R.drawable.ic_information);
                     actionItems.add(whatsNewAction);
                     whatsNewAction.setOnClickListener(v -> {
                         WhatsNewDialogFragment dialogFragment = WhatsNewDialogFragment
                                 .getInstance(mPackageInfo, mInstalledPackageInfo);
                         dialogFragment.show(getChildFragmentManager(), WhatsNewDialogFragment.TAG);
                     });
-                    ActionItem updateAction = new ActionItem(R.string.update, R.drawable.ic_get_app);
+                    ActionItem updateAction = new ActionItem(AppInfoActionOrderResolver.ACTION_INSTALL,
+                            R.string.update, R.drawable.ic_get_app);
                     actionItems.add(updateAction);
                     updateAction.setOnClickListener(v -> install());
                 } else if (installedVersionCode == thisVersionCode) {
                     // Needs reinstall
-                    ActionItem reinstallAction = new ActionItem(R.string.reinstall, R.drawable.ic_get_app);
+                    ActionItem reinstallAction = new ActionItem(AppInfoActionOrderResolver.ACTION_INSTALL,
+                            R.string.reinstall, R.drawable.ic_get_app);
                     actionItems.add(reinstallAction);
                     reinstallAction.setOnClickListener(v -> install());
                 } else if (SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
                     // Needs downgrade
-                    ActionItem downgradeAction = new ActionItem(R.string.downgrade, R.drawable.ic_get_app);
+                    ActionItem downgradeAction = new ActionItem(AppInfoActionOrderResolver.ACTION_INSTALL,
+                            R.string.downgrade, R.drawable.ic_get_app);
                     actionItems.add(downgradeAction);
                     downgradeAction.setOnClickListener(v -> install());
                 }
@@ -2886,7 +2938,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         // Set manifest
         if (FeatureController.isManifestEnabled()) {
-            ActionItem manifestAction = new ActionItem(R.string.manifest, R.drawable.ic_package);
+            ActionItem manifestAction = new ActionItem(AppInfoActionOrderResolver.ACTION_MANIFEST,
+                    R.string.manifest, R.drawable.ic_package);
             actionItems.add(manifestAction);
             manifestAction.setOnClickListener(v -> {
                 Intent intent = new Intent(mActivity, ManifestViewerActivity.class);
@@ -2895,7 +2948,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         // Set scanner
         if (FeatureController.isScannerEnabled()) {
-            ActionItem scannerAction = new ActionItem(R.string.scanner, R.drawable.ic_security);
+            ActionItem scannerAction = new ActionItem(AppInfoActionOrderResolver.ACTION_SCANNER,
+                    R.string.scanner, R.drawable.ic_security);
             actionItems.add(scannerAction);
             scannerAction.setOnClickListener(v -> {
                 Intent intent = new Intent(mActivity, ScannerActivity.class);
@@ -2918,7 +2972,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 for (int i = 0; i < sharedPrefs.size(); ++i) {
                     sharedPrefNames[i] = sharedPrefs.get(i).getName();
                 }
-                ActionItem sharedPrefsAction = new ActionItem(R.string.shared_prefs, R.drawable.ic_view_list);
+                ActionItem sharedPrefsAction = new ActionItem(AppInfoActionOrderResolver.ACTION_SHARED_PREFS,
+                        R.string.shared_prefs, R.drawable.ic_view_list);
                 actionItems.add(sharedPrefsAction);
                 sharedPrefsAction.setOnClickListener(v -> new SearchableItemsDialogBuilder<>(mActivity, sharedPrefNames)
                         .setTitle(R.string.shared_prefs)
@@ -2944,7 +2999,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 for (int i = 0; i < databases.size(); ++i) {
                     databases2[i] = databases.get(i).getName();
                 }
-                ActionItem dbAction = new ActionItem(R.string.databases, R.drawable.ic_database);
+                ActionItem dbAction = new ActionItem(AppInfoActionOrderResolver.ACTION_DATABASES,
+                        R.string.databases, R.drawable.ic_database);
                 actionItems.add(dbAction);
                 dbAction.setOnClickListener(v -> new SearchableItemsDialogBuilder<>(v.getContext(), databases2)
                         .setTitle(R.string.databases)
@@ -2966,7 +3022,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         fdroidIntent.setData(Uri.parse("https://f-droid.org/packages/" + mPackageName));
         List<ResolveInfo> resolvedActivities = mPackageManager.queryIntentActivities(fdroidIntent, 0);
         if (!resolvedActivities.isEmpty()) {
-            ActionItem fdroidItem = new ActionItem(R.string.fdroid, R.drawable.ic_frost_fdroid);
+            ActionItem fdroidItem = new ActionItem(AppInfoActionOrderResolver.ACTION_FDROID,
+                    R.string.fdroid, R.drawable.ic_frost_fdroid);
             actionItems.add(fdroidItem);
             fdroidItem.setOnClickListener(v -> {
                 try {
@@ -2982,7 +3039,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 // Aurora Store is disabled or the installed version has promotional apps
                 throw new PackageManager.NameNotFoundException();
             }
-            ActionItem auroraStoreAction = new ActionItem(R.string.open_in_aurora_store, R.drawable.ic_frost_aurorastore);
+            ActionItem auroraStoreAction = new ActionItem(AppInfoActionOrderResolver.ACTION_AURORA_STORE,
+                    R.string.open_in_aurora_store, R.drawable.ic_frost_aurorastore);
             actionItems.add(auroraStoreAction);
             auroraStoreAction.setOnClickListener(v -> {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -2996,7 +3054,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             });
         } catch (PackageManager.NameNotFoundException ignored) {
         }
-        return actionItems;
+        return AppInfoActionOrderResolver.resolve(actionItems, Prefs.AppDetailsPage.getActionRailPriorityIds());
     }
 
     private void clearDataOnlyPackage() {

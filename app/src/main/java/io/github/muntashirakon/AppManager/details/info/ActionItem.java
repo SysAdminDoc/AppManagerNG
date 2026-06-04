@@ -18,6 +18,8 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 
 class ActionItem {
+    @NonNull
+    private final String mActionId;
     @StringRes
     private final int mTitleRes;
     @DrawableRes
@@ -25,9 +27,15 @@ class ActionItem {
     private View.OnClickListener mOnClickListener;
     private View.OnLongClickListener mOnLongClickListener;
 
-    public ActionItem(@StringRes int titleRes, @DrawableRes int iconRes) {
+    public ActionItem(@NonNull String actionId, @StringRes int titleRes, @DrawableRes int iconRes) {
+        mActionId = actionId;
         mTitleRes = titleRes;
         mIconRes = iconRes;
+    }
+
+    @NonNull
+    public String getActionId() {
+        return mActionId;
     }
 
     public ActionItem setOnClickListener(View.OnClickListener clickListener) {
@@ -44,6 +52,8 @@ class ActionItem {
         MaterialButton button = (MaterialButton) LayoutInflater.from(context).inflate(R.layout.item_app_info_action, parent, false);
         button.setBackgroundTintList(ColorStateList.valueOf(ColorCodes.getListItemColor1(context)));
         button.setText(mTitleRes);
+        button.setContentDescription(context.getString(R.string.app_info_action_button_content_description,
+                context.getString(mTitleRes)));
         button.setIconResource(mIconRes);
         if (mOnClickListener != null) {
             button.setOnClickListener(mOnClickListener);
