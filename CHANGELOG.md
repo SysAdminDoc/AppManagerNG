@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Terminal privilege-provider routing (research P2/#1727, 2026-06-04)
+
+- Terminal startup now labels the active route as local, root, Shizuku, or ADB
+  and tries to bind the active LocalServices-backed provider before falling
+  back to a local shell.
+- Local fallback is explicit in the route status, and startup failures,
+  remote-route fallback, process exits, and dead-process writes are surfaced in
+  the Terminal output instead of silently finishing the activity.
+
 ### Fixed - Mode of Operation apply lifecycle and rollback (research P2/#1817, 2026-06-04)
 
 - Settings -> Mode of Operation now initializes a selected mode as a candidate
