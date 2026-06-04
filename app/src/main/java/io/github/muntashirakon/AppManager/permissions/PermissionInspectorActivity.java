@@ -141,6 +141,7 @@ public class PermissionInspectorActivity extends BaseActivity {
                 PermissionRecovery.Result result =
                         PermissionRecovery.restoreAll(new AppOpsManagerCompat());
                 runOnUiThread(() -> {
+                    if (isDestroyed()) return;
                     finishRecoveryUi();
                     String msg = getString(R.string.perm_recovery_done_fmt,
                             result.packagesProcessed,
@@ -151,6 +152,7 @@ public class PermissionInspectorActivity extends BaseActivity {
                 });
             } catch (Throwable th) {
                 runOnUiThread(() -> {
+                    if (isDestroyed()) return;
                     finishRecoveryUi();
                     Toast.makeText(this, R.string.perm_recovery_failed, Toast.LENGTH_LONG).show();
                 });

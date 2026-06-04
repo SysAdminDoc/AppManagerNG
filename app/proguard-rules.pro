@@ -19,7 +19,7 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
-# Keep all class members that implement the percelable interface
+# Keep all class members that implement the Parcelable interface
 -keepclassmembers class * implements android.os.Parcelable {
     public static final ** CREATOR;
     public int describeContents();
