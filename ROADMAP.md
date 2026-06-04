@@ -399,6 +399,12 @@ walkthrough remains open for each.
   Remaining work is running the benchmark/profile generation on an online
   device and running the smoke suite across API 26/30/34/35 before enabling a
   device CI lane.
+- [ ] **Root module inventory rooted-device walkthrough** — Settings ->
+  Privileges -> Modules is implemented as a root-gated, read-only
+  Magisk/MMRL + LSPosed `module.prop` inventory and host-covered by
+  `RootModuleInfoTest`. Manual verification remains open on a rooted device
+  with at least one Magisk or LSPosed module to confirm the row is hidden
+  without a privileged shell and read-only when modules are present.
 
 ## D. Parked (needs explicit owner sign-off)
 
@@ -602,13 +608,6 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Novelty (P3, no FOSS competitor)
 
-- [ ] P3 — MMRL + LSPosed module browser (research B8)
-  - Why: power users manage modules in a separate app; read-only listing is one tab away from existing root detection.
-  - Evidence: no `/data/adb/modules/` reader in source.
-  - Touches: read `/data/adb/modules/` + `/data/adb/lspd/` `module.prop`; "Modules" entry under Privilege Health-Check, gated on root.
-  - Acceptance: lists installed modules read-only on rooted devices; hidden otherwise.
-  - Verify: on a rooted device with a Magisk module, assert the module appears read-only.
-  - Complexity: M
 - [ ] P3 — Wear OS phone-side companion + foldable posture awareness
   - Why: a Wear OS phone-side package manager is a no-FOSS-competitor banner feature (effort 4/5). (Note: the View-based tablet two-pane work is already tracked as **T21-H** in Existing Planned Work; this row is the *additive* Wear OS companion + foldable-posture awareness only, not the phone two-pane.)
   - Evidence: T21-H covers `SlidingPaneLayout` two-pane for phone/tablet; no `WearableListenerService`/`MessageClient`/watch companion in source.

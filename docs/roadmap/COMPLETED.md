@@ -154,6 +154,14 @@ trail. Long-form historical context is under
   `:benchmark:compileDebugJavaWithJavac :app:compileFullDebugAndroidTestJavaWithJavac`.
   Online macrobenchmark/profile generation and API 26/30/34/35 smoke execution
   remain device-gated.
+- [x] **P3 MMRL + LSPosed module browser** — Settings -> Privileges now exposes
+  a hidden-until-root Modules row that reads Magisk/MMRL
+  `/data/adb/modules/*/module.prop` and LSPosed `/data/adb/lspd/**/module.prop`
+  metadata without mutating module state. The dialog lists module name,
+  version, source, status markers, author, description, and path with a copy
+  action, while non-root states keep the row hidden. Focused verification:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runner.RootModuleInfoTest :app:compileFullDebugJavaWithJavac`.
+  A rooted-device module walkthrough remains device-gated.
 
 ## Closed on 2026-06-03
 
