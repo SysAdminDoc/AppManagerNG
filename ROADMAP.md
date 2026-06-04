@@ -117,18 +117,24 @@ than by historical priority tier:
   `.perfetto-trace` to Downloads and offering an "Open Perfetto UI" button
   (`perfettoUiUrl()`). The confirm dialog shows a pre-capture config preview
   ("10s · 64 MB ring · N ftrace events · pkg") via `PerfettoConfigInspector`
-  (shipped 2026-05-28). _Data layer: `PerfettoTraceConfigBuilder`,
-  `PerfettoCommandBuilder`, `PerfettoConfigInspector`. **Follow-up: a duration
-  picker and true mid-capture cancellation (device-verified).**_
+  (shipped 2026-05-28). Follow-up picker shipped 2026-06-03: the action now
+  opens a duration dropdown (`5s`/`10s`/`30s`/`1m`/`2m`) before the final
+  confirmation, and the config preview reflects the selected duration. _Data
+  layer: `PerfettoTraceConfigBuilder`, `PerfettoCommandBuilder`,
+  `PerfettoConfigInspector`, `ProfileCaptureOptionCatalog`. **Follow-up:
+  true mid-capture cancellation remains device-verified.**_
 - [x] **T20-B simpleperf CPU profile capture**: App Details overflow ->
   "Record CPU profile" shipped 2026-05-28 — gated on root/Shizuku/ADB, confirms
   (explaining the DWARF call-graph + platform `simpleperf`), then
   `AppProfileCapture.captureCpuProfile` runs the `CpuProfileCommandBuilder`
   argv (validated) via `Runner`, saving raw `perf.data` to Downloads.
-  _Data layer: `CpuProfileCommandBuilder`, `CpuProfileEventCatalog`,
-  `PrivilegedRunnerArgValidator`. **Follow-up: duration/event picker (gated by
-  `CpuProfileEventCatalog`), on-device flame-graph SVG conversion, and true
-  mid-capture cancellation (device-verified).**_
+  Follow-up picker shipped 2026-06-03: the action now opens duration + event
+  dropdowns, with events filtered by device API level and primary ABI through
+  `CpuProfileEventCatalog`; the command-builder allow-list is aligned so every
+  offered event is honored. _Data layer: `CpuProfileCommandBuilder`,
+  `CpuProfileEventCatalog`, `ProfileCaptureOptionCatalog`,
+  `PrivilegedRunnerArgValidator`. **Follow-up: on-device flame-graph SVG
+  conversion and true mid-capture cancellation remain device-verified.**_
 - [x] **T20-C Memory allocations inspector**: App Details overflow ->
   "Memory snapshot" shipped 2026-05-28 — `AppMemorySnapshotLoader.load` runs
   `dumpsys meminfo`/`gfxinfo` plus `pidof` -> `/proc/<pid>/status` + `/maps`

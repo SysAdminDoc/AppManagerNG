@@ -59,6 +59,7 @@ public final class CpuProfileCommandBuilder {
             new LinkedHashSet<>(Arrays.asList(
                     "cpu-cycles",
                     "task-clock",
+                    "cpu-clock",
                     "instructions",
                     "cache-references",
                     "cache-misses",
@@ -66,8 +67,20 @@ public final class CpuProfileCommandBuilder {
                     "branch-misses",
                     "bus-cycles",
                     "page-faults",
+                    "cpu-migrations",
+                    "minor-faults",
+                    "major-faults",
                     "context-switches",
-                    "cpu-clock"
+                    "stalled-cycles-frontend",
+                    "stalled-cycles-backend",
+                    "L1-dcache-loads",
+                    "L1-dcache-load-misses",
+                    "L1-icache-loads",
+                    "L1-icache-load-misses",
+                    "dTLB-loads",
+                    "dTLB-load-misses",
+                    "iTLB-loads",
+                    "iTLB-load-misses"
             )));
 
     /**

@@ -882,8 +882,14 @@
     <string name="action_record_cpu_profile">Record CPU profile</string>
     <string name="profile_capture_permission_required">Profiling needs root, Shizuku, or ADB access.</string>
     <string name="perfetto_trace_confirm">Capture a ~10-second Perfetto system trace focused on this app? The <tt>.perfetto-trace</tt> file is saved to Downloads.</string>
+    <string name="perfetto_trace_confirm_with_duration">Capture a <xliff:g id="duration" example="30s">%1$s</xliff:g> Perfetto system trace focused on this app? The <tt>.perfetto-trace</tt> file is saved to Downloads.</string>
     <string name="perfetto_trace_preview">Trace config: <xliff:g id="summary" example="10s · 64 MB ring · 8 ftrace events · com.example">%1$s</xliff:g></string>
     <string name="cpu_profile_confirm">Record a ~10-second simpleperf CPU profile for this app? The raw <tt>perf.data</tt> is saved to Downloads. <tt>simpleperf</tt> ships with the platform; sampling uses a DWARF call graph.</string>
+    <string name="cpu_profile_confirm_with_options">Record a <xliff:g id="duration" example="30s">%1$s</xliff:g> simpleperf CPU profile for this app using <tt><xliff:g id="event" example="cpu-cycles">%2$s</xliff:g></tt>? The raw <tt>perf.data</tt> is saved to Downloads. Sampling uses a DWARF call graph.</string>
+    <string name="profile_capture_duration">Duration</string>
+    <string name="profile_capture_duration_helper">Longer captures create larger files and keep the privileged recorder running longer.</string>
+    <string name="profile_capture_event">Event</string>
+    <string name="cpu_profile_event_helper">Events are filtered for this device API level and primary ABI.</string>
     <string name="profile_capturing">Capturing — this runs for the full sampling window.</string>
     <string name="profile_capture_result_title">Capture complete</string>
     <string name="perfetto_trace_saved">Trace saved to:\n<xliff:g id="path" example="/sdcard/Download/app.perfetto-trace">%1$s</xliff:g></string>

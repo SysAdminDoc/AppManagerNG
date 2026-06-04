@@ -155,6 +155,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   package"), parsed back from the generated text-proto via the existing
   `PerfettoConfigInspector`, so the user sees what they're about to capture.
 
+### Added - Profiling capture pickers (T20-A/T20-B follow-up, 2026-06-03)
+
+- App Details -> "Export Perfetto trace" now opens a duration picker before
+  the final confirmation. The generated Perfetto config and preview summary
+  use the selected duration instead of the fixed 10-second default.
+- App Details -> "Record CPU profile" now opens duration and event pickers.
+  Events are filtered by the device API level and primary ABI through
+  `CpuProfileEventCatalog`, with the command-builder allow-list aligned so
+  every offered event is passed through to `simpleperf`.
+- Added `ProfileCaptureOptionCatalog` to keep duration labels/parsing and
+  device-filtered simpleperf event options JVM-testable. Device-only follow-ups
+  still remain for true mid-capture cancellation and flame-graph SVG export.
+
 ### Added - Scheduled-backup skip-reason capture (EI-07 data layer, 2026-05-28)
 
 - The scheduled-backup selector now records *why* each package was skipped
