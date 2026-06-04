@@ -11,6 +11,10 @@ trail. Long-form historical context is under
 
 ## Closed on 2026-06-03
 
+- [x] **T19-B App Details uninstalled-package convenience entry** — App
+  Details now opens data-only `MATCH_UNINSTALLED_PACKAGES` records without
+  resolving a missing APK, and App Info exposes a guarded Clear data action to
+  complete leftover-data cleanup from the details screen.
 - [x] **T19-B dedicated `op_history` cleanup audit type** — leftover-folder
   deletion now records one high-risk, non-replayable Cleanup history row with
   selected/deleted counts, reclaimed bytes, and target previews; Operation
