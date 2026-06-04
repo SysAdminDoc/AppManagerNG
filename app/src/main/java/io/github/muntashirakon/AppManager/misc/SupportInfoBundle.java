@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.io.Path;
@@ -155,6 +156,12 @@ public final class SupportInfoBundle {
         appendLine(sb, "Log viewer", enabled(FeatureController.isLogViewerEnabled()));
         appendLine(sb, "Usage access", enabled(FeatureController.isUsageAccessEnabled()));
         appendLine(sb, "Terminal", enabled(FeatureController.isTerminalEnabled()));
+        sb.append('\n');
+
+        sb.append("Local crash sink").append('\n');
+        sb.append("----------------").append('\n');
+        appendLine(sb, "Enabled", String.valueOf(Prefs.Privacy.isLocalCrashSinkEnabled()));
+        sb.append(LocalCrashSink.buildSupportSummary(context));
         sb.append('\n');
 
         sb.append("Scrubbed logcat tail").append('\n');

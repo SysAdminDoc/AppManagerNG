@@ -71,6 +71,12 @@
         app:summary="@string/pref_signing_cert_change_monitor_msg"
         app:iconSpaceReserved="false" />
 
+    <SwitchPreferenceCompat
+        app:key="local_crash_sink_enabled"
+        app:title="@string/pref_local_crash_sink"
+        app:summary="@string/pref_local_crash_sink_msg"
+        app:iconSpaceReserved="false" />
+
     <PreferenceCategory
         app:key="snapshot_category"
         app:title="@string/pref_snapshot_category"

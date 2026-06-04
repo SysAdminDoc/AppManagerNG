@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Opt-in local crash sink for support bundles (research P2, 2026-06-04)
+
+- Privacy settings now expose a default-off "Local crash sink" switch. When it
+  is disabled, uncaught crashes no longer persist private crash logs on disk.
+- When enabled, crashes are saved as bounded local JSON files only and reuse the
+  support-info scrubber for thread names, messages, stack frames, causes, and
+  embedded report text; no remote telemetry path is introduced.
+- Support-info bundles now include the local crash-sink state and recent
+  scrubbed crash summaries so user-initiated support shares can carry crash
+  context without raw paths, UIDs, package names, or email addresses.
+
 ### Added - Mode Doctor fix-it probe screen (research P2, 2026-06-03)
 
 - Settings -> Privileges -> Mode doctor now opens a dedicated active-probe
