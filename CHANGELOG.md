@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Installer oversized icon clamp (research P1/#1833, 2026-06-05)
+
+- Installer confirmation titles now sanitize APK-provided app icons before
+  passing them to the dialog header, so oversized bitmap drawables are downscaled
+  to a bounded display icon instead of reaching the `ImageView` draw path raw.
+- Non-bitmap icons with safe intrinsic sizes are preserved, oversized drawable
+  sources are rendered into a bounded bitmap, and icon rendering failures fall
+  back to the platform default activity icon.
+- Focused Robolectric coverage pins small-bitmap preservation, oversized bitmap
+  scaling, oversized non-bitmap rendering, safe drawable preservation, and
+  fallback behavior.
+
 ### Added - Root module inventory (research P3/B8, 2026-06-04)
 
 - Settings -> Privileges now exposes a root-gated Modules row for read-only

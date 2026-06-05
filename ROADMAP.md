@@ -69,7 +69,9 @@ than by historical priority tier:
 - The build toolchain is verified working on the current host (Gradle 9.4.1,
   AGP 9.2.0, NDK 28.2.13676358, JDK 21 toolchain):
   `:app:compileFullDebugUnitTestJavaWithJavac` and targeted
-  `:app:testFullDebugUnitTest` both green as of 2026-05-28.
+  `:app:testFullDebugUnitTest` both green as of 2026-05-28; focused installer
+  icon-sanitizer coverage and `:app:compileFullDebugJavaWithJavac` were green
+  in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
 
@@ -631,27 +633,6 @@ links touched by the edit.
   promoted without stronger source/design proof.
 
 ### Cycle 6 Promoted Items (2026-06-05)
-
-- [ ] P1 - Clamp oversized installer icons before dialog rendering
-  - Why: upstream reports the installer crashing before package confirmation when
-    an APK exposes an extremely large bitmap icon. NG currently loads the raw
-    application icon and passes it directly into a dialog title `ImageView`, so
-    layout scaling does not protect the draw path from pathological icon bitmaps.
-  - Evidence URL or file:line:
-    https://github.com/MuntashirAkon/AppManager/issues/1833,
-    `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java:225-226`,
-    `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallerDialogHelper.java:104-108`,
-    `libcore/ui/src/main/java/io/github/muntashirakon/dialog/DialogTitleBuilder.java:79-82`.
-  - Touches: installer package-info parsing/display model, dialog title icon
-    handling or a shared drawable sanitizer, default-icon fallback path, and
-    installer parse-success tests.
-  - Acceptance: oversized bitmap icons are downscaled or replaced before
-    rendering; vector/adaptive/normal icons still render sharply; icon decode or
-    draw failures degrade to the default app icon; the install confirmation flow
-    reaches user choice instead of crashing.
-  - Verify: host tests for bitmap/vector/adaptive icon sanitization and fallback,
-    a large-icon APK fixture or fake `BitmapDrawable` test, plus a manual
-    install-dialog walkthrough confirming the title icon renders without a crash.
 
 - [ ] P1 - Add a splash mode-initialization watchdog and recovery path
   - Why: upstream reports indefinite "Initializing" splash hangs around wireless
