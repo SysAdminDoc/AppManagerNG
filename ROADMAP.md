@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-04. Baseline: `main` at `889ecd1`, app
+Last consolidated: 2026-06-05. Baseline: `main` at `21d1d00`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 5 - 2026-06-04.
+> Last researched: Cycle 7 - 2026-06-05.
 
 ## Implementer Instructions
 
@@ -723,6 +723,18 @@ links touched by the edit.
     assistant-setting restore; manual Android 16 ADB-mode checks for one known
     exported service and receiver; regression checks for existing force-stop,
     freeze/unfreeze, and App Info assistant actions.
+
+### Researcher Queue (Cycle 7 - 2026-06-05)
+
+- [x] ✅ 🔬 `upstream-issue-recheck-after-installer-cycle-2026-06-05` -
+  rechecked the current upstream open/closed issue set, the active roadmap,
+  completed ledgers, and local source hotspots after the Cycle 6 installer/mode
+  queue landed. No new rows were promoted: #1833/#1825/#1829/#1806/#1973 are
+  already represented by Cycle 6, #1980/#1975/#1969/#1967/#1964/#1963/#1956/
+  #1953/#1948/#1848/#1817/#1810/#1805 are shipped or already represented by
+  existing rows, and #1816 still needs a source-backed stale-state proof before
+  it should become roadmap work. The local installer-icon source/test work was
+  left unstaged for the build lane.
 
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
