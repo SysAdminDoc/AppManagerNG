@@ -9,6 +9,18 @@ roadmap holds only open work. Full per-release prose lives in
 trail. Long-form historical context is under
 [`archive/`](archive/).
 
+## Closed on 2026-06-05
+
+- [x] **P1 oversized installer icon clamp** — installer parse-success dialogs
+  now route APK icons through `InstallerIconSanitizer` before handing them to
+  `DialogTitleBuilder`, preserving bounded bitmap/non-bitmap icons, scaling
+  oversized bitmap and drawable sources to a 96 dp edge budget, and falling back
+  to the platform default activity icon when icon rendering fails. Focused
+  verification in this checkout:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.InstallerIconSanitizerTest`,
+  which also executed `:app:compileFullDebugJavaWithJavac`. Manual
+  install-dialog walkthrough with a pathological APK icon remains device-gated.
+
 ## Closed on 2026-06-04
 
 - [x] **P2 App Info action rail priority controls** — App Info horizontal

@@ -12,6 +12,10 @@ historical context and the previous ledger are under
 
 ## Shipped Features
 
+### Closed on 2026-06-05
+
+- [x] **P1 oversized installer icon clamp** — installer parse-success dialogs now route APK icons through `InstallerIconSanitizer` before handing them to `DialogTitleBuilder`, preserving bounded bitmap/non-bitmap icons, scaling oversized bitmap and drawable sources to a 96 dp edge budget, and falling back to the platform default activity icon when icon rendering fails. Focused verification in this checkout: `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.InstallerIconSanitizerTest`, which also executed `:app:compileFullDebugJavaWithJavac`. Manual install-dialog walkthrough with a pathological APK icon remains device-gated. — *Source: ROADMAP.md*
+
 ### Closed on 2026-06-04
 
 - [x] **P2 App Info action rail priority controls** — App Info horizontal actions now use stable IDs and resolve through a default priority model that keeps Launch, Freeze/Unfreeze, and Force-stop ahead of rare or destructive actions while pruning unsupported actions. The overflow menu adds "Customize action rail" so users can pin available actions to the front or reset to defaults, and action buttons now expose explicit content descriptions. Focused verification: `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.details.info.AppInfoActionOrderResolverTest`. Manual phone-width checks with force-stop, frozen, archived, and data-only packages remain device-gated. — *Source: ROADMAP.md*

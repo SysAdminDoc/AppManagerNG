@@ -104,7 +104,7 @@ public final class InstallerDialogHelper {
     public void onParseSuccess(CharSequence title, CharSequence subtitle, Drawable icon,
                                @Nullable View.OnClickListener optionsClickListener) {
         mTitleBuilder.setTitle(title)
-                .setStartIcon(icon)
+                .setStartIcon(InstallerIconSanitizer.sanitizeForDialog(mContext, icon))
                 .setSubtitle(subtitle);
         if (optionsClickListener != null) {
             mTitleBuilder.setEndIcon(R.drawable.ic_settings, optionsClickListener)
