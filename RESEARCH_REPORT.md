@@ -27,6 +27,7 @@ rejected on license/privacy/scope grounds are recorded as STALE in
 10. Research Refresh - mode and terminal delta (2026-06-04 Cycle 3)
 11. Research Refresh - recovery and headset pairing delta (2026-06-04 Cycle 4)
 12. Research Refresh - release trust and overlay/profile delta (2026-06-04 Cycle 5)
+13. Project Research and Feature Plan - installer, mode recovery, and action parity delta (2026-06-05 Cycle 6)
 
 ---
 
@@ -1075,3 +1076,248 @@ Primary and project-source material reviewed or rechecked:
 - Do not replace the reproducible release workflow. SBOM and provenance are
   additive release assets.
 - Do not implement feature code from this report in the research lane.
+
+---
+
+## 13. Project Research and Feature Plan - installer, mode recovery, and action parity delta (2026-06-05 Cycle 6)
+
+This pass re-synced `main` at `ad90c97`, re-read the active roadmap/completed
+ledger, checked recent upstream AppManager issues through the accepted
+assistant-service/broadcast request and the late-2025 installer/startup/running
+apps reports, and verified the affected local source paths. No feature code was
+changed; the output is a planning delta promoted to `ROADMAP.md`.
+
+### Executive Summary
+
+The current AppManagerNG backlog is already strong on large product lanes:
+Wireless ADB pairing fallback, Debloater recovery, App Info action priority,
+release trust, profile visibility, overlay safety, and root module inventory are
+either shipped or actively queued. The freshest code-backed opportunities are
+smaller but high-leverage reliability and parity gaps where user reports map
+directly to local one-way or blocking flows.
+
+Promoted opportunities:
+
+1. `[Promoted P1]` Clamp oversized installer icons before dialog rendering.
+2. `[Promoted P1]` Add a splash mode-initialization watchdog and recovery path.
+3. `[Promoted P2]` Add a Running Apps inverse action to restore background
+   operation.
+4. `[Promoted P2]` Design a guarded ADB assistant trampoline for services and
+   broadcasts.
+
+### Research Method
+
+- Read the live root instructions, repo instructions, `ROADMAP.md`,
+  `RESEARCH_REPORT.md`, `COMPLETED.md`, `PROJECT_CONTEXT.md`, and recent git
+  history.
+- Queried recent upstream AppManager issue reports and compared them against
+  local source before promoting anything.
+- Searched current source for installer icon loading, splash mode init,
+  background-run AppOps writes, Running Apps menu state, assistant actions, file
+  archive handling, code-editor MIME filters, and rollback support.
+- Treated upstream reports as evidence of user pain, not as implementation
+  requirements. A row was promoted only when the local source gap was visible and
+  not already represented by the active roadmap.
+
+### Evidence Reviewed
+
+- **Local files and code paths:** `ROADMAP.md`, `COMPLETED.md`,
+  `RESEARCH_REPORT.md`, `CHANGELOG.md`, `PROJECT_CONTEXT.md`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallerDialogHelper.java`,
+  `libcore/ui/src/main/java/io/github/muntashirakon/dialog/DialogTitleBuilder.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/main/SplashActivity.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModel.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsAdapter.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsManager.java`,
+  `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/PerAppRollbackManager.java`,
+  and `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java`.
+- **Git history:** `rtk git log -10` from `ad90c97` back through release trust
+  research, Wear OS blocker docs, root module inventory, benchmark smoke
+  journeys, and action-rail/Debloater/ADB recovery work.
+- **Could not verify:** a physical APK sample with a pathological icon, actual
+  Xiaomi/Realme ROM wireless-debugging splash hangs, Android 16 assistant
+  service/broadcast behavior across OEMs, and whether users expect background
+  restoration to use `MODE_DEFAULT` or the exact pre-operation mode when history
+  exists.
+
+### External Source Register
+
+Primary external material reviewed or rechecked:
+
+1. https://github.com/MuntashirAkon/AppManager/releases/tag/v4.0.5
+2. https://github.com/MuntashirAkon/AppManager/issues/1833
+3. https://github.com/MuntashirAkon/AppManager/issues/1825
+4. https://github.com/MuntashirAkon/AppManager/issues/1829
+5. https://github.com/MuntashirAkon/AppManager/issues/1806
+6. https://github.com/MuntashirAkon/AppManager/issues/1973
+7. https://github.com/MuntashirAkon/AppManager/issues/1838
+8. https://github.com/MuntashirAkon/AppManager/issues/1834
+9. https://github.com/MuntashirAkon/AppManager/issues/1839
+10. https://github.com/MuntashirAkon/AppManager/issues/1858
+11. https://developer.android.com/reference/android/content/pm/PackageManager#getApplicationIcon(android.content.pm.ApplicationInfo)
+12. https://developer.android.com/reference/android/widget/ImageView
+13. https://developer.android.com/reference/android/app/AppOpsManager
+14. https://developer.android.com/reference/android/app/SearchManager#launchAssist(android.os.Bundle)
+15. https://developer.android.com/reference/android/provider/Settings.Secure#ASSISTANT
+16. https://developer.android.com/reference/android/content/Context#startService(android.content.Intent)
+17. https://developer.android.com/reference/android/content/Context#sendBroadcast(android.content.Intent)
+18. https://github.com/RikkaApps/Shizuku/releases/tag/v13.6.0
+
+### Current Product Map Delta
+
+- **Installer parse success path:** `PackageInstallerViewModel` loads the APK
+  label/icon from `PackageManager` and stores the raw `Drawable`. The dialog then
+  passes that drawable into `DialogTitleBuilder.setStartIcon()`, which assigns it
+  directly to an `ImageView`. Upstream #1833 reports a crash from a very large
+  bitmap icon before the installer confirmation screen appears. [Verified]
+- **Splash mode init:** `SplashActivity.handleMigrationAndModeOfOp()` switches
+  the state text to `initializing` and calls `SecurityAndOpsViewModel.setModeOfOps()`.
+  The viewmodel posts authentication status only after migration plus
+  `Ops.init(...)` returns. There is no visible stage heartbeat, timeout, or
+  recoverable fallback if mode init blocks. Upstream #1825/#1829 describe
+  indefinite startup hangs around wireless debugging and ROM permission toggles.
+  [Verified]
+- **Running Apps background prevention:** `RunningAppsViewModel` can check
+  whether background run is currently allowed and can write the background AppOps
+  to `MODE_IGNORED`. The per-row menu shows only `action_disable_background` and
+  only when the app can still run in background. Batch operation code also writes
+  only the disable direction, although operation-history rollback can synthesize
+  a per-app default-mode rollback queue after the fact. [Verified]
+- **Assistant action surface:** `AssistActionActivity` exposes force-stop,
+  freeze/unfreeze, and open App Info. It does not expose typed service or
+  broadcast execution, even though upstream #1973 is accepted and points out that
+  ADB assistant routing currently covers activity-style launch only. [Verified]
+
+### Promoted Roadmap Items
+
+- **P1 - Clamp oversized installer icons before dialog rendering**
+  - Why: a malformed or unusually large APK icon can crash the installer before
+    users see package details or installation choices.
+  - Evidence: upstream #1833 plus `PackageInstallerViewModel.java:225-226`,
+    `InstallerDialogHelper.java:104-108`, and `DialogTitleBuilder.java:79-82`.
+  - Priority rationale: installer crashes are high-confidence, externally
+    reported, and can be tested with a small sanitizer unit without changing
+    privileged install behavior.
+  - Verification: host tests for bitmap/vector/adaptive icon sanitization,
+    fallback-icon handling on decode failure, and a manual install-dialog pass
+    with a large-icon fixture.
+
+- **P1 - Splash mode-initialization watchdog and recovery path**
+  - Why: mode startup is a critical path for every launch. A blocked ADB/Shizuku/
+    root init leaves users with no path to switch mode, retry, or collect
+    diagnostics.
+  - Evidence: upstream #1825/#1829 plus `SplashActivity.java:209-218` and
+    `SecurityAndOpsViewModel.java:51-75`.
+  - Priority rationale: this is a launch-blocking reliability issue and also
+    improves supportability for OEM ROMs that repeatedly disable wireless
+    debugging or permission-monitoring settings.
+  - Verification: fake stalled `Ops.init()` tests, timeout and retry unit tests,
+    and manual no-root/ADB/Shizuku startup checks with wireless debugging off,
+    Shizuku stopped, and a successful normal mode.
+
+- **P2 - Running Apps restore-background-operation action**
+  - Why: the UI can apply a background-run restriction from Running Apps, but the
+    same surface does not reveal an inverse action once the restriction is active.
+  - Evidence: upstream #1806 plus `RunningAppsViewModel.java:244-287`,
+    `RunningAppsAdapter.java:319-330`, `BatchOpsManager.java:748-789`, and
+    `PerAppRollbackManager.java:233-240`.
+  - Priority rationale: operation-history rollback helps after tracked ops, but
+    Running Apps should still be reversible at the point of inspection.
+  - Verification: AppOps mode tests for Android N/P+ background ops, UI state
+    tests for disable vs restore menu visibility, and a manual Running Apps
+    flow showing disable then restore on the same package.
+
+- **P2 - Guarded ADB assistant trampoline for services and broadcasts**
+  - Why: upstream #1973 is accepted and identifies a specific rootless parity
+    gap: contextual assistant actions can launch an activity path, while service
+    and broadcast component actions remain outside the assistant quick path.
+  - Evidence: upstream #1973 plus `AssistActionActivity.java:38-40`,
+    `AssistActionActivity.java:108-117`, and
+    `AssistActionActivity.java:169-191`.
+  - Priority rationale: this should be a constrained spike, not a broad
+    arbitrary-intent runner. The valuable scope is user-selected component
+    actions with clear target, extras, route, audit, and rollback of temporary
+    assistant settings.
+  - Verification: unit tests for action gating and intent/component validation,
+    tests that restore the previous assistant setting after success/failure, and
+    manual Android 16 ADB-mode checks for a known exported service and receiver.
+
+### Detailed Feature Plan
+
+1. **Installer icon clamp**
+   - Add a small installer/UI icon sanitizer that accepts `Drawable`, caps the
+     rendered bitmap dimensions/byte budget, preserves vector/adaptive icons
+     where possible, and falls back to the default app icon on failure.
+   - Apply it before `DialogTitleBuilder.setStartIcon()` rather than relying on
+     `ImageView` scaling, because the reported failure happens while drawing the
+     source bitmap.
+   - Keep package parsing behavior unchanged; only the display drawable changes.
+
+2. **Splash init recovery**
+   - Split startup into visible stages: migration, mode initialization, reconnect/
+     privilege probe, and final route.
+   - Add a watchdog around mode init with a recoverable result that offers retry,
+     switch to a safe/no-root mode where appropriate, open Mode Doctor/settings,
+     or export diagnostics.
+   - Ensure stale callbacks from a timed-out attempt cannot race a newer retry.
+
+3. **Background-operation restore**
+   - Add `isBackgroundRunPrevented()` / `restoreBackgroundRun()` helpers next to
+     the current one-way Running Apps methods.
+   - Prefer restoring the tracked previous mode when operation history provides
+     it; otherwise use `MODE_DEFAULT` for the two background AppOps and update
+     `ComponentsBlocker` rules consistently.
+   - Surface the inverse in both per-row Running Apps actions and, if selection
+     semantics stay clear, batch operations.
+
+4. **Assistant service/broadcast spike**
+   - Reuse existing component metadata and confirmation surfaces; do not accept
+     arbitrary raw intents from third-party callers.
+   - Gate by mode, platform behavior, exported/non-exported target, and required
+     privilege. Make service/broadcast type explicit in labels and audit rows.
+   - Preserve and restore the previous assistant setting even on failure or
+     cancellation; log only non-sensitive target metadata.
+
+### Quality, Security, Accessibility, and Operations Notes
+
+- Installer icon clamping is a defensive parsing/display boundary. It should not
+  silently change the APK icon stored elsewhere, and tests should include very
+  large bitmaps plus non-bitmap drawables.
+- Startup recovery must not make the selected privileged mode look healthy when
+  it is not. If wireless debugging or Shizuku is unavailable, the UI should say
+  so and leave the user with a concrete next action.
+- Background restoration should be explicit. A "restore background operation"
+  label is safer than overloading the existing block action, especially for
+  TalkBack users and operation-history review.
+- Assistant service/broadcast work touches privileged execution and secure
+  settings. The safe product shape is a narrow component action with visible
+  confirmation and audit, not a generic automation ingress.
+
+### Checked but Not Promoted
+
+- **File Manager zip create/extract (#1838):** the archive create/extract part is
+  already represented in source by `FmArchiveUtils`; long-name display polish can
+  ride with future File Manager UI audits rather than a new urgent row.
+  [Verified]
+- **Code editor extension launchability (#1834):** current manifest filters
+  already include a broad set of text-like MIME types and `application/octet-stream`;
+  no narrow source gap was promoted without a failing file sample. [Verified]
+- **Pre-install ART/dexopt profile selection (#1839):** NG has DexOpt and
+  installer options, but the exact pre-install compiler-filter UX needs root/
+  system privilege and install-session design research before promotion. [Needs
+  validation]
+- **DPC mode/transfer (#1858):** device-owner/profile-owner operation mode is a
+  large enrollment and policy contract, not a small mode toggle. Keep it as a
+  separate future research spike if maintainers want an enterprise-management
+  lane. [Needs validation]
+
+### Explicit Non-Goals
+
+- Do not implement feature code from this report in the research lane.
+- Do not add a generic third-party privileged intent runner.
+- Do not remove operation-history rollback while adding the Running Apps inverse;
+  the point is point-of-use reversibility, not replacing audit-backed rollback.
+- Do not duplicate shipped Wireless ADB pairing fallback, Debloater Put back,
+  App Info action-rail, File Manager archive, or code-editor MIME work.

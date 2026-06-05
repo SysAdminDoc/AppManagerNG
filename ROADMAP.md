@@ -620,6 +620,110 @@ links touched by the edit.
     include/exclude, empty/missing profile behavior, and compile of the app-list
     options UI path.
 
+### Researcher Queue (Cycle 6 - 2026-06-05)
+
+- [x] 🔬 `installer-mode-recovery-action-gap-refresh-2026-06-05` - rechecked
+  current `main`, the active roadmap/completed ledger, AppManager v4.0.5 release
+  notes, recent upstream installer/startup/running-apps/assistant issues, and
+  local installer, splash, AppOps, Running Apps, rollback, and assistant source
+  paths. Four source-backed rows were promoted; File Manager archive, broad code
+  editor launchability, pre-install DexOpt, and DPC mode were not duplicated or
+  promoted without stronger source/design proof.
+
+### Cycle 6 Promoted Items (2026-06-05)
+
+- [ ] P1 - Clamp oversized installer icons before dialog rendering
+  - Why: upstream reports the installer crashing before package confirmation when
+    an APK exposes an extremely large bitmap icon. NG currently loads the raw
+    application icon and passes it directly into a dialog title `ImageView`, so
+    layout scaling does not protect the draw path from pathological icon bitmaps.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1833,
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java:225-226`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallerDialogHelper.java:104-108`,
+    `libcore/ui/src/main/java/io/github/muntashirakon/dialog/DialogTitleBuilder.java:79-82`.
+  - Touches: installer package-info parsing/display model, dialog title icon
+    handling or a shared drawable sanitizer, default-icon fallback path, and
+    installer parse-success tests.
+  - Acceptance: oversized bitmap icons are downscaled or replaced before
+    rendering; vector/adaptive/normal icons still render sharply; icon decode or
+    draw failures degrade to the default app icon; the install confirmation flow
+    reaches user choice instead of crashing.
+  - Verify: host tests for bitmap/vector/adaptive icon sanitization and fallback,
+    a large-icon APK fixture or fake `BitmapDrawable` test, plus a manual
+    install-dialog walkthrough confirming the title icon renders without a crash.
+
+- [ ] P1 - Add a splash mode-initialization watchdog and recovery path
+  - Why: upstream reports indefinite "Initializing" splash hangs around wireless
+    debugging and ROM permission toggles. NG sets the splash state to
+    initializing, then posts auth status only after migration and `Ops.init()`
+    return. A blocked privileged-mode init leaves users no retry, mode switch, or
+    diagnostic export path.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1825,
+    https://github.com/MuntashirAkon/AppManager/issues/1829,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/SplashActivity.java:209-218`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModel.java:51-75`.
+  - Touches: `SplashActivity`, `SecurityAndOpsViewModel`, `Ops` init status
+    reporting, Mode Doctor/settings entry points, startup strings, stale-callback
+    guards, and startup tests.
+  - Acceptance: startup exposes meaningful init stages, times out a stalled
+    mode probe, offers retry/safe-mode-switch/diagnostics actions, prevents a
+    timed-out callback from overriding a newer attempt, and preserves the normal
+    fast path when mode init succeeds.
+  - Verify: fake stalled `Ops.init()` tests, timeout/retry/stale-callback tests,
+    and manual no-root, ADB-with-wireless-debugging-off, Shizuku-stopped, and
+    successful-mode startup walkthroughs.
+
+- [ ] P2 - Add Running Apps restore-background-operation action
+  - Why: Running Apps can apply background-run restrictions but does not reveal a
+    point-of-use inverse once the restriction is active. Operation-history
+    rollback can synthesize a default-mode rollback after tracked operations, but
+    the same Running Apps surface should let users restore the app they are
+    inspecting.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1806,
+    `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java:244-287`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsAdapter.java:319-330`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsManager.java:748-789`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/PerAppRollbackManager.java:233-240`.
+  - Touches: Running Apps menu XML/adapter, `RunningAppsViewModel`, AppOps
+    rule persistence, optional batch inverse operation, operation-history
+    integration, strings, and AppOps tests.
+  - Acceptance: an app with background-run AppOps ignored/errored shows a
+    clearly labeled restore action; restore sets the relevant Android N/P+
+    background AppOps back to the tracked previous mode when available or
+    `MODE_DEFAULT` otherwise; blocking rules and history stay consistent; the
+    existing disable action remains available only when the app can still run in
+    background.
+  - Verify: tests for background-op detection and restore modes on Android N/P+
+    branches, adapter/menu visibility tests for disable vs restore states, and a
+    manual Running Apps disable-then-restore walkthrough.
+
+- [ ] P2 - Design a guarded ADB assistant trampoline for services and broadcasts
+  - Why: upstream accepted a request to extend assistant-based ADB routing beyond
+    activity launch into privileged service and broadcast component actions. NG's
+    assistant surface currently offers force-stop, freeze/unfreeze, and App Info
+    only, while the existing component action lanes are not exposed as quick
+    assistant actions.
+  - Evidence URL or file:line:
+    https://github.com/MuntashirAkon/AppManager/issues/1973,
+    `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java:38-40`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java:108-117`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java:169-191`.
+  - Touches: assistant target/action model, component metadata reuse, root/ADB/
+    Shizuku route gating, secure-assistant setting restore logic, confirmations,
+    operation history/audit entries, strings, and Android 16 device validation.
+  - Acceptance: only explicit user-selected service or receiver components can
+    be launched; target package/component/type are visible before execution;
+    temporary assistant settings are restored on success/failure/cancel; exported
+    and permission-gated targets are handled honestly; no generic third-party raw
+    intent ingress or bindService support is added.
+  - Verify: unit tests for action gating, component/intent validation, and
+    assistant-setting restore; manual Android 16 ADB-mode checks for one known
+    exported service and receiver; regression checks for existing force-stop,
+    freeze/unfreeze, and App Info assistant actions.
+
 *Research conducted 2026-06-03. Items below are new — not duplicates of Existing
 Planned Work.*
 
