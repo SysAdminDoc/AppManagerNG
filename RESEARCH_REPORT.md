@@ -28,6 +28,7 @@ rejected on license/privacy/scope grounds are recorded as STALE in
 11. Research Refresh - recovery and headset pairing delta (2026-06-04 Cycle 4)
 12. Research Refresh - release trust and overlay/profile delta (2026-06-04 Cycle 5)
 13. Project Research and Feature Plan - installer, mode recovery, and action parity delta (2026-06-05 Cycle 6)
+14. Upstream Issue Recheck - no new source-backed rows (2026-06-05 Cycle 7)
 
 ---
 
@@ -1321,3 +1322,33 @@ Primary external material reviewed or rechecked:
   the point is point-of-use reversibility, not replacing audit-backed rollback.
 - Do not duplicate shipped Wireless ADB pairing fallback, Debloater Put back,
   App Info action-rail, File Manager archive, or code-editor MIME work.
+
+---
+
+## 14. Upstream Issue Recheck - no new source-backed rows (2026-06-05 Cycle 7)
+
+This pass re-synced `main` at `21d1d00`, rechecked the active roadmap/completed
+ledgers, queried current upstream open and recently closed AppManager issues, and
+sampled local source hotspots around frozen-state reporting, installer icons,
+splash startup, Running Apps AppOps, and assistant actions. No feature code was
+changed.
+
+### Outcome
+
+No new roadmap rows were promoted in this cycle.
+
+- #1833, #1825, #1829, #1806, and #1973 are already represented by the Cycle 6
+  installer, splash recovery, Running Apps inverse, and assistant trampoline
+  rows.
+- #1980, #1975, #1969, #1967, #1964, #1963, #1956, #1953, #1948, #1848,
+  #1817, #1810, and #1805 are already shipped, already represented by an active
+  row, or still require device/user evidence rather than another duplicate
+  planning row.
+- #1816 may still be worth a future focused pass, but this cycle did not find
+  enough source-backed stale-state proof to promote it safely.
+
+### Current Local State Note
+
+The working tree already contains uncommitted installer-icon source/test work
+for the first Cycle 6 row. This research cycle left those files untouched and
+unstaged.
