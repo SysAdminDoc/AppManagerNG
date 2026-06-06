@@ -119,6 +119,10 @@ public class FmActivity extends BaseActivity {
             return (options & OPTION_VFS) != 0;
         }
 
+        public boolean isReadOnly() {
+            return (options & OPTION_RO) != 0;
+        }
+
         public boolean isMountDex() {
             return (options & OPTION_MOUNT_DEX) != 0;
         }
