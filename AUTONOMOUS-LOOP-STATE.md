@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 75 source-audit closure for Hail profile empty-import
-  rejection.
+- Result: completed Cycle 76 source-audit closure for package-name empty-segment
+  validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Hail profile empty-import rejection and its verification target.
-- Code: Hail text profile imports now reject files containing only comments,
-  blanks, or invalid package-name lines instead of creating zero-package profile
-  previews.
+  package-name validation hardening and its verification target.
+- Code: platform package-name validation now rejects leading, trailing, and
+  repeated dot separators instead of accepting names with empty segments, while
+  preserving `android` and standard multi-segment package names.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporterTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.PackageUtilsPackageNameValidationTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at

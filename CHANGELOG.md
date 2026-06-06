@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Package name validation (source audit, 2026-06-06)
+
+- Platform package-name validation now rejects leading, trailing, and repeated
+  dot separators instead of accepting names with empty segments.
+- Automation and profile package-name checks keep accepting the special
+  platform package `android` and standard multi-segment package names.
+
 ### Fixed - Hail profile empty imports (source audit, 2026-06-06)
 
 - Hail text profile imports now reject files that contain only comments,
