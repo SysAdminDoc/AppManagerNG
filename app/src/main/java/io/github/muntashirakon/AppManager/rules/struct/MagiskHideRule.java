@@ -25,10 +25,10 @@ public class MagiskHideRule extends RuleEntry {
         mMagiskProcess = new MagiskProcess(packageName, name); // name cannot be STUB
         mMagiskProcess.setAppZygote(name.endsWith("_zygote"));
         if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setEnabled(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+            mMagiskProcess.setEnabled(parseBoolean(tokenizer.nextElement().toString(), "isHidden"));
         } else throw new IllegalArgumentException("Invalid format: isHidden not found");
         if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setIsolatedProcess(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.nextElement().toString(), "isIsolated"));
         }
     }
 

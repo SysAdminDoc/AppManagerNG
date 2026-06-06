@@ -39,7 +39,7 @@ public class PermissionRule extends RuleEntry {
             throws IllegalArgumentException {
         super(packageName, permName, RuleType.PERMISSION);
         if (tokenizer.hasMoreElements()) {
-            mIsGranted = Boolean.parseBoolean(tokenizer.nextElement().toString());
+            mIsGranted = parseBoolean(tokenizer.nextElement().toString(), "isGranted");
         } else throw new IllegalArgumentException("Invalid format: isGranted not found");
         if (tokenizer.hasMoreElements()) {
             mFlags = Integer.parseInt(tokenizer.nextElement().toString());
