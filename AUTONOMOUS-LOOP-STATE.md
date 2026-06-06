@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 61 source-TODO closure for SysConfig permission label
-  display.
+- Result: completed Cycle 62 source-TODO closure for APKS duplicate split
+  validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  SysConfig permission label display and its verification target.
-- Code: SysConfig permission titles and permission-list subtitle rows now show
-  resolved permission labels as `Label (permission)` with raw-name fallbacks for
-  missing, blank, or redundant permission labels.
+  APKS duplicate split validation and its verification target.
+- Code: APKS/XAPK bundle parsing now tracks manifest `split` names while reading
+  APK entries and rejects duplicate or empty split names before adding ambiguous
+  bundle entries.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigActivityTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.ApkFileTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
