@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 12 - 2026-06-06.
+> Last researched: Cycle 13 - 2026-06-06.
 
 ## Implementer Instructions
 
@@ -656,12 +656,20 @@ links touched by the edit.
     and manual no-root, ADB-with-wireless-debugging-off, Shizuku-stopped, and
     successful-mode startup walkthroughs.
 
-- [ ] P2 - Add Running Apps restore-background-operation action
+- [x] P2 - Add Running Apps restore-background-operation action
   - Why: Running Apps can apply background-run restrictions but does not reveal a
     point-of-use inverse once the restriction is active. Operation-history
     rollback can synthesize a default-mode rollback after tracked operations, but
     the same Running Apps surface should let users restore the app they are
     inspecting.
+  - Shipped 2026-06-06: Running Apps row popups now expose **Restore background
+    operation** only when an app has a restricted background AppOp. The restore
+    flow plans `RUN_IN_BACKGROUND` on Android N/O and both `RUN_IN_BACKGROUND`
+    plus `RUN_ANY_IN_BACKGROUND` on Android P+, changes only ignored/errored
+    current modes, falls back to `MODE_DEFAULT` because the current history
+    schema has no structured previous-mode field, removes default-mode blocking
+    rules from `ComponentsBlocker`, and records a single Operation History
+    app-op row with per-op mode details.
   - Evidence URL or file:line:
     https://github.com/MuntashirAkon/AppManager/issues/1806,
     `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java:244-287`,
@@ -679,7 +687,9 @@ links touched by the edit.
     background.
   - Verify: tests for background-op detection and restore modes on Android N/P+
     branches, adapter/menu visibility tests for disable vs restore states, and a
-    manual Running Apps disable-then-restore walkthrough.
+    manual Running Apps disable-then-restore walkthrough. Focused host
+    verification passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
 
 - [ ] P2 - Design a guarded ADB assistant trampoline for services and broadcasts
   - Why: upstream accepted a request to extend assistant-based ADB routing beyond
@@ -763,7 +773,7 @@ links touched by the edit.
     mapping; manual walkthroughs remain no-root, Shizuku-stopped, ADB
     wireless-off, local-network-permission-denied, and success paths.
 
-- [ ] P2 refinement - Running Apps restore should treat background AppOps as
+- [x] P2 refinement - Running Apps restore should treat background AppOps as
   per-op state, even when the UI presents one "background run" concept.
   - Applies to: **P2 - Add Running Apps restore-background-operation action**.
   - Why: `preventBackgroundRun()` writes every background-run op returned by
@@ -783,8 +793,13 @@ links touched by the edit.
   - Acceptance additions: Android N devices restore only `RUN_IN_BACKGROUND`;
     Android P+ devices restore both ops independently; mixed states are shown
     honestly; ComponentsBlocker rule persistence is updated or removed to match
-    the restored modes; operation history gets a reversible row that explains
+    the restored modes; operation history gets a non-replayable row that explains
     which op modes changed.
+  - Shipped 2026-06-06: `BackgroundRunAppOpPlan` centralizes SDK-specific op
+    selection, mixed-mode detection, and restore-mode fallback; the ViewModel
+    uses it for both disable/restore visibility and restore execution. The
+    planner accepts a future structured previous-mode source, but the live
+    restore path correctly uses `MODE_DEFAULT` until such a source exists.
   - Verify additions: tests for N/P+ op selection, ignored/errored/default/allow
     mixed states, previous-mode fallback, adapter visibility for disable vs
     restore, and ComponentsBlocker persistence after restore.
@@ -1025,7 +1040,7 @@ links touched by the edit.
 
 ### Cycle 12 Next Implementation Slice (2026-06-06)
 
-- [ ] P2 - Implement Running Apps restore-background-operation action.
+- [x] P2 - Implement Running Apps restore-background-operation action.
   - Applies to: **P2 - Add Running Apps restore-background-operation action**
     and the Cycle 8 refinement above.
   - Why: `RunningAppsViewModel.preventBackgroundRun()` already persists
@@ -1041,9 +1056,44 @@ links touched by the edit.
     both background ops independently; mixed current states are labelled
     honestly; ComponentsBlocker persistence matches the restored modes; the
     Operation History row records each changed op/mode.
-  - Verify target: focused unit tests around op selection, previous-mode
-    fallback/default fallback, adapter action visibility, and persistence after
-    restore.
+  - Shipped 2026-06-06: added the `BackgroundRunAppOpPlan` planner, a Running
+    Apps popup restore action, restore-result observer/toast handling,
+    default-mode rule deletion through `RulesStorageManager.deleteAppOp()`, and
+    focused planner/formatter tests. The live path falls back to `MODE_DEFAULT`
+    because current AppOps history stores display detail rather than structured
+    previous modes.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
+    Manual Running Apps disable-then-restore walkthrough remains device-gated.
+
+### Researcher Queue (Cycle 13 - 2026-06-06)
+
+- [x] `running-apps-background-restore-2026-06-06` - implemented the
+  host-verifiable restore-background slice after rechecking Android AppOps
+  default/ignored semantics and the per-op `RUN_IN_BACKGROUND` /
+  `RUN_ANY_IN_BACKGROUND` split. The shipped path keeps one user-facing action
+  but plans and records each AppOp independently.
+
+### Cycle 13 Next Implementation Slice (2026-06-06)
+
+- [ ] P2 - Implement the guarded assistant service/broadcast action model.
+  - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
+    and broadcasts** and the Cycle 8 assistant guardrail refinement.
+  - Why: the research row is already scoped: assistant-triggered service and
+    broadcast actions must reuse App Details component constraints, remain
+    visible and explicit, and avoid raw third-party intent ingress.
+  - Next constraints: inspect `AssistActionActivity`, component details models,
+    service start/stop and broadcast-send helpers, secure-assistant setting
+    restore logic, and Operation History single-app action metadata before
+    editing. Start with a package-visible planner/model and tests before adding
+    UI wiring.
+  - Acceptance: action availability is derived from target package components
+    and privilege route; service/receiver candidates are explicit and
+    exported/permission/user-aware; Android service-start failures surface as
+    user-readable results; every attempt records one non-replayable audit row.
+  - Verify target: focused JVM tests for planner availability, component
+    filtering, explicit-intent construction, secure-assistant restore behavior,
+    and audit metadata, followed by `:app:compileFullDebugJavaWithJavac`.
 
 *Research conducted 2026-06-03. Items below are new - not duplicates of Existing
 Planned Work.*
@@ -1178,19 +1228,19 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 12 - `SecurityAndOpsViewModel` startup init-state wiring on 2026-06-06.
+Cycle 13 - Running Apps restore-background-operation action on 2026-06-06.
 
 ### Current Focus
 
-Continue from the next host-verifiable Running Apps row. The startup watchdog
-foundation now has root/local late-callback hardening, a pure reducer, ViewModel
-attempt ownership, observable state, stale-status rejection, and focused JVM
-coverage. Visible watchdog UI controls remain parked for a later UI slice.
+Continue from the next host-verifiable assistant guardrail row. The Running Apps
+restore-background action now has per-op planning, UI entry points, rule-store
+sync, history details, and focused JVM coverage. Manual disable-then-restore
+walkthrough remains device-gated.
 
 ### Important Findings So Far
 
-- Current pre-cycle baseline was `7128b70` (`fix(installer): clamp oversized
-  dialog icons`); the branch is `main`.
+- Current Cycle 13 pre-cycle baseline was `dae498c` (`feat(startup): track
+  initialization attempts`); the branch is `main`.
 - `SplashActivity` exposes only the generic `initializing` state before
   delegating to `SecurityAndOpsViewModel.setModeOfOps()`, which posts only a
   terminal auth status after migration and `Ops.init()`.
@@ -1203,6 +1253,10 @@ coverage. Visible watchdog UI controls remain parked for a later UI slice.
 - Running Apps currently writes background AppOps to ignored mode but has no
   same-surface inverse; App Ops guidance treats `RUN_IN_BACKGROUND` and
   `RUN_ANY_IN_BACKGROUND` as related but independently important.
+- Running Apps restore is now implemented as a same-surface inverse: ignored or
+  errored background AppOps are restored independently to `MODE_DEFAULT`, and
+  default-mode rules are removed from the persisted blocker file. The planner
+  can reuse a structured unrestricted previous mode if one is added later.
 - `AssistActionActivity` has no service/broadcast actions today; App Details
   already contains guarded service and receiver surfaces that should be reused
   instead of adding raw intent ingress.
@@ -1237,25 +1291,26 @@ coverage. Visible watchdog UI controls remain parked for a later UI slice.
   stage publication.
 - Focused verification passed:
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+- Running Apps restore focused verification passed:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Inspect AppOps history persistence, `ComponentsBlocker`, Running Apps row
-   popup resources, and `RunningAppsViewModel.preventBackgroundRun()` before
-   implementing the restore-background action.
-2. Implement per-op restore planning for `RUN_IN_BACKGROUND` and
-   `RUN_ANY_IN_BACKGROUND`, preferring previous-mode history and falling back to
-   `MODE_DEFAULT`.
-3. Add focused tests for op selection, previous/default fallback, adapter
-   visibility, ComponentsBlocker persistence, and operation-history metadata.
+1. Inspect `AssistActionActivity`, assistant action IDs, component service and
+   receiver action helpers, and secure-assistant setting restore logic.
+2. Add a package-visible planner/model for assistant service and broadcast
+   candidates that reuses App Details guardrails instead of accepting raw
+   external intents.
+3. Add focused tests for action availability, explicit component filtering,
+   route/user/permission details, secure-assistant restore behavior, and
+   Operation History metadata.
 
 ### Unprocessed Leads
 
 - Upstream assistant extension request #1973.
-- App Ops per-op background-run strictness versus a single user-facing label.
 - Android service and foreground-service launch restrictions for third-party
   explicit component starts.
 - Startup visible watchdog controls: timeout clock source, action buttons,
@@ -1265,17 +1320,16 @@ coverage. Visible watchdog UI controls remain parked for a later UI slice.
 
 ### Files Still To Inspect
 
-- `app/src/test/java/**/runningapps/**`
-- `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsAdapter.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/rules/ComponentsBlocker.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/details/components/BroadcastSendDialogFragment.java`
 - `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/**`
-- `app/src/main/res/menu/**running**`
+- `app/src/test/java/**/assistant/**`
 
 ### Searches Still To Run
 
-- `rg -n "OP_RUN_IN_BACKGROUND|OP_RUN_ANY_IN_BACKGROUND|ComponentsBlocker|SingleAppActionHistoryItem" app/src/main/java app/src/test`
-- `rg -n "preventBackgroundRun|canRunInBackground|background run|run in background|restore" app/src/main/java app/src/test app/src/main/res`
-- `rg -n "OP_RUN_IN_BACKGROUND|OP_RUN_ANY_IN_BACKGROUND|MODE_IGNORED|MODE_DEFAULT|MODE_ALLOWED" app/src/main/java app/src/test`
-- Web: App Ops background-run mode behavior and current Android AppOps
-  restore/default semantics.
+- `rg -n "AssistActionActivity|assistant|secure assistant|ASSIST" app/src/main/java app/src/test app/src/main/res`
+- `rg -n "startService|stopService|sendBroadcast|BroadcastSendDialogFragment|ComponentRule" app/src/main/java app/src/test`
+- `rg -n "SingleAppActionHistoryItem|forSingleAppAction|HISTORY_TYPE_SINGLE_APP_ACTION" app/src/main/java app/src/test`
+- Web: Android service start restrictions and foreground-service background
+  launch restrictions when finalizing user-facing failure messages.

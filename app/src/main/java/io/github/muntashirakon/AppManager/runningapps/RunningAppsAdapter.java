@@ -328,6 +328,18 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
                     return true;
                 });
             }
+            MenuItem restoreBgItem = menu.findItem(R.id.action_restore_background);
+            boolean canRestoreBackground = applicationInfo != null
+                    && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                    && SelfPermissions.canModifyAppOpMode()
+                    && mModel.hasBackgroundRunRestriction(applicationInfo);
+            restoreBgItem.setVisible(canRestoreBackground);
+            if (canRestoreBackground) {
+                restoreBgItem.setOnMenuItemClickListener(item -> {
+                    mModel.restoreBackgroundRun(applicationInfo);
+                    return true;
+                });
+            }
             // Display popup menu
             popupMenu.show();
         });
