@@ -184,6 +184,9 @@ public final class IntentCompat {
                 }
                 return cn;
             case TYPE_INT_ARR: {
+                if (rawValue.isEmpty()) {
+                    return new int[0];
+                }
                 String[] strings = rawValue.split(",");
                 int[] list = new int[strings.length];
                 for (int i = 0; i < strings.length; i++) {
@@ -192,6 +195,9 @@ public final class IntentCompat {
                 return list;
             }
             case TYPE_INT_AL: {
+                if (rawValue.isEmpty()) {
+                    return new ArrayList<Integer>(0);
+                }
                 String[] strings = rawValue.split(",");
                 ArrayList<Integer> list = new ArrayList<>(strings.length);
                 for (String string : strings) {
@@ -202,6 +208,9 @@ public final class IntentCompat {
             case TYPE_LONG:
                 return Long.parseLong(rawValue);
             case TYPE_LONG_ARR: {
+                if (rawValue.isEmpty()) {
+                    return new long[0];
+                }
                 String[] strings = rawValue.split(",");
                 long[] list = new long[strings.length];
                 for (int i = 0; i < strings.length; i++) {
@@ -210,6 +219,9 @@ public final class IntentCompat {
                 return list;
             }
             case TYPE_LONG_AL: {
+                if (rawValue.isEmpty()) {
+                    return new ArrayList<Long>(0);
+                }
                 String[] strings = rawValue.split(",");
                 ArrayList<Long> list = new ArrayList<>(strings.length);
                 for (String string : strings) {
@@ -220,6 +232,9 @@ public final class IntentCompat {
             case TYPE_FLOAT:
                 return Float.parseFloat(rawValue);
             case TYPE_FLOAT_ARR: {
+                if (rawValue.isEmpty()) {
+                    return new float[0];
+                }
                 String[] strings = rawValue.split(",");
                 float[] list = new float[strings.length];
                 for (int i = 0; i < strings.length; i++) {
@@ -228,6 +243,9 @@ public final class IntentCompat {
                 return list;
             }
             case TYPE_FLOAT_AL: {
+                if (rawValue.isEmpty()) {
+                    return new ArrayList<Float>(0);
+                }
                 String[] strings = rawValue.split(",");
                 ArrayList<Float> list = new ArrayList<>(strings.length);
                 for (String string : strings) {
