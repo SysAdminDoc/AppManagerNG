@@ -30,6 +30,8 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(RobolectricTestRunner.class)
 public class PseudoRulesTest {
     private static final String PACKAGE_NAME = "sample.package";
+    private static final String FIRST_SSAID = "4caf91d267b8e3a5";
+    private static final String SECOND_SSAID = "f6740c904caf91d2";
 
     private PseudoRules rules;
 
@@ -155,11 +157,11 @@ public class PseudoRulesTest {
 
     @Test
     public void uniquenessOfSsaidTest() {
-        rules.setSsaid("bc9948c6");
-        rules.setSsaid("f6740c90");
+        rules.setSsaid(FIRST_SSAID);
+        rules.setSsaid(SECOND_SSAID);
         assertEquals(1, rules.getAll().size());
-        assertNotEquals(new SsaidRule(PACKAGE_NAME, "bc9948c6"), rules.getAll().get(0));
-        assertEquals(new SsaidRule(PACKAGE_NAME, "f6740c90"), rules.getAll().get(0));
+        assertNotEquals(new SsaidRule(PACKAGE_NAME, FIRST_SSAID), rules.getAll().get(0));
+        assertEquals(new SsaidRule(PACKAGE_NAME, SECOND_SSAID), rules.getAll().get(0));
     }
 
 
@@ -209,7 +211,7 @@ public class PseudoRulesTest {
         mp.setEnabled(true);
         rules.setMagiskHide(mp);
         rules.setMagiskDenyList(mp);
-        rules.setSsaid("bc9948c6");
+        rules.setSsaid(FIRST_SSAID);
         rules.setFreezeType(FreezeUtils.FREEZE_DISABLE);
         List<RuleEntry> ruleEntries = rules.getAll();
         assertEquals(12, ruleEntries.size());
@@ -227,7 +229,7 @@ public class PseudoRulesTest {
         assertEquals(new BatteryOptimizationRule(PACKAGE_NAME, true), ruleEntries.get(7));
         assertEquals(new MagiskHideRule(mp), ruleEntries.get(8));
         assertEquals(new MagiskDenyListRule(mp), ruleEntries.get(9));
-        assertEquals(new SsaidRule(PACKAGE_NAME, "bc9948c6"), ruleEntries.get(10));
+        assertEquals(new SsaidRule(PACKAGE_NAME, FIRST_SSAID), ruleEntries.get(10));
         assertEquals(new FreezeRule(PACKAGE_NAME, FreezeUtils.FREEZE_DISABLE), ruleEntries.get(11));
     }
 
