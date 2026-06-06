@@ -60,16 +60,15 @@ class PathContentInfoImpl extends PathContentInfo {
         try (InputStream is = path.openInputStream()) {
             ContentInfo contentInfo = sContentInfoUtil.findMatch(is);
             if (contentInfo != null) {
-                // FIXME: 20/11/22 This will not work for invalid extensions. A better option is to use magic-mime-db
-                //  instead which is currently a WIP.
-                if (extInfo != null) {
-                    return withPartialOverride(fromPathContentInfo(
-                            new PathContentInfoImpl(extInfo.getName(), contentInfo.getMessage(), extInfo.getMimeType(),
-                                    extInfo.getFileExtensions(), contentInfo.isPartial())), extType2);
-                }
-                if (extType2 != null) {
-                    return fromPathContentInfo(new PathContentInfoImpl(extType2.getSimpleName(), contentInfo.getMessage(),
-                            extType2.getMimeType(), extType2.getFileExtensions(), contentInfo.isPartial()));
+                if (contentInfo.isPartial()) {
+                    if (extType2 != null) {
+                        return fromPathContentInfo(new PathContentInfoImpl(extType2.getSimpleName(),
+                                contentInfo.getMessage(), extType2.getMimeType(), extType2.getFileExtensions(), true));
+                    }
+                    if (extInfo != null) {
+                        return fromPathContentInfo(new PathContentInfoImpl(extInfo.getName(), contentInfo.getMessage(),
+                                extInfo.getMimeType(), extInfo.getFileExtensions(), true));
+                    }
                 }
                 return fromContentInfo(contentInfo);
             }
