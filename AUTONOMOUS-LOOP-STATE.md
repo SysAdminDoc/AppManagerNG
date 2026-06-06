@@ -8,23 +8,23 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 15 implementation for visible quick-assist service
-  and receiver component actions.
-- Updated: `ROADMAP.md` marks the guarded assistant service/broadcast
-  trampoline, assistant refinement, and visible quick-assist wiring slice as
-  shipped; `COMPLETED.md` records the closed dispatch/audit slice; and
-  `CHANGELOG.md` records the Unreleased user-facing change.
-- Code: `AssistActionActivity` now loads service and receiver metadata for the
-  resolved foreground target, appends `AssistComponentActionPlan` candidates to
-  the action dialog, confirms component/user/route/permission details, dispatches
-  service start/stop or receiver broadcast actions through explicit intents, and
-  records non-replayable `SingleAppActionHistoryItem` audit rows.
-- Tests: added planner assertions for required permissions and receiver
-  category/action ordering, plus `OpHistoryItemTest` coverage for
-  component-action metadata, failure details, medium risk, and non-replayable /
-  non-reversible status.
+- Result: completed Cycle 16 implementation for visible Splash startup
+  recovery controls.
+- Updated: `ROADMAP.md` closes the parent startup watchdog row and its staged
+  reducer/ViewModel/UI slices, `COMPLETED.md` records the closed startup
+  recovery surface, and `CHANGELOG.md` records the Unreleased user-facing
+  change.
+- Code: `SplashActivity` now observes `StartupInitState`, maps it through
+  `StartupInitUiState`, updates the authentication layout with stage-specific
+  startup text, schedules a current-attempt timeout, and renders only the
+  recovery actions exposed by the current attempt. Recovery buttons reuse retry,
+  Mode settings, Mode Doctor, support info sharing, local-network permission,
+  Shizuku permission, and wireless-pairing cancellation flows.
+- Tests: added `StartupInitUiStateTest` for stage text, recovery ordering,
+  terminal timeout display, and specific blocker messaging; extended
+  `SecurityAndOpsViewModelTest` for public timeout/cancel wrappers.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
 - Environment note: the ignored local `local.properties` was updated to
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
   this host. Do not commit `local.properties`.
@@ -32,18 +32,15 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next host-verifiable roadmap target: `P1 - Wire startup init state into
-  visible Splash recovery controls`.
-- Start by inspecting `SplashActivity`, `activity_splash.xml`, and
-  `SecurityAndOpsViewModel.startupInitState()`; map the reducer's current
-  stage/status/recovery actions into visible initializing text and recovery
-  buttons without extending the system splash hold.
-- Implementation constraint: preserve the fast successful startup path; recovery
-  controls must come from the current attempt only and route through existing
-  mode picker, Mode Doctor, support bundle, local-network permission, Shizuku
-  permission, retry, and pairing-cancel paths where available.
-- Verification target: focused `StartupInitStateTest` /
-  `SecurityAndOpsViewModelTest` coverage plus full-debug Java/resource compile.
+- Next host-verifiable roadmap target: `P1 - Add Gradle dependency verification
+  and dependency locking`.
+- Start by inspecting `settings.gradle`, root/app/benchmark Gradle files,
+  existing dependency metadata or lockfiles, and CI dependency/release jobs.
+- Implementation constraint: do not commit local cache noise; document the
+  maintainer refresh process; verify the chosen metadata/lock shape before
+  generating broad lockfiles.
+- Verification target: focused Gradle help/test command with verification and
+  lock metadata enabled, plus `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
   Android assist invocation, distribution submissions, and Android 17
   target-SDK gate.
