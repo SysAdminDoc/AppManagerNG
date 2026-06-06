@@ -382,6 +382,25 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenRejectsInvalidAppOpValues() {
+        RuleEntry appOpRule = RuleEntry.unflattenFromString(PACKAGE_NAME,
+                "55\tAPP_OP\t " + AppOpsManager.MODE_DEFAULT + " ", false);
+        assertEquals(new AppOpRule(PACKAGE_NAME, 55, AppOpsManager.MODE_DEFAULT), appOpRule);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "not-number\tAPP_OP\t3", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "-1\tAPP_OP\t3", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP\tnot-number", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP\t999", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new AppOpRule(PACKAGE_NAME, -1, AppOpsManager.MODE_DEFAULT));
+        assertThrows(IllegalArgumentException.class, () -> new AppOpRule(PACKAGE_NAME, 55, 999));
+    }
+
+    @Test
     public void unflattenUriGrantPreservesCommaUri() {
         UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
                 "com.source", PACKAGE_NAME,
