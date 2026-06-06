@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Activity Interceptor pasted headers (source audit, 2026-06-06)
+
+- Pasted intent details now ignore malformed `ROOT` and `USER` header lines
+  instead of throwing when a copied export is missing a value.
+- Valid decimal and hex user ids are still accepted, while invalid user header
+  values fail closed.
+
 ### Fixed - Intent empty primitive arrays (source audit, 2026-06-06)
 
 - Empty `int[]`, `long[]`, and `float[]` extras now round-trip through Activity
