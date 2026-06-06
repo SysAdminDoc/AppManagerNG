@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 76 source-audit closure for package-name empty-segment
+- Result: completed Cycle 77 source-audit closure for automation component-name
   validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  package-name validation hardening and its verification target.
-- Code: platform package-name validation now rejects leading, trailing, and
-  repeated dot separators instead of accepting names with empty segments, while
-  preserving `android` and standard multi-segment package names.
+  automation component-name validation hardening and its verification target.
+- Code: automation component actions now reject empty class names, malformed
+  flattened component strings, repeated class-name separators, and invalid Java
+  class segments before dispatch while preserving relative, simple, fully
+  qualified, flattened, and inner-class component forms.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.PackageUtilsPackageNameValidationTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.automation.AutomationIntentsTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
