@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat shared-UID package attribution (source TODO, 2026-06-06)
+
+- Logcat package attribution for shared UIDs now chooses package names through
+  one deterministic selector: ignore empty entries, prefer the shortest package
+  name, and break equal-length ties lexicographically.
+- This keeps log labels stable when PackageManager returns the same package set
+  in a different order.
+
 ### Fixed - Titanium Backup import timestamp preservation (source TODO, 2026-06-06)
 
 - Titanium Backup imports now read the backup timestamp from
