@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Sysconfig low-RAM feature filtering (source FIXME, 2026-06-06)
+
+- `<feature notLowRam="true">` entries are now skipped on low-RAM devices
+  instead of always being added to the parsed system feature set.
+- The parser uses the public `ActivityManager.isLowRamDevice()` state, and
+  focused tests pin low-RAM, normal-device, and default feature decisions.
+
 ### Fixed - VFS permission mutation result reporting (source TODO, 2026-06-06)
 
 - Virtual file-system chmod/chown requests now return `false` when the mounted

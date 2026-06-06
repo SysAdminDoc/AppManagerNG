@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 50 source-TODO closure for VFS permission mutation
-  result reporting.
+- Result: completed Cycle 51 source-FIXME closure for sysconfig low-RAM
+  feature filtering.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  VFS permission mutation result fix and its verification target.
-- Code: `VirtualFileSystem.setMode()` and `setUidGid()` now return boolean
-  mutation results, and `VirtualDocumentFile` forwards unsupported chmod/chown
-  attempts as `false` instead of a no-op success.
+  sysconfig low-RAM feature-filtering fix and its verification target.
+- Code: `SystemConfig` now skips `<feature notLowRam="true">` entries when
+  `ActivityManager.isLowRamDevice()` reports a low-RAM device while preserving
+  normal feature parsing on non-low-RAM devices.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests androidx.documentfile.provider.DexDocumentFileTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SystemConfigTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
