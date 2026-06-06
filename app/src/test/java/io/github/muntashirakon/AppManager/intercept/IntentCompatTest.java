@@ -71,6 +71,28 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void flattenToString_roundTripsEmptyStringExtra() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("empty", "");
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals("", parsed.getStringExtra("empty"));
+    }
+
+    @Test
+    public void flattenToString_roundTripsStringExtraContainingTabs() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("label", "alpha\tbeta\tgamma");
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals("alpha\tbeta\tgamma", parsed.getStringExtra("label"));
+    }
+
+    @Test
     public void flattenToString_roundTripsUriListValuesContainingCommas() {
         Intent input = new Intent(Intent.ACTION_VIEW);
         ArrayList<Uri> uris = new ArrayList<>();
