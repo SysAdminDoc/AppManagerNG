@@ -8,15 +8,19 @@ import android.graphics.Bitmap;
 import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -111,14 +115,36 @@ public final class SplitApkExporter {
     }
 
     @NonNull
-    private static List<Path> getAllApkFiles(@NonNull ApplicationInfo applicationInfo) {
+    static List<Path> getAllApkFiles(@NonNull ApplicationInfo applicationInfo) {
         List<Path> apkFiles = new ArrayList<>();
-        apkFiles.add(Paths.get(applicationInfo.publicSourceDir));
+        Set<String> seenApkPaths = new LinkedHashSet<>();
+        addApkFile(apkFiles, seenApkPaths, applicationInfo.publicSourceDir);
         if (applicationInfo.splitPublicSourceDirs != null) {
-            // FIXME: 8/5/22 This does not work for disabled apps
-            for (String splitPath : applicationInfo.splitPublicSourceDirs)
-                apkFiles.add(Paths.get(splitPath));
+            for (String splitPath : applicationInfo.splitPublicSourceDirs) {
+                addApkFile(apkFiles, seenApkPaths, splitPath);
+            }
+        }
+        if (applicationInfo.publicSourceDir == null) {
+            return apkFiles;
+        }
+        File baseApk = new File(applicationInfo.publicSourceDir);
+        File sourceDir = baseApk.getParentFile();
+        if (sourceDir != null && !"/data/app".equals(sourceDir.getAbsolutePath())) {
+            File[] apks = sourceDir.listFiles((dir, name) -> name.endsWith(".apk"));
+            if (apks != null) {
+                for (File apk : apks) {
+                    addApkFile(apkFiles, seenApkPaths, apk.getAbsolutePath());
+                }
+            }
         }
         return apkFiles;
+    }
+
+    private static void addApkFile(@NonNull List<Path> apkFiles, @NonNull Set<String> seenApkPaths,
+                                   @Nullable String apkPath) {
+        if (apkPath == null || !seenApkPaths.add(apkPath)) {
+            return;
+        }
+        apkFiles.add(Paths.get(apkPath));
     }
 }
