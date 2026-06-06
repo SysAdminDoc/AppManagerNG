@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat numeric field parsing (source audit, 2026-06-06)
+
+- Logcat line parsing now treats overflowed PID, TID, or UID-owner fields as
+  malformed log lines and falls back to the raw-line display path instead of
+  crashing on unchecked numeric conversion.
+- Legacy and modern logcat formats share the same defensive parse behavior for
+  oversized process identifiers.
+
 ### Fixed - Titanium Backup metadata parsing (source audit, 2026-06-06)
 
 - Titanium Backup imports now validate required `app_version_code` metadata and

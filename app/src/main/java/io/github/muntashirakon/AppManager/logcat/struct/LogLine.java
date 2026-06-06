@@ -280,7 +280,11 @@ public class LogLine {
         // Group 3: Tag
         logLine.setTag(Objects.requireNonNull(matcher.group(3)).trim());
         // Group 4: PID
-        logLine.setPid(Integer.parseInt(matcher.group(4)));
+        try {
+            logLine.setPid(Integer.parseInt(matcher.group(4)));
+        } catch (NumberFormatException e) {
+            return false;
+        }
         // Group 5: Message
         logLine.setLogOutput(Objects.requireNonNull(matcher.group(5)));
         return true;
@@ -295,17 +299,21 @@ public class LogLine {
         logLine.setTimestamp(Objects.requireNonNull(matcher.group(1)));
         // Group 2: UID PID
         String[] uidPid = Objects.requireNonNull(matcher.group(2)).split("\\s+", 2);
-        if (uidPid.length == 2) {
-            String owner = uidPid[0];
-            int uid = Owners.parseUid(owner);
-            logLine.setUidOwner(owner);
-            logLine.setUid(uid);
-            // Set package name
-            logLine.setPackageName(retrievePackageName(uid));
+        try {
+            if (uidPid.length == 2) {
+                String owner = uidPid[0];
+                int uid = Owners.parseUid(owner);
+                logLine.setUidOwner(owner);
+                logLine.setUid(uid);
+                // Set package name
+                logLine.setPackageName(retrievePackageName(uid));
+            }
+            logLine.setPid(Integer.parseInt(uidPid[uidPid.length == 2 ? 1 : 0]));
+            // Group 3: TID
+            logLine.setTid(Integer.parseInt(matcher.group(3)));
+        } catch (IllegalArgumentException e) {
+            return false;
         }
-        logLine.setPid(Integer.parseInt(uidPid[uidPid.length == 2 ? 1 : 0]));
-        // Group 3: TID
-        logLine.setTid(Integer.parseInt(matcher.group(3)));
         // Group 4: Log level
         logLine.setLogLevel(convertCharToLogLevel(Objects.requireNonNull(matcher.group(4)).charAt(0)));
         // Group 5: Tag
