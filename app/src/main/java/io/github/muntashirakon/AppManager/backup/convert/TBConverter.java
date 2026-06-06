@@ -31,11 +31,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.backup.BackupException;
@@ -66,6 +70,8 @@ public class TBConverter extends Converter {
 
     private static final String INTERNAL_PREFIX = "data/data/";
     private static final String EXTERNAL_PREFIX = "data/data/.external.";
+    private static final Pattern PROPERTIES_FILENAME_PATTERN = Pattern.compile("^(.+)-(\\d{8}-\\d{6})\\.properties$");
+    private static final String PROPERTIES_TIMESTAMP_FORMAT = "yyyyMMdd-HHmmss";
 
     private final Path mBackupLocation;
     @UserIdInt
@@ -93,11 +99,30 @@ public class TBConverter extends Converter {
         mBackupLocation = propFile.getParent();
         mUserId = UserHandleHidden.myUserId();
         String dirtyName = propFile.getName();
-        int idx = dirtyName.indexOf('-');
-        if (idx == -1) mPackageName = null;
-        else mPackageName = dirtyName.substring(0, idx);
-        mBackupTime = propFile.lastModified();  // TODO: Grab from the file name
+        Matcher matcher = PROPERTIES_FILENAME_PATTERN.matcher(dirtyName);
+        if (matcher.matches()) {
+            mPackageName = matcher.group(1);
+        } else {
+            int idx = dirtyName.indexOf('-');
+            if (idx == -1) mPackageName = null;
+            else mPackageName = dirtyName.substring(0, idx);
+        }
+        mBackupTime = parseBackupTimeFromFilename(dirtyName, propFile.lastModified());
         mFilesToBeDeleted.add(propFile);
+    }
+
+    static long parseBackupTimeFromFilename(@NonNull String filename, long fallback) {
+        Matcher matcher = PROPERTIES_FILENAME_PATTERN.matcher(filename);
+        if (!matcher.matches()) {
+            return fallback;
+        }
+        SimpleDateFormat dateFormat = new SimpleDateFormat(PROPERTIES_TIMESTAMP_FORMAT, Locale.ROOT);
+        dateFormat.setLenient(false);
+        try {
+            return dateFormat.parse(matcher.group(2)).getTime();
+        } catch (ParseException e) {
+            return fallback;
+        }
     }
 
     @Override
