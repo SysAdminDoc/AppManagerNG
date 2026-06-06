@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Multithreaded executor factory synchronization (source TODO, 2026-06-06)
+
+- `MultithreadedExecutor.getNewInstance()` now synchronizes access to the shared
+  executor cache used by `@AnyThread` callers.
+- Renewed executor delegates are published through a volatile field, and
+  fixed-thread-pool creation now flows through one helper for cache reuse.
+
 ### Added - NoOps annotation detector (source TODO, 2026-06-06)
 
 - Added a source-level contract test that scans annotated members and requires
