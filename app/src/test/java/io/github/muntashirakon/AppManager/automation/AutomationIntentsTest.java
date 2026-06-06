@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.automation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -42,6 +43,26 @@ public class AutomationIntentsTest {
                 AutomationIntents.normalizeComponentName("com.example.app", "com.example.app/.Receiver"));
         assertEquals("com.other.Receiver",
                 AutomationIntents.normalizeComponentName("com.example.app", "com.other.Receiver"));
+        assertEquals("com.example.app.Receiver$Inner",
+                AutomationIntents.normalizeComponentName("com.example.app", ".Receiver$Inner"));
+    }
+
+    @Test
+    public void normalizeComponentNameRejectsMalformedClassNames() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", ""));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "/"));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "com.example.app/"));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "."));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "com.example..Receiver"));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "9Receiver"));
+        assertThrows(IllegalArgumentException.class,
+                () -> AutomationIntents.normalizeComponentName("com.example.app", "com.example.app/.Bad/Name"));
     }
 
     @Test

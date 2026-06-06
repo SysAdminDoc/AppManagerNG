@@ -193,17 +193,51 @@ public final class AutomationIntents {
     @NonNull
     static String normalizeComponentName(@NonNull String packageName, @NonNull String componentName) {
         String trimmedComponent = componentName.trim();
+        if (trimmedComponent.isEmpty()) {
+            throw new IllegalArgumentException("Empty component name");
+        }
         int slash = trimmedComponent.indexOf('/');
-        if (slash >= 0 && slash < trimmedComponent.length() - 1) {
+        if (slash >= 0) {
+            if (slash != trimmedComponent.lastIndexOf('/') || slash == trimmedComponent.length() - 1) {
+                throw new IllegalArgumentException("Invalid component name: " + componentName);
+            }
             String className = trimmedComponent.substring(slash + 1);
             return normalizeComponentName(packageName, className);
         }
+        String normalizedComponent;
         if (trimmedComponent.startsWith(".")) {
-            return packageName + trimmedComponent;
+            normalizedComponent = packageName + trimmedComponent;
+        } else if (trimmedComponent.indexOf('.') == -1) {
+            normalizedComponent = packageName + "." + trimmedComponent;
+        } else {
+            normalizedComponent = trimmedComponent;
         }
-        if (trimmedComponent.indexOf('.') == -1) {
-            return packageName + "." + trimmedComponent;
+        if (!isPlausibleComponentClassName(normalizedComponent)) {
+            throw new IllegalArgumentException("Invalid component name: " + componentName);
         }
-        return trimmedComponent;
+        return normalizedComponent;
+    }
+
+    private static boolean isPlausibleComponentClassName(@NonNull String className) {
+        boolean front = true;
+        for (int i = 0; i < className.length(); ++i) {
+            char c = className.charAt(i);
+            if (c == '.') {
+                if (front) {
+                    return false;
+                }
+                front = true;
+                continue;
+            }
+            if (front) {
+                if (!Character.isJavaIdentifierStart(c)) {
+                    return false;
+                }
+                front = false;
+            } else if (!Character.isJavaIdentifierPart(c)) {
+                return false;
+            }
+        }
+        return !front;
     }
 }
