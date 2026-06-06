@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.LayoutInflater;
@@ -165,7 +166,7 @@ public class SysConfigActivity extends BaseActivity {
                 });
             } else {
                 holder.icon.setVisibility(View.GONE);
-                holder.title.setText(info.name);
+                holder.title.setText(isPermissionTitleType(info.type) ? getPermissionReference(info.name) : info.name);
                 holder.packageName.setVisibility(View.GONE);
             }
             setSubtitle(holder, info);
@@ -199,19 +200,17 @@ public class SysConfigActivity extends BaseActivity {
                 case SysConfigType.TYPE_WHITELISTED_STAGED_INSTALLER:
                     break;
                 case SysConfigType.TYPE_PERMISSION: {
-                    // TODO: Display permission info
                     sb.append(getStyledKeyValue(context, "GID", Arrays.toString(info.gids))).append("\n");
                     sb.append(getStyledKeyValue(context, "Per user", String.valueOf(info.perUser)));
                 }
                 break;
                 case SysConfigType.TYPE_ASSIGN_PERMISSION: {
-                    // TODO: Display permission info
                     sb.append(getStyledKeyValue(context, "Permissions", ""));
                     if (info.permissions.length == 0) {
                         sb.append(" None");
                     }
                     for (String permissionName : info.permissions) {
-                        sb.append("\n- ").append(permissionName);
+                        sb.append("\n- ").append(getPermissionReference(permissionName));
                     }
                 }
                 break;
@@ -222,7 +221,7 @@ public class SysConfigActivity extends BaseActivity {
                         sb.append(" None");
                     }
                     for (String permissionName : info.permissions) {
-                        sb.append("\n- ").append(permissionName);
+                        sb.append("\n- ").append(getPermissionReference(permissionName));
                     }
                 }
                 break;
@@ -300,7 +299,7 @@ public class SysConfigActivity extends BaseActivity {
                     }
                     for (int i = 0; i < info.permissions.length; ++i) {
                         sb.append("\n- ")
-                                .append(info.permissions[i])
+                                .append(getPermissionReference(info.permissions[i]))
                                 .append(" = ")
                                 .append(info.whitelist[i] ? "Granted" : "Revoked");
                     }
@@ -357,17 +356,42 @@ public class SysConfigActivity extends BaseActivity {
             }
         }
 
+        @NonNull
+        private CharSequence getPermissionReference(@NonNull String permissionName) {
+            try {
+                PermissionInfo permissionInfo = mPm.getPermissionInfo(permissionName, 0);
+                return formatPermissionReference(permissionName, permissionInfo.loadLabel(mPm));
+            } catch (PackageManager.NameNotFoundException e) {
+                return permissionName;
+            }
+        }
+
         @VisibleForTesting
         @NonNull
         static CharSequence formatPackageReference(@NonNull String packageName, @Nullable CharSequence packageLabel) {
-            if (packageLabel == null) {
-                return packageName;
+            return formatNamedReference(packageName, packageLabel);
+        }
+
+        @VisibleForTesting
+        @NonNull
+        static CharSequence formatPermissionReference(@NonNull String permissionName, @Nullable CharSequence permissionLabel) {
+            return formatNamedReference(permissionName, permissionLabel);
+        }
+
+        private static boolean isPermissionTitleType(@NonNull @SysConfigType String type) {
+            return SysConfigType.TYPE_PERMISSION.equals(type) || SysConfigType.TYPE_SPLIT_PERMISSION.equals(type);
+        }
+
+        @NonNull
+        private static CharSequence formatNamedReference(@NonNull String name, @Nullable CharSequence label) {
+            if (label == null) {
+                return name;
             }
-            String label = packageLabel.toString().trim();
-            if (label.isEmpty() || label.equals(packageName)) {
-                return packageName;
+            String labelString = label.toString().trim();
+            if (labelString.isEmpty() || labelString.equals(name)) {
+                return name;
             }
-            return label + " (" + packageName + ")";
+            return labelString + " (" + name + ")";
         }
 
         public static class ViewHolder extends RecyclerView.ViewHolder {

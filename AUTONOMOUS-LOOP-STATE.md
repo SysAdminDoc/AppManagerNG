@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 60 source-audit closure for SysConfig named-actor
-  conversion.
+- Result: completed Cycle 61 source-TODO closure for SysConfig permission label
+  display.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  SysConfig named-actor conversion hardening and its verification target.
-- Code: `SysConfigWrapper` now copies named-actor namespace entries with the
-  correct inner-loop index, preserves every namespace, and gives empty
-  namespaces empty actor/package arrays for the subtitle renderer.
+  SysConfig permission label display and its verification target.
+- Code: SysConfig permission titles and permission-list subtitle rows now show
+  resolved permission labels as `Label (permission)` with raw-name fallbacks for
+  missing, blank, or redundant permission labels.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigWrapperTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigActivityTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
