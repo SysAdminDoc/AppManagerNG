@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - APK export filename placeholder substitution (source TODO, 2026-06-06)
+
+- APK export filename formatting now uses literal placeholder replacement
+  instead of regex replacement, so app labels and version strings containing
+  `$` or `\` no longer break filename generation.
+- Filename formatting also handles a missing version name without throwing.
+
 ### Fixed - Running Apps VirusTotal process file selection (source TODO, 2026-06-06)
 
 - Running Apps now scans all command-line arguments for the first readable file
