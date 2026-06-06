@@ -283,20 +283,23 @@ public final class ExternalProfileImporter {
     static boolean looksLikePackageName(@NonNull String s) {
         int length = s.length();
         if (length < 3 || length > 255) return false;
-        char first = s.charAt(0);
-        if (!isAsciiLetter(first)) return false;
+        boolean segmentStart = true;
         boolean hasDot = false;
         for (int i = 0; i < length; ++i) {
             char c = s.charAt(i);
             if (c == '.') {
+                if (segmentStart) return false;
                 hasDot = true;
+                segmentStart = true;
                 continue;
             }
+            if (segmentStart && !isAsciiLetter(c)) return false;
             if (!isAsciiLetter(c) && (c < '0' || c > '9') && c != '_') {
                 return false;
             }
+            segmentStart = false;
         }
-        return hasDot;
+        return hasDot && !segmentStart;
     }
 
     private static boolean isAsciiLetter(char c) {
