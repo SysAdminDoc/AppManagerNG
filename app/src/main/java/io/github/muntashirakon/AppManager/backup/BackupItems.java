@@ -44,6 +44,10 @@ public class BackupItems {
     private static final String CHECKSUMS_TXT = "checksums.txt";
     private static final String FREEZE = ".freeze";
     private static final String NO_MEDIA = ".nomedia";
+    private static final String ADB_BACKUP_EXTENSION = ".ab";
+    private static final String[] SPLIT_ARCHIVE_EXTENSIONS = Arrays.stream(BackupUtils.TAR_TYPES)
+            .map(BackupManager::getExt)
+            .toArray(String[]::new);
 
     @NonNull
     private static Path getBaseDirectory() {
@@ -431,25 +435,58 @@ public class BackupItems {
 
         @NonNull
         public Path[] getSourceFiles() {
-            String ext = CryptoUtils.getExtension(mCryptoMode);
-            final String sourcePrefix = BackupUtils.getSourceFilePrefix(null);
-            Path[] paths = getBackupPath().listFiles((dir, name) -> name.startsWith(sourcePrefix) && name.endsWith(ext));
-            return Paths.getSortedPaths(paths);
+            return getBackupArchiveFiles(BackupManager.SOURCE_PREFIX, false);
         }
 
         @NonNull
         public Path[] getDataFiles(int index) {
-            String ext = CryptoUtils.getExtension(mCryptoMode);
-            final String dataPrefix = BackupUtils.getDataFilePrefix(index, null); // extension can be anything
-            Path[] paths = getBackupPath().listFiles((dir, name) -> name.startsWith(dataPrefix) && name.endsWith(ext));
-            return Paths.getSortedPaths(paths);
+            return getBackupArchiveFiles(BackupManager.DATA_PREFIX + index, true);
         }
 
         @NonNull
         public Path[] getKeyStoreFiles() {
-            String ext = CryptoUtils.getExtension(mCryptoMode);
-            Path[] paths = getBackupPath().listFiles((dir, name) -> name.startsWith(KEYSTORE_PREFIX) && name.endsWith(ext));
+            return getBackupArchiveFiles(KEYSTORE_PREFIX, false);
+        }
+
+        @NonNull
+        private Path[] getBackupArchiveFiles(@NonNull String baseName, boolean allowAdbBackup) {
+            String cryptoExtension = CryptoUtils.getExtension(mCryptoMode);
+            Path[] paths = getBackupPath().listFiles((dir, name) ->
+                    isBackupArchiveFileName(name, baseName, cryptoExtension, allowAdbBackup));
             return Paths.getSortedPaths(paths);
+        }
+
+        private static boolean isBackupArchiveFileName(@NonNull String name, @NonNull String baseName,
+                                                       @NonNull String cryptoExtension, boolean allowAdbBackup) {
+            if (!cryptoExtension.isEmpty()) {
+                if (!name.endsWith(cryptoExtension)) {
+                    return false;
+                }
+                name = name.substring(0, name.length() - cryptoExtension.length());
+            }
+            if (allowAdbBackup && name.equals(baseName + ADB_BACKUP_EXTENSION)) {
+                return true;
+            }
+            for (String archiveExtension : SPLIT_ARCHIVE_EXTENSIONS) {
+                String splitPrefix = baseName + archiveExtension + ".";
+                if (name.startsWith(splitPrefix)) {
+                    return isNonNegativeDecimal(name.substring(splitPrefix.length()));
+                }
+            }
+            return false;
+        }
+
+        private static boolean isNonNegativeDecimal(@NonNull String value) {
+            if (value.isEmpty()) {
+                return false;
+            }
+            for (int i = 0; i < value.length(); ++i) {
+                char c = value.charAt(i);
+                if (c < '0' || c > '9') {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public void freeze() throws IOException {
