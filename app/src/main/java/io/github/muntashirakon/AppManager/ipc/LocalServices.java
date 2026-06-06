@@ -108,7 +108,7 @@ public class LocalServices {
 
     @AnyThread
     @NonNull
-    @NoOps
+    @NoOps(used = true)
     public static FileSystemManager getFileSystemManager() throws RemoteException {
         if (Ops.isShizuku() && sShizukuFileSystemServiceConnectionWrapper.isBinderActive()) {
             synchronized (sShizukuFileSystemServiceConnectionWrapper) {
@@ -162,7 +162,7 @@ public class LocalServices {
 
     @AnyThread
     @NonNull
-    @NoOps
+    @NoOps(used = true)
     public static IAMService getAmService() throws RemoteException {
         if (Ops.isShizuku() && sShizukuAMServiceConnectionWrapper.isBinderActive()) {
             synchronized (sShizukuAMServiceConnectionWrapper) {
@@ -183,7 +183,7 @@ public class LocalServices {
     }
 
     @WorkerThread
-    @NoOps
+    @NoOps(used = true)
     public static void stopServices() {
         synchronized (sAMServiceConnectionWrapper) {
             sAMServiceConnectionWrapper.stopDaemon();
