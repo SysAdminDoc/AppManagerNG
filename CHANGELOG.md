@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Default-app role holder parsing (source audit, 2026-06-06)
+
+- Backup default-role detection now normalizes `cmd role get-role-holders`
+  output that prefixes holders as `package:<name>`, so Android-version-specific
+  command output still matches the raw package name being backed up.
+- Bracketed multi-holder output and plain holder output share the same
+  normalization path.
+
 ### Fixed - Selected-user preference parsing (source audit, 2026-06-06)
 
 - Restored or hand-edited selected-user preference lists now drop negative user

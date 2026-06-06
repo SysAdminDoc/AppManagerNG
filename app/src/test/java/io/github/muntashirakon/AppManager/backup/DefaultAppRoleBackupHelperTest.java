@@ -9,6 +9,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import io.github.muntashirakon.AppManager.R;
 
 public class DefaultAppRoleBackupHelperTest {
@@ -51,5 +55,20 @@ public class DefaultAppRoleBackupHelperTest {
                 DefaultAppRoleBackupHelper.getRoleLabelRes(DefaultAppRoleBackupHelper.ROLE_BROWSER));
         assertEquals(R.string.state_unknown,
                 DefaultAppRoleBackupHelper.getRoleLabelRes("android.app.role.NOTES"));
+    }
+
+    @Test
+    public void appendRoleHoldersNormalizesCmdPackagePrefixes() {
+        List<String> holders = new ArrayList<>();
+
+        DefaultAppRoleBackupHelper.appendRoleHoldersFromLine(holders,
+                "[package:com.example.sms, com.example.dialer]");
+        DefaultAppRoleBackupHelper.appendRoleHoldersFromLine(holders,
+                "package:com.example.browser");
+
+        assertEquals(Arrays.asList(
+                "com.example.sms",
+                "com.example.dialer",
+                "com.example.browser"), holders);
     }
 }
