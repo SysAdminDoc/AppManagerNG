@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 59 source-TODO closure for SysConfig associated
-  package label display.
+- Result: completed Cycle 60 source-audit closure for SysConfig named-actor
+  conversion.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  SysConfig associated-package label display and its verification target.
-- Code: SysConfig carrier associated-app and allow-association rows now show
-  resolved app labels as `Label (package)` while preserving raw package-name
-  fallbacks when labels are missing or redundant.
+  SysConfig named-actor conversion hardening and its verification target.
+- Code: `SysConfigWrapper` now copies named-actor namespace entries with the
+  correct inner-loop index, preserves every namespace, and gives empty
+  namespaces empty actor/package arrays for the subtitle renderer.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigActivityTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigWrapperTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at

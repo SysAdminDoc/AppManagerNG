@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - SysConfig named actor conversion (source audit, 2026-06-06)
+
+- SysConfig named-actor conversion now preserves every namespace while copying
+  actor/package pairs with the correct inner-loop index.
+- Empty named-actor namespaces now produce empty arrays instead of null actor
+  state for the subtitle renderer.
+
 ### Fixed - SysConfig associated package labels (source TODO, 2026-06-06)
 
 - SysConfig carrier associated-app and allow-association subtitle rows now show
