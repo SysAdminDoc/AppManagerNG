@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - NoOps annotation detector (source TODO, 2026-06-06)
+
+- Added a source-level contract test that scans annotated members and requires
+  direct `Ops.*` references to declare `@NoOps(used = true)`.
+- `LocalServices` now marks its existing direct mode-check and working-UID
+  updates as intentional `NoOps` usage.
+
 ### Fixed - Running service client counts from dumpsys (source TODO, 2026-06-06)
 
 - The dumpsys fallback for running services now populates
