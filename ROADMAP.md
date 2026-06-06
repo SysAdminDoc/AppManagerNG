@@ -255,7 +255,10 @@ than by historical priority tier:
   tests. `androidx.window 1.4.0` is already a dependency. Host-prep shipped
   2026-06-06: `SettingsActivity` now gates its existing two-pane layout with
   `WindowWidthSizeClass.requiresTwoPane(screenWidthDp)` instead of raw pixel
-  width, with focused JVM coverage in `SettingsActivityLayoutModeTest`._
+  width, with focused JVM coverage in `SettingsActivityLayoutModeTest`.
+  Additional host-prep shipped 2026-06-06: `MainActivityEmbeddingContractTest`
+  pins the existing MainActivity/AppDetails `androidx.window` split pair,
+  placeholder, split width/ratio, finish semantics, and manifest exposure._
   **Device-gated** — a layout restructure whose correctness (view-ID
   preservation + nav/back behavior) cannot be CI-verified; must be exercised on
   a tablet/foldable before shipping, so it is not landed blind. **Concrete
