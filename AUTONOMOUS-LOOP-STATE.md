@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 88 source-audit closure for component rule
-  status-token hardening.
+- Result: completed Cycle 89 source-audit closure for freeze rule method
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  component rule status-token hardening and its verification target.
-- Code: component rule imports now reject unknown status tokens instead of
-  accepting arbitrary strings as applied component states, while preserving
-  legacy `true`/`false`, IFW, disable/enable, `unblocked`, and provider-specific
-  IFW-to-disable remapping behavior.
+  freeze rule method hardening and its verification target.
+- Code: freeze rule imports now accept only the defined freeze methods
+  (`disable`, `suspend`, `hide`, and advanced suspend) instead of accepting
+  arbitrary integers, so malformed, zero, negative, and unknown values fail
+  closed during rule parsing.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
