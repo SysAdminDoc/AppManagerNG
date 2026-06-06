@@ -177,15 +177,7 @@ public abstract class VirtualFileSystem {
         synchronized (sUriVfsIdsMap) {
             sUriVfsIdsMap.put(mountPoint, vfsId);
         }
-        synchronized (sParentUriVfsIdsMap) {
-            Uri uri = Paths.removeLastPathSegment(mountPoint);
-            List<Integer> vfsIds = sParentUriVfsIdsMap.get(uri);
-            if (vfsIds == null) {
-                vfsIds = new ArrayList<>(1);
-                sParentUriVfsIdsMap.put(uri, vfsIds);
-            }
-            vfsIds.add(vfsId);
-        }
+        addParentUriMapping(mountPoint, vfsId);
         Log.d(TAG, "Mounted %d at %s", vfsId, mountPoint);
         return vfsId;
     }
@@ -201,16 +193,7 @@ public abstract class VirtualFileSystem {
         synchronized (sUriVfsIdsMap) {
             sUriVfsIdsMap.remove(mountPoint);
         }
-        synchronized (sParentUriVfsIdsMap) {
-            if (mountPoint != null) {
-                Uri uri = Paths.removeLastPathSegment(mountPoint);
-                List<Integer> vfsIds = sParentUriVfsIdsMap.get(uri);
-                if (vfsIds != null && vfsIds.contains(vfsId)) {
-                    if (vfsIds.size() == 1) sParentUriVfsIdsMap.remove(uri);
-                    else vfsIds.remove((Integer) vfsId);
-                }
-            }
-        }
+        removeParentUriMapping(mountPoint, vfsId);
         fs.unmount();
         Log.d(TAG, "%d unmounted at %s", vfsId, mountPoint);
     }
@@ -222,24 +205,42 @@ public abstract class VirtualFileSystem {
             sUriVfsIdsMap.remove(oldMountPoint);
             sUriVfsIdsMap.put(newMountPoint, fs.getFsId());
         }
-        synchronized (sParentUriVfsIdsMap) {
-            // Remove old mount point
-            Uri oldParent = Paths.removeLastPathSegment(oldMountPoint);
-            List<Integer> oldFsIds = sParentUriVfsIdsMap.get(oldParent);
-            if (oldFsIds != null) {
-                oldFsIds.remove((Integer) fs.getFsId());
-            }
-            // Add new mount point
-            Uri newParent = Paths.removeLastPathSegment(newMountPoint);
-            List<Integer> newFsIds = sParentUriVfsIdsMap.get(newParent);
-            if (newFsIds == null) {
-                newFsIds = new ArrayList<>(1);
-                sParentUriVfsIdsMap.put(newParent, newFsIds);
-            }
-            newFsIds.add(fs.getFsId());
-        }
+        removeParentUriMapping(oldMountPoint, fs.getFsId());
+        addParentUriMapping(newMountPoint, fs.getFsId());
         fs.mMountPoint = newMountPoint;
         Log.d(TAG, "Mount point of %d altered from %s to %s", fs.getFsId(), oldMountPoint, newMountPoint);
+    }
+
+    private static void addParentUriMapping(@NonNull Uri mountPoint, int vfsId) {
+        Uri parentUri = Paths.getParentUri(mountPoint);
+        if (parentUri == null) {
+            return;
+        }
+        synchronized (sParentUriVfsIdsMap) {
+            List<Integer> vfsIds = sParentUriVfsIdsMap.get(parentUri);
+            if (vfsIds == null) {
+                vfsIds = new ArrayList<>(1);
+                sParentUriVfsIdsMap.put(parentUri, vfsIds);
+            }
+            vfsIds.add(vfsId);
+        }
+    }
+
+    private static void removeParentUriMapping(@Nullable Uri mountPoint, int vfsId) {
+        if (mountPoint == null) {
+            return;
+        }
+        Uri parentUri = Paths.getParentUri(mountPoint);
+        if (parentUri == null) {
+            return;
+        }
+        synchronized (sParentUriVfsIdsMap) {
+            List<Integer> vfsIds = sParentUriVfsIdsMap.get(parentUri);
+            if (vfsIds != null && vfsIds.contains(vfsId)) {
+                if (vfsIds.size() == 1) sParentUriVfsIdsMap.remove(parentUri);
+                else vfsIds.remove((Integer) vfsId);
+            }
+        }
     }
 
     public static boolean isMountPoint(@NonNull Uri uri) {
