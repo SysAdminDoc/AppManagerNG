@@ -214,17 +214,52 @@ public class UriManager {
             if (parts.length < 9) {
                 throw new IllegalArgumentException("Invalid URI grant format.");
             }
-            int sourceUserId = Integer.parseInt(parts[0]);
-            int targetUserId = Integer.parseInt(parts[1]);
-            int userHandle = Integer.parseInt(parts[2]);
+            int sourceUserId = parseNonNegativeInt(parts[0], "sourceUserId");
+            int targetUserId = parseNonNegativeInt(parts[1], "targetUserId");
+            int userHandle = parseNonNegativeInt(parts[2], "userHandle");
             String sourcePkg = parts[3];
             String targetPkg = parts[4];
-            boolean prefix = Boolean.parseBoolean(parts[5]);
-            int modeFlags = Integer.parseInt(parts[6]);
-            long createdTime = Long.parseLong(parts[7]);
+            boolean prefix = parseBoolean(parts[5], "prefix");
+            int modeFlags = parseNonNegativeInt(parts[6], "modeFlags");
+            long createdTime = parseNonNegativeLong(parts[7], "createdTime");
             Uri uri = Uri.parse(parts[8]);
             return new UriGrant(sourceUserId, targetUserId, userHandle, sourcePkg, targetPkg, uri,
                     prefix, modeFlags, createdTime);
+        }
+
+        private static int parseNonNegativeInt(@NonNull String value, @NonNull String fieldName) {
+            try {
+                int parsedValue = Integer.parseInt(value.trim());
+                if (parsedValue < 0) {
+                    throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".");
+                }
+                return parsedValue;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".", e);
+            }
+        }
+
+        private static long parseNonNegativeLong(@NonNull String value, @NonNull String fieldName) {
+            try {
+                long parsedValue = Long.parseLong(value.trim());
+                if (parsedValue < 0) {
+                    throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".");
+                }
+                return parsedValue;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".", e);
+            }
+        }
+
+        private static boolean parseBoolean(@NonNull String value, @NonNull String fieldName) {
+            String normalizedValue = value.trim();
+            if ("true".equalsIgnoreCase(normalizedValue)) {
+                return true;
+            }
+            if ("false".equalsIgnoreCase(normalizedValue)) {
+                return false;
+            }
+            throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".");
         }
     }
 }

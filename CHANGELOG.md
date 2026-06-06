@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - URI grant scalar parsing (source audit, 2026-06-06)
+
+- Flattened URI grant parsing now rejects malformed or negative user IDs,
+  mode flags, and created-time values instead of leaking numeric conversion
+  failures or constructing invalid grants.
+- URI grant prefix flags now parse strictly as `true` or `false` while
+  preserving case-insensitive and whitespace-padded valid values.
+
 ### Fixed - Rule numeric field negativity checks (source audit, 2026-06-06)
 
 - Permission-rule flag imports now reject malformed or negative flag values
