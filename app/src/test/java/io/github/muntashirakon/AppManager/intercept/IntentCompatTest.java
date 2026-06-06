@@ -117,6 +117,35 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void flattenToString_roundTripsCharSequenceArrayExtraAsStringArray() {
+        Intent input = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        input.putExtra("labels", new CharSequence[]{
+                new SpannableString("alpha,beta"),
+                new SpannableString("gamma")
+        });
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals(Arrays.asList("alpha,beta", "gamma"),
+                Arrays.asList(parsed.getStringArrayExtra("labels")));
+    }
+
+    @Test
+    public void flattenToString_roundTripsCharSequenceListExtraAsStringList() {
+        Intent input = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        ArrayList<CharSequence> labels = new ArrayList<>();
+        labels.add(new SpannableString("alpha,beta"));
+        labels.add(new SpannableString("gamma"));
+        input.putCharSequenceArrayListExtra("labels", labels);
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals(Arrays.asList("alpha,beta", "gamma"), parsed.getStringArrayListExtra("labels"));
+    }
+
+    @Test
     public void flattenToString_roundTripsUriListValuesContainingCommas() {
         Intent input = new Intent(Intent.ACTION_VIEW);
         ArrayList<Uri> uris = new ArrayList<>();
