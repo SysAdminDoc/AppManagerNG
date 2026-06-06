@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-or-later
 
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.api.artifacts.dsl.LockMode
 
 buildscript {
     apply from: 'versions.gradle'
@@ -8,6 +9,9 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+    }
+    configurations.classpath {
+        resolutionStrategy.activateDependencyLocking()
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${agp_version}"
@@ -22,6 +26,10 @@ wrapper {
 }
 
 allprojects {
+    dependencyLocking {
+        lockMode = LockMode.STRICT
+        lockAllConfigurations()
+    }
     repositories {
         google()
         mavenCentral()
