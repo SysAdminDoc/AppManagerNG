@@ -74,19 +74,19 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include batch clear-cache
-  multi-volume trimming, nullable last path segment semantics, certificate
-  extension OID descriptions, OpenPGP backup provider availability checks,
-  multithreaded executor factory synchronization, NoOps annotation detector
-  coverage, running-service client counts from dumpsys, external key import
-  algorithm guardrails, APK export filename placeholder substitution, Running
-  Apps VirusTotal command-line file selection, changelog inline markup support,
-  logcat shared-UID package attribution, Titanium Backup import timestamp
-  preservation, file content MIME detection for mismatched extensions, Dex VFS
-  API-level mount options, File Manager VFS read-only mount mapping, main-list
-  split/SAF filter conversion, main-list user-filter persistence, data-only
-  split reinstall routing, and APKS split-source export fallback; closed
-  details live in `COMPLETED.md`.
+- Source-backed 2026-06-06 audit closures now include SAF VFS parent URI
+  mapping, batch clear-cache multi-volume trimming, nullable last path segment
+  semantics, certificate extension OID descriptions, OpenPGP backup provider
+  availability checks, multithreaded executor factory synchronization, NoOps
+  annotation detector coverage, running-service client counts from dumpsys,
+  external key import algorithm guardrails, APK export filename placeholder
+  substitution, Running Apps VirusTotal command-line file selection, changelog
+  inline markup support, logcat shared-UID package attribution, Titanium Backup
+  import timestamp preservation, file content MIME detection for mismatched
+  extensions, Dex VFS API-level mount options, File Manager VFS read-only mount
+  mapping, main-list split/SAF filter conversion, main-list user-filter
+  persistence, data-only split reinstall routing, and APKS split-source export
+  fallback; closed details live in `COMPLETED.md`.
 
 ## A. Feature wiring — implementable now
 

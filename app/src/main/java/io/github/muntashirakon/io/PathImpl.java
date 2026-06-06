@@ -1362,8 +1362,10 @@ class PathImpl extends Path {
         if (mountPoint == null) {
             return null;
         }
-        // FIXME: 9/9/23 This doesn't actually work for content URIs
-        Uri parentUri = Paths.removeLastPathSegment(mountPoint);
+        Uri parentUri = Paths.getParentUri(mountPoint);
+        if (parentUri == null) {
+            return null;
+        }
         return new PathImpl(context, parentUri).documentFile;
     }
 
