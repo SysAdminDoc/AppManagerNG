@@ -46,4 +46,27 @@ public class PackageUtilsPackageNameValidationTest {
         }
         assertFalse(PackageUtils.isPlausiblePackageName(oversized.toString()));
     }
+
+    @Test
+    public void validateNameAcceptsPlatformAndStandardPackageNames() {
+        assertTrue(PackageUtils.validateName("android"));
+        assertTrue(PackageUtils.validateName("com.android.vending"));
+        assertTrue(PackageUtils.validateName("io.github.muntashirakon.AppManager"));
+    }
+
+    @Test
+    public void validateNameRejectsEmptySegments() {
+        assertFalse(PackageUtils.validateName(""));
+        assertFalse(PackageUtils.validateName(".com.example"));
+        assertFalse(PackageUtils.validateName("com.example."));
+        assertFalse(PackageUtils.validateName("com..example"));
+    }
+
+    @Test
+    public void validateNameRejectsInvalidSegmentStartAndCharacters() {
+        assertFalse(PackageUtils.validateName("1com.example"));
+        assertFalse(PackageUtils.validateName("com.1example"));
+        assertFalse(PackageUtils.validateName("com._example"));
+        assertFalse(PackageUtils.validateName("com.example bad"));
+    }
 }

@@ -946,12 +946,15 @@ public final class PackageUtils {
                 }
             }
             if (c == '.') {
+                if (front) {
+                    return false;
+                }
                 hasSep = true;
                 front = true;
                 continue;
             }
             return false;
         }
-        return hasSep;
+        return hasSep && !front;
     }
 }
