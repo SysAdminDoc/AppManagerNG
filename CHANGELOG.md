@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile URI package validation (source audit, 2026-06-06)
+
+- Profile automation URI package overrides now use the same package-name
+  validator as package-targeted automation requests before writing runtime
+  override JSON.
+- Malformed `package`, `pkg`, and `packages` query values now fail closed
+  instead of reaching profile execution as invalid package overrides.
+
 ### Fixed - Automation user validation (source audit, 2026-06-06)
 
 - Package-targeted automation requests now reject negative user ids from URI,

@@ -104,6 +104,12 @@ public class AutomationRequestTest {
     }
 
     @Test
+    public void rejectsInvalidProfilePackageOverride() {
+        assertThrows(IllegalArgumentException.class, () ->
+                AutomationRequest.fromUri(Uri.parse("am://profile/nightly/run?package=not%20a%20package")));
+    }
+
+    @Test
     public void rejectsNegativeUriUser() {
         assertThrows(IllegalArgumentException.class, () ->
                 AutomationRequest.fromUri(Uri.parse("am://freeze/com.example.app?user=-1")));

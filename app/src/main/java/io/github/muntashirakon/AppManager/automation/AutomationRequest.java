@@ -203,6 +203,7 @@ final class AutomationRequest {
                 query(uri, "profile-overrides"),
                 query(uri, "overrides")));
         ArrayList<String> packages = packageQueriesFromUri(uri);
+        validatePackageNames(packages);
         if (!packages.isEmpty()) {
             if (overrides == null) {
                 overrides = new JSONObject();
@@ -340,13 +341,7 @@ final class AutomationRequest {
 
     private void validatePackages() {
         packages.removeAll(Collections.singleton(null));
-        for (int i = 0; i < packages.size(); ++i) {
-            String packageName = packages.get(i).trim();
-            if (!PackageUtils.validateName(packageName)) {
-                throw new IllegalArgumentException("Invalid package name: " + packageName);
-            }
-            packages.set(i, packageName);
-        }
+        validatePackageNames(packages);
         if (packages.isEmpty()) {
             throw new IllegalArgumentException("Missing " + EXTRA_PACKAGE);
         }
@@ -368,6 +363,16 @@ final class AutomationRequest {
         }
         if (users.size() != packages.size()) {
             throw new IllegalArgumentException(EXTRA_USERS + " size must match package count");
+        }
+    }
+
+    private static void validatePackageNames(@NonNull ArrayList<String> packages) {
+        for (int i = 0; i < packages.size(); ++i) {
+            String packageName = packages.get(i).trim();
+            if (!PackageUtils.validateName(packageName)) {
+                throw new IllegalArgumentException("Invalid package name: " + packageName);
+            }
+            packages.set(i, packageName);
         }
     }
 
