@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 69 source-audit closure for selected-user preference
+- Result: completed Cycle 70 source-audit closure for default-app role holder
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  selected-user preference parser hardening and its verification target.
-- Code: restored or hand-edited main-list user-filter and global selected-user
-  preference strings now drop negative Android user ids along with empty and
-  non-numeric tokens while preserving valid decimal and decoded hex ids.
+  default-app role holder parser hardening and its verification target.
+- Code: backup default-role detection now strips `package:` prefixes from
+  `cmd role get-role-holders` output before comparing holders with the raw
+  backed-up package name, preserving bracketed and plain holder formats.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelperTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
