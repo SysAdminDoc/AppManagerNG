@@ -10,18 +10,22 @@ import java.util.StringTokenizer;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
 public class SsaidRule extends RuleEntry {
+    private static final String SYSTEM_PACKAGE_NAME = "android";
+    private static final int APP_SSAID_HEX_LENGTH = 16;
+    private static final int SYSTEM_SSAID_HEX_LENGTH = 64;
+
     @NonNull
     private String mSsaid;
 
     public SsaidRule(@NonNull String packageName, @NonNull String ssaid) {
         super(packageName, STUB, RuleType.SSAID);
-        mSsaid = ssaid;
+        mSsaid = validateSsaid(packageName, ssaid);
     }
 
     public SsaidRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
         super(packageName, STUB, RuleType.SSAID);
         if (tokenizer.hasMoreElements()) {
-            mSsaid = tokenizer.nextElement().toString();
+            mSsaid = validateSsaid(packageName, tokenizer.nextElement().toString());
         } else throw new IllegalArgumentException("Invalid format: ssaid not found");
     }
 
@@ -31,7 +35,19 @@ public class SsaidRule extends RuleEntry {
     }
 
     public void setSsaid(@NonNull String ssaid) {
-        mSsaid = ssaid;
+        mSsaid = validateSsaid(packageName, ssaid);
+    }
+
+    @NonNull
+    private static String validateSsaid(@NonNull String packageName, @NonNull String ssaid) {
+        String normalizedSsaid = ssaid.trim();
+        int expectedLength = SYSTEM_PACKAGE_NAME.equals(packageName)
+                ? SYSTEM_SSAID_HEX_LENGTH
+                : APP_SSAID_HEX_LENGTH;
+        if (normalizedSsaid.length() != expectedLength || !normalizedSsaid.matches("[0-9A-Fa-f]+")) {
+            throw new IllegalArgumentException("Invalid format: ssaid is invalid");
+        }
+        return normalizedSsaid;
     }
 
     @NonNull

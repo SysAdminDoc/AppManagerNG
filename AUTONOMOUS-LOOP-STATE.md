@@ -8,17 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 92 source-audit closure for URI grant scalar parser
+- Result: completed Cycle 93 source-audit closure for SSAID rule value
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  URI grant scalar parser hardening and its verification target.
-- Code: flattened URI grant parsing now rejects malformed or negative user IDs,
-  mode flags, and created-time values instead of leaking numeric conversion
-  failures or constructing invalid grants, and prefix flags now parse strictly
-  as `true` or `false` while preserving case-insensitive and whitespace-padded
-  valid values.
+  SSAID rule value hardening and its verification target.
+- Code: SSAID rule imports now reject values that do not match the generated
+  SSAID/user-key hex shape before restore applies them; app SSAIDs must be
+  exactly 16 hex characters, while the system user key remains a 64-character
+  hex value.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.uri.UriManagerTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest --tests io.github.muntashirakon.AppManager.rules.PseudoRulesTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
@@ -31,9 +30,9 @@ Current branch: `main`
 - Next roadmap target: find or promote the next host-verifiable source-backed
   audit slice, since the remaining visible rows are largely device/manual,
   external-submission, or owner-signoff gated.
-- Start by scanning backup/profile/settings parser edges, source TODOs, and
-  existing guardrail tests for a small source-backed risk that can be tightened
-  without device-only claims.
+- Start by scanning backup/profile/settings parser edges, persisted export
+  formats, source TODOs, and existing guardrail tests for a small source-backed
+  risk that can be tightened without device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - SSAID rule value parsing (source audit, 2026-06-06)
+
+- SSAID rule imports now reject values that do not match the generated
+  SSAID/user-key hex shape before restore applies them.
+- App SSAID values must be exactly 16 hex characters, while the system user key
+  remains a 64-character hex value.
+
 ### Fixed - URI grant scalar parsing (source audit, 2026-06-06)
 
 - Flattened URI grant parsing now rejects malformed or negative user IDs,
