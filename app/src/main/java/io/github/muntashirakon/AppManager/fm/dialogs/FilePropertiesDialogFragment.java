@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.os.BundleCompat;
 import androidx.lifecycle.AndroidViewModel;
@@ -37,10 +38,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
@@ -517,24 +520,25 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
                 mGroupList.add(id);
             }
             List<ApplicationInfo> applicationInfoList = PackageUtils.getAllApplications(0);
-            Map<Integer, CharSequence> uidList = new HashMap<>(applicationInfoList.size());
+            Map<Integer, List<CharSequence>> uidList = new HashMap<>(applicationInfoList.size());
             PackageManager pm = getApplication().getPackageManager();
             for (ApplicationInfo info : applicationInfoList) {
                 if (uidOwnerMap.containsKey(info.uid)) {
                     // Omit system UID/GIDs
                     continue;
                 }
-                if (!uidList.containsKey(info.uid)) {
-                    // Include only the first app label
-                    // TODO: 30/6/23 Include all app names?
-                    uidList.put(info.uid, info.loadLabel(pm));
+                List<CharSequence> labels = uidList.get(info.uid);
+                if (labels == null) {
+                    labels = new ArrayList<>();
+                    uidList.put(info.uid, labels);
                 }
+                labels.add(info.loadLabel(pm));
             }
             for (int uid : uidList.keySet()) {
                 AndroidId id = new AndroidId();
                 id.id = uid;
                 id.name = Owners.formatUid(uid);
-                id.description = Objects.requireNonNull(uidList.get(uid));
+                id.description = describeSharedUidLabels(Objects.requireNonNull(uidList.get(uid)));
                 mOwnerList.add(id);
                 mGroupList.add(id);
                 // Add cached uid
@@ -552,6 +556,18 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             }
             Collections.sort(mOwnerList, (o1, o2) -> Integer.compare(o1.id, o2.id));
             Collections.sort(mGroupList, (o1, o2) -> Integer.compare(o1.id, o2.id));
+        }
+
+        @VisibleForTesting
+        @NonNull
+        static CharSequence describeSharedUidLabels(@NonNull List<CharSequence> labels) {
+            Set<String> uniqueLabels = new LinkedHashSet<>(labels.size());
+            for (CharSequence label : labels) {
+                if (!TextUtils.isEmpty(label)) {
+                    uniqueLabels.add(label.toString());
+                }
+            }
+            return TextUtils.join(", ", uniqueLabels);
         }
 
         public void setUid(@NonNull FileProperties properties, int uid, boolean recursive) {
