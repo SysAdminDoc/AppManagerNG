@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 65 source-audit closure for intent empty
-  primitive-array serialization.
+- Result: completed Cycle 66 source-audit closure for Activity Interceptor
+  pasted header hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent empty primitive-array serialization and its verification target.
-- Code: Activity Interceptor flattened intent parsing now restores empty
-  `int[]`, `long[]`, and `float[]` extras as zero-length typed arrays instead
-  of treating their empty value as a malformed number.
+  Activity Interceptor pasted header hardening and its verification target.
+- Code: Activity Interceptor paste parsing now ignores malformed `ROOT` and
+  `USER` header lines instead of throwing when a clipboard export is missing a
+  value or has an invalid user id.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at

@@ -3,7 +3,9 @@
 package io.github.muntashirakon.AppManager.intercept;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.ComponentName;
@@ -46,5 +48,22 @@ public class ActivityInterceptorTest {
         assertEquals("privileged component (0)",
                 ActivityInterceptor.formatLaunchResult("privileged component", 0));
         assertEquals("default (-1)", ActivityInterceptor.formatLaunchResult(null, -1));
+    }
+
+    @Test
+    public void getPastedRootHeaderValueHandlesMalformedLines() {
+        assertNull(ActivityInterceptor.getPastedRootHeaderValue("ROOT"));
+        assertNull(ActivityInterceptor.getPastedRootHeaderValue("ACTION\tandroid.intent.action.VIEW"));
+        assertTrue(ActivityInterceptor.getPastedRootHeaderValue("ROOT\ttrue"));
+        assertFalse(ActivityInterceptor.getPastedRootHeaderValue("ROOT\t"));
+    }
+
+    @Test
+    public void getPastedUserHeaderValueHandlesMalformedLines() {
+        assertNull(ActivityInterceptor.getPastedUserHeaderValue("USER"));
+        assertNull(ActivityInterceptor.getPastedUserHeaderValue("USER\tbad"));
+        assertNull(ActivityInterceptor.getPastedUserHeaderValue("ACTION\tandroid.intent.action.VIEW"));
+        assertEquals(Integer.valueOf(10), ActivityInterceptor.getPastedUserHeaderValue("USER\t10"));
+        assertEquals(Integer.valueOf(16), ActivityInterceptor.getPastedUserHeaderValue("USER\t0x10"));
     }
 }

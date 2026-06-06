@@ -51,7 +51,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.StringTokenizer;
 import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
@@ -884,19 +883,18 @@ public class ActivityInterceptor extends BaseActivity {
         int parseCount = 0;
         for (String line : lines) {
             if (TextUtils.isEmpty(line)) continue;
-            StringTokenizer tokenizer = new StringTokenizer(line, "\t");
-            switch (tokenizer.nextToken()) {
-                case "ROOT":
-                    mUseRoot = Ops.isWorkingUidRoot() && Boolean.parseBoolean(tokenizer.nextToken());
-                    ++parseCount;
-                    break;
-                case "USER":
-                    int userId = Integer.decode(tokenizer.nextToken());
+            Boolean useRoot = getPastedRootHeaderValue(line);
+            if (useRoot != null) {
+                mUseRoot = Ops.isWorkingUidRoot() && useRoot;
+                ++parseCount;
+            } else {
+                Integer userId = getPastedUserHeaderValue(line);
+                if (userId != null) {
                     if (SelfPermissions.checkCrossUserPermission(userId, false)) {
                         mUserHandle = userId;
                     }
                     ++parseCount;
-                    break;
+                }
             }
             if (parseCount == 2) {
                 // Got both ROOT and USER, no need to continue the loop
@@ -933,6 +931,30 @@ public class ActivityInterceptor extends BaseActivity {
         share.setType("text/plain");
         share.putExtra(Intent.EXTRA_TEXT, getIntentDetailsString());
         return share;
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static Boolean getPastedRootHeaderValue(@NonNull String line) {
+        String[] parts = line.split("\t", 3);
+        if (parts.length < 2 || !"ROOT".equals(parts[0])) {
+            return null;
+        }
+        return Boolean.parseBoolean(parts[1]);
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static Integer getPastedUserHeaderValue(@NonNull String line) {
+        String[] parts = line.split("\t", 3);
+        if (parts.length < 2 || !"USER".equals(parts[0])) {
+            return null;
+        }
+        try {
+            return Integer.decode(parts[1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @NonNull
