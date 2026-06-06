@@ -80,6 +80,7 @@ import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
+import io.github.muntashirakon.AppManager.utils.StorageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -648,15 +649,16 @@ public class BatchOpsManager {
     @NonNull
     private Result opTrimCaches() {
         long size = 1024L * 1024L * 1024L * 1024L;  // 1 TB
-        boolean isSuccessful;
-        try {
-            // TODO: 30/8/21 Iterate all volumes?
-            PackageManagerCompat.freeStorageAndNotify(null /* internal */, size,
-                    StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
-            isSuccessful = true;
-        } catch (Throwable e) {
-            log("====> op=TRIM_CACHES", e);
-            isSuccessful = false;
+        boolean isSuccessful = true;
+        for (String volumeUuid : StorageUtils.getTrimCacheVolumeUuids(
+                StorageUtils.getWritableStorageVolumeUuids(ContextUtils.getContext(), UserHandleHidden.myUserId()))) {
+            try {
+                PackageManagerCompat.freeStorageAndNotify(volumeUuid, size,
+                        StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
+            } catch (Throwable e) {
+                log("====> op=TRIM_CACHES volume=" + (volumeUuid == null ? "internal" : volumeUuid), e);
+                isSuccessful = false;
+            }
         }
         return new Result(Collections.emptyList(), isSuccessful);
     }

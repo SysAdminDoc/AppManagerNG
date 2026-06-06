@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch cache trim volume coverage (source TODO, 2026-06-06)
+
+- Empty clear-cache batch operations now trim every known writable storage
+  volume instead of only the internal volume.
+- One-Click Ops and batch cache trimming now share the same internal-first,
+  deduplicated volume ordering helper.
+
 ### Fixed - Nullable last path segment helper (source TODO, 2026-06-06)
 
 - `Paths` now exposes `getLastPathSegmentOrNull()` for callers that need to
