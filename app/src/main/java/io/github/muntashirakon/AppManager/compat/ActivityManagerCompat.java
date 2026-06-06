@@ -33,8 +33,10 @@ import androidx.annotation.WorkerThread;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -317,6 +319,8 @@ public final class ActivityManagerCompat {
     private static final Pattern SERVICE_RECORD_REGEX = Pattern.compile("\\* ServiceRecord\\{[0-9a-f]+ u(\\d+) ([^\\}]+)\\}");
     @SuppressWarnings("RegExpRedundantEscape")
     private static final Pattern PROCESS_RECORD_REGEX = Pattern.compile("app=ProcessRecord\\{[0-9a-f]+ (\\d+):([^/]+)/([^\\}]+)\\}");
+    @SuppressWarnings("RegExpRedundantEscape")
+    private static final Pattern CONNECTION_RECORD_REGEX = Pattern.compile("^\\s+ConnectionRecord\\{[0-9a-f]+ [^\\}]*@([^\\}\\s]+)\\}");
 
     @NonNull
     private static List<ActivityManager.RunningServiceInfo> getRunningServicesUsingDumpSys(String packageName) {
@@ -357,44 +361,57 @@ public final class ActivityManagerCompat {
             service = ComponentName.unflattenFromString(i == -1 ? serviceName : serviceName.substring(0, i));
             line = it.next();
             srMatcher = SERVICE_RECORD_REGEX.matcher(line);
+            ActivityManager.RunningServiceInfo info = null;
+            Set<String> clientConnections = new HashSet<>();
             while (it.hasNext()) {
                 if (srMatcher.find(0)) {
                     // found next ServiceRecord, no need to continue the search for ProcessRecord
                     break;
                 }
                 prMatcher = PROCESS_RECORD_REGEX.matcher(line);
-                if (!prMatcher.find(0)) {
-                    // Process didn't match, find next line
+                Matcher crMatcher = CONNECTION_RECORD_REGEX.matcher(line);
+                boolean processRecordFound = prMatcher.find(0);
+                boolean connectionRecordFound = crMatcher.find(0);
+                if (connectionRecordFound) {
+                    clientConnections.add(crMatcher.group(1));
+                    if (info != null) {
+                        info.clientCount = clientConnections.size();
+                    }
+                }
+                if (!processRecordFound && !connectionRecordFound) {
+                    // Process or connection didn't match, find next line
                     line = it.next();
                     srMatcher = SERVICE_RECORD_REGEX.matcher(line);
                     continue;
                 }
-                // Found a ProcessRecord
-                String pid = prMatcher.group(1);
-                String processName = prMatcher.group(2);
-                String userInfo = prMatcher.group(3);
-                if (pid != null && processName != null && userInfo != null) {
-                    ActivityManager.RunningServiceInfo info = new ActivityManager.RunningServiceInfo();
-                    info.pid = Integer.decode(pid);
-                    info.process = processName;
-                    info.service = service;
-                    // UID
-                    if (TextUtils.isDigitsOnly(userInfo)) {  // UID < 10000
-                        info.uid = Integer.decode(userInfo);
-                    } else if (userInfo.startsWith("u")) {  // u<USER_ID>(a|s)<APP_ID>[i<ISOLATION_ID>]
-                        userInfo = userInfo.substring(("u" + userId).length()); // u<USER_ID> removed
-                        int iIdx = userInfo.indexOf('i');
-                        int iIndex = iIdx == -1 ? userInfo.length() : iIdx;
-                        if (userInfo.startsWith("a")) {
-                            // User app
-                            info.uid = UserHandleHidden.getUid(Integer.decode(userId), 10_000 + Integer.decode(userInfo.substring(1, iIndex)));
-                        } else if (userInfo.startsWith("s")) {
-                            // System app
-                            info.uid = UserHandleHidden.getUid(Integer.decode(userId), Integer.decode(userInfo.substring(1, iIndex)));
-                        } else throw new IllegalStateException("No valid UID info found in ProcessRecord");
-                    } else throw new IllegalStateException("Invalid user info section in ProcessRecord");
-                    // TODO: 1/9/21 Parse others
-                    runningServices.add(info);
+                if (processRecordFound) {
+                    // Found a ProcessRecord
+                    String pid = prMatcher.group(1);
+                    String processName = prMatcher.group(2);
+                    String userInfo = prMatcher.group(3);
+                    if (pid != null && processName != null && userInfo != null) {
+                        info = new ActivityManager.RunningServiceInfo();
+                        info.pid = Integer.decode(pid);
+                        info.process = processName;
+                        info.service = service;
+                        info.clientCount = clientConnections.size();
+                        // UID
+                        if (TextUtils.isDigitsOnly(userInfo)) {  // UID < 10000
+                            info.uid = Integer.decode(userInfo);
+                        } else if (userInfo.startsWith("u")) {  // u<USER_ID>(a|s)<APP_ID>[i<ISOLATION_ID>]
+                            userInfo = userInfo.substring(("u" + userId).length()); // u<USER_ID> removed
+                            int iIdx = userInfo.indexOf('i');
+                            int iIndex = iIdx == -1 ? userInfo.length() : iIdx;
+                            if (userInfo.startsWith("a")) {
+                                // User app
+                                info.uid = UserHandleHidden.getUid(Integer.decode(userId), 10_000 + Integer.decode(userInfo.substring(1, iIndex)));
+                            } else if (userInfo.startsWith("s")) {
+                                // System app
+                                info.uid = UserHandleHidden.getUid(Integer.decode(userId), Integer.decode(userInfo.substring(1, iIndex)));
+                            } else throw new IllegalStateException("No valid UID info found in ProcessRecord");
+                        } else throw new IllegalStateException("Invalid user info section in ProcessRecord");
+                        runningServices.add(info);
+                    }
                 }
                 line = it.next();
                 srMatcher = SERVICE_RECORD_REGEX.matcher(line);
