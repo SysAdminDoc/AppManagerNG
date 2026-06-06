@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 42 source-TODO closure for certificate extension OID
-  descriptions.
+- Result: completed Cycle 43 source-TODO closure for nullable path segment
+  semantics.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  certificate extension label descriptions and their verification target.
-- Code: `OidMap` now stores descriptions for every mapped X.509 extension OID,
-  and signing-certificate details append those descriptions to critical and
-  non-critical extension labels while preserving unknown-OID fallback.
+  nullable last path segment helper and its verification target.
+- Code: `Paths` now exposes `getLastPathSegmentOrNull()` for no-segment cases
+  while preserving the existing non-null `getLastPathSegment()` compatibility
+  behavior.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.OidMapTest --tests io.github.muntashirakon.AppManager.utils.PackageUtilsCertificateExtensionTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.PathsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
