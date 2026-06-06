@@ -117,7 +117,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         mFilterProfileInverse = Prefs.MainPage.isFilteredProfileInverse();
         mInstallDateStartMillis = Prefs.MainPage.getInstallDateStartMillis();
         mInstallDateEndMillis = Prefs.MainPage.getInstallDateEndMillis();
-        mSelectedUsers = null; // TODO: 5/6/23 Load from prefs?
+        mSelectedUsers = Prefs.MainPage.getFilteredUsers();
         if ("".equals(mFilterProfileName)) mFilterProfileName = null;
     }
 
@@ -433,8 +433,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
             }
         }
-        mSelectedUsers = selectedUsers;
-        // TODO: 5/6/23 Store value to prefs
+        mSelectedUsers = selectedUsers != null ? selectedUsers.clone() : null;
+        Prefs.MainPage.setFilteredUsers(mSelectedUsers);
         cancelIfRunning();
         mFilterResult = executor.submit(this::filterItemsByFlags);
     }
@@ -454,13 +454,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         Prefs.MainPage.setFilteredProfileInverse(false);
         Prefs.MainPage.setInstallDateStartMillis(0L);
         Prefs.MainPage.setInstallDateEndMillis(0L);
+        Prefs.MainPage.setFilteredUsers(null);
         cancelIfRunning();
         mFilterResult = executor.submit(this::filterItemsByFlags);
     }
 
     @Nullable
     public int[] getSelectedUsers() {
-        return mSelectedUsers;
+        return mSelectedUsers != null ? mSelectedUsers.clone() : null;
     }
 
     @AnyThread
