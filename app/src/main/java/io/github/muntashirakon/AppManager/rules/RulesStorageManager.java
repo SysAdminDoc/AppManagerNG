@@ -154,6 +154,10 @@ public class RulesStorageManager implements Closeable {
         addUniqueEntry(new AppOpRule(packageName, op, mode));
     }
 
+    public void deleteAppOp(int op) {
+        removeEntries(String.valueOf(op), RuleType.APP_OP);
+    }
+
     public void setPermission(String name, boolean isGranted, @PermissionCompat.PermissionFlags int flags) {
         addUniqueEntry(new PermissionRule(packageName, name, isGranted, flags));
     }
