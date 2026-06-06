@@ -8,11 +8,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @RunWith(RobolectricTestRunner.class)
 public class IntentCompatTest {
@@ -51,5 +55,32 @@ public class IntentCompatTest {
         Intent parsed = IntentCompat.unflattenFromString("VERSION\t1\nEXTRA\tanswer\t5\n");
 
         assertNull(parsed);
+    }
+
+    @Test
+    public void flattenToString_roundTripsStringArrayValuesContainingCommas() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("labels", new String[]{"alpha,beta", "gamma"});
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals(Arrays.asList("alpha,beta", "gamma"),
+                Arrays.asList(parsed.getStringArrayExtra("labels")));
+    }
+
+    @Test
+    public void flattenToString_roundTripsUriListValuesContainingCommas() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        ArrayList<Uri> uris = new ArrayList<>();
+        uris.add(Uri.parse("content://example/items/alpha,beta"));
+        uris.add(Uri.parse("content://example/items/gamma"));
+        input.putParcelableArrayListExtra("uris", uris);
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        ArrayList<Uri> parsedUris = IntentCompat.getParcelableArrayListExtra(parsed, "uris", Uri.class);
+        assertEquals(uris, parsedUris);
     }
 }
