@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.users.ProfileVisibilityDiagnostics;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.settings.crypto.ImportExportKeyStoreDialogFragment;
 import io.github.muntashirakon.AppManager.utils.AppPref;
@@ -59,6 +60,7 @@ public class AdvancedPreferences extends PreferenceFragment {
         mModel = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
         // Selected users
         Preference usersPref = Objects.requireNonNull(findPreference("selected_users"));
+        usersPref.setSummary(ProfileVisibilityDiagnostics.getSelectedUsersSummary(requireContext()));
         usersPref.setOnPreferenceClickListener(preference -> {
             mModel.loadAllUsers();
             return true;
