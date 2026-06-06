@@ -13,6 +13,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Focused JVM coverage pins compact and medium widths to single-pane and
   expanded widths to two-pane.
 
+### Added - Main/App Details split contract guardrail (research T21-H, 2026-06-06)
+
+- Added a source-level contract test for the existing `androidx.window`
+  MainActivity/AppDetails split pair and placeholder.
+- The test pins the split target activities, split minimum width, ratio, finish
+  behavior, placeholder routing, and manifest exposure for the embedded
+  activities.
+
 ### Added - Profile membership inverse filters (research P2, 2026-06-06)
 
 - The main app list profile filter now supports an `Exclude selected profile`
