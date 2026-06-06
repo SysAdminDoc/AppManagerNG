@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 73 source-audit closure for logcat search criteria
-  hardening.
+- Result: completed Cycle 74 source-audit closure for external profile
+  package-name validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  logcat search criteria hardening and its verification target.
-- Code: plain-text logcat searches now match log output as well as tags, and
-  overflowed digit-only `pid:` / `uid:` filters now degrade to empty filters
-  instead of unchecked numeric conversion failures.
+  external profile package-name validation and its verification target.
+- Code: external Canta, UAD-NG, and Hail profile imports now reject package-name
+  candidates with empty segments, trailing dots, or digit-starting segments
+  instead of accepting malformed imported names.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.SearchCriteriaTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporterTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
@@ -29,9 +29,9 @@ Current branch: `main`
 - Next roadmap target: find or promote the next host-verifiable source-backed
   audit slice, since the remaining visible rows are largely device/manual,
   external-submission, or owner-signoff gated.
-- Start by scanning backup/profile/settings/logcat parser edges, source TODOs,
-  and existing guardrail tests for a small source-backed risk that can be
-  tightened without device-only claims.
+- Start by scanning backup/profile/settings parser edges, source TODOs, and
+  existing guardrail tests for a small source-backed risk that can be tightened
+  without device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
