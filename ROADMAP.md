@@ -575,7 +575,7 @@ links touched by the edit.
     and `rtk git diff --check`. A real tag run must still verify the published
     APK with `gh attestation verify` after GitHub records the attestations.
 
-- [ ] P1 - Harden the foreground UI tracker overlay against device-freeze reports
+- [x] P1 - Harden the foreground UI tracker overlay against device-freeze reports
   - Why: upstream reports the UI Tracker window freezing a rooted Android 11
     OnePlus device. NG's tracker is driven from an accessibility service but
     creates an application overlay/phone window with no-limit layout, a large
@@ -594,15 +594,26 @@ links touched by the edit.
   - Touches: `TrackerWindow`, `NoRootAccessibilityService`, tracker settings/
     copy, extracted overlay layout policy helpers, and accessibility/overlay
     regression tests.
+  - Shipped 2026-06-06: `TrackerWindow` now uses the accessibility-service
+    overlay type on API 22+ instead of the untrusted application-overlay type,
+    keeps only focus/pass-outside-touch flags instead of `FLAG_LAYOUT_NO_LIMITS`,
+    clamps expanded/iconified size and centered offsets to display margins,
+    refreshes metrics before layout updates, throttles `updateViewLayout`
+    storms, and disables the tracker with an explanation after repeated
+    `WindowManager` add/update failures. `TrackerOverlayPolicyTest` pins window
+    type selection, flags, width clamps, centered-offset clamps, throttling, and
+    repeated-failure disable thresholds.
   - Acceptance: tracker windows use the accessibility-service-appropriate window
     type when available, clamp size/position through current window metrics, keep
     a visible pause/dismiss affordance, throttle update storms, degrade to
     disabled-with-explanation after repeated add/update failures, and do not
     block unrelated app touches outside the intended handle/content bounds.
-  - Verify: host tests for layout clamp/throttle/failure policy, plus manual
-    Android 11, Android 12+, and current-target walkthroughs enabling tracker,
-    dragging/iconifying, interacting with underlying apps, and checking logcat
-    for blocked untrusted-touch or WindowManager failures.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.accessibility.activity.TrackerOverlayPolicyTest --tests io.github.muntashirakon.AppManager.accessibility.ActionLabelAccessibilityContractTest`.
+    Manual Android 11, Android 12+, and current-target walkthroughs enabling
+    tracker, dragging/iconifying, interacting with underlying apps, and checking
+    logcat for blocked untrusted-touch or WindowManager failures remain
+    device-gated.
 
 - [ ] P2 - Add Private Space/profile visibility diagnostics
   - Why: the manifest declares `ACCESS_HIDDEN_PROFILES`, and package-management
@@ -1363,15 +1374,15 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 18 - Release SBOM and provenance attestations on 2026-06-06.
+Cycle 19 - Foreground tracker overlay hardening on 2026-06-06.
 
 ### Current Focus
 
-Continue from the next host-verifiable reliability row:
-**P1 - Harden the foreground UI tracker overlay against device-freeze reports**.
-Start by reviewing `TrackerWindow`, overlay `WindowManager.LayoutParams`
-construction/update paths, accessibility-service ownership, and existing
-settings copy before extracting bounded overlay policy.
+Continue from the next host-verifiable profile-visibility row:
+**P2 - Add Private Space/profile visibility diagnostics**. Start by reviewing
+`Users`, package/profile discovery, manifest hidden-profile permissions, and
+main-list user/profile selection copy before extracting a host-testable profile
+label/state mapping.
 
 ### Important Findings So Far
 
@@ -1456,20 +1467,29 @@ settings copy before extracting bounded overlay policy.
 - The tag release workflow now uploads a versioned `.cdx.json` SBOM asset and
   publishes GitHub APK provenance plus CycloneDX SBOM predicate attestations via
   `actions/attest@v4`. Full attestation verification remains tag-run dependent.
+- Android's current `WindowManager.LayoutParams` docs describe
+  `TYPE_ACCESSIBILITY_OVERLAY` as the window type for a connected
+  `AccessibilityService`; Android 12 behavior docs list accessibility windows as
+  trusted pass-through-touch exceptions while `TYPE_APPLICATION_OVERLAY` windows
+  are not trusted.
+- `TrackerWindow` no longer uses `TYPE_APPLICATION_OVERLAY` on O+ or
+  `FLAG_LAYOUT_NO_LIMITS`. The new `TrackerOverlayPolicy` clamps overlay size
+  and centered offsets, throttles layout updates, and disables the tracker after
+  repeated `WindowManager` failures.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Inspect `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java`
-   and `NoRootAccessibilityService` for unbounded overlay sizing, update
-   frequency, and failure handling.
-2. Extract a host-testable overlay layout policy helper for width/height,
-   flags, margins, and update throttling so device-specific freeze mitigations
-   are pinned in JVM tests.
-3. Wire the policy back into `TrackerWindow`, update user-facing copy where
-   needed, and verify with focused unit tests plus Java compile.
+1. Inspect `app/src/main/java/io/github/muntashirakon/AppManager/users/Users.java`,
+   `PackageManagerCompat`, and main-list profile/user selector code for how
+   personal, work, hidden, quiet, locked, and unavailable profiles are surfaced.
+2. Extract a host-testable profile visibility/label mapper that can classify
+   hidden/private/quiet/locked/unknown states from public API signals without
+   implying unavailable profiles are scanned.
+3. Wire the diagnostics into the least invasive existing surface and add focused
+   JVM coverage for state labels and fallback copy.
 
 ### Unprocessed Leads
 
@@ -1478,15 +1498,17 @@ settings copy before extracting bounded overlay policy.
   pairing flows.
 - Manual Android assist invocation for the shipped service/broadcast quick
   actions.
+- Manual foreground tracker overlay walkthroughs on Android 11, Android 12+,
+  and current target devices.
 
 ### Files Still To Inspect
 
-- `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/NoRootAccessibilityService.java`
-- tracker/accessibility settings resources and tests
+- `app/src/main/java/io/github/muntashirakon/AppManager/users/Users.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java`
+- main-list user/profile selector code and profile diagnostics surfaces
 
 ### Searches Still To Run
 
-- `rg -n "TrackerWindow|NoRootAccessibilityService|TYPE_APPLICATION_OVERLAY|WindowManager.LayoutParams|FLAG_NOT_TOUCH_MODAL|updateViewLayout" app/src/main/java app/src/test/java`
-- Web: Android overlay window bounds/touch behavior docs if the platform rules
-  need refreshed before editing.
+- `rg -n "ACCESS_HIDDEN_PROFILES|Private Space|hidden profile|quiet mode|UserManager|LauncherApps|profile" app/src/main/java app/src/test/java app/src/main/AndroidManifest.xml`
+- Web: Android Private Space, `UserManager`, and `LauncherApps` docs if API
+  semantics need refreshed before editing.

@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.UserHandleHidden;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -59,10 +60,15 @@ public class TrackerWindow implements View.OnTouchListener {
     private final Point mWindowSize = new Point(0, 0);
     private final Point mWindowPosition = new Point(0, 0);
     private final Point mPressPosition = new Point(0, 0);
-    private final int mMaxWidth;
+    private final float mDensity;
+    private final int mEdgeMargin;
+    private final int mFallbackWindowSize;
+    private int mMaxWidth;
     private boolean mPaused = false;
     private boolean mIconified = false;
     private boolean mViewAttached = false;
+    private int mWindowManagerFailures = 0;
+    private long mLastLayoutUpdateUptime = -1L;
     @Nullable
     private Future<?> mClassHierarchyResult;
 
@@ -70,13 +76,12 @@ public class TrackerWindow implements View.OnTouchListener {
     public TrackerWindow(@NonNull Context context) {
         Context themedContext = AppearanceUtils.getThemedContext(context, true);
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        int type = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                : WindowManager.LayoutParams.TYPE_PHONE;
-        Display display = mWindowManager.getDefaultDisplay();
-        int displayWidth = display.getWidth();
-        display.getRealSize(mWindowSize);
-        mMaxWidth = (displayWidth / 2) + 300; // FIXME: 5/2/23 Find a better way to represent a display
-        int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+        mDensity = context.getResources().getDisplayMetrics().density;
+        mEdgeMargin = TrackerOverlayPolicy.edgeMarginPx(mDensity);
+        mFallbackWindowSize = TrackerOverlayPolicy.fallbackWindowSizePx(mDensity);
+        refreshWindowMetrics();
+        int type = TrackerOverlayPolicy.windowTypeForSdk(Build.VERSION.SDK_INT);
+        int flags = TrackerOverlayPolicy.windowFlags();
         mWindowLayoutParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT, type, flags, PixelFormat.TRANSLUCENT);
         mWindowLayoutParams.gravity = Gravity.CENTER;
@@ -182,8 +187,9 @@ public class TrackerWindow implements View.OnTouchListener {
 
     public void showOrUpdate(AccessibilityEvent event) {
         if (!mViewAttached) {
-            mViewAttached = true;
-            mWindowManager.addView(mView, mWindowLayoutParams);
+            if (!attachView()) {
+                return;
+            }
         }
         if (!mPaused) {
             @Nullable
@@ -218,6 +224,7 @@ public class TrackerWindow implements View.OnTouchListener {
     public void dismiss() {
         AccessibilityMultiplexer.getInstance().enableLeadingActivityTracker(false);
         mViewAttached = false;
+        mWindowManagerFailures = 0;
         if (mClassHierarchyResult != null) {
             mClassHierarchyResult.cancel(true);
         }
@@ -230,17 +237,10 @@ public class TrackerWindow implements View.OnTouchListener {
     private void iconify() {
         mPaused = true;
         mIconified = true;
-        // Window position may need to be adjusted to display the icon
-        // (0,0) is middle
-        int height = -mWindowSize.y / 2;
-        if (mWindowLayoutParams.y < height) {
-            mWindowPosition.y = height;
-            mWindowLayoutParams.y = height;
-        }
         mIconView.setVisibility(View.VISIBLE);
         mContentView.setVisibility(View.GONE);
         updatePlayPauseButton();
-        updateLayout();
+        updateLayout(true);
     }
 
     private void expand() {
@@ -248,15 +248,8 @@ public class TrackerWindow implements View.OnTouchListener {
         mIconView.setVisibility(View.GONE);
         mPaused = false;
         mIconified = false;
-        // Window position may need to be adjusted to display the drag handle
-        // (0,0) is middle
-        int width = (-mWindowSize.x + mMaxWidth) / 2;
-        if (mWindowLayoutParams.x < width) {
-            mWindowPosition.x = width;
-            mWindowLayoutParams.x = width;
-        }
         updatePlayPauseButton();
-        updateLayout();
+        updateLayout(true);
     }
 
     private void updatePlayPauseButton() {
@@ -267,8 +260,93 @@ public class TrackerWindow implements View.OnTouchListener {
     }
 
     private void updateLayout() {
-        mWindowLayoutParams.width = mIconified ? WindowManager.LayoutParams.WRAP_CONTENT : mMaxWidth;
-        mWindowManager.updateViewLayout(mView, mWindowLayoutParams);
+        updateLayout(false);
+    }
+
+    private void updateLayout(boolean force) {
+        int displayedWidth = TrackerOverlayPolicy.displayedWidth(mIconified, mMaxWidth);
+        applyWindowBounds(displayedWidth);
+        long now = SystemClock.uptimeMillis();
+        if (!force && !TrackerOverlayPolicy.shouldApplyLayoutUpdate(mLastLayoutUpdateUptime, now)) {
+            return;
+        }
+        mLastLayoutUpdateUptime = now;
+        try {
+            mWindowManager.updateViewLayout(mView, mWindowLayoutParams);
+            mWindowManagerFailures = 0;
+        } catch (RuntimeException e) {
+            handleWindowManagerFailure(e);
+        }
+    }
+
+    private boolean attachView() {
+        applyWindowBounds(mMaxWidth);
+        try {
+            mWindowManager.addView(mView, mWindowLayoutParams);
+            mViewAttached = true;
+            mWindowManagerFailures = 0;
+            return true;
+        } catch (RuntimeException e) {
+            mViewAttached = false;
+            handleWindowManagerFailure(e);
+            return false;
+        }
+    }
+
+    private void applyWindowBounds(int displayedWidth) {
+        refreshWindowMetrics();
+        int windowWidth = displayedWidth == WindowManager.LayoutParams.WRAP_CONTENT
+                ? measuredWidthOrFallback(mIconified ? mIconView : mView)
+                : displayedWidth;
+        int windowHeight = measuredHeightOrFallback(mIconified ? mIconView : mView);
+        mWindowLayoutParams.width = displayedWidth;
+        mWindowLayoutParams.x = TrackerOverlayPolicy.clampHorizontalOffset(
+                mWindowLayoutParams.x, mWindowSize.x, windowWidth, mEdgeMargin);
+        mWindowLayoutParams.y = TrackerOverlayPolicy.clampVerticalOffset(
+                mWindowLayoutParams.y, mWindowSize.y, windowHeight, mEdgeMargin);
+    }
+
+    private int measuredWidthOrFallback(@NonNull View view) {
+        int measured = view.getWidth() > 0 ? view.getWidth() : view.getMeasuredWidth();
+        if (measured > 0) {
+            return measured;
+        }
+        return mFallbackWindowSize;
+    }
+
+    private int measuredHeightOrFallback(@NonNull View view) {
+        int measured = view.getHeight() > 0 ? view.getHeight() : view.getMeasuredHeight();
+        if (measured > 0) {
+            return measured;
+        }
+        return mFallbackWindowSize;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void refreshWindowMetrics() {
+        Display display = mWindowManager.getDefaultDisplay();
+        display.getRealSize(mWindowSize);
+        if (mWindowSize.x <= 0) {
+            mWindowSize.x = Math.max(1, display.getWidth());
+        }
+        if (mWindowSize.y <= 0) {
+            mWindowSize.y = Math.max(1, display.getHeight());
+        }
+        mMaxWidth = TrackerOverlayPolicy.expandedWidthPx(mWindowSize.x, mDensity);
+    }
+
+    private void handleWindowManagerFailure(@NonNull RuntimeException error) {
+        ++mWindowManagerFailures;
+        if (!TrackerOverlayPolicy.shouldDisableAfterFailure(mWindowManagerFailures)) {
+            return;
+        }
+        mViewAttached = false;
+        AccessibilityMultiplexer.getInstance().enableLeadingActivityTracker(false);
+        try {
+            mWindowManager.removeView(mView);
+        } catch (Exception ignore) {
+        }
+        UIUtils.displayLongToast("Tracker overlay disabled: " + error.getMessage());
     }
 
     private void copyText(CharSequence label, CharSequence content) {
