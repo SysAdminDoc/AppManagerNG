@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 47 source-audit closure for intent escaped-comma
-  extra parsing.
+- Result: completed Cycle 48 source-audit closure for intent extra edit
+  prefill formatting.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent escaped-comma extra parsing fix and its verification target.
-- Code: `IntentCompat` now shares comma escape/unescape helpers for serialized
-  string and URI array/list extras, preserving labels and URIs that contain
-  commas across flatten/unflatten round trips.
+  intent extra edit prefill fix and its verification target.
+- Code: `AddIntentExtraFragment` now pre-fills the currently selected extra
+  type control when editing, and `IntentCompat` exposes the same parseable
+  formatter used by import/export so array/list values remain editable.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
