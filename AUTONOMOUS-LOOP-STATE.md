@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 52 source-audit closure for owner UID parser
-  hardening.
+- Result: completed Cycle 53 source-FIXME closure for sysconfig runtime RAM
+  feature injection.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  owner UID parser hardening and its verification target.
-- Code: `Owners.parseUid()` now parses digit-prefixed formatted UID strings
-  before native owner-map lookup, rejects truncated formatted UID strings as
-  `IllegalArgumentException`, and preserves valid app, isolated, app-zygote
-  isolated, system, and underscore-less forms.
+  sysconfig runtime RAM feature injection and its verification target.
+- Code: `SystemConfig` now adds the runtime `FEATURE_RAM_LOW` or
+  `FEATURE_RAM_NORMAL` entry from the public low-RAM device state after static
+  permission XML parsing.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.users.OwnersTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SystemConfigTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
