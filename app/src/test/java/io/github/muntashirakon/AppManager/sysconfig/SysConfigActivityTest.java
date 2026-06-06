@@ -41,4 +41,28 @@ public class SysConfigActivityTest {
 
         assertEquals("com.example.carrier", reference.toString());
     }
+
+    @Test
+    public void formatPermissionReference_includesResolvedLabel() {
+        CharSequence reference = SysConfigActivity.SysConfigRecyclerAdapter.formatPermissionReference(
+                "android.permission.CAMERA", "Camera");
+
+        assertEquals("Camera (android.permission.CAMERA)", reference.toString());
+    }
+
+    @Test
+    public void formatPermissionReference_fallsBackToPermissionNameForMatchingLabel() {
+        CharSequence reference = SysConfigActivity.SysConfigRecyclerAdapter.formatPermissionReference(
+                "android.permission.CAMERA", "android.permission.CAMERA");
+
+        assertEquals("android.permission.CAMERA", reference.toString());
+    }
+
+    @Test
+    public void formatPermissionReference_fallsBackToPermissionNameForBlankLabel() {
+        CharSequence reference = SysConfigActivity.SysConfigRecyclerAdapter.formatPermissionReference(
+                "android.permission.CAMERA", "  ");
+
+        assertEquals("android.permission.CAMERA", reference.toString());
+    }
 }
