@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Hail profile empty imports (source audit, 2026-06-06)
+
+- Hail text profile imports now reject files that contain only comments,
+  blanks, or invalid package-name lines instead of creating zero-package
+  profile previews.
+
 ### Fixed - External profile package-name validation (source audit, 2026-06-06)
 
 - External Canta, UAD-NG, and Hail profile imports now reject package-name
