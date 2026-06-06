@@ -8,17 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 93 source-audit closure for SSAID rule value
+- Result: completed Cycle 94 source-audit closure for ADB backup category path
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  SSAID rule value hardening and its verification target.
-- Code: SSAID rule imports now reject values that do not match the generated
-  SSAID/user-key hex shape before restore applies them; app SSAIDs must be
-  exactly 16 hex characters, while the system user key remains a 64-character
-  hex value.
+  ADB backup category path hardening and its verification target.
+- Code: ADB backup extraction now rejects category-only or otherwise malformed
+  entry paths as `IOException` import failures instead of leaking array-index
+  errors, while preserving valid category path mapping into the App Manager
+  backup archive layout.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest --tests io.github.muntashirakon.AppManager.rules.PseudoRulesTest`
-  (including `:app:compileFullDebugJavaWithJavac` as a dependency);
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupExtractorTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
