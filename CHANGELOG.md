@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat search criteria parsing (source audit, 2026-06-06)
+
+- Logcat plain-text searches now match log message output as well as tags.
+- Overflowed digit-only `pid:` and `uid:` search filters now degrade to empty
+  filters instead of throwing unchecked numeric conversion errors while the user
+  types or restores a saved query.
+
 ### Fixed - Logcat numeric field parsing (source audit, 2026-06-06)
 
 - Logcat line parsing now treats overflowed PID, TID, or UID-owner fields as
