@@ -60,6 +60,32 @@ public class SecurityAndOpsViewModelTest {
     }
 
     @Test
+    public void publicTimeoutMarksCurrentAttemptTimedOut() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        long attemptId = viewModel.beginStartupInitAttempt(Ops.MODE_SHIZUKU, 100, 600);
+
+        viewModel.timeoutStartupInitAttempt(attemptId, "timeout");
+
+        StartupInitState state = viewModel.getStartupInitStateSnapshot();
+        assertEquals(StartupInitState.Status.TIMED_OUT, state.getStatus());
+        assertEquals("timeout", state.getDetail());
+        assertTrue(state.getRecoveryActions().contains(StartupInitState.RecoveryAction.RETRY));
+    }
+
+    @Test
+    public void publicCancelMarksCurrentAttemptCancelled() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        long attemptId = viewModel.beginStartupInitAttempt(Ops.MODE_ADB_WIFI, 100, 600);
+
+        viewModel.cancelStartupInitAttempt(attemptId, "cancelled");
+
+        StartupInitState state = viewModel.getStartupInitStateSnapshot();
+        assertEquals(StartupInitState.Status.CANCELLED, state.getStatus());
+        assertEquals("cancelled", state.getDetail());
+        assertTrue(state.getRecoveryActions().contains(StartupInitState.RecoveryAction.RETRY));
+    }
+
+    @Test
     public void stageUpdatePublishesObservableState() {
         SecurityAndOpsViewModel viewModel = newViewModel();
         long attemptId = viewModel.beginStartupInitAttempt(Ops.MODE_ADB_OVER_TCP, 100, 600);
