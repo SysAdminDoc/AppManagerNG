@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - VFS permission mutation result reporting (source TODO, 2026-06-06)
+
+- Virtual file-system chmod/chown requests now return `false` when the mounted
+  file system does not support permission mutation instead of reporting success.
+- `VirtualDocumentFile` now forwards those mutation results to `Path` callers.
+
 ### Fixed - Intent empty list extra serialization (source FIXME, 2026-06-06)
 
 - Intent export now skips empty runtime list extras whose element type cannot
