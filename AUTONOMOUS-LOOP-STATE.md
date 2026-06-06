@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 30 source-TODO closure for Dex VFS API-level mount
-  options.
+- Result: completed Cycle 31 source-FIXME closure for file content MIME
+  detection with mismatched extensions.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Dex VFS API-level mount-option contract and its verification target.
-- Code: `DexFileSystem.getApiLevel()` now reads from
-  `VirtualFileSystem.MountOptions`; File Manager VFS launches and APK Scanner
-  class loading pass the current platform SDK into Dex mounts, while low-level
-  callers keep the fallback when unset.
+  `PathContentInfoImpl.fromPath()` detection policy and its verification
+  target.
+- Code: full magic-byte matches now win over misleading filename extensions,
+  while partial archive matches still keep extension-specific bundle MIME types
+  such as APKS.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.fs.DexFileSystemTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.PathContentInfoImplTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
