@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - ADB backup category path parsing (source audit, 2026-06-06)
+
+- ADB backup extraction now rejects category-only or otherwise malformed entry
+  paths as `IOException` import failures instead of leaking array-index errors.
+- Valid source, internal, device-encrypted, external, and OBB category paths
+  continue to map into the App Manager backup archive layout.
+
 ### Fixed - SSAID rule value parsing (source audit, 2026-06-06)
 
 - SSAID rule imports now reject values that do not match the generated
