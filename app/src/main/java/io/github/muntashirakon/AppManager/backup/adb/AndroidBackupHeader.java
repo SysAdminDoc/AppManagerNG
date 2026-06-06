@@ -84,7 +84,7 @@ final class AndroidBackupHeader {
                 final boolean pbkdf2Fallback = (mBackupFileVersion == 1);
 
                 s = readHeaderLine(backupStream);
-                mCompress = (parseHeaderInt(s, "compression flag") != 0);
+                mCompress = parseCompressionFlag(s);
                 s = readHeaderLine(backupStream);
                 if (s.equals("none")) {
                     // no more header to parse; we're good to go
@@ -399,6 +399,18 @@ final class AndroidBackupHeader {
         } catch (NumberFormatException e) {
             throw new IOException("Invalid " + fieldName + ": " + value, e);
         }
+    }
+
+    @VisibleForTesting
+    static boolean parseCompressionFlag(@NonNull String value) throws IOException {
+        int flag = parseHeaderInt(value, "compression flag");
+        if (flag == 0) {
+            return false;
+        }
+        if (flag == 1) {
+            return true;
+        }
+        throw new IOException("Invalid compression flag: " + value);
     }
 
     /**

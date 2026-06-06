@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 84 source-audit closure for ADB backup numeric header
-  hardening.
+- Result: completed Cycle 85 source-audit closure for ADB backup compression
+  flag hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  ADB backup numeric header hardening and its verification target.
-- Code: ADB backup header parsing now reports malformed or overflowing backup
-  version, compression flag, and PBKDF2-round fields as `IOException` header
-  failures instead of leaking unchecked numeric conversion errors, while
-  preserving valid whitespace-padded numeric fields.
+  ADB backup compression flag hardening and its verification target.
+- Code: ADB backup header parsing now rejects compression flag values other than
+  `0` or `1` as `IOException` header failures instead of treating every
+  non-zero integer as compressed data, while preserving valid whitespace-padded
+  values.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
