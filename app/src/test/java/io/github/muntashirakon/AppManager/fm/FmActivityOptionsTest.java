@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.net.Uri;
+import android.os.Build;
 import android.os.Parcel;
 
 import org.junit.Test;
@@ -51,5 +52,7 @@ public class FmActivityOptionsTest {
 
         assertFalse(readOnly.readWrite);
         assertTrue(readWrite.readWrite);
+        assertEquals(Build.VERSION.SDK_INT, readOnly.dexApiLevel);
+        assertEquals(Build.VERSION.SDK_INT, readWrite.dexApiLevel);
     }
 }
