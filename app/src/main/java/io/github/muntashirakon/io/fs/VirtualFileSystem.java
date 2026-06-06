@@ -50,6 +50,7 @@ public abstract class VirtualFileSystem {
             private boolean mRemount = false;
             private boolean mReadWrite = false;
             private int mMode = 0;
+            private int mDexApiLevel = -1;
             @Nullable
             private UidGidPair mUidGidPair = null;
             @Nullable
@@ -70,6 +71,14 @@ public abstract class VirtualFileSystem {
                 return this;
             }
 
+            public Builder setDexApiLevel(int apiLevel) {
+                if (apiLevel < -1) {
+                    throw new IllegalArgumentException("apiLevel must be -1 or greater.");
+                }
+                mDexApiLevel = apiLevel;
+                return this;
+            }
+
             public Builder setUidGidPair(@Nullable UidGidPair uidGidPair) {
                 mUidGidPair = uidGidPair;
                 return this;
@@ -81,23 +90,27 @@ public abstract class VirtualFileSystem {
             }
 
             public MountOptions build() {
-                return new MountOptions(mRemount, mReadWrite, mMode, mUidGidPair, mOnFileSystemUnmounted);
+                return new MountOptions(mRemount, mReadWrite, mMode, mDexApiLevel, mUidGidPair,
+                        mOnFileSystemUnmounted);
             }
         }
 
         public final boolean remount;
         public final boolean readWrite;
         public final int mode;
+        public final int dexApiLevel;
         @Nullable
         public final UidGidPair uidGidPair;
         @Nullable
         public final OnFileSystemUnmounted onFileSystemUnmounted;
 
-        private MountOptions(boolean remount, boolean readWrite, int mode, @Nullable UidGidPair uidGidPair,
+        private MountOptions(boolean remount, boolean readWrite, int mode, int dexApiLevel,
+                             @Nullable UidGidPair uidGidPair,
                              @Nullable OnFileSystemUnmounted fileSystemUnmounted) {
             this.remount = remount;
             this.readWrite = readWrite;
             this.mode = mode;
+            this.dexApiLevel = dexApiLevel;
             this.uidGidPair = uidGidPair;
             this.onFileSystemUnmounted = fileSystemUnmounted;
         }
