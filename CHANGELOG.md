@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - ADB backup numeric header parsing (source audit, 2026-06-06)
+
+- ADB backup header parsing now reports malformed or overflowing backup version,
+  compression flag, and PBKDF2-round fields as `IOException` header failures
+  instead of leaking unchecked numeric conversion errors.
+- Valid whitespace-padded numeric header fields continue to parse normally.
+
 ### Fixed - Manifest intent-filter name parsing (source audit, 2026-06-06)
 
 - APK manifest parsing now ignores intent-filter action and category children

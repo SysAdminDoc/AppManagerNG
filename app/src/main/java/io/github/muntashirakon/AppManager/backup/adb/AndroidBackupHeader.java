@@ -15,6 +15,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -76,14 +77,14 @@ final class AndroidBackupHeader {
         if (Arrays.equals(magicBytes, streamHeader)) {
             // okay, header looks good.  now parse out the rest of the fields.
             String s = readHeaderLine(backupStream);
-            mBackupFileVersion = Integer.parseInt(s);
+            mBackupFileVersion = parseHeaderInt(s, "backup file version");
             if (mBackupFileVersion <= BACKUP_FILE_VERSION) {
                 // okay, it's a version we recognize.  if it's version 1, we may need
                 // to try two different PBKDF2 regimes to compare checksums.
                 final boolean pbkdf2Fallback = (mBackupFileVersion == 1);
 
                 s = readHeaderLine(backupStream);
-                mCompress = (Integer.parseInt(s) != 0);
+                mCompress = (parseHeaderInt(s, "compression flag") != 0);
                 s = readHeaderLine(backupStream);
                 if (s.equals("none")) {
                     // no more header to parse; we're good to go
@@ -243,7 +244,7 @@ final class AndroidBackupHeader {
         String ckSaltHex = readHeaderLine(rawInStream); // 6
         byte[] ckSalt = hexToByteArray(ckSaltHex);
 
-        int rounds = Integer.parseInt(readHeaderLine(rawInStream)); // 7
+        int rounds = parseHeaderInt(readHeaderLine(rawInStream), "PBKDF2 rounds"); // 7
         String userIvHex = readHeaderLine(rawInStream); // 8
 
         String encryptionKeyBlobHex = readHeaderLine(rawInStream); // 9
@@ -389,6 +390,15 @@ final class AndroidBackupHeader {
      */
     public static String byteArrayToHex(byte[] data) {
         return HexEncoding.encodeToString(data, true);
+    }
+
+    @VisibleForTesting
+    static int parseHeaderInt(@NonNull String value, @NonNull String fieldName) throws IOException {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IOException("Invalid " + fieldName + ": " + value, e);
+        }
     }
 
     /**
