@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - APKS duplicate split validation (source TODO, 2026-06-06)
+
+- APKS/XAPK bundle parsing now tracks manifest `split` names and rejects
+  duplicate split names before adding ambiguous entries.
+- Empty split names are rejected with a bundle-file-specific parse error instead
+  of reaching later entry construction with invalid split metadata.
+
 ### Fixed - SysConfig permission labels (source TODO, 2026-06-06)
 
 - SysConfig permission titles and permission-list rows now show resolved
