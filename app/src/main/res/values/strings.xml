@@ -115,6 +115,12 @@
     <string name="package_user_state_dialog_label">%1$s - %2$s</string>
     <string name="finder_user_state">User %1$d: %2$s</string>
     <string name="finder_known_preinstall_oems">Known preinstall OEMs: <xliff:g id="oems" example="Samsung, Xiaomi">%1$s</xliff:g></string>
+    <string name="finder_matched_permissions">Permissions: <xliff:g id="permissions" example="android.permission.CAMERA">%1$s</xliff:g></string>
+    <string name="finder_matched_components">Components: <xliff:g id="components" example="com.example.MainActivity">%1$s</xliff:g></string>
+    <string name="finder_matched_trackers">Trackers: <xliff:g id="trackers" example="com.example.AnalyticsService">%1$s</xliff:g></string>
+    <string name="finder_matched_backups">Backups: <xliff:g id="backups" example="nightly">%1$s</xliff:g></string>
+    <string name="finder_matched_signatures">Signatures: <xliff:g id="signatures" example="CN=Example">%1$s</xliff:g></string>
+    <string name="finder_more_matches">+%1$d more</string>
     <string name="main_list_open_app">Open <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="main_list_select_app">Select <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="select_visible">Select all visible</string>

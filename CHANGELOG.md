@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Finder matched result evidence (source TODO, 2026-06-06)
+
+- Finder result rows now show matched permissions, components, trackers,
+  backups, and signing subject lines already collected by filter evaluation.
+- Long matched-value lists are de-duplicated and truncated to a compact preview
+  so result rows expose useful evidence without flooding the list.
+
 ### Fixed - ADB backup header hex validation (source audit, 2026-06-06)
 
 - Encrypted ADB backup header hex fields now reject null and non-hex values
