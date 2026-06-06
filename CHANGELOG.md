@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - ADB encrypted key blob parsing (source audit, 2026-06-06)
+
+- Encrypted ADB backup header parsing now validates each decrypted key-blob
+  segment length before copying IV, key, or checksum bytes.
+- Malformed key blobs with missing, zero, or overlong segment lengths now fail
+  as `IOException` header errors instead of leaking unchecked array/range
+  exceptions.
+
 ### Fixed - ADB backup compression flag parsing (source audit, 2026-06-06)
 
 - ADB backup header parsing now rejects compression flag values other than `0`

@@ -280,19 +280,12 @@ final class AndroidBackupHeader {
         byte[] mkBlob = c.doFinal(mkCipher);
 
         // first, the encryption key IV
-        int offset = 0;
-        int len = mkBlob[offset++];
-        IV = Arrays.copyOfRange(mkBlob, offset, offset + len);
-        offset += len;
+        int[] offset = new int[]{0};
+        IV = readKeyBlobSegment(mkBlob, offset, "encryption IV");
         // then the encryption key itself
-        len = mkBlob[offset++];
-        byte[] encryptionKey = Arrays.copyOfRange(mkBlob,
-                offset, offset + len);
-        offset += len;
+        byte[] encryptionKey = readKeyBlobSegment(mkBlob, offset, "encryption key");
         // and finally the encryption key checksum hash
-        len = mkBlob[offset++];
-        byte[] mkChecksum = Arrays.copyOfRange(mkBlob,
-                offset, offset + len);
+        byte[] mkChecksum = readKeyBlobSegment(mkBlob, offset, "encryption key checksum");
 
         // now validate the decrypted encryption key against the checksum
         byte[] calculatedCk = makeKeyChecksum(algorithm, encryptionKey, ckSalt,
@@ -411,6 +404,23 @@ final class AndroidBackupHeader {
             return true;
         }
         throw new IOException("Invalid compression flag: " + value);
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static byte[] readKeyBlobSegment(@NonNull byte[] blob, @NonNull int[] offsetRef, @NonNull String fieldName)
+            throws IOException {
+        int lengthOffset = offsetRef[0];
+        if (lengthOffset < 0 || lengthOffset >= blob.length) {
+            throw new IOException("Missing " + fieldName + " length");
+        }
+        int dataOffset = lengthOffset + 1;
+        int length = blob[lengthOffset] & 0xff;
+        if (length == 0 || length > blob.length - dataOffset) {
+            throw new IOException("Invalid " + fieldName + " length: " + length);
+        }
+        offsetRef[0] = dataOffset + length;
+        return Arrays.copyOfRange(blob, dataOffset, offsetRef[0]);
     }
 
     /**

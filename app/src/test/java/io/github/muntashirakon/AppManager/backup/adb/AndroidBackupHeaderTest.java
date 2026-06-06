@@ -33,6 +33,23 @@ public class AndroidBackupHeaderTest {
     }
 
     @Test
+    public void readKeyBlobSegmentRejectsMalformedLengths() throws Exception {
+        int[] offset = {0};
+        assertArrayEquals(new byte[]{1, 2}, AndroidBackupHeader.readKeyBlobSegment(
+                new byte[]{2, 1, 2, 1, 3}, offset, "encryption IV"));
+        assertEquals(3, offset[0]);
+
+        assertThrows(IOException.class, () -> AndroidBackupHeader.readKeyBlobSegment(
+                new byte[0], new int[]{0}, "encryption IV"));
+        assertThrows(IOException.class, () -> AndroidBackupHeader.readKeyBlobSegment(
+                new byte[]{0}, new int[]{0}, "encryption IV"));
+        assertThrows(IOException.class, () -> AndroidBackupHeader.readKeyBlobSegment(
+                new byte[]{3, 1, 2}, new int[]{0}, "encryption IV"));
+        assertThrows(IOException.class, () -> AndroidBackupHeader.readKeyBlobSegment(
+                new byte[]{1, 2}, new int[]{2}, "encryption key"));
+    }
+
+    @Test
     public void hexToByteArray_roundTripsHeaderBytes() {
         byte[] data = {0x00, 0x0f, (byte) 0xa0, (byte) 0xff};
 
