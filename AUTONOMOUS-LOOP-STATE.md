@@ -8,13 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 63 source-audit closure for intent `CharSequence`
-  extra serialization.
+- Result: completed Cycle 64 source-audit closure for intent `CharSequence`
+  collection serialization.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent `CharSequence` extra serialization and its verification target.
-- Code: Activity Interceptor intent flattening, description, and shell-command
-  export now serialize `CharSequence` extras as string extras instead of
-  silently dropping styled text payloads.
+  intent `CharSequence` collection serialization and its verification target.
+- Code: Activity Interceptor intent flattening now serializes `CharSequence[]`
+  and `ArrayList<CharSequence>` extras as escaped string arrays/lists instead
+  of dropping styled text collections from flattened strings and command
+  exports.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
