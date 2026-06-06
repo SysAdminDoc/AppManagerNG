@@ -8,19 +8,19 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 24 blocker refresh for Android 17 and Wear/foldable
-  future-platform rows.
-- Updated: `ROADMAP.md` now records 2026-06-06 local SDK, AVD, `adb`, and
-  `sdkmanager.bat` evidence for the Android 17 target-SDK gate and the Wear OS
-  companion/foldable-posture row.
-- Code: no source changes; this was a docs/state refresh. Local evidence still
-  blocks the Android 17 SDK bump and Wear OS companion scaffolding: SDK platforms
-  stop at `android-36.1`, the only AVD is `Medium_Phone_API_36.1`, no Android
-  devices are connected, no Wear OS system image is installed, and
-  `sdkmanager.bat` is absent from standard SDK locations.
-- Verification: `adb devices`, `emulator -list-avds`, local SDK platform/system
-  image inspection, direct `sdkmanager.bat` path check, and `versions.gradle`
-  inspection.
+- Result: completed Cycle 25 source-TODO closure for main-list selected-user
+  filter persistence.
+- Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
+  dedicated main-window selected-user filter preference and its verification
+  target.
+- Code: `MainViewModel` hydrates selected-user filter state from
+  `Prefs.MainPage`, persists filter-sheet changes, preserves empty selections
+  as an active filter, and clears the persisted value with Clear filters.
+  `Prefs.Misc` remains the separate Advanced app-wide selected-users
+  restriction.
+- Verification: passed
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`;
+  `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
   this host. Do not commit `local.properties`.

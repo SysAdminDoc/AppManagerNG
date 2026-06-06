@@ -687,6 +687,29 @@ links touched by the edit.
   - Verify: passed 2026-06-06:
     `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.ProfileMembershipFilterTest --tests io.github.muntashirakon.AppManager.filters.FilterItemTest`.
 
+- [x] P2 - Persist the main-list selected-user filter
+  - Why: `MainViewModel` already supports a selected-user filter, but its state
+    was process-local (`TODO: Load from prefs?` / `Store value to prefs`), so a
+    restart lost the active user subset while other main-list filters persisted.
+  - Evidence URL or file:line:
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:120`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:437`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainListOptions.java:287-320`.
+  - Touches: `AppPref`, `Prefs.MainPage`, `MainViewModel`, focused view-model
+    preference tests, and roadmap/completed/changelog state.
+  - Shipped 2026-06-06: added a dedicated main-window selected-user filter
+    preference, hydrated `MainViewModel` from it, persisted filter-sheet
+    changes, preserved empty user selections as an active "no selected users"
+    filter, and cleared the persisted value when Clear filters resets the main
+    list. The Advanced app-wide selected-users preference remains separate and
+    is not mutated by main-list filtering.
+  - Acceptance: selected-user main-list filters survive activity/process
+    recreation; Clear filters removes that persisted main-list filter; empty
+    selections remain active instead of reloading as "all users"; app-wide
+    selected-users settings remain unchanged by main-list filter changes.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`.
+
 ### Researcher Queue (Cycle 6 - 2026-06-05)
 
 - [x] 🔬 `installer-mode-recovery-action-gap-refresh-2026-06-05` - rechecked
