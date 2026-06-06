@@ -710,6 +710,29 @@ links touched by the edit.
   - Verify: passed 2026-06-06:
     `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`.
 
+- [x] P2 - Include split APKs in data-only reinstall fallback
+  - Why: the main-list data-only fallback used only
+    `info.publicSourceDir` when offering to reinstall an uninstalled app from
+    APK files, leaving a source FIXME because split APK packages need the base
+    and split sources together.
+  - Evidence URL or file:line:
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/MainRecyclerAdapter.java:765`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/ApplicationInfoApkSource.java:34-41`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/ApkFile.java:368-381`.
+  - Touches: `MainRecyclerAdapter`, installer launch intent routing, and a
+    focused adapter reinstall intent test.
+  - Shipped 2026-06-06: the data-only reinstall fallback now builds the
+    installer launch intent from `ApkSource.getApkSource(ApplicationInfo)`
+    instead of `Uri.fromFile(info.publicSourceDir)`. That keeps the installer on
+    the existing `ApplicationInfoApkSource` path, where APK resolution can
+    include `splitPublicSourceDirs` when the package has splits.
+  - Acceptance: a readable base APK still opens the installer; split APK
+    packages route through `ApplicationInfoApkSource` rather than a base-only
+    file URI; missing base APKs still fall through to backup/not-installed
+    handling.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainRecyclerAdapterReinstallIntentTest`.
+
 ### Researcher Queue (Cycle 6 - 2026-06-05)
 
 - [x] 🔬 `installer-mode-recovery-action-gap-refresh-2026-06-05` - rechecked
