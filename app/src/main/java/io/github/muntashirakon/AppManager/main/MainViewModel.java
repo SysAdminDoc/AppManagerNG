@@ -57,14 +57,10 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.filters.FilterItem;
-import io.github.muntashirakon.AppManager.filters.options.FilterOption;
-import io.github.muntashirakon.AppManager.filters.options.PackageNameOption;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.ListOptions;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
-import io.github.muntashirakon.AppManager.profiles.struct.AppsFilterProfile;
-import io.github.muntashirakon.AppManager.profiles.struct.AppsProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -97,6 +93,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     private int mFilterFlags;
     @Nullable
     private String mFilterProfileName;
+    private boolean mFilterProfileInverse;
     private long mInstallDateStartMillis;
     private long mInstallDateEndMillis;
     @Nullable
@@ -117,6 +114,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         mReverseSort = Prefs.MainPage.isReverseSort();
         mFilterFlags = Prefs.MainPage.getFilters();
         mFilterProfileName = Prefs.MainPage.getFilteredProfileName();
+        mFilterProfileInverse = Prefs.MainPage.isFilteredProfileInverse();
         mInstallDateStartMillis = Prefs.MainPage.getInstallDateStartMillis();
         mInstallDateEndMillis = Prefs.MainPage.getInstallDateEndMillis();
         mSelectedUsers = null; // TODO: 5/6/23 Load from prefs?
@@ -157,6 +155,25 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             ++count;
         }
         return count;
+    }
+
+    @Override
+    public boolean isOptionSelected(int option) {
+        if (option == MainListOptions.OPTION_PROFILE_FILTER_INVERSE) {
+            return mFilterProfileInverse;
+        }
+        return false;
+    }
+
+    @Override
+    public void onOptionSelected(int option, boolean selected) {
+        if (option != MainListOptions.OPTION_PROFILE_FILTER_INVERSE || mFilterProfileInverse == selected) {
+            return;
+        }
+        mFilterProfileInverse = selected;
+        Prefs.MainPage.setFilteredProfileInverse(selected);
+        cancelIfRunning();
+        mFilterResult = executor.submit(this::filterItemsByFlags);
     }
 
     @NonNull
@@ -346,6 +363,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         return mFilterProfileName;
     }
 
+    public boolean isFilterProfileInverse() {
+        return mFilterProfileInverse;
+    }
+
     public boolean hasInstallDateFilter() {
         return mInstallDateStartMillis > 0 || mInstallDateEndMillis > 0;
     }
@@ -424,11 +445,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
         mFilterFlags = MainListOptions.FILTER_NO_FILTER;
         mFilterProfileName = null;
+        mFilterProfileInverse = false;
         mInstallDateStartMillis = 0L;
         mInstallDateEndMillis = 0L;
         mSelectedUsers = null;
         Prefs.MainPage.setFilters(mFilterFlags);
         Prefs.MainPage.setFilteredProfileName(null);
+        Prefs.MainPage.setFilteredProfileInverse(false);
         Prefs.MainPage.setInstallDateStartMillis(0L);
         Prefs.MainPage.setInstallDateEndMillis(0L);
         cancelIfRunning();
@@ -614,28 +637,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     private void filterItemsByFlags() {
         synchronized (mApplicationItems) {
             List<ApplicationItem> candidateApplicationItems = new ArrayList<>();
-            List<FilterOption> profileFilterOptions = new ArrayList<>();
-            if (mFilterProfileName != null) {
-                String profileId = ProfileManager.getProfileIdCompat(mFilterProfileName);
-                Path profilePath = ProfileManager.findProfilePathById(profileId);
-                try {
-                    BaseProfile profile = BaseProfile.fromPath(profilePath);
-                    if (profile instanceof AppsProfile) {
-                        AppsProfile appsProfile = (AppsProfile) profile;
-                        PackageNameOption option = new PackageNameOption();
-                        option.setKeyValue("eq_any", TextUtils.join("\n", appsProfile.packages));
-                        profileFilterOptions.add(option);
-                    } else if (profile instanceof AppsFilterProfile) {
-                        AppsFilterProfile filterProfile = (AppsFilterProfile) profile;
-                        FilterItem filterItem = filterProfile.getFilterItem();
-                        for (int i = 0; i < filterItem.getSize(); ++i) {
-                            profileFilterOptions.add(filterItem.getFilterOptionAt(i));
-                        }
-                    }
-                } catch (IOException | JSONException e) {
-                    e.printStackTrace();
-                }
-            }
+            ProfileMembershipFilter profileMembershipFilter = getProfileMembershipFilter();
+            FilterItem flagFilterItem = MainListOptions.getFilterItemFromFlags(mFilterFlags);
+            int timesUsageInfoUsed = flagFilterItem.getTimesUsageInfoUsed() + profileMembershipFilter.getTimesUsageInfoUsed();
+            int timesRunningOptionUsed = flagFilterItem.getTimesRunningOptionUsed() + profileMembershipFilter.getTimesRunningOptionUsed();
+            boolean hasProfileFilter = profileMembershipFilter.isFiltering();
             for (ApplicationItem item : mApplicationItems) {
                 if (ThreadUtils.isInterrupted()) {
                     return;
@@ -645,7 +651,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
             }
             // Other filters
-            if (profileFilterOptions.isEmpty()
+            if (!hasProfileFilter
                     && mFilterFlags == MainListOptions.FILTER_NO_FILTER
                     && !hasInstallDateFilter()) {
                 if (!TextUtils.isEmpty(mSearchQuery)) {
@@ -653,94 +659,108 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 } else {
                     mApplicationItemsLiveData.postValue(candidateApplicationItems);
                 }
-            } else {
-                List<ApplicationItem> filteredApplicationItems = new ArrayList<>();
-                FilterItem filterItem = MainListOptions.getFilterItemFromFlags(mFilterFlags);
-                for (FilterOption filterOption : profileFilterOptions) {
-                    filterItem.addFilterOption(filterOption);
-                }
-                Map<String, PackageUsageInfo> packageUsageInfoList = new HashMap<>();
-                if (filterItem.getTimesUsageInfoUsed() > 0) {
-                    boolean hasUsageAccess = FeatureController.isUsageAccessEnabled() && SelfPermissions.checkUsageStatsPermission();
-                    if (hasUsageAccess) {
-                        TimeInterval interval = UsageUtils.getLastWeek();
-                        for (int userId : Users.getUsersIds()) {
-                            List<PackageUsageInfo> usageInfoList;
-                            usageInfoList = ExUtils.exceptionAsNull(() -> AppUsageStatsManager
-                                    .getInstance().getUsageStats(interval, userId));
-                            if (usageInfoList != null) {
-                                for (PackageUsageInfo info : usageInfoList) {
-                                    if (ThreadUtils.isInterrupted()) return;
-                                    PackageUsageInfo oldInfo = packageUsageInfoList.get(info.packageName);
-                                    if (oldInfo != null) {
-                                        oldInfo.screenTime += info.screenTime;
-                                        oldInfo.lastUsageTime = Math.max(oldInfo.lastUsageTime, info.lastUsageTime);
-                                        oldInfo.timesOpened += info.timesOpened;
-                                        oldInfo.mobileData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.mobileData, info.mobileData);
-                                        oldInfo.wifiData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.wifiData, info.wifiData);
-                                        if (info.entries != null) {
-                                            if (oldInfo.entries == null) {
-                                                oldInfo.entries = new ArrayList<>(info.entries);
-                                            } else oldInfo.entries.addAll(info.entries);
-                                        }
-                                    } else packageUsageInfoList.put(info.packageName, info);
-                                }
+                return;
+            }
+            List<ApplicationItem> filteredApplicationItems = new ArrayList<>();
+            Map<String, PackageUsageInfo> packageUsageInfoList = new HashMap<>();
+            if (timesUsageInfoUsed > 0) {
+                boolean hasUsageAccess = FeatureController.isUsageAccessEnabled() && SelfPermissions.checkUsageStatsPermission();
+                if (hasUsageAccess) {
+                    TimeInterval interval = UsageUtils.getLastWeek();
+                    for (int userId : Users.getUsersIds()) {
+                        List<PackageUsageInfo> usageInfoList;
+                        usageInfoList = ExUtils.exceptionAsNull(() -> AppUsageStatsManager
+                                .getInstance().getUsageStats(interval, userId));
+                        if (usageInfoList != null) {
+                            for (PackageUsageInfo info : usageInfoList) {
+                                if (ThreadUtils.isInterrupted()) return;
+                                PackageUsageInfo oldInfo = packageUsageInfoList.get(info.packageName);
+                                if (oldInfo != null) {
+                                    oldInfo.screenTime += info.screenTime;
+                                    oldInfo.lastUsageTime = Math.max(oldInfo.lastUsageTime, info.lastUsageTime);
+                                    oldInfo.timesOpened += info.timesOpened;
+                                    oldInfo.mobileData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.mobileData, info.mobileData);
+                                    oldInfo.wifiData = AppUsageStatsManager.DataUsage.fromDataUsage(oldInfo.wifiData, info.wifiData);
+                                    if (info.entries != null) {
+                                        if (oldInfo.entries == null) {
+                                            oldInfo.entries = new ArrayList<>(info.entries);
+                                        } else oldInfo.entries.addAll(info.entries);
+                                    }
+                                } else packageUsageInfoList.put(info.packageName, info);
                             }
                         }
                     }
                 }
-                HashSet<String> runningPackages = new HashSet<>();
-                if (filterItem.getTimesRunningOptionUsed() > 0) {
-                    for (ActivityManager.RunningAppProcessInfo info : ActivityManagerCompat.getRunningAppProcesses()) {
-                        if (info.pkgList != null) {
-                            runningPackages.addAll(Arrays.asList(info.pkgList));
-                        }
+            }
+            HashSet<String> runningPackages = new HashSet<>();
+            if (timesRunningOptionUsed > 0) {
+                for (ActivityManager.RunningAppProcessInfo info : ActivityManagerCompat.getRunningAppProcesses()) {
+                    if (info.pkgList != null) {
+                        runningPackages.addAll(Arrays.asList(info.pkgList));
                     }
-                }
-                for (ApplicationItem item : candidateApplicationItems) {
-                    item.setPackageUsageInfo(packageUsageInfoList.get(item.packageName));
-                    item.setRunning(runningPackages.contains(item.packageName));
-                }
-                List<FilterItem.FilteredItemInfo<ApplicationItem>> result = filterItem.getFilteredList(candidateApplicationItems);
-                for (FilterItem.FilteredItemInfo<ApplicationItem> item : result) {
-                    if (!matchesInstallDateRange(item.info)) {
-                        continue;
-                    }
-                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SPLITS) != 0 && !item.info.hasSplits) {
-                        continue;
-                    }
-                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SAF) != 0 && !item.info.usesSaf) {
-                        continue;
-                    }
-                    // Refine 'with trackers' to mean 'with UNBLOCKED trackers' so users
-                    // who've already locked an app down don't see it cluttering the
-                    // tracker view. The FilterItem-level TrackersOption=ge,1 has already
-                    // dropped apps with zero trackers; this drops apps where every
-                    // tracker is blocked (trackerBlockedCount >= trackerCount).
-                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_TRACKERS) != 0
-                            && item.info.trackerCount != null && item.info.trackerCount > 0
-                            && item.info.trackerBlockedCount != null
-                            && item.info.trackerBlockedCount >= item.info.trackerCount) {
-                        continue;
-                    }
-                    // 'With granted dangerous perms' filter — drops apps that don't
-                    // have any granted dangerous permissions. The Room column is
-                    // populated by the AppDb refresh pass; uses the cached value
-                    // directly so no per-render lookup is needed.
-                    if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS) != 0
-                            && (item.info.dangerousPermGranted == null
-                                    || item.info.dangerousPermGranted == 0)) {
-                        continue;
-                    }
-                    filteredApplicationItems.add(item.info);
-                }
-                if (!TextUtils.isEmpty(mSearchQuery)) {
-                    filterItemsByQuery(filteredApplicationItems);
-                } else {
-                    mApplicationItemsLiveData.postValue(filteredApplicationItems);
                 }
             }
+            for (ApplicationItem item : candidateApplicationItems) {
+                item.setPackageUsageInfo(packageUsageInfoList.get(item.packageName));
+                item.setRunning(runningPackages.contains(item.packageName));
+                if (!profileMembershipFilter.matches(item)) {
+                    continue;
+                }
+                if (!matchesInstallDateRange(item)) {
+                    continue;
+                }
+                if (!flagFilterItem.matches(item)) {
+                    continue;
+                }
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SPLITS) != 0 && !item.hasSplits) {
+                    continue;
+                }
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_SAF) != 0 && !item.usesSaf) {
+                    continue;
+                }
+                // Refine 'with trackers' to mean 'with UNBLOCKED trackers' so users
+                // who've already locked an app down don't see it cluttering the
+                // tracker view. The FilterItem-level TrackersOption=ge,1 has already
+                // dropped apps with zero trackers; this drops apps where every
+                // tracker is blocked (trackerBlockedCount >= trackerCount).
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_TRACKERS) != 0
+                        && item.trackerCount != null && item.trackerCount > 0
+                        && item.trackerBlockedCount != null
+                        && item.trackerBlockedCount >= item.trackerCount) {
+                    continue;
+                }
+                // 'With granted dangerous perms' filter — drops apps that don't
+                // have any granted dangerous permissions. The Room column is
+                // populated by the AppDb refresh pass; uses the cached value
+                // directly so no per-render lookup is needed.
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS) != 0
+                        && (item.dangerousPermGranted == null
+                                || item.dangerousPermGranted == 0)) {
+                    continue;
+                }
+                filteredApplicationItems.add(item);
+            }
+            if (!TextUtils.isEmpty(mSearchQuery)) {
+                filterItemsByQuery(filteredApplicationItems);
+            } else {
+                mApplicationItemsLiveData.postValue(filteredApplicationItems);
+            }
         }
+    }
+
+    @NonNull
+    private ProfileMembershipFilter getProfileMembershipFilter() {
+        if (mFilterProfileName != null) {
+            String profileId = ProfileManager.getProfileIdCompat(mFilterProfileName);
+            Path profilePath = ProfileManager.findProfilePathById(profileId);
+            try {
+                BaseProfile profile = BaseProfile.fromPath(profilePath);
+                return ProfileMembershipFilter.fromProfile(profile, mFilterProfileInverse);
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return ProfileMembershipFilter.none();
     }
 
     private boolean isAmongSelectedUsers(@NonNull ApplicationItem applicationItem) {

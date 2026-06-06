@@ -748,6 +748,14 @@ public final class Prefs {
         public static void setFilteredProfileName(@Nullable String profileName) {
             AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_STR, profileName == null ? "" : profileName);
         }
+
+        public static boolean isFilteredProfileInverse() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_INVERSE_BOOL);
+        }
+
+        public static void setFilteredProfileInverse(boolean inverse) {
+            AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_INVERSE_BOOL, inverse);
+        }
     }
 
     public static final class Misc {

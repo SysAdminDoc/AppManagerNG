@@ -652,7 +652,7 @@ links touched by the edit.
     Manual Android 15+ Private Space locked/unlocked/hidden walkthrough on a
     device or image that exposes the feature remains device-gated.
 
-- [ ] P2 - Add profile membership inverse filters
+- [x] P2 - Add profile membership inverse filters
   - Why: the current app-list profile picker turns a selected Apps profile into
     positive include filters only. Users auditing backup/debloat/profile coverage
     also need "not in this profile" to find omissions, stale profile membership,
@@ -663,13 +663,23 @@ links touched by the edit.
     `app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:617-632`.
   - Touches: `MainListOptions`, `MainViewModel`, profile filter state, Finder/
     filter option model if reused, strings, and focused filter tests.
+  - Shipped 2026-06-06: the main app-list profile picker now persists an
+    `Exclude selected profile` option beside the selected profile, evaluates
+    profile membership separately from the normal filter expression, and then
+    applies the remaining main-list filters, install-date filter, selected-user
+    filter, and search query as before. Static package-list profiles and
+    filter-based profiles share `ProfileMembershipFilter`, which supports
+    include and inverse membership without changing profile apply behavior.
+    `FilterItem` now exposes single-item match helpers so filter-based profile
+    membership can be evaluated without materializing a temporary list. The
+    filtered empty-state label now distinguishes `In profile: ...` from
+    `Not in profile: ...`.
   - Acceptance: users can filter apps included in a selected profile and apps not
     included in that profile; both static package-list profiles and filter-based
     profiles behave correctly; active-filter labels distinguish include vs
     exclude; the feature does not change existing profile apply behavior.
-  - Verify: unit tests for static AppsProfile include/exclude, filter-profile
-    include/exclude, empty/missing profile behavior, and compile of the app-list
-    options UI path.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.ProfileMembershipFilterTest --tests io.github.muntashirakon.AppManager.filters.FilterItemTest`.
 
 ### Researcher Queue (Cycle 6 - 2026-06-05)
 

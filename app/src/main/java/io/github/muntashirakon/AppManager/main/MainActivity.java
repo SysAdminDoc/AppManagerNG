@@ -1001,11 +1001,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     /**
-     * Build a comma-separated list of the chip labels that are currently active so the
-     * filtered-empty-state can tell users <em>which</em> filters are hiding their apps,
-     * not just that "filters are active". Returns {@code null} if no quick chip is on
-     * (the view model may still report active filters from the long-form sort/filter
-     * sheet — fall back to the generic message in that case).
+     * Build a comma-separated list of active filters so the filtered-empty-state can
+     * tell users <em>which</em> filters are hiding their apps, not just that "filters
+     * are active". Returns {@code null} when the active filters cannot be described.
      */
     @Nullable
     private String describeActiveQuickFilters() {
@@ -1023,6 +1021,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         if (viewModel.hasInstallDateFilter()) {
             if (sb.length() > 0) sb.append(", ");
             sb.append(MainListOptions.getInstallDateRangeLabel(this, viewModel));
+        }
+        String profileName = viewModel.getFilterProfileName();
+        if (profileName != null) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(getString(viewModel.isFilterProfileInverse()
+                    ? R.string.main_filter_profile_exclude_label
+                    : R.string.main_filter_profile_include_label, profileName));
         }
         return sb.length() == 0 ? null : sb.toString();
     }
