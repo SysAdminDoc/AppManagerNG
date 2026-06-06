@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Changelog inline markup support (source TODO, 2026-06-06)
+
+- Changelog text parsing now supports the documented inline markups for bold,
+  italic, monospace, strikethrough, and markdown-style links.
+- Existing bracketed HTML aliases such as `[b]...[/b]` and
+  `[a href="..."]...[/a]` continue to render through the same parser path.
+
 ### Fixed - Logcat shared-UID package attribution (source TODO, 2026-06-06)
 
 - Logcat package attribution for shared UIDs now chooses package names through
