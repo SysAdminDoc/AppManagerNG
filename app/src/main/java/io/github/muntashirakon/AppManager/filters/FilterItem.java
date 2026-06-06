@@ -212,17 +212,27 @@ public class FilterItem implements IJsonSerializer, Parcelable {
 
     public <T extends IFilterableAppInfo> List<FilteredItemInfo<T>> getFilteredList(@NonNull List<T> allFilterableAppInfo) {
         List<FilteredItemInfo<T>> filteredFilterableAppInfo = new ArrayList<>();
-        ExprEvaluator evaluator = new ExprEvaluator(mFilterOptions);
-        String expr = TextUtils.isEmpty(mExpr) ? "true" : mExpr;
         for (T info : allFilterableAppInfo) {
-            evaluator.setInfo(info);
-            boolean eval = evaluator.evaluate(expr);
-            FilterOption.TestResult result = Objects.requireNonNull(evaluator.getResult());
-            if (eval) {
-                filteredFilterableAppInfo.add(new FilteredItemInfo<>(info, result));
+            FilteredItemInfo<T> filteredItemInfo = getFilteredItem(info);
+            if (filteredItemInfo != null) {
+                filteredFilterableAppInfo.add(filteredItemInfo);
             }
         }
         return filteredFilterableAppInfo;
+    }
+
+    public <T extends IFilterableAppInfo> boolean matches(@NonNull T info) {
+        return getFilteredItem(info) != null;
+    }
+
+    @Nullable
+    public <T extends IFilterableAppInfo> FilteredItemInfo<T> getFilteredItem(@NonNull T info) {
+        ExprEvaluator evaluator = new ExprEvaluator(mFilterOptions);
+        String expr = TextUtils.isEmpty(mExpr) ? "true" : mExpr;
+        evaluator.setInfo(info);
+        boolean eval = evaluator.evaluate(expr);
+        FilterOption.TestResult result = Objects.requireNonNull(evaluator.getResult());
+        return eval ? new FilteredItemInfo<>(info, result) : null;
     }
 
     private void incrementUsage(FilterOption filterOption, boolean increment) {

@@ -138,6 +138,8 @@ public class MainListOptions extends ListOptions {
     public static final int FILTER_APPS_WITH_TRACKERS = 1 << 16;
     public static final int FILTER_APPS_WITH_GRANTED_PERMS = 1 << 17;
 
+    public static final int OPTION_PROFILE_FILTER_INVERSE = 1;
+
     // For now, just generate FilterItem
     @NonNull
     public static FilterItem getFilterItemFromFlags(int flags) {
@@ -449,7 +451,9 @@ public class MainListOptions extends ListOptions {
     @Nullable
     @Override
     public LinkedHashMap<Integer, Integer> getOptionIdLocaleMap() {
-        return null;
+        return new LinkedHashMap<Integer, Integer>() {{
+            put(OPTION_PROFILE_FILTER_INVERSE, R.string.main_filter_exclude_selected_profile);
+        }};
     }
 
     @Override
