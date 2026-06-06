@@ -83,4 +83,26 @@ public class IntentCompatTest {
         ArrayList<Uri> parsedUris = IntentCompat.getParcelableArrayListExtra(parsed, "uris", Uri.class);
         assertEquals(uris, parsedUris);
     }
+
+    @Test
+    public void valueToParsableString_formatsArrayValuesForParser() {
+        String rawValue = IntentCompat.valueToParsableString(AddIntentExtraFragment.TYPE_INT_ARR,
+                new int[]{1, 2, 3});
+
+        assertEquals("1,2,3", rawValue);
+        assertTrue(Arrays.equals(new int[]{1, 2, 3},
+                (int[]) IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_INT_ARR, rawValue)));
+    }
+
+    @Test
+    public void valueToParsableString_formatsEscapedListValuesForParser() {
+        ArrayList<String> labels = new ArrayList<>();
+        labels.add("alpha,beta");
+        labels.add("gamma");
+
+        String rawValue = IntentCompat.valueToParsableString(AddIntentExtraFragment.TYPE_STRING_AL, labels);
+
+        assertEquals("alpha\\,beta,gamma", rawValue);
+        assertEquals(labels, IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_STRING_AL, rawValue));
+    }
 }

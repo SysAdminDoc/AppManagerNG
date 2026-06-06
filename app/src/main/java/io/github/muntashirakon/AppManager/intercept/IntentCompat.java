@@ -292,6 +292,15 @@ public final class IntentCompat {
     }
 
     @Nullable
+    static String valueToParsableString(@Type int type, @Nullable Object object) {
+        Pair<Integer, String> typeAndString = valueToParsableStringAndType(object);
+        if (typeAndString == null || typeAndString.first != type) {
+            return null;
+        }
+        return typeAndString.second;
+    }
+
+    @Nullable
     private static Pair<Integer, String> valueToParsableStringAndType(@Nullable Object object) {
         if (object == null) {
             return new Pair<>(TYPE_NULL, null);
