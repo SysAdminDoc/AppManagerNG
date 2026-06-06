@@ -82,14 +82,14 @@ public class ComponentRule extends RuleEntry {
     public ComponentRule(@NonNull String packageName, @NonNull String name, RuleType componentType,
                          @NonNull @ComponentStatus String componentStatus) {
         super(packageName, name, componentType);
-        mComponentStatus = fixComponentStatus(componentStatus);
+        mComponentStatus = fixComponentStatus(parseComponentStatus(componentStatus));
     }
 
     public ComponentRule(@NonNull String packageName, @NonNull String name, RuleType componentType,
                          @NonNull StringTokenizer tokenizer) throws IllegalArgumentException {
         super(packageName, name, componentType);
         if (tokenizer.hasMoreElements()) {
-            mComponentStatus = fixComponentStatus(tokenizer.nextElement().toString());
+            mComponentStatus = fixComponentStatus(parseComponentStatus(tokenizer.nextElement().toString()));
         } else throw new IllegalArgumentException("Invalid format: componentStatus not found");
     }
 
@@ -175,6 +175,28 @@ public class ComponentRule extends RuleEntry {
         }
     }
 
+    @NonNull
+    @ComponentStatus
+    private static String parseComponentStatus(@NonNull String componentStatus) {
+        String normalizedStatus = componentStatus.trim();
+        switch (normalizedStatus) {
+            case COMPONENT_BLOCKED_IFW_DISABLE:
+            case COMPONENT_BLOCKED_IFW:
+            case COMPONENT_DISABLED:
+            case COMPONENT_ENABLED:
+            case COMPONENT_TO_BE_BLOCKED_IFW_DISABLE:
+            case COMPONENT_TO_BE_BLOCKED_IFW:
+            case COMPONENT_TO_BE_DISABLED:
+            case COMPONENT_TO_BE_ENABLED:
+            case COMPONENT_TO_BE_DEFAULTED:
+                return normalizedStatus;
+            default:
+                throw new IllegalArgumentException("Invalid format: componentStatus is invalid");
+        }
+    }
+
+    @NonNull
+    @ComponentStatus
     private String fixComponentStatus(@ComponentStatus String componentStatus) {
         if (type != RuleType.PROVIDER) {
             return componentStatus;
