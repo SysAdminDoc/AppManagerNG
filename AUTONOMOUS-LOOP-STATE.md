@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 29 source-TODO closure for main-list split and SAF
-  filter conversion.
+- Result: completed Cycle 30 source-TODO closure for Dex VFS API-level mount
+  options.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  main-list split/SAF filter conversion and its verification target.
-- Code: `MainListOptions.getFilterItemFromFlags()` now maps "Apps with splits"
-  and "Apps with SAF" to shared `AppTypeOption` flags, with filter-engine
-  accessors backed by `ApplicationItem` and package split metadata.
+  Dex VFS API-level mount-option contract and its verification target.
+- Code: `DexFileSystem.getApiLevel()` now reads from
+  `VirtualFileSystem.MountOptions`; File Manager VFS launches and APK Scanner
+  class loading pass the current platform SDK into Dex mounts, while low-level
+  callers keep the fallback when unset.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainListOptionsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.fs.DexFileSystemTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

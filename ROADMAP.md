@@ -74,10 +74,11 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include File Manager VFS
-  read-only mount mapping, main-list split/SAF filter conversion, main-list
-  user-filter persistence, data-only split reinstall routing, and APKS
-  split-source export fallback; closed details live in `COMPLETED.md`.
+- Source-backed 2026-06-06 audit closures now include Dex VFS API-level mount
+  options, File Manager VFS read-only mount mapping, main-list split/SAF filter
+  conversion, main-list user-filter persistence, data-only split reinstall
+  routing, and APKS split-source export fallback; closed details live in
+  `COMPLETED.md`.
 
 ## A. Feature wiring — implementable now
 
