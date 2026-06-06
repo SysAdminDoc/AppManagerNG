@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed - Settings adaptive layout width-class gate (research T21-H, 2026-06-06)
+
+- Settings now decides whether to use its existing two-pane layout from
+  `WindowWidthSizeClass.requiresTwoPane(screenWidthDp)` instead of raw pixel
+  width.
+- Focused JVM coverage pins compact and medium widths to single-pane and
+  expanded widths to two-pane.
+
 ### Added - Profile membership inverse filters (research P2, 2026-06-06)
 
 - The main app list profile filter now supports an `Exclude selected profile`
