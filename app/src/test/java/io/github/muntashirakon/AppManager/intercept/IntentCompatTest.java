@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.intercept;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -91,6 +92,21 @@ public class IntentCompatTest {
 
         assertNotNull(parsed);
         assertEquals("alpha\tbeta\tgamma", parsed.getStringExtra("label"));
+    }
+
+    @Test
+    public void flattenToString_roundTripsEmptyPrimitiveArrayExtras() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("ints", new int[0]);
+        input.putExtra("longs", new long[0]);
+        input.putExtra("floats", new float[0]);
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertArrayEquals(new int[0], parsed.getIntArrayExtra("ints"));
+        assertArrayEquals(new long[0], parsed.getLongArrayExtra("longs"));
+        assertArrayEquals(new float[0], parsed.getFloatArrayExtra("floats"), 0);
     }
 
     @Test
