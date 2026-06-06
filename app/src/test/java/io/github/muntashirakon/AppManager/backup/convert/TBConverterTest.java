@@ -13,9 +13,11 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.backup.BackupException;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
@@ -36,6 +38,23 @@ public class TBConverterTest {
 
     private final ClassLoader classLoader = getClass().getClassLoader();
     private File backupLocation;
+
+    @Test
+    public void parseBackupTimeFromFilenameUsesTitaniumBackupTimestamp() throws Exception {
+        long expected = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT)
+                .parse("20210529-164214")
+                .getTime();
+
+        assertEquals(expected, TBConverter.parseBackupTimeFromFilename(
+                "dnsfilter.android-20210529-164214.properties", 123L));
+    }
+
+    @Test
+    public void parseBackupTimeFromFilenameFallsBackForInvalidFilename() {
+        assertEquals(456L, TBConverter.parseBackupTimeFromFilename("dnsfilter.android.properties", 456L));
+        assertEquals(789L, TBConverter.parseBackupTimeFromFilename(
+                "dnsfilter.android-20210231-164214.properties", 789L));
+    }
 
     @Before
     public void setUp() {
@@ -94,6 +113,8 @@ public class TBConverterTest {
         BackupMetadataV5 metadataV5 = backupItem.getMetadata();
         assertEquals(MetadataManager.getCurrentBackupMetaVersion(), metadataV5.info.version);
         assertEquals("TB", metadataV5.metadata.backupName);
+        assertEquals(TBConverter.parseBackupTimeFromFilename(propFile.getName(), propFile.lastModified()),
+                metadataV5.info.backupTime);
         assertEquals(Collections.singletonList("base.apk"), TarUtilsTest.getFileNamesGZip(
                 Arrays.asList(backupItem.getSourceFiles())));
         List<String> files = TarUtilsTest.getFileNamesGZip(

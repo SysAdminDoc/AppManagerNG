@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Titanium Backup import timestamp preservation (source TODO, 2026-06-06)
+
+- Titanium Backup imports now read the backup timestamp from
+  `<package>-YYYYMMDD-HHMMSS.properties` filenames instead of using the
+  properties file modification time.
+- Invalid or nonstandard filenames still fall back to file modification time.
+
 ### Fixed - File content MIME detection with mismatched extensions (source FIXME, 2026-06-06)
 
 - File content inspection now prefers full magic-byte matches over the filename
