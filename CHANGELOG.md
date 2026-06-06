@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Running Apps VirusTotal process file selection (source TODO, 2026-06-06)
+
+- Running Apps now scans all command-line arguments for the first readable file
+  before showing VirusTotal actions for non-app processes.
+- The VirusTotal execution path uses the same readable-file selection, so a
+  readable payload in later command-line arguments is no longer ignored.
+
 ### Fixed - Changelog inline markup support (source TODO, 2026-06-06)
 
 - Changelog text parsing now supports the documented inline markups for bold,

@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 34 source-TODO closure for changelog inline markup
-  support.
+- Result: completed Cycle 35 source-TODO closure for Running Apps VirusTotal
+  process file selection.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  changelog inline markup parser behavior and its verification target.
-- Code: `ChangelogItem` now converts documented inline bold, italic, monospace,
-  strikethrough, and markdown-link markup before HTML rendering while keeping
-  existing bracketed HTML aliases.
+  Running Apps command-line file selection behavior and its verification target.
+- Code: `RunningAppsViewModel` now exposes a shared readable-commandline-file
+  selector, and both the popup visibility path and VirusTotal execution path use
+  it for non-app processes.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.changelog.ChangelogItemTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
