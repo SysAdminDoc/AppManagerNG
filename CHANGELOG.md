@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Gradle dependency verification and locks (research P1, 2026-06-06)
+
+- Gradle builds now use strict dependency locking for project configurations and
+  the root buildscript classpath, with checked-in lockfiles for every module.
+- Strict dependency verification now checks approved SHA-256 metadata for
+  plugin, buildscript, app, benchmark, test, and Android tool artifacts.
+- Maintainer docs now cover metadata/lock refresh commands, ignored-key review,
+  and JitPack checksum review expectations.
+
 ### Added - Startup recovery controls (research P1/#1825/#1829, 2026-06-06)
 
 - Splash startup now shows stage-specific mode initialization text instead of a

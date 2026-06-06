@@ -502,7 +502,7 @@ links touched by the edit.
 
 ### Cycle 5 Promoted Items (2026-06-04)
 
-- [ ] P1 - Add Gradle dependency verification and dependency locking
+- [x] P1 - Add Gradle dependency verification and dependency locking
   - Why: AppManagerNG pins the Gradle wrapper hash and runs OWASP CVE audits, but
     plugin/application/test/benchmark artifacts still resolve from Google Maven,
     Maven Central, and JitPack without checked dependency metadata or lockfiles.
@@ -516,14 +516,25 @@ links touched by the edit.
   - Touches: Gradle verification metadata, dependency lockfiles for root/app/
     benchmark/test configurations, JitPack dependency review notes, CI
     dependency jobs, and distribution docs.
+  - Shipped 2026-06-06: root Gradle now locks all project configurations in
+    strict mode and explicitly locks the root buildscript classpath. Checked-in
+    lockfiles cover the app, benchmark, docs, hiddenapi, libcore modules,
+    libopenpgp, libserver, server, and buildscript classpath. Checked-in
+    `gradle/verification-metadata.xml` enables strict dependency verification
+    with SHA-256 checksums for plugin/buildscript/application/test/benchmark
+    artifacts, including Android Gradle Plugin detached AAPT2 tool artifacts.
+    `docs/distribution/dependency-verification.md` documents the refresh and
+    validation commands plus JitPack/key-review expectations.
   - Acceptance: normal CI fails on missing/changed artifact checksums or
     unreviewed lock drift; all production, test, benchmark, plugin, and build
     logic dependencies are covered; the update process is documented so
     maintainers can intentionally refresh metadata.
-  - Verify: bootstrap metadata with
-    `./gradlew --write-verification-metadata sha256,pgp help`, write locks,
-    rerun `./gradlew test` or the repo's equivalent host test suite, then seed a
-    temporary bad checksum/lock in a throwaway copy and confirm the build fails.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest`
+    under strict verification and locking with no write flags, after generating
+    metadata/locks through dependency reports and the same focused app test path.
+    A deliberate bad-checksum drill remains a low-cost future hardening check in
+    a throwaway copy.
 
 - [ ] P2 - Publish release SBOM and provenance attestation
   - Why: the release workflow performs a strong two-build reproducibility check
@@ -1337,15 +1348,15 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 16 - visible Splash startup recovery controls on 2026-06-06.
+Cycle 17 - Gradle dependency verification and locking on 2026-06-06.
 
 ### Current Focus
 
-Continue from the next host-verifiable supply-chain row:
-**P1 - Add Gradle dependency verification and dependency locking**. Start by
-checking current Gradle version support, existing dependency metadata, lockfile
-presence, and CI/build script constraints before generating any large metadata
-artifacts.
+Continue from the next host-verifiable release-trust row:
+**P2 - Publish release SBOM and provenance attestation**. Start by checking the
+release workflow, reproducible-build publish directory shape, GitHub
+attestation permissions, and whether an init-script or checked plugin is the
+least invasive SBOM path.
 
 ### Important Findings So Far
 
@@ -1419,24 +1430,26 @@ artifacts.
   in the authentication layout, schedules current-attempt timeouts, and renders
   recovery buttons for retry, mode settings, Mode Doctor, support bundle,
   local-network permission, Shizuku permission, and pairing cancel.
+- Gradle dependency verification and locking are now enabled. The no-write
+  focused app test passed under strict metadata/lock checks:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest`.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Inspect Gradle dependency verification and locking support in the current
-   wrapper/build scripts.
-2. Identify the narrowest metadata/lockfile shape that covers build logic,
-   app/test/benchmark dependencies, plugins, Google Maven, Maven Central, and
-   JitPack without committing local cache noise.
-3. Add/update maintainer docs and run a focused Gradle verification command
-   before deciding whether full lock generation is safe in this cycle.
+1. Inspect `.github/workflows/release.yml`,
+   `scripts/verify_reproducible_release.sh`, and
+   `docs/distribution/reproducible-builds.md`.
+2. Choose a minimal SBOM generation path that does not destabilize normal debug
+   builds and produces a release asset beside the reproducible APKs/checksums.
+3. Add provenance attestation permissions/steps and document verification with
+   `gh attestation verify` plus SBOM schema validation where locally possible.
 
 ### Unprocessed Leads
 
-- Dependency verification metadata and lockfiles for Gradle supply-chain drift
-  protection.
+- SBOM and provenance attestations for release artifacts.
 - Android 17 local-network permission timeout diagnostics for ADB and wireless
   pairing flows.
 - Manual Android assist invocation for the shipped service/broadcast quick
@@ -1444,15 +1457,16 @@ artifacts.
 
 ### Files Still To Inspect
 
-- `settings.gradle`
+- `.github/workflows/release.yml`
+- `scripts/verify_reproducible_release.sh`
+- `scripts/verify_reproducible_release.ps1`
+- `docs/distribution/reproducible-builds.md`
 - `build.gradle`
-- `app/build.gradle`
-- `benchmark/build.gradle`
-- `.github/workflows/dependency-scan.yml`
-- `docs/distribution/`
+- `versions.gradle`
 
 ### Searches Still To Run
 
-- `rg -n "dependencyVerification|verification-metadata|dependencyLocking|lockMode|write-locks|gradle.lockfile|JitPack|mavenCentral|google\\(" .`
-- `rg -n "dependencyCheck|dependency-review|release|attest|sha256|SBOM" .github build.gradle settings.gradle docs`
-- `Get-ChildItem -Recurse -Filter gradle.lockfile`
+- `rg -n "attestation|attest|sbom|cyclonedx|sha256|github-release-assets|reproducible-release" .github scripts docs build.gradle versions.gradle`
+- `rg -n "CycloneDX|spdx|provenance|artifact" docs .github scripts`
+- Web: GitHub artifact attestation and CycloneDX Gradle plugin docs if the
+  release workflow syntax needs refreshed before editing.
