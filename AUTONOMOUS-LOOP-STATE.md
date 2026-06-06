@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 35 source-TODO closure for Running Apps VirusTotal
-  process file selection.
+- Result: completed Cycle 36 source-TODO closure for APK export filename
+  placeholder substitution.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Running Apps command-line file selection behavior and its verification target.
-- Code: `RunningAppsViewModel` now exposes a shared readable-commandline-file
-  selector, and both the popup visibility path and VirusTotal execution path use
-  it for non-app processes.
+  APK export filename formatter behavior and its verification target.
+- Code: `ApkUtils` now formats saved APK names with literal placeholder
+  replacement instead of regex replacement, preserving `$` and `\` in labels or
+  versions and handling missing version names.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.ApkUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

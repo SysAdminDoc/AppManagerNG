@@ -16,6 +16,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
 
@@ -126,16 +127,36 @@ public final class ApkUtils {
     @NonNull
     private static String getFormattedApkFilename(@NonNull Context context, @NonNull PackageInfo packageInfo,
                                                   @NonNull PackageManager pm) {
-        // TODO: 15/3/22 Optimize this
-        String apkName = AppPref.getString(AppPref.PrefKey.PREF_SAVED_APK_FORMAT_STR)
-                .replaceAll("%label%", packageInfo.applicationInfo.loadLabel(pm).toString())
-                .replaceAll("%package_name%", packageInfo.packageName)
-                .replaceAll("%version%", packageInfo.versionName)
-                .replaceAll("%version_code%", String.valueOf(PackageInfoCompat.getLongVersionCode(packageInfo)))
-                .replaceAll("%target_sdk%", String.valueOf(packageInfo.applicationInfo.targetSdkVersion))
-                .replaceAll("%datetime%", DateUtils.formatDateTime(context, System.currentTimeMillis()));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return apkName.replaceAll("%min_sdk%", String.valueOf(packageInfo.applicationInfo.minSdkVersion));
+        Integer minSdk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? packageInfo.applicationInfo.minSdkVersion : null;
+        return formatApkFilename(AppPref.getString(AppPref.PrefKey.PREF_SAVED_APK_FORMAT_STR),
+                packageInfo.applicationInfo.loadLabel(pm).toString(),
+                packageInfo.packageName,
+                packageInfo.versionName,
+                PackageInfoCompat.getLongVersionCode(packageInfo),
+                packageInfo.applicationInfo.targetSdkVersion,
+                minSdk,
+                DateUtils.formatDateTime(context, System.currentTimeMillis()));
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String formatApkFilename(@NonNull String format,
+                                    @NonNull String label,
+                                    @NonNull String packageName,
+                                    @Nullable String version,
+                                    long versionCode,
+                                    int targetSdk,
+                                    @Nullable Integer minSdk,
+                                    @NonNull String datetime) {
+        String apkName = format
+                .replace("%label%", label)
+                .replace("%package_name%", packageName)
+                .replace("%version%", version != null ? version : "")
+                .replace("%version_code%", String.valueOf(versionCode))
+                .replace("%target_sdk%", String.valueOf(targetSdk))
+                .replace("%datetime%", datetime);
+        if (minSdk != null) {
+            return apkName.replace("%min_sdk%", String.valueOf(minSdk));
         }
         return apkName;
     }
