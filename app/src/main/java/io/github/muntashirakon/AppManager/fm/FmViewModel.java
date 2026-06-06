@@ -618,25 +618,33 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         }
         VirtualFileSystem fs = VirtualFileSystem.getFileSystem(mOptions.uri);
         if (fs == null) {
-            // TODO: 31/5/23 Handle read-only
             Path filePath = Paths.getStrict(mOptions.uri);
             Path cachedPath = Paths.get(mFileCache.getCachedFile(filePath));
             String type = cachedPath.getType();
+            String vfsType;
             int vfsId;
             if (ContentType.APK.getMimeType().equals(type)) {
-                vfsId = VirtualFileSystem.mount(filePath.getUri(), cachedPath, ContentType.APK.getMimeType());
+                vfsType = ContentType.APK.getMimeType();
             } else if (FileUtils.isZip(cachedPath)) {
-                vfsId = VirtualFileSystem.mount(filePath.getUri(), cachedPath, ContentType.ZIP.getMimeType());
+                vfsType = ContentType.ZIP.getMimeType();
             } else if (DexUtils.isDex(cachedPath)) {
-                vfsId = VirtualFileSystem.mount(filePath.getUri(), cachedPath, ContentType2.DEX.getMimeType());
+                vfsType = ContentType2.DEX.getMimeType();
             } else {
-                vfsId = VirtualFileSystem.mount(filePath.getUri(), cachedPath, cachedPath.getType());
+                vfsType = cachedPath.getType();
             }
+            vfsId = VirtualFileSystem.mount(filePath.getUri(), cachedPath, vfsType, getVfsMountOptions(mOptions));
             fs = VirtualFileSystem.getFileSystem(vfsId);
             if (fs == null) {
                 throw new IOException("Could not mount " + mOptions.uri);
             }
         }
         return fs;
+    }
+
+    @NonNull
+    static VirtualFileSystem.MountOptions getVfsMountOptions(@NonNull FmActivity.Options options) {
+        return new VirtualFileSystem.MountOptions.Builder()
+                .setReadWrite(!options.isReadOnly())
+                .build();
     }
 }

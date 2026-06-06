@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File Manager VFS read-only mounts (source TODO, 2026-06-06)
+
+- File Manager virtual filesystem launches now pass explicit mount options from
+  `FmActivity.Options`, preserving read-only archive explorer sessions while
+  allowing editable VFS entry points to request writable mounts.
+- Focused coverage now pins the read-only flag, parcel round-trip, and VFS
+  mount-option mapping.
+
 ### Fixed - APKS export split source fallback (source FIXME, 2026-06-06)
 
 - APKS export now supplements `splitPublicSourceDirs` with sibling `.apk` files
