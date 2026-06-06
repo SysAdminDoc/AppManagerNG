@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent escaped comma extra parsing (source audit, 2026-06-06)
+
+- Serialized string and URI array/list extras now unescape `\,` back to commas
+  after splitting, preserving values such as labels or URIs that contain commas.
+- The comma escape logic is shared between intent flattening and parsing.
+
 ### Fixed - Intent string null extra parsing (source audit, 2026-06-06)
 
 - `IntentCompat.unflattenFromString()` now round-trips serialized null extras

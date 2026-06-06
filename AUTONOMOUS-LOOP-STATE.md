@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 46 source-audit closure for intent string null-extra
-  parsing.
+- Result: completed Cycle 47 source-audit closure for intent escaped-comma
+  extra parsing.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent string null-extra parsing fix and its verification target.
-- Code: `IntentCompat.unflattenFromString()` now accepts serialized null extras
-  without reading a missing value token and rejects malformed non-null extras
-  that omit their value.
+  intent escaped-comma extra parsing fix and its verification target.
+- Code: `IntentCompat` now shares comma escape/unescape helpers for serialized
+  string and URI array/list extras, preserving labels and URIs that contain
+  commas across flatten/unflatten round trips.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
