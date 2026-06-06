@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Main-list selected-user filter persistence (source TODO, 2026-06-06)
+
+- The main app list now restores the selected-user filter from a dedicated
+  main-window preference instead of dropping it on view-model recreation.
+- Filter-sheet changes persist separately from the Advanced app-wide
+  selected-users restriction, including an empty selection that intentionally
+  hides all user-scoped rows.
+- Clear filters now clears the persisted main-list selected-user filter along
+  with the other main-list filter state.
+
 ### Changed - Settings adaptive layout width-class gate (research T21-H, 2026-06-06)
 
 - Settings now decides whether to use its existing two-pane layout from
