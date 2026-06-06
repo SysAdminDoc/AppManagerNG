@@ -186,7 +186,7 @@ public class SearchCriteria {
                         matches = matchPattern(p, tag) || matchPattern(p, out);
                     } else {
                         String query = (String) mValue;
-                        matches = matchQuery(query, tag, mExact) || matchQuery(query, tag, mExact);
+                        matches = matchQuery(query, tag, mExact) || matchQuery(query, out, mExact);
                     }
                     break;
                 }
@@ -255,8 +255,12 @@ public class SearchCriteria {
             }
             switch (mType) {
                 case TYPE_UID: {
+                    Integer uid = parseIntegerFilterValue(value);
+                    if (uid != null) {
+                        return uid;
+                    }
                     if (TextUtils.isDigitsOnly(value)) {
-                        return Integer.parseInt(value);
+                        return null;
                     } // else fallthrough
                 }
                 case TYPE_MSG:
@@ -265,10 +269,22 @@ public class SearchCriteria {
                     return mExact ? value : value.toLowerCase(Locale.ROOT);
                 }
                 case TYPE_PID: {
-                    return TextUtils.isDigitsOnly(value) ? Integer.parseInt(value) : null;
+                    return parseIntegerFilterValue(value);
                 }
                 default:
                     throw new IllegalArgumentException("Invalid filter: " + mType);
+            }
+        }
+
+        @Nullable
+        private static Integer parseIntegerFilterValue(@NonNull String value) {
+            if (!TextUtils.isDigitsOnly(value)) {
+                return null;
+            }
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
 
