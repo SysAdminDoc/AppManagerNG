@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
+import android.provider.DocumentsContract;
 import android.system.ErrnoException;
 import android.system.OsConstants;
 import android.text.TextUtils;
@@ -16,6 +17,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.provider.DocumentsContractCompat;
 
 import org.jetbrains.annotations.Contract;
 
@@ -507,6 +509,39 @@ public final class Paths {
                 .authority(uri.getAuthority())
                 .path(removeLastPathSegment(path))
                 .build();
+    }
+
+    @Nullable
+    public static Uri getParentUri(@NonNull Uri uri) {
+        if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme()) && DocumentsContractCompat.isTreeUri(uri)) {
+            return getParentTreeDocumentUri(uri);
+        }
+        return removeLastPathSegment(uri);
+    }
+
+    @Nullable
+    private static Uri getParentTreeDocumentUri(@NonNull Uri uri) {
+        String treeDocumentId;
+        String documentId;
+        try {
+            treeDocumentId = DocumentsContract.getTreeDocumentId(uri);
+            documentId = DocumentsContract.getDocumentId(uri);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        if (TextUtils.isEmpty(treeDocumentId) || TextUtils.isEmpty(documentId)
+                || treeDocumentId.equals(documentId)) {
+            return null;
+        }
+        String treePrefix = treeDocumentId + PATH_SEPARATOR;
+        if (!documentId.startsWith(treePrefix)) {
+            return null;
+        }
+        int separatorIndex = documentId.lastIndexOf(PATH_SEPARATOR_CHAR);
+        if (separatorIndex <= treeDocumentId.length()) {
+            return DocumentsContract.buildDocumentUriUsingTree(uri, treeDocumentId);
+        }
+        return DocumentsContract.buildDocumentUriUsingTree(uri, documentId.substring(0, separatorIndex));
     }
 
     @NonNull

@@ -5,6 +5,8 @@ package io.github.muntashirakon.io;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import android.net.Uri;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -160,6 +162,43 @@ public class PathsTest {
         assertEquals("a", Paths.removeLastPathSegment("a/b.c.d"));
         assertEquals("a", Paths.removeLastPathSegment("a/b.c.d.e"));
         assertEquals("asdkjrejvncnmiet/eru43jffn", Paths.removeLastPathSegment("asdkjrejvncnmiet/eru43jffn/ewrjpoewiwfjfpwrejtp.ext"));
+    }
+
+    @Test
+    public void getParentUriKeepsPathSegmentBehaviorForFileUris() {
+        Uri fileUri = Uri.parse("file:///tmp/AppManager/archive.zip");
+
+        assertEquals(Uri.parse("file:///tmp/AppManager"), Paths.getParentUri(fileUri));
+    }
+
+    @Test
+    public void getParentUriBuildsSafTreeDocumentParentUri() {
+        Uri documentUri = Uri.parse("content://com.example.documents/tree/primary%3AAppManager/document/primary%3AAppManager%2Fbackups%2Farchive.zip");
+
+        assertEquals(Uri.parse("content://com.example.documents/tree/primary%3AAppManager/document/primary%3AAppManager%2Fbackups"),
+                Paths.getParentUri(documentUri));
+    }
+
+    @Test
+    public void getParentUriBuildsSafTreeRootForDirectChild() {
+        Uri documentUri = Uri.parse("content://com.example.documents/tree/primary%3AAppManager/document/primary%3AAppManager%2Fbackups");
+
+        assertEquals(Uri.parse("content://com.example.documents/tree/primary%3AAppManager/document/primary%3AAppManager"),
+                Paths.getParentUri(documentUri));
+    }
+
+    @Test
+    public void getParentUriReturnsNullForSafTreeRoot() {
+        Uri documentUri = Uri.parse("content://com.example.documents/tree/primary%3AAppManager/document/primary%3AAppManager");
+
+        assertNull(Paths.getParentUri(documentUri));
+    }
+
+    @Test
+    public void getParentUriReturnsNullForOpaqueSafTreeDocumentId() {
+        Uri documentUri = Uri.parse("content://com.example.documents/tree/root/document/opaque-child");
+
+        assertNull(Paths.getParentUri(documentUri));
     }
 
     @Test

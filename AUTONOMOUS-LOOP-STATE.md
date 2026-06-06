@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 44 source-TODO closure for batch clear-cache
-  multi-volume trimming.
+- Result: completed Cycle 45 source-FIXME closure for SAF VFS parent URI
+  mapping.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch cache trim volume coverage and its verification target.
-- Code: `StorageUtils` now owns writable-volume discovery and internal-first
-  cache-trim ordering, `OneClickOpsViewModel` uses the shared helper, and empty
-  clear-cache batches trim every ordered writable volume instead of only the
-  internal volume.
+  SAF VFS parent URI mapping and its verification target.
+- Code: `Paths.getParentUri()` now derives parent URIs for path-style SAF tree
+  documents, `PathImpl` uses it when building virtual-document parents, and
+  `VirtualFileSystem` uses the same helper for mount parent indexing.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.StorageUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.PathsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
