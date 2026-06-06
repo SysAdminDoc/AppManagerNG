@@ -20,7 +20,7 @@ public class NotificationListenerRule extends RuleEntry {
     public NotificationListenerRule(@NonNull String packageName, String name, @NonNull StringTokenizer tokenizer) {
         super(packageName, name, RuleType.NOTIFICATION);
         if (tokenizer.hasMoreElements()) {
-            mIsGranted = Boolean.parseBoolean(tokenizer.nextElement().toString());
+            mIsGranted = parseBoolean(tokenizer.nextElement().toString(), "isGranted");
         } else throw new IllegalArgumentException("Invalid format: isGranted not found");
     }
 

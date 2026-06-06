@@ -20,7 +20,7 @@ public class BatteryOptimizationRule extends RuleEntry {
     public BatteryOptimizationRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
         super(packageName, STUB, RuleType.BATTERY_OPT);
         if (tokenizer.hasMoreElements()) {
-            mEnabled = Boolean.parseBoolean(tokenizer.nextElement().toString());
+            mEnabled = parseBoolean(tokenizer.nextElement().toString(), "enabled");
         } else throw new IllegalArgumentException("Invalid format: enabled not found");
     }
 

@@ -329,6 +329,29 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenStrictlyParsesBooleanFields() {
+        PermissionRule permissionRule = (PermissionRule) RuleEntry.unflattenFromString(PACKAGE_NAME,
+                ".permission\tPERMISSION\t TRUE \t32", false);
+        assertTrue(permissionRule.isGranted());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tBATTERY_OPT\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".notif\tNOTIFICATION\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "pkg:process\tMAGISK_HIDE\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "pkg:process\tMAGISK_HIDE\ttrue\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "pkg:process\tMAGISK_DENY_LIST\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME,
+                        "pkg:process\tMAGISK_DENY_LIST\ttrue\tmaybe", false));
+    }
+
+    @Test
     public void unflattenUriGrantPreservesCommaUri() {
         UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
                 "com.source", PACKAGE_NAME,

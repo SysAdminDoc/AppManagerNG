@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Rule import boolean parsing (source audit, 2026-06-06)
+
+- Rule imports now strictly accept only `true` or `false` boolean tokens for
+  permission, notification-listener, battery-optimization, and Magisk rule
+  fields instead of silently treating malformed values as `false`.
+- Valid boolean fields remain case-insensitive and tolerate surrounding
+  whitespace.
+
 ### Fixed - ADB encrypted key blob parsing (source audit, 2026-06-06)
 
 - Encrypted ADB backup header parsing now validates each decrypted key-blob

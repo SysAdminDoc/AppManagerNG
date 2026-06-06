@@ -98,6 +98,17 @@ public abstract class RuleEntry {
         return index >= 0 && index < fields.length && !fields[index].isEmpty();
     }
 
+    static boolean parseBoolean(@NonNull String value, @NonNull String fieldName) {
+        String normalizedValue = value.trim();
+        if ("true".equalsIgnoreCase(normalizedValue)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(normalizedValue)) {
+            return false;
+        }
+        throw new IllegalArgumentException("Invalid format: " + fieldName + " is not a boolean");
+    }
+
     @NonNull
     private static StringTokenizer valueTokenizer(@NonNull String[] fields, int startIndex) {
         StringBuilder valueFields = new StringBuilder();
