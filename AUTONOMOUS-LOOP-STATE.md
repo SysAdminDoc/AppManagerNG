@@ -8,23 +8,23 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 14 implementation for the host-verifiable assistant
-  service/broadcast action model.
-- Updated: `ROADMAP.md` marks the assistant component action model slice as
-  shipped, keeps the broader assistant UI/dispatch row open, adds Cycle 14
-  notes, queues the visible quick-assist wiring next, and refreshes
-  `Continuation State`. `COMPLETED.md` records the closed model slice.
-- Code: `AssistComponentActionPlan` now classifies service start/stop and
-  declared-action receiver broadcast candidates for the resolved target app. It
-  reuses App Details service and receiver route rules, suppresses
-  disabled/blocked components, hides privileged-only actions when no privileged
-  route is available, and builds explicit intents for tests.
-- Tests: added `AssistComponentActionPlanTest` coverage for unprivileged and
-  privileged service routes, running service stop actions, permission-protected
-  services, disabled/blocked component suppression, declared-only receiver
-  actions, protected Android broadcasts, and explicit intent construction.
+- Result: completed Cycle 15 implementation for visible quick-assist service
+  and receiver component actions.
+- Updated: `ROADMAP.md` marks the guarded assistant service/broadcast
+  trampoline, assistant refinement, and visible quick-assist wiring slice as
+  shipped; `COMPLETED.md` records the closed dispatch/audit slice; and
+  `CHANGELOG.md` records the Unreleased user-facing change.
+- Code: `AssistActionActivity` now loads service and receiver metadata for the
+  resolved foreground target, appends `AssistComponentActionPlan` candidates to
+  the action dialog, confirms component/user/route/permission details, dispatches
+  service start/stop or receiver broadcast actions through explicit intents, and
+  records non-replayable `SingleAppActionHistoryItem` audit rows.
+- Tests: added planner assertions for required permissions and receiver
+  category/action ordering, plus `OpHistoryItemTest` coverage for
+  component-action metadata, failure details, medium risk, and non-replayable /
+  non-reversible status.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest`.
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
 - Environment note: the ignored local `local.properties` was updated to
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
   this host. Do not commit `local.properties`.
@@ -32,17 +32,18 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next host-verifiable roadmap target: `P2 - Wire assistant component
-  candidates into the visible quick-assist dialog`.
-- Start by wiring `AssistActionActivity` to load service/receiver metadata for
-  the resolved foreground app, append `AssistComponentActionPlan` candidates to
-  the existing action dialog, and add confirmation/dispatch helpers that record
-  one non-replayable Operation History row per attempted component action.
-- Implementation constraint: keep actions visible and user-selected; do not add
-  bindService support, raw external intent ingress, custom receiver action
-  entry, or a background-only execution path.
-- Verification target: focused tests for label ordering/availability and audit
-  metadata plus `:app:compileFullDebugJavaWithJavac`.
-- Parked follow-ups: visible startup watchdog controls, device-only Running
-  Apps restore walkthrough, manual Android assist invocation, distribution
-  submissions, and Android 17 target-SDK gate.
+- Next host-verifiable roadmap target: `P1 - Wire startup init state into
+  visible Splash recovery controls`.
+- Start by inspecting `SplashActivity`, `activity_splash.xml`, and
+  `SecurityAndOpsViewModel.startupInitState()`; map the reducer's current
+  stage/status/recovery actions into visible initializing text and recovery
+  buttons without extending the system splash hold.
+- Implementation constraint: preserve the fast successful startup path; recovery
+  controls must come from the current attempt only and route through existing
+  mode picker, Mode Doctor, support bundle, local-network permission, Shizuku
+  permission, retry, and pairing-cancel paths where available.
+- Verification target: focused `StartupInitStateTest` /
+  `SecurityAndOpsViewModelTest` coverage plus full-debug Java/resource compile.
+- Parked follow-ups: device-only Running Apps restore walkthrough, manual
+  Android assist invocation, distribution submissions, and Android 17
+  target-SDK gate.
