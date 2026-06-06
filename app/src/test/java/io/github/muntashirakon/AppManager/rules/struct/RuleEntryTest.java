@@ -2,18 +2,22 @@
 
 package io.github.muntashirakon.AppManager.rules.struct;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+import android.app.AppOpsManager;
+import android.content.Intent;
+import android.net.Uri;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.uri.UriManager;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import android.app.AppOpsManager;
 
 @RunWith(RobolectricTestRunner.class)
 public class RuleEntryTest {
@@ -312,5 +316,32 @@ public class RuleEntryTest {
         assertEquals(RuleEntry.unflattenFromString(null, PACKAGE_NAME + "\tSTUB\tFREEZE\t" + FreezeUtils.FREEZE_DISABLE, true), rule);
         assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, PACKAGE_NAME + "\tSTUB\tFREEZE\t" + FreezeUtils.FREEZE_DISABLE, true), rule);
         assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tFREEZE\t" + FreezeUtils.FREEZE_DISABLE, false), rule);
+    }
+
+    @Test
+    public void unflattenRejectsEmptyRequiredFields() {
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".activity\t\tACTIVITY\ttrue", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".activity\tACTIVITY\t\ttrue", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString("", ".activity\tACTIVITY\ttrue", false));
+    }
+
+    @Test
+    public void unflattenUriGrantPreservesCommaUri() {
+        UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
+                "com.source", PACKAGE_NAME,
+                Uri.parse("content://example/items/a,b?value=1,2"),
+                true, Intent.FLAG_GRANT_READ_URI_PERMISSION, 1234L);
+
+        RuleEntry parsed = RuleEntry.unflattenFromString(PACKAGE_NAME,
+                "STUB\tURI_GRANT\t" + grant.flattenToString(), false);
+
+        assertTrue(parsed instanceof UriGrantRule);
+        UriManager.UriGrant parsedGrant = ((UriGrantRule) parsed).getUriGrant();
+        assertEquals("content://example/items/a,b?value=1,2", parsedGrant.uri.toString());
+        assertEquals(PACKAGE_NAME, parsedGrant.targetPkg);
+        assertEquals(Intent.FLAG_GRANT_READ_URI_PERMISSION, parsedGrant.modeFlags);
     }
 }
