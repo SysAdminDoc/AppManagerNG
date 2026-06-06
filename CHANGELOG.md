@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - OpenPGP backup provider availability (source FIXME, 2026-06-06)
+
+- OpenPGP backup encryption availability now requires both configured key IDs
+  and a configured provider package that resolves the OpenPGP service action.
+- Stale key IDs no longer keep OpenPGP selected after the provider app is
+  removed or no longer exposes the expected service.
+
 ### Fixed - Multithreaded executor factory synchronization (source TODO, 2026-06-06)
 
 - `MultithreadedExecutor.getNewInstance()` now synchronizes access to the shared
