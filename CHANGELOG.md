@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent string null extra parsing (source audit, 2026-06-06)
+
+- `IntentCompat.unflattenFromString()` now round-trips serialized null extras
+  produced by `flattenToString()` instead of reading a missing value token.
+- Malformed non-null extras without a value now fail parsing cleanly.
+
 ### Fixed - SAF VFS mount parent URI mapping (source FIXME, 2026-06-06)
 
 - Virtual file-system mounts under path-style SAF tree documents now derive the

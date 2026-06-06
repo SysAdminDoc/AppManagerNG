@@ -695,7 +695,12 @@ public final class IntentCompat {
                     ExtraItem item = new ExtraItem();
                     item.keyName = tokenizer.nextToken();
                     item.type = IntegerCompat.decode(tokenizer.nextToken());
-                    item.keyValue = parseExtraValue(item.type, tokenizer.nextToken());
+                    if (item.type != TYPE_NULL) {
+                        if (!tokenizer.hasMoreTokens()) {
+                            return null;
+                        }
+                        item.keyValue = parseExtraValue(item.type, tokenizer.nextToken());
+                    }
                     addToIntent(intent, item);
                 }
             }
