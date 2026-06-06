@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - URI grant parser hardening (source audit, 2026-06-06)
+
+- Persisted URI grant strings now parse with a bounded field split, so URI
+  values containing commas still round-trip.
+- Truncated URI grant rows now fail with `IllegalArgumentException` instead of
+  tokenizer exhaustion.
+
 ### Fixed - Activity Interceptor pasted headers (source audit, 2026-06-06)
 
 - Pasted intent details now ignore malformed `ROOT` and `USER` header lines
