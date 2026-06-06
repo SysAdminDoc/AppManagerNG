@@ -121,6 +121,14 @@ public interface IFilterableAppInfo {
     /** Resource overlay (RRO) — declares an {@code <overlay>} manifest tag pointing at a target package. */
     boolean isOverlay();
 
+    default boolean hasSplits() {
+        return false;
+    }
+
+    default boolean usesSaf() {
+        return false;
+    }
+
     /** Uploaded to Play with Play App Signing — APK signed by Google rather than the developer's release key. */
     boolean usesPlayAppSigning();
 

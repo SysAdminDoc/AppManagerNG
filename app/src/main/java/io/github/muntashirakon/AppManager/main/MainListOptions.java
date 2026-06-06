@@ -181,7 +181,7 @@ public class MainListOptions extends ListOptions {
             filterItem.addFilterOption(option);
         }
         if ((flags & FILTER_APPS_WITH_SPLITS) != 0) {
-            // TODO: 7/28/25
+            appTypeWithFlags |= AppTypeOption.APP_TYPE_HAS_SPLITS;
         }
         if ((flags & FILTER_INSTALLED_APPS) != 0) {
             InstalledOption option = new InstalledOption();
@@ -202,7 +202,7 @@ public class MainListOptions extends ListOptions {
             appTypeWithFlags |= AppTypeOption.APP_TYPE_KEYSTORE;
         }
         if ((flags & FILTER_APPS_WITH_SAF) != 0) {
-            // TODO: 7/28/25
+            appTypeWithFlags |= AppTypeOption.APP_TYPE_USES_SAF;
         }
         if ((flags & FILTER_APPS_WITH_SSAID) != 0) {
             appTypeWithFlags |= AppTypeOption.APP_TYPE_SSAID;
