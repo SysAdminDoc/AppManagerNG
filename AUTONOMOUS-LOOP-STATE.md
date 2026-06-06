@@ -8,16 +8,17 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 91 source-audit closure for rule numeric negativity
+- Result: completed Cycle 92 source-audit closure for URI grant scalar parser
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  rule numeric negativity hardening and its verification target.
-- Code: permission-rule flag imports now reject malformed or negative flag
-  values instead of allowing all-bit negative masks into restore/apply paths,
-  and network-policy rule imports reject malformed or negative policy values
-  while continuing to allow positive OEM policy bits.
+  URI grant scalar parser hardening and its verification target.
+- Code: flattened URI grant parsing now rejects malformed or negative user IDs,
+  mode flags, and created-time values instead of leaking numeric conversion
+  failures or constructing invalid grants, and prefix flags now parse strictly
+  as `true` or `false` while preserving case-insensitive and whitespace-padded
+  valid values.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.uri.UriManagerTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at

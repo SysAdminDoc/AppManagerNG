@@ -40,4 +40,32 @@ public class UriManagerTest {
         assertThrows(IllegalArgumentException.class,
                 () -> UriManager.UriGrant.unflattenFromString("0,10,10,com.source"));
     }
+
+    @Test
+    public void uriGrantRejectsMalformedScalarFields() {
+        UriManager.UriGrant parsed = UriManager.UriGrant.unflattenFromString(
+                " 0 ,10,10,com.source,com.target, TRUE ,1, 1234 ,content://example/items");
+        assertEquals(0, parsed.sourceUserId);
+        assertTrue(parsed.prefix);
+        assertEquals(1234L, parsed.createdTime);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "bad,10,10,com.source,com.target,true,1,1234,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "-1,10,10,com.source,com.target,true,1,1234,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,com.target,maybe,1,1234,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,com.target,true,-1,1234,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,com.target,true,1,-1,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,com.target,true,1,bad,content://example/items"));
+    }
 }
