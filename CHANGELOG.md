@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Rule import TSV hardening (source audit, 2026-06-06)
+
+- Rule import parsing now validates required tab-separated fields by position,
+  so malformed rows with empty name, type, or value columns fail closed instead
+  of sliding later tokens into those slots.
+- URI grant rule imports keep comma-bearing URI payloads intact while the top
+  level rule parser rejects empty package names.
+
 ### Fixed - URI grant parser hardening (source audit, 2026-06-06)
 
 - Persisted URI grant strings now parse with a bounded field split, so URI
