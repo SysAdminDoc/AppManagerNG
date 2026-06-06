@@ -25,10 +25,10 @@ public class MagiskDenyListRule extends RuleEntry {
         mMagiskProcess = new MagiskProcess(packageName, name);
         mMagiskProcess.setAppZygote(name.endsWith("_zygote"));
         if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setEnabled(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+            mMagiskProcess.setEnabled(parseBoolean(tokenizer.nextElement().toString(), "isDenied"));
         } else throw new IllegalArgumentException("Invalid format: isHidden not found");
         if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setIsolatedProcess(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.nextElement().toString(), "isIsolated"));
         }
     }
 

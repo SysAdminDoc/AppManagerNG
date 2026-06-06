@@ -74,18 +74,19 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include ADB encrypted key-blob
-  length hardening, ADB backup compression flag hardening, ADB backup numeric
-  header hardening, manifest intent-filter name hardening, manifest
-  intent-filter priority hardening, dynamic shortcut candidate validation, app
-  action shortcut target validation, profile URI package override validation,
-  automation negative user-id validation, automation component-name validation,
-  package-name empty-segment validation, Hail profile empty-import rejection,
-  external profile package-name validation, logcat search criteria hardening,
-  logcat numeric field parser hardening, Titanium Backup metadata parser
-  hardening, default-app role holder parser hardening, selected-user preference
-  parser hardening, rule import TSV required-field hardening, URI grant
-  flattened parser hardening, Activity Interceptor pasted header hardening,
+- Source-backed 2026-06-06 audit closures now include rule import boolean token
+  hardening, ADB encrypted key-blob length hardening, ADB backup compression
+  flag hardening, ADB backup numeric header hardening, manifest intent-filter
+  name hardening, manifest intent-filter priority hardening, dynamic shortcut
+  candidate validation, app action shortcut target validation, profile URI
+  package override validation, automation negative user-id validation,
+  automation component-name validation, package-name empty-segment validation,
+  Hail profile empty-import rejection, external profile package-name
+  validation, logcat search criteria hardening, logcat numeric field parser
+  hardening, Titanium Backup metadata parser hardening, default-app role holder
+  parser hardening, selected-user preference parser hardening, rule import TSV
+  required-field hardening, URI grant flattened parser hardening, Activity
+  Interceptor pasted header hardening,
   intent empty primitive-array serialization, intent `CharSequence` collection
   serialization, intent `CharSequence` extra serialization, APKS duplicate
   split validation, SysConfig permission label display, SysConfig named-actor

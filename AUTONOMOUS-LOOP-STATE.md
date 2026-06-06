@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 86 source-audit closure for ADB encrypted key-blob
-  length hardening.
+- Result: completed Cycle 87 source-audit closure for rule import boolean token
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  ADB encrypted key-blob length hardening and its verification target.
-- Code: encrypted ADB backup header parsing now validates each decrypted
-  key-blob segment length before copying IV, key, or checksum bytes, so
-  malformed blobs with missing, zero, or overlong lengths fail as `IOException`
-  header errors instead of unchecked array/range exceptions.
+  rule import boolean token hardening and its verification target.
+- Code: rule imports now strictly accept only `true` or `false` boolean tokens
+  for permission, notification-listener, battery-optimization, and Magisk rule
+  fields instead of silently treating malformed values as `false`, while
+  preserving case-insensitive and whitespace-padded valid booleans.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
