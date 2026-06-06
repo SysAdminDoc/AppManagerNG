@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Dynamic shortcut candidate validation (source audit, 2026-06-06)
+
+- Dynamic app action shortcut publishing now skips cached app rows with
+  malformed package names before creating shortcut target models.
+- Valid installed app candidates continue to use the existing recency/open-count
+  ranking and action ordering.
+
 ### Fixed - App action shortcut target validation (source audit, 2026-06-06)
 
 - App action shortcut models now reject malformed package names, negative user
