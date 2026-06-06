@@ -22,6 +22,9 @@ import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 @RunWith(RobolectricTestRunner.class)
 public class RuleEntryTest {
     private static final String PACKAGE_NAME = "sample.package";
+    private static final String VALID_SSAID = "4caf91d267b8e3a5";
+    private static final String VALID_SYSTEM_SSAID =
+            "4CAF91D267B8E3A54CAF91D267B8E3A54CAF91D267B8E3A54CAF91D267B8E3A5";
 
     @Test
     public void flattenActivityToString() {
@@ -130,9 +133,9 @@ public class RuleEntryTest {
 
     @Test
     public void flattenSsaidToString() {
-        RuleEntry rule = new SsaidRule(PACKAGE_NAME, "bc9948c6");
-        assertEquals(PACKAGE_NAME + "\tSTUB\tSSAID\tbc9948c6", rule.flattenToString(true));
-        assertEquals("STUB\tSSAID\tbc9948c6", rule.flattenToString(false));
+        RuleEntry rule = new SsaidRule(PACKAGE_NAME, VALID_SSAID);
+        assertEquals(PACKAGE_NAME + "\tSTUB\tSSAID\t" + VALID_SSAID, rule.flattenToString(true));
+        assertEquals("STUB\tSSAID\t" + VALID_SSAID, rule.flattenToString(false));
     }
 
     @Test
@@ -304,10 +307,12 @@ public class RuleEntryTest {
 
     @Test
     public void unflattenSsaidFromString() {
-        RuleEntry rule = new SsaidRule(PACKAGE_NAME, "bc9948c6");
-        assertEquals(RuleEntry.unflattenFromString(null, PACKAGE_NAME + "\tSTUB\tSSAID\tbc9948c6", true), rule);
-        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, PACKAGE_NAME + "\tSTUB\tSSAID\tbc9948c6", true), rule);
-        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tSSAID\tbc9948c6", false), rule);
+        RuleEntry rule = new SsaidRule(PACKAGE_NAME, VALID_SSAID);
+        assertEquals(RuleEntry.unflattenFromString(null, PACKAGE_NAME + "\tSTUB\tSSAID\t" + VALID_SSAID,
+                true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, PACKAGE_NAME + "\tSTUB\tSSAID\t" + VALID_SSAID,
+                true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tSSAID\t" + VALID_SSAID, false), rule);
     }
 
     @Test
@@ -417,6 +422,21 @@ public class RuleEntryTest {
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tNET_POLICY\t-1", false));
         assertThrows(IllegalArgumentException.class, () -> new PermissionRule(PACKAGE_NAME, ".permission", true, -1));
         assertThrows(IllegalArgumentException.class, () -> new NetPolicyRule(PACKAGE_NAME, -1));
+    }
+
+    @Test
+    public void unflattenRejectsInvalidSsaidValues() {
+        SsaidRule systemSsaidRule = (SsaidRule) RuleEntry.unflattenFromString("android",
+                "STUB\tSSAID\t " + VALID_SYSTEM_SSAID + " ", false);
+        assertEquals(VALID_SYSTEM_SSAID, systemSsaidRule.getSsaid());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tSSAID\tbc9948c6", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tSSAID\t4caf91d267b8e3ag", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString("android", "STUB\tSSAID\t" + VALID_SSAID, false));
+        assertThrows(IllegalArgumentException.class, () -> new SsaidRule(PACKAGE_NAME, "not-hex"));
     }
 
     @Test
