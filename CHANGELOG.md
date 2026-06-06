@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - SysConfig permission labels (source TODO, 2026-06-06)
+
+- SysConfig permission titles and permission-list rows now show resolved
+  permission labels next to raw permission names.
+- Missing, blank, and redundant permission labels fall back to the raw
+  permission name.
+
 ### Fixed - SysConfig named actor conversion (source audit, 2026-06-06)
 
 - SysConfig named-actor conversion now preserves every namespace while copying
