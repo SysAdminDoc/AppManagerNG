@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Component rule status parsing (source audit, 2026-06-06)
+
+- Component rule imports now reject unknown status tokens instead of accepting
+  arbitrary strings as applied component states.
+- Legacy `true`/`false`, IFW, disable/enable, and `unblocked` status tokens
+  continue to parse, including provider-specific IFW-to-disable remapping.
+
 ### Fixed - Rule import boolean parsing (source audit, 2026-06-06)
 
 - Rule imports now strictly accept only `true` or `false` boolean tokens for
