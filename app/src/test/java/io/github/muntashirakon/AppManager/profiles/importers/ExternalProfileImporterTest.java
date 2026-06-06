@@ -190,6 +190,9 @@ public class ExternalProfileImporterTest {
         assertFalse(ExternalProfileImporter.looksLikePackageName("com.foo;rm"));
         assertFalse(ExternalProfileImporter.looksLikePackageName("noperiod"));
         assertFalse(ExternalProfileImporter.looksLikePackageName(".leadingdot"));
+        assertFalse(ExternalProfileImporter.looksLikePackageName("trailingdot."));
+        assertFalse(ExternalProfileImporter.looksLikePackageName("com..emptysegment"));
+        assertFalse(ExternalProfileImporter.looksLikePackageName("com.1starts.withdigit"));
         assertFalse(ExternalProfileImporter.looksLikePackageName("1com.starts.with.digit"));
     }
 }

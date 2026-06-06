@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - External profile package-name validation (source audit, 2026-06-06)
+
+- External Canta, UAD-NG, and Hail profile imports now reject package-name
+  candidates with empty segments, trailing dots, or digit-starting segments
+  instead of accepting malformed names from imported text or JSON.
+
 ### Fixed - Logcat search criteria parsing (source audit, 2026-06-06)
 
 - Logcat plain-text searches now match log message output as well as tags.
