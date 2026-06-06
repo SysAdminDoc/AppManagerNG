@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Foreground tracker overlay hardening (research P1/#1848, 2026-06-06)
+
+- The accessibility tracker overlay now uses the accessibility-service overlay
+  window type on supported Android versions instead of the application-overlay
+  type.
+- Tracker overlay layout no longer uses no-limit bounds; expanded and iconified
+  states clamp size and centered offsets to display margins.
+- Layout updates are throttled, and repeated `WindowManager` add/update
+  failures now disable the tracker with a visible explanation instead of
+  letting the accessibility service keep retrying indefinitely.
+
 ### Added - Release SBOM and attestations (research P2, 2026-06-06)
 
 - Release verification now emits a CycloneDX 1.6 aggregate SBOM from checked
