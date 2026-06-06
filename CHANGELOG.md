@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Release SBOM and attestations (research P2, 2026-06-06)
+
+- Release verification now emits a CycloneDX 1.6 aggregate SBOM from checked
+  Gradle lockfiles and validates the generated component/dependency shape.
+- Tag releases now upload the versioned `.cdx.json` SBOM beside the APK and
+  `.sha256` assets.
+- The release workflow now publishes GitHub artifact attestations for APK
+  provenance and the CycloneDX SBOM predicate attached to those APK subjects.
+
 ### Added - Gradle dependency verification and locks (research P1, 2026-06-06)
 
 - Gradle builds now use strict dependency locking for project configurations and
