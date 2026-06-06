@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 57 source-audit closure for Intent flattened string
-  extra parsing.
+- Result: completed Cycle 58 source-TODO closure for File properties shared-UID
+  label display.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Intent flattened string extra parser hardening and its verification target.
-- Code: `IntentCompat.unflattenFromString()` now parses flattened lines with
-  bounded tab splits, preserving empty string extra values and string extra
-  values containing tabs while malformed non-null extras without values still
-  fail closed.
+  File properties shared-UID label aggregation and its verification target.
+- Code: File Manager owner/group selection now aggregates all distinct package
+  labels sharing an app UID and reuses the same combined description for cached
+  app GID choices.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
