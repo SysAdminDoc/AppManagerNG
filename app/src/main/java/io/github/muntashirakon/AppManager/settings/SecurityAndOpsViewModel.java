@@ -170,6 +170,10 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
         publishLiveData(mAuthenticationStatus, status);
     }
 
+    public void timeoutStartupInitAttempt(long attemptId, @Nullable String detail) {
+        timeoutStartupInitAttempt(attemptId, System.currentTimeMillis(), detail);
+    }
+
     void timeoutStartupInitAttempt(long attemptId, long nowMillis, @Nullable String detail) {
         synchronized (mStartupInitLock) {
             StartupInitState nextState = mStartupInitSnapshot.timeout(attemptId, nowMillis, detail);
@@ -179,7 +183,7 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
         }
     }
 
-    void cancelStartupInitAttempt(long attemptId, @Nullable String detail) {
+    public void cancelStartupInitAttempt(long attemptId, @Nullable String detail) {
         synchronized (mStartupInitLock) {
             StartupInitState nextState = mStartupInitSnapshot.cancel(attemptId, detail);
             if (nextState != mStartupInitSnapshot) {

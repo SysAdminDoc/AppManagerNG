@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Startup recovery controls (research P1/#1825/#1829, 2026-06-06)
+
+- Splash startup now shows stage-specific mode initialization text instead of a
+  generic initializing message while root, Shizuku, ADB, wireless debugging, or
+  permission setup is in progress.
+- Stalled startup attempts now time out through the current attempt state and
+  expose focused recovery actions for retry, Mode settings, Mode Doctor,
+  support info sharing, local-network permission, Shizuku permission, and
+  wireless-pairing cancellation.
+- Focused JVM coverage pins startup view-state mapping, timeout/cancel wrappers,
+  stale-attempt behavior, and reducer recovery actions; manual startup
+  walkthroughs remain device-gated.
+
 ### Added - Quick assist component actions (research P2/#1973, 2026-06-06)
 
 - Quick assist now discovers service start/stop and declared-action receiver

@@ -53,6 +53,7 @@
             android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/startup_progress"
             style="@style/Widget.AppTheme.CircularProgressIndicator.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -61,6 +62,16 @@
             android:importantForAccessibility="no"
             app:indicatorSize="32dp"
             app:trackThickness="3dp" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/startup_recovery_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/premium_space_20"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
