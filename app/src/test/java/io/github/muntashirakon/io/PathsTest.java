@@ -121,6 +121,20 @@ public class PathsTest {
     }
 
     @Test
+    public void getLastPathSegmentOrNull() {
+        assertNull(Paths.getLastPathSegmentOrNull(""));
+        assertNull(Paths.getLastPathSegmentOrNull("/"));
+        assertNull(Paths.getLastPathSegmentOrNull("//"));
+        assertNull(Paths.getLastPathSegmentOrNull("///"));
+        assertNull(Paths.getLastPathSegmentOrNull("a/b/c/.."));
+        assertNull(Paths.getLastPathSegmentOrNull("a/b/c/../"));
+        assertEquals("a", Paths.getLastPathSegmentOrNull("a/"));
+        assertEquals("c", Paths.getLastPathSegmentOrNull("a/b/c"));
+        assertEquals("c", Paths.getLastPathSegmentOrNull("a/b/c/."));
+        assertEquals("d", Paths.getLastPathSegmentOrNull("a/b/c/../d"));
+    }
+
+    @Test
     public void removeLastPathSegment() {
         assertEquals("", Paths.removeLastPathSegment(""));
         assertEquals("/", Paths.removeLastPathSegment("/"));

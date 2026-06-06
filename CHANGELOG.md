@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Nullable last path segment helper (source TODO, 2026-06-06)
+
+- `Paths` now exposes `getLastPathSegmentOrNull()` for callers that need to
+  distinguish invalid or root-only paths from an empty final segment.
+- The existing `getLastPathSegment()` API keeps its non-null compatibility
+  contract by returning an empty string when no segment exists.
+
 ### Added - Certificate extension descriptions (source TODO, 2026-06-06)
 
 - Signing-certificate details now include concise descriptions for known
