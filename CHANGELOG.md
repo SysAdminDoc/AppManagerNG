@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Certificate extension descriptions (source TODO, 2026-06-06)
+
+- Signing-certificate details now include concise descriptions for known
+  critical and non-critical X.509 extension OIDs.
+- Unknown extension OIDs still render as raw OIDs, and tests require every
+  mapped known OID to carry a description.
+
 ### Fixed - OpenPGP backup provider availability (source FIXME, 2026-06-06)
 
 - OpenPGP backup encryption availability now requires both configured key IDs
