@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
@@ -281,11 +282,10 @@ public class SysConfigActivity extends BaseActivity {
                         sb.append(" None");
                     }
                     for (int i = 0; i < info.packages.length; ++i) {
-                        // TODO Display package labels
                         sb.append("\n- ")
                                 .append("Package")
                                 .append(LangUtils.getSeparatorString())
-                                .append(info.packages[i])
+                                .append(getPackageReference(info.packages[i]))
                                 .append(", Target SDK")
                                 .append(LangUtils.getSeparatorString())
                                 .append(String.valueOf(info.targetSdks[i]));
@@ -312,8 +312,7 @@ public class SysConfigActivity extends BaseActivity {
                         sb.append(" None");
                     }
                     for (String packageName : info.packages) {
-                        // TODO Display package labels
-                        sb.append("\n- ").append(packageName);
+                        sb.append("\n- ").append(getPackageReference(packageName));
                     }
                 }
                 break;
@@ -346,6 +345,29 @@ public class SysConfigActivity extends BaseActivity {
                 holder.subtitle.setVisibility(View.VISIBLE);
                 holder.subtitle.setText(sb);
             } else holder.subtitle.setVisibility(View.GONE);
+        }
+
+        @NonNull
+        private CharSequence getPackageReference(@NonNull String packageName) {
+            try {
+                ApplicationInfo applicationInfo = mPm.getApplicationInfo(packageName, 0);
+                return formatPackageReference(packageName, applicationInfo.loadLabel(mPm));
+            } catch (PackageManager.NameNotFoundException e) {
+                return packageName;
+            }
+        }
+
+        @VisibleForTesting
+        @NonNull
+        static CharSequence formatPackageReference(@NonNull String packageName, @Nullable CharSequence packageLabel) {
+            if (packageLabel == null) {
+                return packageName;
+            }
+            String label = packageLabel.toString().trim();
+            if (label.isEmpty() || label.equals(packageName)) {
+                return packageName;
+            }
+            return label + " (" + packageName + ")";
         }
 
         public static class ViewHolder extends RecyclerView.ViewHolder {

@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 58 source-TODO closure for File properties shared-UID
-  label display.
+- Result: completed Cycle 59 source-TODO closure for SysConfig associated
+  package label display.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  File properties shared-UID label aggregation and its verification target.
-- Code: File Manager owner/group selection now aggregates all distinct package
-  labels sharing an app UID and reuses the same combined description for cached
-  app GID choices.
+  SysConfig associated-package label display and its verification target.
+- Code: SysConfig carrier associated-app and allow-association rows now show
+  resolved app labels as `Label (package)` while preserving raw package-name
+  fallbacks when labels are missing or redundant.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.sysconfig.SysConfigActivityTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
