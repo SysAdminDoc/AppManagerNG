@@ -25,6 +25,14 @@ public class AndroidBackupHeaderTest {
     }
 
     @Test
+    public void parseCompressionFlagAcceptsOnlyDefinedValues() throws Exception {
+        assertEquals(false, AndroidBackupHeader.parseCompressionFlag(" 0 "));
+        assertEquals(true, AndroidBackupHeader.parseCompressionFlag("1"));
+        assertThrows(IOException.class, () -> AndroidBackupHeader.parseCompressionFlag("2"));
+        assertThrows(IOException.class, () -> AndroidBackupHeader.parseCompressionFlag("-1"));
+    }
+
+    @Test
     public void hexToByteArray_roundTripsHeaderBytes() {
         byte[] data = {0x00, 0x0f, (byte) 0xa0, (byte) 0xff};
 

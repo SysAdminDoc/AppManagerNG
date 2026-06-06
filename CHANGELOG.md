@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - ADB backup compression flag parsing (source audit, 2026-06-06)
+
+- ADB backup header parsing now rejects compression flag values other than `0`
+  or `1` as `IOException` header failures instead of treating every non-zero
+  integer as compressed data.
+- Valid whitespace-padded `0` and `1` compression flag values continue to parse
+  normally.
+
 ### Fixed - ADB backup numeric header parsing (source audit, 2026-06-06)
 
 - ADB backup header parsing now reports malformed or overflowing backup version,
