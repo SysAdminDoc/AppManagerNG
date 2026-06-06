@@ -74,8 +74,9 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include SysConfig permission label
-  display, SysConfig named-actor conversion hardening, SysConfig
+- Source-backed 2026-06-06 audit closures now include APKS duplicate split
+  validation, SysConfig permission label display, SysConfig named-actor
+  conversion hardening, SysConfig
   associated-package label display, File properties shared-UID label display,
   intent flattened string empty/tab extra parsing, Finder matched result
   evidence display, ADB backup header hex validation, split APK chooser type
