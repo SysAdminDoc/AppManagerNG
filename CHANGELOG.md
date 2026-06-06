@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup archive filename filtering (source audit, 2026-06-06)
+
+- Backup restore and verify file discovery now accepts only generated archive
+  filenames for source, data, and keystore payloads instead of broad prefix
+  matches.
+- Source and keystore payloads must be split tar-family archives, while data
+  payloads may also be the exact ADB `.ab` export file.
+
 ### Fixed - ADB backup category path parsing (source audit, 2026-06-06)
 
 - ADB backup extraction now rejects category-only or otherwise malformed entry

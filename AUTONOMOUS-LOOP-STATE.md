@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 94 source-audit closure for ADB backup category path
+- Result: completed Cycle 95 source-audit closure for backup archive filename
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  ADB backup category path hardening and its verification target.
-- Code: ADB backup extraction now rejects category-only or otherwise malformed
-  entry paths as `IOException` import failures instead of leaking array-index
-  errors, while preserving valid category path mapping into the App Manager
-  backup archive layout.
+  backup archive filename filtering and its verification target.
+- Code: backup restore and verify file discovery now accepts only generated
+  archive filenames for source, data, and keystore payloads instead of broad
+  prefix matches; source and keystore payloads must be split tar-family
+  archives, while data payloads may also be the exact ADB `.ab` export file.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupExtractorTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
