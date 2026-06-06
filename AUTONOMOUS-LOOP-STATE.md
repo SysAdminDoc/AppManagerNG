@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 26 source-FIXME closure for data-only split APK
-  reinstall fallback.
+- Result: completed Cycle 27 source-FIXME closure for APKS export split source
+  fallback.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  main-list reinstall fallback fix and its verification target.
-- Code: `MainRecyclerAdapter` now launches the installer from
-  `ApkSource.getApkSource(ApplicationInfo)` for readable data-only APK sources,
-  preserving split APK metadata through `ApplicationInfoApkSource` instead of
-  sending only `info.publicSourceDir` as a raw file URI.
+  split-export fallback fix and its verification target.
+- Code: `SplitApkExporter` now builds a de-duplicated APK source set from the
+  base APK, explicit `splitPublicSourceDirs`, and sibling `.apk` files in the
+  package source directory, while keeping the old `/data/app` shared-directory
+  guard.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainRecyclerAdapterReinstallIntentTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.splitapk.SplitApkExporterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

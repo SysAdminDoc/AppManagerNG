@@ -733,6 +733,27 @@ links touched by the edit.
   - Verify: passed 2026-06-06:
     `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainRecyclerAdapterReinstallIntentTest`.
 
+- [x] P2 - Fall back to package-directory splits during APKS export
+  - Why: `SplitApkExporter` trusted `ApplicationInfo.splitPublicSourceDirs`,
+    but the source already carried a FIXME that this path does not work for some
+    disabled apps. The adjacent `ApkFile` resolver already falls back to sibling
+    APK files in the package source directory when split paths are unavailable.
+  - Evidence URL or file:line:
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/splitapk/SplitApkExporter.java:117-120`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/apk/ApkFile.java:368-381`.
+  - Touches: `SplitApkExporter` and focused split-export source enumeration
+    tests.
+  - Shipped 2026-06-06: APKS export now adds the base APK, explicit
+    `splitPublicSourceDirs`, and sibling `.apk` files from the base APK's
+    package directory into one de-duplicated source set. The old `/data/app`
+    guard remains so legacy shared app directories are not swept.
+  - Acceptance: packages with explicit split paths export the same APK set
+    without duplicates; packages whose split paths are absent still include
+    sibling split APKs from their package directory; unrelated non-APK files are
+    ignored.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.splitapk.SplitApkExporterTest`.
+
 ### Researcher Queue (Cycle 6 - 2026-06-05)
 
 - [x] 🔬 `installer-mode-recovery-action-gap-refresh-2026-06-05` - rechecked
