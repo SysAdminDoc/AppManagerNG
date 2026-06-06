@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
@@ -211,20 +210,19 @@ public class UriManager {
         @NonNull
         public static UriGrant unflattenFromString(@NonNull String string) {
             Objects.requireNonNull(string);
-            StringTokenizer tokenizer = new StringTokenizer(string, ",");
-            int sourceUserId = Integer.parseInt(tokenizer.nextElement().toString());
-            int targetUserId = Integer.parseInt(tokenizer.nextElement().toString());
-            int userHandle = Integer.parseInt(tokenizer.nextElement().toString());
-            String sourcePkg = tokenizer.nextElement().toString();
-            String targetPkg = tokenizer.nextElement().toString();
-            boolean prefix = Boolean.parseBoolean(tokenizer.nextElement().toString());
-            int modeFlags = Integer.parseInt(tokenizer.nextElement().toString());
-            long createdTime = Long.parseLong(tokenizer.nextElement().toString());
-            StringBuilder uriString = new StringBuilder(tokenizer.nextElement().toString());
-            while (tokenizer.hasMoreElements()) {
-                uriString.append(",").append(tokenizer.nextElement().toString());
+            String[] parts = string.split(",", 9);
+            if (parts.length < 9) {
+                throw new IllegalArgumentException("Invalid URI grant format.");
             }
-            Uri uri = Uri.parse(uriString.toString());
+            int sourceUserId = Integer.parseInt(parts[0]);
+            int targetUserId = Integer.parseInt(parts[1]);
+            int userHandle = Integer.parseInt(parts[2]);
+            String sourcePkg = parts[3];
+            String targetPkg = parts[4];
+            boolean prefix = Boolean.parseBoolean(parts[5]);
+            int modeFlags = Integer.parseInt(parts[6]);
+            long createdTime = Long.parseLong(parts[7]);
+            Uri uri = Uri.parse(parts[8]);
             return new UriGrant(sourceUserId, targetUserId, userHandle, sourcePkg, targetPkg, uri,
                     prefix, modeFlags, createdTime);
         }
