@@ -634,7 +634,7 @@ links touched by the edit.
 
 ### Cycle 6 Promoted Items (2026-06-05)
 
-- [ ] P1 - Add a splash mode-initialization watchdog and recovery path
+- [x] P1 - Add a splash mode-initialization watchdog and recovery path
   - Why: upstream reports indefinite "Initializing" splash hangs around wireless
     debugging and ROM permission toggles. NG sets the splash state to
     initializing, then posts auth status only after migration and `Ops.init()`
@@ -648,13 +648,20 @@ links touched by the edit.
   - Touches: `SplashActivity`, `SecurityAndOpsViewModel`, `Ops` init status
     reporting, Mode Doctor/settings entry points, startup strings, stale-callback
     guards, and startup tests.
+  - Shipped 2026-06-06: startup now has immutable attempt state, ViewModel-owned
+    attempt ids, stale-status rejection, visible Splash stage text, a 45-second
+    current-attempt timeout, and recovery buttons for retry, mode settings, Mode
+    Doctor, support bundle sharing, local-network permission, Shizuku
+    permission, and wireless-pairing cancellation. Root/local late binder
+    callbacks were hardened first so retry churn does not crash the bind wrapper.
   - Acceptance: startup exposes meaningful init stages, times out a stalled
     mode probe, offers retry/safe-mode-switch/diagnostics actions, prevents a
     timed-out callback from overriding a newer attempt, and preserves the normal
     fast path when mode init succeeds.
-  - Verify: fake stalled `Ops.init()` tests, timeout/retry/stale-callback tests,
-    and manual no-root, ADB-with-wireless-debugging-off, Shizuku-stopped, and
-    successful-mode startup walkthroughs.
+  - Verify: focused host verification passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+    Manual no-root, ADB-with-wireless-debugging-off, Shizuku-stopped, and
+    successful-mode startup walkthroughs remain device-gated.
 
 - [x] P2 - Add Running Apps restore-background-operation action
   - Why: Running Apps can apply background-run restrictions but does not reveal a
@@ -748,7 +755,7 @@ links touched by the edit.
 
 ### Cycle 8 Refinements to Existing Open Items (2026-06-06)
 
-- [ ] P1 refinement - Startup watchdog should be an observable init-attempt
+- [x] P1 refinement - Startup watchdog should be an observable init-attempt
   state machine, not a longer hidden splash hold.
   - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
     path**.
@@ -775,6 +782,10 @@ links touched by the edit.
     observable; timeout actions include retry, mode selection, Mode Doctor, and
     support bundle; stale completions from a timed-out attempt cannot mark the
     app authenticated or start `MainActivity`.
+  - Shipped 2026-06-06: `StartupInitState`, `SecurityAndOpsViewModel`, and
+    `SplashActivity` now implement this observable attempt model and render the
+    recovery actions in the authentication content instead of extending the
+    AndroidX system splash hold.
   - Verify additions: JVM tests for timeout transition, retry token rollover,
     stale callback rejection, terminal-status passthrough, and stage label
     mapping; manual walkthroughs remain no-root, Shizuku-stopped, ADB
@@ -861,7 +872,7 @@ links touched by the edit.
 
 ### Cycle 9 Promoted / Refined Items (2026-06-06)
 
-- [ ] P1 - Add a pure startup init-state reducer before wiring the splash
+- [x] P1 - Add a pure startup init-state reducer before wiring the splash
   watchdog UI.
   - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
     path**.
@@ -898,7 +909,8 @@ links touched by the edit.
     and Mode Doctor/support bundle.
   - Verify: `StartupInitStateTest` for reducer transitions, stale-event
     rejection, retry token rollover, timeout action selection, local-network
-    permission state, and pairing cancel state before Activity wiring.
+    permission state, and pairing cancel state before Activity wiring. Shipped
+    2026-06-06 as part of the startup watchdog host-state foundation.
 
 - [x] P1 - Harden root/local service late binder callbacks before startup
   retry loops depend on them.
@@ -1162,7 +1174,7 @@ links touched by the edit.
 
 ### Cycle 15 Next Implementation Slice (2026-06-06)
 
-- [ ] P1 - Wire startup init state into visible Splash recovery controls.
+- [x] P1 - Wire startup init state into visible Splash recovery controls.
   - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
     path** and the Cycle 8 startup-state refinement.
   - Why: `StartupInitState` and `SecurityAndOpsViewModel` now expose attempt,
@@ -1178,9 +1190,18 @@ links touched by the edit.
     recovery actions for stalled root/Shizuku/ADB/wireless-pairing attempts;
     stale callbacks from older attempts cannot launch `MainActivity`; successful
     startup remains visually unchanged apart from richer progress text.
-  - Verify target: focused `StartupInitStateTest` /
-    `SecurityAndOpsViewModelTest` coverage plus `SplashActivity` resource/Java
-    compile; manual no-root, Shizuku-stopped, ADB-wireless-off, local-network
+  - Shipped 2026-06-06: `SplashActivity` now observes
+    `startupInitState()`, maps it through `StartupInitUiState`, updates the
+    authentication text with the current init stage, schedules the current
+    attempt timeout, hides progress on terminal timeout/cancel/failure states,
+    and renders only the recovery buttons exposed by the current attempt.
+    Mode settings and Mode Doctor deep links authenticate the already-unlocked
+    user before leaving Splash; support bundle sharing, Shizuku/local-network
+    permission prompts, retry, and wireless-pairing cancellation reuse existing
+    app flows.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+    Manual no-root, Shizuku-stopped, ADB-wireless-off, local-network
     permission, and successful startup walkthroughs remain device-gated.
 
 *Research conducted 2026-06-03. Items below are new - not duplicates of Existing
@@ -1316,15 +1337,15 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 15 - visible quick-assist component actions on 2026-06-06.
+Cycle 16 - visible Splash startup recovery controls on 2026-06-06.
 
 ### Current Focus
 
-Continue from the startup watchdog UI row. The startup attempt state and
-ViewModel stream now exist; the next pass should make that state visible in
-`SplashActivity` and attach retry, mode-selection, diagnostics, support-bundle,
-local-network, Shizuku-permission, and pairing-cancel recovery controls where
-the reducer exposes those actions.
+Continue from the next host-verifiable supply-chain row:
+**P1 - Add Gradle dependency verification and dependency locking**. Start by
+checking current Gradle version support, existing dependency metadata, lockfile
+presence, and CI/build script constraints before generating any large metadata
+artifacts.
 
 ### Important Findings So Far
 
@@ -1392,24 +1413,30 @@ the reducer exposes those actions.
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
 - Assistant component-action focused verification passed:
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
+- Startup Splash recovery focused verification passed:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+- `SplashActivity` now observes `StartupInitState`, shows stage-specific text
+  in the authentication layout, schedules current-attempt timeouts, and renders
+  recovery buttons for retry, mode settings, Mode Doctor, support bundle,
+  local-network permission, Shizuku permission, and pairing cancel.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Inspect `SplashActivity` and its authentication layout to find the existing
-   initializing/status text and button surfaces.
-2. Bind `SecurityAndOpsViewModel.startupInitState()` into `SplashActivity`,
-   update visible stage text, and render recovery buttons only from the current
-   attempt's `StartupInitState.RecoveryAction` set.
-3. Add focused tests for the view-state mapping and stale-attempt behavior, then
-   compile the full debug Java/resources path.
+1. Inspect Gradle dependency verification and locking support in the current
+   wrapper/build scripts.
+2. Identify the narrowest metadata/lockfile shape that covers build logic,
+   app/test/benchmark dependencies, plugins, Google Maven, Maven Central, and
+   JitPack without committing local cache noise.
+3. Add/update maintainer docs and run a focused Gradle verification command
+   before deciding whether full lock generation is safe in this cycle.
 
 ### Unprocessed Leads
 
-- Startup visible watchdog controls: timeout clock source, action buttons,
-  Mode Doctor/support-bundle routing, and Activity text-state mapping.
+- Dependency verification metadata and lockfiles for Gradle supply-chain drift
+  protection.
 - Android 17 local-network permission timeout diagnostics for ADB and wireless
   pairing flows.
 - Manual Android assist invocation for the shipped service/broadcast quick
@@ -1417,18 +1444,15 @@ the reducer exposes those actions.
 
 ### Files Still To Inspect
 
-- `app/src/main/java/io/github/muntashirakon/AppManager/main/SplashActivity.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModel.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/settings/StartupInitState.java`
-- `app/src/main/res/layout/activity_splash.xml`
-- `app/src/main/res/values/strings.xml`
-- `app/src/test/java/io/github/muntashirakon/AppManager/settings/StartupInitStateTest.java`
-- `app/src/test/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModelTest.java`
+- `settings.gradle`
+- `build.gradle`
+- `app/build.gradle`
+- `benchmark/build.gradle`
+- `.github/workflows/dependency-scan.yml`
+- `docs/distribution/`
 
 ### Searches Still To Run
 
-- `rg -n "startupInitState|StartupInitState|setModeOfOps|authenticationStatus|initializing|SplashActivity" app/src/main/java app/src/test app/src/main/res`
-- `rg -n "ModeDoctor|SupportInfoBundle|REQUEST_LOCAL_NETWORK|REQUEST_SHIZUKU|pairing|cancel" app/src/main/java/io/github/muntashirakon/AppManager app/src/test/java`
-- `rg -n "STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED|STATUS_SHIZUKU_PERMISSION_REQUIRED|STATUS_PAIRING_REQUIRED|STATUS_FAILURE|STATUS_SUCCESS" app/src/main/java app/src/test`
-- Web: Android local-network permission and AndroidX splash guidance if the
-  visible recovery mapping needs refreshed wording.
+- `rg -n "dependencyVerification|verification-metadata|dependencyLocking|lockMode|write-locks|gradle.lockfile|JitPack|mavenCentral|google\\(" .`
+- `rg -n "dependencyCheck|dependency-review|release|attest|sha256|SBOM" .github build.gradle settings.gradle docs`
+- `Get-ChildItem -Recurse -Filter gradle.lockfile`

@@ -5,12 +5,20 @@ package io.github.muntashirakon.AppManager.main;
 import static io.github.muntashirakon.AppManager.BaseActivity.ASKED_PERMISSIONS;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.app.KeyguardManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
 import android.view.Menu;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -19,13 +27,16 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.view.menu.MenuBuilder;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.DynamicColors;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,16 +44,23 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.adb.AdbPairingService;
 import io.github.muntashirakon.AppManager.compat.BiometricAuthenticatorsCompat;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreActivity;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModel;
+import io.github.muntashirakon.AppManager.settings.SettingsActivity;
+import io.github.muntashirakon.AppManager.settings.StartupInitState;
+import io.github.muntashirakon.AppManager.settings.StartupInitUiState;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+import io.github.muntashirakon.io.Path;
 
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
@@ -50,8 +68,21 @@ public class SplashActivity extends AppCompatActivity {
 
     @Nullable
     private TextView mStateNameView;
+    @Nullable
+    private CircularProgressIndicator mStartupProgressView;
+    @Nullable
+    private LinearLayoutCompat mRecoveryActionsView;
     private SecurityAndOpsViewModel mViewModel;
     private BiometricPrompt mBiometricPrompt;
+    private final Handler mStartupInitHandler = new Handler(Looper.getMainLooper());
+    private long mStartupInitTimeoutAttemptId;
+    private long mDisplayedStartupAttemptId;
+    private final Runnable mStartupInitTimeoutRunnable = () -> {
+        if (mViewModel != null && mStartupInitTimeoutAttemptId > 0) {
+            mViewModel.timeoutStartupInitAttempt(mStartupInitTimeoutAttemptId,
+                    getString(R.string.startup_init_timeout_detail));
+        }
+    };
 
     private final ActivityResultLauncher<Intent> mKeyStoreActivity = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -76,6 +107,8 @@ public class SplashActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.version)).setText(String.format(Locale.ROOT, "%s (%d)",
                 BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE));
         mStateNameView = findViewById(R.id.state_name);
+        mStartupProgressView = findViewById(R.id.startup_progress);
+        mRecoveryActionsView = findViewById(R.id.startup_recovery_actions);
         if (Ops.isAuthenticated()) {
             Log.d(TAG, "Already authenticated.");
             startActivity(new Intent(this, MainActivity.class));
@@ -104,6 +137,13 @@ public class SplashActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
+    @CallSuper
+    @Override
+    protected void onDestroy() {
+        mStartupInitHandler.removeCallbacks(mStartupInitTimeoutRunnable);
+        super.onDestroy();
+    }
+
     private void doAuthenticate() {
         mViewModel = new ViewModelProvider(this).get(SecurityAndOpsViewModel.class);
         mBiometricPrompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
@@ -126,6 +166,7 @@ public class SplashActivity extends AppCompatActivity {
                     }
                 });
         Log.d(TAG, "Waiting to be authenticated.");
+        mViewModel.startupInitState().observe(this, this::bindStartupInitState);
         mViewModel.authenticationStatus().observe(this, status -> {
             switch (status) {
                 case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
@@ -232,5 +273,147 @@ public class SplashActivity extends AppCompatActivity {
             return true;
         }
         return false;
+    }
+
+    private void bindStartupInitState(@Nullable StartupInitState state) {
+        if (state == null) {
+            return;
+        }
+        mDisplayedStartupAttemptId = state.getAttemptId();
+        StartupInitUiState uiState = StartupInitUiState.from(state);
+        if (mStateNameView != null) {
+            mStateNameView.setText(uiState.getMessageRes());
+        }
+        if (mStartupProgressView != null) {
+            mStartupProgressView.setVisibility(uiState.isProgressVisible() ? View.VISIBLE : View.GONE);
+        }
+        bindRecoveryActions(uiState.getActions());
+        scheduleStartupInitTimeout(state);
+    }
+
+    private void bindRecoveryActions(@NonNull List<StartupInitUiState.Action> actions) {
+        if (mRecoveryActionsView == null) {
+            return;
+        }
+        mRecoveryActionsView.removeAllViews();
+        if (actions.isEmpty()) {
+            mRecoveryActionsView.setVisibility(View.GONE);
+            return;
+        }
+        int marginTop = getResources().getDimensionPixelSize(R.dimen.premium_space_8);
+        int iconPadding = getResources().getDimensionPixelSize(R.dimen.premium_space_8);
+        mRecoveryActionsView.setVisibility(View.VISIBLE);
+        for (StartupInitUiState.Action action : actions) {
+            MaterialButton button = new MaterialButton(this);
+            button.setText(action.getLabelRes());
+            button.setIconResource(action.getIconRes());
+            button.setIconPadding(iconPadding);
+            button.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
+            button.setCornerRadiusResource(R.dimen.premium_radius_control);
+            button.setAllCaps(false);
+            button.setGravity(Gravity.CENTER);
+            button.setMaxLines(2);
+            button.setOnClickListener(v -> handleStartupRecoveryAction(action.getAction()));
+            LinearLayoutCompat.LayoutParams params = new LinearLayoutCompat.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (mRecoveryActionsView.getChildCount() > 0) {
+                params.topMargin = marginTop;
+            }
+            mRecoveryActionsView.addView(button, params);
+        }
+    }
+
+    private void scheduleStartupInitTimeout(@NonNull StartupInitState state) {
+        mStartupInitHandler.removeCallbacks(mStartupInitTimeoutRunnable);
+        mStartupInitTimeoutAttemptId = 0;
+        if (mViewModel == null || state.getStatus() != StartupInitState.Status.RUNNING
+                || state.getDeadlineAtMillis() <= 0) {
+            return;
+        }
+        mStartupInitTimeoutAttemptId = state.getAttemptId();
+        long delayMillis = state.getDeadlineAtMillis() - System.currentTimeMillis();
+        if (delayMillis <= 0) {
+            mStartupInitTimeoutRunnable.run();
+            return;
+        }
+        mStartupInitHandler.postDelayed(mStartupInitTimeoutRunnable, delayMillis);
+    }
+
+    private void handleStartupRecoveryAction(@NonNull StartupInitState.RecoveryAction action) {
+        switch (action) {
+            case REQUEST_LOCAL_NETWORK_PERMISSION:
+                if (mViewModel != null) {
+                    Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
+                }
+                return;
+            case REQUEST_SHIZUKU_PERMISSION:
+                if (mViewModel != null) {
+                    Ops.requestShizukuPermission(this, mViewModel);
+                }
+                return;
+            case CANCEL_PAIRING:
+                cancelStartupPairing();
+                return;
+            case CHOOSE_MODE:
+                openStartupSettings("mode_of_operations");
+                return;
+            case MODE_DOCTOR:
+                openStartupSettings("privilege_health", "privilege_health_mode_doctor");
+                return;
+            case SUPPORT_BUNDLE:
+                shareSupportInfoBundle();
+                return;
+            case RETRY:
+            default:
+                handleMigrationAndModeOfOp();
+        }
+    }
+
+    private void cancelStartupPairing() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            startService(AdbPairingService.getStopSearchingIntent(this));
+        }
+        if (mViewModel != null && mDisplayedStartupAttemptId > 0) {
+            mViewModel.cancelStartupInitAttempt(mDisplayedStartupAttemptId,
+                    getString(R.string.startup_init_pairing_cancelled_detail));
+        }
+    }
+
+    private void openStartupSettings(@NonNull String... paths) {
+        if (mViewModel != null) {
+            mViewModel.setAuthenticating(false);
+        }
+        Ops.setAuthenticated(this, true);
+        startActivity(SettingsActivity.getSettingsIntent(this, paths));
+        finish();
+    }
+
+    private void shareSupportInfoBundle() {
+        Context appContext = getApplicationContext();
+        Toast.makeText(this, R.string.support_info_bundle_preparing, Toast.LENGTH_SHORT).show();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Path bundlePath = null;
+            try {
+                bundlePath = SupportInfoBundle.writeTextBundle(appContext);
+            } catch (Throwable ignored) {
+            }
+            Path finalBundlePath = bundlePath;
+            ThreadUtils.postOnMainThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (finalBundlePath == null) {
+                    Toast.makeText(this, R.string.support_info_bundle_failed, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                Intent shareIntent = SupportInfoBundle.buildShareIntent(this, finalBundlePath);
+                try {
+                    startActivity(Intent.createChooser(shareIntent,
+                            getString(R.string.support_info_bundle_share_title)));
+                } catch (ActivityNotFoundException | SecurityException e) {
+                    Toast.makeText(this, R.string.no_apps_to_handle, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
     }
 }
