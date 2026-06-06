@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 81 source-audit closure for dynamic shortcut candidate
-  validation.
+- Result: completed Cycle 82 source-audit closure for manifest intent-filter
+  priority hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  dynamic shortcut candidate validation hardening and its verification target.
-- Code: dynamic app action shortcut publishing now skips cached app rows with
-  malformed package names before creating shortcut target models, preserving
-  valid installed-app ranking by recency/open count and the existing action
-  order.
+  manifest intent-filter priority hardening and its verification target.
+- Code: APK manifest parsing now defaults malformed or overflowing
+  `android:priority` values on intent filters to `0` instead of throwing during
+  component inspection, while preserving valid whitespace-padded priorities.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisherTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.parser.ManifestParserTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at

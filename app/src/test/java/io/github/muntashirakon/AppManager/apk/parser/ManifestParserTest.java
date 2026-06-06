@@ -57,6 +57,14 @@ public class ManifestParserTest {
                 "android.support.FILE_PROVIDER_PATHS"), "android.support.FILE_PROVIDER_PATHS");
     }
 
+    @Test
+    public void parseIntentFilterPriorityDefaultsMalformedValues() {
+        assertEquals(0, ManifestParser.parseIntentFilterPriority(null));
+        assertEquals(42, ManifestParser.parseIntentFilterPriority(" 42 "));
+        assertEquals(0, ManifestParser.parseIntentFilterPriority("not-a-number"));
+        assertEquals(0, ManifestParser.parseIntentFilterPriority("999999999999999999999"));
+    }
+
     private static void assertResourceMetadata(List<ManifestMetadata> metadata, ManifestMetadata row, String name) {
         assertNotNull("Missing resource metadata for " + name + "; candidates: "
                 + describeCandidates(metadata, name), row);

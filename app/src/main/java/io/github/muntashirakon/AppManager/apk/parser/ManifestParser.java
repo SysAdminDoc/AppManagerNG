@@ -6,6 +6,7 @@ import android.content.ComponentName;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.reandroid.arsc.chunk.xml.ResXmlAttribute;
 import com.reandroid.arsc.chunk.xml.ResXmlDocument;
@@ -217,9 +218,7 @@ public class ManifestParser {
     private ManifestIntentFilter parseIntentFilter(@NonNull ResXmlElement intentFilterElement) {
         ManifestIntentFilter intentFilter = new ManifestIntentFilter();
         String priorityString = getAttributeValue(intentFilterElement, ATTR_PRIORITY);
-        if (priorityString != null) {
-            intentFilter.priority = Integer.parseInt(priorityString);
-        }
+        intentFilter.priority = parseIntentFilterPriority(priorityString);
         // manifest -> application -> component -> intent-filter -> action|category|data
         Iterator<ResXmlElement> resXmlElementIt = intentFilterElement.getElements();
         String tagName;
@@ -272,6 +271,18 @@ public class ManifestParser {
             }
         }
         return data;
+    }
+
+    @VisibleForTesting
+    static int parseIntentFilterPriority(@Nullable String priorityString) {
+        if (priorityString == null) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(priorityString.trim());
+        } catch (NumberFormatException ignore) {
+            return 0;
+        }
     }
 
     private void collectMetadata(@NonNull ResXmlElement ownerElement, @NonNull String ownerType,
