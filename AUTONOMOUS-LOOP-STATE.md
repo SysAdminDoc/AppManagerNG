@@ -8,16 +8,17 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 22 host-verifiable prep for T21-H Settings adaptive
-  layout gating.
-- Updated: `ROADMAP.md` records the T21-H Settings width-class prep slice and
-  `CHANGELOG.md` records the Unreleased Settings adaptive layout gate change.
-- Code: `SettingsActivity` now gates its existing two-pane layout with
-  `WindowWidthSizeClass.requiresTwoPane(screenWidthDp)` instead of comparing raw
-  display pixels against a pane-width resource. The actual tablet/foldable
-  navigation walkthrough remains device-gated.
+- Result: completed Cycle 23 host-verifiable guardrail for T21-H Main/App
+  Details activity embedding.
+- Updated: `ROADMAP.md` records the T21-H Main/App Details split contract
+  guardrail and `CHANGELOG.md` records the Unreleased split contract test.
+- Code: `MainActivityEmbeddingContractTest` pins the existing
+  `main_activity_splits.xml` MainActivity/AppDetails split pair, placeholder
+  rule, split minimum width, split ratio, finish behavior, locale layout
+  direction, and manifest exposure for the embedded activities. The actual
+  tablet/foldable navigation walkthrough remains device-gated.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.SettingsActivityLayoutModeTest --tests io.github.muntashirakon.AppManager.main.WindowWidthSizeClassTest`.
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainActivityEmbeddingContractTest --tests io.github.muntashirakon.AppManager.main.WindowWidthSizeClassTest`.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
   this host. Do not commit `local.properties`.
@@ -27,10 +28,10 @@ Current branch: `main`
 - Continue this same assigned project.
 - Next roadmap target: continue `T21-H Material 3 Adaptive layouts for tablets /
   large screens`.
-- Start by auditing the existing `main_activity_splits.xml`,
-  `MainSplitPlaceholderActivity`, `MainRecyclerAdapter` App Details launch
-  paths, and any host-testable source guardrails for the MainActivity/AppDetails
-  activity-embedding split.
+- Start by auditing whether any remaining T21-H work can be validated from host
+  tests without changing runtime tablet/foldable navigation. If the remaining
+  T21-H work is only device-gated, move to the next open host-verifiable roadmap
+  item or promote a new source-backed audit slice.
 - Implementation constraint: the roadmap marks the actual wide-screen layout
   restructure as device-gated; do host-verifiable prep only unless the change can
   be validated without claiming tablet/foldable navigation correctness.
