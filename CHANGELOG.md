@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File content MIME detection with mismatched extensions (source FIXME, 2026-06-06)
+
+- File content inspection now prefers full magic-byte matches over the filename
+  extension, so an image or binary payload with a misleading extension no longer
+  inherits the wrong MIME type.
+- Partial archive matches still keep extension-specific bundle MIME types such
+  as APKS when the extension is the stronger signal.
+
 ### Fixed - Dex VFS API-level mount options (source TODO, 2026-06-06)
 
 - Dex-backed virtual file systems now read their smali opcode API level from
