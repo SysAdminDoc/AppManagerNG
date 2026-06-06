@@ -20,11 +20,12 @@ import java.util.concurrent.TimeoutException;
 import io.github.muntashirakon.AppManager.logs.Log;
 
 public class MultithreadedExecutor implements ExecutorService {
+    // Guarded by MultithreadedExecutor.class.
     private static final List<MultithreadedExecutor> sExecutorCache = new ArrayList<>();
 
     @AnyThread
     @NonNull
-    public static MultithreadedExecutor getNewInstance() {
+    public static synchronized MultithreadedExecutor getNewInstance() {
         if (sExecutorCache.size() > 0) {
             // Check if any executor has been shutdown
             for (MultithreadedExecutor executor : sExecutorCache) {
@@ -40,17 +41,21 @@ public class MultithreadedExecutor implements ExecutorService {
     }
 
     @NonNull
-    private ExecutorService mExecutor;
+    private volatile ExecutorService mExecutor;
 
     private MultithreadedExecutor() {
-        mExecutor = Executors.newFixedThreadPool(getThreadCount());
+        mExecutor = createExecutor();
     }
 
     private void renew() {
         if (mExecutor.isTerminated()) {
-            // TODO: 26/5/21 Find a better way to recreate an executor
-            mExecutor = Executors.newFixedThreadPool(getThreadCount());
+            mExecutor = createExecutor();
         }
+    }
+
+    @NonNull
+    private static ExecutorService createExecutor() {
+        return Executors.newFixedThreadPool(getThreadCount());
     }
 
     @Override
