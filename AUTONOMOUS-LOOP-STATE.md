@@ -8,13 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 82 source-audit closure for manifest intent-filter
-  priority hardening.
+- Result: completed Cycle 83 source-audit closure for manifest intent-filter
+  name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  manifest intent-filter priority hardening and its verification target.
-- Code: APK manifest parsing now defaults malformed or overflowing
-  `android:priority` values on intent filters to `0` instead of throwing during
-  component inspection, while preserving valid whitespace-padded priorities.
+  manifest intent-filter name hardening and its verification target.
+- Code: APK manifest parsing now ignores intent-filter action and category
+  children with missing or blank `android:name` values instead of throwing
+  during component inspection, and trims valid names before adding them to the
+  exported manifest model.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.parser.ManifestParserTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
