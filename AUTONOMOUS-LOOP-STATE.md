@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 33 source-TODO closure for logcat shared-UID package
-  attribution.
+- Result: completed Cycle 34 source-TODO closure for changelog inline markup
+  support.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  deterministic shared-UID package attribution behavior and its verification
-  target.
-- Code: `LogLine` now chooses package names through a package-local selector
-  that ignores empty entries, prefers the shortest package name, and breaks
-  equal-length ties lexicographically.
+  changelog inline markup parser behavior and its verification target.
+- Code: `ChangelogItem` now converts documented inline bold, italic, monospace,
+  strikethrough, and markdown-link markup before HTML rendering while keeping
+  existing bracketed HTML aliases.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.LogLineTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.changelog.ChangelogItemTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
