@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent empty primitive arrays (source audit, 2026-06-06)
+
+- Empty `int[]`, `long[]`, and `float[]` extras now round-trip through Activity
+  Interceptor flattened strings as zero-length typed arrays.
+- Empty numeric array payloads are no longer parsed as malformed number values.
+
 ### Fixed - Intent CharSequence extras (source TODO, 2026-06-06)
 
 - Activity Interceptor intent flattening now preserves `CharSequence` extras
