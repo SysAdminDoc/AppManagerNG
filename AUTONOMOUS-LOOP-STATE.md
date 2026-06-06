@@ -8,15 +8,17 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 55 source-audit closure for ADB backup header hex
-  validation.
+- Result: completed Cycle 56 source-TODO closure for Finder matched result
+  evidence display.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  ADB backup header hex validation hardening and its verification target.
-- Code: `AndroidBackupHeader.hexToByteArray()` now rejects null and non-hex
-  header fields with consistent `IllegalArgumentException` failures while
-  preserving byte/hex round-trips and odd-length rejection.
+  Finder matched result evidence row and its verification target.
+- Code: Finder result rows now surface matched permissions, components,
+  trackers, backups, and signing subject lines from the existing filter
+  `TestResult` evidence, with stable de-duplication and compact truncation for
+  long matched-value lists.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`;
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.filters.FinderAdapterTest`
+  (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
