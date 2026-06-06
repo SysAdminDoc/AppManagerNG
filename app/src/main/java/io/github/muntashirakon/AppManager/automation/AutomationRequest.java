@@ -361,6 +361,11 @@ final class AutomationRequest {
                 users.add(userId);
             }
         }
+        for (int userId : users) {
+            if (userId < 0) {
+                throw new IllegalArgumentException("Invalid " + EXTRA_USER + ": " + userId);
+            }
+        }
         if (users.size() != packages.size()) {
             throw new IllegalArgumentException(EXTRA_USERS + " size must match package count");
         }
