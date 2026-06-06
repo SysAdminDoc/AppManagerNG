@@ -9,6 +9,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Activity Interceptor intent flattening now preserves `CharSequence` extras
   such as styled text payloads by serializing their text as string extras.
+- `CharSequence[]` and `ArrayList<CharSequence>` extras are preserved as
+  escaped string array/list extras instead of disappearing from exports.
 - Shell-command export and intent descriptions use the same conversion path, so
   text extras are no longer silently dropped when they are not already `String`.
 
