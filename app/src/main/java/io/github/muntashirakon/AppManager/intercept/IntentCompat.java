@@ -305,6 +305,8 @@ public final class IntentCompat {
             return new Pair<>(TYPE_NULL, null);
         } else if (object instanceof String) {
             return new Pair<>(TYPE_STRING, (String) object);
+        } else if (object instanceof CharSequence) {
+            return new Pair<>(TYPE_STRING, object.toString());
         } else if (object instanceof Integer) {
             return new Pair<>(TYPE_INTEGER, String.valueOf((int) object));
         } else if (object instanceof Long) {

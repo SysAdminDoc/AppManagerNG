@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.SpannableString;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -90,6 +91,29 @@ public class IntentCompatTest {
 
         assertNotNull(parsed);
         assertEquals("alpha\tbeta\tgamma", parsed.getStringExtra("label"));
+    }
+
+    @Test
+    public void flattenToString_roundTripsCharSequenceExtraAsString() {
+        Intent input = new Intent(Intent.ACTION_SEND);
+        input.putExtra(Intent.EXTRA_TEXT, new SpannableString("Styled body"));
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals("Styled body", parsed.getStringExtra(Intent.EXTRA_TEXT));
+    }
+
+    @Test
+    public void flattenToCommand_exportsCharSequenceExtraAsString() {
+        Intent input = new Intent(Intent.ACTION_SEND);
+        input.putExtra(Intent.EXTRA_TEXT, new SpannableString("Styled body"));
+
+        ArrayList<String> args = new ArrayList<>(IntentCompat.flattenToCommand(input));
+
+        assertTrue(args.contains("--es"));
+        assertTrue(args.contains(Intent.EXTRA_TEXT));
+        assertTrue(args.contains("Styled body"));
     }
 
     @Test
