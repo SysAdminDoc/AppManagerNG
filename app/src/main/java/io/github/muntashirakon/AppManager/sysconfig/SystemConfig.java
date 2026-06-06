@@ -2,7 +2,9 @@
 
 package io.github.muntashirakon.AppManager.sysconfig;
 
+import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -34,6 +36,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.misc.SystemProperties;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
 import io.github.muntashirakon.compat.xml.XmlUtils;
 import io.github.muntashirakon.io.IoUtils;
@@ -779,13 +782,7 @@ public class SystemConfig {
                         if (allowFeatures) {
                             String fname = parser.getAttributeValue(null, "name");
                             int fversion = XmlUtils.readIntAttribute(parser, "version", 0);
-                            boolean allowed = true;  // FIXME
-//                            if (!lowRam) {
-//                                allowed = true;
-//                            } else {
-//                            String notLowRam = parser.getAttributeValue(null, "notLowRam");
-//                            allowed = !"true".equals(notLowRam);
-//                            }
+                            boolean allowed = shouldAddFeature(parser, isLowRamDevice());
                             if (fname == null) {
                                 Log.w(TAG, "<" + name + "> without name in " + permFile + " at "
                                         + parser.getPositionDescription());
@@ -1278,6 +1275,16 @@ public class SystemConfig {
         for (String featureName : mUnavailableFeatures) {
             removeFeature(featureName);
         }
+    }
+
+    static boolean shouldAddFeature(@NonNull XmlPullParser parser, boolean lowRam) {
+        return !lowRam || !"true".equals(parser.getAttributeValue(null, "notLowRam"));
+    }
+
+    private static boolean isLowRamDevice() {
+        ActivityManager activityManager = (ActivityManager) ContextUtils.getContext()
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        return activityManager != null && activityManager.isLowRamDevice();
     }
 
     private void addFeature(String name, int version) {
