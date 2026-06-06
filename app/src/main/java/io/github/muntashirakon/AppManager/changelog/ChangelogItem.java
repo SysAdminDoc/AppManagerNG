@@ -9,10 +9,18 @@ import androidx.core.text.HtmlCompat;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // Copyright 2013 Gabriele Mariotti <gabri.mariotti@gmail.com>
 // Copyright 2022 Muntashir Al-Islam
 public class ChangelogItem {
+    private static final Pattern MARKDOWN_LINK = Pattern.compile("\\[([^\\]]+)]\\(([^)]+)\\)");
+    private static final Pattern MARKDOWN_BOLD = Pattern.compile("\\*\\*(.+?)\\*\\*");
+    private static final Pattern MARKDOWN_ITALIC = Pattern.compile("__(.+?)__");
+    private static final Pattern MARKDOWN_MONOSPACE = Pattern.compile("`(.+?)`");
+    private static final Pattern MARKDOWN_STRIKETHROUGH = Pattern.compile("~~(.+?)~~");
+
     @IntDef({HEADER, TITLE, NOTE, NEW, IMPROVE, FIX})
     @Retention(RetentionPolicy.SOURCE)
     public @interface ChangelogType {
@@ -104,8 +112,28 @@ public class ChangelogItem {
 
     @NonNull
     public static CharSequence parseChangeText(@NonNull String changeText) {
-        // TODO: Supported markups **Bold**, __Italic__, `Monospace`, ~~Strikethrough~~, [Link](link_name)
-        changeText = changeText.replaceAll("\\[", "<").replaceAll("\\]", ">");
-        return HtmlCompat.fromHtml(changeText, HtmlCompat.FROM_HTML_MODE_COMPACT);
+        return HtmlCompat.fromHtml(toHtmlMarkup(changeText), HtmlCompat.FROM_HTML_MODE_COMPACT);
+    }
+
+    @NonNull
+    static String toHtmlMarkup(@NonNull String changeText) {
+        String html = replaceMarkdownLinks(changeText);
+        html = MARKDOWN_BOLD.matcher(html).replaceAll("<b>$1</b>");
+        html = MARKDOWN_ITALIC.matcher(html).replaceAll("<i>$1</i>");
+        html = MARKDOWN_MONOSPACE.matcher(html).replaceAll("<tt>$1</tt>");
+        html = MARKDOWN_STRIKETHROUGH.matcher(html).replaceAll("<strike>$1</strike>");
+        return html.replace('[', '<').replace(']', '>');
+    }
+
+    @NonNull
+    private static String replaceMarkdownLinks(@NonNull String changeText) {
+        Matcher matcher = MARKDOWN_LINK.matcher(changeText);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String replacement = "<a href=\"" + matcher.group(2) + "\">" + matcher.group(1) + "</a>";
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 }
