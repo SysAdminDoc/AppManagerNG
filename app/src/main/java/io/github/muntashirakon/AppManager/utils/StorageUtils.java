@@ -4,7 +4,9 @@ package io.github.muntashirakon.AppManager.utils;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
+import android.os.storage.StorageManagerHidden;
 import android.os.storage.StorageVolume;
 import android.os.storage.StorageVolumeHidden;
 import android.text.TextUtils;
@@ -12,6 +14,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
@@ -19,8 +22,10 @@ import androidx.core.content.ContextCompat;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +42,45 @@ public class StorageUtils {
     public static final String TAG = "StorageUtils";
 
     private static final String ENV_SECONDARY_STORAGE = "SECONDARY_STORAGE";
+
+    @WorkerThread
+    @NonNull
+    public static List<String> getWritableStorageVolumeUuids(@NonNull Context context, int userId) {
+        List<String> volumeUuids = new ArrayList<>();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return volumeUuids;
+        }
+        try {
+            StorageVolume[] volumes = StorageManagerCompat.getVolumeList(context,
+                    userId, StorageManagerHidden.FLAG_FOR_WRITE);
+            for (@NonNull StorageVolume volume : volumes) {
+                try {
+                    String uuid = Refine.<StorageVolumeHidden>unsafeCast(volume).getUuid();
+                    if (uuid != null) {
+                        volumeUuids.add(uuid);
+                    }
+                } catch (Throwable e) {
+                    Log.w(TAG, "Failed to read storage volume UUID.", e);
+                }
+            }
+        } catch (SecurityException e) {
+            Log.w(TAG, "Failed to enumerate storage volumes.", e);
+        }
+        return volumeUuids;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public static List<String> getTrimCacheVolumeUuids(@NonNull List<String> storageVolumeUuids) {
+        LinkedHashSet<String> orderedVolumeUuids = new LinkedHashSet<>();
+        orderedVolumeUuids.add(null);
+        for (String uuid : storageVolumeUuids) {
+            if (uuid != null && !uuid.isEmpty()) {
+                orderedVolumeUuids.add(uuid);
+            }
+        }
+        return new ArrayList<>(orderedVolumeUuids);
+    }
 
     @WorkerThread
     @NonNull
