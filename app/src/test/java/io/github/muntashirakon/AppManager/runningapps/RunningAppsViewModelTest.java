@@ -5,21 +5,28 @@ package io.github.muntashirakon.AppManager.runningapps;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.AppOpsManager;
 import android.os.Build;
 
+import java.io.File;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.rules.TemporaryFolder;
 import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 
 @RunWith(RobolectricTestRunner.class)
 public class RunningAppsViewModelTest {
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
     @Test
     public void getBackgroundRunAppOpsForSdk_returnsNoOpsBeforeNougat() {
         assertArrayEquals(new int[0],
@@ -150,5 +157,27 @@ public class RunningAppsViewModelTest {
         assertTrue(details.contains(AppOpsManagerCompat.opToName(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND)));
         assertTrue(details.contains(AppOpsManagerCompat.modeToName(AppOpsManager.MODE_IGNORED)));
         assertTrue(details.contains(AppOpsManagerCompat.modeToName(AppOpsManager.MODE_DEFAULT)));
+    }
+
+    @Test
+    public void getReadableCommandlineFileUsesFirstReadableArgument() throws Exception {
+        File firstReadable = temporaryFolder.newFile("first-readable.bin");
+        File secondReadable = temporaryFolder.newFile("second-readable.bin");
+
+        assertEquals(firstReadable.getAbsolutePath(), RunningAppsViewModel.getReadableCommandlineFile(new String[]{
+                "--flag",
+                firstReadable.getAbsolutePath(),
+                secondReadable.getAbsolutePath(),
+        }));
+    }
+
+    @Test
+    public void getReadableCommandlineFileReturnsNullWithoutReadableFile() {
+        assertNull(RunningAppsViewModel.getReadableCommandlineFile(new String[]{
+                "",
+                null,
+                "--flag",
+                temporaryFolder.getRoot().toPath().resolve("missing.bin").toString(),
+        }));
     }
 }
