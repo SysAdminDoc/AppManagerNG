@@ -145,8 +145,13 @@ public final class ExternalProfileImporter {
      */
     @NonNull
     private static String[] requireNonEmpty(@NonNull String[] packages) throws JSONException {
+        return requireNonEmpty(packages, "Canta preset");
+    }
+
+    @NonNull
+    private static String[] requireNonEmpty(@NonNull String[] packages, @NonNull String source) throws JSONException {
         if (packages.length == 0) {
-            throw new JSONException("Canta preset contained no recognisable package names.");
+            throw new JSONException(source + " contained no recognisable package names.");
         }
         return packages;
     }
@@ -224,7 +229,7 @@ public final class ExternalProfileImporter {
      */
     @VisibleForTesting
     @NonNull
-    static String[] parseHail(@NonNull String text) {
+    static String[] parseHail(@NonNull String text) throws JSONException {
         String[] lines = text.split("\\r?\\n");
         Set<String> packages = new LinkedHashSet<>();
         for (String raw : lines) {
@@ -240,7 +245,7 @@ public final class ExternalProfileImporter {
                 packages.add(candidate);
             }
         }
-        return packages.toArray(new String[0]);
+        return requireNonEmpty(packages.toArray(new String[0]), "Hail tag list");
     }
 
     // -----------------------------------------------------------------------
