@@ -362,9 +362,8 @@ public final class IntentCompat {
             @SuppressWarnings("rawtypes")
             List list = (List) object;
             if (list.isEmpty()) {
-                // Type is lost forever, return null
-                // FIXME: Try to infer type using reflection
-                return new Pair<>(TYPE_NULL, null);
+                // Element type is not recoverable from an empty runtime list.
+                return null;
             }
             Object item = list.get(0);
             if (item instanceof Integer) {
