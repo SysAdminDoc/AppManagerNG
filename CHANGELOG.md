@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Automation user validation (source audit, 2026-06-06)
+
+- Package-targeted automation requests now reject negative user ids from URI,
+  single-extra, and user-list inputs instead of forwarding invalid handles into
+  batch execution.
+- Valid package/user automation still keeps the existing single-user expansion
+  behavior for multi-package requests.
+
 ### Fixed - Automation component validation (source audit, 2026-06-06)
 
 - Automation component actions now reject empty class names, malformed flattened
