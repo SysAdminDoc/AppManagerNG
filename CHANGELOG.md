@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent CharSequence extras (source TODO, 2026-06-06)
+
+- Activity Interceptor intent flattening now preserves `CharSequence` extras
+  such as styled text payloads by serializing their text as string extras.
+- Shell-command export and intent descriptions use the same conversion path, so
+  text extras are no longer silently dropped when they are not already `String`.
+
 ### Fixed - APKS duplicate split validation (source TODO, 2026-06-06)
 
 - APKS/XAPK bundle parsing now tracks manifest `split` names and rejects
