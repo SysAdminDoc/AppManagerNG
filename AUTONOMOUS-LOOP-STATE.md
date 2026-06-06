@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 78 source-audit closure for automation negative
-  user-id validation.
+- Result: completed Cycle 79 source-audit closure for profile URI package
+  override validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  automation user-id validation hardening and its verification target.
-- Code: package-targeted automation requests now reject negative user ids from
-  URI, single-extra, and user-list inputs instead of forwarding invalid handles
-  into batch execution, while preserving valid single-user expansion for
-  multi-package requests.
+  profile URI package override validation hardening and its verification target.
+- Code: profile automation URI `package`, `pkg`, and `packages` query overrides
+  now use the same package-name validator as package-targeted automation
+  requests before writing runtime override JSON, so malformed query values fail
+  closed instead of reaching profile execution.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.automation.AutomationRequestTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
