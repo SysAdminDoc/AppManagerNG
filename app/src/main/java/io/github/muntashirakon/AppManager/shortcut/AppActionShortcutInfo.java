@@ -14,6 +14,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
 
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
+
 public class AppActionShortcutInfo extends ShortcutInfo {
     public static final String ACTION_FREEZE = "freeze";
     public static final String ACTION_FORCE_STOP = "force_stop";
@@ -39,6 +41,7 @@ public class AppActionShortcutInfo extends ShortcutInfo {
     public AppActionShortcutInfo(@NonNull String packageName,
                                  @UserIdInt int userId,
                                  @NonNull @ShortcutAction String action) {
+        validateTarget(packageName, userId, action);
         setId(buildId(packageName, userId, action));
         this.packageName = packageName;
         this.userId = userId;
@@ -57,6 +60,21 @@ public class AppActionShortcutInfo extends ShortcutInfo {
                                  @UserIdInt int userId,
                                  @NonNull @ShortcutAction String action) {
         return "app-action:" + action + ":u=" + userId + ",p=" + packageName;
+    }
+
+    private static void validateTarget(@NonNull String packageName,
+                                       @UserIdInt int userId,
+                                       @NonNull String action) {
+        if (!PackageUtils.validateName(packageName)) {
+            throw new IllegalArgumentException("Invalid package name: " + packageName);
+        }
+        if (userId < 0) {
+            throw new IllegalArgumentException("Invalid user id: " + userId);
+        }
+        if (!ACTION_FREEZE.equals(action) && !ACTION_FORCE_STOP.equals(action)
+                && !ACTION_CLEAR_CACHE.equals(action)) {
+            throw new IllegalArgumentException("Invalid shortcut action: " + action);
+        }
     }
 
     @Override

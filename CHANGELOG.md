@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App action shortcut target validation (source audit, 2026-06-06)
+
+- App action shortcut models now reject malformed package names, negative user
+  ids, and unsupported action strings before building pinned or dynamic shortcut
+  targets.
+- Valid freeze, force-stop, and clear-cache shortcut targets keep the same ID
+  format and intent routing.
+
 ### Fixed - Profile URI package validation (source audit, 2026-06-06)
 
 - Profile automation URI package overrides now use the same package-name
