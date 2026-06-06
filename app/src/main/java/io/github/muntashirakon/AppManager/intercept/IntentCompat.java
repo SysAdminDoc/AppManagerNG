@@ -163,24 +163,18 @@ public final class IntentCompat {
             case TYPE_URI:
                 return Uri.parse(rawValue);
             case TYPE_URI_ARR: {
-                // Split on commas unless they are preceded by an escape.
-                // The escape character must be escaped for the string and
-                // again for the regex, thus four escape characters become one.
-                String[] strings = rawValue.split("(?<!\\\\),");
+                String[] strings = splitEscapedComma(rawValue);
                 Uri[] list = new Uri[strings.length];
                 for (int i = 0; i < list.length; ++i) {
-                    list[i] = Uri.parse(strings[i]);
+                    list[i] = Uri.parse(unescapeComma(strings[i]));
                 }
                 return list;
             }
             case TYPE_URI_AL: {
-                // Split on commas unless they are preceded by an escape.
-                // The escape character must be escaped for the string and
-                // again for the regex, thus four escape characters become one.
-                String[] strings = rawValue.split("(?<!\\\\),");
+                String[] strings = splitEscapedComma(rawValue);
                 List<Uri> list = new ArrayList<>(strings.length);
                 for (String s : strings) {
-                    list.add(Uri.parse(s));
+                    list.add(Uri.parse(unescapeComma(s)));
                 }
                 return list;
             }
@@ -242,18 +236,19 @@ public final class IntentCompat {
                 }
                 return list;
             }
-            case TYPE_STRING_ARR:
-                // Split on commas unless they are preceded by an escape.
-                // The escape character must be escaped for the string and
-                // again for the regex, thus four escape characters become one.
-                return rawValue.split("(?<!\\\\),");
+            case TYPE_STRING_ARR: {
+                String[] strings = splitEscapedComma(rawValue);
+                for (int i = 0; i < strings.length; ++i) {
+                    strings[i] = unescapeComma(strings[i]);
+                }
+                return strings;
+            }
             case TYPE_STRING_AL: {
-                // Split on commas unless they are preceded by an escape.
-                // The escape character must be escaped for the string and
-                // again for the regex, thus four escape characters become one.
-                String[] strings = rawValue.split("(?<!\\\\),");
+                String[] strings = splitEscapedComma(rawValue);
                 ArrayList<String> list = new ArrayList<>(strings.length);
-                Collections.addAll(list, strings);
+                for (String string : strings) {
+                    list.add(unescapeComma(string));
+                }
                 return list;
             }
             case TYPE_BOOLEAN: {
@@ -276,6 +271,24 @@ public final class IntentCompat {
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
         }
+    }
+
+    @NonNull
+    private static String[] splitEscapedComma(@NonNull String rawValue) {
+        // Split on commas unless they are preceded by an escape.
+        // The escape character must be escaped for the string and again for the
+        // regex, thus four escape characters become one.
+        return rawValue.split("(?<!\\\\),", -1);
+    }
+
+    @NonNull
+    private static String escapeComma(@NonNull String value) {
+        return value.replace(",", "\\,");
+    }
+
+    @NonNull
+    private static String unescapeComma(@NonNull String value) {
+        return value.replace("\\,", ",");
     }
 
     @Nullable
@@ -323,17 +336,17 @@ public final class IntentCompat {
         } else if (object instanceof String[]) {
             StringBuilder sb = new StringBuilder();
             String[] list = (String[]) object;
-            if (list.length >= 1) sb.append(list[0].replace(",", "\\,"));
+            if (list.length >= 1) sb.append(escapeComma(list[0]));
             for (int i = 1; i < list.length; ++i) {
-                sb.append(",").append(list[i].replace(",", "\\,"));
+                sb.append(",").append(escapeComma(list[i]));
             }
             return new Pair<>(TYPE_STRING_ARR, sb.toString());
         } else if (object instanceof Uri[]) {
             StringBuilder sb = new StringBuilder();
             Uri[] list = (Uri[]) object;
-            if (list.length >= 1) sb.append(list[0].toString().replace(",", "\\,"));
+            if (list.length >= 1) sb.append(escapeComma(list[0].toString()));
             for (int i = 1; i < list.length; ++i) {
-                sb.append(",").append(list[i].toString().replace(",", "\\,"));
+                sb.append(",").append(escapeComma(list[i].toString()));
             }
             return new Pair<>(TYPE_URI_ARR, sb.toString());
         } else if (object instanceof List) {
@@ -368,16 +381,16 @@ public final class IntentCompat {
                 return new Pair<>(TYPE_FLOAT_AL, sb.toString());
             } else if (item instanceof String) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(((String) item).replace(",", "\\,"));
+                sb.append(escapeComma((String) item));
                 for (int i = 1; i < list.size(); ++i) {
-                    sb.append(",").append(((String) list.get(i)).replace(",", "\\,"));
+                    sb.append(",").append(escapeComma((String) list.get(i)));
                 }
                 return new Pair<>(TYPE_STRING_AL, sb.toString());
             } else if (item instanceof Uri) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(item.toString().replace(",", "\\,"));
+                sb.append(escapeComma(item.toString()));
                 for (int i = 1; i < list.size(); ++i) {
-                    sb.append(",").append(list.get(i).toString().replace(",", "\\,"));
+                    sb.append(",").append(escapeComma(list.get(i).toString()));
                 }
                 return new Pair<>(TYPE_URI_AL, sb.toString());
             }
