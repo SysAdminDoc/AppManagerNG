@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Owner UID parser hardening (source audit, 2026-06-06)
+
+- Owner string parsing now handles malformed formatted UID strings as
+  `IllegalArgumentException` instead of indexing past the end of truncated
+  values.
+- Formatted app, isolated, app-zygote isolated, and system UID forms are parsed
+  before native owner-map lookup when the string clearly uses the `u<user>`
+  grammar, preserving normal named-owner lookup for other names.
+
 ### Fixed - Sysconfig low-RAM feature filtering (source FIXME, 2026-06-06)
 
 - `<feature notLowRam="true">` entries are now skipped on low-RAM devices
