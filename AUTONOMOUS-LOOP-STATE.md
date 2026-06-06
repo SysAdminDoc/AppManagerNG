@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 68 source-audit closure for rule import TSV
-  required-field hardening.
+- Result: completed Cycle 69 source-audit closure for selected-user preference
+  parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  rule import parser hardening and its verification target.
-- Code: rule TSV imports now validate required package/name/type/value fields by
-  position before delegating to rule-specific parsers, so empty tab columns fail
-  closed instead of shifting later tokens into a valid rule shape. URI grant
-  rule imports keep comma-bearing URI payloads intact.
+  selected-user preference parser hardening and its verification target.
+- Code: restored or hand-edited main-list user-filter and global selected-user
+  preference strings now drop negative Android user ids along with empty and
+  non-numeric tokens while preserving valid decimal and decoded hex ids.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
