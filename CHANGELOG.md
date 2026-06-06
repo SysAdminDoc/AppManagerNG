@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - SysConfig associated package labels (source TODO, 2026-06-06)
+
+- SysConfig carrier associated-app and allow-association subtitle rows now show
+  resolved app labels beside package names.
+- Unresolved associated packages still fall back to the raw package name, and
+  package-name labels are not duplicated.
+
 ### Fixed - File properties shared-UID labels (source TODO, 2026-06-06)
 
 - File Manager owner/group selection now shows all distinct app labels sharing a
