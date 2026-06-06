@@ -12,6 +12,7 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -32,6 +33,7 @@ public final class DefaultAppRoleBackupHelper {
     public static final String ROLE_SMS = "android.app.role.SMS";
 
     private static final String TAG = DefaultAppRoleBackupHelper.class.getSimpleName();
+    private static final String PACKAGE_PREFIX = "package:";
     private static final String[] SUPPORTED_ROLES = new String[]{
             ROLE_DIALER,
             ROLE_SMS,
@@ -165,7 +167,8 @@ public final class DefaultAppRoleBackupHelper {
         return holders;
     }
 
-    private static void appendRoleHoldersFromLine(@NonNull List<String> holders, @Nullable String line) {
+    @VisibleForTesting
+    static void appendRoleHoldersFromLine(@NonNull List<String> holders, @Nullable String line) {
         if (isEmpty(line)) {
             return;
         }
@@ -177,6 +180,9 @@ public final class DefaultAppRoleBackupHelper {
                 appendRoleHoldersFromLine(holders, splitValue);
             }
             return;
+        }
+        if (value.startsWith(PACKAGE_PREFIX)) {
+            value = value.substring(PACKAGE_PREFIX.length()).trim();
         }
         if (!isEmpty(value)) {
             holders.add(value);
