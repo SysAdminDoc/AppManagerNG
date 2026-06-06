@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 70 source-audit closure for default-app role holder
+- Result: completed Cycle 71 source-audit closure for Titanium Backup metadata
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  default-app role holder parser hardening and its verification target.
-- Code: backup default-role detection now strips `package:` prefixes from
-  `cmd role get-role-holders` output before comparing holders with the raw
-  backed-up package name, preserving bracketed and plain holder formats.
+  Titanium Backup metadata parser hardening and its verification target.
+- Code: Titanium Backup conversion now parses required `app_version_code`
+  metadata as a long value and reports missing or malformed values through
+  `BackupException` instead of unchecked number-format crashes.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelperTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.convert.TBConverterTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
@@ -29,9 +29,9 @@ Current branch: `main`
 - Next roadmap target: find or promote the next host-verifiable source-backed
   audit slice, since the remaining visible rows are largely device/manual,
   external-submission, or owner-signoff gated.
-- Start by scanning `RESEARCH_REPORT.md`, `docs/audits/`, recent source TODOs,
-  and existing guardrail tests for a small source-backed risk that can be
-  tightened without device-only claims.
+- Start by scanning backup/profile/settings parsers, source TODOs, and existing
+  guardrail tests for a small source-backed risk that can be tightened without
+  device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
