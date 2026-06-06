@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 31 source-FIXME closure for file content MIME
-  detection with mismatched extensions.
+- Result: completed Cycle 32 source-TODO closure for Titanium Backup import
+  timestamp preservation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  `PathContentInfoImpl.fromPath()` detection policy and its verification
+  Titanium Backup filename timestamp parsing behavior and its verification
   target.
-- Code: full magic-byte matches now win over misleading filename extensions,
-  while partial archive matches still keep extension-specific bundle MIME types
-  such as APKS.
+- Code: `TBConverter` now parses `<package>-YYYYMMDD-HHMMSS.properties`
+  timestamps and falls back to file modification time for invalid or
+  nonstandard filenames.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.PathContentInfoImplTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.convert.TBConverterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
