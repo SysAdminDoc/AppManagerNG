@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 28 source-TODO closure for File Manager VFS read-only
-  mount handling.
+- Result: completed Cycle 29 source-TODO closure for main-list split and SAF
+  filter conversion.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  VFS read-only mount contract and its verification target.
-- Code: `FmActivity.Options` now exposes its read-only flag, and
-  `FmViewModel` passes explicit `VirtualFileSystem.MountOptions` when mounting
-  archives so explorer-launched VFS sessions stay read-only while editable VFS
-  entry points can request read/write mounts.
+  main-list split/SAF filter conversion and its verification target.
+- Code: `MainListOptions.getFilterItemFromFlags()` now maps "Apps with splits"
+  and "Apps with SAF" to shared `AppTypeOption` flags, with filter-engine
+  accessors backed by `ApplicationItem` and package split metadata.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainListOptionsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

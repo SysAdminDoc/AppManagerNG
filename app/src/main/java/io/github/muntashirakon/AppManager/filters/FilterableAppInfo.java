@@ -436,6 +436,13 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     }
 
     @Override
+    public boolean hasSplits() {
+        return (mPackageInfo.splitNames != null && mPackageInfo.splitNames.length > 0)
+                || (mApplicationInfo.splitSourceDirs != null && mApplicationInfo.splitSourceDirs.length > 0)
+                || (mApplicationInfo.splitPublicSourceDirs != null && mApplicationInfo.splitPublicSourceDirs.length > 0);
+    }
+
+    @Override
     public boolean usesPlayAppSigning() {
         return PackageUtils.usesPlayAppSigning(mApplicationInfo);
     }
