@@ -13,7 +13,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.text.Spannable;
@@ -40,13 +39,13 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
@@ -762,10 +761,9 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     return;
                 }
                 // Otherwise, try with APK files
-                // FIXME: 1/4/23 Include splits
-                if (Paths.exists(info.publicSourceDir)) {
-                    mActivity.startActivity(PackageInstallerActivity.getLaunchableInstance(mActivity,
-                            Uri.fromFile(new File(info.publicSourceDir))));
+                Intent reinstallIntent = getReinstallApkSourceIntent(mActivity, info);
+                if (reinstallIntent != null) {
+                    mActivity.startActivity(reinstallIntent);
                     return;
                 }
             }
@@ -851,6 +849,14 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         fragment.setOnActionBeginListener(mode -> mActivity.showProgressIndicator(true));
         fragment.setOnActionCompleteListener((mode, failedPackages) -> mActivity.showProgressIndicator(false));
         fragment.show(mActivity.getSupportFragmentManager(), BackupRestoreDialogFragment.TAG);
+    }
+
+    @Nullable
+    static Intent getReinstallApkSourceIntent(@NonNull Context context, @NonNull ApplicationInfo info) {
+        if (info.publicSourceDir == null || !Paths.exists(info.publicSourceDir)) {
+            return null;
+        }
+        return PackageInstallerActivity.getLaunchableInstance(context, ApkSource.getApkSource(info));
     }
 
     @NonNull

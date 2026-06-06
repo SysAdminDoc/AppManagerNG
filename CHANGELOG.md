@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Data-only split APK reinstall fallback (source FIXME, 2026-06-06)
+
+- Main-list data-only reinstall fallback now launches the installer with an
+  `ApplicationInfoApkSource` instead of a base-only file URI.
+- Split APK packages keep their split source metadata when the installer
+  resolves the package for reinstall; missing base APKs still fall through to
+  the existing backup/not-installed handling.
+
 ### Fixed - Main-list selected-user filter persistence (source TODO, 2026-06-06)
 
 - The main app list now restores the selected-user filter from a dedicated
