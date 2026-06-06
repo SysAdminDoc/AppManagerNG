@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 66 source-audit closure for Activity Interceptor
-  pasted header hardening.
+- Result: completed Cycle 67 source-audit closure for URI grant flattened parser
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Activity Interceptor pasted header hardening and its verification target.
-- Code: Activity Interceptor paste parsing now ignores malformed `ROOT` and
-  `USER` header lines instead of throwing when a clipboard export is missing a
-  value or has an invalid user id.
+  URI grant flattened parser hardening and its verification target.
+- Code: persisted URI grant string parsing now uses a bounded nine-field split
+  so URIs containing commas still round-trip, and truncated rows fail with
+  `IllegalArgumentException` instead of tokenizer exhaustion.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.uri.UriManagerTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
