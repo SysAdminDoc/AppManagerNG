@@ -352,6 +352,19 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenRejectsMalformedComponentStatus() {
+        RuleEntry providerRule = RuleEntry.unflattenFromString(PACKAGE_NAME,
+                ".provider\tPROVIDER\t ifw_false ", false);
+        assertEquals(new ComponentRule(PACKAGE_NAME, ".provider", RuleType.PROVIDER,
+                ComponentRule.COMPONENT_TO_BE_DISABLED), providerRule);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".activity\tACTIVITY\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ComponentRule(PACKAGE_NAME, ".activity", RuleType.ACTIVITY, "maybe"));
+    }
+
+    @Test
     public void unflattenUriGrantPreservesCommaUri() {
         UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
                 "com.source", PACKAGE_NAME,

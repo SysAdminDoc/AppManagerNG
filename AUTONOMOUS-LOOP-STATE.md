@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 87 source-audit closure for rule import boolean token
-  hardening.
+- Result: completed Cycle 88 source-audit closure for component rule
+  status-token hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  rule import boolean token hardening and its verification target.
-- Code: rule imports now strictly accept only `true` or `false` boolean tokens
-  for permission, notification-listener, battery-optimization, and Magisk rule
-  fields instead of silently treating malformed values as `false`, while
-  preserving case-insensitive and whitespace-padded valid booleans.
+  component rule status-token hardening and its verification target.
+- Code: component rule imports now reject unknown status tokens instead of
+  accepting arbitrary strings as applied component states, while preserving
+  legacy `true`/`false`, IFW, disable/enable, `unblocked`, and provider-specific
+  IFW-to-disable remapping behavior.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
