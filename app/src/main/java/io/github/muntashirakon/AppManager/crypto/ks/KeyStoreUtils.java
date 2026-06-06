@@ -29,6 +29,7 @@ import android.text.TextUtils;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -78,6 +79,7 @@ import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Locale;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -155,10 +157,26 @@ public class KeyStoreUtils {
         }
         try (InputStream cer = cr.openInputStream(certPath)) {
             cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(cer);
-            // TODO: 22/5/21 Check algorithm type: We only support RSA and EC
-            privateKey = KeyFactory.getInstance(cert.getPublicKey().getAlgorithm()).generatePrivate(spec);
+            privateKey = KeyFactory.getInstance(getSupportedKeyFactoryAlgorithm(
+                    cert.getPublicKey().getAlgorithm())).generatePrivate(spec);
         }
         return new KeyPair(privateKey, cert);
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String getSupportedKeyFactoryAlgorithm(@NonNull String certificateKeyAlgorithm)
+            throws NoSuchAlgorithmException {
+        switch (certificateKeyAlgorithm.toUpperCase(Locale.ROOT)) {
+            case "RSA":
+                return "RSA";
+            case "EC":
+            case "ECDH":
+            case "ECDSA":
+                return "EC";
+            default:
+                throw new NoSuchAlgorithmException("Unsupported key algorithm: " + certificateKeyAlgorithm);
+        }
     }
 
     @NonNull
