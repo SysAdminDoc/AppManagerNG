@@ -806,14 +806,12 @@ public final class PackageUtils {
                     .append("\n")
                     .append(getStyledKeyValue(ctx, R.string.dsa_affine_y, ecPublicKey.getW().getAffineY().toString(), separator));
         }
-        // TODO(5/10/20): Add description for each extensions
         Set<String> critSet = certificate.getCriticalExtensionOIDs();
         if (critSet != null && !critSet.isEmpty()) {
             builder.append("\n").append(getTitleText(ctx, ctx.getString(R.string.critical_exts)));
             for (String oid : critSet) {
-                String oidName = OidMap.getName(oid);
                 builder.append("\n- ")
-                        .append(getPrimaryText(ctx, (oidName != null ? oidName : oid) + separator))
+                        .append(getPrimaryText(ctx, getCertificateExtensionLabel(oid) + separator))
                         .append(getMonospacedText(HexEncoding.encodeToString(certificate.getExtensionValue(oid), false)));
             }
         }
@@ -821,13 +819,21 @@ public final class PackageUtils {
         if (nonCritSet != null && !nonCritSet.isEmpty()) {
             builder.append("\n").append(getTitleText(ctx, ctx.getString(R.string.non_critical_exts)));
             for (String oid : nonCritSet) {
-                String oidName = OidMap.getName(oid);
                 builder.append("\n- ")
-                        .append(getPrimaryText(ctx, (oidName != null ? oidName : oid) + separator))
+                        .append(getPrimaryText(ctx, getCertificateExtensionLabel(oid) + separator))
                         .append(getMonospacedText(HexEncoding.encodeToString(certificate.getExtensionValue(oid), false)));
             }
         }
         return builder;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getCertificateExtensionLabel(@NonNull String oid) {
+        String oidName = OidMap.getName(oid);
+        String description = OidMap.getDescription(oid);
+        String label = oidName != null ? oidName : oid;
+        return description != null ? label + " (" + description + ")" : label;
     }
 
     @NonNull
