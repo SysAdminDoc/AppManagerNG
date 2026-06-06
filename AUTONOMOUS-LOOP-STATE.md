@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 40 source-TODO closure for the multithreaded
-  executor factory.
+- Result: completed Cycle 41 source-TODO closure for OpenPGP backup provider
+  availability.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  executor cache synchronization contract and its verification target.
-- Code: `MultithreadedExecutor.getNewInstance()` now synchronizes shared cache
-  access, publishes renewed delegates through a volatile field, and centralizes
-  fixed-thread-pool creation.
+  provider availability check and its verification target.
+- Code: OpenPGP backup encryption mode availability now requires configured key
+  IDs plus a configured provider package that resolves
+  `OpenPgpApi.SERVICE_INTENT_2`.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.MultithreadedExecutorContractTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.CryptoUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

@@ -3,6 +3,11 @@
 package io.github.muntashirakon.AppManager.backup;
 
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -11,6 +16,7 @@ import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.List;
 
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV2;
 import io.github.muntashirakon.AppManager.crypto.AESCrypto;
@@ -21,6 +27,9 @@ import io.github.muntashirakon.AppManager.crypto.OpenPGPCrypto;
 import io.github.muntashirakon.AppManager.crypto.RSACrypto;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
+
+import org.openintents.openpgp.util.OpenPgpApi;
 
 public class CryptoUtils {
     @StringDef(value = {
@@ -85,8 +94,11 @@ public class CryptoUtils {
         switch (mode) {
             case MODE_OPEN_PGP:
                 String keyIds = Prefs.Encryption.getOpenPgpKeyIds();
-                // FIXME(1/10/20): Check for the availability of the provider
-                return !TextUtils.isEmpty(keyIds);
+                if (TextUtils.isEmpty(keyIds)) {
+                    return false;
+                }
+                return isOpenPgpProviderAvailable(ContextUtils.getContext(),
+                        Prefs.Encryption.getOpenPgpProvider());
             case MODE_AES:
                 try {
                     return KeyStoreManager.getInstance().containsKey(AESCrypto.AES_KEY_ALIAS);
@@ -110,5 +122,22 @@ public class CryptoUtils {
             default:
                 return false;
         }
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    static boolean isOpenPgpProviderAvailable(@NonNull Context context, @NonNull String providerPackage) {
+        if (TextUtils.isEmpty(providerPackage)) {
+            return false;
+        }
+        Intent intent = new Intent(OpenPgpApi.SERVICE_INTENT_2);
+        intent.setPackage(providerPackage);
+        List<ResolveInfo> resolveInfoList = context.getPackageManager().queryIntentServices(intent, 0);
+        for (ResolveInfo resolveInfo : resolveInfoList) {
+            ServiceInfo serviceInfo = resolveInfo.serviceInfo;
+            if (serviceInfo != null && providerPackage.equals(serviceInfo.packageName)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
