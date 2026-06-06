@@ -31,7 +31,7 @@ public class PermissionRule extends RuleEntry {
                           @PermissionCompat.PermissionFlags int flags) {
         super(packageName, permName, RuleType.PERMISSION);
         mIsGranted = isGranted;
-        mFlags = flags;
+        mFlags = requireNonNegativeInt(flags, "flags");
         mAppOp = AppOpsManagerCompat.permissionToOpCode(name);
     }
 
@@ -42,7 +42,7 @@ public class PermissionRule extends RuleEntry {
             mIsGranted = parseBoolean(tokenizer.nextElement().toString(), "isGranted");
         } else throw new IllegalArgumentException("Invalid format: isGranted not found");
         if (tokenizer.hasMoreElements()) {
-            mFlags = Integer.parseInt(tokenizer.nextElement().toString());
+            mFlags = parseNonNegativeInt(tokenizer.nextElement().toString(), "flags");
         } else {
             // Don't throw exception in order to provide backward compatibility
             mFlags = 0;
@@ -64,7 +64,7 @@ public class PermissionRule extends RuleEntry {
     }
 
     public void setFlags(@PermissionCompat.PermissionFlags int flags) {
-        mFlags = flags;
+        mFlags = requireNonNegativeInt(flags, "flags");
     }
 
     public int getAppOp() {
