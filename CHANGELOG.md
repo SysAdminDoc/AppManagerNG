@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - ADB backup header hex validation (source audit, 2026-06-06)
+
+- Encrypted ADB backup header hex fields now reject null and non-hex values
+  with consistent `IllegalArgumentException` failures.
+- Backup header tests pin byte/hex round-trips plus odd-length, null, and
+  non-hex rejection paths used while decoding encrypted headers.
+
 ### Fixed - Split APK chooser type tracking (source FIXME, 2026-06-06)
 
 - Manual split selection now records the selected split's type bucket as soon as
