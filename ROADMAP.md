@@ -252,7 +252,10 @@ than by historical priority tier:
   available-width thresholds not fixed device classes. _Width-class resolver
   shipped: `WindowWidthSizeClass.resolve(int)` + `supportsTwoPane`/
   `requiresTwoPane` (COMPACT <600 / MEDIUM 600–840 / EXPANDED ≥840); 7 JVM
-  tests. `androidx.window 1.4.0` is already a dependency._
+  tests. `androidx.window 1.4.0` is already a dependency. Host-prep shipped
+  2026-06-06: `SettingsActivity` now gates its existing two-pane layout with
+  `WindowWidthSizeClass.requiresTwoPane(screenWidthDp)` instead of raw pixel
+  width, with focused JVM coverage in `SettingsActivityLayoutModeTest`._
   **Device-gated** — a layout restructure whose correctness (view-ID
   preservation + nav/back behavior) cannot be CI-verified; must be exercised on
   a tablet/foldable before shipping, so it is not landed blind. **Concrete
