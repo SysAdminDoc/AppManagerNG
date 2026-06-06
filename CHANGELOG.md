@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Manifest intent-filter priority parsing (source audit, 2026-06-06)
+
+- APK manifest parsing now defaults malformed or overflowing
+  `android:priority` values on intent filters to `0` instead of throwing during
+  component inspection.
+- Valid priority values, including whitespace-padded values, continue to parse
+  into the exported manifest model.
+
 ### Fixed - Dynamic shortcut candidate validation (source audit, 2026-06-06)
 
 - Dynamic app action shortcut publishing now skips cached app rows with
