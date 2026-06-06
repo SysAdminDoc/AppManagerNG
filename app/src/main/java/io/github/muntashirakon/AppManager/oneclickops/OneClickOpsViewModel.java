@@ -14,15 +14,11 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
-import android.os.storage.StorageManagerHidden;
-import android.os.storage.StorageVolume;
-import android.os.storage.StorageVolumeHidden;
 import android.util.Log;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -32,11 +28,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
@@ -54,6 +48,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
+import io.github.muntashirakon.AppManager.utils.StorageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Paths;
 
@@ -563,7 +558,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         ThreadUtils.postOnBackgroundThread(() -> {
             long size = 1024L * 1024L * 1024L * 1024L;  // 1 TB
             boolean success = true;
-            for (String volumeUuid : getTrimCacheVolumeUuids(getWritableStorageVolumeUuids())) {
+            for (String volumeUuid : StorageUtils.getTrimCacheVolumeUuids(
+                    StorageUtils.getWritableStorageVolumeUuids(getApplication(), UserHandleHidden.myUserId()))) {
                 try {
                     PackageManagerCompat.freeStorageAndNotify(volumeUuid, size,
                             StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
@@ -574,44 +570,6 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             }
             mTrimCachesResult.postValue(success);
         });
-    }
-
-    @NonNull
-    private List<String> getWritableStorageVolumeUuids() {
-        List<String> volumeUuids = new ArrayList<>();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return volumeUuids;
-        }
-        try {
-            StorageVolume[] volumes = StorageManagerCompat.getVolumeList(getApplication(),
-                    UserHandleHidden.myUserId(), StorageManagerHidden.FLAG_FOR_WRITE);
-            for (@NonNull StorageVolume volume : volumes) {
-                try {
-                    String uuid = Refine.<StorageVolumeHidden>unsafeCast(volume).getUuid();
-                    if (uuid != null) {
-                        volumeUuids.add(uuid);
-                    }
-                } catch (Throwable e) {
-                    Log.w(TAG, "Failed to read storage volume UUID.", e);
-                }
-            }
-        } catch (SecurityException e) {
-            Log.w(TAG, "Failed to enumerate storage volumes for cache trimming.", e);
-        }
-        return volumeUuids;
-    }
-
-    @VisibleForTesting
-    @NonNull
-    static List<String> getTrimCacheVolumeUuids(@NonNull List<String> storageVolumeUuids) {
-        LinkedHashSet<String> orderedVolumeUuids = new LinkedHashSet<>();
-        orderedVolumeUuids.add(null);
-        for (String uuid : storageVolumeUuids) {
-            if (uuid != null && !uuid.isEmpty()) {
-                orderedVolumeUuids.add(uuid);
-            }
-        }
-        return new ArrayList<>(orderedVolumeUuids);
     }
 
     public void listAppsInstalledByAmForDexOpt() {
