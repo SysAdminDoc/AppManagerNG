@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 79 source-audit closure for profile URI package
-  override validation.
+- Result: completed Cycle 80 source-audit closure for app action shortcut target
+  validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  profile URI package override validation hardening and its verification target.
-- Code: profile automation URI `package`, `pkg`, and `packages` query overrides
-  now use the same package-name validator as package-targeted automation
-  requests before writing runtime override JSON, so malformed query values fail
-  closed instead of reaching profile execution.
+  app action shortcut target validation hardening and its verification target.
+- Code: app action shortcut models now reject malformed package names, negative
+  user ids, and unsupported action strings before building pinned or dynamic
+  shortcut targets while preserving the existing valid freeze, force-stop, and
+  clear-cache shortcut ID format.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.automation.AutomationRequestTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.shortcut.AppActionShortcutInfoTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
