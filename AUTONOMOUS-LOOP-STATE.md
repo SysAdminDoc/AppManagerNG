@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 85 source-audit closure for ADB backup compression
-  flag hardening.
+- Result: completed Cycle 86 source-audit closure for ADB encrypted key-blob
+  length hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  ADB backup compression flag hardening and its verification target.
-- Code: ADB backup header parsing now rejects compression flag values other than
-  `0` or `1` as `IOException` header failures instead of treating every
-  non-zero integer as compressed data, while preserving valid whitespace-padded
-  values.
+  ADB encrypted key-blob length hardening and its verification target.
+- Code: encrypted ADB backup header parsing now validates each decrypted
+  key-blob segment length before copying IV, key, or checksum bytes, so
+  malformed blobs with missing, zero, or overlong lengths fail as `IOException`
+  header errors instead of unchecked array/range exceptions.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
