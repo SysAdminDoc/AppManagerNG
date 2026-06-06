@@ -24,6 +24,7 @@ public final class SingleAppActionHistoryItem implements IJsonSerializer {
     public static final String ACTION_PERMISSION_REVOKE = "permission_revoke";
     public static final String ACTION_APP_OP_SET = "app_op_set";
     public static final String ACTION_COMPONENT_RULE = "component_rule";
+    public static final String ACTION_COMPONENT_ACTION = "component_action";
 
     @NonNull
     private final String mAction;

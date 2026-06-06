@@ -5,6 +5,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Quick assist component actions (research P2/#1973, 2026-06-06)
+
+- Quick assist now discovers service start/stop and declared-action receiver
+  broadcast candidates for the resolved foreground app and appends them to the
+  existing visible action dialog.
+- Component actions show route, user, permission, and broadcast-category context
+  before dispatch, use explicit intents only, and keep raw/custom intent entry
+  out of the assistant path.
+- Each attempted component action writes a non-replayable single-app Operation
+  History row with the package, component, route, result, and failure metadata.
+- Focused JVM coverage pins planner payload ordering and component-action
+  audit metadata; manual Android assistant invocation remains device-gated.
+
 ### Fixed - Installer oversized icon clamp (research P1/#1833, 2026-06-05)
 
 - Installer confirmation titles now sanitize APK-provided app icons before
@@ -3272,10 +3285,10 @@ Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **cl
 
 ### Added — Project-context consolidation (2026-05-17)
 
-- New [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) canonical entry-point index, designed so new contributors / AI sessions can orient against the project surface in <5 minutes instead of re-reading every scattered planning artifact. Links into [`ROADMAP.md`](ROADMAP.md), [`CHANGELOG.md`](CHANGELOG.md), the audit / research dirs, [`design/`](design/), [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md), and the new `.ai/` research run.
+- New [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) canonical entry-point index, designed so new contributors can orient against the project surface in <5 minutes instead of re-reading every scattered planning artifact. Links into [`ROADMAP.md`](ROADMAP.md), [`CHANGELOG.md`](CHANGELOG.md), the audit / research dirs, [`design/`](design/), [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md), and the new `.ai/` research run.
 - New [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/) directory holds the 2026-05-17 autonomous research-run audit trail: `STATE_OF_REPO.md`, `MEMORY_CONSOLIDATION.md`, `SOURCE_REGISTER.md`, `RESEARCH_LOG.md`, `COMPETITOR_MATRIX.md`, `FEATURE_BACKLOG.md`, `PRIORITIZATION_MATRIX.md`, `SECURITY_AND_DEPENDENCY_REVIEW.md`, `DATASET_MODEL_INTEGRATION_REVIEW.md`, `CHANGESET_SUMMARY.md`, `CONTINUE_FROM_HERE.md`. The pass surfaced an iter-24 backlog of three commit-ready in-progress fixes (Finder regex predicate quoting, install transcript URI redactor, onboarding root-probe race) plus governance items, all documented in `FEATURE_BACKLOG.md`.
 - New [`docs/audits/README.md`](docs/audits/README.md) documents the audit-doc doctrine: when to write an audit, filename convention (`<YYYY-MM-DD>-<topic>.md`), document-shape template, verdict vocabulary (`clean` / `clean (audit)` / `remediated` / `confirmed, needs-design` / `deferred` / `n/a`), and cross-reference scheme. Lowers the cost of standing up the next behaviour-change audit; addresses the long-standing gap that the 14 existing audit files followed a consistent shape with no documented template.
-- [`AGENTS.md`](AGENTS.md) gained a `## Canonical Project Context` block pointing at `PROJECT_CONTEXT.md` and the new `.ai/research/2026-05-17/` directory so any tool that loads `AGENTS.md` (Codex, et al.) routes to the consolidation index. `CLAUDE.md` (gitignored per `.gitignore:32`, intentional working-notes file) received the same pointer locally for the Claude-side path.
+- [`AGENTS.md`](AGENTS.md) gained a `## Canonical Project Context` block pointing at `PROJECT_CONTEXT.md` and the new `.ai/research/2026-05-17/` directory so future sessions route to the consolidation index. The local working-notes file received the same pointer.
 - [`ROADMAP.md`](ROADMAP.md) Source Appendix gained **S316 → S320**: F-Droid 2.0-alpha9 release-feed (2026-05-08), F-Droid Basic 2.0-alpha announcement (2026-01-24), Shizuku Manager 13.6.0 APKMirror metadata, the 2026-05-17 research-run self-reference, and the AOSP Android-16 release-notes hub. Header pointer line added linking to `PROJECT_CONTEXT.md` and the iter-24 backlog.
 - [`README.md`](README.md) §"Roadmap" version-target preview refreshed to reflect ground truth: v0.2.0 / v0.3.0 / v0.4.0 marked ✅ (v0.4.0 shipped both Permission Inspector + Onboarding capability wizard via the 2026-05-14 `feat: refine capability onboarding` work); v0.5.0 retargeted to "Settings reorganization, global in-app search, contextual help tooltips, in-app changelog viewer" matching ROADMAP §"Committed Version Targets"; new v0.6.0 row "Rootless Power: Shizuku integration polish, wireless ADB auto-pairing, rootless debloat".
 - [`versions.gradle`](versions.gradle) `material_version` comment extended to flag the cascade implication: Material Components 1.14.0-rc01+ raises minSdkVersion to 23 and is the single ceiling dep whose bump unblocks the activity/biometric/room/webkit pinned-line cluster. Cross-references [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md).
