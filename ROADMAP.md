@@ -74,11 +74,12 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include owner UID parser
-  hardening, sysconfig low-RAM feature filtering, VFS permission mutation
-  result reporting, intent empty-list extra serialization, intent extra
-  edit-mode prefill formatting, intent escaped-comma extra parsing, intent
-  string null-extra parsing, SAF VFS parent URI mapping,
+- Source-backed 2026-06-06 audit closures now include sysconfig runtime RAM
+  feature injection, owner UID parser hardening, sysconfig low-RAM feature
+  filtering, VFS permission mutation result reporting, intent empty-list extra
+  serialization, intent extra edit-mode prefill formatting, intent
+  escaped-comma extra parsing, intent string null-extra parsing, SAF VFS parent
+  URI mapping,
   batch clear-cache multi-volume trimming, nullable last path segment semantics,
   certificate extension OID descriptions, OpenPGP backup provider availability
   checks, multithreaded executor factory synchronization, NoOps annotation
