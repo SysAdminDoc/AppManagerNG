@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 77 source-audit closure for automation component-name
-  validation.
+- Result: completed Cycle 78 source-audit closure for automation negative
+  user-id validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  automation component-name validation hardening and its verification target.
-- Code: automation component actions now reject empty class names, malformed
-  flattened component strings, repeated class-name separators, and invalid Java
-  class segments before dispatch while preserving relative, simple, fully
-  qualified, flattened, and inner-class component forms.
+  automation user-id validation hardening and its verification target.
+- Code: package-targeted automation requests now reject negative user ids from
+  URI, single-extra, and user-list inputs instead of forwarding invalid handles
+  into batch execution, while preserving valid single-user expansion for
+  multi-package requests.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.automation.AutomationIntentsTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.automation.AutomationRequestTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
