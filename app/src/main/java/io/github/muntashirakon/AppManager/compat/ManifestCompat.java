@@ -10,6 +10,8 @@ public final class ManifestCompat {
     public static final class permission {
         public static final String TERMUX_RUN_COMMAND = "com.termux.permission.RUN_COMMAND";
 
+        @RequiresApi(35)
+        public static final String ACCESS_HIDDEN_PROFILES = "android.permission.ACCESS_HIDDEN_PROFILES";
         public static final String ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK";
         @RequiresApi(Build.VERSION_CODES.Q)
         public static final String ADJUST_RUNTIME_PERMISSIONS_POLICY = "android.permission.ADJUST_RUNTIME_PERMISSIONS_POLICY";

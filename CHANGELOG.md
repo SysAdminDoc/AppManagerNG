@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Private Space/profile visibility diagnostics (research P2, 2026-06-06)
+
+- User/profile labels now distinguish Private Space, work, clone, guest,
+  restricted, generic profile, quiet/locked, disabled, and ephemeral states
+  when platform APIs expose them.
+- Advanced -> Selected users now explains when Android 15+ Private Space or
+  hidden profiles may be not visible from the current mode/state because
+  Android requires the default launcher role and an unlocked profile for
+  launcher APIs.
+- Empty app-list copy now points users at profile visibility instead of
+  implying the current profile scan is complete.
+
 ### Fixed - Foreground tracker overlay hardening (research P1/#1848, 2026-06-06)
 
 - The accessibility tracker overlay now uses the accessibility-service overlay

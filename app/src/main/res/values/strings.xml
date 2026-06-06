@@ -93,7 +93,7 @@
         <item quantity="other"><xliff:g id="count" example="847">%1$d</xliff:g> dangerous permissions granted</item>
     </plurals>
     <string name="main_empty_title_no_apps">No apps to show</string>
-    <string name="main_empty_message_no_apps">No apps are available for this user or profile. Refresh, or review storage and profile access if apps should appear here.</string>
+    <string name="main_empty_message_no_apps">No apps are available for this user or profile. Refresh, unlock the profile, or review Private Space/profile visibility if apps should appear here.</string>
     <string name="main_empty_title_no_matches">No matching apps</string>
     <string name="main_empty_message_no_matches">Search or active filters are hiding every app in this view.</string>
     <string name="main_empty_message_no_matches_with_filters">Active filters: <xliff:g id="filter_list" example="With trackers, Frozen apps">%1$s</xliff:g>. Clear them to return to the full app list.</string>
@@ -1362,6 +1362,16 @@
     <string name="simple">Simple</string>
     <string name="advanced">Advanced</string>
     <string name="user_profile_with_id">Profile: %1$s (%2$d)</string>
+    <string name="user_profile_label_with_diagnostics"><xliff:g id="user" example="Owner (0)">%1$s</xliff:g> - <xliff:g id="details" example="Private Space, quiet/locked">%2$s</xliff:g></string>
+    <string name="user_profile_kind_private_space">Private Space</string>
+    <string name="user_profile_kind_work">Work profile</string>
+    <string name="user_profile_kind_clone">Clone profile</string>
+    <string name="user_profile_kind_guest">Guest</string>
+    <string name="user_profile_kind_restricted">Restricted profile</string>
+    <string name="user_profile_kind_profile">Profile</string>
+    <string name="user_profile_state_quiet">quiet/locked</string>
+    <string name="user_profile_state_disabled">disabled</string>
+    <string name="user_profile_state_ephemeral">ephemeral</string>
     <string name="root">Root</string>
     <string name="no_root">No root</string>
     <string name="close">Close</string>
@@ -1863,6 +1873,8 @@
     <string name="added_to_queue">Added to queue</string>
     <string name="pref_selected_users">Selected users</string>
     <string name="pref_selected_users_msg">Restrict App Manager to work with the selected users only.</string>
+    <string name="profile_visibility_not_visible_current_mode">Private Space/hidden profiles may be not visible from current mode/state. Android requires the default launcher role and an unlocked profile to expose them through launcher APIs.</string>
+    <string name="profile_visibility_available_when_unlocked">Private Space/hidden profiles are visible when Android exposes the profile and it is unlocked.</string>
     <string name="permission_flags">Permission flags</string>
     <string name="saved_filters">Saved filters</string>
     <string name="error_with_details">Error: %s</string>
