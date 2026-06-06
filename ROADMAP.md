@@ -615,7 +615,7 @@ links touched by the edit.
     logcat for blocked untrusted-touch or WindowManager failures remain
     device-gated.
 
-- [ ] P2 - Add Private Space/profile visibility diagnostics
+- [x] P2 - Add Private Space/profile visibility diagnostics
   - Why: the manifest declares `ACCESS_HIDDEN_PROFILES`, and package-management
     users need honest visibility across personal, work, hidden, locked, and
     private profiles. Current profile discovery falls back to `UserManager`
@@ -631,14 +631,26 @@ links touched by the edit.
   - Touches: `Users`, user/profile labels, package-loading summaries, main-list
     user/profile selector copy, privilege/mode diagnostics, and Private Space
     device-verification notes.
+  - Shipped 2026-06-06: `ProfileVisibilityDiagnostics` now centralizes
+    user/profile metadata mapping for classic flags plus reflected current
+    platform `userType`/private-profile signals. `UserInfo` labels now
+    distinguish Private Space, work, clone, guest, restricted, generic profile,
+    quiet/locked, disabled, and ephemeral states across the existing main-list,
+    backup/installer/profile, App Details, and device-info user pickers that
+    already call `toLocalizedString()`. Advanced -> Selected users now explains
+    when Android 15+ Private Space/hidden profiles may be not visible from the
+    current mode/state because the default launcher role or unlocked profile is
+    missing, and the empty app-list copy now points users at profile visibility
+    instead of implying a complete scan.
   - Acceptance: when platform APIs expose the state, private/hidden/quiet/locked
     profiles are labeled distinctly; inaccessible profiles produce a clear
     "not visible from current mode/state" diagnostic instead of implying the app
     list is complete; normal work-profile behavior and unprivileged fallback are
     preserved.
-  - Verify: JVM tests for profile label/state mapping, source-level manifest/API
-    guards, and manual Android 15+ Private Space locked/unlocked/hidden
-    walkthrough on a device or image that exposes the feature.
+  - Verify: passed 2026-06-06:
+    `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.users.ProfileVisibilityDiagnosticsTest`.
+    Manual Android 15+ Private Space locked/unlocked/hidden walkthrough on a
+    device or image that exposes the feature remains device-gated.
 
 - [ ] P2 - Add profile membership inverse filters
   - Why: the current app-list profile picker turns a selected Apps profile into
