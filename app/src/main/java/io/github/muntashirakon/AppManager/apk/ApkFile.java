@@ -27,6 +27,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.SparseArrayCompat;
 
@@ -48,9 +49,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -296,6 +299,7 @@ public final class ApkFile implements AutoCloseable {
                 throw new ApkFileException(e);
             }
             Enumeration<? extends ZipEntry> zipEntries = mZipFile.entries();
+            Set<String> splitNames = new HashSet<>();
             while (zipEntries.hasMoreElements()) {
                 ZipEntry zipEntry = zipEntries.nextElement();
                 if (zipEntry.isDirectory()) continue;
@@ -306,7 +310,7 @@ public final class ApkFile implements AutoCloseable {
                         ByteBuffer manifest = getManifestFromApk(zipInputStream);
                         HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
                         if (manifestAttrs.containsKey("split")) {
-                            // TODO: check for duplicates
+                            recordSplitName(manifestAttrs, splitNames, fileName);
                             Entry entry = new Entry(fileName, zipEntry, APK_SPLIT, manifest, manifestAttrs);
                             mEntries.add(entry);
                         } else {
@@ -355,6 +359,19 @@ public final class ApkFile implements AutoCloseable {
         }
         if (packageName == null) throw new ApkFileException("Package name not found.");
         mPackageName = packageName;
+    }
+
+    @VisibleForTesting
+    static void recordSplitName(@NonNull HashMap<String, String> manifestAttrs,
+                                @NonNull Set<String> splitNames,
+                                @NonNull String fileName) throws ApkFileException {
+        String splitName = manifestAttrs.get(ATTR_SPLIT);
+        if (splitName == null || splitName.isEmpty()) {
+            throw new ApkFileException("Split name is empty in " + fileName + ".");
+        }
+        if (!splitNames.add(splitName)) {
+            throw new ApkFileException("Duplicate split apk found: " + splitName);
+        }
     }
 
     private ApkFile(@NonNull ApplicationInfo info, int sparseArrayKey) throws ApkFileException {
