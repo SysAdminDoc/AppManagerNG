@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File properties shared-UID labels (source TODO, 2026-06-06)
+
+- File Manager owner/group selection now shows all distinct app labels sharing a
+  UID instead of whichever package label was seen first.
+- Cached app GID rows reuse the same combined shared-UID description, so cache
+  group choices carry the same package evidence as owner choices.
+
 ### Fixed - Intent flattened string extras (source audit, 2026-06-06)
 
 - Activity Interceptor flattened-intent parsing now preserves empty string
