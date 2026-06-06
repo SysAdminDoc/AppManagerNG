@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.history.ops;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -102,5 +103,38 @@ public class OpHistoryItemTest {
         Intent targetIntent = item.getPrimaryTargetIntent(context);
         assertNotNull(targetIntent);
         assertEquals("com.example.app", targetIntent.getStringExtra("android.intent.extra.PACKAGE_NAME"));
+    }
+
+    @Test
+    public void componentActionHistoryIsNonReplayableAndAuditable() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        SingleAppActionHistoryItem historyItem = new SingleAppActionHistoryItem(
+                SingleAppActionHistoryItem.ACTION_COMPONENT_ACTION,
+                context.getString(R.string.quick_assist_op_history_start_service),
+                "com.example.app",
+                0,
+                "com.example.app.SyncService",
+                "User: 0; Route: Privileged; Permission: com.example.SERVICE");
+        OpHistory row = new OpHistory();
+        row.id = 10L;
+        row.type = OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_FAILURE;
+        row.serializedData = historyItem.serializeToJson().toString();
+        row.serializedExtra = OperationJournalMetadata.forSingleAppAction(
+                context, historyItem, false, OperationJournalMetadata.RISK_MEDIUM, false,
+                new IllegalStateException("blocked by service policy"))
+                .serializeToJson().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertEquals(context.getString(R.string.quick_assist_op_history_start_service), item.getLabel(context));
+        assertEquals(OperationJournalMetadata.RISK_MEDIUM, item.getRisk());
+        assertEquals(1, item.getTargetCount());
+        assertEquals(1, item.getFailedCount());
+        assertFalse(item.isReplayable());
+        assertFalse(item.isReversible());
+        assertTrue(item.getDetailMessage(context).contains("com.example.app.SyncService"));
+        assertTrue(item.getDetailMessage(context).contains("blocked by service policy"));
     }
 }

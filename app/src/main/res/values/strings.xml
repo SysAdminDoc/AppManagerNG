@@ -1206,6 +1206,15 @@
     <string name="quick_assist_target_message">Target package: <xliff:g id="package_name" example="com.example.app">%1$s</xliff:g></string>
     <string name="quick_assist_no_target_title">No foreground app detected</string>
     <string name="quick_assist_no_target_message">AppManagerNG could not identify the app that was active before assist opened. Open Running apps to choose a process manually.</string>
+    <string name="quick_assist_start_service">Start service: <xliff:g id="service" example=".SyncService">%1$s</xliff:g></string>
+    <string name="quick_assist_stop_service">Stop service: <xliff:g id="service" example=".SyncService">%1$s</xliff:g></string>
+    <string name="quick_assist_send_broadcast">Send broadcast: <xliff:g id="receiver_action" example=".BootReceiver (android.intent.action.BOOT_COMPLETED)">%1$s</xliff:g></string>
+    <string name="quick_assist_service_action_confirm_message">Service: <xliff:g id="service" example="com.example.SyncService">%1$s</xliff:g>\nUser: <xliff:g id="user" example="0">%2$d</xliff:g>\nRoute: <xliff:g id="route" example="Privileged">%3$s</xliff:g>\nRequired permission: <xliff:g id="permission" example="No permission required">%4$s</xliff:g></string>
+    <string name="quick_assist_op_history_start_service">Assistant start service</string>
+    <string name="quick_assist_op_history_stop_service">Assistant stop service</string>
+    <string name="quick_assist_op_history_send_broadcast">Assistant send broadcast</string>
+    <string name="quick_assist_history_route">Route</string>
+    <string name="quick_assist_history_permission">Permission</string>
     <string name="profile_apply_load_failed">Could not load this profile. It may have been moved or deleted.</string>
     <string name="profile_apply_invalid_shortcut">This profile shortcut is no longer valid.</string>
     <string name="keystore">KeyStore</string>

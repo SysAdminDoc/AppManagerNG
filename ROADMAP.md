@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 14 - 2026-06-06.
+> Last researched: Cycle 15 - 2026-06-06.
 
 ## Implementer Instructions
 
@@ -691,7 +691,7 @@ links touched by the edit.
     verification passed 2026-06-06:
     `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
 
-- [ ] P2 - Design a guarded ADB assistant trampoline for services and broadcasts
+- [x] P2 - Design a guarded ADB assistant trampoline for services and broadcasts
   - Why: upstream accepted a request to extend assistant-based ADB routing beyond
     activity launch into privileged service and broadcast component actions. NG's
     assistant surface currently offers force-stop, freeze/unfreeze, and App Info
@@ -705,22 +705,22 @@ links touched by the edit.
   - Touches: assistant target/action model, component metadata reuse, root/ADB/
     Shizuku route gating, secure-assistant setting restore logic, confirmations,
     operation history/audit entries, strings, and Android 16 device validation.
-  - Progress 2026-06-06: `AssistComponentActionPlan` now defines the
-    package-visible action model for this row. It reuses App Details
-    `ServiceActionUtils` and `ReceiverBroadcastUtils`, emits explicit service
-    start/stop and declared-action receiver broadcast candidates only, filters
-    disabled/blocked components, hides privileged-only actions when no
-    privileged route is available, and builds explicit intents for tests. UI
-    wiring, dispatch, confirmation text, and audit recording remain open.
+  - Shipped 2026-06-06: `AssistComponentActionPlan` defines the
+    package-visible action model for this row, and `AssistActionActivity` now
+    loads service/receiver metadata for the resolved target, appends safe
+    service start/stop and declared-action receiver broadcast candidates to the
+    visible quick-assist dialog, confirms component/user/route/permission
+    details before execution, dispatches only explicit intents, and records one
+    non-replayable single-app Operation History row per attempt.
   - Acceptance: only explicit user-selected service or receiver components can
     be launched; target package/component/type are visible before execution;
     temporary assistant settings are restored on success/failure/cancel; exported
     and permission-gated targets are handled honestly; no generic third-party raw
     intent ingress or bindService support is added.
-  - Verify: unit tests for action gating, component/intent validation, and
-    assistant-setting restore; manual Android 16 ADB-mode checks for one known
-    exported service and receiver; regression checks for existing force-stop,
-    freeze/unfreeze, and App Info assistant actions.
+  - Verify: focused host verification passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
+    Manual Android assist invocation and Android 16 ADB-mode service/receiver
+    walkthroughs remain device-gated.
 
 ### Researcher Queue (Cycle 7 - 2026-06-05)
 
@@ -811,7 +811,7 @@ links touched by the edit.
     mixed states, previous-mode fallback, adapter visibility for disable vs
     restore, and ComponentsBlocker persistence after restore.
 
-- [ ] P2 refinement - Assistant service/broadcast trampoline must reuse the
+- [x] P2 refinement - Assistant service/broadcast trampoline must reuse the
   App Details component action guardrails and stay user-visible.
   - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
     and broadcasts**.
@@ -839,10 +839,15 @@ links touched by the edit.
     failures are surfaced as user-readable results; every attempt writes a
     single non-replayable audit row with package, component, component type,
     route, result, and failure text.
-  - Verify additions: tests for action availability, exported/permission-gated
-    component filtering, explicit-intent construction, secure-assistant setting
-    restoration on success/failure/cancel, audit row content, and regressions for
-    existing force-stop, freeze/unfreeze, and App Info assistant actions.
+  - Shipped 2026-06-06: quick assist now reuses the planner and App Details
+    service/receiver dispatch helpers, keeps the action chooser visible, shows
+    route and permission details before dispatch, blocks raw/custom receiver
+    action entry, and records non-replayable component-action audit metadata.
+    The existing force-stop, freeze/unfreeze, and App Info assistant actions
+    were not changed.
+  - Verify additions: focused host verification passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
+    Manual Android assist invocation remains device-gated.
 
 ### Researcher Queue (Cycle 9 - 2026-06-06)
 
@@ -1118,7 +1123,7 @@ links touched by the edit.
 
 ### Cycle 14 Next Implementation Slice (2026-06-06)
 
-- [ ] P2 - Wire assistant component candidates into the visible quick-assist
+- [x] P2 - Wire assistant component candidates into the visible quick-assist
   dialog.
   - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
     and broadcasts**.
@@ -1135,9 +1140,48 @@ links touched by the edit.
     available; privileged-only entries require a privileged route; confirmations
     include component, action, user, route, and permission details; each attempt
     records one non-replayable single-app Operation History row.
-  - Verify target: focused tests for label ordering/availability and audit
-    metadata plus `:app:compileFullDebugJavaWithJavac`; manual Android assist
-    invocation remains device-gated.
+  - Shipped 2026-06-06: `AssistActionActivity` now loads target package
+    services/receivers, parses receiver declared actions/categories, filters
+    disabled or blocked components, appends component actions to the quick
+    assist dialog, confirms details before dispatch, routes privileged and
+    unprivileged service/broadcast execution, and records component-action
+    Operation History rows. `AssistComponentActionPlanTest` now pins permission
+    and category payloads; `OpHistoryItemTest` pins non-replayable audit
+    metadata.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
+    Manual Android assist invocation remains device-gated.
+
+### Researcher Queue (Cycle 15 - 2026-06-06)
+
+- [x] `assistant-visible-component-actions-2026-06-06` - implemented the
+  visible quick-assist wiring for service start/stop and receiver broadcasts
+  after the planner model landed. The follow-up queue returns to the startup
+  watchdog work because its ViewModel state exists but the user-facing
+  Splash/authentication controls still need to consume it.
+
+### Cycle 15 Next Implementation Slice (2026-06-06)
+
+- [ ] P1 - Wire startup init state into visible Splash recovery controls.
+  - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
+    path** and the Cycle 8 startup-state refinement.
+  - Why: `StartupInitState` and `SecurityAndOpsViewModel` now expose attempt,
+    stage, timeout, retry, cancel, and recovery-action state, but
+    `SplashActivity` still shows only the generic initializing text before a
+    terminal status.
+  - Next constraints: keep the AndroidX splash-screen keep condition fast, show
+    recovery in the existing authentication content rather than holding a blank
+    splash, preserve the normal success path, and route recovery buttons to the
+    existing mode picker, Mode Doctor, support bundle, local-network permission,
+    Shizuku permission, retry, and pairing-cancel paths where available.
+  - Acceptance: startup displays stage-specific text, timeout/retry state, and
+    recovery actions for stalled root/Shizuku/ADB/wireless-pairing attempts;
+    stale callbacks from older attempts cannot launch `MainActivity`; successful
+    startup remains visually unchanged apart from richer progress text.
+  - Verify target: focused `StartupInitStateTest` /
+    `SecurityAndOpsViewModelTest` coverage plus `SplashActivity` resource/Java
+    compile; manual no-root, Shizuku-stopped, ADB-wireless-off, local-network
+    permission, and successful startup walkthroughs remain device-gated.
 
 *Research conducted 2026-06-03. Items below are new - not duplicates of Existing
 Planned Work.*
@@ -1272,14 +1316,15 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 14 - assistant service/broadcast action model on 2026-06-06.
+Cycle 15 - visible quick-assist component actions on 2026-06-06.
 
 ### Current Focus
 
-Continue from the assistant guardrail UI/dispatch row. The assistant component
-planner now filters safe service and receiver candidates with focused JVM
-coverage; visible quick-assist wiring, confirmations, dispatch, and audit rows
-remain next.
+Continue from the startup watchdog UI row. The startup attempt state and
+ViewModel stream now exist; the next pass should make that state visible in
+`SplashActivity` and attach retry, mode-selection, diagnostics, support-bundle,
+local-network, Shizuku-permission, and pairing-cancel recovery controls where
+the reducer exposes those actions.
 
 ### Important Findings So Far
 
@@ -1307,6 +1352,11 @@ remain next.
 - `AssistComponentActionPlan` now reuses App Details service and receiver route
   rules, accepts only explicit components and declared receiver actions, and
   suppresses disabled/blocked or privileged-unavailable candidates.
+- `AssistActionActivity` now consumes that planner: it loads services and
+  receivers for the resolved target app, appends service start/stop and receiver
+  broadcast entries to the visible quick-assist dialog, confirms route/user/
+  permission details, dispatches explicit intents, and records non-replayable
+  single-app Operation History rows.
 - `Ops.init()` has blocking boundaries at root service bind, Shizuku service
   bind, wireless ADB port discovery, LocalServer restart/bind, and ADB pairing;
   `pairAdbInternal()` can wait in one-hour chunks while the pairing service is
@@ -1340,46 +1390,45 @@ remain next.
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
 - Running Apps restore focused verification passed:
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runningapps.RunningAppsViewModelTest`.
+- Assistant component-action focused verification passed:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Wire `AssistActionActivity` to load service and receiver component metadata
-   for the resolved target and append planner candidates to the visible dialog.
-2. Add confirmation/dispatch helpers that reuse `ActivityManagerCompat`,
-   `ServiceActionUtils`, and `ReceiverBroadcastUtils` with route-aware failure
-   messages.
-3. Record one non-replayable `SingleAppActionHistoryItem` per attempted
-   assistant component action and cover label ordering plus metadata in focused
-   tests.
+1. Inspect `SplashActivity` and its authentication layout to find the existing
+   initializing/status text and button surfaces.
+2. Bind `SecurityAndOpsViewModel.startupInitState()` into `SplashActivity`,
+   update visible stage text, and render recovery buttons only from the current
+   attempt's `StartupInitState.RecoveryAction` set.
+3. Add focused tests for the view-state mapping and stale-attempt behavior, then
+   compile the full debug Java/resources path.
 
 ### Unprocessed Leads
 
-- Upstream assistant extension request #1973.
-- Android service and foreground-service launch restrictions for third-party
-  explicit component starts.
 - Startup visible watchdog controls: timeout clock source, action buttons,
   Mode Doctor/support-bundle routing, and Activity text-state mapping.
 - Android 17 local-network permission timeout diagnostics for ADB and wireless
   pairing flows.
+- Manual Android assist invocation for the shipped service/broadcast quick
+  actions.
 
 ### Files Still To Inspect
 
-- `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistComponentActionPlan.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java`
-- `app/src/main/java/io/github/muntashirakon/AppManager/details/components/BroadcastSendDialogFragment.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/main/SplashActivity.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModel.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/settings/StartupInitState.java`
+- `app/src/main/res/layout/activity_splash.xml`
 - `app/src/main/res/values/strings.xml`
-- `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/**`
-- `app/src/test/java/**/assistant/**`
+- `app/src/test/java/io/github/muntashirakon/AppManager/settings/StartupInitStateTest.java`
+- `app/src/test/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModelTest.java`
 
 ### Searches Still To Run
 
-- `rg -n "AssistActionActivity|assistant|secure assistant|ASSIST" app/src/main/java app/src/test app/src/main/res`
-- `rg -n "AssistComponentActionPlan|ActionItem|showActionDialog|runPrivilegedActionInternal" app/src/main/java/io/github/muntashirakon/AppManager/assistant app/src/test/java/io/github/muntashirakon/AppManager/assistant`
-- `rg -n "startService|stopService|sendBroadcast|BroadcastSendDialogFragment|ComponentRule" app/src/main/java app/src/test`
-- `rg -n "SingleAppActionHistoryItem|forSingleAppAction|HISTORY_TYPE_SINGLE_APP_ACTION" app/src/main/java app/src/test`
-- Web: Android service start restrictions and foreground-service background
-  launch restrictions when finalizing user-facing failure messages.
+- `rg -n "startupInitState|StartupInitState|setModeOfOps|authenticationStatus|initializing|SplashActivity" app/src/main/java app/src/test app/src/main/res`
+- `rg -n "ModeDoctor|SupportInfoBundle|REQUEST_LOCAL_NETWORK|REQUEST_SHIZUKU|pairing|cancel" app/src/main/java/io/github/muntashirakon/AppManager app/src/test/java`
+- `rg -n "STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED|STATUS_SHIZUKU_PERMISSION_REQUIRED|STATUS_PAIRING_REQUIRED|STATUS_FAILURE|STATUS_SUCCESS" app/src/main/java app/src/test`
+- Web: Android local-network permission and AndroidX splash guidance if the
+  visible recovery mapping needs refreshed wording.
