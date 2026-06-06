@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Automation component validation (source audit, 2026-06-06)
+
+- Automation component actions now reject empty class names, malformed flattened
+  component strings, repeated class-name separators, and invalid Java class
+  segments before dispatch.
+- Relative, simple, fully qualified, flattened, and inner-class component forms
+  remain supported.
+
 ### Fixed - Package name validation (source audit, 2026-06-06)
 
 - Platform package-name validation now rejects leading, trailing, and repeated
