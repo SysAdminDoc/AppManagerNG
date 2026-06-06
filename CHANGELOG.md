@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Titanium Backup metadata parsing (source audit, 2026-06-06)
+
+- Titanium Backup imports now validate required `app_version_code` metadata and
+  report malformed or missing values as `BackupException` conversion failures
+  instead of unchecked number-format crashes.
+- Titanium Backup version codes are parsed as long values, matching the backup
+  metadata model and preserving high Android version-code values.
+
 ### Fixed - Default-app role holder parsing (source audit, 2026-06-06)
 
 - Backup default-role detection now normalizes `cmd role get-role-holders`
