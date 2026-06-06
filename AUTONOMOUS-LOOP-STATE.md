@@ -8,18 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 25 source-TODO closure for main-list selected-user
-  filter persistence.
+- Result: completed Cycle 26 source-FIXME closure for data-only split APK
+  reinstall fallback.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  dedicated main-window selected-user filter preference and its verification
-  target.
-- Code: `MainViewModel` hydrates selected-user filter state from
-  `Prefs.MainPage`, persists filter-sheet changes, preserves empty selections
-  as an active filter, and clears the persisted value with Clear filters.
-  `Prefs.Misc` remains the separate Advanced app-wide selected-users
-  restriction.
+  main-list reinstall fallback fix and its verification target.
+- Code: `MainRecyclerAdapter` now launches the installer from
+  `ApkSource.getApkSource(ApplicationInfo)` for readable data-only APK sources,
+  preserving split APK metadata through `ApplicationInfoApkSource` instead of
+  sending only `info.publicSourceDir` as a raw file URI.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainViewModelSelectedUsersTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.main.MainRecyclerAdapterReinstallIntentTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
