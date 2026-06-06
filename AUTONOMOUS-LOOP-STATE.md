@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 71 source-audit closure for Titanium Backup metadata
+- Result: completed Cycle 72 source-audit closure for logcat numeric field
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Titanium Backup metadata parser hardening and its verification target.
-- Code: Titanium Backup conversion now parses required `app_version_code`
-  metadata as a long value and reports missing or malformed values through
-  `BackupException` instead of unchecked number-format crashes.
+  logcat numeric field parser hardening and its verification target.
+- Code: modern and legacy logcat line parsing now treats overflowed PID, TID,
+  or UID-owner fields as malformed lines and falls back to the existing raw-line
+  display path instead of unchecked numeric conversion failures.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.convert.TBConverterTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.LogLineTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
@@ -29,9 +29,9 @@ Current branch: `main`
 - Next roadmap target: find or promote the next host-verifiable source-backed
   audit slice, since the remaining visible rows are largely device/manual,
   external-submission, or owner-signoff gated.
-- Start by scanning backup/profile/settings parsers, source TODOs, and existing
-  guardrail tests for a small source-backed risk that can be tightened without
-  device-only claims.
+- Start by scanning backup/profile/settings/logcat parser edges, source TODOs,
+  and existing guardrail tests for a small source-backed risk that can be
+  tightened without device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
