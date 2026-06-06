@@ -101,14 +101,14 @@ public class ExternalProfileImporterTest {
     // -----------------------------------------------------------------------
 
     @Test
-    public void hailParsesPlainList() {
+    public void hailParsesPlainList() throws JSONException {
         String text = "com.foo.bar\ncom.example.baz\n";
         String[] out = ExternalProfileImporter.parseHail(text);
         assertArrayEquals(new String[]{"com.foo.bar", "com.example.baz"}, out);
     }
 
     @Test
-    public void hailIgnoresBlankAndCommentLines() {
+    public void hailIgnoresBlankAndCommentLines() throws JSONException {
         String text = "# header\n"
                 + "com.foo.bar\n"
                 + "\n"
@@ -120,7 +120,7 @@ public class ExternalProfileImporterTest {
     }
 
     @Test
-    public void hailStripsTrailingFlagAfterPipeOrWhitespace() {
+    public void hailStripsTrailingFlagAfterPipeOrWhitespace() throws JSONException {
         String text = "com.foo.bar|f\n"
                 + "com.example.baz   active\n"
                 + "com.qux.zoo\tfrozen\n";
@@ -129,17 +129,27 @@ public class ExternalProfileImporterTest {
     }
 
     @Test
-    public void hailDeduplicates() {
+    public void hailDeduplicates() throws JSONException {
         String text = "com.foo.bar\ncom.foo.bar\ncom.example.baz\n";
         String[] out = ExternalProfileImporter.parseHail(text);
         assertArrayEquals(new String[]{"com.foo.bar", "com.example.baz"}, out);
     }
 
     @Test
-    public void hailDropsNonPackageLines() {
+    public void hailDropsNonPackageLines() throws JSONException {
         String text = "this is not a package\ncom.foo.bar\n";
         String[] out = ExternalProfileImporter.parseHail(text);
         assertArrayEquals(new String[]{"com.foo.bar"}, out);
+    }
+
+    @Test
+    public void hailThrowsWhenNoPackagesFound() {
+        try {
+            ExternalProfileImporter.parseHail("# header\nthis is not a package\n");
+            fail("Expected JSONException for Hail file with no packages");
+        } catch (JSONException expected) {
+            assertTrue(expected.getMessage().contains("Hail"));
+        }
     }
 
     // -----------------------------------------------------------------------

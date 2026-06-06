@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 74 source-audit closure for external profile
-  package-name validation.
+- Result: completed Cycle 75 source-audit closure for Hail profile empty-import
+  rejection.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  external profile package-name validation and its verification target.
-- Code: external Canta, UAD-NG, and Hail profile imports now reject package-name
-  candidates with empty segments, trailing dots, or digit-starting segments
-  instead of accepting malformed imported names.
+  Hail profile empty-import rejection and its verification target.
+- Code: Hail text profile imports now reject files containing only comments,
+  blanks, or invalid package-name lines instead of creating zero-package profile
+  previews.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporterTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
