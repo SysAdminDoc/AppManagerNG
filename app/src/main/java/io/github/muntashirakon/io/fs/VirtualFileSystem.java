@@ -950,9 +950,9 @@ public abstract class VirtualFileSystem {
         return 0;
     }
 
-    public void setMode(String path, int mode) {
-        // TODO: 7/12/22 This should either throw ErrnoException or a boolean value
+    public boolean setMode(String path, int mode) {
         checkMounted();
+        return false;
     }
 
     @Nullable
@@ -961,9 +961,9 @@ public abstract class VirtualFileSystem {
         return Objects.requireNonNull(getOptions()).uidGidPair;
     }
 
-    public void setUidGid(String path, int uid, int gid) {
-        // TODO: 7/12/22 This should either throw ErrnoException or a boolean value
+    public boolean setUidGid(String path, int uid, int gid) {
         checkMounted();
+        return false;
     }
 
     public boolean createLink(String link, String target, boolean soft) {

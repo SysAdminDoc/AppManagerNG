@@ -148,8 +148,7 @@ public class VirtualDocumentFile extends DocumentFile {
     }
 
     public boolean setMode(int mode) {
-        mFs.setMode(mFullPath, mode);
-        return true;
+        return mFs.setMode(mFullPath, mode);
     }
 
     @Nullable
@@ -158,8 +157,7 @@ public class VirtualDocumentFile extends DocumentFile {
     }
 
     public boolean setUidGid(@NonNull UidGidPair uidGidPair) {
-        mFs.setUidGid(mFullPath, uidGidPair.uid, uidGidPair.gid);
-        return true;
+        return mFs.setUidGid(mFullPath, uidGidPair.uid, uidGidPair.gid);
     }
 
     @Override

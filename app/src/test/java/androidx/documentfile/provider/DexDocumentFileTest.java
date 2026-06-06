@@ -18,6 +18,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.backup.convert.OABConverter;
 import io.github.muntashirakon.AppManager.fm.ContentType2;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.io.UidGidPair;
 import io.github.muntashirakon.io.fs.VirtualFileSystem;
 
 import static androidx.documentfile.provider.ZipDocumentFileTest.getChildNames;
@@ -49,6 +50,8 @@ public class DexDocumentFileTest {
         assertTrue(doc.exists());
         assertEquals(doc.length(), 0);
         assertEquals(Paths.PATH_SEPARATOR, doc.getName());
+        assertFalse(doc.setMode(0600));
+        assertFalse(doc.setUidGid(new UidGidPair(1000, 1000)));
         // Children checks
         List<String> tmpList = getChildNames(doc);
         Collections.sort(tmpList);
