@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 27 source-FIXME closure for APKS export split source
-  fallback.
+- Result: completed Cycle 28 source-TODO closure for File Manager VFS read-only
+  mount handling.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  split-export fallback fix and its verification target.
-- Code: `SplitApkExporter` now builds a de-duplicated APK source set from the
-  base APK, explicit `splitPublicSourceDirs`, and sibling `.apk` files in the
-  package source directory, while keeping the old `/data/app` shared-directory
-  guard.
+  VFS read-only mount contract and its verification target.
+- Code: `FmActivity.Options` now exposes its read-only flag, and
+  `FmViewModel` passes explicit `VirtualFileSystem.MountOptions` when mounting
+  archives so explorer-launched VFS sessions stay read-only while editable VFS
+  entry points can request read/write mounts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.splitapk.SplitApkExporterTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
