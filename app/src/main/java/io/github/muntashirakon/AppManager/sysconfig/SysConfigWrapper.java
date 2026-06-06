@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 @WorkerThread
@@ -316,21 +317,7 @@ class SysConfigWrapper {
             }
             break;
             case SysConfigType.TYPE_NAMED_ACTOR: {
-                ArrayMap<String, ArrayMap<String, String>> actorMap = config.getNamedActors();
-                ArrayMap<String, String> actors;
-                for (int i = 0; i < actorMap.size(); ++i) {
-                    SysConfigInfo info = new SysConfigInfo(SysConfigType.TYPE_NAMED_ACTOR, /* namespace */ actorMap.keyAt(i), false);
-                    actors = actorMap.valueAt(i);
-                    if (actors != null) {
-                        info.actors = new String[actors.size()];
-                        info.packages = new String[actors.size()];
-                        for (int j = 0; j < actors.size(); ++i) {
-                            info.actors[i] = actors.keyAt(i);
-                            info.packages[i] = actors.valueAt(i);
-                        }
-                    }
-                    list.add(info);
-                }
+                addNamedActorConfigs(list, config.getNamedActors());
             }
             break;
             case SysConfigType.TYPE_ROLLBACK_WHITELISTED_APP:
@@ -347,6 +334,27 @@ class SysConfigWrapper {
                 throw new IllegalStateException("Unexpected value: " + type);
         }
         return list;
+    }
+
+    @VisibleForTesting
+    static void addNamedActorConfigs(@NonNull List<SysConfigInfo> list,
+                                     @NonNull ArrayMap<String, ArrayMap<String, String>> actorMap) {
+        for (int i = 0; i < actorMap.size(); ++i) {
+            SysConfigInfo info = new SysConfigInfo(SysConfigType.TYPE_NAMED_ACTOR, /* namespace */ actorMap.keyAt(i), false);
+            ArrayMap<String, String> actors = actorMap.valueAt(i);
+            if (actors != null) {
+                info.actors = new String[actors.size()];
+                info.packages = new String[actors.size()];
+                for (int j = 0; j < actors.size(); ++j) {
+                    info.actors[j] = actors.keyAt(j);
+                    info.packages[j] = actors.valueAt(j);
+                }
+            } else {
+                info.actors = new String[0];
+                info.packages = new String[0];
+            }
+            list.add(info);
+        }
     }
 
     private static void convertToMap(final ArrayMap<String, ArrayMap<String, Boolean>> packagePermissionsMap,
