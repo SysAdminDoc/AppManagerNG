@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 45 source-FIXME closure for SAF VFS parent URI
-  mapping.
+- Result: completed Cycle 46 source-audit closure for intent string null-extra
+  parsing.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  SAF VFS parent URI mapping and its verification target.
-- Code: `Paths.getParentUri()` now derives parent URIs for path-style SAF tree
-  documents, `PathImpl` uses it when building virtual-document parents, and
-  `VirtualFileSystem` uses the same helper for mount parent indexing.
+  intent string null-extra parsing fix and its verification target.
+- Code: `IntentCompat.unflattenFromString()` now accepts serialized null extras
+  without reading a missing value token and rejects malformed non-null extras
+  that omit their value.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.io.PathsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
