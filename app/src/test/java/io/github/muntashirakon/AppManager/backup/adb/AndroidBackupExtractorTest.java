@@ -7,6 +7,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
+import androidx.annotation.NonNull;
+
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +18,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -106,5 +112,36 @@ public class AndroidBackupExtractorTest {
                     "io.github.muntashirakon.androidbackuptestapps.key_value")) {
             }
         });
+    }
+
+    @Test
+    public void rejectsCategoryOnlyEntries() throws IOException {
+        String packageName = "com.example.malformed";
+        Path malformedTarPath = createTarWithEntry(Constants.APPS_PREFIX + packageName + Paths.PATH_SEPARATOR
+                + Constants.APK_TREE_TOKEN);
+        Path malformedAbPath = testDir.createNewFile("malformed.ab", null);
+        AndroidBackupCreator.fromTar(malformedTarPath, malformedAbPath, null, 36, true);
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            try (AndroidBackupExtractor ignored = new AndroidBackupExtractor(malformedAbPath, testDir, packageName)) {
+            }
+        });
+        assertEquals("Malformed file in AB: " + Constants.APK_TREE_TOKEN, exception.getMessage());
+    }
+
+    @NonNull
+    private Path createTarWithEntry(@NonNull String entryName) throws IOException {
+        Path malformedTarPath = testDir.createNewFile("malformed.tar", null);
+        byte[] contents = "payload".getBytes(StandardCharsets.UTF_8);
+        try (OutputStream os = malformedTarPath.openOutputStream();
+             TarArchiveOutputStream tos = new TarArchiveOutputStream(os)) {
+            TarArchiveEntry entry = new TarArchiveEntry(entryName);
+            entry.setSize(contents.length);
+            tos.putArchiveEntry(entry);
+            tos.write(contents);
+            tos.closeArchiveEntry();
+            tos.finish();
+        }
+        return malformedTarPath;
     }
 }

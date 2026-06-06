@@ -236,7 +236,8 @@ public class AndroidBackupExtractor implements AutoCloseable {
     }
 
     @NonNull
-    private TarArchiveEntry getTargetArchiveEntry(@NonNull TarArchiveEntry src, @NonNull String filename) {
+    private TarArchiveEntry getTargetArchiveEntry(@NonNull TarArchiveEntry src, @NonNull String filename)
+            throws IOException {
         String realFilename = getRealFilename(filename);
         if (src.isSymbolicLink()) {
             TarArchiveEntry dst = new TarArchiveEntry(realFilename, TarConstants.LF_SYMLINK);
@@ -257,8 +258,11 @@ public class AndroidBackupExtractor implements AutoCloseable {
     }
 
     @NonNull
-    private String getRealFilename(@NonNull String filename) {
+    private String getRealFilename(@NonNull String filename) throws IOException {
         String[] parts = filename.split(Paths.PATH_SEPARATOR, 2);
+        if (parts.length != 2 || parts[0].isEmpty() || parts[1].isEmpty()) {
+            throw new IOException("Malformed file in AB: " + filename);
+        }
         String firstPart = parts[0];
         String secondPart = parts[1];
         switch (firstPart) {
