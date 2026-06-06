@@ -56,35 +56,56 @@ public abstract class RuleEntry {
     @NonNull
     public static RuleEntry unflattenFromString(@Nullable String packageName, @NonNull String ruleLine,
                                                 boolean isExternal) throws IllegalArgumentException {
-        StringTokenizer tokenizer = new StringTokenizer(ruleLine, "\t");
+        String[] fields = ruleLine.split("\t", -1);
+        int nameIndex = isExternal ? 1 : 0;
+        int typeIndex = nameIndex + 1;
+        int valueIndex = typeIndex + 1;
         if (isExternal) {
             // External rules, the first part is the package name
-            if (tokenizer.hasMoreElements()) {
-                // Match package name
-                String newPackageName = tokenizer.nextElement().toString();
-                if (packageName == null) packageName = newPackageName;
-                if (!packageName.equals(newPackageName)) {
-                    throw new IllegalArgumentException("Invalid format: package names do not match.");
-                }
-            } else throw new IllegalArgumentException("Invalid format: packageName not found for external rule.");
+            if (!hasField(fields, 0)) {
+                throw new IllegalArgumentException("Invalid format: packageName not found for external rule.");
+            }
+            // Match package name
+            String newPackageName = fields[0];
+            if (packageName == null) packageName = newPackageName;
+            if (!packageName.equals(newPackageName)) {
+                throw new IllegalArgumentException("Invalid format: package names do not match.");
+            }
         }
-        if (packageName == null) {
+        if (packageName == null || packageName.isEmpty()) {
             // packageName can't be empty
             throw new IllegalArgumentException("Package name cannot be empty.");
         }
         String name;
         RuleType type;
-        if (tokenizer.hasMoreElements()) {
-            name = tokenizer.nextElement().toString();
+        if (hasField(fields, nameIndex)) {
+            name = fields[nameIndex];
         } else throw new IllegalArgumentException("Invalid format: name not found");
-        if (tokenizer.hasMoreElements()) {
+        if (hasField(fields, typeIndex)) {
             try {
-                type = RuleType.valueOf(tokenizer.nextElement().toString());
+                type = RuleType.valueOf(fields[typeIndex]);
             } catch (Exception e) {
                 throw new IllegalArgumentException("Invalid format: Invalid type");
             }
         } else throw new IllegalArgumentException("Invalid format: entryType not found");
-        return getRuleEntry(packageName, name, type, tokenizer);
+        if (!hasField(fields, valueIndex)) {
+            throw new IllegalArgumentException("Invalid format: value not found");
+        }
+        return getRuleEntry(packageName, name, type, valueTokenizer(fields, valueIndex));
+    }
+
+    private static boolean hasField(@NonNull String[] fields, int index) {
+        return index >= 0 && index < fields.length && !fields[index].isEmpty();
+    }
+
+    @NonNull
+    private static StringTokenizer valueTokenizer(@NonNull String[] fields, int startIndex) {
+        StringBuilder valueFields = new StringBuilder();
+        for (int i = startIndex; i < fields.length; ++i) {
+            if (i > startIndex) valueFields.append('\t');
+            valueFields.append(fields[i]);
+        }
+        return new StringTokenizer(valueFields.toString(), "\t");
     }
 
     @NonNull
