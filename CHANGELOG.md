@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added - Profile membership inverse filters (research P2, 2026-06-06)
+
+- The main app list profile filter now supports an `Exclude selected profile`
+  option so users can audit apps not covered by a saved profile.
+- Static package-list profiles and filter-based profiles both support include
+  and inverse membership while preserving existing profile apply behavior.
+- Profile membership evaluation now stays separate from the rest of the
+  main-list filter expression so selected-user, install-date, search, and
+  refinement filters keep their existing behavior.
+- Filtered empty-state copy now names whether the selected profile is being
+  included or excluded.
+
 ### Added - Private Space/profile visibility diagnostics (research P2, 2026-06-06)
 
 - User/profile labels now distinguish Private Space, work, clone, guest,
