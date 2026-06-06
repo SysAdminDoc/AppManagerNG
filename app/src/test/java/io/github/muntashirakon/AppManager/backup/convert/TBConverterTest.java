@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.backup.convert;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
@@ -12,12 +13,14 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 import io.github.muntashirakon.AppManager.backup.BackupException;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
@@ -54,6 +57,33 @@ public class TBConverterTest {
         assertEquals(456L, TBConverter.parseBackupTimeFromFilename("dnsfilter.android.properties", 456L));
         assertEquals(789L, TBConverter.parseBackupTimeFromFilename(
                 "dnsfilter.android-20210231-164214.properties", 789L));
+    }
+
+    @Test
+    public void convertRejectsMalformedVersionCode() throws Exception {
+        File propFile = File.createTempFile("bad.version-20210529-164214", ".properties");
+        try {
+            Properties prop = new Properties();
+            prop.setProperty("app_label", "Bad Version");
+            prop.setProperty("app_version_name", "1.0");
+            prop.setProperty("app_version_code", "not-a-number");
+            prop.setProperty("app_apk_md5", "deadbeef");
+            prop.setProperty("app_apk_codec", "BZIP2");
+            try (FileOutputStream os = new FileOutputStream(propFile)) {
+                prop.store(os, null);
+            }
+
+            try {
+                new TBConverter(Paths.get(propFile)).convert();
+                fail("Expected BackupException");
+            } catch (BackupException e) {
+                assertEquals("Invalid Titanium Backup property app_version_code: not-a-number",
+                        e.getMessage());
+            }
+        } finally {
+            //noinspection ResultOfMethodCallIgnored
+            propFile.delete();
+        }
     }
 
     @Before

@@ -407,7 +407,7 @@ public class TBConverter extends Converter {
             metadataV2.label = prop.getProperty("app_label");
             metadataV2.packageName = mPackageName;
             metadataV2.versionName = prop.getProperty("app_version_name");
-            metadataV2.versionCode = Integer.parseInt(prop.getProperty("app_version_code"));
+            metadataV2.versionCode = parseRequiredLongProperty(prop, "app_version_code");
             metadataV2.isSystem = "1".equals(prop.getProperty("app_is_system"));
             metadataV2.isSplitApk = false;
             metadataV2.splitConfigs = ArrayUtils.emptyArray(String.class);
@@ -453,6 +453,18 @@ public class TBConverter extends Converter {
             return metadataV2;
         } catch (IOException e) {
             throw new BackupException("Could not read the prop file", e);
+        }
+    }
+
+    private static long parseRequiredLongProperty(@NonNull Properties prop, @NonNull String key) throws BackupException {
+        String value = prop.getProperty(key);
+        if (value == null) {
+            throw new BackupException("Missing Titanium Backup property: " + key);
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new BackupException("Invalid Titanium Backup property " + key + ": " + value, e);
         }
     }
 
