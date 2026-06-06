@@ -1381,7 +1381,14 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 - [ ] P0 — Android 17 (target SDK 37) pre-bump compliance gate
   - Why: the individual Android 17 audits are written (`docs/audits/2026-05-*`) and the HKDF + reflection items are already implemented, but the **bump itself** (`compile_sdk`/`target_sdk` 36 -> 37) has not landed and needs a final on-image gate before flipping. This row is the bump checklist, not the (now-shipped) per-item audits.
   - Evidence: `versions.gradle:8-9` still `compile_sdk = 36` / `target_sdk = 36`; the audit docs exist but the bump is gated on an Android 17 image run.
-  - Blocker rechecked 2026-06-04: connected emulator is API 36 / Android 16 (`sdk_gphone64_x86_64`), local SDK platforms are `android-34`, `android-35`, `android-36`, and `android-36.1`, no `android-37` platform or system image is installed, and no `sdkmanager.bat` exists under `%LOCALAPPDATA%\Android\Sdk`. Do not bump until an API 37 platform + emulator/device image is available and the workflow can run.
+  - Blocker rechecked 2026-06-06: local SDK platforms are `android-34`,
+    `android-35`, `android-36`, and `android-36.1`; system images are only
+    `android-36/google_apis/x86_64` and
+    `android-36.1/google_apis_playstore/x86_64`; the only AVD is
+    `Medium_Phone_API_36.1`; `adb devices` is empty; no `android-37` platform
+    or system image is installed; and no `sdkmanager.bat` exists in the standard
+    SDK locations. Do not bump until an API 37 platform + emulator/device image
+    is available and the workflow can run.
   - Touches: `versions.gradle` `compile_sdk`/`target_sdk` -> 37 after the BAL allow-flag + explicit-URI-grant items are device-confirmed; re-run the `android17-emulator.yml` matrix on an API-37 image.
   - Acceptance: each audited behavior change passes on an Android 17 image before `targetSdk` flips to 37.
   - Verify: `android17-emulator.yml` green on API-37 with the bumped SDK.
@@ -1392,7 +1399,11 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 - [ ] P3 — Wear OS phone-side companion + foldable posture awareness
   - Why: a Wear OS phone-side package manager is a no-FOSS-competitor banner feature (effort 4/5). (Note: the View-based tablet two-pane work is already tracked as **T21-H** in Existing Planned Work; this row is the *additive* Wear OS companion + foldable-posture awareness only, not the phone two-pane.)
   - Evidence: T21-H covers `SlidingPaneLayout` two-pane for phone/tablet; no `WearableListenerService`/`MessageClient`/watch companion in source.
-  - Blocker rechecked 2026-06-04: the host has only the `Medium_Phone_API_36.1` AVD, no Wear OS system images, and no connected Android devices (`adb devices` empty). Do not scaffold this blind; acceptance requires a paired watch emulator/device plus at least one package query/operation from the phone.
+  - Blocker rechecked 2026-06-06: the host still has only the
+    `Medium_Phone_API_36.1` AVD, no Wear OS system images under the local SDK,
+    and no connected Android devices (`adb devices` empty). Do not scaffold this
+    blind; acceptance requires a paired watch emulator/device plus at least one
+    package query/operation from the phone.
   - Touches: ADB-over-WiFi + `WearableListenerService`/`MessageClient` + ~200 KB watch companion; `FoldingFeature` posture awareness layered on the T21-H panes.
   - Acceptance: watch packages can be queried/operated from the phone; folded postures are handled.
   - Verify: pair a watch emulator, list its packages from the phone, run one op.
