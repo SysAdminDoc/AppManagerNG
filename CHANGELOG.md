@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Rule numeric field negativity checks (source audit, 2026-06-06)
+
+- Permission-rule flag imports now reject malformed or negative flag values
+  instead of allowing all-bit negative masks into restore/apply paths.
+- Network-policy rule imports now reject malformed or negative policy values
+  while continuing to allow positive OEM policy bits.
+
 ### Fixed - App-op rule numeric parsing (source audit, 2026-06-06)
 
 - App-op rule imports now reject malformed or negative operation IDs before
