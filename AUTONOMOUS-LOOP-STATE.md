@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 32 source-TODO closure for Titanium Backup import
-  timestamp preservation.
+- Result: completed Cycle 33 source-TODO closure for logcat shared-UID package
+  attribution.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Titanium Backup filename timestamp parsing behavior and its verification
+  deterministic shared-UID package attribution behavior and its verification
   target.
-- Code: `TBConverter` now parses `<package>-YYYYMMDD-HHMMSS.properties`
-  timestamps and falls back to file modification time for invalid or
-  nonstandard filenames.
+- Code: `LogLine` now chooses package names through a package-local selector
+  that ignores empty entries, prefers the shortest package name, and breaks
+  equal-length ties lexicographically.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.convert.TBConverterTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.LogLineTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

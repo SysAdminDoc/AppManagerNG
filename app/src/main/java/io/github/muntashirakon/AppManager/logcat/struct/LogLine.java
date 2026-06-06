@@ -326,32 +326,9 @@ public class LogLine {
         if (packageName != null) {
             return TextUtils.isEmpty(packageName) ? null : packageName;
         }
-        // TODO: 1/18/25
-        // Assumptions for multiple UIDs:
-        // 1. Process name likely matches/starts with the package name
-        // 2. Shortest package name is preferred (the primary package in a shared UID is likely to have the shortest package name)
-        // Ignored assumption:
-        // 3. Primary package is likely to be installed first
         try {
             String[] packages = PackageManagerCompat.getPackageManager().getPackagesForUid(uid);
-            String selectedPackage = null;
-            if (packages == null || packages.length == 0) {
-                selectedPackage = null;
-            } else {
-                if (packages.length == 1) {
-                    selectedPackage = packages[0];
-                } else {
-                    int shortestIndex = 0;
-                    for (int i = 0; i < packages.length; ++i) {
-                        if (packages[shortestIndex].length() > packages[i].length()) {
-                            shortestIndex = i;
-                        }
-                    }
-                    if (selectedPackage == null) {
-                        selectedPackage = packages[shortestIndex];
-                    }
-                }
-            }
+            String selectedPackage = selectPackageNameForUid(packages);
             if (selectedPackage != null) {
                 sUidPackageNameCache.put(uid, selectedPackage);
             } else {
@@ -362,5 +339,25 @@ public class LogLine {
         } catch (RemoteException e) {
             return null;
         }
+    }
+
+    @Nullable
+    static String selectPackageNameForUid(@Nullable String[] packages) {
+        if (packages == null || packages.length == 0) {
+            return null;
+        }
+        String selectedPackage = null;
+        for (String packageName : packages) {
+            if (packageName == null || packageName.isEmpty()) {
+                continue;
+            }
+            if (selectedPackage == null
+                    || selectedPackage.length() > packageName.length()
+                    || (selectedPackage.length() == packageName.length()
+                    && packageName.compareTo(selectedPackage) < 0)) {
+                selectedPackage = packageName;
+            }
+        }
+        return selectedPackage;
     }
 }
