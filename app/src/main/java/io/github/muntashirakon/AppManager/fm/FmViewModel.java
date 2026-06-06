@@ -8,6 +8,7 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
 
@@ -645,6 +646,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     static VirtualFileSystem.MountOptions getVfsMountOptions(@NonNull FmActivity.Options options) {
         return new VirtualFileSystem.MountOptions.Builder()
                 .setReadWrite(!options.isReadOnly())
+                .setDexApiLevel(Build.VERSION.SDK_INT)
                 .build();
     }
 }

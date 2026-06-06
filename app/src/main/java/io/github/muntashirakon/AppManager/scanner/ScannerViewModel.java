@@ -290,7 +290,11 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             mNativeLibraries = Collections.emptyList();
         }
         try {
-            mDexVfsId = VirtualFileSystem.mount(Uri.fromFile(mApkFile), Paths.getUnprivileged(mApkFile), ContentType2.DEX.getMimeType());
+            VirtualFileSystem.MountOptions options = new VirtualFileSystem.MountOptions.Builder()
+                    .setDexApiLevel(Build.VERSION.SDK_INT)
+                    .build();
+            mDexVfsId = VirtualFileSystem.mount(Uri.fromFile(mApkFile), Paths.getUnprivileged(mApkFile),
+                    ContentType2.DEX.getMimeType(), options);
             DexFileSystem dfs = (DexFileSystem) Objects.requireNonNull(VirtualFileSystem.getFileSystem(mDexVfsId));
             mAllClasses = dfs.getDexClasses().getBaseClassNames();
             Collections.sort(mAllClasses);

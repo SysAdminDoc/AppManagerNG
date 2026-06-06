@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Dex VFS API-level mount options (source TODO, 2026-06-06)
+
+- Dex-backed virtual file systems now read their smali opcode API level from
+  `VirtualFileSystem.MountOptions` instead of always using the default opcode
+  table.
+- File Manager VFS launches and APK Scanner class loading now pass the current
+  platform SDK into Dex mounts, while low-level callers keep the existing
+  fallback by leaving the option unset.
+
 ### Fixed - Main-list split and SAF filter conversion (source TODO, 2026-06-06)
 
 - Main-list "Apps with splits" and "Apps with SAF" chips now convert into the

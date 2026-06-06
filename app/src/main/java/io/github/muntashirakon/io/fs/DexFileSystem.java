@@ -68,8 +68,8 @@ public class DexFileSystem extends VirtualFileSystem {
     }
 
     public int getApiLevel() {
-        // TODO: 26/11/22 Set via MountOptions
-        return -1;
+        MountOptions options = getOptions();
+        return options != null ? options.dexApiLevel : -1;
     }
 
     @Override
