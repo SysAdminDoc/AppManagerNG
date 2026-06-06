@@ -365,6 +365,23 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenRejectsInvalidFreezeMethods() {
+        RuleEntry freezeRule = RuleEntry.unflattenFromString(PACKAGE_NAME,
+                "STUB\tFREEZE\t " + FreezeUtils.FREEZE_DISABLE + " ", false);
+        assertEquals(new FreezeRule(PACKAGE_NAME, FreezeUtils.FREEZE_DISABLE), freezeRule);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tFREEZE\tnot-number", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tFREEZE\t0", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tFREEZE\t-1", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tFREEZE\t999", false));
+        assertThrows(IllegalArgumentException.class, () -> new FreezeRule(PACKAGE_NAME, 0));
+    }
+
+    @Test
     public void unflattenUriGrantPreservesCommaUri() {
         UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
                 "com.source", PACKAGE_NAME,

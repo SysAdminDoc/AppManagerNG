@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Freeze rule method parsing (source audit, 2026-06-06)
+
+- Freeze rule imports now accept only the defined freeze methods
+  (`disable`, `suspend`, `hide`, and advanced suspend) instead of accepting
+  arbitrary integers.
+- Malformed, zero, negative, and unknown freeze method values now fail closed
+  during rule parsing.
+
 ### Fixed - Component rule status parsing (source audit, 2026-06-06)
 
 - Component rule imports now reject unknown status tokens instead of accepting
