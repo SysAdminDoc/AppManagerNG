@@ -101,3 +101,8 @@ while IFS= read -r name; do
     printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
     echo "Reproducible release APK verified: $name $first_hash"
 done <<< "$FIRST_APKS"
+
+sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
+"$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"
+"$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --check "$sbom_path"
+printf '%s\n' "$sbom_path" >> "$ASSET_LIST"

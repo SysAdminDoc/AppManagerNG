@@ -96,6 +96,23 @@ function Invoke-NativePageAlignmentCheck {
     }
 }
 
+function Invoke-ReleaseSbomGeneration {
+    param([string] $SbomPath)
+
+    $python = Get-Command $PythonCmd -ErrorAction SilentlyContinue
+    if ($null -eq $python) {
+        throw "Python command '$PythonCmd' was not found; cannot generate the release SBOM."
+    }
+    & $python.Source "scripts\generate-cyclonedx-sbom.py" --output $SbomPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "CycloneDX SBOM generation failed for $SbomPath"
+    }
+    & $python.Source "scripts\generate-cyclonedx-sbom.py" --check $SbomPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "CycloneDX SBOM validation failed for $SbomPath"
+    }
+}
+
 Invoke-ReproducibleBuild -Label "first" -DestinationDir $firstDir
 Invoke-ReproducibleBuild -Label "second" -DestinationDir $secondDir
 
@@ -129,6 +146,10 @@ foreach ($name in $firstNames) {
     $assetLines += $publishSha
     Write-Host "Reproducible release APK verified: $name $firstHash"
 }
+
+$sbomPath = Join-Path $publishDir "AppManagerNG-reproducible.cdx.json"
+Invoke-ReleaseSbomGeneration -SbomPath $sbomPath
+$assetLines += $sbomPath
 
 Set-Content -Path $combinedSha -Value $shaLines -Encoding ascii
 Set-Content -Path $assetList -Value $assetLines -Encoding ascii
