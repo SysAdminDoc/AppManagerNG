@@ -45,9 +45,10 @@ public class AppActionShortcutPublisherTest {
     }
 
     @Test
-    public void selectTargetActionsSkipsSelfUninstalledAndAlreadyStoppedFreezeCases() {
+    public void selectTargetActionsSkipsInvalidSelfUninstalledAndAlreadyStoppedFreezeCases() {
         List<AppActionShortcutPublisher.TargetAction> actions =
                 AppActionShortcutPublisher.selectTargetActions(Arrays.asList(
+                        item("not a package", "Invalid", 600, 0, false, false),
                         item(BuildConfig.APPLICATION_ID, "Self", 500, 0, false, false),
                         uninstalledItem("com.example.backup"),
                         item("com.example.frozen", "Frozen", 400, 0, true, true)

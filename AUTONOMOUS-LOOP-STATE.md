@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 80 source-audit closure for app action shortcut target
+- Result: completed Cycle 81 source-audit closure for dynamic shortcut candidate
   validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  app action shortcut target validation hardening and its verification target.
-- Code: app action shortcut models now reject malformed package names, negative
-  user ids, and unsupported action strings before building pinned or dynamic
-  shortcut targets while preserving the existing valid freeze, force-stop, and
-  clear-cache shortcut ID format.
+  dynamic shortcut candidate validation hardening and its verification target.
+- Code: dynamic app action shortcut publishing now skips cached app rows with
+  malformed package names before creating shortcut target models, preserving
+  valid installed-app ranking by recency/open count and the existing action
+  order.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.shortcut.AppActionShortcutInfoTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisherTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
