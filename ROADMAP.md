@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 13 - 2026-06-06.
+> Last researched: Cycle 14 - 2026-06-06.
 
 ## Implementer Instructions
 
@@ -705,6 +705,13 @@ links touched by the edit.
   - Touches: assistant target/action model, component metadata reuse, root/ADB/
     Shizuku route gating, secure-assistant setting restore logic, confirmations,
     operation history/audit entries, strings, and Android 16 device validation.
+  - Progress 2026-06-06: `AssistComponentActionPlan` now defines the
+    package-visible action model for this row. It reuses App Details
+    `ServiceActionUtils` and `ReceiverBroadcastUtils`, emits explicit service
+    start/stop and declared-action receiver broadcast candidates only, filters
+    disabled/blocked components, hides privileged-only actions when no
+    privileged route is available, and builds explicit intents for tests. UI
+    wiring, dispatch, confirmation text, and audit recording remain open.
   - Acceptance: only explicit user-selected service or receiver components can
     be launched; target package/component/type are visible before execution;
     temporary assistant settings are restored on success/failure/cancel; exported
@@ -1076,7 +1083,7 @@ links touched by the edit.
 
 ### Cycle 13 Next Implementation Slice (2026-06-06)
 
-- [ ] P2 - Implement the guarded assistant service/broadcast action model.
+- [x] P2 - Implement the guarded assistant service/broadcast action model.
   - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
     and broadcasts** and the Cycle 8 assistant guardrail refinement.
   - Why: the research row is already scoped: assistant-triggered service and
@@ -1091,9 +1098,46 @@ links touched by the edit.
     and privilege route; service/receiver candidates are explicit and
     exported/permission/user-aware; Android service-start failures surface as
     user-readable results; every attempt records one non-replayable audit row.
-  - Verify target: focused JVM tests for planner availability, component
-    filtering, explicit-intent construction, secure-assistant restore behavior,
-    and audit metadata, followed by `:app:compileFullDebugJavaWithJavac`.
+  - Shipped 2026-06-06: added `AssistComponentActionPlan` plus focused tests for
+    unprivileged exported services, privileged-only services, running service
+    start/stop actions, permission-protected services, disabled/blocked
+    component suppression, declared-action receiver broadcasts, protected
+    Android broadcast routing, and explicit intent construction.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.assistant.AssistComponentActionPlanTest --tests io.github.muntashirakon.AppManager.assistant.AssistTargetResolverTest`.
+    Visible dialog wiring, dispatch, secure-assistant restoration, and audit
+    metadata remain the next slice.
+
+### Researcher Queue (Cycle 14 - 2026-06-06)
+
+- [x] `assistant-component-action-model-2026-06-06` - implemented the
+  host-verifiable planner foundation for assistant service/broadcast actions.
+  The model intentionally accepts already-resolved component metadata and route
+  capability booleans so it can stay deterministic under JVM tests and reuse
+  App Details dispatch rules without opening a new raw intent surface.
+
+### Cycle 14 Next Implementation Slice (2026-06-06)
+
+- [ ] P2 - Wire assistant component candidates into the visible quick-assist
+  dialog.
+  - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
+    and broadcasts**.
+  - Why: the planner now provides safe service/receiver candidates, but
+    `AssistActionActivity` still presents only force-stop, freeze/unfreeze, and
+    App Info.
+  - Next constraints: keep all actions visible and user-selected; reuse the
+    planner and App Details dispatch utilities; do not add bindService, custom
+    receiver action entry, raw external intent ingress, or background-only
+    execution. Preserve the existing assistant setting restore behavior for
+    activity-launch flows.
+  - Acceptance: quick assist can show service start/stop and receiver
+    send-broadcast entries for the resolved foreground app when candidates are
+    available; privileged-only entries require a privileged route; confirmations
+    include component, action, user, route, and permission details; each attempt
+    records one non-replayable single-app Operation History row.
+  - Verify target: focused tests for label ordering/availability and audit
+    metadata plus `:app:compileFullDebugJavaWithJavac`; manual Android assist
+    invocation remains device-gated.
 
 *Research conducted 2026-06-03. Items below are new - not duplicates of Existing
 Planned Work.*
@@ -1228,14 +1272,14 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 13 - Running Apps restore-background-operation action on 2026-06-06.
+Cycle 14 - assistant service/broadcast action model on 2026-06-06.
 
 ### Current Focus
 
-Continue from the next host-verifiable assistant guardrail row. The Running Apps
-restore-background action now has per-op planning, UI entry points, rule-store
-sync, history details, and focused JVM coverage. Manual disable-then-restore
-walkthrough remains device-gated.
+Continue from the assistant guardrail UI/dispatch row. The assistant component
+planner now filters safe service and receiver candidates with focused JVM
+coverage; visible quick-assist wiring, confirmations, dispatch, and audit rows
+remain next.
 
 ### Important Findings So Far
 
@@ -1260,6 +1304,9 @@ walkthrough remains device-gated.
 - `AssistActionActivity` has no service/broadcast actions today; App Details
   already contains guarded service and receiver surfaces that should be reused
   instead of adding raw intent ingress.
+- `AssistComponentActionPlan` now reuses App Details service and receiver route
+  rules, accepts only explicit components and declared receiver actions, and
+  suppresses disabled/blocked or privileged-unavailable candidates.
 - `Ops.init()` has blocking boundaries at root service bind, Shizuku service
   bind, wireless ADB port discovery, LocalServer restart/bind, and ADB pairing;
   `pairAdbInternal()` can wait in one-hour chunks while the pairing service is
@@ -1299,14 +1346,14 @@ walkthrough remains device-gated.
 
 ### Next Best Actions
 
-1. Inspect `AssistActionActivity`, assistant action IDs, component service and
-   receiver action helpers, and secure-assistant setting restore logic.
-2. Add a package-visible planner/model for assistant service and broadcast
-   candidates that reuses App Details guardrails instead of accepting raw
-   external intents.
-3. Add focused tests for action availability, explicit component filtering,
-   route/user/permission details, secure-assistant restore behavior, and
-   Operation History metadata.
+1. Wire `AssistActionActivity` to load service and receiver component metadata
+   for the resolved target and append planner candidates to the visible dialog.
+2. Add confirmation/dispatch helpers that reuse `ActivityManagerCompat`,
+   `ServiceActionUtils`, and `ReceiverBroadcastUtils` with route-aware failure
+   messages.
+3. Record one non-replayable `SingleAppActionHistoryItem` per attempted
+   assistant component action and cover label ordering plus metadata in focused
+   tests.
 
 ### Unprocessed Leads
 
@@ -1321,14 +1368,17 @@ walkthrough remains device-gated.
 ### Files Still To Inspect
 
 - `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistComponentActionPlan.java`
 - `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java`
 - `app/src/main/java/io/github/muntashirakon/AppManager/details/components/BroadcastSendDialogFragment.java`
+- `app/src/main/res/values/strings.xml`
 - `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/**`
 - `app/src/test/java/**/assistant/**`
 
 ### Searches Still To Run
 
 - `rg -n "AssistActionActivity|assistant|secure assistant|ASSIST" app/src/main/java app/src/test app/src/main/res`
+- `rg -n "AssistComponentActionPlan|ActionItem|showActionDialog|runPrivilegedActionInternal" app/src/main/java/io/github/muntashirakon/AppManager/assistant app/src/test/java/io/github/muntashirakon/AppManager/assistant`
 - `rg -n "startService|stopService|sendBroadcast|BroadcastSendDialogFragment|ComponentRule" app/src/main/java app/src/test`
 - `rg -n "SingleAppActionHistoryItem|forSingleAppAction|HISTORY_TYPE_SINGLE_APP_ACTION" app/src/main/java app/src/test`
 - Web: Android service start restrictions and foreground-service background
