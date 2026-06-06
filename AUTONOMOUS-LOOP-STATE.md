@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 37 source-TODO closure for external key import
-  algorithm guardrails.
+- Result: completed Cycle 38 source-TODO closure for running-service client
+  counts from dumpsys.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  external private-key import algorithm validation behavior and its verification
-  target.
-- Code: `KeyStoreUtils` now validates external certificate key algorithms before
-  constructing a private-key factory, accepting RSA and EC-family aliases while
-  rejecting unsupported algorithms clearly.
+  running-service client-count parser behavior and its verification target.
+- Code: `ActivityManagerCompat` now populates
+  `RunningServiceInfo.clientCount` in the dumpsys fallback by counting unique
+  service client binders inside each service block.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.crypto.ks.KeyStoreUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.compat.ActivityManagerCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

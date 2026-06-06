@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Running service client counts from dumpsys (source TODO, 2026-06-06)
+
+- The dumpsys fallback for running services now populates
+  `RunningServiceInfo.clientCount` by counting unique service client binders
+  inside each service block.
+- Existing service parser fixture coverage now asserts the parsed client counts
+  alongside service, process, UID, and PID.
+
 ### Fixed - External key import algorithm guard (source TODO, 2026-06-06)
 
 - External private-key plus certificate import now accepts only RSA and EC-family
