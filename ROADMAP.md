@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-05. Baseline: `main` at `21d1d00`, app
+Last consolidated: 2026-06-06. Baseline: `main` at `7128b70`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 7 - 2026-06-05.
+> Last researched: Cycle 12 - 2026-06-06.
 
 ## Implementer Instructions
 
@@ -717,7 +717,335 @@ links touched by the edit.
   it should become roadmap work. The local installer-icon source/test work was
   left unstaged for the build lane.
 
-*Research conducted 2026-06-03. Items below are new — not duplicates of Existing
+### Researcher Queue (Cycle 8 - 2026-06-06)
+
+- [x] `privilege-startup-assistant-deepening-2026-06-06` - rechecked current
+  `main` after the oversized installer icon clamp, the active roadmap and
+  autonomous loop state, `SplashActivity`, `SecurityAndOpsViewModel`,
+  `RunningAppsViewModel`, `RunningAppsAdapter`, and `AssistActionActivity`.
+  External research focused on Android splash/startup guidance, Android
+  service/foreground-service launch restrictions, Shizuku setup failure modes,
+  and App Ops background-operation handling. No duplicate top-level feature was
+  promoted; the Cycle 6 rows below were refined with implementation constraints,
+  test targets, and source-backed acceptance details.
+
+### Cycle 8 Refinements to Existing Open Items (2026-06-06)
+
+- [ ] P1 refinement - Startup watchdog should be an observable init-attempt
+  state machine, not a longer hidden splash hold.
+  - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
+    path**.
+  - Why: `SplashActivity.handleMigrationAndModeOfOp()` currently changes the
+    visible text to `initializing` and calls `SecurityAndOpsViewModel.setModeOfOps()`;
+    the ViewModel then runs migration and `Ops.init()` on an executor before
+    posting a single terminal auth status. There is no attempt id, stage
+    stream, timeout state, or stale-callback suppression, so a hung mode probe
+    can look identical to normal startup latency.
+  - Evidence URL or file:line:
+    https://developer.android.com/reference/androidx/core/splashscreen/SplashScreen#setKeepOnScreenCondition(androidx.core.splashscreen.SplashScreen.KeepOnScreenCondition),
+    https://developer.android.com/develop/ui/views/launch/splash-screen,
+    https://shizuku.rikka.app/guide/setup/,
+    `app/src/main/java/io/github/muntashirakon/AppManager/main/SplashActivity.java:199-218`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/SecurityAndOpsViewModel.java:51-75`.
+  - Implementation constraint: do not solve this by keeping the system splash
+    screen indefinitely. AndroidX documents that `setKeepOnScreenCondition()` is
+    evaluated before each draw and must stay fast. Show the existing
+    authentication layout, expose progress stages there, and move the recovery
+    decision into ViewModel-owned attempt state.
+  - Acceptance additions: each startup attempt has a monotonically increasing
+    token; migration, `Ops.init`, wireless auto-connect, ADB connect, ADB pair,
+    Shizuku permission, and local-network-permission stages are individually
+    observable; timeout actions include retry, mode selection, Mode Doctor, and
+    support bundle; stale completions from a timed-out attempt cannot mark the
+    app authenticated or start `MainActivity`.
+  - Verify additions: JVM tests for timeout transition, retry token rollover,
+    stale callback rejection, terminal-status passthrough, and stage label
+    mapping; manual walkthroughs remain no-root, Shizuku-stopped, ADB
+    wireless-off, local-network-permission-denied, and success paths.
+
+- [ ] P2 refinement - Running Apps restore should treat background AppOps as
+  per-op state, even when the UI presents one "background run" concept.
+  - Applies to: **P2 - Add Running Apps restore-background-operation action**.
+  - Why: `preventBackgroundRun()` writes every background-run op returned by
+    `getBackgroundRunAppOpsForSdk()` to `MODE_IGNORED`, and the adapter hides
+    the disable action once `canRunInBackground()` is false. The inverse action
+    must inspect both current ops and any tracked previous modes instead of
+    assuming a single toggle state.
+  - Evidence URL or file:line:
+    https://appops.rikka.app/guide/technical/run_in_background/,
+    `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java:244-287`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsAdapter.java:319-330`.
+  - Implementation constraint: expose one plain-language restore action in the
+    popup, but drive it from per-op current/previous state. Prefer restoring the
+    operation-history previous mode where available; fall back to `MODE_DEFAULT`
+    per op rather than hard-coded `MODE_ALLOWED`, so OEM/default behavior is not
+    silently changed.
+  - Acceptance additions: Android N devices restore only `RUN_IN_BACKGROUND`;
+    Android P+ devices restore both ops independently; mixed states are shown
+    honestly; ComponentsBlocker rule persistence is updated or removed to match
+    the restored modes; operation history gets a reversible row that explains
+    which op modes changed.
+  - Verify additions: tests for N/P+ op selection, ignored/errored/default/allow
+    mixed states, previous-mode fallback, adapter visibility for disable vs
+    restore, and ComponentsBlocker persistence after restore.
+
+- [ ] P2 refinement - Assistant service/broadcast trampoline must reuse the
+  App Details component action guardrails and stay user-visible.
+  - Applies to: **P2 - Design a guarded ADB assistant trampoline for services
+    and broadcasts**.
+  - Why: `AssistActionActivity` currently offers only force-stop,
+    freeze/unfreeze, and App Info. App Details already has explicit service and
+    receiver action surfaces with target/component summaries; the assistant
+    path should reuse those constraints rather than accepting arbitrary raw
+    intents or hidden generic actions.
+  - Evidence URL or file:line:
+    https://developer.android.com/develop/background-work/services,
+    https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start,
+    `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java:38-40`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/assistant/AssistActionActivity.java:108-117`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java:936-1000`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/details/components/BroadcastSendDialogFragment.java:88-224`.
+  - Implementation constraint: assistant-triggered service/broadcast actions
+    must originate from a visible assistant dialog for the resolved foreground
+    package, require explicit component choice, show exported/permission/user
+    details before execution, and preserve the existing secure-assistant setting
+    restore behavior. Do not add bindService support, raw third-party intent
+    ingress, or a background-only execution path.
+  - Acceptance additions: service start/stop and receiver broadcast candidates
+    are filtered to components visible for the target package/user; Android O+
+    service-start restrictions and Android 12+ foreground-service launch
+    failures are surfaced as user-readable results; every attempt writes a
+    single non-replayable audit row with package, component, component type,
+    route, result, and failure text.
+  - Verify additions: tests for action availability, exported/permission-gated
+    component filtering, explicit-intent construction, secure-assistant setting
+    restoration on success/failure/cancel, audit row content, and regressions for
+    existing force-stop, freeze/unfreeze, and App Info assistant actions.
+
+### Researcher Queue (Cycle 9 - 2026-06-06)
+
+- [x] `startup-watchdog-implementation-blueprint-2026-06-06` - inspected the
+  rest of `Ops.init()`, Shizuku and root service bind wrappers, LocalServer ADB
+  startup waits, Mode Doctor, support-bundle sharing, startup strings, and
+  focused test coverage. External recheck added Android local-network
+  permission guidance: target-SDK-37 local network denial can manifest as TCP
+  timeout, so startup recovery needs to distinguish "waiting" from
+  permission-blocked network access.
+
+### Cycle 9 Promoted / Refined Items (2026-06-06)
+
+- [ ] P1 - Add a pure startup init-state reducer before wiring the splash
+  watchdog UI.
+  - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
+    path**.
+  - Why: the startup flow has multiple blocking or long-wait branches:
+    `Ops.init()` routes through root, Shizuku, ADB-over-TCP, wireless ADB, or
+    no-root; Shizuku service binding waits up to 45 seconds; root service
+    binding waits up to 45 seconds; ADB server startup waits up to one minute;
+    wireless pairing can wait in a one-hour observer loop. A UI watchdog bolted
+    directly onto these calls would be hard to test and easy to race.
+  - Evidence URL or file:line:
+    https://developer.android.com/privacy-and-security/local-network-permission,
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java:318-381`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java:569-742`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java:906-1006`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/ipc/ShizukuServiceConnectionWrapper.java:134-145`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/ipc/ServiceConnectionWrapper.java:116-128`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java:216-239`.
+  - Proposed shape: add a small JVM-testable model such as `StartupInitState`
+    / `StartupInitStage` / `StartupInitEvent` with fields for attempt id,
+    configured mode, current stage, status, start/deadline timestamps, recovery
+    actions, and optional diagnostic detail. `SecurityAndOpsViewModel` should
+    translate the existing `Ops` callbacks into this model and keep the legacy
+    integer `authenticationStatus()` only as the terminal compatibility signal.
+  - Stage coverage: migration, auto-detect, root service bind, Shizuku
+    capability/permission, Shizuku service bind, wireless ADB port discovery,
+    ADB server restart, ADB service bind, ADB pairing wait, local-network
+    permission required, incomplete USB debugging, no-root fallback, success,
+    failure, timeout, and cancelled.
+  - Acceptance: the reducer is testable without Android services; retry creates
+    a new attempt id; late events from old attempts are ignored; a timeout never
+    sets `Ops.setAuthenticated(..., true)`; long pairing waits are visible and
+    cancellable instead of silently blocking the startup surface; local-network
+    permission denial/timeout points users to the existing permission dialog
+    and Mode Doctor/support bundle.
+  - Verify: `StartupInitStateTest` for reducer transitions, stale-event
+    rejection, retry token rollover, timeout action selection, local-network
+    permission state, and pairing cancel state before Activity wiring.
+
+- [x] P1 - Harden root/local service late binder callbacks before startup
+  retry loops depend on them.
+  - Why: `ShizukuServiceConnectionWrapper` already treats late or duplicate
+    binder callbacks outside an active bind window as benign, but the root/local
+    `ServiceConnectionWrapper` still throws `RuntimeException("Service watcher
+    should never be null!")` when `onServiceDisconnected`, `onBindingDied`, or
+    a delayed callback arrives with no watcher. A startup retry/watchdog loop
+    will increase bind/unbind churn, so this crash class should be removed first.
+  - Shipped 2026-06-06: `ServiceConnectionWrapper` now mirrors the hardened
+    Shizuku callback contract for root/local services: binder and watcher fields
+    are `volatile`, callbacks read the watcher once into a local, active bind
+    waits still count down, and callbacks outside an active wait no longer throw
+    from the binder thread. `ServiceConnectionWrapperTest` adds the first
+    focused IPC wrapper JVM coverage and exercises both no-watcher late
+    callbacks and with-watcher connected callbacks through the private
+    `ServiceConnection`.
+  - Evidence URL or file:line:
+    `app/src/main/java/io/github/muntashirakon/AppManager/ipc/ServiceConnectionWrapper.java:30-74`,
+    `app/src/test/java/io/github/muntashirakon/AppManager/ipc/ServiceConnectionWrapperTest.java:26-47`,
+    `app/src/main/java/io/github/muntashirakon/AppManager/ipc/ShizukuServiceConnectionWrapper.java:64-79`.
+  - Touched: `ServiceConnectionWrapper` and `ServiceConnectionWrapperTest`;
+    startup watchdog failure handling can now depend on non-crashing root/local
+    late callbacks.
+  - Acceptance: delayed disconnect/binding-died/null-binding callbacks outside
+    an active bind window do not crash the process; active bind still counts
+    down the watcher; `mIBinder` is cleared on disconnect/death/null binding;
+    existing root service bind behavior is preserved.
+  - Verify: run `:app:testFullDebugUnitTest --tests
+    io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest` on a
+    host with Android SDK configured. Attempted locally 2026-06-06: direct UNC
+    Gradle launch failed because `cmd.exe` cannot use a UNC current directory;
+    `cmd pushd` reached the Gradle project but failed before compilation because
+    `local.properties` points at missing `C:\Users\Xray\.cache\android-sdk` and
+    no active-user `ANDROID_HOME` / `%LOCALAPPDATA%\Android\Sdk` exists.
+
+### Researcher Queue (Cycle 10 - 2026-06-06)
+
+- [x] `ipc-root-service-late-callback-hardening-2026-06-06` - inspected the
+  existing test tree for IPC/root-service coverage, confirmed there were no
+  existing `app/src/test/java/**/ipc/**` tests, then implemented the P1
+  root/local `ServiceConnectionWrapper` hardening before the startup watchdog
+  retry loop starts increasing bind/unbind churn. The production change is
+  intentionally narrow and follows the already-hardened Shizuku wrapper pattern.
+  A new Robolectric/JUnit test file exercises stale callbacks without an active
+  watcher and active connected callbacks with a latch/binder. Verification is
+  implementation-ready but not locally completed because this machine has Java
+  only and no usable Android SDK path.
+
+### Cycle 10 Next Implementation Slice (2026-06-06)
+
+- [x] P1 - Implement the pure `StartupInitState` reducer as the next host-side
+  startup watchdog step.
+  - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
+    path** and the Cycle 9 `StartupInitState` blueprint above.
+  - Why: the root/local callback crash class is now removed, so the next safe
+    host-verifiable unit of work is the reducer that will let
+    `SecurityAndOpsViewModel` reject stale terminal events, expose timeout
+    recovery actions, and keep the splash/authentication UI honest before any
+    Activity wiring touches the long-running `Ops.init()` branches.
+  - Shipped 2026-06-06: added package-private
+    `settings/StartupInitState.java` beside `SecurityAndOpsViewModel`, with
+    nested `Status`, `Stage`, and `RecoveryAction` enums plus immutable reducer
+    methods for attempt start, stage transition, `Ops` status receipt, timeout,
+    cancel, retry, stale-event rejection, and terminal detection. Added
+    `StartupInitStateTest` coverage for migration start, stale stage rejection,
+    timeout recovery actions, retry token rollover with stale failure ignored,
+    local-network-permission recovery, Shizuku-permission recovery, pairing
+    cancel, and success terminal/no-recovery behavior. No `SplashActivity` or
+    `Ops.init()` runtime behavior was changed in this slice.
+  - Actual files:
+    `app/src/main/java/io/github/muntashirakon/AppManager/settings/StartupInitState.java`,
+    `app/src/test/java/io/github/muntashirakon/AppManager/settings/StartupInitStateTest.java`.
+  - Required reducer semantics: `startAttempt(mode, now, deadline)`, `stage()`,
+    `timeout()`, `cancel()`, `retry()`, and terminal `success/failure/status`
+    events all carry an attempt id; events for old attempt ids return the
+    current state unchanged; timeout/cancel never authenticate; retry creates a
+    new attempt id and clears stale recovery detail; local-network-permission
+    and pairing-wait states expose distinct recovery actions.
+  - Acceptance: reducer tests cover happy path, timeout, cancel, retry token
+    rollover, stale success ignored after timeout, stale failure ignored after
+    retry, local-network-permission recovery action, Shizuku-permission
+    recovery action, and pairing cancel state. No `SplashActivity` or
+    `Ops.init()` behavior should be changed until the reducer tests pass.
+  - Verify: `StartupInitStateTest` plus the existing
+    `ServiceConnectionWrapperTest` once an Android SDK is available. Local
+    verification remains blocked by the missing SDK path described in Cycle 10;
+    static checks found no trailing whitespace in the new files and no remaining
+    root/local `ServiceConnectionWrapper` watcher throw string in source.
+
+### Researcher Queue (Cycle 11 - 2026-06-06)
+
+- [x] `startup-init-state-reducer-implementation-2026-06-06` - continued from
+  Cycle 10 and implemented the pure startup reducer before touching Activity or
+  ViewModel wiring. The reducer is intentionally isolated under `settings/`
+  because its first consumer is `SecurityAndOpsViewModel` and its status mapping
+  is driven by `Ops.STATUS_*`. The new tests define the behavior that the future
+  watchdog UI must preserve: attempt ids are authoritative, stale completions do
+  nothing, timeout/cancel are terminal and non-authenticating, retry rolls to a
+  fresh attempt id, and permission/pairing states carry specific recovery
+  actions.
+
+### Cycle 11 Next Implementation Slice (2026-06-06)
+
+- [x] P1 - Wire `StartupInitState` into `SecurityAndOpsViewModel` before adding
+  visible watchdog controls.
+  - Applies to: **P1 - Add a splash mode-initialization watchdog and recovery
+    path**.
+  - Why: the reducer now exists but is not yet observed by the UI. The next
+    narrow slice should add `LiveData<StartupInitState>` and attempt-id
+    ownership in `SecurityAndOpsViewModel`, then route the existing
+    `setModeOfOps()`, `autoConnectWirelessDebugging()`, `connectAdb()`,
+    `pairAdb()`, and `onStatusReceived()` status posts through the reducer
+    while keeping the legacy integer `authenticationStatus()` observer intact.
+  - Shipped 2026-06-06: `SecurityAndOpsViewModel` now owns a
+    `LiveData<StartupInitState>` stream, a synchronized startup attempt
+    snapshot, and monotonic attempt ids. `setModeOfOps()`,
+    `autoConnectWirelessDebugging()`, `connectAdb()`, `pairAdb()`, and
+    `onStatusReceived()` now post reducer stages/statuses while preserving the
+    legacy integer `authenticationStatus()` signal for the current attempt.
+    Stale statuses from timed-out or retried attempts are ignored before they
+    can post the legacy terminal status. `SecurityAndOpsViewModelTest` covers
+    current-attempt passthrough, stale-status rejection, timeout-then-retry old
+    success rejection, and observable stage publication.
+  - Implementation constraints: do not add timeout UI or change the
+    authentication success path yet; first expose state, post migration and
+    `Ops.init` stages, map every `Ops.STATUS_*` through `statusReceived()`, and
+    ensure stale statuses from old attempts cannot post a legacy terminal status
+    after timeout/retry once timeout is wired.
+  - Acceptance: ViewModel tests or a small package-visible coordinator prove
+    new attempts get new ids, `LiveData<StartupInitState>` starts at migration,
+    `Ops` statuses update reducer state and still post the same legacy integer
+    values for current attempts, old-attempt statuses are ignored, and no call
+    to `Ops.setAuthenticated()` moves out of `SplashActivity` in this slice.
+  - Verify: passed 2026-06-06:
+    `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+    Manual UI watchdog work remains parked until visible controls are added.
+
+### Researcher Queue (Cycle 12 - 2026-06-06)
+
+- [x] `startup-init-viewmodel-wiring-2026-06-06` - verified the Cycle 11
+  reducer slice against `SecurityAndOpsViewModel`, `SplashActivity`,
+  `Ops.STATUS_*`, and the Android SDK/JDK environment. External recheck kept the
+  implementation constrained to state exposure rather than splash-screen
+  retention: AndroidX splash retention callbacks must stay lightweight, Android
+  17 local-network permission can block ADB/wireless flows by default for target
+  SDK 37+, Shizuku remains rooted in user-visible wireless/USB setup flows, and
+  Android service-start restrictions still support the follow-up assistant
+  guardrail direction. The current cycle completed the host-verifiable startup
+  state foundation; visible watchdog controls remain a later UI slice.
+
+### Cycle 12 Next Implementation Slice (2026-06-06)
+
+- [ ] P2 - Implement Running Apps restore-background-operation action.
+  - Applies to: **P2 - Add Running Apps restore-background-operation action**
+    and the Cycle 8 refinement above.
+  - Why: `RunningAppsViewModel.preventBackgroundRun()` already persists
+    `RUN_IN_BACKGROUND` / `RUN_ANY_IN_BACKGROUND` blocks, but the same surface
+    has no inverse action. Users can create a background-run restriction from
+    Running Apps and then must leave the flow to undo it.
+  - Next constraints: inspect current ComponentsBlocker persistence and
+    operation-history metadata before editing; expose one restore action in the
+    row popup, but compute per-op modes independently. Prefer previous-mode
+    history where available and fall back to `MODE_DEFAULT`, not hard-coded
+    allowed.
+  - Acceptance: Android N restores only `RUN_IN_BACKGROUND`; Android P+ restores
+    both background ops independently; mixed current states are labelled
+    honestly; ComponentsBlocker persistence matches the restored modes; the
+    Operation History row records each changed op/mode.
+  - Verify target: focused unit tests around op selection, previous-mode
+    fallback/default fallback, adapter action visibility, and persistence after
+    restore.
+
+*Research conducted 2026-06-03. Items below are new - not duplicates of Existing
 Planned Work.*
 
 This section was re-verified against the current code on 2026-06-03 (deep pass).
@@ -845,3 +1173,109 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
   - Acceptance: watch packages can be queried/operated from the phone; folded postures are handled.
   - Verify: pair a watch emulator, list its packages from the phone, run one op.
   - Complexity: XL
+
+## Continuation State
+
+### Last Completed Cycle
+
+Cycle 12 - `SecurityAndOpsViewModel` startup init-state wiring on 2026-06-06.
+
+### Current Focus
+
+Continue from the next host-verifiable Running Apps row. The startup watchdog
+foundation now has root/local late-callback hardening, a pure reducer, ViewModel
+attempt ownership, observable state, stale-status rejection, and focused JVM
+coverage. Visible watchdog UI controls remain parked for a later UI slice.
+
+### Important Findings So Far
+
+- Current pre-cycle baseline was `7128b70` (`fix(installer): clamp oversized
+  dialog icons`); the branch is `main`.
+- `SplashActivity` exposes only the generic `initializing` state before
+  delegating to `SecurityAndOpsViewModel.setModeOfOps()`, which posts only a
+  terminal auth status after migration and `Ops.init()`.
+- AndroidX splash guidance supports short, fast splash retention checks; the
+  recovery UI should live in the authentication content view rather than
+  extending a hidden splash indefinitely.
+- Shizuku setup docs explicitly call out OEM background/local-network behavior
+  and limited ADB permission modes, matching the reported wireless-debugging
+  startup hang class.
+- Running Apps currently writes background AppOps to ignored mode but has no
+  same-surface inverse; App Ops guidance treats `RUN_IN_BACKGROUND` and
+  `RUN_ANY_IN_BACKGROUND` as related but independently important.
+- `AssistActionActivity` has no service/broadcast actions today; App Details
+  already contains guarded service and receiver surfaces that should be reused
+  instead of adding raw intent ingress.
+- `Ops.init()` has blocking boundaries at root service bind, Shizuku service
+  bind, wireless ADB port discovery, LocalServer restart/bind, and ADB pairing;
+  `pairAdbInternal()` can wait in one-hour chunks while the pairing service is
+  retrying.
+- No pre-existing IPC/root-service JVM tests were found under `app/src/test` or
+  `app/src/androidTest`.
+- `ShizukuServiceConnectionWrapper` already ignores late callbacks outside an
+  active bind window; root/local `ServiceConnectionWrapper` now has parity for
+  this crash class through volatile binder/watcher fields and a no-throw
+  callback path.
+- `ServiceConnectionWrapperTest` was added under
+  `app/src/test/java/io/github/muntashirakon/AppManager/ipc/` and covers
+  callbacks without an active watcher plus active connected callbacks with a
+  latch/binder.
+- `StartupInitState` was added under `settings/` with immutable attempt-state
+  transitions for migration/stage/status/timeout/cancel/retry; it maps
+  `Ops.STATUS_*` to stages and recovery actions while rejecting old attempt ids.
+- `StartupInitStateTest` covers stale-event rejection, timeout recovery,
+  retry-token rollover, local-network and Shizuku permission recovery,
+  pairing cancel, and success terminal/no-recovery behavior.
+- The ignored local `local.properties` now points at
+  `C:\Users\--\AppData\Local\Android\Sdk`, which allowed focused Gradle
+  verification to run on this host.
+- `SecurityAndOpsViewModel` now owns `LiveData<StartupInitState>`, synchronized
+  attempt snapshots, monotonic attempt ids, current-attempt legacy status
+  passthrough, and stale-status rejection before legacy terminal status posts.
+- `SecurityAndOpsViewModelTest` covers current-attempt status passthrough,
+  stale-status rejection, timeout/retry stale success rejection, and observable
+  stage publication.
+- Focused verification passed:
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`.
+- Android local-network-permission guidance says target-SDK-37 local network
+  denial can present as TCP timeout, so watchdog diagnostics should identify
+  missing local-network permission separately from generic ADB port timeouts.
+
+### Next Best Actions
+
+1. Inspect AppOps history persistence, `ComponentsBlocker`, Running Apps row
+   popup resources, and `RunningAppsViewModel.preventBackgroundRun()` before
+   implementing the restore-background action.
+2. Implement per-op restore planning for `RUN_IN_BACKGROUND` and
+   `RUN_ANY_IN_BACKGROUND`, preferring previous-mode history and falling back to
+   `MODE_DEFAULT`.
+3. Add focused tests for op selection, previous/default fallback, adapter
+   visibility, ComponentsBlocker persistence, and operation-history metadata.
+
+### Unprocessed Leads
+
+- Upstream assistant extension request #1973.
+- App Ops per-op background-run strictness versus a single user-facing label.
+- Android service and foreground-service launch restrictions for third-party
+  explicit component starts.
+- Startup visible watchdog controls: timeout clock source, action buttons,
+  Mode Doctor/support-bundle routing, and Activity text-state mapping.
+- Android 17 local-network permission timeout diagnostics for ADB and wireless
+  pairing flows.
+
+### Files Still To Inspect
+
+- `app/src/test/java/**/runningapps/**`
+- `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsViewModel.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsAdapter.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/rules/ComponentsBlocker.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/history/ops/**`
+- `app/src/main/res/menu/**running**`
+
+### Searches Still To Run
+
+- `rg -n "OP_RUN_IN_BACKGROUND|OP_RUN_ANY_IN_BACKGROUND|ComponentsBlocker|SingleAppActionHistoryItem" app/src/main/java app/src/test`
+- `rg -n "preventBackgroundRun|canRunInBackground|background run|run in background|restore" app/src/main/java app/src/test app/src/main/res`
+- `rg -n "OP_RUN_IN_BACKGROUND|OP_RUN_ANY_IN_BACKGROUND|MODE_IGNORED|MODE_DEFAULT|MODE_ALLOWED" app/src/main/java app/src/test`
+- Web: App Ops background-run mode behavior and current Android AppOps
+  restore/default semantics.

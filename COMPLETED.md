@@ -12,6 +12,10 @@ historical context and the previous ledger are under
 
 ## Shipped Features
 
+### Closed on 2026-06-06
+
+- [x] **P1 startup watchdog host-state foundation** — root/local service callbacks now match the hardened Shizuku wrapper behavior by ignoring late binder callbacks outside an active bind wait; `StartupInitState` adds a pure reducer for startup attempt ids, stages, `Ops.STATUS_*` mapping, timeout, cancel, retry, recovery actions, and stale-event rejection; and `SecurityAndOpsViewModel` now exposes observable startup init state while preserving the existing integer authentication status for current attempts only. Focused verification: `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.ipc.ServiceConnectionWrapperTest --tests io.github.muntashirakon.AppManager.settings.StartupInitStateTest --tests io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModelTest`. Visible watchdog controls and manual startup walkthroughs remain in the active roadmap. — *Source: ROADMAP.md*
+
 ### Closed on 2026-06-05
 
 - [x] **P1 oversized installer icon clamp** — installer parse-success dialogs now route APK icons through `InstallerIconSanitizer` before handing them to `DialogTitleBuilder`, preserving bounded bitmap/non-bitmap icons, scaling oversized bitmap and drawable sources to a 96 dp edge budget, and falling back to the platform default activity icon when icon rendering fails. Focused verification in this checkout: `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.InstallerIconSanitizerTest`, which also executed `:app:compileFullDebugJavaWithJavac`. Manual install-dialog walkthrough with a pathological APK icon remains device-gated. — *Source: ROADMAP.md*

@@ -24,10 +24,12 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 class ServiceConnectionWrapper {
     public static final String TAG = ServiceConnectionWrapper.class.getSimpleName();
 
+    // RootService callbacks can arrive on a binder thread while callers are
+    // waiting from worker threads. Keep these fields visible across both sides.
     @Nullable
-    private IBinder mIBinder;
+    private volatile IBinder mIBinder;
     @Nullable
-    private CountDownLatch mServiceBoundWatcher;
+    private volatile CountDownLatch mServiceBoundWatcher;
 
     private class ServiceConnectionImpl implements ServiceConnection {
         @Override
@@ -59,10 +61,16 @@ class ServiceConnectionWrapper {
         }
 
         private void onResponseReceived() {
-            if (mServiceBoundWatcher != null) {
-                // Should never be null
-                mServiceBoundWatcher.countDown();
-            } else throw new RuntimeException("Service watcher should never be null!");
+            // Read once into a local: the field can be nulled/replaced by a
+            // concurrent bind on another thread.
+            CountDownLatch watcher = mServiceBoundWatcher;
+            if (watcher != null) {
+                watcher.countDown();
+            }
+            // Framework/service callbacks can legitimately arrive outside an
+            // active bind wait, for example after an earlier wait timed out or
+            // after the service was explicitly stopped. This callback runs on a
+            // binder thread, so never throw here.
         }
     }
 
