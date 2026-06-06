@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 56 source-TODO closure for Finder matched result
-  evidence display.
+- Result: completed Cycle 57 source-audit closure for Intent flattened string
+  extra parsing.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Finder matched result evidence row and its verification target.
-- Code: Finder result rows now surface matched permissions, components,
-  trackers, backups, and signing subject lines from the existing filter
-  `TestResult` evidence, with stable de-duplication and compact truncation for
-  long matched-value lists.
+  Intent flattened string extra parser hardening and its verification target.
+- Code: `IntentCompat.unflattenFromString()` now parses flattened lines with
+  bounded tab splits, preserving empty string extra values and string extra
+  values containing tabs while malformed non-null extras without values still
+  fail closed.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.filters.FinderAdapterTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
