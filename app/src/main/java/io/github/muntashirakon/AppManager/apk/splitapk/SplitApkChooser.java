@@ -120,13 +120,7 @@ public class SplitApkChooser extends Fragment {
                         // Ignore splits that weren't selected in the previous installation
                         continue;
                     }
-                    mSelectedSplits.add(apkEntry.id);
-                    HashSet<Integer> types = mSeenSplits.get(apkEntry.getFeature());
-                    if (types == null) {
-                        types = new HashSet<>();
-                        mSeenSplits.put(apkEntry.getFeature(), types);
-                    }
-                    types.add(apkEntry.type);
+                    recordSelectedSplit(apkEntry);
                 }
                 // Fall-through deliberately to see if there are any new requirements
             }
@@ -142,14 +136,8 @@ public class SplitApkChooser extends Fragment {
             }
             if (apkEntry.isRequired()) {
                 // Required splits are selected by default
-                mSelectedSplits.add(apkEntry.id);
+                recordSelectedSplit(apkEntry);
                 selections.add(i);
-                HashSet<Integer> types = mSeenSplits.get(apkEntry.getFeature());
-                if (types == null) {
-                    types = new HashSet<>();
-                    mSeenSplits.put(apkEntry.getFeature(), types);
-                }
-                types.add(apkEntry.type);
             }
         }
         // Select feature-dependencies based on the items selected above.
@@ -176,21 +164,21 @@ public class SplitApkChooser extends Fragment {
                     if (!types.contains(ApkFile.APK_SPLIT_DENSITY)) {
                         types.add(ApkFile.APK_SPLIT_DENSITY);
                         selections.add(i);
-                        mSelectedSplits.add(apkEntry.id);
+                        recordSelectedSplit(apkEntry);
                     }
                     break;
                 case ApkFile.APK_SPLIT_ABI:
                     if (!types.contains(ApkFile.APK_SPLIT_ABI)) {
                         types.add(ApkFile.APK_SPLIT_ABI);
                         selections.add(i);
-                        mSelectedSplits.add(apkEntry.id);
+                        recordSelectedSplit(apkEntry);
                     }
                     break;
                 case ApkFile.APK_SPLIT_LOCALE:
                     if (!types.contains(ApkFile.APK_SPLIT_LOCALE)) {
                         types.add(ApkFile.APK_SPLIT_LOCALE);
                         selections.add(i);
-                        mSelectedSplits.add(apkEntry.id);
+                        recordSelectedSplit(apkEntry);
                     }
                     break;
                 default:
@@ -216,12 +204,8 @@ public class SplitApkChooser extends Fragment {
         List<Integer> selections = new ArrayList<>();
         ApkFile.Entry selectedEntry = mApkEntries.get(index);
         String feature = selectedEntry.getFeature();
-        HashSet<Integer> types = mSeenSplits.get(feature);
-        if (types == null) {
-            types = new HashSet<>();
-            mSeenSplits.put(feature, types);
-        }
-        mSelectedSplits.add(selectedEntry.id); // We don't need to add it to selections because it's already checked
+        HashSet<Integer> types = recordSelectedSplit(selectedEntry);
+        // We don't need to add the selected entry to selections because it's already checked.
         for (int i = 0; i < mApkEntries.size(); ++i) {
             ApkFile.Entry apkEntry = mApkEntries.get(i);
             if (Objects.equals(apkEntry.getFeature(), feature) && apkEntry.type != selectedEntry.type) {
@@ -229,9 +213,8 @@ public class SplitApkChooser extends Fragment {
                 switch (apkEntry.type) {
                     case ApkFile.APK_BASE:
                     case ApkFile.APK_SPLIT_FEATURE:
-                        // FIXME: 7/7/23 Never reached?
                         selections.add(i);
-                        mSelectedSplits.add(apkEntry.id);
+                        recordSelectedSplit(apkEntry);
                         break;
                     case ApkFile.APK_SPLIT_UNKNOWN:
                     case ApkFile.APK_SPLIT:
@@ -240,21 +223,21 @@ public class SplitApkChooser extends Fragment {
                         if (!types.contains(ApkFile.APK_SPLIT_DENSITY)) {
                             types.add(ApkFile.APK_SPLIT_DENSITY);
                             selections.add(i);
-                            mSelectedSplits.add(apkEntry.id);
+                            recordSelectedSplit(apkEntry);
                         }
                         break;
                     case ApkFile.APK_SPLIT_ABI:
                         if (!types.contains(ApkFile.APK_SPLIT_ABI)) {
                             types.add(ApkFile.APK_SPLIT_ABI);
                             selections.add(i);
-                            mSelectedSplits.add(apkEntry.id);
+                            recordSelectedSplit(apkEntry);
                         }
                         break;
                     case ApkFile.APK_SPLIT_LOCALE:
                         if (!types.contains(ApkFile.APK_SPLIT_LOCALE)) {
                             types.add(ApkFile.APK_SPLIT_LOCALE);
                             selections.add(i);
-                            mSelectedSplits.add(apkEntry.id);
+                            recordSelectedSplit(apkEntry);
                         }
                         break;
                     default:
@@ -263,6 +246,27 @@ public class SplitApkChooser extends Fragment {
             }
         }
         return ArrayUtils.convertToIntArray(selections);
+    }
+
+    @NonNull
+    private HashSet<Integer> recordSelectedSplit(@NonNull ApkFile.Entry entry) {
+        return recordSelectedSplit(mSelectedSplits, mSeenSplits, entry.id, entry.getFeature(), entry.type);
+    }
+
+    @NonNull
+    static HashSet<Integer> recordSelectedSplit(@NonNull Set<String> selectedSplits,
+                                                @NonNull HashMap<String, HashSet<Integer>> seenSplits,
+                                                @NonNull String splitId,
+                                                @Nullable String feature,
+                                                @ApkFile.ApkType int type) {
+        selectedSplits.add(splitId);
+        HashSet<Integer> types = seenSplits.get(feature);
+        if (types == null) {
+            types = new HashSet<>();
+            seenSplits.put(feature, types);
+        }
+        types.add(type);
+        return types;
     }
 
     @Nullable
