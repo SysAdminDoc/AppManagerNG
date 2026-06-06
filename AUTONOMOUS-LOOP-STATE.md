@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 49 source-FIXME closure for intent empty list extra
-  serialization.
+- Result: completed Cycle 50 source-TODO closure for VFS permission mutation
+  result reporting.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent empty list extra serialization fix and its verification target.
-- Code: `IntentCompat` now skips empty runtime list extras whose element type
-  cannot be recovered instead of converting them into null string extras, while
-  explicit null extras remain serialized.
+  VFS permission mutation result fix and its verification target.
+- Code: `VirtualFileSystem.setMode()` and `setUidGid()` now return boolean
+  mutation results, and `VirtualDocumentFile` forwards unsupported chmod/chown
+  attempts as `false` instead of a no-op success.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests androidx.documentfile.provider.DexDocumentFileTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
