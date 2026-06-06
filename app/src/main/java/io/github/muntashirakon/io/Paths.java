@@ -364,21 +364,26 @@ public final class Paths {
         return path.isEmpty() ? null : path;
     }
 
+    @AnyThread
+    @NonNull
+    public static String getLastPathSegment(@NonNull String path) {
+        String lastPathSegment = getLastPathSegmentOrNull(path);
+        return lastPathSegment != null ? lastPathSegment : "";
+    }
+
     /**
-     * Return the last segment from the given path. If the path has a trailing `/`, it removes it and attempt to find
-     * the last segment again. If it contains only `/` or no `/` at all, it returns empty string.
-     * <p>
-     * TODO: It should return null when no last path segment is found
+     * Return the last segment from the given path. If the path has a trailing `/`, it removes it and attempts to find
+     * the last segment again. If it contains only `/` or resolves to an invalid trailing `..`, it returns null.
      *
      * @param path An abstract path, may or may not start and/or end with `/`.
      */
     @AnyThread
-    @NonNull
-    public static String getLastPathSegment(@NonNull String path) {
+    @Nullable
+    public static String getLastPathSegmentOrNull(@NonNull String path) {
         path = sanitize(path, false);
         // path has no trailing / or .
         if (path == null || path.equals(PATH_SEPARATOR)) {
-            return "";
+            return null;
         }
         int separatorIndex = path.lastIndexOf(PATH_SEPARATOR);
         if (separatorIndex == -1) {
@@ -389,7 +394,7 @@ public final class Paths {
         String lastPart = path.substring(separatorIndex + 1);
         if (lastPart.equals("..")) {
             // Invalid part
-            return "";
+            return null;
         }
         return lastPart;
     }
