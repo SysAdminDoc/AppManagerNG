@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 38 source-TODO closure for running-service client
-  counts from dumpsys.
+- Result: completed Cycle 39 source-TODO closure for the NoOps annotation
+  detector.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  running-service client-count parser behavior and its verification target.
-- Code: `ActivityManagerCompat` now populates
-  `RunningServiceInfo.clientCount` in the dumpsys fallback by counting unique
-  service client binders inside each service block.
+  `@NoOps` source-level contract and its verification target.
+- Code: `NoOpsAnnotationContractTest` now scans annotated members and requires
+  direct `Ops.*` references to declare `@NoOps(used = true)`, with existing
+  `LocalServices` direct references marked accordingly.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.compat.ActivityManagerCompatTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.NoOpsAnnotationContractTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

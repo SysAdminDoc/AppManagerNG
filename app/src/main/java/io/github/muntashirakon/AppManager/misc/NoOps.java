@@ -16,8 +16,8 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 /**
  * Denotes that the method, constructor or class does not contain any checks from {@link Ops}. This is useful to prevent
  * cycles when checking for root, ADB, etc.
- * <p>
- * TODO: Build a annotation detector
+ * Direct {@code Ops.*} references from annotated members should set {@link #used()} to {@code true}; the source-level
+ * contract test pins that declaration.
  */
 @Documented
 @Retention(SOURCE)
