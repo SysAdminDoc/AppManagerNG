@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 83 source-audit closure for manifest intent-filter
-  name hardening.
+- Result: completed Cycle 84 source-audit closure for ADB backup numeric header
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  manifest intent-filter name hardening and its verification target.
-- Code: APK manifest parsing now ignores intent-filter action and category
-  children with missing or blank `android:name` values instead of throwing
-  during component inspection, and trims valid names before adding them to the
-  exported manifest model.
+  ADB backup numeric header hardening and its verification target.
+- Code: ADB backup header parsing now reports malformed or overflowing backup
+  version, compression flag, and PBKDF2-round fields as `IOException` header
+  failures instead of leaking unchecked numeric conversion errors, while
+  preserving valid whitespace-padded numeric fields.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.parser.ManifestParserTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
