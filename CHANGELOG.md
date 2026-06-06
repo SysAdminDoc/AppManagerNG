@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Main-list split and SAF filter conversion (source TODO, 2026-06-06)
+
+- Main-list "Apps with splits" and "Apps with SAF" chips now convert into the
+  same shared `FilterItem` model as the other app-type chips.
+- `AppTypeOption` can now evaluate split-APK and SAF-grant app properties,
+  keeping active-chip filtering consistent with saved/profile filter
+  expressions.
+
 ### Fixed - File Manager VFS read-only mounts (source TODO, 2026-06-06)
 
 - File Manager virtual filesystem launches now pass explicit mount options from

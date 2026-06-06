@@ -719,6 +719,16 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     }
 
     @Override
+    public boolean hasSplits() {
+        return hasSplits;
+    }
+
+    @Override
+    public boolean usesSaf() {
+        return usesSaf;
+    }
+
+    @Override
     public boolean usesHttp() {
         return usesCleartextTraffic;
     }

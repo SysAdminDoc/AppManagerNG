@@ -41,6 +41,8 @@ public class AppTypeOption extends FilterOption {
     public static final int APP_TYPE_PWA = 1 << 20;
     public static final int APP_TYPE_SHORT_CODE = 1 << 21;
     public static final int APP_TYPE_OVERLAY = 1 << 22;
+    public static final int APP_TYPE_HAS_SPLITS = 1 << 23;
+    public static final int APP_TYPE_USES_SAF = 1 << 24;
 
     private final Map<String, Integer> mKeysWithType = new LinkedHashMap<String, Integer>() {{
         put(KEY_ALL, TYPE_NONE);
@@ -75,6 +77,8 @@ public class AppTypeOption extends FilterOption {
         put(APP_TYPE_KEYSTORE, "Uses Android KeyStore");
         put(APP_TYPE_WITH_RULES, "Has rules");
         put(APP_TYPE_OVERLAY, "Overlay app");
+        put(APP_TYPE_HAS_SPLITS, "Has split APKs");
+        put(APP_TYPE_USES_SAF, "Uses SAF grants");
         // PWA / SHORT_CODE deferred — TWA detection requires manifest service-tag
         // sniffing (no clean PackageInfo flag) and short-code is not a stable
         // PackageManager signal. Filed back into the engineering-debt register
@@ -207,6 +211,12 @@ public class AppTypeOption extends FilterOption {
         if ((flag & AppTypeOption.APP_TYPE_OVERLAY) != 0) {
             if (!info.isOverlay()) return false;
         }
+        if ((flag & AppTypeOption.APP_TYPE_HAS_SPLITS) != 0) {
+            if (!info.hasSplits()) return false;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_USES_SAF) != 0) {
+            if (!info.usesSaf()) return false;
+        }
         // All requested flags are matched
         return true;
     }
@@ -283,6 +293,12 @@ public class AppTypeOption extends FilterOption {
         }
         if ((flag & AppTypeOption.APP_TYPE_OVERLAY) != 0) {
             if (!info.isOverlay()) return true;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_HAS_SPLITS) != 0) {
+            if (!info.hasSplits()) return true;
+        }
+        if ((flag & AppTypeOption.APP_TYPE_USES_SAF) != 0) {
+            if (!info.usesSaf()) return true;
         }
         // All requested flags are present, so "not all flags missing"
         return false;
