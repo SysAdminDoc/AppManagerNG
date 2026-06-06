@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 36 source-TODO closure for APK export filename
-  placeholder substitution.
+- Result: completed Cycle 37 source-TODO closure for external key import
+  algorithm guardrails.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  APK export filename formatter behavior and its verification target.
-- Code: `ApkUtils` now formats saved APK names with literal placeholder
-  replacement instead of regex replacement, preserving `$` and `\` in labels or
-  versions and handling missing version names.
+  external private-key import algorithm validation behavior and its verification
+  target.
+- Code: `KeyStoreUtils` now validates external certificate key algorithms before
+  constructing a private-key factory, accepting RSA and EC-family aliases while
+  rejecting unsupported algorithms clearly.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.ApkUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.crypto.ks.KeyStoreUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
