@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.compat.IntegerCompat;
@@ -667,19 +666,19 @@ public final class IntentCompat {
     @Nullable
     public static Intent unflattenFromString(@NonNull String intentString) {
         Intent intent = new Intent();
-        String[] lines = intentString.split("\n");
+        String[] lines = intentString.split("\n", -1);
         Uri data = null;
         String type = null;
         for (String line : lines) {
             if (TextUtils.isEmpty(line)) continue;
-            StringTokenizer tokenizer = new StringTokenizer(line, "\t");
-            if (tokenizer.countTokens() < 2) {
+            String[] lineParts = line.split("\t", 2);
+            if (lineParts.length < 2) {
                 // Invalid line
                 return null;
             }
-            switch (tokenizer.nextToken()) {
+            switch (lineParts[0]) {
                 case "VERSION": {
-                    int version = IntegerCompat.decode(tokenizer.nextToken());
+                    int version = IntegerCompat.decode(lineParts[1]);
                     if (version != 1) {
                         // Unsupported version
                         return null;
@@ -687,40 +686,44 @@ public final class IntentCompat {
                     break;
                 }
                 case "ACTION":
-                    intent.setAction(tokenizer.nextToken());
+                    intent.setAction(lineParts[1]);
                     break;
                 case "DATA":
-                    data = Uri.parse(tokenizer.nextToken());
+                    data = Uri.parse(lineParts[1]);
                     break;
                 case "TYPE":
-                    type = tokenizer.nextToken();
+                    type = lineParts[1];
                     break;
                 case "IDENTIFIER":
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        intent.setIdentifier(tokenizer.nextToken());
+                        intent.setIdentifier(lineParts[1]);
                     }
                     break;
                 case "CATEGORY":
-                    intent.addCategory(tokenizer.nextToken());
+                    intent.addCategory(lineParts[1]);
                     break;
                 case "COMPONENT":
-                    intent.setComponent(ComponentName.unflattenFromString(tokenizer.nextToken()));
+                    intent.setComponent(ComponentName.unflattenFromString(lineParts[1]));
                     break;
                 case "PACKAGE":
-                    intent.setPackage(tokenizer.nextToken());
+                    intent.setPackage(lineParts[1]);
                     break;
                 case "FLAGS":
-                    intent.setFlags(IntegerCompat.decode(tokenizer.nextToken()));
+                    intent.setFlags(IntegerCompat.decode(lineParts[1]));
                     break;
                 case "EXTRA": {
+                    String[] extraParts = lineParts[1].split("\t", 3);
+                    if (extraParts.length < 2) {
+                        return null;
+                    }
                     ExtraItem item = new ExtraItem();
-                    item.keyName = tokenizer.nextToken();
-                    item.type = IntegerCompat.decode(tokenizer.nextToken());
+                    item.keyName = extraParts[0];
+                    item.type = IntegerCompat.decode(extraParts[1]);
                     if (item.type != TYPE_NULL) {
-                        if (!tokenizer.hasMoreTokens()) {
+                        if (extraParts.length < 3) {
                             return null;
                         }
-                        item.keyValue = parseExtraValue(item.type, tokenizer.nextToken());
+                        item.keyValue = parseExtraValue(item.type, extraParts[2]);
                     }
                     addToIntent(intent, item);
                 }

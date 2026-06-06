@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent flattened string extras (source audit, 2026-06-06)
+
+- Activity Interceptor flattened-intent parsing now preserves empty string
+  extras instead of treating the missing final token as a malformed extra.
+- String extra values containing tab characters now round-trip through the
+  custom flattened format instead of being truncated at the first tab.
+
 ### Added - Finder matched result evidence (source TODO, 2026-06-06)
 
 - Finder result rows now show matched permissions, components, trackers,
