@@ -75,7 +75,9 @@ public final class Prefs {
             String t = token.trim();
             if (t.isEmpty()) continue;
             try {
-                parsed[count++] = Integer.decode(t);
+                int userId = Integer.decode(t);
+                if (userId < 0) continue;
+                parsed[count++] = userId;
             } catch (NumberFormatException ignore) {
                 // skip malformed token
             }
