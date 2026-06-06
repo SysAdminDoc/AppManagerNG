@@ -401,6 +401,25 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenRejectsNegativePolicyAndPermissionFlagValues() {
+        assertEquals(new PermissionRule(PACKAGE_NAME, ".permission", true, 32),
+                RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\ttrue\t 32 ", false));
+        assertEquals(new NetPolicyRule(PACKAGE_NAME, 4),
+                RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tNET_POLICY\t 4 ", false));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\ttrue\tnot-number", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\ttrue\t-1", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tNET_POLICY\tnot-number", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tNET_POLICY\t-1", false));
+        assertThrows(IllegalArgumentException.class, () -> new PermissionRule(PACKAGE_NAME, ".permission", true, -1));
+        assertThrows(IllegalArgumentException.class, () -> new NetPolicyRule(PACKAGE_NAME, -1));
+    }
+
+    @Test
     public void unflattenUriGrantPreservesCommaUri() {
         UriManager.UriGrant grant = new UriManager.UriGrant(0, 10, 10,
                 "com.source", PACKAGE_NAME,

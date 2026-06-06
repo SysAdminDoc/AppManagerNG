@@ -109,6 +109,21 @@ public abstract class RuleEntry {
         throw new IllegalArgumentException("Invalid format: " + fieldName + " is not a boolean");
     }
 
+    static int parseNonNegativeInt(@NonNull String value, @NonNull String fieldName) {
+        try {
+            return requireNonNegativeInt(Integer.parseInt(value.trim()), fieldName);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid format: " + fieldName + " is invalid", e);
+        }
+    }
+
+    static int requireNonNegativeInt(int value, @NonNull String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Invalid format: " + fieldName + " is invalid");
+        }
+        return value;
+    }
+
     @NonNull
     private static StringTokenizer valueTokenizer(@NonNull String[] fields, int startIndex) {
         StringBuilder valueFields = new StringBuilder();
