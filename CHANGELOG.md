@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - External key import algorithm guard (source TODO, 2026-06-06)
+
+- External private-key plus certificate import now accepts only RSA and EC-family
+  certificate key algorithms before constructing a `KeyFactory`.
+- EC aliases such as ECDH and ECDSA map to the standard EC key factory, while
+  unsupported algorithms now fail with a clear `NoSuchAlgorithmException`.
+
 ### Fixed - APK export filename placeholder substitution (source TODO, 2026-06-06)
 
 - APK export filename formatting now uses literal placeholder replacement
