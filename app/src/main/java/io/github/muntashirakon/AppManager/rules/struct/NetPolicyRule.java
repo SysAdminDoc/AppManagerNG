@@ -16,13 +16,13 @@ public class NetPolicyRule extends RuleEntry {
 
     public NetPolicyRule(@NonNull String packageName, @NetworkPolicyManagerCompat.NetPolicy int netPolicies) {
         super(packageName, STUB, RuleType.NET_POLICY);
-        mNetPolicies = netPolicies;
+        mNetPolicies = requireNonNegativeInt(netPolicies, "netPolicies");
     }
 
     public NetPolicyRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
         super(packageName, STUB, RuleType.NET_POLICY);
         if (tokenizer.hasMoreElements()) {
-            mNetPolicies = Integer.parseInt(tokenizer.nextElement().toString());
+            mNetPolicies = parseNonNegativeInt(tokenizer.nextElement().toString(), "netPolicies");
         } else throw new IllegalArgumentException("Invalid format: netPolicies not found");
     }
 
@@ -32,7 +32,7 @@ public class NetPolicyRule extends RuleEntry {
     }
 
     public void setPolicies(@NetworkPolicyManagerCompat.NetPolicy int netPolicies) {
-        mNetPolicies = netPolicies;
+        mNetPolicies = requireNonNegativeInt(netPolicies, "netPolicies");
     }
 
     @NonNull

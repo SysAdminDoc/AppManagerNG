@@ -8,13 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 90 source-audit closure for app-op rule numeric
+- Result: completed Cycle 91 source-audit closure for rule numeric negativity
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  app-op rule numeric hardening and its verification target.
-- Code: app-op rule imports now reject malformed or negative operation IDs
-  before they can reach app-op restore/apply paths, and imported modes must
-  match a platform `MODE_*` constant instead of accepting arbitrary integers.
+  rule numeric negativity hardening and its verification target.
+- Code: permission-rule flag imports now reject malformed or negative flag
+  values instead of allowing all-bit negative masks into restore/apply paths,
+  and network-policy rule imports reject malformed or negative policy values
+  while continuing to allow positive OEM policy bits.
 - Verification: passed
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.struct.RuleEntryTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
