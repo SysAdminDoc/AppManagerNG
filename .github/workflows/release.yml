@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Triggered by a vX.Y.Z tag push.
 # Builds a signed release APK twice from a clean tree, compares the binary hashes,
-# creates a GitHub Release, and uploads the verified APK plus SHA-256 sidecar.
+# creates a GitHub Release, and uploads the verified APK plus SHA-256 sidecar,
+# SBOM, and GitHub artifact attestations.
 #
 # Required GitHub Secrets:
 #   SIGNING_KEYSTORE_BASE64  — base64-encoded AppManagerNG-release.jks
@@ -18,6 +19,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build-release:
@@ -83,6 +86,7 @@ jobs:
           : > "$ASSET_LIST"
           mkdir -p "$RELEASE_ASSET_DIR"
           shopt -s nullglob
+          APK_COUNT=0
           for SRC in "$PUBLISH_DIR"/*.apk; do
             FILE="$(basename "$SRC")"
             DEST_NAME="$(printf '%s' "$FILE" | sed "s/^AppManagerNG-reproducible/AppManagerNG-${VERSION}/")"
@@ -92,12 +96,37 @@ jobs:
             HASH="$(sha256sum "$DEST" | awk '{print $1}')"
             printf '%s  %s\n' "$HASH" "$(basename "$DEST")" > "$CHECKSUM"
             printf '%s\n%s\n' "$DEST" "$CHECKSUM" >> "$ASSET_LIST"
+            APK_COUNT=$((APK_COUNT + 1))
           done
-          if [[ ! -s "$ASSET_LIST" ]]; then
+          if (( APK_COUNT == 0 )); then
             echo "::error::No reproducible APK artifacts were found in $PUBLISH_DIR" >&2
             exit 1
           fi
+          SBOM_COUNT=0
+          for SRC in "$PUBLISH_DIR"/*.cdx.json; do
+            FILE="$(basename "$SRC")"
+            DEST_NAME="$(printf '%s' "$FILE" | sed "s/^AppManagerNG-reproducible/AppManagerNG-${VERSION}/")"
+            DEST="$RELEASE_ASSET_DIR/$DEST_NAME"
+            cp "$SRC" "$DEST"
+            printf '%s\n' "$DEST" >> "$ASSET_LIST"
+            SBOM_COUNT=$((SBOM_COUNT + 1))
+          done
+          if (( SBOM_COUNT == 0 )); then
+            echo "::error::No CycloneDX SBOM artifact was found in $PUBLISH_DIR" >&2
+            exit 1
+          fi
           echo "ASSET_LIST=$ASSET_LIST" >> "$GITHUB_OUTPUT"
+
+      - name: Attest APK provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: app/build/outputs/apk/release/*.apk
+
+      - name: Attest APK SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: app/build/outputs/apk/release/*.apk
+          sbom-path: app/build/outputs/apk/release/AppManagerNG-${{ steps.version.outputs.VERSION }}.cdx.json
 
       - name: Create or update GitHub Release
         env:

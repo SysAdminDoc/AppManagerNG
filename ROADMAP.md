@@ -536,7 +536,7 @@ links touched by the edit.
     A deliberate bad-checksum drill remains a low-cost future hardening check in
     a throwaway copy.
 
-- [ ] P2 - Publish release SBOM and provenance attestation
+- [x] P2 - Publish release SBOM and provenance attestation
   - Why: the release workflow performs a strong two-build reproducibility check
     and publishes `.sha256` sidecars, but release consumers still lack a
     machine-readable SBOM and a provenance attestation tying each APK digest to
@@ -552,13 +552,28 @@ links touched by the edit.
   - Touches: release workflow permissions (`id-token: write`), SBOM generation
     task/plugin or init-script path, release asset upload list, provenance
     attestation step, reproducible-build docs, and verification instructions.
+  - Shipped 2026-06-06: `scripts/generate-cyclonedx-sbom.py` now emits a
+    CycloneDX 1.6 aggregate SBOM from the checked Gradle lockfiles and validates
+    the generated shape, duplicate references, Maven purls, aggregate app
+    component, and dependency coverage. Both reproducible-release wrappers add
+    `AppManagerNG-reproducible.cdx.json` beside the publish APKs and include it
+    in `release-assets.txt`. The GitHub release workflow now copies the SBOM to
+    a versioned `AppManagerNG-<version>.cdx.json` release asset, requires
+    `id-token: write` plus `attestations: write`, and uses
+    `actions/attest@v4` to publish APK provenance and CycloneDX SBOM predicate
+    attestations.
   - Acceptance: every tag release publishes APKs, `.sha256` files, a named SBOM
     for each shipped flavor or a clear aggregate, and a verifiable provenance
     attestation for each APK digest; docs show how to verify the checksum,
     attestation, and SBOM.
-  - Verify: run the SBOM task locally, lint the workflow, dry-run release asset
-    discovery where possible, and after a real tag verify an APK with
-    `gh attestation verify` plus SBOM schema validation.
+  - Verify: passed 2026-06-06:
+    `python scripts\generate-cyclonedx-sbom.py --version 0.5.0 --output build\reproducible-release\publish\AppManagerNG-reproducible.cdx.json`;
+    `python scripts\generate-cyclonedx-sbom.py --check build\reproducible-release\publish\AppManagerNG-reproducible.cdx.json`;
+    official CycloneDX 1.6 JSON schema validation via Python `jsonschema`;
+    `bash -n scripts/verify_reproducible_release.sh`;
+    PowerShell script parse check for `scripts/verify_reproducible_release.ps1`;
+    and `rtk git diff --check`. A real tag run must still verify the published
+    APK with `gh attestation verify` after GitHub records the attestations.
 
 - [ ] P1 - Harden the foreground UI tracker overlay against device-freeze reports
   - Why: upstream reports the UI Tracker window freezing a rooted Android 11
@@ -1348,15 +1363,15 @@ rejected on license/privacy/scope grounds remain in `COMPLETED.md` under
 
 ### Last Completed Cycle
 
-Cycle 17 - Gradle dependency verification and locking on 2026-06-06.
+Cycle 18 - Release SBOM and provenance attestations on 2026-06-06.
 
 ### Current Focus
 
-Continue from the next host-verifiable release-trust row:
-**P2 - Publish release SBOM and provenance attestation**. Start by checking the
-release workflow, reproducible-build publish directory shape, GitHub
-attestation permissions, and whether an init-script or checked plugin is the
-least invasive SBOM path.
+Continue from the next host-verifiable reliability row:
+**P1 - Harden the foreground UI tracker overlay against device-freeze reports**.
+Start by reviewing `TrackerWindow`, overlay `WindowManager.LayoutParams`
+construction/update paths, accessibility-service ownership, and existing
+settings copy before extracting bounded overlay policy.
 
 ### Important Findings So Far
 
@@ -1433,23 +1448,32 @@ least invasive SBOM path.
 - Gradle dependency verification and locking are now enabled. The no-write
   focused app test passed under strict metadata/lock checks:
   `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.StartupInitUiStateTest`.
+- Release SBOM generation is now host-verifiable without a release build:
+  `scripts/generate-cyclonedx-sbom.py` emits a CycloneDX 1.6 aggregate from the
+  committed Gradle lockfiles and `--check` validates 575 component references in
+  this checkout. The generated document also passed the official CycloneDX 1.6
+  JSON schema through Python `jsonschema`.
+- The tag release workflow now uploads a versioned `.cdx.json` SBOM asset and
+  publishes GitHub APK provenance plus CycloneDX SBOM predicate attestations via
+  `actions/attest@v4`. Full attestation verification remains tag-run dependent.
 - Android local-network-permission guidance says target-SDK-37 local network
   denial can present as TCP timeout, so watchdog diagnostics should identify
   missing local-network permission separately from generic ADB port timeouts.
 
 ### Next Best Actions
 
-1. Inspect `.github/workflows/release.yml`,
-   `scripts/verify_reproducible_release.sh`, and
-   `docs/distribution/reproducible-builds.md`.
-2. Choose a minimal SBOM generation path that does not destabilize normal debug
-   builds and produces a release asset beside the reproducible APKs/checksums.
-3. Add provenance attestation permissions/steps and document verification with
-   `gh attestation verify` plus SBOM schema validation where locally possible.
+1. Inspect `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java`
+   and `NoRootAccessibilityService` for unbounded overlay sizing, update
+   frequency, and failure handling.
+2. Extract a host-testable overlay layout policy helper for width/height,
+   flags, margins, and update throttling so device-specific freeze mitigations
+   are pinned in JVM tests.
+3. Wire the policy back into `TrackerWindow`, update user-facing copy where
+   needed, and verify with focused unit tests plus Java compile.
 
 ### Unprocessed Leads
 
-- SBOM and provenance attestations for release artifacts.
+- Real tag-run `gh attestation verify` after the next release is published.
 - Android 17 local-network permission timeout diagnostics for ADB and wireless
   pairing flows.
 - Manual Android assist invocation for the shipped service/broadcast quick
@@ -1457,16 +1481,12 @@ least invasive SBOM path.
 
 ### Files Still To Inspect
 
-- `.github/workflows/release.yml`
-- `scripts/verify_reproducible_release.sh`
-- `scripts/verify_reproducible_release.ps1`
-- `docs/distribution/reproducible-builds.md`
-- `build.gradle`
-- `versions.gradle`
+- `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/activity/TrackerWindow.java`
+- `app/src/main/java/io/github/muntashirakon/AppManager/accessibility/NoRootAccessibilityService.java`
+- tracker/accessibility settings resources and tests
 
 ### Searches Still To Run
 
-- `rg -n "attestation|attest|sbom|cyclonedx|sha256|github-release-assets|reproducible-release" .github scripts docs build.gradle versions.gradle`
-- `rg -n "CycloneDX|spdx|provenance|artifact" docs .github scripts`
-- Web: GitHub artifact attestation and CycloneDX Gradle plugin docs if the
-  release workflow syntax needs refreshed before editing.
+- `rg -n "TrackerWindow|NoRootAccessibilityService|TYPE_APPLICATION_OVERLAY|WindowManager.LayoutParams|FLAG_NOT_TOUCH_MODAL|updateViewLayout" app/src/main/java app/src/test/java`
+- Web: Android overlay window bounds/touch behavior docs if the platform rules
+  need refreshed before editing.
