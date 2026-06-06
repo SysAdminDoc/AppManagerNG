@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.intercept;
 
 import static io.github.muntashirakon.AppManager.intercept.IntentCompat.parseExtraValue;
+import static io.github.muntashirakon.AppManager.intercept.IntentCompat.valueToParsableString;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -210,11 +211,13 @@ public class AddIntentExtraFragment extends DialogFragment {
                     ((TextInputLayout) viewGroup).setHint(spinnerAdapter.getItem(mCurrentType));
                 }
                 if (keyValue != null) {
-                    // FIXME: 25/1/21 Reformat the string to support parsing
-                    TextView tv = mValues[TYPE_FLOAT];
+                    TextView tv = mValues[mCurrentType];
                     if (tv instanceof MaterialSwitch) {
                         ((MaterialSwitch) tv).setChecked((boolean) keyValue);
-                    } else tv.setText(keyValue.toString());
+                    } else {
+                        String rawValue = valueToParsableString(mCurrentType, keyValue);
+                        tv.setText(rawValue != null ? rawValue : keyValue.toString());
+                    }
                 }
             }
         }

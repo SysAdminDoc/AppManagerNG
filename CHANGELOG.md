@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent extra edit prefill formatting (source audit, 2026-06-06)
+
+- Editing an existing Activity Interceptor extra now pre-fills the control for
+  that extra type instead of always writing into the float input.
+- Array and list extras now reuse the intent serialization format for edit
+  prefill, so escaped comma values remain parseable after editing.
+
 ### Fixed - Intent escaped comma extra parsing (source audit, 2026-06-06)
 
 - Serialized string and URI array/list extras now unescape `\,` back to commas
