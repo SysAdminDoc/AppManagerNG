@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App-op rule numeric parsing (source audit, 2026-06-06)
+
+- App-op rule imports now reject malformed or negative operation IDs before
+  they can reach app-op restore/apply paths.
+- App-op rule modes now must match a platform `MODE_*` constant instead of
+  accepting arbitrary integers.
+
 ### Fixed - Freeze rule method parsing (source audit, 2026-06-06)
 
 - Freeze rule imports now accept only the defined freeze methods

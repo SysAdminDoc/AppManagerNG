@@ -17,16 +17,16 @@ public class AppOpRule extends RuleEntry {
 
     public AppOpRule(@NonNull String packageName, int op, @AppOpsManagerCompat.Mode int mode) {
         super(packageName, String.valueOf(op), RuleType.APP_OP);
-        mOp = op;
-        mMode = mode;
+        mOp = validateOp(op);
+        mMode = validateMode(mode);
     }
 
     public AppOpRule(@NonNull String packageName, String opInt, @NonNull StringTokenizer tokenizer)
             throws RuntimeException {
         super(packageName, opInt, RuleType.APP_OP);
-        mOp = Integer.parseInt(opInt);
+        mOp = validateOp(parseInt(opInt, "op"));
         if (tokenizer.hasMoreElements()) {
-            mMode = Integer.parseInt(tokenizer.nextElement().toString());
+            mMode = validateMode(parseInt(tokenizer.nextElement().toString(), "mode"));
         } else throw new IllegalArgumentException("Invalid format: mode not found");
     }
 
@@ -40,7 +40,30 @@ public class AppOpRule extends RuleEntry {
     }
 
     public void setMode(@AppOpsManagerCompat.Mode int mode) {
-        mMode = mode;
+        mMode = validateMode(mode);
+    }
+
+    private static int parseInt(@NonNull String value, @NonNull String fieldName) {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid format: " + fieldName + " is invalid", e);
+        }
+    }
+
+    private static int validateOp(int op) {
+        if (op < 0) {
+            throw new IllegalArgumentException("Invalid format: op is invalid");
+        }
+        return op;
+    }
+
+    @AppOpsManagerCompat.Mode
+    private static int validateMode(int mode) {
+        if (!AppOpsManagerCompat.getModeConstants().contains(mode)) {
+            throw new IllegalArgumentException("Invalid format: mode is invalid");
+        }
+        return mode;
     }
 
     @NonNull
