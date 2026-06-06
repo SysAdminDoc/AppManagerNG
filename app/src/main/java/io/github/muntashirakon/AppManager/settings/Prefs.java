@@ -61,6 +61,41 @@ import io.github.muntashirakon.io.Paths;
 // possible to deliver the changes to the settings using lifecycle where required. For example, in the log viewer page,
 // changes to the settings are not immediately reflected unless the settings page is opened from the page itself.
 public final class Prefs {
+    private static final String NO_MAIN_WINDOW_USERS_SELECTED = "-";
+
+    @Nullable
+    private static int[] parseUserIds(@NonNull String usersStr) {
+        if (usersStr.isEmpty()) return null;
+        // This value can be restored from settings snapshots or edited outside
+        // the app. Skip bad tokens so callers do not crash while bootstrapping.
+        String[] usersSplitStr = usersStr.split(",");
+        int[] parsed = new int[usersSplitStr.length];
+        int count = 0;
+        for (String token : usersSplitStr) {
+            String t = token.trim();
+            if (t.isEmpty()) continue;
+            try {
+                parsed[count++] = Integer.decode(t);
+            } catch (NumberFormatException ignore) {
+                // skip malformed token
+            }
+        }
+        if (count == 0) return null;
+        return count == parsed.length ? parsed : java.util.Arrays.copyOf(parsed, count);
+    }
+
+    private static void setUserIds(@NonNull AppPref.PrefKey key, @Nullable int[] users) {
+        if (users == null) {
+            AppPref.set(key, "");
+            return;
+        }
+        String[] userString = new String[users.length];
+        for (int i = 0; i < users.length; ++i) {
+            userString[i] = String.valueOf(users[i]);
+        }
+        AppPref.set(key, TextUtils.join(",", userString));
+    }
+
     public static final class AppDetailsPage {
         public static boolean displayDefaultAppOps() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_APP_OP_SHOW_DEFAULT_BOOL);
@@ -749,6 +784,23 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_STR, profileName == null ? "" : profileName);
         }
 
+        @Nullable
+        public static int[] getFilteredUsers() {
+            String usersStr = AppPref.getString(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_USERS_STR);
+            if (NO_MAIN_WINDOW_USERS_SELECTED.equals(usersStr)) {
+                return new int[0];
+            }
+            return parseUserIds(usersStr);
+        }
+
+        public static void setFilteredUsers(@Nullable int[] users) {
+            if (users != null && users.length == 0) {
+                AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_USERS_STR, NO_MAIN_WINDOW_USERS_SELECTED);
+                return;
+            }
+            setUserIds(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_USERS_STR, users);
+        }
+
         public static boolean isFilteredProfileInverse() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_PROFILE_INVERSE_BOOL);
         }
@@ -762,39 +814,11 @@ public final class Prefs {
         @Nullable
         public static int[] getSelectedUsers() {
             String usersStr = AppPref.getString(AppPref.PrefKey.PREF_SELECTED_USERS_STR);
-            if (usersStr.isEmpty()) return null;
-            // Parse defensively: this value can be set by the snapshot-import
-            // feature (a trust boundary) or hand-edited, so a blank or
-            // non-numeric token must not crash every caller via an unchecked
-            // NumberFormatException (Integer.decode("") threw and propagated out
-            // of Users.getUsers()/getUsersIds() and the backup/list paths). Skip
-            // bad tokens; return null (= "all users") if nothing valid remains.
-            String[] usersSplitStr = usersStr.split(",");
-            int[] parsed = new int[usersSplitStr.length];
-            int count = 0;
-            for (String token : usersSplitStr) {
-                String t = token.trim();
-                if (t.isEmpty()) continue;
-                try {
-                    parsed[count++] = Integer.decode(t);
-                } catch (NumberFormatException ignore) {
-                    // skip malformed token
-                }
-            }
-            if (count == 0) return null;
-            return count == parsed.length ? parsed : java.util.Arrays.copyOf(parsed, count);
+            return parseUserIds(usersStr);
         }
 
         public static void setSelectedUsers(@Nullable int[] users) {
-            if (users == null) {
-                AppPref.set(AppPref.PrefKey.PREF_SELECTED_USERS_STR, "");
-                return;
-            }
-            String[] userString = new String[users.length];
-            for (int i = 0; i < users.length; ++i) {
-                userString[i] = String.valueOf(users[i]);
-            }
-            AppPref.set(AppPref.PrefKey.PREF_SELECTED_USERS_STR, TextUtils.join(",", userString));
+            setUserIds(AppPref.PrefKey.PREF_SELECTED_USERS_STR, users);
         }
 
         public static boolean sendNotificationsToConnectedDevices() {
