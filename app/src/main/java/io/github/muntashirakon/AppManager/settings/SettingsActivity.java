@@ -31,13 +31,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import io.github.muntashirakon.AppManager.utils.ThreadUtils;
-
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.main.WindowWidthSizeClass;
 import io.github.muntashirakon.AppManager.self.SelfUriManager;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.UiUtils;
 
@@ -88,9 +88,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
-        int mainPrefSize = getResources().getDimensionPixelSize(R.dimen.settings_primary_pane_width);
-        int windowWidth = getResources().getDisplayMetrics().widthPixels;
-        mDualPaneMode = windowWidth >= 2 * mainPrefSize;
+        mDualPaneMode = shouldUseDualPane(getResources().getConfiguration().screenWidthDp);
         setContentView(mDualPaneMode ? R.layout.activity_settings_dual_pane : R.layout.activity_settings);
         setSupportActionBar(findViewById(R.id.toolbar));
         mSecondaryToolbar = findViewById(R.id.toolbar2);
@@ -169,6 +167,10 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
                 getSupportFragmentManager().beginTransaction());
         initialTransaction.replace(R.id.main_layout, MainPreferences.getInstance(defaultPref, mDualPaneMode))
                 .commit();
+    }
+
+    static boolean shouldUseDualPane(int screenWidthDp) {
+        return WindowWidthSizeClass.requiresTwoPane(screenWidthDp);
     }
 
     @Override
