@@ -61,6 +61,19 @@ public class AssistComponentActionPlanTest {
     }
 
     @Test
+    public void servicePlan_carriesRequiredPermissionForConfirmation() {
+        ServiceInfo serviceInfo = service("com.example", ".ProtectedService", true, "com.example.SERVICE");
+
+        List<AssistComponentActionPlan.Action> actions = AssistComponentActionPlan.forService(
+                serviceInfo, false, false, false, true, 0, 0);
+
+        assertEquals(1, actions.size());
+        AssistComponentActionPlan.Action action = actions.get(0);
+        assertEquals(AssistComponentActionPlan.DispatchRoute.PRIVILEGED, action.route);
+        assertEquals("com.example.SERVICE", action.requiredPermission);
+    }
+
+    @Test
     public void servicePlan_hidesPermissionProtectedServiceWithoutPermissionOrPrivilege() {
         ServiceInfo serviceInfo = service("com.example", ".ProtectedService", true, "com.example.SERVICE");
 
@@ -127,6 +140,23 @@ public class AssistComponentActionPlanTest {
 
         assertEquals(1, actions.size());
         assertEquals(AssistComponentActionPlan.DispatchRoute.PRIVILEGED, actions.get(0).route);
+    }
+
+    @Test
+    public void receiverPlan_preservesDeclaredOrderPermissionAndCategories() {
+        ActivityInfo receiverInfo = receiver("com.example", ".SyncReceiver", true);
+        receiverInfo.permission = "com.example.RECEIVE_SYNC";
+
+        List<AssistComponentActionPlan.Action> actions = AssistComponentActionPlan.forReceiver(receiverInfo,
+                Arrays.asList("com.example.SYNC", "com.example.REFRESH"),
+                Arrays.asList(Intent.CATEGORY_DEFAULT, "com.example.CATEGORY"), false, false, 0, 0);
+
+        assertEquals(2, actions.size());
+        assertEquals("com.example.SYNC", actions.get(0).broadcastAction);
+        assertEquals("com.example.REFRESH", actions.get(1).broadcastAction);
+        assertEquals("com.example.RECEIVE_SYNC", actions.get(0).requiredPermission);
+        assertEquals(Arrays.asList(Intent.CATEGORY_DEFAULT, "com.example.CATEGORY"),
+                actions.get(0).declaredCategories);
     }
 
     @Test

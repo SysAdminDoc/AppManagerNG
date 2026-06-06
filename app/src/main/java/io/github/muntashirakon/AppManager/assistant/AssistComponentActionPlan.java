@@ -66,6 +66,18 @@ final class AssistComponentActionPlan {
                                     boolean privilegedAvailable,
                                     int targetUserId,
                                     int currentUserId) {
+        return forReceiver(receiverInfo, declaredActions, Collections.emptyList(), disabledOrBlocked,
+                privilegedAvailable, targetUserId, currentUserId);
+    }
+
+    @NonNull
+    static List<Action> forReceiver(@NonNull ActivityInfo receiverInfo,
+                                    @NonNull List<String> declaredActions,
+                                    @NonNull List<String> declaredCategories,
+                                    boolean disabledOrBlocked,
+                                    boolean privilegedAvailable,
+                                    int targetUserId,
+                                    int currentUserId) {
         if (disabledOrBlocked || declaredActions.isEmpty()) {
             return Collections.emptyList();
         }
@@ -81,7 +93,7 @@ final class AssistComponentActionPlan {
                 continue;
             }
             actions.add(new Action(ActionType.RECEIVER_BROADCAST, route(privileged), receiverInfo.packageName,
-                    receiverInfo.name, targetUserId, action));
+                    receiverInfo.name, targetUserId, action, receiverInfo.permission, declaredCategories));
         }
         return actions;
     }
@@ -98,7 +110,8 @@ final class AssistComponentActionPlan {
         if (privileged && !privilegedAvailable) {
             return null;
         }
-        return new Action(actionType, route(privileged), serviceInfo.packageName, serviceInfo.name, targetUserId, null);
+        return new Action(actionType, route(privileged), serviceInfo.packageName, serviceInfo.name, targetUserId,
+                null, serviceInfo.permission, Collections.emptyList());
     }
 
     @NonNull
@@ -127,15 +140,22 @@ final class AssistComponentActionPlan {
         final int userId;
         @Nullable
         final String broadcastAction;
+        @Nullable
+        final String requiredPermission;
+        @NonNull
+        final List<String> declaredCategories;
 
         private Action(@NonNull ActionType type, @NonNull DispatchRoute route, @NonNull String packageName,
-                       @NonNull String componentName, int userId, @Nullable String broadcastAction) {
+                       @NonNull String componentName, int userId, @Nullable String broadcastAction,
+                       @Nullable String requiredPermission, @NonNull List<String> declaredCategories) {
             this.type = type;
             this.route = route;
             this.packageName = packageName;
             this.componentName = componentName;
             this.userId = userId;
             this.broadcastAction = broadcastAction;
+            this.requiredPermission = requiredPermission;
+            this.declaredCategories = Collections.unmodifiableList(new ArrayList<>(declaredCategories));
         }
 
         @NonNull
