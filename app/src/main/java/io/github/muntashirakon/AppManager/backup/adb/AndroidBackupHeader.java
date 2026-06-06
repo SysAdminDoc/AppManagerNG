@@ -395,6 +395,9 @@ final class AndroidBackupHeader {
      * Creates byte array from it's hex string representation.
      */
     public static byte[] hexToByteArray(String digits) {
+        if (digits == null) {
+            throw new IllegalArgumentException("Hex string must not be null");
+        }
         final int bytes = digits.length() / 2;
         if (2 * bytes != digits.length()) {
             throw new IllegalArgumentException("Hex string must have an even number of digits");
@@ -402,7 +405,11 @@ final class AndroidBackupHeader {
 
         byte[] result = new byte[bytes];
         for (int i = 0; i < digits.length(); i += 2) {
-            result[i / 2] = (byte) Integer.parseInt(digits.substring(i, i + 2), 16);
+            try {
+                result[i / 2] = (byte) Integer.parseInt(digits.substring(i, i + 2), 16);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Hex string contains non-hex digits", e);
+            }
         }
         return result;
     }

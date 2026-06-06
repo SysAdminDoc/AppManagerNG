@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 54 source-FIXME closure for split APK chooser type
-  tracking.
+- Result: completed Cycle 55 source-audit closure for ADB backup header hex
+  validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  split APK chooser type-tracking fix and its verification target.
-- Code: `SplitApkChooser` now routes restored, required, automatic dependency,
-  and manual selections through one recorder that stores both selected split ids
-  and their type buckets.
+  ADB backup header hex validation hardening and its verification target.
+- Code: `AndroidBackupHeader.hexToByteArray()` now rejects null and non-hex
+  header fields with consistent `IllegalArgumentException` failures while
+  preserving byte/hex round-trips and odd-length rejection.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.splitapk.SplitApkChooserTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.adb.AndroidBackupHeaderTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
