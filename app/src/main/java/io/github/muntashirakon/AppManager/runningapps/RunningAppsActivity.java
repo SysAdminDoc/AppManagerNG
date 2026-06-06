@@ -152,6 +152,7 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mMultiSelectionView.updateCounter(true);
         mSelectionMenu = mMultiSelectionView.getMenu();
         mSelectionMenu.findItem(R.id.action_scan_vt).setVisible(false);
+        mSelectionMenu.findItem(R.id.action_restore_background).setVisible(false);
         mEnableKillForSystem = Prefs.RunningApps.enableKillForSystemApps();
 
         // Set observers
@@ -186,6 +187,14 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
                 refresh();
             } else {
                 UIUtils.displayLongToast(R.string.failed_to_prevent_background_run, applicationInfoBooleanPair.first
+                        .loadLabel(getPackageManager()));
+            }
+        });
+        model.observeRestoreBackgroundRun().observe(this, applicationInfoBooleanPair -> {
+            if (applicationInfoBooleanPair.second /* is success */) {
+                refresh();
+            } else {
+                UIUtils.displayLongToast(R.string.failed_to_restore_background_run, applicationInfoBooleanPair.first
                         .loadLabel(getPackageManager()));
             }
         });
@@ -399,7 +408,9 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         MenuItem kill = mSelectionMenu.findItem(R.id.action_kill);
         MenuItem forceStop = mSelectionMenu.findItem(R.id.action_force_stop);
         MenuItem preventBackground = mSelectionMenu.findItem(R.id.action_disable_background);
+        MenuItem restoreBackground = mSelectionMenu.findItem(R.id.action_restore_background);
         MenuItem viewLogs = mSelectionMenu.findItem(R.id.action_view_logs);
+        restoreBackground.setVisible(false);
         viewLogs.setEnabled(FeatureController.isLogViewerEnabled() && selectedItems.size() == 1);
         int appsCount = 0;
         for (Object item : selectedItems) {

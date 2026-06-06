@@ -33,8 +33,12 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
+import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.runner.Runner;
@@ -240,6 +244,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
     }
 
     private final MutableLiveData<Pair<ApplicationInfo, Boolean>> mPreventBackgroundRunResult = new MutableLiveData<>();
+    private final MutableLiveData<Pair<ApplicationInfo, Boolean>> mRestoreBackgroundRunResult = new MutableLiveData<>();
 
     public boolean canRunInBackground(@NonNull ApplicationInfo info) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
@@ -247,18 +252,23 @@ public class RunningAppsViewModel extends AndroidViewModel {
         }
         try {
             AppOpsManagerCompat appOpsManager = new AppOpsManagerCompat();
-            boolean canRun;
-            {
-                int mode = appOpsManager.checkOperation(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND, info.uid, info.packageName);
-                canRun = (mode != AppOpsManager.MODE_IGNORED && mode != AppOpsManager.MODE_ERRORED);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                int mode = appOpsManager.checkOperation(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND, info.uid, info.packageName);
-                canRun |= (mode != AppOpsManager.MODE_IGNORED && mode != AppOpsManager.MODE_ERRORED);
-            }
-            return canRun;
+            int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
+            return BackgroundRunAppOpPlan.canRunInBackground(readAppOpModes(appOpsManager, appOps, info));
         } catch (RemoteException | SecurityException e) {
             return true;
+        }
+    }
+
+    public boolean hasBackgroundRunRestriction(@NonNull ApplicationInfo info) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return false;
+        }
+        try {
+            AppOpsManagerCompat appOpsManager = new AppOpsManagerCompat();
+            int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
+            return BackgroundRunAppOpPlan.hasBackgroundRestriction(readAppOpModes(appOpsManager, appOps, info));
+        } catch (RemoteException | SecurityException e) {
+            return false;
         }
     }
 
@@ -286,23 +296,115 @@ public class RunningAppsViewModel extends AndroidViewModel {
         });
     }
 
+    public void restoreBackgroundRun(@NonNull ApplicationInfo info) {
+        mExecutor.submit(() -> {
+            List<BackgroundRunAppOpPlan.OpModeChange> plan = Collections.emptyList();
+            List<BackgroundRunAppOpPlan.OpModeChange> appliedChanges = new ArrayList<>();
+            Throwable failure = null;
+            try {
+                int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
+                AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
+                int[] currentModes = readAppOpModes(appOpsService, appOps, info);
+                plan = BackgroundRunAppOpPlan.createRestorePlan(appOps, currentModes, null);
+                for (BackgroundRunAppOpPlan.OpModeChange change : plan) {
+                    try {
+                        appOpsService.setMode(change.op, info.uid, info.packageName, change.restoreMode);
+                        appliedChanges.add(change);
+                    } catch (RemoteException | SecurityException e) {
+                        failure = e;
+                        Log.e("RunningApps", "Could not restore background app-op " + change.op, e);
+                    }
+                }
+                if (!appliedChanges.isEmpty()) {
+                    persistBackgroundRunRestore(info, appliedChanges);
+                }
+            } catch (RemoteException | SecurityException e) {
+                failure = e;
+                Log.e("RunningApps", "Could not read background app-op modes.", e);
+            } catch (Throwable th) {
+                failure = th;
+                Log.e("RunningApps", "Could not restore background operation.", th);
+            }
+            boolean success = failure == null && appliedChanges.size() == plan.size();
+            recordBackgroundRunRestoreHistory(info, appliedChanges, success, failure);
+            mRestoreBackgroundRunResult.postValue(new Pair<>(info, success));
+        });
+    }
+
     @VisibleForTesting
     @NonNull
     static int[] getBackgroundRunAppOpsForSdk(int sdkInt) {
-        if (sdkInt < Build.VERSION_CODES.N) {
-            return new int[0];
-        }
-        if (sdkInt < Build.VERSION_CODES.P) {
-            return new int[]{AppOpsManagerCompat.OP_RUN_IN_BACKGROUND};
-        }
-        return new int[]{
-                AppOpsManagerCompat.OP_RUN_IN_BACKGROUND,
-                AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND,
-        };
+        return BackgroundRunAppOpPlan.getAppOpsForSdk(sdkInt);
     }
 
     public LiveData<Pair<ApplicationInfo, Boolean>> observePreventBackgroundRun() {
         return mPreventBackgroundRunResult;
+    }
+
+    public LiveData<Pair<ApplicationInfo, Boolean>> observeRestoreBackgroundRun() {
+        return mRestoreBackgroundRunResult;
+    }
+
+    @NonNull
+    private static int[] readAppOpModes(@NonNull AppOpsManagerCompat appOpsManager, @NonNull int[] appOps,
+                                        @NonNull ApplicationInfo info) throws RemoteException {
+        int[] modes = new int[appOps.length];
+        for (int i = 0; i < appOps.length; ++i) {
+            modes[i] = appOpsManager.checkOperation(appOps[i], info.uid, info.packageName);
+        }
+        return modes;
+    }
+
+    private static void persistBackgroundRunRestore(@NonNull ApplicationInfo info,
+                                                    @NonNull List<BackgroundRunAppOpPlan.OpModeChange> changes) {
+        int userId = UserHandleHidden.getUserId(info.uid);
+        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(info.packageName, userId)) {
+            for (BackgroundRunAppOpPlan.OpModeChange change : changes) {
+                if (change.restoreMode == AppOpsManager.MODE_DEFAULT) {
+                    cb.deleteAppOp(change.op);
+                } else {
+                    cb.setAppOp(change.op, change.restoreMode);
+                }
+            }
+        }
+    }
+
+    @WorkerThread
+    private void recordBackgroundRunRestoreHistory(@NonNull ApplicationInfo info,
+                                                   @NonNull List<BackgroundRunAppOpPlan.OpModeChange> changes,
+                                                   boolean success,
+                                                   @Nullable Throwable failure) {
+        try {
+            int userId = UserHandleHidden.getUserId(info.uid);
+            SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                    SingleAppActionHistoryItem.ACTION_APP_OP_SET,
+                    getApplication().getString(R.string.restore_background_run),
+                    info.packageName,
+                    userId,
+                    getApplication().getString(R.string.background),
+                    formatBackgroundRunRestoreDetail(changes));
+            OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
+                    OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
+                            OperationJournalMetadata.RISK_MEDIUM, false, failure));
+        } catch (Throwable th) {
+            Log.e("RunningApps", "Could not record background-run restore history.", th);
+        }
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String formatBackgroundRunRestoreDetail(@NonNull List<BackgroundRunAppOpPlan.OpModeChange> changes) {
+        if (changes.isEmpty()) {
+            return "";
+        }
+        List<String> labels = new ArrayList<>(changes.size());
+        for (BackgroundRunAppOpPlan.OpModeChange change : changes) {
+            labels.add(String.format(Locale.ROOT, "%s: %s -> %s",
+                    AppOpsManagerCompat.opToName(change.op),
+                    AppOpsManagerCompat.modeToName(change.previousMode),
+                    AppOpsManagerCompat.modeToName(change.restoreMode)));
+        }
+        return TextUtils.join("; ", labels);
     }
 
     public int getTotalCount() {

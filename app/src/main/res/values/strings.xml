@@ -469,6 +469,7 @@
     <string name="running_apps_system_kill_disabled">System process killing disabled.</string>
     <string name="kill_process">Kill</string>
     <string name="disable_background_run">Prevent background operation</string>
+    <string name="restore_background_run">Restore background operation</string>
     <string name="pid_and_ppid">Process ID: %1$d, Parent process ID: %2$d</string>
     <string name="memory_virtual_memory">Memory: %1$s, Virtual memory: %2$s</string>
     <string name="user_with_id">User: <xliff:g id="user_id" example="0">%1$d</xliff:g></string>
@@ -1845,6 +1846,7 @@
     <string name="port_number_invalid">Invalid port number.</string>
     <string name="unknown_net_policy">Unknown netpolicy (%1$s - %2$X)</string>
     <string name="failed_to_prevent_background_run">Could not prevent %1$s from running in the background</string>
+    <string name="failed_to_restore_background_run">Could not restore background operation for %1$s</string>
     <string name="help_app_ops_tab">Click on an item to <b>allow</b> or <b>ignore</b> it. Long click on an item to see other supported modes.</string>
     <string name="help_permissions_tab">These permissions are defined by this app and cannot be revoked.</string>
     <string name="help_uses_permissions_tab">Click on an item to <b>grant</b> or <b>revoke</b> it. Only <b>dangerous</b> and <b>development</b> permissions may be granted or revoked.</string>
