@@ -169,6 +169,9 @@
         <intent>
             <action android:name="com.rosan.dhizuku.action.REQUEST_DHIZUKU_PERMISSION" />
         </intent>
+        <intent>
+            <action android:name="org.openintents.openpgp.IOpenPgpService2" />
+        </intent>
     </queries>
 
     <permission
