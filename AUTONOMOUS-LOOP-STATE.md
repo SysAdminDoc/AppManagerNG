@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 48 source-audit closure for intent extra edit
-  prefill formatting.
+- Result: completed Cycle 49 source-FIXME closure for intent empty list extra
+  serialization.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  intent extra edit prefill fix and its verification target.
-- Code: `AddIntentExtraFragment` now pre-fills the currently selected extra
-  type control when editing, and `IntentCompat` exposes the same parseable
-  formatter used by import/export so array/list values remain editable.
+  intent empty list extra serialization fix and its verification target.
+- Code: `IntentCompat` now skips empty runtime list extras whose element type
+  cannot be recovered instead of converting them into null string extras, while
+  explicit null extras remain serialized.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

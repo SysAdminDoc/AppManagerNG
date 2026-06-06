@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.intercept;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -82,6 +83,37 @@ public class IntentCompatTest {
         assertNotNull(parsed);
         ArrayList<Uri> parsedUris = IntentCompat.getParcelableArrayListExtra(parsed, "uris", Uri.class);
         assertEquals(uris, parsedUris);
+    }
+
+    @Test
+    public void flattenToString_skipsEmptyListExtraInsteadOfNullExtra() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putIntegerArrayListExtra("numbers", new ArrayList<>());
+        input.putExtra("nullable", (String) null);
+
+        String flattened = IntentCompat.flattenToString(input);
+        Intent parsed = IntentCompat.unflattenFromString(flattened);
+
+        assertFalse(flattened.contains("EXTRA\tnumbers\t" + AddIntentExtraFragment.TYPE_NULL));
+        assertNotNull(parsed);
+        Bundle extras = parsed.getExtras();
+        assertNotNull(extras);
+        assertFalse(extras.containsKey("numbers"));
+        assertTrue(extras.containsKey("nullable"));
+        assertNull(extras.getString("nullable"));
+    }
+
+    @Test
+    public void flattenToCommand_skipsEmptyListExtraInsteadOfNullExtra() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putStringArrayListExtra("labels", new ArrayList<>());
+        input.putExtra("nullable", (String) null);
+
+        ArrayList<String> args = new ArrayList<>(IntentCompat.flattenToCommand(input));
+
+        assertFalse(args.contains("labels"));
+        assertTrue(args.contains("--esn"));
+        assertTrue(args.contains("nullable"));
     }
 
     @Test

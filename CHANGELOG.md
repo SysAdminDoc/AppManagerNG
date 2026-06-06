@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent empty list extra serialization (source FIXME, 2026-06-06)
+
+- Intent export now skips empty runtime list extras whose element type cannot
+  be recovered instead of serializing them as null string extras.
+- Null extras still serialize explicitly, preserving the distinction between
+  unsupported empty lists and intentional null string extras.
+
 ### Fixed - Intent extra edit prefill formatting (source audit, 2026-06-06)
 
 - Editing an existing Activity Interceptor extra now pre-fills the control for
