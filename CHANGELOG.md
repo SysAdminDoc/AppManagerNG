@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Sysconfig runtime RAM feature injection (source FIXME, 2026-06-06)
+
+- Parsed system configuration now adds the runtime RAM feature that matches the
+  current public low-RAM device state.
+- Host tests pin the low-RAM and normal-RAM feature names plus the empty
+  `SystemConfig` mutation path without reading device permission files.
+
 ### Fixed - Owner UID parser hardening (source audit, 2026-06-06)
 
 - Owner string parsing now handles malformed formatted UID strings as

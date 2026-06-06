@@ -1241,9 +1241,12 @@ public class SystemConfig {
             IoUtils.closeQuietly(permReader);
         }
 
+        addRamFeature(isLowRamDevice());
+
         // Some devices can be field-converted to FBE, so offer to splice in
-        // those features if not already defined by the static config
-        // FIXME
+        // those features if not already defined by the static config.
+        // FIXME: implement the remaining storage, incremental, and app enumeration
+        // runtime features when public APIs are available.
 //        if (StorageManager.isFileEncryptedNativeOnly()) {
 //            addFeature(PackageManager.FEATURE_FILE_BASED_ENCRYPTION, 0);
 //            addFeature(PackageManager.FEATURE_SECURELY_REMOVES_USERS, 0);
@@ -1252,12 +1255,6 @@ public class SystemConfig {
 //        // Help legacy devices that may not have updated their static config
 //        if (StorageManager.hasAdoptable()) {
 //            addFeature(PackageManager.FEATURE_ADOPTABLE_STORAGE, 0);
-//        }
-//
-//        if (ActivityManager.isLowRamDeviceStatic()) {
-//            addFeature(PackageManager.FEATURE_RAM_LOW, 0);
-//        } else {
-//            addFeature(PackageManager.FEATURE_RAM_NORMAL, 0);
 //        }
 //
 //        if (IncrementalManager.isFeatureEnabled()) {
@@ -1279,6 +1276,15 @@ public class SystemConfig {
 
     static boolean shouldAddFeature(@NonNull XmlPullParser parser, boolean lowRam) {
         return !lowRam || !"true".equals(parser.getAttributeValue(null, "notLowRam"));
+    }
+
+    void addRamFeature(boolean lowRam) {
+        addFeature(getRamFeatureName(lowRam), 0);
+    }
+
+    @NonNull
+    static String getRamFeatureName(boolean lowRam) {
+        return lowRam ? PackageManager.FEATURE_RAM_LOW : PackageManager.FEATURE_RAM_NORMAL;
     }
 
     private static boolean isLowRamDevice() {
