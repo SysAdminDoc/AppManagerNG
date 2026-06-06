@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 
@@ -228,10 +227,16 @@ public class ManifestParser {
             if (tagName != null) {
                 switch (tagName) {
                     case TAG_ACTION:
-                        intentFilter.actions.add(Objects.requireNonNull(getAttributeValue(elem, ATTR_NAME)));
+                        String action = normalizeIntentFilterName(getAttributeValue(elem, ATTR_NAME));
+                        if (action != null) {
+                            intentFilter.actions.add(action);
+                        }
                         break;
                     case TAG_CATEGORY:
-                        intentFilter.categories.add(Objects.requireNonNull(getAttributeValue(elem, ATTR_NAME)));
+                        String category = normalizeIntentFilterName(getAttributeValue(elem, ATTR_NAME));
+                        if (category != null) {
+                            intentFilter.categories.add(category);
+                        }
                         break;
                     case TAG_DATA:
                         intentFilter.data.add(parseData(elem));
@@ -271,6 +276,16 @@ public class ManifestParser {
             }
         }
         return data;
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static String normalizeIntentFilterName(@Nullable String name) {
+        if (name == null) {
+            return null;
+        }
+        String trimmed = name.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @VisibleForTesting

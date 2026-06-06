@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Manifest intent-filter name parsing (source audit, 2026-06-06)
+
+- APK manifest parsing now ignores intent-filter action and category children
+  with missing or blank `android:name` values instead of throwing during
+  component inspection.
+- Valid action and category names are trimmed before they are added to the
+  exported manifest model.
+
 ### Fixed - Manifest intent-filter priority parsing (source audit, 2026-06-06)
 
 - APK manifest parsing now defaults malformed or overflowing
