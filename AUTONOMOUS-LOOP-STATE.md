@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 72 source-audit closure for logcat numeric field
-  parser hardening.
+- Result: completed Cycle 73 source-audit closure for logcat search criteria
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  logcat numeric field parser hardening and its verification target.
-- Code: modern and legacy logcat line parsing now treats overflowed PID, TID,
-  or UID-owner fields as malformed lines and falls back to the existing raw-line
-  display path instead of unchecked numeric conversion failures.
+  logcat search criteria hardening and its verification target.
+- Code: plain-text logcat searches now match log output as well as tags, and
+  overflowed digit-only `pid:` / `uid:` filters now degrade to empty filters
+  instead of unchecked numeric conversion failures.
 - Verification: passed
-  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.LogLineTest`
+  `:app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.struct.SearchCriteriaTest`
   (including `:app:compileFullDebugJavaWithJavac` as a dependency);
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
