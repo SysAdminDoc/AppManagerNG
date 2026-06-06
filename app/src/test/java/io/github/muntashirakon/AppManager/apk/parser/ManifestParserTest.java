@@ -65,6 +65,14 @@ public class ManifestParserTest {
         assertEquals(0, ManifestParser.parseIntentFilterPriority("999999999999999999999"));
     }
 
+    @Test
+    public void normalizeIntentFilterNameDropsMissingAndBlankNames() {
+        assertEquals(null, ManifestParser.normalizeIntentFilterName(null));
+        assertEquals(null, ManifestParser.normalizeIntentFilterName("   "));
+        assertEquals("android.intent.action.VIEW",
+                ManifestParser.normalizeIntentFilterName(" android.intent.action.VIEW "));
+    }
+
     private static void assertResourceMetadata(List<ManifestMetadata> metadata, ManifestMetadata row, String name) {
         assertNotNull("Missing resource metadata for " + name + "; candidates: "
                 + describeCandidates(metadata, name), row);
