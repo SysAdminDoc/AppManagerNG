@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Selected-user preference parsing (source audit, 2026-06-06)
+
+- Restored or hand-edited selected-user preference lists now drop negative user
+  ids in the same defensive path that already skips empty and non-numeric
+  tokens.
+- Main-list user filters and global selected-user preferences keep valid
+  decimal and decoded hex ids while ignoring invalid entries.
+
 ### Fixed - Rule import TSV hardening (source audit, 2026-06-06)
 
 - Rule import parsing now validates required tab-separated fields by position,

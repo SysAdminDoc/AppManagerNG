@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 
 @RunWith(RobolectricTestRunner.class)
 public class MainViewModelSelectedUsersTest {
@@ -63,6 +64,15 @@ public class MainViewModelSelectedUsersTest {
         Prefs.MainPage.setFilteredUsers(new int[0]);
 
         assertArrayEquals(new int[0], Prefs.MainPage.getFilteredUsers());
+    }
+
+    @Test
+    public void persistedUserFiltersDropMalformedAndNegativeIds() {
+        AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_USERS_STR, "10,-1,bad,0x0");
+        AppPref.set(AppPref.PrefKey.PREF_SELECTED_USERS_STR, "0, -2, 11, nope");
+
+        assertArrayEquals(new int[]{10, 0}, Prefs.MainPage.getFilteredUsers());
+        assertArrayEquals(new int[]{0, 11}, Prefs.Misc.getSelectedUsers());
     }
 
     @Test
