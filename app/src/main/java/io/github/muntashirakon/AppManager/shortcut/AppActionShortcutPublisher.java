@@ -24,6 +24,7 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public final class AppActionShortcutPublisher {
     private static final String TAG = AppActionShortcutPublisher.class.getSimpleName();
@@ -121,6 +122,7 @@ public final class AppActionShortcutPublisher {
     private static boolean isEligible(@NonNull ApplicationItem item) {
         return item.isInstalled
                 && item.userIds.length > 0
+                && PackageUtils.validateName(item.packageName)
                 && !BuildConfig.APPLICATION_ID.equals(item.packageName);
     }
 
