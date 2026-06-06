@@ -44,7 +44,6 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
-import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.proc.ProcMemoryInfo;
 import io.github.muntashirakon.util.AccessibilityUtils;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -297,9 +296,9 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             } else viewLogsItem.setVisible(false);
             // Scan using VT
             MenuItem scanVtIem = menu.findItem(R.id.action_scan_vt);
-            String firstCliArg = processItem.getCommandlineArgs()[0];
-            if (mModel.isVirusTotalAvailable() && (applicationInfo != null || Paths.get(firstCliArg).canRead())) {
-                // TODO: 7/1/22 Check other arguments for files, too?
+            if (mModel.isVirusTotalAvailable()
+                    && (applicationInfo != null
+                    || RunningAppsViewModel.getReadableCommandlineFile(processItem.getCommandlineArgs()) != null)) {
                 scanVtIem.setVisible(true).setOnMenuItemClickListener(item -> {
                     mModel.scanWithVt(processItem);
                     return true;

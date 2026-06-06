@@ -98,7 +98,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
         String file;
         if (processItem instanceof AppProcessItem) {
             file = ((AppProcessItem) processItem).packageInfo.applicationInfo.publicSourceDir;
-        } else file = processItem.getCommandlineArgs()[0];
+        } else file = getReadableCommandlineFile(processItem.getCommandlineArgs());
         if (mVt == null || file == null) {
             mVtFileReport.postValue(new Pair<>(processItem, null));
             return;
@@ -143,6 +143,20 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 mVtFileReport.postValue(new Pair<>(processItem, null));
             }
         });
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static String getReadableCommandlineFile(@NonNull String[] commandlineArgs) {
+        for (String arg : commandlineArgs) {
+            if (TextUtils.isEmpty(arg)) {
+                continue;
+            }
+            if (Paths.get(arg).canRead()) {
+                return arg;
+            }
+        }
+        return null;
     }
 
     @NonNull
