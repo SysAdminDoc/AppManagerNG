@@ -102,4 +102,28 @@ public class AutomationRequestTest {
         assertThrows(IllegalArgumentException.class, () ->
                 AutomationRequest.fromUri(Uri.parse("am://freeze/not a package")));
     }
+
+    @Test
+    public void rejectsNegativeUriUser() {
+        assertThrows(IllegalArgumentException.class, () ->
+                AutomationRequest.fromUri(Uri.parse("am://freeze/com.example.app?user=-1")));
+    }
+
+    @Test
+    public void rejectsNegativeIntentUser() {
+        Intent intent = new Intent(AutomationIntents.ACTION_FREEZE)
+                .putExtra(AutomationIntents.EXTRA_PACKAGE, "com.example.app")
+                .putExtra(AutomationIntents.EXTRA_USER, -1);
+
+        assertThrows(IllegalArgumentException.class, () -> AutomationRequest.fromIntent(intent));
+    }
+
+    @Test
+    public void rejectsNegativeIntentUserListEntry() {
+        Intent intent = new Intent(AutomationIntents.ACTION_FREEZE)
+                .putExtra(AutomationIntents.EXTRA_PACKAGE, "com.example.app")
+                .putExtra(AutomationIntents.EXTRA_USERS, "-1");
+
+        assertThrows(IllegalArgumentException.class, () -> AutomationRequest.fromIntent(intent));
+    }
 }
