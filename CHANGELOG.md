@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - APKS export split source fallback (source FIXME, 2026-06-06)
+
+- APKS export now supplements `splitPublicSourceDirs` with sibling `.apk` files
+  from the package source directory so split packages can still export complete
+  sources when platform split paths are absent.
+- Export source enumeration de-duplicates explicit and directory-discovered APK
+  paths and keeps the legacy `/data/app` guard.
+
 ### Fixed - Data-only split APK reinstall fallback (source FIXME, 2026-06-06)
 
 - Main-list data-only reinstall fallback now launches the installer with an
