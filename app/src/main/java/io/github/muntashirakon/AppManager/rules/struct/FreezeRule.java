@@ -16,13 +16,13 @@ public class FreezeRule extends RuleEntry {
 
     public FreezeRule(@NonNull String packageName, @FreezeUtils.FreezeMethod int freezeType) {
         super(packageName, STUB, RuleType.FREEZE);
-        mFreezeType = freezeType;
+        mFreezeType = validateFreezeType(freezeType);
     }
 
     public FreezeRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
         super(packageName, STUB, RuleType.FREEZE);
         if (tokenizer.hasMoreElements()) {
-            mFreezeType = Integer.parseInt(tokenizer.nextElement().toString());
+            mFreezeType = parseFreezeType(tokenizer.nextElement().toString());
         } else throw new IllegalArgumentException("Invalid format: freeze_type not found");
     }
 
@@ -31,7 +31,29 @@ public class FreezeRule extends RuleEntry {
     }
 
     public void setFreezeType(@FreezeUtils.FreezeMethod int freezeType) {
-        mFreezeType = freezeType;
+        mFreezeType = validateFreezeType(freezeType);
+    }
+
+    @FreezeUtils.FreezeMethod
+    private static int parseFreezeType(@NonNull String value) {
+        try {
+            return validateFreezeType(Integer.parseInt(value.trim()));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid format: freeze_type is invalid", e);
+        }
+    }
+
+    @FreezeUtils.FreezeMethod
+    private static int validateFreezeType(int freezeType) {
+        switch (freezeType) {
+            case FreezeUtils.FREEZE_DISABLE:
+            case FreezeUtils.FREEZE_SUSPEND:
+            case FreezeUtils.FREEZE_HIDE:
+            case FreezeUtils.FREEZE_ADV_SUSPEND:
+                return freezeType;
+            default:
+                throw new IllegalArgumentException("Invalid format: freeze_type is invalid");
+        }
     }
 
     @NonNull
