@@ -351,6 +351,14 @@ public final class IntentCompat {
                 sb.append(",").append(escapeComma(list[i]));
             }
             return new Pair<>(TYPE_STRING_ARR, sb.toString());
+        } else if (object instanceof CharSequence[]) {
+            StringBuilder sb = new StringBuilder();
+            CharSequence[] list = (CharSequence[]) object;
+            if (list.length >= 1) sb.append(escapeComma(list[0].toString()));
+            for (int i = 1; i < list.length; ++i) {
+                sb.append(",").append(escapeComma(list[i].toString()));
+            }
+            return new Pair<>(TYPE_STRING_ARR, sb.toString());
         } else if (object instanceof Uri[]) {
             StringBuilder sb = new StringBuilder();
             Uri[] list = (Uri[]) object;
@@ -393,6 +401,13 @@ public final class IntentCompat {
                 sb.append(escapeComma((String) item));
                 for (int i = 1; i < list.size(); ++i) {
                     sb.append(",").append(escapeComma((String) list.get(i)));
+                }
+                return new Pair<>(TYPE_STRING_AL, sb.toString());
+            } else if (item instanceof CharSequence) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(escapeComma(item.toString()));
+                for (int i = 1; i < list.size(); ++i) {
+                    sb.append(",").append(escapeComma(list.get(i).toString()));
                 }
                 return new Pair<>(TYPE_STRING_AL, sb.toString());
             } else if (item instanceof Uri) {
