@@ -129,6 +129,7 @@ public class ActivityManagerCompatTest {
                 assertEquals(expected.process, actual.process);
                 assertEquals(expected.uid, actual.uid);
                 assertEquals(expected.pid, actual.pid);
+                assertEquals(expected.clientCount, actual.clientCount);
             }
         }
     }
