@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 41 source-TODO closure for OpenPGP backup provider
-  availability.
+- Result: completed Cycle 42 source-TODO closure for certificate extension OID
+  descriptions.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  provider availability check and its verification target.
-- Code: OpenPGP backup encryption mode availability now requires configured key
-  IDs plus a configured provider package that resolves
-  `OpenPgpApi.SERVICE_INTENT_2`.
+  certificate extension label descriptions and their verification target.
+- Code: `OidMap` now stores descriptions for every mapped X.509 extension OID,
+  and signing-certificate details append those descriptions to critical and
+  non-critical extension labels while preserving unknown-OID fallback.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.CryptoUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.OidMapTest --tests io.github.muntashirakon.AppManager.utils.PackageUtilsCertificateExtensionTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
