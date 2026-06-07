@@ -18,4 +18,13 @@ public class FmUtilsTest {
 
         assertEquals("/sdcard/ =payload name", FmUtils.getClipboardPath(uri));
     }
+
+    @Test
+    public void getDisplayNameFlattensControlsDefusesFormulaAndFallsBack() {
+        assertEquals("' =payload name.txt",
+                FmUtils.getDisplayName("\t=payload\nname.txt", "fallback.txt"));
+        assertEquals("/sdcard/root",
+                FmUtils.getDisplayName("\r\n\t", "/sdcard/root"));
+        assertEquals("", FmUtils.getDisplayName(null, "\r\n\t"));
+    }
 }
