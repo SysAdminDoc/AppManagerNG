@@ -20,6 +20,7 @@ import java.util.Set;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public final class BatchOpsJournal {
     private static final String PREF_NAME = BuildConfig.APPLICATION_ID + ".batch_ops_journal";
@@ -205,6 +206,9 @@ public final class BatchOpsJournal {
     private static JSONArray serializeTargets(@NonNull List<UserPackagePair> targets) throws JSONException {
         JSONArray array = new JSONArray();
         for (UserPackagePair target : targets) {
+            if (!isValidTarget(target.getPackageName(), target.getUserId())) {
+                continue;
+            }
             array.put(new JSONObject()
                     .put(KEY_PACKAGE, target.getPackageName())
                     .put(KEY_USER, target.getUserId()));
@@ -224,12 +228,17 @@ public final class BatchOpsJournal {
                 continue;
             }
             String packageName = item.optString(KEY_PACKAGE, "");
-            if (packageName.isEmpty()) {
+            int userId = item.optInt(KEY_USER, 0);
+            if (!isValidTarget(packageName, userId)) {
                 continue;
             }
-            targets.add(new UserPackagePair(packageName, item.optInt(KEY_USER, 0)));
+            targets.add(new UserPackagePair(packageName, userId));
         }
         return targets;
+    }
+
+    private static boolean isValidTarget(@NonNull String packageName, int userId) {
+        return userId >= 0 && PackageUtils.validateName(packageName);
     }
 
     @NonNull

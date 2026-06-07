@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 118 source-audit closure for profile trigger type
+- Result: completed Cycle 119 source-audit closure for batch journal target
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  profile trigger type parser hardening and its verification target.
-- Code: persisted profile triggers with unknown future or malformed `type`
-  strings are now skipped instead of silently becoming time-of-day triggers,
-  while missing trigger types keep the existing legacy default.
+  batch journal target parser hardening and its verification target.
+- Code: interrupted batch-operation progress now drops completed or failed
+  target rows with malformed package names or negative user IDs before
+  persisting or reading journal state, so retry queue reconstruction ignores
+  malformed progress rows.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStoreTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.batchops.BatchOpsJournalTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
