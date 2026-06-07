@@ -42,7 +42,7 @@ public class OpHistoryItem {
 
     @NonNull
     public String getType() {
-        return isKnownType(opHistory.type) ? opHistory.type : OpHistoryManager.HISTORY_TYPE_UNKNOWN;
+        return OpHistoryManager.normalizeHistoryType(opHistory.type);
     }
 
     public long getId() {
@@ -119,9 +119,7 @@ public class OpHistoryItem {
 
     @NonNull
     public String getStatusName() {
-        return OpHistoryManager.STATUS_SUCCESS.equals(opHistory.status)
-                ? OpHistoryManager.STATUS_SUCCESS
-                : OpHistoryManager.STATUS_FAILURE;
+        return OpHistoryManager.normalizeStatus(opHistory.status);
     }
 
     public boolean getStatus() {
@@ -397,14 +395,6 @@ public class OpHistoryItem {
                 return jsonData.optInt("user_id", UserHandleHidden.myUserId());
         }
         return UserHandleHidden.myUserId();
-    }
-
-    private static boolean isKnownType(@Nullable String type) {
-        return OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(type)
-                || OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(type)
-                || OpHistoryManager.HISTORY_TYPE_PROFILE.equals(type)
-                || OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(type)
-                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(type);
     }
 
     private static void appendSection(@NonNull Context context,

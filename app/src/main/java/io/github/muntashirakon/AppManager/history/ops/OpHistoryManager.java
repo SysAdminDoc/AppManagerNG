@@ -63,6 +63,27 @@ public final class OpHistoryManager {
 
     private static final MutableLiveData<OpHistory> sHistoryAddedLiveData = new MutableLiveData<>();
 
+    @NonNull
+    public static String normalizeHistoryType(@Nullable String type) {
+        String normalizedType = normalizeToken(type);
+        if (HISTORY_TYPE_BATCH_OPS.equals(normalizedType)
+                || HISTORY_TYPE_INSTALLER.equals(normalizedType)
+                || HISTORY_TYPE_PROFILE.equals(normalizedType)
+                || HISTORY_TYPE_CLEANUP.equals(normalizedType)
+                || HISTORY_TYPE_SINGLE_APP_ACTION.equals(normalizedType)) {
+            return normalizedType;
+        }
+        return HISTORY_TYPE_UNKNOWN;
+    }
+
+    @Status
+    @NonNull
+    public static String normalizeStatus(@Nullable String status) {
+        return STATUS_SUCCESS.equals(normalizeToken(status))
+                ? STATUS_SUCCESS
+                : STATUS_FAILURE;
+    }
+
     public static LiveData<OpHistory> getHistoryAddedLiveData() {
         return sHistoryAddedLiveData;
     }
@@ -294,5 +315,14 @@ public final class OpHistoryManager {
             throw new JSONException("Missing profile identity.");
         }
         return profileQueueItem;
+    }
+
+    @Nullable
+    private static String normalizeToken(@Nullable String token) {
+        if (token == null) {
+            return null;
+        }
+        String normalizedToken = token.trim();
+        return normalizedToken.isEmpty() ? null : normalizedToken;
     }
 }

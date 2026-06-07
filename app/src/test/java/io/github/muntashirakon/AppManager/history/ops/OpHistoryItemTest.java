@@ -198,10 +198,35 @@ public class OpHistoryItemTest {
     }
 
     @Test
-    public void malformedReplayPayloadIsNotReplayableEvenWhenMetadataAllowsReplay() throws Exception {
+    public void trimmedHistoryTypeAndStatusUseCanonicalValues() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         OpHistory row = new OpHistory();
         row.id = 13L;
+        row.type = " " + OpHistoryManager.HISTORY_TYPE_BATCH_OPS + " ";
+        row.execTime = 1_700_000_000_000L;
+        row.status = " " + OpHistoryManager.STATUS_SUCCESS + " ";
+        row.serializedData = new JSONObject()
+                .put("title_res", R.string.batch_ops)
+                .put("op", BatchOpsManager.OP_FREEZE)
+                .put("packages", new JSONArray().put("com.example.app"))
+                .put("users", new JSONArray().put(0))
+                .put("options", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = null;
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertEquals(OpHistoryManager.HISTORY_TYPE_BATCH_OPS, item.getType());
+        assertEquals(context.getString(R.string.batch_ops), item.getLocalizedType(context));
+        assertEquals(OpHistoryManager.STATUS_SUCCESS, item.getStatusName());
+        assertTrue(item.getStatus());
+    }
+
+    @Test
+    public void malformedReplayPayloadIsNotReplayableEvenWhenMetadataAllowsReplay() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 14L;
         row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
         row.execTime = 1_700_000_000_000L;
         row.status = OpHistoryManager.STATUS_SUCCESS;
@@ -221,7 +246,7 @@ public class OpHistoryItemTest {
     public void validBatchReplayPayloadRemainsReplayable() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         OpHistory row = new OpHistory();
-        row.id = 14L;
+        row.id = 15L;
         row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
         row.execTime = 1_700_000_000_000L;
         row.status = OpHistoryManager.STATUS_SUCCESS;
