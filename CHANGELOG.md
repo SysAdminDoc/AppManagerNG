@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Open-with MIME fallback hardening (source audit, 2026-06-07)
+
+- File-manager open-with intents now normalize custom MIME strings before
+  calling `Intent.setDataAndType`.
+- Malformed or parameterized open-with MIME strings now fall back to the file's
+  detected type, using the same MIME normalization helper as file sharing.
+
 ### Fixed - File-share helper input hardening (source audit, 2026-06-07)
 
 - File-share chooser construction now copies share path lists at helper
