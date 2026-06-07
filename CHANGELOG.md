@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Support-info share intent attachment hardening (source audit, 2026-06-07)
+
+- Support-info bundle sharing now builds its attachment `ACTION_SEND` intent
+  through a tested URI-based helper.
+- Support-info attachment shares now pin plain-text MIME, subject, stream URI,
+  read-grant, and `ClipData` behavior before launching the external chooser.
+
 ### Fixed - Activity Interceptor share-details intent hardening (source audit, 2026-06-07)
 
 - Activity Interceptor details sharing now builds its `ACTION_SEND` intent

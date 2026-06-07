@@ -4,13 +4,35 @@ package io.github.muntashirakon.AppManager.misc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Intent;
+import android.net.Uri;
+
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
 import java.util.Date;
 
+@RunWith(RobolectricTestRunner.class)
 public class SupportInfoBundleTest {
+    @Test
+    public void buildShareIntentPinsTextStreamGrantAndSubject() {
+        Uri uri = Uri.parse("content://io.github.sysadmindoc.AppManagerNG.filecache/support-info/report.txt");
+
+        Intent intent = SupportInfoBundle.buildShareIntent("Support info", uri);
+
+        assertEquals(Intent.ACTION_SEND, intent.getAction());
+        assertEquals("text/plain", intent.getType());
+        assertEquals("Support info", intent.getStringExtra(Intent.EXTRA_SUBJECT));
+        assertEquals(uri, intent.getParcelableExtra(Intent.EXTRA_STREAM));
+        assertTrue((intent.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
+        assertNotNull(intent.getClipData());
+        assertEquals(uri, intent.getClipData().getItemAt(0).getUri());
+    }
+
     @Test
     public void scrubForPublicIssue_masksPackagePathUriEmailAndUidData() {
         String scrubbed = SupportInfoBundle.scrubForPublicIssue(
