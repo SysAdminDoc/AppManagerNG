@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-share helper input hardening (source audit, 2026-06-07)
+
+- File-share chooser construction now copies share path lists at helper
+  creation time and rejects empty share requests before URI construction.
+- Custom share MIME strings are now trimmed, parameter-stripped, lowercased, and
+  defaulted to `application/octet-stream` when malformed before they reach share
+  intents or `ClipData`.
+
 ### Fixed - Clipboard oversized fallback UTF-8 hardening (source audit, 2026-06-07)
 
 - Oversized clipboard text now uses explicit UTF-8 bytes before deciding
