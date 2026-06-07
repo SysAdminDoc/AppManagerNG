@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager load-error display-name hardening (source audit, 2026-06-07)
+
+- File-manager not-folder and missing-path load errors now format path-derived
+  names before rendering them in the empty-state error title.
+- File loading, symlink resolution, and URI state still use the original `Path`
+  and URI values.
+
 ### Fixed - File properties path display-name hardening (source audit, 2026-06-07)
 
 - File properties now format readable path and symlink target path fields before

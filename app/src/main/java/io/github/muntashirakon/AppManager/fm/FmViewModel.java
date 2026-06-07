@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
@@ -340,9 +341,11 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
             if (!path.isDirectory()) {
                 IOException e;
                 if (path.exists()) {
-                    e = new FileNotFoundException(getApplication().getString(R.string.path_not_a_folder, path.getName()));
+                    e = new FileNotFoundException(getApplication().getString(R.string.path_not_a_folder,
+                            getDisplayPathName(path)));
                 } else {
-                    e = new IOException(getApplication().getString(R.string.path_does_not_exist, path.getName()));
+                    e = new IOException(getApplication().getString(R.string.path_does_not_exist,
+                            getDisplayPathName(path)));
                 }
                 handleError(e, mCurrentUri);
                 return;
@@ -648,5 +651,11 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
                 .setReadWrite(!options.isReadOnly())
                 .setDexApiLevel(Build.VERSION.SDK_INT)
                 .build();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getDisplayPathName(@NonNull Path path) {
+        return FmUtils.getPathDisplayName(path);
     }
 }
