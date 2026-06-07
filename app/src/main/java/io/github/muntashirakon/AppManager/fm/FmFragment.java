@@ -1333,7 +1333,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         for (int i = 0; i < previewCount; ++i) {
             FmBatchRenameUtils.Entry entry = plan.entries.get(i);
             builder.append("\n").append(getString(R.string.batch_rename_preview_row,
-                    entry.sourceName, entry.targetName));
+                    FmBatchRenameUtils.getDisplayName(entry.sourceName),
+                    FmBatchRenameUtils.getDisplayName(entry.targetName)));
         }
         int remainingCount = plan.entries.size() - previewCount;
         if (remainingCount > 0) {
@@ -1349,12 +1350,15 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             case EMPTY_TARGET_NAME:
                 return getString(R.string.batch_rename_empty_target);
             case INVALID_TARGET_NAME:
-                return getString(R.string.batch_rename_invalid_target, issue.targetName);
+                return getString(R.string.batch_rename_invalid_target,
+                        FmBatchRenameUtils.getDisplayName(issue.targetName));
             case MISSING_PARENT:
-                return getString(R.string.batch_rename_missing_parent, issue.sourceName);
+                return getString(R.string.batch_rename_missing_parent,
+                        FmBatchRenameUtils.getDisplayName(issue.sourceName));
             case NO_AVAILABLE_TARGET_NAME:
             default:
-                return getString(R.string.batch_rename_no_available_target, issue.sourceName);
+                return getString(R.string.batch_rename_no_available_target,
+                        FmBatchRenameUtils.getDisplayName(issue.sourceName));
         }
     }
 
@@ -1394,7 +1398,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     public void onEntryStarted(@NonNull FmBatchRenameUtils.Entry entry, int index, int total) {
                         TextView l = labelRef.get();
                         if (l != null) {
-                            ThreadUtils.postOnMainThread(() -> l.setText(entry.sourceName));
+                            ThreadUtils.postOnMainThread(() ->
+                                    l.setText(FmBatchRenameUtils.getDisplayName(entry.sourceName)));
                         }
                     }
 
@@ -1445,13 +1450,16 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             builder.append("\n");
             if (item.success) {
                 builder.append(getString(R.string.batch_rename_result_success_row,
-                        item.entry.sourceName, item.entry.targetName));
+                        FmBatchRenameUtils.getDisplayName(item.entry.sourceName),
+                        FmBatchRenameUtils.getDisplayName(item.entry.targetName)));
             } else if (TextUtils.isEmpty(item.failureMessage)) {
                 builder.append(getString(R.string.batch_rename_result_failed_row,
-                        item.entry.sourceName, item.entry.targetName));
+                        FmBatchRenameUtils.getDisplayName(item.entry.sourceName),
+                        FmBatchRenameUtils.getDisplayName(item.entry.targetName)));
             } else {
                 builder.append(getString(R.string.batch_rename_result_failed_row_with_reason,
-                        item.entry.sourceName, item.entry.targetName, item.failureMessage));
+                        FmBatchRenameUtils.getDisplayName(item.entry.sourceName),
+                        FmBatchRenameUtils.getDisplayName(item.entry.targetName), item.failureMessage));
             }
         }
         return builder;
