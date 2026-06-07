@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 97 source-audit closure for Activity Interceptor
-  pasted USER header hardening.
+- Result: completed Cycle 98 source-audit closure for backup checksum row
+  parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  pasted USER header hardening and its verification target.
-- Code: Activity Interceptor paste handling now ignores negative copied `USER`
-  headers instead of forwarding invalid user IDs into permission checks, while
-  valid decimal and decoded hex values tolerate surrounding whitespace.
+  backup checksum row parser hardening and its verification target.
+- Code: backup checksum-file loading now reports malformed rows as
+  `IOException` failures instead of unchecked runtime exceptions, and rows with
+  missing separators, empty checksum values, or empty filenames are rejected
+  before restore or verify uses them.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
