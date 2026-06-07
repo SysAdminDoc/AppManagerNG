@@ -118,6 +118,49 @@ public class OperationJournalMetadataTest {
         assertFalse(serialized.toString().contains("bad-warning"));
     }
 
+    @Test
+    public void restoredMetadataSanitizesScalarCountsAndRisk() throws Exception {
+        OperationJournalMetadata metadata = OperationJournalMetadata.fromJson(new JSONObject()
+                .put("schema_version", 1)
+                .put("target_count", 2)
+                .put("failed_count", 5)
+                .put("exit_code", -7)
+                .put("risk", 99)
+                .toString());
+        assertNotNull(metadata);
+
+        assertEquals(2, metadata.getTargetCount());
+        assertEquals(2, metadata.getFailedCount());
+        assertEquals(Integer.valueOf(-7), metadata.getExitCode());
+        assertEquals(OperationJournalMetadata.RISK_MEDIUM, metadata.getRisk());
+
+        JSONObject serialized = metadata.serializeToJson();
+        assertEquals(2, serialized.getInt("target_count"));
+        assertEquals(2, serialized.getInt("failed_count"));
+        assertEquals(-7, serialized.getInt("exit_code"));
+        assertEquals(OperationJournalMetadata.RISK_MEDIUM, serialized.getInt("risk"));
+    }
+
+    @Test
+    public void restoredMetadataDropsMalformedScalarValues() throws Exception {
+        OperationJournalMetadata metadata = OperationJournalMetadata.fromJson(new JSONObject()
+                .put("schema_version", 1)
+                .put("target_count", -3)
+                .put("failed_count", -1)
+                .put("exit_code", "bad")
+                .toString());
+        assertNotNull(metadata);
+
+        assertEquals(0, metadata.getTargetCount());
+        assertEquals(0, metadata.getFailedCount());
+        assertEquals(null, metadata.getExitCode());
+
+        JSONObject serialized = metadata.serializeToJson();
+        assertEquals(0, serialized.getInt("target_count"));
+        assertEquals(0, serialized.getInt("failed_count"));
+        assertFalse(serialized.has("exit_code"));
+    }
+
     private static List<String> createWarnings(int count) {
         ArrayList<String> warnings = new ArrayList<>(count);
         for (int i = 0; i < count; ++i) {
