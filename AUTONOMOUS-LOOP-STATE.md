@@ -8,12 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 109 source-audit closure for backup metadata
-  package-name hardening.
+- Result: completed Cycle 110 source-audit closure for backup metadata
+  APK-filename hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata package-name hardening and its verification target.
-- Code: backup metadata loading now rejects malformed persisted `package_name`
-  values in `meta_v5.am.json` before they can be written into backup-list state.
+  backup metadata APK-filename hardening and its verification target.
+- Code: backup metadata loading now rejects unsafe persisted `apk_name` and
+  `split_configs` filenames before restore creates package-staging files from
+  them.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
