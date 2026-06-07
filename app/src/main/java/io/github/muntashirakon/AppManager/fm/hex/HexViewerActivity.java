@@ -137,7 +137,7 @@ public class HexViewerActivity extends BaseActivity {
             long offset = HexViewerUtils.parseOffset(getText(mOffsetInput), mFileSize);
             loadPage(offset, offset);
         } catch (IllegalArgumentException e) {
-            UIUtils.displayLongToast(e.getMessage());
+            UIUtils.displayLongToast(getErrorMessage(e));
         }
     }
 
@@ -150,7 +150,7 @@ public class HexViewerActivity extends BaseActivity {
         try {
             pattern = HexViewerUtils.parseHexPattern(getText(mSearchInput));
         } catch (IllegalArgumentException e) {
-            UIUtils.displayLongToast(e.getMessage());
+            UIUtils.displayLongToast(getErrorMessage(e));
             return;
         }
         long startOffset = mHighlightOffset >= mPageOffset ? mHighlightOffset + 1 : mPageOffset;
