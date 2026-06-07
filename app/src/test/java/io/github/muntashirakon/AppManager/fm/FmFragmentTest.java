@@ -38,4 +38,15 @@ public class FmFragmentTest {
                         + "   at pkg.Cause.method(Cause.java:34)\n",
                 FmFragment.formatEmptyViewDetails(failure));
     }
+
+    @Test
+    public void formatArchiveErrorMessageSanitizesLocalizedMessage() {
+        assertEquals("' =payload path\n'@next",
+                FmFragment.formatArchiveErrorMessage(new IOException("\t=payload\rpath\n@next")));
+    }
+
+    @Test
+    public void formatArchiveErrorMessageAllowsEmptyMessages() {
+        assertEquals("", FmFragment.formatArchiveErrorMessage(new IOException()));
+    }
 }
