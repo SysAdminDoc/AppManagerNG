@@ -142,6 +142,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readInfoRejectsUnknownTarType() throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup("ffffffff-ffff-ffff-ffff-ffffffffffff",
+                1L, 0, "x", DigestUtils.SHA_256, CryptoUtils.MODE_NO_ENCRYPTION, "");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -150,16 +160,24 @@ public class BackupItemsTest {
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, String crypto, String extraFields)
             throws IOException {
-        return createInfoBackup(backupUuid, 1L, 0, crypto, extraFields);
+        return createInfoBackup(backupUuid, 1L, 0, TarUtils.TAR_GZIP, DigestUtils.SHA_256, crypto, extraFields);
     }
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, int userHandle, String crypto,
                                                     String extraFields) throws IOException {
-        return createInfoBackup(backupUuid, 1L, userHandle, crypto, extraFields);
+        return createInfoBackup(backupUuid, 1L, userHandle, TarUtils.TAR_GZIP, DigestUtils.SHA_256, crypto,
+                extraFields);
     }
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, long backupTime, int userHandle, String crypto,
                                                     String extraFields) throws IOException {
+        return createInfoBackup(backupUuid, backupTime, userHandle, TarUtils.TAR_GZIP, DigestUtils.SHA_256, crypto,
+                extraFields);
+    }
+
+    private BackupItems.BackupItem createInfoBackup(String backupUuid, long backupTime, int userHandle, String tarType,
+                                                    String checksumAlgo, String crypto, String extraFields)
+            throws IOException {
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
                 .findOrCreateDirectory(backupUuid);
@@ -169,8 +187,8 @@ public class BackupItemsTest {
                 + "\"backup_time\":" + backupTime + ","
                 + "\"flags\":0,"
                 + "\"user_handle\":" + userHandle + ","
-                + "\"tar_type\":\"" + TarUtils.TAR_GZIP + "\","
-                + "\"checksum_algo\":\"" + DigestUtils.SHA_256 + "\","
+                + "\"tar_type\":\"" + tarType + "\","
+                + "\"checksum_algo\":\"" + checksumAlgo + "\","
                 + "\"crypto\":\"" + crypto + "\""
                 + extraFields
                 + "}");

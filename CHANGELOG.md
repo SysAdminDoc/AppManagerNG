@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata archive types (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects unknown persisted `tar_type` values during
+  info parsing instead of deferring invalid archive formats to restore-time tar
+  extraction paths.
+- Malformed archive types are reported through the same `IOException` backup
+  read boundary as other malformed backup info fields.
+
 ### Fixed - Backup metadata timestamps (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects negative persisted `backup_time` values

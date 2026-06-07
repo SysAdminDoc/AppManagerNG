@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup.struct;
 
 import static io.github.muntashirakon.AppManager.backup.BackupUtils.getReadableTarType;
+import static io.github.muntashirakon.AppManager.backup.BackupUtils.TAR_TYPES;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSecondaryText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getTitleText;
@@ -203,6 +204,9 @@ public class BackupMetadataV5 implements LocalizedString {
             }
             if (userId < 0) {
                 throw new IllegalArgumentException("Malformed backup: negative user ID");
+            }
+            if (ArrayUtils.indexOf(TAR_TYPES, tarType) == -1) {
+                throw new IllegalArgumentException("Malformed backup: unknown tar type " + tarType);
             }
             verifyCrypto();
         }
