@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 122 source-audit closure for batch AppOps option
+- Result: completed Cycle 123 source-audit closure for batch component option
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch AppOps option parser hardening and its verification target.
-- Code: batch AppOps options now reject empty AppOps arrays, invalid operation
-  IDs, wildcard operations mixed with concrete operations, and unsupported
-  AppOps modes before batch execution or recovery can apply them; constructor,
-  parcel, and JSON restoration paths share the same validation.
+  batch component option parser hardening and its verification target.
+- Code: batch component options now reject empty, blank, null, or non-string
+  component signatures before block/unblock component operations can match them;
+  persisted component signatures are trimmed before use so whitespace-only
+  values are rejected before they can widen component matching.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.batchops.struct.BatchAppOpsOptionsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.batchops.struct.BatchComponentOptionsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,12 +27,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed batch or
-  persisted-state parser edge, starting with network-policy, component, and
-  permission batch option constructors before expanding back into backup/profile
-  parser edges.
-- Start by checking whether persisted network policies, component signatures,
-  or permission names can reach runtime paths without validation, and choose a
-  small source-backed risk that can be tightened without device-only claims.
+  persisted-state parser edge, starting with permission and network-policy batch
+  option constructors before expanding back into backup/profile parser edges.
+- Start by checking whether persisted permission names or network policies can
+  reach runtime paths without validation, and choose a small source-backed risk
+  that can be tightened without device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

@@ -6,9 +6,11 @@ import android.os.Parcel;
 
 import androidx.annotation.NonNull;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
@@ -21,7 +23,7 @@ public class BatchComponentOptions implements IBatchOpOptions {
     private String[] mSignatures;
 
     public BatchComponentOptions(@NonNull String[] signatures) {
-        mSignatures = signatures;
+        mSignatures = requireValidSignatures(signatures);
     }
 
     @NonNull
@@ -30,7 +32,7 @@ public class BatchComponentOptions implements IBatchOpOptions {
     }
 
     protected BatchComponentOptions(@NonNull Parcel in) {
-        mSignatures = Objects.requireNonNull(in.createStringArray());
+        mSignatures = requireValidSignatures(Objects.requireNonNull(in.createStringArray()));
     }
 
     @Override
@@ -40,7 +42,7 @@ public class BatchComponentOptions implements IBatchOpOptions {
 
     protected BatchComponentOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mSignatures = JSONUtils.getArray(String.class, jsonObject.getJSONArray("signatures"));
+        mSignatures = deserializeSignatures(jsonObject.getJSONArray("signatures"));
     }
 
     public static final JsonDeserializer.Creator<BatchComponentOptions> DESERIALIZER
@@ -73,4 +75,40 @@ public class BatchComponentOptions implements IBatchOpOptions {
             return new BatchComponentOptions[size];
         }
     };
+
+    @NonNull
+    private static String[] deserializeSignatures(@NonNull JSONArray signaturesJson) throws JSONException {
+        String[] signatures = new String[signaturesJson.length()];
+        for (int i = 0; i < signaturesJson.length(); ++i) {
+            Object value = signaturesJson.get(i);
+            if (!(value instanceof String)) {
+                throw new JSONException("Invalid component signature.");
+            }
+            signatures[i] = (String) value;
+        }
+        try {
+            return requireValidSignatures(signatures);
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
+    }
+
+    @NonNull
+    private static String[] requireValidSignatures(@NonNull String[] signatures) {
+        if (signatures.length == 0) {
+            throw new IllegalArgumentException("Component options must include at least one signature.");
+        }
+        ArrayList<String> validSignatures = new ArrayList<>(signatures.length);
+        for (String signature : signatures) {
+            if (signature == null) {
+                throw new IllegalArgumentException("Invalid component signature.");
+            }
+            String normalizedSignature = signature.trim();
+            if (normalizedSignature.isEmpty()) {
+                throw new IllegalArgumentException("Invalid component signature.");
+            }
+            validSignatures.add(normalizedSignature);
+        }
+        return validSignatures.toArray(new String[0]);
+    }
 }

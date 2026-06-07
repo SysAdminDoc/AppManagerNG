@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch component option parsing (source audit, 2026-06-06)
+
+- Batch component options now reject empty, blank, null, or non-string
+  component signatures before block/unblock component operations can match
+  them.
+- Persisted component signatures are trimmed before use so whitespace-only
+  values are rejected before they can widen component matching.
+
 ### Fixed - Batch AppOps option parsing (source audit, 2026-06-06)
 
 - Batch AppOps options now reject empty AppOps arrays, invalid operation IDs,
