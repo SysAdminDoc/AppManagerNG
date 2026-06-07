@@ -958,7 +958,8 @@ public class ActivityInterceptor extends BaseActivity {
             return null;
         }
         try {
-            return Integer.decode(parts[1]);
+            int userId = Integer.decode(parts[1].trim());
+            return userId >= 0 ? userId : null;
         } catch (NumberFormatException e) {
             return null;
         }

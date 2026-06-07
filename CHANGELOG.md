@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Activity Interceptor pasted USER parsing (source audit, 2026-06-06)
+
+- Activity Interceptor paste handling now ignores negative copied `USER`
+  headers instead of forwarding invalid user IDs into permission checks.
+- Valid decimal and decoded hex `USER` values now tolerate surrounding
+  whitespace.
+
 ### Fixed - Activity Interceptor pasted ROOT parsing (source audit, 2026-06-06)
 
 - Activity Interceptor paste handling now accepts only explicit `true` or
