@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile clipboard label hardening (source audit, 2026-06-07)
+
+- Profile ID copy actions now normalize profile-name clipboard labels before
+  handing them to Android clipboard previews.
+- Clipboard labels now share the profile metadata sanitizer used by profile
+  share subjects and filename suggestions, while copied profile IDs remain
+  unchanged.
+
 ### Fixed - Profile share metadata hardening (source audit, 2026-06-07)
 
 - Profile JSON share subjects, shared titles, and export filename suggestions

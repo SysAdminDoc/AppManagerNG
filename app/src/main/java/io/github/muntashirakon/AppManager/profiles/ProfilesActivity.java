@@ -268,7 +268,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             Path profilePath = ProfileManager.findProfilePathById(profile.profileId);
             BaseProfile loaded = BaseProfile.fromPath(profilePath);
             String json = loaded.serializeToJson().toString(2);
-            String profileLabel = formatProfileShareLabel(profile.name);
+            String profileLabel = formatProfileMetadataLabel(profile.name);
             String subject = getString(R.string.share_profile_subject, profileLabel);
             Intent send = new Intent(Intent.ACTION_SEND)
                     .setType("application/json")
@@ -285,7 +285,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
 
     @VisibleForTesting
     @NonNull
-    static String formatProfileShareLabel(@Nullable String profileName) {
+    static String formatProfileMetadataLabel(@Nullable String profileName) {
         String label = ExportTextUtils.escapeTsvField(profileName).trim();
         return label.isEmpty() ? "profile" : label;
     }
@@ -293,7 +293,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     @VisibleForTesting
     @NonNull
     static String buildProfileShareFilename(@Nullable String profileName, @NonNull String suffix) {
-        return ProfileManager.getProfileIdCompat(formatProfileShareLabel(profileName)) + suffix;
+        return ProfileManager.getProfileIdCompat(formatProfileMetadataLabel(profileName)) + suffix;
     }
 
     @Override
@@ -516,7 +516,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 } else if (id == R.id.action_share) {
                     mActivity.shareProfileAsJson(profile);
                 } else if (id == R.id.action_copy) {
-                    Utils.copyToClipboard(mActivity, profile.name, profile.profileId);
+                    Utils.copyToClipboard(mActivity, formatProfileMetadataLabel(profile.name), profile.profileId);
                 } else if (id == R.id.action_quick_freeze_tile) {
                     if (QuickFreezeTileController.isSelectedProfile(profile.profileId)) {
                         QuickFreezeTileController.clearSelectedProfile();

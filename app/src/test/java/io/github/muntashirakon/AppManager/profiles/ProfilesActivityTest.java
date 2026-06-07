@@ -10,9 +10,9 @@ import org.junit.Test;
 
 public class ProfilesActivityTest {
     @Test
-    public void formatProfileShareLabelNormalizesControlTextAndDefusesFormula() {
-        assertEquals("' =Profile Name", ProfilesActivity.formatProfileShareLabel("\t=Profile\nName"));
-        assertEquals("profile", ProfilesActivity.formatProfileShareLabel("\n\t"));
+    public void formatProfileMetadataLabelNormalizesControlTextAndDefusesFormula() {
+        assertEquals("' =Profile Name", ProfilesActivity.formatProfileMetadataLabel("\t=Profile\nName"));
+        assertEquals("profile", ProfilesActivity.formatProfileMetadataLabel("\n\t"));
     }
 
     @Test
