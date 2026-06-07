@@ -152,6 +152,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readInfoRejectsUnsupportedChecksumAlgorithm() throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup("00000000-0000-0000-0000-000000000000",
+                1L, 0, TarUtils.TAR_GZIP, "rot13", CryptoUtils.MODE_NO_ENCRYPTION, "");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
