@@ -89,7 +89,8 @@ public class ModeDoctorPreferences extends PreferenceFragment {
         Preference copy = newPreference(context, getString(R.string.copy_to_clipboard),
                 getString(R.string.privilege_health_mode_doctor_copy_summary), true);
         copy.setOnPreferenceClickListener(preference -> {
-            ClipboardUtils.copyToClipboard(context, "mode-doctor", report.text);
+            ClipboardUtils.copyToClipboard(context, "mode-doctor",
+                    PrivilegeModeDoctor.formatReportForClipboard(report.text));
             UIUtils.displayShortToast(R.string.copied_to_clipboard);
             return true;
         });
