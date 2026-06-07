@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch permission option parsing (source audit, 2026-06-06)
+
+- Batch permission options now reject empty, blank, null, or non-string
+  permission names before grant/revoke operations can apply them.
+- A permission wildcard remains supported only as a single `*` entry, so
+  persisted wildcard entries cannot be mixed with explicit permission names.
+
 ### Fixed - Batch component option parsing (source audit, 2026-06-06)
 
 - Batch component options now reject empty, blank, null, or non-string
