@@ -11,6 +11,7 @@ import org.json.JSONObject;
 
 import java.util.Objects;
 
+import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
@@ -22,8 +23,8 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
     private int mMode;
 
     public BatchAppOpsOptions(@NonNull int[] appOps, int mode) {
-        mAppOps = appOps;
-        mMode = mode;
+        mAppOps = requireValidAppOps(appOps);
+        mMode = requireValidMode(mode);
     }
 
     @NonNull
@@ -36,8 +37,8 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
     }
 
     protected BatchAppOpsOptions(@NonNull Parcel in) {
-        mAppOps = Objects.requireNonNull(in.createIntArray());
-        mMode = in.readInt();
+        mAppOps = requireValidAppOps(Objects.requireNonNull(in.createIntArray()));
+        mMode = requireValidMode(in.readInt());
     }
 
     public static final Creator<BatchAppOpsOptions> CREATOR = new Creator<BatchAppOpsOptions>() {
@@ -67,8 +68,13 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
 
     protected BatchAppOpsOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mAppOps = JSONUtils.getIntArray(jsonObject.getJSONArray("app_ops"));
-        mMode = jsonObject.getInt("mode");
+        try {
+            int[] appOps = Objects.requireNonNull(JSONUtils.getIntArray(jsonObject.getJSONArray("app_ops")));
+            mAppOps = requireValidAppOps(appOps);
+            mMode = requireValidMode(jsonObject.getInt("mode"));
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     public static final JsonDeserializer.Creator<BatchAppOpsOptions> DESERIALIZER
@@ -82,5 +88,28 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
         jsonObject.put("app_ops", JSONUtils.getJSONArray(mAppOps));
         jsonObject.put("mode", mMode);
         return jsonObject;
+    }
+
+    @NonNull
+    private static int[] requireValidAppOps(@NonNull int[] appOps) {
+        if (appOps.length == 0) {
+            throw new IllegalArgumentException("AppOps options must include at least one operation.");
+        }
+        if (appOps.length == 1 && appOps[0] == AppOpsManagerCompat.OP_NONE) {
+            return appOps;
+        }
+        for (int appOp : appOps) {
+            if (!AppOpsManagerCompat.isValidOp(appOp)) {
+                throw new IllegalArgumentException("Invalid app op: " + appOp);
+            }
+        }
+        return appOps;
+    }
+
+    private static int requireValidMode(int mode) {
+        if (!AppOpsManagerCompat.isValidMode(mode)) {
+            throw new IllegalArgumentException("Invalid app op mode: " + mode);
+        }
+        return mode;
     }
 }
