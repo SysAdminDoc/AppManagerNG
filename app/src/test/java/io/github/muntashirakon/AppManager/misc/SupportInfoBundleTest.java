@@ -39,4 +39,21 @@ public class SupportInfoBundleTest {
 
         assertEquals("support-info-Pixel_9_Pro-19700101-000000.txt", fileName);
     }
+
+    @Test
+    public void formatPreambleForPublicIssueScrubsCallerReport() {
+        String preamble = SupportInfoBundle.formatPreambleForPublicIssue(
+                "Mode Doctor probe\ncom.example.secret /sdcard/private uid=10345 person@example.com");
+
+        assertTrue(preamble.startsWith("Mode Doctor probe\n"));
+        assertTrue(preamble.endsWith("\n\n"));
+        assertTrue(preamble.contains("<package>"));
+        assertTrue(preamble.contains("<path>"));
+        assertTrue(preamble.contains("<email>"));
+        assertTrue(preamble.contains("uid=<redacted>"));
+        assertFalse(preamble.contains("com.example.secret"));
+        assertFalse(preamble.contains("/sdcard/private"));
+        assertFalse(preamble.contains("person@example.com"));
+        assertFalse(preamble.contains("uid=10345"));
+    }
 }
