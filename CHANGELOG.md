@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File search display-name hardening (source audit, 2026-06-07)
+
+- File-manager active search chips and empty-search messages now format the
+  displayed query before rendering it.
+- File search execution, stored query state, and clear-search behavior still use
+  the original query string.
+
 ### Fixed - File properties metadata display-name hardening (source audit, 2026-06-07)
 
 - File properties now format content-info messages, owner names, group names,
