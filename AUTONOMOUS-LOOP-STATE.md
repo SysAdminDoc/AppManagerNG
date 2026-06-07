@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 197 source-audit closure for file dialog subtitle
+- Result: completed Cycle 198 source-audit closure for file-manager item
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file dialog subtitle display-name hardening and its verification target.
-- Code: Open With and Checksums dialogs now format file subtitles through the
-  shared file-manager display-name helper before rendering path-derived names,
+  file-manager item display-name hardening and its verification target.
+- Code: file-manager row titles and delete confirmation titles now format
+  path-derived names through the shared file-manager display-name helper,
   flattening tab/newline controls, defusing spreadsheet-style prefixes, and
-  falling back to a sanitized display path when the path name is blank.
+  sharing the sanitized display-path fallback used by file dialog subtitles.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
