@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 187 - 2026-06-07.
+> Last researched: Cycle 188 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -75,8 +75,9 @@ than by historical priority tier:
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
 - Source-backed 2026-06-06/2026-06-07 audit closures now include
-  scanner missing-signature email intent hardening, operation-history share
-  intent hardening, leftover export share intent hardening, provider-query share
+  Activity Interceptor share-details intent hardening, scanner
+  missing-signature email intent hardening, operation-history share intent
+  hardening, leftover export share intent hardening, provider-query share
   subject hardening, diagnostic ZIP share intent attachment hardening, crash
   share intent attachment hardening, APK share MIME hardening, editor share MIME
   hardening, logcat share attachment MIME hardening, open-with MIME fallback
