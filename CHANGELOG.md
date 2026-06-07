@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch file operation display-name hardening (source audit, 2026-06-07)
+
+- File-manager batch delete and paste progress labels now format path-derived
+  names through the shared file-manager display-name helper.
+- Batch paste copy/delete failure dialogs now show sanitized file display names
+  while preserving raw path names for the underlying file operations.
+
 ### Fixed - File-manager item display-name hardening (source audit, 2026-06-07)
 
 - File-manager row titles and delete confirmation titles now format

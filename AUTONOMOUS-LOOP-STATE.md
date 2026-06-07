@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 198 source-audit closure for file-manager item
+- Result: completed Cycle 199 source-audit closure for batch file operation
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-manager item display-name hardening and its verification target.
-- Code: file-manager row titles and delete confirmation titles now format
-  path-derived names through the shared file-manager display-name helper,
-  flattening tab/newline controls, defusing spreadsheet-style prefixes, and
-  sharing the sanitized display-path fallback used by file dialog subtitles.
+  batch file operation display-name hardening and its verification target.
+- Code: file-manager batch delete and paste progress labels now format
+  path-derived names through the shared file-manager display-name helper, and
+  batch paste copy/delete failure dialogs now show sanitized file display names
+  while preserving raw path names for the underlying file operations.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
