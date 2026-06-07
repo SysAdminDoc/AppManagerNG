@@ -8,6 +8,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.IOException;
+
 @RunWith(RobolectricTestRunner.class)
 public class HexViewerActivityTest {
     @Test
@@ -16,5 +18,12 @@ public class HexViewerActivityTest {
                 HexViewerActivity.formatExternalMetadataText("\t=Binary\nName", "Fallback"));
         assertEquals("Fallback", HexViewerActivity.formatExternalMetadataText("\n\t", "Fallback"));
         assertEquals("Fallback", HexViewerActivity.formatExternalMetadataText(null, "Fallback"));
+    }
+
+    @Test
+    public void getErrorMessageFlattensControlsDefusesFormulaAndFallsBack() {
+        assertEquals("' =payload path",
+                HexViewerActivity.getErrorMessage(new IOException("\t=payload\rpath")));
+        assertEquals("IOException", HexViewerActivity.getErrorMessage(new IOException()));
     }
 }

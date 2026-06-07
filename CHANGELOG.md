@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Hex viewer error-message display hardening (source audit, 2026-06-07)
+
+- Hex viewer open/read failure summaries and toasts now format localized
+  throwable messages before rendering them.
+- Hex viewer error messages flatten controls, defuse formula-style prefixes, and
+  keep the throwable class-name fallback for blank messages.
+
 ### Fixed - File-manager failure toast message hardening (source audit, 2026-06-07)
 
 - File-manager open-file and Open With launch failure toasts now format
