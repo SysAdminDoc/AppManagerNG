@@ -8,17 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 188 source-audit closure for Activity Interceptor
-  share-details intent hardening.
+- Result: completed Cycle 189 source-audit closure for support-info share
+  intent attachment hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Activity Interceptor share-details intent hardening and its verification
-  target.
-- Code: Activity Interceptor details sharing now builds its `ACTION_SEND` intent
-  through a tested helper, shared intent-detail URI headers use the same
-  TSV-safe formatter as matching activity fields, and empty share bodies are
-  rejected before launch.
+  support-info share intent attachment hardening and its verification target.
+- Code: support-info bundle sharing now builds its attachment `ACTION_SEND`
+  intent through a tested URI-based helper, and attachment shares pin
+  plain-text MIME, subject, stream URI, read-grant, and `ClipData` behavior
+  before launching the external chooser.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
