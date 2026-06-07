@@ -606,8 +606,8 @@ public class BackupItems {
                     String[] lineSplits;
                     while ((line = reader.readLine()) != null) {
                         lineSplits = line.split("\t", 2);
-                        if (lineSplits.length != 2) {
-                            throw new RuntimeException("Illegal lines found in the checksum file.");
+                        if (lineSplits.length != 2 || lineSplits[0].isEmpty() || lineSplits[1].isEmpty()) {
+                            throw new IOException("Illegal lines found in the checksum file.");
                         }
                         mChecksums.put(lineSplits[1], lineSplits[0]);
                     }
