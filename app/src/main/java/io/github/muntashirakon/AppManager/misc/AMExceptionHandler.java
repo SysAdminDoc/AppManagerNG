@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.PendingIntentCompat;
@@ -57,19 +58,7 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
                 : null;
 
         // Send notification
-        Intent i = new Intent(Intent.ACTION_SEND);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            i.setIdentifier(String.valueOf(System.currentTimeMillis()));
-        }
-        i.setType("text/plain");
-        i.putExtra(Intent.EXTRA_SUBJECT, "AppManager NG: Crash Report");
-        i.putExtra(Intent.EXTRA_TEXT, formatCrashReportForShare(report));
-        if (crashUri != null) {
-            i.putExtra(Intent.EXTRA_STREAM, crashUri);
-            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to reach the chooser
-            i.setClipData(ClipData.newRawUri("", crashUri));
-        }
+        Intent i = buildCrashShareIntent(report, crashUri, System.currentTimeMillis());
         PendingIntent pendingIntent = PendingIntentCompat.getActivity(mContext, 0,
                 Intent.createChooser(i, mContext.getText(R.string.send_crash_report)),
                 PendingIntent.FLAG_ONE_SHOT, true);
@@ -91,5 +80,25 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
     @NonNull
     static String formatCrashReportForShare(@NonNull CharSequence report) {
         return ExportTextUtils.toPlainTextReport(SupportInfoBundle.scrubForPublicIssue(report.toString()));
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildCrashShareIntent(@NonNull CharSequence report, @Nullable Uri crashUri,
+                                        long identifierMillis) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            intent.setIdentifier(String.valueOf(identifierMillis));
+        }
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_SUBJECT, "AppManager NG: Crash Report");
+        intent.putExtra(Intent.EXTRA_TEXT, formatCrashReportForShare(report));
+        if (crashUri != null) {
+            intent.putExtra(Intent.EXTRA_STREAM, crashUri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to reach the chooser.
+            intent.setClipData(ClipData.newRawUri("", crashUri));
+        }
+        return intent;
     }
 }
