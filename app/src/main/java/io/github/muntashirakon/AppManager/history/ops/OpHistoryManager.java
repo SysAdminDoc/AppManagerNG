@@ -84,6 +84,28 @@ public final class OpHistoryManager {
                 : STATUS_FAILURE;
     }
 
+    @Nullable
+    public static String normalizePackageName(@Nullable String packageName) {
+        if (packageName == null) {
+            return null;
+        }
+        String normalizedPackageName = packageName.trim();
+        return PackageUtils.validateName(normalizedPackageName) ? normalizedPackageName : null;
+    }
+
+    @Nullable
+    public static Integer normalizeUserId(@Nullable Object userId) {
+        if (!(userId instanceof Number)) {
+            return null;
+        }
+        Number number = (Number) userId;
+        long longValue = number.longValue();
+        if (longValue < 0 || longValue > Integer.MAX_VALUE || number.doubleValue() != longValue) {
+            return null;
+        }
+        return (int) longValue;
+    }
+
     public static LiveData<OpHistory> getHistoryAddedLiveData() {
         return sHistoryAddedLiveData;
     }
