@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 
 public final class LogcatStructuredExporter {
     public enum Format {
@@ -117,7 +118,7 @@ public final class LogcatStructuredExporter {
             if (i > 0) {
                 builder.append(',');
             }
-            builder.append('"').append(escapeCsvField(values[i])).append('"');
+            builder.append('"').append(ExportTextUtils.escapeCsvField(values[i])).append('"');
         }
     }
 
@@ -131,26 +132,4 @@ public final class LogcatStructuredExporter {
         return value >= 0 ? Integer.toString(value) : "";
     }
 
-    @NonNull
-    private static String escapeCsvField(@NonNull String value) {
-        String escaped = value.replace("\"", "\"\"");
-        if (startsWithSpreadsheetFormula(escaped)) {
-            return "'" + escaped;
-        }
-        return escaped;
-    }
-
-    private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
-        for (int i = 0; i < value.length(); ++i) {
-            char c = value.charAt(i);
-            if (c == '=' || c == '+' || c == '-' || c == '@'
-                    || c == '\t' || c == '\r' || c == '\n') {
-                return true;
-            }
-            if (!Character.isWhitespace(c)) {
-                return false;
-            }
-        }
-        return false;
-    }
 }
