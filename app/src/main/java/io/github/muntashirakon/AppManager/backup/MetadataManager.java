@@ -59,7 +59,7 @@ public final class MetadataManager {
             BackupMetadataV5.Info info = new BackupMetadataV5.Info(jsonObject);
             info.setBackupItem(backupItem);
             return info;
-        } catch (JSONException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             throw new IOException(e.getMessage() + " for path " + infoFile, e);
         }
     }
@@ -95,7 +95,7 @@ public final class MetadataManager {
             }
             BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(jsonObject);
             return new BackupMetadataV5(backupInfo, metadata);
-        } catch (JSONException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             throw new IOException(e.getMessage() + " for path " + metadataFile, e);
         }
     }
