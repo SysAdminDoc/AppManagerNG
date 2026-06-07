@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch network-policy option parsing (source audit, 2026-06-06)
+
+- Batch network-policy options now reject negative persisted, parcelled, or
+  constructed policy values before batch execution or rollback can apply them.
+- Positive OEM policy values remain accepted so vendor-specific policy bits are
+  not over-tightened.
+
 ### Fixed - Batch permission option parsing (source audit, 2026-06-06)
 
 - Batch permission options now reject empty, blank, null, or non-string
