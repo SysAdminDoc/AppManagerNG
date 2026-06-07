@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile JSON UTF-8 export (source audit, 2026-06-07)
+
+- Profile JSON export now writes raw profile definitions with explicit UTF-8
+  bytes instead of relying on the platform default charset.
+- Profile serialization tests now pin non-ASCII profile names and comments so
+  shared or exported profile JSON remains byte-stable across hosts.
+
 ### Fixed - Support bundle preamble redaction (source audit, 2026-06-07)
 
 - Support-info bundles now scrub caller-supplied preamble text before writing it

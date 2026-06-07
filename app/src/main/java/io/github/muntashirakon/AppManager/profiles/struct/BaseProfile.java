@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
@@ -110,7 +111,7 @@ public abstract class BaseProfile implements LocalizedString, IJsonSerializer {
 
     public void write(@NonNull OutputStream out) throws IOException {
         try {
-            out.write(serializeToJson().toString().getBytes());
+            out.write(serializeToJson().toString().getBytes(StandardCharsets.UTF_8));
         } catch (JSONException e) {
             throw new IOException(e);
         }
