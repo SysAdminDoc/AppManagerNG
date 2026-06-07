@@ -29,6 +29,8 @@ import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.io.Path;
 
 public class OpHistoryItem {
+    private static final String HISTORY_TYPE_UNKNOWN = "unknown";
+
     private final OpHistory opHistory;
     public final JSONObject jsonData;
     @Nullable
@@ -40,9 +42,9 @@ public class OpHistoryItem {
         metadata = OperationJournalMetadata.fromJson(opHistory.serializedExtra);
     }
 
-    @OpHistoryManager.HistoryType
+    @NonNull
     public String getType() {
-        return opHistory.type;
+        return isKnownType(opHistory.type) ? opHistory.type : HISTORY_TYPE_UNKNOWN;
     }
 
     public long getId() {
@@ -51,7 +53,7 @@ public class OpHistoryItem {
 
     @NonNull
     public String getLocalizedType(@NonNull Context context) {
-        switch (opHistory.type) {
+        switch (getType()) {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS:
                 try {
                     return context.getString(jsonData.getInt("title_res"));
@@ -67,12 +69,12 @@ public class OpHistoryItem {
             case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
                 return context.getString(R.string.op_history_type_single_app_action);
         }
-        throw new IllegalStateException("Invalid type: " + opHistory.type);
+        return context.getString(R.string.state_unknown);
     }
 
     @NonNull
     public String getLabel(@NonNull Context context) {
-        switch (opHistory.type) {
+        switch (getType()) {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS:
                 try {
                     int op = jsonData.getInt("op");
@@ -110,7 +112,7 @@ public class OpHistoryItem {
                 return packageName != null ? packageName : context.getString(R.string.op_history_type_single_app_action);
             }
         }
-        throw new IllegalStateException("Invalid type: " + opHistory.type);
+        return context.getString(R.string.state_unknown);
     }
 
     public long getTimestamp() {
@@ -119,11 +121,13 @@ public class OpHistoryItem {
 
     @NonNull
     public String getStatusName() {
-        return opHistory.status;
+        return OpHistoryManager.STATUS_SUCCESS.equals(opHistory.status)
+                ? OpHistoryManager.STATUS_SUCCESS
+                : OpHistoryManager.STATUS_FAILURE;
     }
 
     public boolean getStatus() {
-        return opHistory.status.equals(OpHistoryManager.STATUS_SUCCESS);
+        return OpHistoryManager.STATUS_SUCCESS.equals(getStatusName());
     }
 
     @NonNull
@@ -134,11 +138,14 @@ public class OpHistoryItem {
     }
 
     public boolean isReplayable() {
-        if (OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(getType())
-                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(getType())) {
-            return false;
+        switch (getType()) {
+            case OpHistoryManager.HISTORY_TYPE_BATCH_OPS:
+            case OpHistoryManager.HISTORY_TYPE_INSTALLER:
+            case OpHistoryManager.HISTORY_TYPE_PROFILE:
+                return metadata == null || metadata.isReplayable();
+            default:
+                return false;
         }
-        return metadata == null || metadata.isReplayable();
     }
 
     public boolean isReversible() {
@@ -361,7 +368,7 @@ public class OpHistoryItem {
 
     @Nullable
     private String getPrimaryPackageName() {
-        switch (opHistory.type) {
+        switch (getType()) {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS: {
                 JSONArray packages = jsonData.optJSONArray("packages");
                 if (packages != null && packages.length() == 1) {
@@ -379,7 +386,7 @@ public class OpHistoryItem {
     }
 
     private int getPrimaryUserId() {
-        switch (opHistory.type) {
+        switch (getType()) {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS: {
                 JSONArray users = jsonData.optJSONArray("users");
                 if (users != null && users.length() > 0) {
@@ -391,6 +398,14 @@ public class OpHistoryItem {
                 return jsonData.optInt("user_id", UserHandleHidden.myUserId());
         }
         return UserHandleHidden.myUserId();
+    }
+
+    private static boolean isKnownType(@Nullable String type) {
+        return OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(type)
+                || OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(type)
+                || OpHistoryManager.HISTORY_TYPE_PROFILE.equals(type)
+                || OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(type)
+                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(type);
     }
 
     private static void appendSection(@NonNull Context context,
