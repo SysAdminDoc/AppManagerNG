@@ -738,10 +738,12 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             for (ApkDuplicateSelector.Candidate drop : group.drop) {
                 indices.add(drops.size());
                 drops.add(drop);
-                labels.add(new SpannableStringBuilder(drop.path.getName())
+                String dropName = FmUtils.getFileDisplayName(drop.path);
+                String keeperName = FmUtils.getFileDisplayName(group.keeper.path);
+                labels.add(new SpannableStringBuilder(dropName)
                         .append("\n").append(getSmallerText(drop.packageName + " v" + drop.versionCode
                                 + " · " + Formatter.formatShortFileSize(requireContext(), drop.sizeBytes)
-                                + " · " + getString(R.string.apk_duplicate_keeping, group.keeper.path.getName()))));
+                                + " · " + getString(R.string.apk_duplicate_keeping, keeperName))));
             }
         }
         new SearchableMultiChoiceDialogBuilder<>(requireContext(), indices, labels)

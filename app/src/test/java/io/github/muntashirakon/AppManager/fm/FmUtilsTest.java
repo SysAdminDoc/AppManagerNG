@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.File;
+
 import io.github.muntashirakon.io.Paths;
 
 @RunWith(RobolectricTestRunner.class)
@@ -35,5 +37,12 @@ public class FmUtilsTest {
         Uri uri = Uri.parse("file:///sdcard/%09=payload%0Aname.txt");
 
         assertEquals("' =payload name.txt", FmUtils.getPathDisplayName(Paths.get(uri)));
+    }
+
+    @Test
+    public void getFileDisplayNameUsesFormattedName() {
+        File file = new File("/sdcard/\t=payload\nname.apk");
+
+        assertEquals("' =payload name.apk", FmUtils.getFileDisplayName(file));
     }
 }
