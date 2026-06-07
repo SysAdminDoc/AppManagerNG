@@ -56,4 +56,10 @@ public class SupportInfoBundleTest {
         assertFalse(preamble.contains("person@example.com"));
         assertFalse(preamble.contains("uid=10345"));
     }
+
+    @Test
+    public void formatBundleTextForPublicIssueSanitizesStandaloneLines() {
+        assertEquals("'=cmd payload\nplain line",
+                SupportInfoBundle.formatBundleTextForPublicIssue("=cmd\tpayload\nplain\rline"));
+    }
 }
