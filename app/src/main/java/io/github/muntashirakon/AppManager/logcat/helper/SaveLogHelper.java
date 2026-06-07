@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.logcat.helper;
 import android.content.Context;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -208,12 +207,21 @@ public class SaveLogHelper {
 
     @Contract("null -> true")
     public static boolean isInvalidFilename(@Nullable CharSequence filename) {
-        String filenameAsString;
-        return TextUtils.isEmpty(filename)
-                || (filenameAsString = filename.toString()).contains("/")
-                || filenameAsString.contains(":")
-                || filenameAsString.contains(" ")
-                || !filenameAsString.endsWith(".log");
+        if (filename == null || filename.length() == 0) {
+            return true;
+        }
+        String filenameAsString = filename.toString();
+        if (!filenameAsString.endsWith(".log")) {
+            return true;
+        }
+        for (int i = 0; i < filenameAsString.length(); ++i) {
+            char c = filenameAsString.charAt(i);
+            if (Character.isWhitespace(c) || Character.isISOControl(c)
+                    || c == '/' || c == '\\' || c == ':') {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
