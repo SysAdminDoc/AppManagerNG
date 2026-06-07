@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 191 source-audit closure for hex viewer external
-  metadata hardening.
+- Result: completed Cycle 192 source-audit closure for batch installer URI
+  list hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  hex viewer external metadata hardening and its verification target.
-- Code: hex viewer external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now
-  pass through a tested formatter before reaching toolbar labels, flattening
-  tab/newline controls, defusing spreadsheet-style prefixes, and falling back
-  to safe defaults when blank.
+  batch installer URI list hardening and its verification target.
+- Code: batch APK installer multi-stream intents now snapshot caller-supplied
+  URI lists before setting `EXTRA_STREAM` and `ClipData`, and reject null
+  stream entries before launching the installer flow.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.hex.HexViewerActivityTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivityTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
