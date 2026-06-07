@@ -54,8 +54,12 @@ public class ActivityInterceptorTest {
     public void getPastedRootHeaderValueHandlesMalformedLines() {
         assertNull(ActivityInterceptor.getPastedRootHeaderValue("ROOT"));
         assertNull(ActivityInterceptor.getPastedRootHeaderValue("ACTION\tandroid.intent.action.VIEW"));
+        assertNull(ActivityInterceptor.getPastedRootHeaderValue("ROOT\t"));
+        assertNull(ActivityInterceptor.getPastedRootHeaderValue("ROOT\tmaybe"));
         assertTrue(ActivityInterceptor.getPastedRootHeaderValue("ROOT\ttrue"));
-        assertFalse(ActivityInterceptor.getPastedRootHeaderValue("ROOT\t"));
+        assertTrue(ActivityInterceptor.getPastedRootHeaderValue("ROOT\t TRUE "));
+        assertFalse(ActivityInterceptor.getPastedRootHeaderValue("ROOT\tfalse"));
+        assertFalse(ActivityInterceptor.getPastedRootHeaderValue("ROOT\t FALSE "));
     }
 
     @Test

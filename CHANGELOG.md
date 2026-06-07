@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Activity Interceptor pasted ROOT parsing (source audit, 2026-06-06)
+
+- Activity Interceptor paste handling now accepts only explicit `true` or
+  `false` values for copied `ROOT` headers instead of treating malformed
+  values as `false`.
+- Valid `ROOT` values remain case-insensitive and tolerate surrounding
+  whitespace.
+
 ### Fixed - Backup archive filename filtering (source audit, 2026-06-06)
 
 - Backup restore and verify file discovery now accepts only generated archive
