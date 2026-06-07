@@ -61,6 +61,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 import io.github.muntashirakon.AppManager.utils.BetterActivityResult;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
@@ -154,6 +155,17 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
         return MimeTypeUtils.normalizeMimeTypeOrDefault(attachment.getType());
     }
 
+    @VisibleForTesting
+    @NonNull
+    static String formatAttachmentName(@Nullable String attachmentName, @NonNull String fallbackName) {
+        String formattedName = ExportTextUtils.escapeTsvField(attachmentName).trim();
+        if (!formattedName.isEmpty()) {
+            return formattedName;
+        }
+        formattedName = ExportTextUtils.escapeTsvField(fallbackName).trim();
+        return formattedName.isEmpty() ? SaveLogHelper.LOG_FILENAME : formattedName;
+    }
+
     @Override
     public void onAuthenticated(Bundle savedInstanceState) {
         setContentView(R.layout.activity_logcat);
@@ -238,9 +250,8 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
                         sendLogDetails.getAttachment());
             } else {
                 // Open SAF activity
-                String attachmentName = sendLogDetails.getAttachmentName() != null
-                        ? sendLogDetails.getAttachmentName()
-                        : sendLogDetails.getAttachment().getName();
+                String attachmentName = formatAttachmentName(sendLogDetails.getAttachmentName(),
+                        sendLogDetails.getAttachment().getName());
                 mSaveLauncher.launch(attachmentName, uri -> {
                     if (uri == null) return;
                     mViewModel.saveLogs(Paths.get(uri), sendLogDetails);
