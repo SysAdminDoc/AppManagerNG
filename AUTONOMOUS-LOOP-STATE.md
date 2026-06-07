@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 145 source-audit closure for operation-history replay
-  identity validation.
+- Result: completed Cycle 146 source-audit closure for operation-history export
+  formula hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  operation-history replay identity validation and its verification target.
-- Code: Install-existing replay now normalizes stored package names before
-  constructing package-installer queue items, and profile replay payloads now
-  require nonblank profile identity fields plus an explicit supported profile
-  type before preflight marks the row replayable.
+  operation-history export formula hardening and its verification target.
+- Code: Operation-history CSV export now detects formula triggers after leading
+  whitespace and newline characters before writing attacker-controlled restored
+  labels, target previews, or bootstrap text to quoted cells; JSON export tests
+  now verify formula-like failure messages and warnings stay structured.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,10 +27,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  operation-history export edge, starting with `OperationHistoryExporter` CSV
-  and JSON escaping for untrusted restored history text.
-- Check whether labels, metadata summaries, target previews, failure messages,
-  or warnings can produce spreadsheet formula payloads or malformed exports.
+  structured-export edge, starting with `LogcatStructuredExporter` CSV escaping
+  for untrusted log text and parity with the hardened operation-history formula
+  trigger rules.
+- Check whether log messages, process names, tags, or exception text can produce
+  spreadsheet formula payloads or malformed exports.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

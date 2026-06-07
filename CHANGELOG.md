@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history export formula hardening (source audit, 2026-06-07)
+
+- Operation-history CSV export now defuses spreadsheet formulas hidden behind
+  leading whitespace or newline characters, preserving the existing CSV columns
+  while preventing attacker-controlled restored labels from opening as formulas.
+- JSON export coverage now verifies formula-like failure messages and warning
+  strings remain structured JSON strings after export.
+
 ### Fixed - Operation history replay identity validation (source audit, 2026-06-07)
 
 - Install-existing replay now normalizes stored package names before constructing
