@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat export formula hardening (source audit, 2026-06-07)
+
+- Structured logcat CSV export now defuses spreadsheet formulas hidden behind
+  leading whitespace or newline characters in tag, package, message, and raw
+  line fields.
+- Logcat exporter tests now cover direct and whitespace-prefixed formula-like
+  log text while preserving the existing JSON and filename behavior.
+
 ### Fixed - Operation history export formula hardening (source audit, 2026-06-07)
 
 - Operation-history CSV export now defuses spreadsheet formulas hidden behind

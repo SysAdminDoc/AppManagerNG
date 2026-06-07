@@ -51,6 +51,26 @@ public class LogcatStructuredExporterTest {
     }
 
     @Test
+    public void toCsvDefusesWhitespacePrefixedFormulaValues() {
+        LogLine logLine = createLogLine(
+                "\n=RAW(\"http://evil/\")",
+                " \t=TAG(\"http://evil/\")",
+                "\n=PKG(\"http://evil/\")",
+                " \t=MSG(\"http://evil/\")");
+
+        String exported = LogcatStructuredExporter.toCsv(Collections.singletonList(logLine));
+
+        assertTrue(exported.contains("\"' \t=TAG(\"\"http://evil/\"\")\""));
+        assertTrue(exported.contains("\"'\n=PKG(\"\"http://evil/\"\")\""));
+        assertTrue(exported.contains("\"' \t=MSG(\"\"http://evil/\"\")\""));
+        assertTrue(exported.contains("\"'\n=RAW(\"\"http://evil/\"\")\""));
+        assertFalse(exported.contains("\" \t=TAG"));
+        assertFalse(exported.contains("\"\n=PKG"));
+        assertFalse(exported.contains("\" \t=MSG"));
+        assertFalse(exported.contains("\"\n=RAW"));
+    }
+
+    @Test
     public void createExportFilenameUsesStructuredExtension() {
         assertTrue(LogcatStructuredExporter.createExportFilename(LogcatStructuredExporter.Format.JSON)
                 .endsWith(".logcat.json"));
@@ -59,15 +79,23 @@ public class LogcatStructuredExporterTest {
     }
 
     private static LogLine createLogLine(String message) {
-        LogLine logLine = new LogLine("05-26 13:45:12.123 u0_a123 1234 5678 I ActivityManager: " + message);
+        return createLogLine("05-26 13:45:12.123 u0_a123 1234 5678 I ActivityManager: " + message,
+                "ActivityManager", "com.example", message);
+    }
+
+    private static LogLine createLogLine(String originalLine,
+                                         String tag,
+                                         String packageName,
+                                         String message) {
+        LogLine logLine = new LogLine(originalLine);
         logLine.setTimestamp("05-26 13:45:12.123");
         logLine.setUidOwner("u0_a123");
         logLine.setUid(10123);
         logLine.setPid(1234);
         logLine.setTid(5678);
         logLine.setLogLevel(Log.INFO);
-        logLine.setTag("ActivityManager");
-        logLine.setPackageName("com.example");
+        logLine.setTag(tag);
+        logLine.setPackageName(packageName);
         logLine.setLogOutput(message);
         return logLine;
     }

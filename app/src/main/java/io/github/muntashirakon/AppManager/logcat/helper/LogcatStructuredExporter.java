@@ -134,13 +134,23 @@ public final class LogcatStructuredExporter {
     @NonNull
     private static String escapeCsvField(@NonNull String value) {
         String escaped = value.replace("\"", "\"\"");
-        if (!escaped.isEmpty()) {
-            char first = escaped.charAt(0);
-            if (first == '=' || first == '+' || first == '-' || first == '@'
-                    || first == '\t' || first == '\r') {
-                return "'" + escaped;
-            }
+        if (startsWithSpreadsheetFormula(escaped)) {
+            return "'" + escaped;
         }
         return escaped;
+    }
+
+    private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
+        for (int i = 0; i < value.length(); ++i) {
+            char c = value.charAt(i);
+            if (c == '=' || c == '+' || c == '-' || c == '@'
+                    || c == '\t' || c == '\r' || c == '\n') {
+                return true;
+            }
+            if (!Character.isWhitespace(c)) {
+                return false;
+            }
+        }
+        return false;
     }
 }
