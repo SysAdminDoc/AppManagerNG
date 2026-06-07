@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App list Markdown escaping (source audit, 2026-06-07)
+
+- App-list Markdown export now flattens embedded line breaks and escapes
+  Markdown control characters plus raw HTML delimiters in app-controlled labels,
+  version names, installer fields, package names, and source paths.
+- Markdown escaping prevents exported app metadata from injecting headings,
+  links, emphasis, or raw HTML while preserving the existing report structure.
+
 ### Fixed - App list CSV formula hardening (source audit, 2026-06-07)
 
 - App-list CSV export now defuses spreadsheet formulas hidden behind leading
