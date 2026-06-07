@@ -93,7 +93,8 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         Preference profileIdPref = Objects.requireNonNull(findPreference("profile_id"));
         profileIdPref.setSummary(mModel.getProfileId());
         profileIdPref.setOnPreferenceClickListener(preference -> {
-            Utils.copyToClipboard(mActivity, mModel.getProfileName(), mModel.getProfileId());
+            Utils.copyToClipboard(mActivity, ProfilesActivity.formatProfileMetadataLabel(mModel.getProfileName()),
+                    mModel.getProfileId());
             return true;
         });
         // Set comment
