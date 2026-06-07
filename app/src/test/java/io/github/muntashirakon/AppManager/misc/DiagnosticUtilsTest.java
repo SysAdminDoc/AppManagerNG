@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.misc;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -24,5 +25,11 @@ public class DiagnosticUtilsTest {
         assertFalse(formatted.contains("person@example.com"));
         assertFalse(formatted.contains("/storage/emulated/0/private.txt"));
         assertFalse(formatted.contains("uid=10345"));
+    }
+
+    @Test
+    public void formatSharedDiagnosticTextSanitizesStandaloneLines() {
+        assertEquals("'=cmd payload\nplain line",
+                DiagnosticUtils.formatSharedDiagnosticText("=cmd\tpayload\nplain\rline"));
     }
 }

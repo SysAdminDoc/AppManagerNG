@@ -26,6 +26,7 @@ import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.io.Paths;
 
 public class DiagnosticUtils {
@@ -92,7 +93,7 @@ public class DiagnosticUtils {
                 }
             }
             PrintWriter writer = newZipEntryWriter(zos);
-            writer.print(SupportInfoBundle.scrubForPublicIssue(sb.toString()));
+            writer.print(formatSharedDiagnosticText(sb.toString()));
             writer.flush();
             zos.closeEntry();
         }
@@ -121,7 +122,7 @@ public class DiagnosticUtils {
             int start = (count == MAX_LOGCAT_LINES) ? head : 0;
             for (int i = 0; i < count; i++) {
                 // Scrub each line: see writeCrashLogs — the report is shared externally.
-                writer.println(SupportInfoBundle.scrubForPublicIssue(ringBuf[(start + i) % MAX_LOGCAT_LINES]));
+                writer.println(formatSharedDiagnosticText(ringBuf[(start + i) % MAX_LOGCAT_LINES]));
             }
             writer.flush();
             zos.closeEntry();
@@ -133,7 +134,13 @@ public class DiagnosticUtils {
     @VisibleForTesting
     @NonNull
     static String formatDeviceInfoForReport(@NonNull String deviceInfo) {
-        return SupportInfoBundle.scrubForPublicIssue(deviceInfo);
+        return formatSharedDiagnosticText(deviceInfo);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatSharedDiagnosticText(@NonNull String text) {
+        return ExportTextUtils.toPlainTextReport(SupportInfoBundle.scrubForPublicIssue(text));
     }
 
     @NonNull
