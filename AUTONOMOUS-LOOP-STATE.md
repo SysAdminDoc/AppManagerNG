@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 117 source-audit closure for backup schedule
-  skipped-detail parser hardening.
+- Result: completed Cycle 118 source-audit closure for profile trigger type
+  parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup schedule skipped-detail parser hardening and its verification target.
-- Code: scheduled-backup last-run skipped-package details now drop persisted
-  rows with malformed package names or negative user IDs before Settings
-  displays them, while preserving tolerant handling for valid rows, unknown
-  skipped reasons, and malformed JSON.
+  profile trigger type parser hardening and its verification target.
+- Code: persisted profile triggers with unknown future or malformed `type`
+  strings are now skipped instead of silently becoming time-of-day triggers,
+  while missing trigger types keep the existing legacy default.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.schedule.AutoBackupSchedulerTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStoreTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
