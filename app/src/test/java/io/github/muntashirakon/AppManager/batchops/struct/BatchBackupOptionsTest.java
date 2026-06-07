@@ -2,11 +2,11 @@
 
 package io.github.muntashirakon.AppManager.batchops.struct;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import android.os.Parcel;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,5 +53,37 @@ public class BatchBackupOptionsTest {
         BatchBackupOptions restored = new BatchBackupOptions(new JSONObject(options.serializeToJson().toString()));
 
         assertArrayEquals(globs, restored.getBackupOpOptions("example.pkg", 0).exclusionGlobs);
+    }
+
+    @Test
+    public void constructorRejectsNegativeFlags() {
+        assertThrows(IllegalArgumentException.class, () -> new BatchBackupOptions(-1, null, null));
+    }
+
+    @Test
+    public void jsonRejectsNegativeFlags() {
+        assertThrows(JSONException.class, () -> new BatchBackupOptions(jsonOptions(-1)));
+    }
+
+    @Test
+    public void parcelRejectsNegativeFlags() {
+        Parcel parcel = Parcel.obtain();
+        try {
+            parcel.writeInt(-1);
+            parcel.writeStringArray(null);
+            parcel.writeStringArray(null);
+            parcel.writeStringArray(null);
+            parcel.setDataPosition(0);
+
+            assertThrows(IllegalArgumentException.class, () -> BatchBackupOptions.CREATOR.createFromParcel(parcel));
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    private static JSONObject jsonOptions(int flags) throws JSONException {
+        return new JSONObject()
+                .put("tag", BatchBackupOptions.TAG)
+                .put("flags", flags);
     }
 }
