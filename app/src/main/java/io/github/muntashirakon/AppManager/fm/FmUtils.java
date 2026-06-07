@@ -72,6 +72,11 @@ public final class FmUtils {
         return ExportTextUtils.escapeTsvField(fallback).trim();
     }
 
+    @NonNull
+    public static String getPathDisplayName(@NonNull Path path) {
+        return getDisplayName(path.getName(), getDisplayablePath(path));
+    }
+
     @SuppressWarnings("OctalInteger")
     @NonNull
     public static String getFormattedMode(int mode) {
