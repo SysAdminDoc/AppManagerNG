@@ -32,6 +32,18 @@ public class BackupDataDirectoryInfoTest {
         assertEquals(BackupDataDirectoryInfo.TYPE_UNKNOWN, deInfo2.type);
         assertEquals(BackupDataDirectoryInfo.TYPE_CUSTOM, deInfo2.subtype);
         assertTrue(deInfo2.isMounted);
+        BackupDataDirectoryInfo adoptableCeInfo = BackupDataDirectoryInfo.getInfo("/mnt/expand/volume-1/user/0/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_INTERNAL, adoptableCeInfo.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_CREDENTIAL_PROTECTED, adoptableCeInfo.subtype);
+        assertTrue(adoptableCeInfo.isMounted);
+        BackupDataDirectoryInfo adoptableDeInfo = BackupDataDirectoryInfo.getInfo("/mnt/expand/volume-1/user_de/0/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_INTERNAL, adoptableDeInfo.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_DEVICE_PROTECTED, adoptableDeInfo.subtype);
+        assertTrue(adoptableDeInfo.isMounted);
+        BackupDataDirectoryInfo otherUserAdoptableInfo = BackupDataDirectoryInfo.getInfo("/mnt/expand/volume-1/user/10/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_UNKNOWN, otherUserAdoptableInfo.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_CUSTOM, otherUserAdoptableInfo.subtype);
+        assertTrue(otherUserAdoptableInfo.isMounted);
     }
 
     @Test
