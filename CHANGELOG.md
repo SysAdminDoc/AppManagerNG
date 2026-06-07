@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App list CSV nullable fields (source audit, 2026-06-07)
+
+- App-list CSV export now writes empty fields for absent app labels, version
+  names, signatures, installer fields, and source paths instead of misleading
+  literal `null` placeholders.
+- CSV null handling still runs before spreadsheet-formula hardening, so
+  nullable and hostile text metadata share the same package row path.
+
 ### Fixed - App list XML nullable fields (source audit, 2026-06-07)
 
 - App-list XML export now skips nullable text attributes for absent labels,
