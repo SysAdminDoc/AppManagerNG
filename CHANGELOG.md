@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history row type/status fallback (source audit, 2026-06-07)
+
+- Imported or legacy operation-history rows with null or future type values now
+  render as unknown, stay non-replayable, skip target routing, and export with
+  safe unknown labels instead of crashing list sorting, details, or JSON export.
+- Null or future status values now normalize to failure before filters, summary
+  counts, row colors, detail dialogs, and exports use them.
+
 ### Fixed - Operation history metadata scalars (source audit, 2026-06-07)
 
 - Restored operation-history metadata now clamps target and failed counters to

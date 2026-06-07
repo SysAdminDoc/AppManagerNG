@@ -5,11 +5,13 @@ package io.github.muntashirakon.AppManager.history.ops;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
 
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -136,5 +138,60 @@ public class OpHistoryItemTest {
         assertFalse(item.isReversible());
         assertTrue(item.getDetailMessage(context).contains("com.example.app.SyncService"));
         assertTrue(item.getDetailMessage(context).contains("blocked by service policy"));
+    }
+
+    @Test
+    public void unknownHistoryTypeAndStatusUseSafeFallbacks() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 11L;
+        row.type = "future_history_type";
+        row.execTime = 1_700_000_000_000L;
+        row.status = "future_status";
+        row.serializedData = new JSONObject()
+                .put("package_name", "com.example.future")
+                .toString();
+        row.serializedExtra = new JSONObject()
+                .put("schema_version", 1)
+                .put("replayable", true)
+                .toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertEquals("unknown", item.getType());
+        assertEquals(context.getString(R.string.state_unknown), item.getLocalizedType(context));
+        assertEquals(context.getString(R.string.state_unknown), item.getLabel(context));
+        assertEquals(OpHistoryManager.STATUS_FAILURE, item.getStatusName());
+        assertEquals(context.getString(R.string.op_history_status_failure), item.getLocalizedStatus(context));
+        assertFalse(item.getStatus());
+        assertFalse(item.isReplayable());
+        assertNull(item.getPrimaryTargetIntent(context));
+
+        JSONObject exportJson = item.getExportJson(context);
+        assertEquals("unknown", exportJson.getString("type"));
+        assertEquals(OpHistoryManager.STATUS_FAILURE, exportJson.getString("status"));
+        assertEquals(context.getString(R.string.state_unknown), exportJson.getString("type_label"));
+        assertEquals(context.getString(R.string.op_history_status_failure), exportJson.getString("status_label"));
+    }
+
+    @Test
+    public void nullHistoryTypeAndStatusUseSafeFallbacks() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 12L;
+        row.type = null;
+        row.execTime = 1_700_000_000_000L;
+        row.status = null;
+        row.serializedData = new JSONObject().toString();
+        row.serializedExtra = null;
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertEquals("unknown", item.getType());
+        assertEquals(OpHistoryManager.STATUS_FAILURE, item.getStatusName());
+        assertFalse(item.getStatus());
+        assertFalse(item.isReplayable());
+        assertNull(item.getPrimaryTargetIntent(context));
+        assertTrue(item.getDetailMessage(context).contains(context.getString(R.string.state_unknown)));
     }
 }
