@@ -23,6 +23,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -39,6 +40,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
 import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -350,7 +352,20 @@ public class TrackerWindow implements View.OnTouchListener {
     }
 
     private void copyText(CharSequence label, CharSequence content) {
-        Utils.copyToClipboard(mView.getContext(), label, content);
+        Utils.copyToClipboard(mView.getContext(), formatClipboardLabel(label), formatClipboardContent(content));
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatClipboardLabel(@Nullable CharSequence label) {
+        String formatted = ExportTextUtils.escapeTsvField(label != null ? label.toString() : null).trim();
+        return formatted.isEmpty() ? "text" : formatted;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatClipboardContent(@NonNull CharSequence content) {
+        return ExportTextUtils.toPlainTextReport(content.toString());
     }
 
     @Nullable
