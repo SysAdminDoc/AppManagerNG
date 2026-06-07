@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Clipboard oversized fallback UTF-8 hardening (source audit, 2026-06-07)
+
+- Oversized clipboard text now uses explicit UTF-8 bytes before deciding
+  whether to copy directly or fall back to a cached URI.
+- If the cached-file fallback fails, the plain-text fallback truncates by UTF-8
+  byte length without splitting complete code points, so non-ASCII text stays
+  under the clipboard byte cap.
+
 ### Fixed - Support-info bundle text line hardening (source audit, 2026-06-07)
 
 - Support-info bundle bodies and caller preambles now pass through a shared

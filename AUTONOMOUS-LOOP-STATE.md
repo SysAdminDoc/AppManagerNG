@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 175 source-audit closure for support-info bundle text
-  line hardening.
+- Result: completed Cycle 176 source-audit closure for clipboard oversized
+  fallback UTF-8 hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  support-info bundle text line hardening and its verification target.
-- Code: Support-info bundle bodies and caller preambles now pass through a
-  shared line-safe formatter after public-issue scrubbing, preserving report
-  line breaks while normalizing tab/carriage-return controls and defusing
-  spreadsheet-formula prefixes at line starts.
+  clipboard oversized fallback UTF-8 hardening and its verification target.
+- Code: Shared clipboard copy now measures text with explicit UTF-8 bytes before
+  deciding between direct text copy and cached-URI fallback; if cache-file
+  creation fails, the plain-text fallback truncates by UTF-8 byte length without
+  splitting complete code points.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.ClipboardUtilsTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -26,12 +26,11 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next roadmap target: inspect remaining generic copy/share helpers that still
-  accept app/provider-controlled labels or diagnostics.
-- Check whether remaining copy/share diagnostics still leak nullable
-  placeholders, unchecked control text, or spreadsheet-formula entry points that
-  can be pinned with focused host tests without changing import-compatible rule
-  files.
+- Next roadmap target: continue auditing remaining copy/share helpers and
+  exact-copy boundaries for host-verifiable defects.
+- Check whether file-share builders, chooser metadata, or diagnostic copy paths
+  still have byte-limit, URI-grant, nullable-placeholder, or unchecked-control
+  text issues that can be pinned with focused host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
