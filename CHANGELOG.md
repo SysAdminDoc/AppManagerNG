@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup checksum row parsing (source audit, 2026-06-06)
+
+- Backup checksum-file loading now reports malformed rows as `IOException`
+  failures instead of unchecked runtime exceptions.
+- Checksum rows with missing separators, empty checksum values, or empty
+  filenames are rejected before restore or verify uses them.
+
 ### Fixed - Activity Interceptor pasted USER parsing (source audit, 2026-06-06)
 
 - Activity Interceptor paste handling now ignores negative copied `USER`
