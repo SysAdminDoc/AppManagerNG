@@ -174,7 +174,6 @@ public final class ProfileTrigger {
         }
     }
 
-    @Type
     @VisibleForTesting
     static int parseTypeString(@NonNull String raw) {
         switch (raw.toLowerCase(Locale.ROOT)) {
@@ -182,8 +181,8 @@ public final class ProfileTrigger {
             case "on_network_wifi": return TYPE_ON_NETWORK_WIFI;
             case "on_network_any": return TYPE_ON_NETWORK_ANY;
             case "on_boot": return TYPE_ON_BOOT;
-            case "time_of_day":
-            default: return TYPE_TIME_OF_DAY;
+            case "time_of_day": return TYPE_TIME_OF_DAY;
+            default: return -1;
         }
     }
 }

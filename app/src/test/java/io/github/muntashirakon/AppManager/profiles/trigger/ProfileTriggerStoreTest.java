@@ -9,6 +9,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.content.Context;
+
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Before;
@@ -185,5 +187,24 @@ public class ProfileTriggerStoreTest {
             String label = ProfileTrigger.typeAsString(type);
             assertEquals(type, ProfileTrigger.parseTypeString(label));
         }
+        assertFalse(ProfileTrigger.isValidType(ProfileTrigger.parseTypeString("unknown_future_type")));
+    }
+
+    @Test
+    public void allSkipsUnknownPersistedTriggerType() {
+        Context context = ApplicationProvider.getApplicationContext();
+        assertTrue(context.getSharedPreferences("profile_triggers", Context.MODE_PRIVATE)
+                .edit()
+                .putString("triggers", "["
+                        + "{\"id\":\"bad\",\"profile\":\"profile-a\",\"type\":\"unknown_future_type\",\"createdAt\":1},"
+                        + "{\"id\":\"good\",\"profile\":\"profile-a\",\"type\":\"on_boot\",\"createdAt\":2}"
+                        + "]")
+                .commit());
+
+        List<ProfileTrigger> triggers = mStore.all();
+
+        assertEquals(1, triggers.size());
+        assertEquals("good", triggers.get(0).id);
+        assertEquals(ProfileTrigger.TYPE_ON_BOOT, triggers.get(0).type);
     }
 }
