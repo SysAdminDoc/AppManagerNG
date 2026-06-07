@@ -120,7 +120,7 @@ class FmPathListAdapter extends RecyclerView.Adapter<FmPathListAdapter.PathHolde
             // Copy path
             menu.add(R.string.copy_this_path)
                     .setOnMenuItemClickListener(menuItem -> {
-                        String path = FmUtils.getDisplayablePath(calculateUri(position));
+                        String path = FmUtils.getClipboardPath(calculateUri(position));
                         Utils.copyToClipboard(context, "Path", path);
                         return true;
                     });

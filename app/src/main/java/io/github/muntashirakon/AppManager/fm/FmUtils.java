@@ -20,6 +20,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.io.fs.VirtualFileSystem;
@@ -38,6 +39,28 @@ public final class FmUtils {
             return uri.getPath();
         }
         return uri.toString();
+    }
+
+    @NonNull
+    public static String getClipboardPath(@NonNull Path path) {
+        return getClipboardPath(path.getUri());
+    }
+
+    @NonNull
+    public static String getClipboardPath(@NonNull Uri uri) {
+        return ExportTextUtils.escapeTsvField(getDisplayablePath(uri));
+    }
+
+    @NonNull
+    public static String getClipboardPaths(@NonNull List<Path> paths) {
+        StringBuilder builder = new StringBuilder();
+        for (Path path : paths) {
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append(getClipboardPath(path));
+        }
+        return builder.toString();
     }
 
     @SuppressWarnings("OctalInteger")
