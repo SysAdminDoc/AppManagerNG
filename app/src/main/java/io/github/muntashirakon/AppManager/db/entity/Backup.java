@@ -116,7 +116,7 @@ public class Backup {
     public static Backup fromBackupMetadata(@NonNull BackupMetadataV2 metadata) {
         Backup backup = new Backup();
         backup.packageName = metadata.packageName;
-        backup.backupName = metadata.backupName != null ? metadata.backupName : "";
+        backup.backupName = normalizeBackupName(metadata.backupName);
         backup.label = metadata.label;
         backup.versionName = metadata.versionName;
         backup.versionCode = metadata.versionCode;
@@ -144,7 +144,7 @@ public class Backup {
     public static Backup fromBackupInfoAndMeta(@NonNull BackupMetadataV5.Info info, @NonNull BackupMetadataV5.Metadata metadata) {
         Backup backup = new Backup();
         backup.packageName = metadata.packageName;
-        backup.backupName = metadata.backupName != null ? metadata.backupName : "";
+        backup.backupName = normalizeBackupName(metadata.backupName);
         backup.label = metadata.label;
         backup.versionName = metadata.versionName;
         backup.versionCode = metadata.versionCode;
@@ -161,5 +161,14 @@ public class Backup {
         backup.installer = metadata.installer;
         backup.relativeDir = info.getRelativeDir();
         return backup;
+    }
+
+    @NonNull
+    private static String normalizeBackupName(@Nullable String backupName) {
+        if (backupName == null) {
+            return "";
+        }
+        String normalizedBackupName = backupName.trim();
+        return normalizedBackupName.isEmpty() ? "" : normalizedBackupName;
     }
 }

@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup database backup-name projection (source audit, 2026-06-07)
+
+- Backup-list database rows now trim backup names from both legacy v2 metadata
+  and v5 metadata before writing the Room key.
+- Blank direct metadata backup names now project to the base-backup sentinel,
+  keeping retention and display buckets aligned with metadata parsing.
+
 ### Fixed - Backup metadata backup-name parsing (source audit, 2026-06-06)
 
 - Backup metadata v5 names are trimmed when created, copied, read from JSON, or
