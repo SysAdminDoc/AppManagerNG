@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager failure toast message hardening (source audit, 2026-06-07)
+
+- File-manager open-file and Open With launch failure toasts now format
+  exception messages before rendering them.
+- Failure toasts flatten controls, defuse formula-style prefixes, and fall back
+  to the existing generic failure text for blank exception messages.
+
 ### Fixed - File-manager folder error-title hardening (source audit, 2026-06-07)
 
 - File-manager folder error empty-state titles now format throwable messages

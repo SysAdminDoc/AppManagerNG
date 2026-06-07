@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 215 source-audit closure for file-manager folder
-  error-title hardening.
+- Result: completed Cycle 216 source-audit closure for file-manager failure
+  toast message hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-manager folder error-title hardening and its verification target.
-- Code: File-manager folder error empty-state titles now format throwable
-  messages before rendering them, flatten controls, defuse formula-style
-  prefixes, and keep the existing generic error fallback for blank messages.
+  file-manager failure toast message hardening and its verification target.
+- Code: File-manager open-file and Open With launch failure toasts now format
+  exception messages before rendering them, flatten controls, defuse
+  formula-style prefixes, and fall back to the existing generic failure text for
+  blank exception messages.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
