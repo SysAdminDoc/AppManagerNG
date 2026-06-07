@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 111 source-audit closure for backup metadata
-  version-code hardening.
+- Result: completed Cycle 112 source-audit closure for backup metadata
+  data-directory hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata version-code hardening and its verification target.
-- Code: backup metadata loading now rejects negative persisted `version_code`
-  values before they can be written into backup-list state, while preserving
-  version code `0` as the existing unknown-version sentinel.
+  backup metadata data-directory hardening and its verification target.
+- Code: backup metadata loading now rejects empty persisted `data_dirs` entries
+  before restore iteration can dereference or fall through to an invalid data
+  path, while empty arrays remain accepted for APK-only backups.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
