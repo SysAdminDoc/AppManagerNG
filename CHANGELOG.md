@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Hex viewer external metadata hardening (source audit, 2026-06-07)
+
+- Hex viewer external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now pass
+  through a tested formatter before reaching toolbar labels.
+- External hex viewer title and subtitle metadata now flatten tab/newline
+  controls, defuse spreadsheet-style prefixes, and fall back to safe defaults
+  when blank.
+
 ### Fixed - Code editor external metadata hardening (source audit, 2026-06-07)
 
 - Code editor external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now pass
