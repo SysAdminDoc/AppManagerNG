@@ -24,6 +24,7 @@ import android.widget.TextView;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.collection.ArrayMap;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -56,6 +57,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
@@ -179,8 +181,8 @@ public class ScannerFragment extends Fragment {
                         .showSelectAll(false)
                         .setNegativeButton(R.string.ok, null)
                         .setNeutralButton(R.string.send_selected, (dialog, which, selectedItems) -> {
-                            String message = "Package: " + mViewModel.getPackageName() + "\n" +
-                                    "Signatures: " + selectedItems;
+                            String message = formatMissingSignaturesReport(mViewModel.getPackageName(),
+                                    selectedItems);
                             Intent i = new Intent(Intent.ACTION_SEND);
                             i.setType("message/rfc822");
                             i.putExtra(Intent.EXTRA_EMAIL, new String[]{"am4android@riseup.net"});
@@ -232,6 +234,24 @@ public class ScannerFragment extends Fragment {
         });
         // Load summary for the APK file
         mViewModel.loadSummary();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatMissingSignaturesReport(@Nullable String packageName,
+                                                @NonNull Collection<? extends CharSequence> selectedItems) {
+        StringBuilder message = new StringBuilder()
+                .append("Package: ")
+                .append(ExportTextUtils.escapeTsvField(packageName))
+                .append('\n')
+                .append("Signatures:");
+        for (CharSequence selectedItem : selectedItems) {
+            message.append('\n')
+                    .append("- ")
+                    .append(ExportTextUtils.escapeTsvField(
+                            selectedItem != null ? selectedItem.toString() : ""));
+        }
+        return message.toString();
     }
 
     private void publishVirusTotalReport(@NonNull VtFileReport vtFileReport) {
