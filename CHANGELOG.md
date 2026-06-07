@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Code editor external metadata hardening (source audit, 2026-06-07)
+
+- Code editor external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now pass
+  through a tested formatter before reaching toolbar or fragment labels.
+- External editor title and subtitle metadata now flatten tab/newline controls,
+  defuse spreadsheet-style prefixes, and fall back to safe defaults when blank.
+
 ### Fixed - Support-info share intent attachment hardening (source audit, 2026-06-07)
 
 - Support-info bundle sharing now builds its attachment `ACTION_SEND` intent
