@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 
 public final class OperationHistoryExporter {
@@ -90,7 +91,7 @@ public final class OperationHistoryExporter {
                 builder.append(',');
             }
             builder.append('"');
-            builder.append(escapeCsvField(values[i]));
+            builder.append(ExportTextUtils.escapeCsvField(values[i]));
             builder.append('"');
         }
     }
@@ -105,35 +106,4 @@ public final class OperationHistoryExporter {
         return value != null ? Integer.toString(value) : "";
     }
 
-    /**
-     * Defuse CSV / formula injection: Excel and LibreOffice Calc can treat cells beginning with
-     * {@code = + - @ \t \r \n}, or a trigger after leading whitespace, as formulas. Operation
-     * history fields include attacker-influenced text (app labels, package names, failure messages
-     * from the platform), so prepend a literal apostrophe for any value beginning with a trigger
-     * sequence. The leading apostrophe is hidden by Excel/Calc and harmless in tools that follow
-     * RFC 4180.
-     * Embedded double quotes are escaped (RFC 4180) the same way as before.
-     */
-    @NonNull
-    private static String escapeCsvField(@NonNull String value) {
-        String escaped = value.replace("\"", "\"\"");
-        if (startsWithSpreadsheetFormula(escaped)) {
-            return "'" + escaped;
-        }
-        return escaped;
-    }
-
-    private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
-        for (int i = 0; i < value.length(); ++i) {
-            char c = value.charAt(i);
-            if (c == '=' || c == '+' || c == '-' || c == '@'
-                    || c == '\t' || c == '\r' || c == '\n') {
-                return true;
-            }
-            if (!Character.isWhitespace(c)) {
-                return false;
-            }
-        }
-        return false;
-    }
 }

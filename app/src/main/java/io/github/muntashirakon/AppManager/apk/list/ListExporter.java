@@ -34,6 +34,7 @@ import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.csv.CsvWriter;
@@ -201,9 +202,11 @@ public final class ListExporter {
                                        boolean includeExtendedMetadata) throws IOException {
         writer.write("# Package Info\n\n");
         for (AppListItem appListItem : appListItems) {
-            writer.append("## ").append(toMarkdownText(appListItem.getPackageLabel())).append("\n\n")
-                    .append("**Package name:** ").append(toMarkdownText(appListItem.packageName)).append("\n")
-                    .append("**Version:** ").append(toMarkdownText(appListItem.getVersionName())).append(" (")
+            writer.append("## ").append(ExportTextUtils.toMarkdownText(appListItem.getPackageLabel())).append("\n\n")
+                    .append("**Package name:** ").append(ExportTextUtils.toMarkdownText(appListItem.packageName))
+                    .append("\n")
+                    .append("**Version:** ").append(ExportTextUtils.toMarkdownText(appListItem.getVersionName()))
+                    .append(" (")
                     .append(String.valueOf(appListItem.getVersionCode())).append(")\n");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 writer.append("**Min SDK:** ").append(String.valueOf(appListItem.getMinSdk()))
@@ -219,9 +222,9 @@ public final class ListExporter {
             if (appListItem.getInstallerPackageName() != null) {
                 writer.append("**Installer:** ");
                 if (appListItem.getInstallerPackageLabel() != null) {
-                    writer.append(toMarkdownText(appListItem.getInstallerPackageLabel())).append(" (");
+                    writer.append(ExportTextUtils.toMarkdownText(appListItem.getInstallerPackageLabel())).append(" (");
                 }
-                writer.append(toMarkdownText(appListItem.getInstallerPackageName()));
+                writer.append(ExportTextUtils.toMarkdownText(appListItem.getInstallerPackageName()));
                 if (appListItem.getInstallerPackageLabel() != null) {
                     writer.append(")");
                 }
@@ -249,62 +252,13 @@ public final class ListExporter {
                         .append(String.valueOf(appListItem.isStopped()))
                         .append("\n");
                 if (appListItem.getPublicSourceDir() != null) {
-                    writer.append("**Source:** ").append(toMarkdownText(appListItem.getPublicSourceDir()))
+                    writer.append("**Source:** ")
+                            .append(ExportTextUtils.toMarkdownText(appListItem.getPublicSourceDir()))
                             .append("\n");
                 }
             }
             writer.append("\n\n");
         }
-    }
-
-    @NonNull
-    private static String toMarkdownText(@Nullable String value) {
-        String text = String.valueOf(value);
-        StringBuilder safeText = new StringBuilder(text.length());
-        boolean pendingSpace = false;
-        for (int i = 0; i < text.length(); ++i) {
-            char c = text.charAt(i);
-            if (c == '\r' || c == '\n' || c == '\t') {
-                pendingSpace = true;
-                continue;
-            }
-            if (pendingSpace && safeText.length() > 0 && safeText.charAt(safeText.length() - 1) != ' ') {
-                safeText.append(' ');
-            }
-            pendingSpace = false;
-            switch (c) {
-                case '&':
-                    safeText.append("&amp;");
-                    break;
-                case '<':
-                    safeText.append("&lt;");
-                    break;
-                case '>':
-                    safeText.append("&gt;");
-                    break;
-                case '\\':
-                case '`':
-                case '*':
-                case '_':
-                case '{':
-                case '}':
-                case '[':
-                case ']':
-                case '(':
-                case ')':
-                case '#':
-                case '+':
-                case '-':
-                case '!':
-                case '|':
-                    safeText.append('\\').append(c);
-                    break;
-                default:
-                    safeText.append(c);
-                    break;
-            }
-        }
-        return safeText.toString();
     }
 
     @NonNull
@@ -369,31 +323,9 @@ public final class ListExporter {
     private static String[] defuseCsvFormulaFields(@NonNull String[] values) {
         String[] safeValues = new String[values.length];
         for (int i = 0; i < values.length; ++i) {
-            safeValues[i] = defuseCsvFormula(values[i]);
+            safeValues[i] = values[i] != null ? ExportTextUtils.defuseCsvFormula(values[i]) : null;
         }
         return safeValues;
-    }
-
-    @Nullable
-    private static String defuseCsvFormula(@Nullable String value) {
-        if (value != null && startsWithSpreadsheetFormula(value)) {
-            return "'" + value;
-        }
-        return value;
-    }
-
-    private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
-        for (int i = 0; i < value.length(); ++i) {
-            char c = value.charAt(i);
-            if (c == '=' || c == '+' || c == '-' || c == '@'
-                    || c == '\t' || c == '\r' || c == '\n') {
-                return true;
-            }
-            if (!Character.isWhitespace(c)) {
-                return false;
-            }
-        }
-        return false;
     }
 
     private static void appendExtendedJson(@NonNull JSONObject object, @NonNull AppListItem item)
