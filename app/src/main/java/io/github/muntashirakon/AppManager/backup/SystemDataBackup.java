@@ -75,6 +75,15 @@ final class SystemDataBackup {
         return dataDir.startsWith(BackupManager.DATA_BACKUP_SPECIAL_SYSTEM_PREFIX);
     }
 
+    static boolean isKnownSystemDataToken(@NonNull String dataDir) {
+        for (Spec spec : SPECS) {
+            if (spec.token.equals(dataDir)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static boolean hasSystemDataToken(@Nullable String[] dataDirs) {
         if (dataDirs == null) {
             return false;

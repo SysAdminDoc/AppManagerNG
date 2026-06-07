@@ -31,4 +31,38 @@ public class BackupUtilsTest {
 //        assertEquals("/data/media/10/Android/data/com.example.package", BackupUtils.getWritableDataDirectory("/storage/emulated/0/Android/data/com.example.package", 0, 10));
 //        assertEquals("/data/media/10/Android/data/com.example.package", BackupUtils.getWritableDataDirectory("/data/media/0/Android/data/com.example.package", 0, 10));
     }
+
+    @Test
+    public void isRestorableDataDirectoryAcceptsGeneratedAppScopedRoots() {
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/data/data/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/data/user/0/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/data/user_de/10/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/volume-1/user/0/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/volume-1/user_de/10/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/sdcard/Android/data/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/storage/emulated/0/Android/media/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/storage/1234-5678/Android/obb/com.example"));
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", "/data/media/10/Android/data/com.example"));
+    }
+
+    @Test
+    public void isRestorableDataDirectoryAcceptsOnlyKnownSpecialTokens() {
+        assertTrue(BackupUtils.isRestorableDataDirectory("com.example", BackupManager.DATA_BACKUP_SPECIAL_ADB));
+        assertTrue(BackupUtils.isRestorableDataDirectory("android", SystemDataBackup.TOKEN_WIFI_MISC));
+
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", SystemDataBackup.TOKEN_WIFI_MISC));
+        assertFalse(BackupUtils.isRestorableDataDirectory("android", "special:system:unknown"));
+    }
+
+    @Test
+    public void isRestorableDataDirectoryRejectsArbitraryOrCrossPackageRoots() {
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/data/system"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/data/user/0/com.other"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/data/user/x/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/../user/0/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/volume-1/extra/user/0/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/emulated/0/Download/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/../Android/data/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/1234-5678/Android/data/com.other"));
+    }
 }

@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata data roots (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects persisted `data_dirs` entries outside
+  generated app-scoped data roots, the ADB data token, or known Android
+  system-data tokens.
+- Removable-volume and adoptable-storage app-scoped roots remain accepted.
+
 ### Fixed - Backup metadata installer packages (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects malformed persisted `installer` package

@@ -307,6 +307,100 @@ public final class BackupUtils {
         return BackupManager.DATA_PREFIX + index + fullExtension;
     }
 
+    public static boolean isRestorableDataDirectory(@NonNull String packageName, @NonNull String dataDir) {
+        if (BackupManager.DATA_BACKUP_SPECIAL_ADB.equals(dataDir)) {
+            return true;
+        }
+        if (SystemDataBackup.isKnownSystemDataToken(dataDir)) {
+            return SystemDataBackup.isSystemDataPackage(packageName);
+        }
+        return isPackageScopedInternalDataDirectory(packageName, dataDir)
+                || isPackageScopedExternalDataDirectory(packageName, dataDir);
+    }
+
+    private static boolean isPackageScopedInternalDataDirectory(@NonNull String packageName, @NonNull String dataDir) {
+        return dataDir.equals("/data/data/" + packageName)
+                || matchesUserScopedPath(dataDir, "/data/user/", packageName)
+                || matchesUserScopedPath(dataDir, "/data/user_de/", packageName)
+                || matchesAdoptableUserScopedPath(dataDir, "/user/", packageName)
+                || matchesAdoptableUserScopedPath(dataDir, "/user_de/", packageName);
+    }
+
+    private static boolean isPackageScopedExternalDataDirectory(@NonNull String packageName, @NonNull String dataDir) {
+        return matchesExternalAppDirectory(dataDir, "Android/data/" + packageName)
+                || matchesExternalAppDirectory(dataDir, "Android/media/" + packageName)
+                || matchesExternalAppDirectory(dataDir, "Android/obb/" + packageName);
+    }
+
+    private static boolean matchesAdoptableUserScopedPath(@NonNull String dataDir, @NonNull String userKind,
+                                                          @NonNull String packageName) {
+        final String expandRoot = "/mnt/expand/";
+        if (!dataDir.startsWith(expandRoot)) {
+            return false;
+        }
+        int userRootIndex = dataDir.indexOf(userKind, expandRoot.length());
+        if (userRootIndex <= expandRoot.length()) {
+            return false;
+        }
+        String volumeId = dataDir.substring(expandRoot.length(), userRootIndex);
+        return volumeId.indexOf(Paths.PATH_SEPARATOR) == -1
+                && !hasUnsafePathSegment(volumeId)
+                && matchesUserScopedPath(dataDir, dataDir.substring(0, userRootIndex) + userKind, packageName);
+    }
+
+    private static boolean matchesExternalAppDirectory(@NonNull String dataDir, @NonNull String relativePath) {
+        return dataDir.equals("/sdcard/" + relativePath)
+                || matchesStorageVolumeRelativePath(dataDir, "/storage/", relativePath)
+                || matchesUserScopedPath(dataDir, "/data/media/", relativePath);
+    }
+
+    private static boolean matchesStorageVolumeRelativePath(@NonNull String dataDir, @NonNull String root,
+                                                            @NonNull String relativePath) {
+        String suffix = "/" + relativePath;
+        if (!dataDir.startsWith(root) || !dataDir.endsWith(suffix)) {
+            return false;
+        }
+        String volumePath = dataDir.substring(root.length(), dataDir.length() - suffix.length());
+        return !hasUnsafePathSegment(volumePath);
+    }
+
+    private static boolean matchesUserScopedPath(@NonNull String dataDir, @NonNull String root,
+                                                 @NonNull String relativePath) {
+        if (!dataDir.startsWith(root)) {
+            return false;
+        }
+        int userIdStart = root.length();
+        int userIdEnd = dataDir.indexOf(Paths.PATH_SEPARATOR, userIdStart);
+        if (userIdEnd <= userIdStart) {
+            return false;
+        }
+        String userId = dataDir.substring(userIdStart, userIdEnd);
+        return TextUtils.isDigitsOnly(userId)
+                && dataDir.substring(userIdEnd + Paths.PATH_SEPARATOR.length()).equals(relativePath);
+    }
+
+    private static boolean hasUnsafePathSegment(@NonNull String path) {
+        if (TextUtils.isEmpty(path)) {
+            return true;
+        }
+        int segmentStart = 0;
+        while (segmentStart <= path.length()) {
+            int segmentEnd = path.indexOf(Paths.PATH_SEPARATOR, segmentStart);
+            if (segmentEnd == -1) {
+                segmentEnd = path.length();
+            }
+            String segment = path.substring(segmentStart, segmentEnd);
+            if (TextUtils.isEmpty(segment) || ".".equals(segment) || "..".equals(segment)) {
+                return true;
+            }
+            if (segmentEnd == path.length()) {
+                return false;
+            }
+            segmentStart = segmentEnd + Paths.PATH_SEPARATOR.length();
+        }
+        return false;
+    }
+
     @NonNull
     static String[] getExcludeDirs(boolean includeCache, @Nullable String... others) {
         // Lib dirs has to be ignored by default

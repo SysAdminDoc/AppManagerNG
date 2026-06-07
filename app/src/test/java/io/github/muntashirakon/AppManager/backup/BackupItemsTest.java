@@ -213,8 +213,18 @@ public class BackupItemsTest {
     }
 
     @Test
-    public void readMetadataRejectsInvalidInstallerName() throws IOException {
+    public void readMetadataRejectsUnexpectedDataDirPath() throws IOException {
         BackupItems.BackupItem backupItem = createMetadataBackup("66666666-6666-6666-6666-666666666666",
+                "com.example", 1L, "[\"/data/system\"]", "base.apk", "[]");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
+    @Test
+    public void readMetadataRejectsInvalidInstallerName() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("77777777-7777-7777-7777-777777777777",
                 "com.example", 1L, "[]", "base.apk", "[]", "\"com..installer\"");
 
         IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
