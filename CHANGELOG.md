@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Archive error message report hardening (source audit, 2026-06-07)
+
+- Archive create/extract error dialogs now normalize localized throwable
+  messages before rendering them.
+- Archive error messages preserve report line breaks while normalizing tabs and
+  carriage returns, defusing formula-style line starts, and hiding empty
+  messages.
+
 ### Fixed - File-manager error-details report hardening (source audit, 2026-06-07)
 
 - File-manager empty-state error details now preserve short stack-report lines

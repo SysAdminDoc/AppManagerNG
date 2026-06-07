@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 213 source-audit closure for file-manager
-  error-details report hardening.
+- Result: completed Cycle 214 source-audit closure for archive error message
+  report hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-manager error-details report hardening and its verification target.
-- Code: File-manager empty-state error details now preserve short stack-report
-  lines while normalizing tabs and carriage returns before rendering them, and
-  formula-style line starts introduced by exception messages are defused without
-  changing refresh or error-summary behavior.
+  archive error message report hardening and its verification target.
+- Code: Archive create/extract error dialogs now normalize localized throwable
+  messages before rendering them, preserving report line breaks while
+  normalizing tabs and carriage returns, defusing formula-style line starts, and
+  hiding empty messages.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
