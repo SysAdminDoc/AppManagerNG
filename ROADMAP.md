@@ -5,7 +5,7 @@
 > Single source of truth for all planned work. Items above the `---` are
 > existing plans; items below are research-driven additions.
 
-Last consolidated: 2026-06-06. Baseline: `main` at `7128b70`, app
+Last consolidated: 2026-06-07. Baseline: `main` at `7128b70`, app
 `versionName 0.5.0`, `versionCode 7`.
 
 This is the single live to-do file and holds **only open work**. Completed
@@ -75,10 +75,11 @@ than by historical priority tier:
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
 - Source-backed 2026-06-06/2026-06-07 audit closures now include backup
-  database backup-name projection hardening, backup metadata backup-name parser
-  hardening, profile backup-data parser hardening, direct backup operation
-  option parser hardening, batch backup string-array parser hardening, DexOpt
-  option parser hardening, batch backup flag parser hardening, batch backup
+  base-name display label hardening, backup database backup-name projection
+  hardening, backup metadata backup-name parser hardening, profile backup-data
+  parser hardening, direct backup operation option parser hardening, batch
+  backup string-array parser hardening, DexOpt option parser hardening, batch
+  backup flag parser hardening, batch backup
   import option parser hardening,
   batch freeze option parser hardening, batch network-policy option parser
   hardening, batch permission option parser hardening, batch component option

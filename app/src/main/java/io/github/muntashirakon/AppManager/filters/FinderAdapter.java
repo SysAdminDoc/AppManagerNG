@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.filters.options.FilterOption;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -95,13 +96,13 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
                 getComponentNames(result.getMatchedComponents()));
         appendMatches(context, lines, R.string.finder_matched_trackers,
                 getComponentNames(result.getMatchedTrackers()));
-        appendMatches(context, lines, R.string.finder_matched_backups, getBackupNames(result.getMatchedBackups()));
+        appendMatches(context, lines, R.string.finder_matched_backups, getBackupNames(context, result.getMatchedBackups()));
         appendMatches(context, lines, R.string.finder_matched_signatures, result.getMatchedSubjectLines());
         return lines.isEmpty() ? null : TextUtils.join("\n", lines);
     }
 
     private static void appendMatches(@NonNull Context context, @NonNull List<String> lines,
-                                      @StringRes int labelStringRes, @Nullable Collection<String> rawValues) {
+                                      @StringRes int labelStringRes, @Nullable Collection<? extends CharSequence> rawValues) {
         CharSequence preview = formatPreview(context, rawValues);
         if (!TextUtils.isEmpty(preview)) {
             lines.add(context.getString(labelStringRes, preview));
@@ -109,14 +110,15 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
     }
 
     @Nullable
-    private static CharSequence formatPreview(@NonNull Context context, @Nullable Collection<String> rawValues) {
+    private static CharSequence formatPreview(@NonNull Context context,
+                                              @Nullable Collection<? extends CharSequence> rawValues) {
         if (rawValues == null || rawValues.isEmpty()) {
             return null;
         }
         Set<String> values = new LinkedHashSet<>();
-        for (String rawValue : rawValues) {
+        for (CharSequence rawValue : rawValues) {
             if (!TextUtils.isEmpty(rawValue)) {
-                values.add(rawValue);
+                values.add(rawValue.toString());
             }
         }
         if (values.isEmpty()) {
@@ -151,20 +153,16 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
     }
 
     @Nullable
-    private static List<String> getBackupNames(@Nullable List<Backup> backups) {
+    private static List<CharSequence> getBackupNames(@NonNull Context context, @Nullable List<Backup> backups) {
         if (backups == null || backups.isEmpty()) {
             return null;
         }
-        List<String> names = new ArrayList<>();
+        List<CharSequence> names = new ArrayList<>();
         for (Backup backup : backups) {
             if (backup == null) {
                 continue;
             }
-            if (!TextUtils.isEmpty(backup.backupName)) {
-                names.add(backup.backupName);
-            } else if (!TextUtils.isEmpty(backup.packageName)) {
-                names.add(backup.packageName);
-            }
+            names.add(BackupUtils.getDisplayBackupName(context, backup.backupName));
         }
         return names;
     }
