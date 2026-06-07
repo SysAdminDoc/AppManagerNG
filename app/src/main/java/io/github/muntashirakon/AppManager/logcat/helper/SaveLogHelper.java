@@ -9,14 +9,19 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import org.jetbrains.annotations.Contract;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -51,14 +56,8 @@ public class SaveLogHelper {
     public static Path saveTemporaryFile(String extension, CharSequence text, Collection<String> lines) {
         try {
             Path tempFile = Paths.get(FileCache.getGlobalFileCache().createCachedFile(extension));
-            try (PrintStream out = new PrintStream(new BufferedOutputStream(tempFile.openOutputStream(), BUFFER))) {
-                if (text != null) { // one big string
-                    out.print(text);
-                } else { // multiple lines separated by newline
-                    for (CharSequence line : lines) {
-                        out.println(line);
-                    }
-                }
+            try (OutputStream out = new BufferedOutputStream(tempFile.openOutputStream(), BUFFER)) {
+                writeText(out, text, lines);
                 Log.d(TAG, "Saved temp file: %s", tempFile);
                 return tempFile;
             }
@@ -108,20 +107,12 @@ public class SaveLogHelper {
     @NonNull
     public static SavedLog openLog(@NonNull Uri fileUri, int maxLines) {
         Path logFile = Paths.get(fileUri);
-        LinkedList<String> logLines = new LinkedList<>();
-        boolean truncated = false;
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(logFile.openInputStream()), BUFFER)) {
-            while (bufferedReader.ready()) {
-                logLines.add(bufferedReader.readLine());
-                if (logLines.size() > maxLines) {
-                    logLines.removeFirst();
-                    truncated = true;
-                }
-            }
+        try (InputStream inputStream = logFile.openInputStream()) {
+            return readLog(inputStream, maxLines);
         } catch (IOException e) {
             Log.e(TAG, e);
         }
-        return new SavedLog(logLines, truncated);
+        return new SavedLog(Collections.emptyList(), false);
     }
 
     public static synchronized boolean saveLog(CharSequence logString, String filename) {
@@ -147,17 +138,43 @@ public class SaveLogHelper {
     @NonNull
     private static Path saveLog(List<String> logLines, CharSequence logString, String filename) throws IOException {
         Path newFile = getSavedLogsDirectory().createNewFile(filename, null);
-        try (PrintStream out = new PrintStream(new BufferedOutputStream(newFile.openOutputStream(), BUFFER))) {
-            // Save a log as either a list of strings
-            if (logLines != null) {
-                for (CharSequence line : logLines) {
-                    out.println(line);
-                }
-            } else if (logString != null) {
-                out.print(logString);
-            }
+        try (OutputStream out = new BufferedOutputStream(newFile.openOutputStream(), BUFFER)) {
+            writeText(out, logString, logLines);
         }
         return newFile;
+    }
+
+    @VisibleForTesting
+    static void writeText(@NonNull OutputStream out, @Nullable CharSequence text,
+                          @Nullable Collection<String> lines) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), BUFFER);
+        if (text != null) { // one big string
+            writer.append(text);
+        } else if (lines != null) { // multiple lines separated by newline
+            for (CharSequence line : lines) {
+                writer.append(line);
+                writer.append('\n');
+            }
+        }
+        writer.flush();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static SavedLog readLog(@NonNull InputStream in, int maxLines) throws IOException {
+        LinkedList<String> logLines = new LinkedList<>();
+        boolean truncated = false;
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8), BUFFER)) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                logLines.add(line);
+                if (logLines.size() > maxLines) {
+                    logLines.removeFirst();
+                    truncated = true;
+                }
+            }
+        }
+        return new SavedLog(logLines, truncated);
     }
 
     @NonNull

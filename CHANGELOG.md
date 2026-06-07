@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat saved-log UTF-8 export (source audit, 2026-06-07)
+
+- Logcat saved logs and temporary share attachments now write text through
+  explicit UTF-8 streams instead of the platform default charset.
+- Saved-log reopening now decodes UTF-8 explicitly and uses the same truncation
+  path covered by host tests, keeping non-ASCII log text stable across hosts.
+
 ### Fixed - Installer diagnostic message redaction (source audit, 2026-06-07)
 
 - Installer failure transcripts now scrub package names, paths, content URIs,
