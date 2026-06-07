@@ -7,6 +7,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
@@ -107,6 +108,23 @@ public class IntentCompatTest {
         assertArrayEquals(new int[0], parsed.getIntArrayExtra("ints"));
         assertArrayEquals(new long[0], parsed.getLongArrayExtra("longs"));
         assertArrayEquals(new float[0], parsed.getFloatArrayExtra("floats"), 0);
+    }
+
+    @Test
+    public void unflattenFromString_roundTripsDecodedLongExtra() {
+        Intent parsed = IntentCompat.unflattenFromString(
+                "VERSION\t1\nEXTRA\tanswer\t" + AddIntentExtraFragment.TYPE_LONG + "\t0x2a\n");
+
+        assertNotNull(parsed);
+        assertEquals(42L, parsed.getLongExtra("answer", 0));
+    }
+
+    @Test
+    public void parseExtraValue_decodesLongLiterals() {
+        assertEquals(42L, IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_LONG, "0x2a"));
+        assertEquals(42L, IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_LONG, " 42 "));
+        assertThrows(NumberFormatException.class,
+                () -> IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_LONG, "not-a-long"));
     }
 
     @Test
