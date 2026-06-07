@@ -357,7 +357,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         favItem.setEnabled(item.isDirectory);
         favItem.setVisible(item.isDirectory);
         menu.findItem(R.id.action_copy_path).setOnMenuItemClickListener(menuItem -> {
-            String path = FmUtils.getDisplayablePath(item.path);
+            String path = FmUtils.getClipboardPath(item.path);
             Utils.copyToClipboard(mFmActivity, "Path", path);
             return true;
         });

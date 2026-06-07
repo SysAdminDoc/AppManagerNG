@@ -464,7 +464,7 @@ public class FmActivity extends BaseActivity {
                 menu.add(R.string.copy_this_path).setOnMenuItemClickListener(menuItem -> {
                     Uri uri = item.options.getInitUriForVfs() != null
                             ? item.options.getInitUriForVfs() : item.options.uri;
-                    String path = FmUtils.getDisplayablePath(uri);
+                    String path = FmUtils.getClipboardPath(uri);
                     Utils.copyToClipboard(context, "Path", path);
                     return true;
                 });
