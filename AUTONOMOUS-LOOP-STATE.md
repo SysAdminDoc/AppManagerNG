@@ -8,16 +8,17 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 95 source-audit closure for backup archive filename
+- Result: completed Cycle 96 source-audit closure for Activity Interceptor
+  pasted ROOT header boolean parsing
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup archive filename filtering and its verification target.
-- Code: backup restore and verify file discovery now accepts only generated
-  archive filenames for source, data, and keystore payloads instead of broad
-  prefix matches; source and keystore payloads must be split tar-family
-  archives, while data payloads may also be the exact ADB `.ab` export file.
+  pasted ROOT header hardening and its verification target.
+- Code: Activity Interceptor paste handling now accepts only explicit `true` or
+  `false` values for copied `ROOT` headers instead of treating malformed values
+  as `false`, while preserving case-insensitive and whitespace-padded valid
+  values.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
