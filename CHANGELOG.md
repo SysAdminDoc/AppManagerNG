@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager item display-name hardening (source audit, 2026-06-07)
+
+- File-manager row titles and delete confirmation titles now format
+  path-derived names through the shared file-manager display-name helper.
+- File-manager item display names now flatten tab/newline controls, defuse
+  spreadsheet-style prefixes, and share the sanitized display-path fallback used
+  by file dialog subtitles.
+
 ### Fixed - File dialog subtitle display-name hardening (source audit, 2026-06-07)
 
 - Open With and Checksums dialogs now format file subtitles through the shared
