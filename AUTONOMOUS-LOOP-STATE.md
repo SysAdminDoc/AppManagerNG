@@ -8,17 +8,17 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 140 source-audit closure for operation-history replay
-  payload validation.
+- Result: completed Cycle 141 source-audit closure for operation-history failed
+  cleanup matching.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  operation-history replay payload validation and its verification target.
-- Code: Operation-history rows now validate their stored batch, installer, or
-  profile replay payload before exposing rerun actions or marking
-  details/exports as replayable; malformed replay payloads stay visible as
-  history, but confirmation text and detail rows report that they are not
-  replayable instead of deferring the failure until service-intent construction.
+  operation-history failed cleanup matching and its verification target.
+- Code: Failed-history cleanup now deletes every stored row that the UI
+  normalizes as failed, including imported or future status tokens, while
+  successful-history cleanup remains limited to exact `success` rows; a
+  Robolectric Room regression test covers the generated operation-history DAO
+  delete queries.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.db.dao.OpHistoryDaoTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -28,11 +28,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed persisted
-  operation-history status consistency edge, starting with failed-status cleanup
-  actions in `OpHistoryActivity`, `OpHistoryManager`, and `OpHistoryDao`.
-- Check whether rows normalized to failure for display/filtering are also
-  included by failed-history cleanup/delete paths instead of remaining behind
-  with a status value the UI no longer presents.
+  operation-history snapshot edge, starting with import/export type, status,
+  and data normalization in `SnapshotBundle`.
+- Check whether snapshot-imported operation-history rows with blank, unknown, or
+  malformed scalar fields preserve idempotency while avoiding rows that the live
+  UI must immediately sanitize again.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
