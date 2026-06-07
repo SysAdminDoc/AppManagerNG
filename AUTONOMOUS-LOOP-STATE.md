@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 162 source-audit closure for profile clipboard label
-  hardening.
+- Result: completed Cycle 163 source-audit closure for operation-history text
+  report hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  profile clipboard label hardening and its verification target.
-- Code: Profile ID copy actions now normalize profile-name clipboard labels
-  before handing them to Android clipboard previews, while leaving copied
-  profile IDs unchanged.
+  operation-history text report hardening and its verification target.
+- Code: Operation-history plain-text share reports and per-row clipboard copies
+  now pass through a line-aware report sanitizer that preserves report line
+  breaks while replacing tab/carriage-return column controls and defusing
+  spreadsheet-formula prefixes at the start of each line.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.ProfilesActivityTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -26,12 +27,12 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect remaining plain text `ACTION_SEND` result
-  previews and clipboard-only diagnostics outside the profile flow that still
-  accept app/provider-controlled labels.
-- Check whether file-manager, app-info, operation-history, or settings copy
-  surfaces still leak nullable placeholders, unchecked control text, or
-  spreadsheet-formula entry points that can be pinned with focused host tests
-  without changing import-compatible rule files.
+  previews and clipboard-only diagnostics outside the profile and
+  operation-history flows that still accept app/provider-controlled labels.
+- Check whether file-manager, app-info, or settings copy surfaces still leak
+  nullable placeholders, unchecked control text, or spreadsheet-formula entry
+  points that can be pinned with focused host tests without changing
+  import-compatible rule files.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

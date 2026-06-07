@@ -111,6 +111,30 @@ public class OperationHistoryExporterTest {
         assertEquals(warning, entry.getJSONArray("warnings").getString(0));
     }
 
+    @Test
+    public void exportTextDefusesFormulaLinesAndNormalizesTabs() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistoryItem history = createInstallerHistoryWithLabelAndExtra("\t=HYPERLINK(\"http://evil/\")",
+                createInstallerExtra()
+                        .put("failure_message", "\n+SUM(1,1)")
+                        .put("warnings", new JSONArray()
+                                .put("safe warning")
+                                .put("@WEBSERVICE(\"http://evil/\")")));
+
+        String exported = OperationHistoryExporter.toText(context, Collections.singletonList(history));
+        String copied = OperationHistoryExporter.toTextEntry(context, history);
+        String clipboardLabel = OperationHistoryExporter.toTextLabel(context, history);
+
+        assertTrue(exported.contains("' =HYPERLINK(\"http://evil/\")"));
+        assertTrue(exported.contains("\n'+SUM(1,1)"));
+        assertTrue(exported.contains("\n'@WEBSERVICE(\"http://evil/\")"));
+        assertEquals("' =HYPERLINK(\"http://evil/\")", clipboardLabel);
+        assertTrue(copied.startsWith(clipboardLabel + "\n"));
+        assertFalse(exported.contains("\t"));
+        assertFalse(exported.contains("\n+SUM"));
+        assertFalse(exported.contains("\n@WEBSERVICE"));
+    }
+
     private static OpHistoryItem createInstallerHistory() throws Exception {
         return createInstallerHistoryWithLabel("Example App");
     }
