@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager folder error-title hardening (source audit, 2026-06-07)
+
+- File-manager folder error empty-state titles now format throwable messages
+  before rendering them.
+- Folder error titles flatten controls, defuse formula-style prefixes, and keep
+  the existing generic error fallback for blank messages.
+
 ### Fixed - Archive error message report hardening (source audit, 2026-06-07)
 
 - Archive create/extract error dialogs now normalize localized throwable

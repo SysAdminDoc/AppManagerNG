@@ -366,7 +366,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             if (mSwipeRefresh != null) {
                 mSwipeRefresh.setRefreshing(false);
             }
-            CharSequence title = !TextUtils.isEmpty(throwable.getMessage()) ? throwable.getMessage() : getText(R.string.error);
+            CharSequence title = getFolderErrorDisplayTitle(throwable, getText(R.string.error));
             handleEmptyView(io.github.muntashirakon.ui.R.drawable.ic_caution, title,
                     getText(R.string.fm_folder_error_message), throwable);
         });
@@ -1754,6 +1754,13 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     @NonNull
     static String formatArchiveErrorMessage(@NonNull Throwable throwable) {
         return ExportTextUtils.toPlainTextReport(throwable.getLocalizedMessage()).trim();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static CharSequence getFolderErrorDisplayTitle(@NonNull Throwable throwable, @NonNull CharSequence fallback) {
+        String title = FmUtils.getDisplayName(throwable.getMessage(), "");
+        return !TextUtils.isEmpty(title) ? title : fallback;
     }
 
     private String findNextBestDisplayName(@NonNull Path basePath, @NonNull String prefix, @Nullable String extension) {
