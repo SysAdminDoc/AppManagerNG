@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch backup import option parsing (source audit, 2026-06-06)
+
+- Batch backup import options now reject unsupported persisted, parcelled, or
+  constructed import type integers before importer discovery can dispatch them.
+- Empty backup import directory URIs are rejected before they can reach path
+  resolution.
+
 ### Fixed - Batch freeze option parsing (source audit, 2026-06-06)
 
 - Batch freeze options now reject unsupported persisted, parcelled, or
