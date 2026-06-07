@@ -78,6 +78,26 @@ public class ListExporterTest {
         assertEquals(2, object.getInt("grantedPermissionCount"));
     }
 
+    @Test
+    public void markdownEscapesAppControlledMetadata() throws Exception {
+        AppListItem item = buildItem();
+        item.setPackageLabel("Example\n# Inject <script>");
+        item.setVersionName("[1.2.3](http://evil/)");
+        item.setInstallerPackageLabel("Store **bold**");
+        item.setInstallerPackageName("com.evil[installer]");
+        item.setPublicSourceDir("/data/app/<script>.apk");
+
+        String output = exportMarkdown(true, item);
+
+        assertTrue(output.contains("## Example \\# Inject &lt;script&gt;"));
+        assertTrue(output.contains("**Version:** \\[1.2.3\\]\\(http://evil/\\) (42)"));
+        assertTrue(output.contains("**Installer:** Store \\*\\*bold\\*\\* (com.evil\\[installer\\])"));
+        assertTrue(output.contains("**Source:** /data/app/&lt;script&gt;.apk"));
+        assertFalse(output.contains("\n# Inject"));
+        assertFalse(output.contains("[1.2.3](http://evil/)"));
+        assertFalse(output.contains("<script>"));
+    }
+
     private static String exportCsv(boolean includeExtendedMetadata) throws Exception {
         return exportCsv(includeExtendedMetadata, buildItem());
     }
@@ -85,6 +105,15 @@ public class ListExporterTest {
     private static String exportCsv(boolean includeExtendedMetadata, AppListItem item) throws Exception {
         try (StringWriter writer = new StringWriter()) {
             ListExporter.exportItems(writer, ListExporter.EXPORT_TYPE_CSV,
+                    Collections.singletonList(item), includeExtendedMetadata,
+                    RuntimeEnvironment.getApplication());
+            return writer.toString();
+        }
+    }
+
+    private static String exportMarkdown(boolean includeExtendedMetadata, AppListItem item) throws Exception {
+        try (StringWriter writer = new StringWriter()) {
+            ListExporter.exportItems(writer, ListExporter.EXPORT_TYPE_MARKDOWN,
                     Collections.singletonList(item), includeExtendedMetadata,
                     RuntimeEnvironment.getApplication());
             return writer.toString();
