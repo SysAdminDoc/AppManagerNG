@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup checksum duplicate rows (source audit, 2026-06-06)
+
+- Backup checksum-file loading now rejects duplicate filename rows instead of
+  letting later rows overwrite earlier checksum values.
+- Malformed checksum rows continue to fail as `IOException` restore or verify
+  errors before backup payload checks run.
+
 ### Fixed - Intent long extra literal parsing (source audit, 2026-06-06)
 
 - Activity Interceptor flattened long extras now accept decoded long literals

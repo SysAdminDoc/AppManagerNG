@@ -600,18 +600,19 @@ public class BackupItems {
                 mWriter = new PrintWriter(new BufferedWriter(new PathWriter(checksumFile)));
             } else if ("r".equals(mode)) {
                 synchronized (mChecksums) {
-                    BufferedReader reader = new BufferedReader(new PathReader(checksumFile));
                     // Get checksums
-                    String line;
-                    String[] lineSplits;
-                    while ((line = reader.readLine()) != null) {
-                        lineSplits = line.split("\t", 2);
-                        if (lineSplits.length != 2 || lineSplits[0].isEmpty() || lineSplits[1].isEmpty()) {
-                            throw new IOException("Illegal lines found in the checksum file.");
+                    try (BufferedReader reader = new BufferedReader(new PathReader(checksumFile))) {
+                        String line;
+                        String[] lineSplits;
+                        while ((line = reader.readLine()) != null) {
+                            lineSplits = line.split("\t", 2);
+                            if (lineSplits.length != 2 || lineSplits[0].isEmpty() || lineSplits[1].isEmpty()
+                                    || mChecksums.containsKey(lineSplits[1])) {
+                                throw new IOException("Illegal lines found in the checksum file.");
+                            }
+                            mChecksums.put(lineSplits[1], lineSplits[0]);
                         }
-                        mChecksums.put(lineSplits[1], lineSplits[0]);
                     }
-                    reader.close();
                 }
             } else throw new IOException("Unknown mode: " + mode);
         }
