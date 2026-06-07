@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.history.ops;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,6 +34,7 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierService;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public final class OpHistoryManager {
     public static final String TAG = OpHistoryManager.class.getSimpleName();
@@ -219,25 +221,74 @@ public final class OpHistoryManager {
         return metadata;
     }
 
+    public static boolean canReplayHistoryItem(@NonNull OpHistoryItem item) {
+        try {
+            switch (item.getType()) {
+                case HISTORY_TYPE_BATCH_OPS:
+                    getBatchQueueItem(item);
+                    return true;
+                case HISTORY_TYPE_INSTALLER:
+                    getApkQueueItem(item);
+                    return true;
+                case HISTORY_TYPE_PROFILE:
+                    getProfileQueueItem(item);
+                    return true;
+            }
+        } catch (JSONException | RuntimeException e) {
+            return false;
+        }
+        return false;
+    }
+
     @NonNull
     public static Intent getExecutableIntent(@NonNull Context context, @NonNull OpHistoryItem item)
             throws JSONException {
         switch (item.getType()) {
             case HISTORY_TYPE_BATCH_OPS: {
-                BatchQueueItem batchQueueItem = BatchQueueItem.DESERIALIZER.deserialize(item.jsonData);
-                return BatchOpsService.getServiceIntent(context, batchQueueItem);
+                return BatchOpsService.getServiceIntent(context, getBatchQueueItem(item));
             }
             case HISTORY_TYPE_INSTALLER: {
-                ApkQueueItem apkQueueItem = ApkQueueItem.DESERIALIZER.deserialize(item.jsonData);
                 Intent intent = new Intent(context, PackageInstallerService.class);
-                IntentCompat.putWrappedParcelableExtra(intent, PackageInstallerService.EXTRA_QUEUE_ITEM, apkQueueItem);
+                IntentCompat.putWrappedParcelableExtra(intent, PackageInstallerService.EXTRA_QUEUE_ITEM,
+                        getApkQueueItem(item));
                 return intent;
             }
             case HISTORY_TYPE_PROFILE: {
-                ProfileQueueItem profileQueueItem = ProfileQueueItem.DESERIALIZER.deserialize(item.jsonData);
-                return ProfileApplierService.getIntent(context, profileQueueItem, true);
+                return ProfileApplierService.getIntent(context, getProfileQueueItem(item), true);
             }
         }
         throw new IllegalStateException("Invalid type: " + item.getType());
+    }
+
+    @NonNull
+    private static BatchQueueItem getBatchQueueItem(@NonNull OpHistoryItem item) throws JSONException {
+        BatchQueueItem batchQueueItem = BatchQueueItem.DESERIALIZER.deserialize(item.jsonData);
+        if (batchQueueItem.getPackages().isEmpty()) {
+            throw new JSONException("Missing batch queue targets.");
+        }
+        return batchQueueItem;
+    }
+
+    @NonNull
+    private static ApkQueueItem getApkQueueItem(@NonNull OpHistoryItem item) throws JSONException {
+        ApkQueueItem apkQueueItem = ApkQueueItem.DESERIALIZER.deserialize(item.jsonData);
+        if (apkQueueItem.isInstallExisting()) {
+            String packageName = apkQueueItem.getPackageName();
+            if (TextUtils.isEmpty(packageName) || !PackageUtils.validateName(packageName)) {
+                throw new JSONException("Missing install-existing package name.");
+            }
+        } else if (apkQueueItem.getApkSource() == null) {
+            throw new JSONException("Missing APK source.");
+        }
+        return apkQueueItem;
+    }
+
+    @NonNull
+    private static ProfileQueueItem getProfileQueueItem(@NonNull OpHistoryItem item) throws JSONException {
+        ProfileQueueItem profileQueueItem = ProfileQueueItem.DESERIALIZER.deserialize(item.jsonData);
+        if (TextUtils.isEmpty(profileQueueItem.getProfileId()) || TextUtils.isEmpty(profileQueueItem.getProfileName())) {
+            throw new JSONException("Missing profile identity.");
+        }
+        return profileQueueItem;
     }
 }

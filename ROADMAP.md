@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 139 - 2026-06-07.
+> Last researched: Cycle 140 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -75,10 +75,11 @@ than by historical priority tier:
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
 - Source-backed 2026-06-06/2026-06-07 audit closures now include operation
-  history row type/status fallback, operation history metadata scalar
-  hardening, operation history metadata array hardening, duplicate backup
-  cleanup history label hardening, backup base-name display label hardening,
-  backup database backup-name projection hardening,
+  history replay payload validation, operation history row type/status
+  fallback, operation history metadata scalar hardening, operation history
+  metadata array hardening, duplicate backup cleanup history label hardening,
+  backup base-name display label hardening, backup database backup-name
+  projection hardening,
   backup metadata backup-name parser hardening, profile backup-data parser
   hardening, direct backup operation option parser hardening, batch backup
   string-array parser hardening, DexOpt option parser hardening, batch backup

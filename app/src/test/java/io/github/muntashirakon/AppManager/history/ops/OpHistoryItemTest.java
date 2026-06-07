@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.Intent;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverCleanupHistoryItem;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverScanner;
@@ -193,5 +195,64 @@ public class OpHistoryItemTest {
         assertFalse(item.isReplayable());
         assertNull(item.getPrimaryTargetIntent(context));
         assertTrue(item.getDetailMessage(context).contains(context.getString(R.string.state_unknown)));
+    }
+
+    @Test
+    public void malformedReplayPayloadIsNotReplayableEvenWhenMetadataAllowsReplay() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 13L;
+        row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject().toString();
+        row.serializedExtra = createReplayableMetadata().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertFalse(OpHistoryManager.canReplayHistoryItem(item));
+        assertFalse(item.isReplayable());
+        assertTrue(item.getDetailMessage(context).contains(context.getString(R.string.no)));
+        assertTrue(item.getExecutionConfirmationMessage(context)
+                .contains(context.getString(R.string.op_preflight_not_replayable_warning)));
+    }
+
+    @Test
+    public void validBatchReplayPayloadRemainsReplayable() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 14L;
+        row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("title_res", R.string.batch_ops)
+                .put("op", BatchOpsManager.OP_FREEZE)
+                .put("packages", new JSONArray().put("com.example.app"))
+                .put("users", new JSONArray().put(0))
+                .put("options", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = createReplayableMetadata().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertTrue(OpHistoryManager.canReplayHistoryItem(item));
+        assertTrue(item.isReplayable());
+        assertNotNull(OpHistoryManager.getExecutableIntent(context, item));
+    }
+
+    private static JSONObject createReplayableMetadata() throws Exception {
+        return new JSONObject()
+                .put("schema_version", 1)
+                .put("mode_label", "ADB")
+                .put("operation_label", "Replay")
+                .put("target_count", 1)
+                .put("failed_count", 0)
+                .put("requires_restart", false)
+                .put("replayable", true)
+                .put("reversible", false)
+                .put("risk", OperationJournalMetadata.RISK_MEDIUM)
+                .put("rollback_hint", "none")
+                .put("target_preview", new JSONArray().put("com.example.app"));
     }
 }
