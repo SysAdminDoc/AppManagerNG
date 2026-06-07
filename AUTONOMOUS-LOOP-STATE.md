@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 113 source-audit closure for backup metadata
-  installer-package hardening.
+- Result: completed Cycle 114 source-audit closure for backup metadata
+  data-root hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata installer-package hardening and its verification target.
-- Code: backup metadata loading now rejects malformed persisted `installer`
-  package names before restore uses them as installer-session metadata, while
-  missing or null installer metadata still falls back to the AppManagerNG
-  installer identity.
+  backup metadata data-root hardening and its verification target.
+- Code: backup metadata loading now rejects persisted `data_dirs` entries
+  outside generated app-scoped data roots, the ADB data token, or known Android
+  system-data tokens, while removable-volume and adoptable-storage app-scoped
+  roots remain accepted.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest --tests io.github.muntashirakon.AppManager.backup.BackupUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
