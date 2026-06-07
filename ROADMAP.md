@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 179 - 2026-06-07.
+> Last researched: Cycle 180 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -74,11 +74,11 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06/2026-06-07 audit closures now include logcat share
-  attachment MIME hardening, open-with MIME fallback hardening, file-share
-  helper input hardening, clipboard oversized fallback UTF-8 hardening,
-  support-info bundle text line hardening, diagnostic ZIP text line hardening,
-  logcat
+- Source-backed 2026-06-06/2026-06-07 audit closures now include editor share
+  MIME hardening, logcat share attachment MIME hardening, open-with MIME
+  fallback hardening, file-share helper input hardening, clipboard oversized
+  fallback UTF-8 hardening, support-info bundle text line hardening, diagnostic
+  ZIP text line hardening, logcat
   clipboard text hardening, component rules IFW clipboard hardening, Mode
   Doctor clipboard redaction, crash report share redaction, copyable error
   clipboard hardening, accessibility tracker clipboard hardening, file-manager

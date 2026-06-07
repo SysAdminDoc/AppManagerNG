@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Editor share MIME hardening (source audit, 2026-06-07)
+
+- Code editor file sharing now builds its `ACTION_SEND` intent through a
+  tested helper.
+- Shared editor files now normalize their file MIME type before setting the
+  share intent type while preserving stream URI grants and `ClipData`.
+
 ### Fixed - Logcat share attachment MIME hardening (source audit, 2026-06-07)
 
 - Logcat attachment share intents now normalize caller-supplied MIME strings
