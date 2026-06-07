@@ -204,10 +204,10 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             ImageLoader.getInstance().displayImage(fmItem.getTag(), mIconView, new FmIconFetcher(fmItem));
             PathContentInfo contentInfo = fmItem.getContentInfo();
             if (contentInfo != null) {
-                String name = contentInfo.getName();
-                String mime = contentInfo.getMimeType();
+                String name = formatPropertyDisplayName(contentInfo.getName(), "");
+                String mime = formatPropertyDisplayName(contentInfo.getMimeType(), "");
                 String message = contentInfo.getMessage();
-                if (mime != null) {
+                if (!TextUtils.isEmpty(mime)) {
                     mTypeView.setText(String.format(Locale.ROOT, "%s (%s)", name, mime));
                 } else {
                     mTypeView.setText(name);
@@ -251,7 +251,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             mSymlinkIconView.setVisibility(fileProperties.isSymlink ? View.VISIBLE : View.GONE);
         }
         if (noInit || !Objects.equals(mFileProperties.name, fileProperties.name)) {
-            mNameView.setText(fileProperties.name);
+            mNameView.setText(formatPropertyDisplayName(fileProperties.name, fileProperties.readablePath));
         }
         if (noInit || !Objects.equals(mFileProperties.readablePath, fileProperties.readablePath)) {
             mPathView.setText(fileProperties.readablePath);
@@ -316,6 +316,12 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             mViewModel.loadOwnerInfo(fileProperties.uidGidPair.uid);
             mViewModel.loadGroupInfo(fileProperties.uidGidPair.gid);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatPropertyDisplayName(@Nullable String name, @Nullable String fallback) {
+        return FmUtils.getDisplayName(name, fallback);
     }
 
     private void updateSummary(@NonNull FileProperties fileProperties) {

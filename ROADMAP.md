@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 201 - 2026-06-07.
+> Last researched: Cycle 202 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -75,11 +75,12 @@ than by historical priority tier:
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
 - Source-backed 2026-06-06/2026-06-07 audit closures now include
-  one-click duplicate APK review display-name hardening, duplicate APK review
-  display-name hardening, batch file operation display-name hardening,
-  file-manager item display-name hardening, file dialog subtitle display-name
-  hardening, saved log display filename hardening, saved log filename validator
-  hardening, log export attachment-name hardening,
+  file properties display-name hardening, one-click duplicate APK review
+  display-name hardening, duplicate APK review display-name hardening, batch
+  file operation display-name hardening, file-manager item display-name
+  hardening, file dialog subtitle display-name hardening, saved log display
+  filename hardening, saved log filename validator hardening, log export
+  attachment-name hardening,
   saved log subtitle metadata hardening, batch installer URI list hardening,
   hex viewer external metadata hardening, code editor external metadata
   hardening, support-info share intent attachment hardening, Activity

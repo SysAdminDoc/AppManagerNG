@@ -44,4 +44,12 @@ public class FilePropertiesDialogFragmentTest {
 
         assertEquals("", labels.toString());
     }
+
+    @Test
+    public void formatPropertyDisplayNameFlattensControlsDefusesFormulaAndFallsBack() {
+        assertEquals("' =payload name.txt",
+                FilePropertiesDialogFragment.formatPropertyDisplayName("\t=payload\nname.txt", "/sdcard/fallback"));
+        assertEquals("/sdcard/fallback",
+                FilePropertiesDialogFragment.formatPropertyDisplayName("\r\n\t", "/sdcard/fallback"));
+    }
 }
