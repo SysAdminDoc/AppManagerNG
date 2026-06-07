@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch installer URI list hardening (source audit, 2026-06-07)
+
+- Batch APK installer multi-stream intents now snapshot caller-supplied URI
+  lists before setting `EXTRA_STREAM` and `ClipData`.
+- Batch install URI builders now reject null stream entries before launching
+  the installer flow.
+
 ### Fixed - Hex viewer external metadata hardening (source audit, 2026-06-07)
 
 - Hex viewer external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now pass

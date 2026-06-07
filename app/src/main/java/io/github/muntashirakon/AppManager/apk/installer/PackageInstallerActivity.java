@@ -138,14 +138,21 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (uris.isEmpty()) {
             throw new IllegalArgumentException("At least one APK URI is required.");
         }
+        ArrayList<Uri> safeUris = new ArrayList<>(uris.size());
+        for (Uri uri : uris) {
+            if (uri == null) {
+                throw new IllegalArgumentException("APK URI must not be null.");
+            }
+            safeUris.add(uri);
+        }
         Intent intent = new Intent(context, PackageInstallerActivity.class)
                 .setAction(Intent.ACTION_SEND_MULTIPLE)
-                .putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                .putParcelableArrayListExtra(Intent.EXTRA_STREAM, safeUris)
                 .putExtra(EXTRA_BATCH_INSTALL, true)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        ClipData clipData = ClipData.newRawUri("", uris.get(0));
-        for (int i = 1; i < uris.size(); ++i) {
-            clipData.addItem(new ClipData.Item(uris.get(i)));
+        ClipData clipData = ClipData.newRawUri("", safeUris.get(0));
+        for (int i = 1; i < safeUris.size(); ++i) {
+            clipData.addItem(new ClipData.Item(safeUris.get(i)));
         }
         intent.setClipData(clipData);
         return intent;
