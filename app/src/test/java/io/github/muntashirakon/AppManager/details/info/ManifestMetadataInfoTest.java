@@ -61,6 +61,17 @@ public class ManifestMetadataInfoTest {
     }
 
     @Test
+    public void copyTextEscapesManifestControlledTsvCells() {
+        ManifestMetadataInfo info = ManifestMetadataInfo.fromManifest(Collections.singletonList(
+                new ManifestMetadata(ManifestComponent.TYPE_RECEIVER, "\t=Receiver\nName",
+                        "\t=metadata\nname", "\n+SUM(1,1)", "STRING", false)));
+
+        assertEquals("Owner\tName\tValue\tType\n"
+                        + "Receiver -  =Receiver Name\t' =metadata name\t' +SUM(1,1)\tstring",
+                info.toCopyText());
+    }
+
+    @Test
     public void emptyInputHasNoMetadata() {
         ManifestMetadataInfo info = ManifestMetadataInfo.fromManifest(Collections.emptyList());
 

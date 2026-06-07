@@ -19,6 +19,7 @@ import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.apk.parser.ManifestComponent;
 import io.github.muntashirakon.AppManager.apk.parser.ManifestMetadata;
 import io.github.muntashirakon.AppManager.apk.parser.ManifestParser;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 
 /**
  * Generic manifest {@code <meta-data>} inventory for the inspected target APK.
@@ -84,10 +85,10 @@ public final class ManifestMetadataInfo {
         for (Owner owner : owners) {
             for (Entry entry : owner.entries) {
                 builder.append('\n')
-                        .append(owner.toDisplayTitle()).append('\t')
-                        .append(entry.name).append('\t')
-                        .append(entry.value != null ? entry.value : "").append('\t')
-                        .append(entry.getDisplayType());
+                        .append(ExportTextUtils.escapeTsvField(owner.toDisplayTitle())).append('\t')
+                        .append(ExportTextUtils.escapeTsvField(entry.name)).append('\t')
+                        .append(ExportTextUtils.escapeTsvField(entry.value)).append('\t')
+                        .append(ExportTextUtils.escapeTsvField(entry.getDisplayType()));
             }
         }
         return builder.toString();
