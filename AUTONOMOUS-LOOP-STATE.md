@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 104 source-audit closure for backup crypto mode
-  parsing hardening.
+- Result: completed Cycle 105 source-audit closure for backup metadata user-id
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup crypto mode parsing hardening and its verification target.
-- Code: backup metadata loading now rejects unknown persisted crypto modes
-  during info parsing instead of deferring them to later restore setup paths, and
-  reports them through the same `IOException` backup read boundary.
+  backup metadata user-id hardening and its verification target.
+- Code: backup metadata loading now rejects negative persisted `user_handle`
+  values before they can reach restore or backup-list state, and reports them
+  through the same `IOException` backup read boundary.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata user IDs (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects negative persisted `user_handle` values
+  before they can reach restore or backup-list state.
+- Invalid backup user IDs are reported through the same `IOException` read
+  boundary as other malformed backup info fields.
+
 ### Fixed - Backup crypto mode parsing (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects unknown persisted crypto modes during
