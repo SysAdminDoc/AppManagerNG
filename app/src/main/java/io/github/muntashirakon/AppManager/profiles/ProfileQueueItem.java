@@ -132,9 +132,19 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     }
 
     protected ProfileQueueItem(@NonNull JSONObject jsonObject) throws JSONException {
-        mProfileId = jsonObject.getString("profile_id");
-        mProfileType = jsonObject.optInt("profile_type", BaseProfile.PROFILE_TYPE_APPS);
-        mProfileName = jsonObject.getString("profile_name");
+        String profileId = JSONUtils.getString(jsonObject, "profile_id");
+        String profileName = JSONUtils.getString(jsonObject, "profile_name");
+        if (profileId == null || profileName == null) {
+            throw new JSONException("Missing profile identity.");
+        }
+        profileId = profileId.trim();
+        profileName = profileName.trim();
+        if (profileId.isEmpty() || profileName.isEmpty()) {
+            throw new JSONException("Missing profile identity.");
+        }
+        mProfileId = profileId;
+        mProfileType = getProfileType(jsonObject);
+        mProfileName = profileName;
         mState = JSONUtils.getString(jsonObject, "state");
         JSONObject profile = jsonObject.optJSONObject("profile");
         File profilePath = null;
@@ -147,6 +157,20 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
             }
         }
         mTempProfilePath = profilePath != null ? Paths.get(profilePath) : null;
+    }
+
+    @BaseProfile.ProfileType
+    private static int getProfileType(@NonNull JSONObject jsonObject) throws JSONException {
+        Object value = jsonObject.opt("profile_type");
+        if (!(value instanceof Integer || value instanceof Long)) {
+            throw new JSONException("Invalid profile type.");
+        }
+        long profileType = ((Number) value).longValue();
+        if (profileType == BaseProfile.PROFILE_TYPE_APPS
+                || profileType == BaseProfile.PROFILE_TYPE_APPS_FILTER) {
+            return (int) profileType;
+        }
+        throw new JSONException("Invalid profile type.");
     }
 
     @NonNull

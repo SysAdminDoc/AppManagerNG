@@ -320,10 +320,11 @@ public final class OpHistoryManager {
     private static ApkQueueItem getApkQueueItem(@NonNull OpHistoryItem item) throws JSONException {
         ApkQueueItem apkQueueItem = ApkQueueItem.DESERIALIZER.deserialize(item.jsonData);
         if (apkQueueItem.isInstallExisting()) {
-            String packageName = apkQueueItem.getPackageName();
-            if (TextUtils.isEmpty(packageName) || !PackageUtils.validateName(packageName)) {
+            String packageName = normalizePackageName(apkQueueItem.getPackageName());
+            if (packageName == null) {
                 throw new JSONException("Missing install-existing package name.");
             }
+            apkQueueItem.setPackageName(packageName);
         } else if (apkQueueItem.getApkSource() == null) {
             throw new JSONException("Missing APK source.");
         }
