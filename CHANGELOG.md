@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Manifest metadata copy TSV hardening (source audit, 2026-06-07)
+
+- App-info manifest metadata copy text now escapes owner, name, value, and type
+  cells before writing the tab-separated clipboard payload.
+- Manifest-controlled metadata names and values now flatten tab/newline controls
+  and defuse spreadsheet-formula prefixes while leaving the on-screen metadata
+  display unchanged.
+
 ### Fixed - Operation history text report hardening (source audit, 2026-06-07)
 
 - Operation-history plain-text share reports and per-row clipboard copies now
