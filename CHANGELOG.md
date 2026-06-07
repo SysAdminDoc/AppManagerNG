@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch rename failure-message hardening (source audit, 2026-06-07)
+
+- File-manager batch rename result dialogs now format runtime failure messages
+  before rendering failed-row reasons.
+- Batch rename failure reasons flatten controls, defuse formula-style prefixes,
+  and continue to omit blank failure messages.
+
 ### Fixed - Hex viewer validation-toast hardening (source audit, 2026-06-07)
 
 - Hex viewer offset and search validation toasts now use the shared hex viewer
