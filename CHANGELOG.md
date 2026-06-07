@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Crash share intent attachment hardening (source audit, 2026-06-07)
+
+- Crash notification sharing now builds its `ACTION_SEND` intent through a
+  tested helper.
+- Crash attachments now have pinned URI stream, read-grant, and `ClipData`
+  behavior while no-attachment crash shares stay text-only.
+
 ### Fixed - APK share MIME hardening (source audit, 2026-06-07)
 
 - App-info APK sharing now builds its `ACTION_SEND` intent through a tested
