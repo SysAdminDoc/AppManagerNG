@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Crash report share redaction (source audit, 2026-06-07)
+
+- Crash notification share payloads now scrub report text before handing it to
+  external share targets.
+- Shared crash details now preserve report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Copyable error clipboard hardening (source audit, 2026-06-07)
 
 - Shared copyable-error dialogs now sanitize clipboard text without changing the
