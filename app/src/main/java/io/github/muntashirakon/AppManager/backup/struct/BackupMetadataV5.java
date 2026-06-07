@@ -49,6 +49,7 @@ import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.util.LocalizedString;
@@ -356,6 +357,13 @@ public class BackupMetadataV5 implements LocalizedString {
             defaultRoles = defaultRolesArray != null
                     ? JSONUtils.getArray(String.class, defaultRolesArray)
                     : ArrayUtils.emptyArray(String.class);
+            verifyMetadata();
+        }
+
+        private void verifyMetadata() {
+            if (!PackageUtils.validateName(packageName)) {
+                throw new IllegalArgumentException("Malformed backup metadata: invalid package name " + packageName);
+            }
         }
 
         @NonNull

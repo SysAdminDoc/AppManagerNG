@@ -162,6 +162,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readMetadataRejectsInvalidPackageName() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("11111111-1111-1111-1111-111111111111",
+                "com..example");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -203,6 +213,33 @@ public class BackupItemsTest {
                 + extraFields
                 + "}");
         return BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(backupUuid));
+    }
+
+    private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName) throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup(backupUuid, CryptoUtils.MODE_NO_ENCRYPTION, "");
+        Path backupPath = Prefs.Storage.getAppManagerDirectory()
+                .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
+                .findOrCreateDirectory(backupUuid);
+        Path metadataFile = backupPath.createNewFile(MetadataManager.META_V5_FILE, null);
+        writeString(metadataFile, "{"
+                + "\"version\":7,"
+                + "\"backup_name\":null,"
+                + "\"label\":\"Example\","
+                + "\"package_name\":\"" + packageName + "\","
+                + "\"version_name\":\"1\","
+                + "\"version_code\":1,"
+                + "\"data_dirs\":[],"
+                + "\"is_system\":false,"
+                + "\"is_split_apk\":false,"
+                + "\"split_configs\":[],"
+                + "\"has_rules\":false,"
+                + "\"apk_name\":\"base.apk\","
+                + "\"instruction_set\":\"arm64\","
+                + "\"key_store\":false,"
+                + "\"installer\":null,"
+                + "\"default_roles\":[]"
+                + "}");
+        return backupItem;
     }
 
     private void assertMalformedChecksum(String filename, String contents) throws IOException {

@@ -8,13 +8,12 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 108 source-audit closure for backup metadata
-  checksum-algorithm hardening.
+- Result: completed Cycle 109 source-audit closure for backup metadata
+  package-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata checksum-algorithm hardening and its verification target.
-- Code: backup metadata loading now rejects unsupported persisted
-  `checksum_algo` values during info parsing instead of letting digest
-  computation produce empty checksums later in restore or verify flows.
+  backup metadata package-name hardening and its verification target.
+- Code: backup metadata loading now rejects malformed persisted `package_name`
+  values in `meta_v5.am.json` before they can be written into backup-list state.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
