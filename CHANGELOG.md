@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata package names (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects malformed persisted `package_name` values
+  in `meta_v5.am.json` before they can be written into backup-list state.
+- Invalid package names are reported through the same `IOException` metadata
+  read boundary as other malformed backup metadata fields.
+
 ### Fixed - Backup metadata checksum algorithms (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects unsupported persisted `checksum_algo`
