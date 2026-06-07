@@ -25,6 +25,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.collection.ArraySet;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.content.ContextCompat;
@@ -578,15 +579,29 @@ public class OneClickOpsActivity extends BaseActivity {
     }
 
     private void shareLeftoverList(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries) {
-        Intent shareIntent = new Intent(Intent.ACTION_SEND)
-                .setType("text/tab-separated-values")
-                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.leftover_files_export_subject))
-                .putExtra(Intent.EXTRA_TEXT, LeftoverExportFormatter.toTsv(entries));
+        if (entries.isEmpty()) {
+            UIUtils.displayLongToast(R.string.no_leftover_files_found_message);
+            return;
+        }
+        Intent shareIntent = buildLeftoverShareIntent(entries, getString(R.string.leftover_files_export_subject));
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.leftover_files_export_results)));
         } catch (Throwable throwable) {
             UIUtils.displayLongToast(R.string.export_failed);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildLeftoverShareIntent(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries,
+                                           @NonNull CharSequence subject) {
+        if (entries.isEmpty()) {
+            throw new IllegalArgumentException("No leftover entries to export");
+        }
+        return new Intent(Intent.ACTION_SEND)
+                .setType("text/tab-separated-values")
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_TEXT, LeftoverExportFormatter.toTsv(entries));
     }
 
     private void confirmDeleteLeftovers(@NonNull List<OneClickOpsViewModel.LeftoverEntry> entries) {
