@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch backup string-array parsing (source audit, 2026-06-06)
+
+- Batch backup option backup names are trimmed at constructor, Parcel, and JSON
+  boundaries, while blank non-null backup names are rejected before lookup or
+  backup creation paths use them.
+- Batch backup relative directories now reject null, blank, absolute,
+  drive-qualified, single-segment, or traversal-shaped values before restore or
+  delete paths resolve backup items, and custom exclusion globs are sanitized
+  before persistence or execution.
+
 ### Fixed - DexOpt option parsing (source audit, 2026-06-06)
 
 - Persisted DexOpt package arrays now reject null, non-string, blank, or

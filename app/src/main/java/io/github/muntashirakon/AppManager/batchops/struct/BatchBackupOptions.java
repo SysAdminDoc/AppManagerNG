@@ -8,9 +8,11 @@ import android.os.Parcel;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
@@ -45,9 +47,9 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               @Nullable String[] relativeDirs,
                               @Nullable String[] exclusionGlobs) {
         mFlags = requireValidFlags(flags);
-        mBackupNames = backupNames;
-        mRelativeDirs = relativeDirs;
-        mExclusionGlobs = exclusionGlobs;
+        mBackupNames = requireValidBackupNames(backupNames);
+        mRelativeDirs = requireValidRelativeDirs(relativeDirs);
+        mExclusionGlobs = sanitizeExclusionGlobs(exclusionGlobs);
     }
 
     public BackupOpOptions getBackupOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -110,9 +112,9 @@ public class BatchBackupOptions implements IBatchOpOptions {
 
     protected BatchBackupOptions(@NonNull Parcel in) {
         mFlags = requireValidFlags(in.readInt());
-        mBackupNames = in.createStringArray();
-        mRelativeDirs = in.createStringArray();
-        mExclusionGlobs = in.createStringArray();
+        mBackupNames = requireValidBackupNames(in.createStringArray());
+        mRelativeDirs = requireValidRelativeDirs(in.createStringArray());
+        mExclusionGlobs = sanitizeExclusionGlobs(in.createStringArray());
     }
 
     public static final Creator<BatchBackupOptions> CREATOR = new Creator<BatchBackupOptions>() {
@@ -137,18 +139,21 @@ public class BatchBackupOptions implements IBatchOpOptions {
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(mFlags);
-        dest.writeStringArray(mBackupNames);
-        dest.writeStringArray(mRelativeDirs);
-        dest.writeStringArray(mExclusionGlobs);
+        dest.writeStringArray(requireValidBackupNames(mBackupNames));
+        dest.writeStringArray(requireValidRelativeDirs(mRelativeDirs));
+        dest.writeStringArray(sanitizeExclusionGlobs(mExclusionGlobs));
     }
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
         try {
             mFlags = requireValidFlags(jsonObject.getInt("flags"));
-            mBackupNames = JSONUtils.getArray(String.class, jsonObject.optJSONArray("backup_names"));
-            mRelativeDirs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("relative_dirs"));
-            mExclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
+            mBackupNames = requireValidBackupNames(readStringArray(jsonObject, "backup_names",
+                    true, "backup name"));
+            mRelativeDirs = requireValidRelativeDirs(readStringArray(jsonObject, "relative_dirs",
+                    false, "relative directory"));
+            mExclusionGlobs = sanitizeExclusionGlobs(readStringArray(jsonObject, "exclusion_globs",
+                    false, "exclusion glob"));
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -163,9 +168,9 @@ public class BatchBackupOptions implements IBatchOpOptions {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("tag", TAG);
         jsonObject.put("flags", mFlags);
-        jsonObject.put("backup_names", JSONUtils.getJSONArray(mBackupNames));
-        jsonObject.put("relative_dirs", JSONUtils.getJSONArray(mRelativeDirs));
-        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(mExclusionGlobs));
+        jsonObject.put("backup_names", JSONUtils.getJSONArray(requireValidBackupNames(mBackupNames)));
+        jsonObject.put("relative_dirs", JSONUtils.getJSONArray(requireValidRelativeDirs(mRelativeDirs)));
+        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(sanitizeExclusionGlobs(mExclusionGlobs)));
         return jsonObject;
     }
 
@@ -175,5 +180,101 @@ public class BatchBackupOptions implements IBatchOpOptions {
             throw new IllegalArgumentException("Backup flags must not be negative: " + flags);
         }
         return flags;
+    }
+
+    @Nullable
+    private static String[] readStringArray(@NonNull JSONObject jsonObject, @NonNull String key,
+                                            boolean allowNullValues, @NonNull String fieldName)
+            throws JSONException {
+        Object value = jsonObject.opt(key);
+        if (value == null || value == JSONObject.NULL) {
+            return null;
+        }
+        if (!(value instanceof JSONArray)) {
+            throw new JSONException("Invalid backup option " + fieldName + ".");
+        }
+        return readStringArray((JSONArray) value, allowNullValues, fieldName);
+    }
+
+    @Nullable
+    private static String[] readStringArray(@NonNull JSONArray jsonArray, boolean allowNullValues,
+                                            @NonNull String fieldName) throws JSONException {
+        String[] values = new String[jsonArray.length()];
+        for (int i = 0; i < jsonArray.length(); ++i) {
+            Object value = jsonArray.get(i);
+            if (value == JSONObject.NULL) {
+                if (!allowNullValues) {
+                    throw new JSONException("Invalid backup option " + fieldName + ".");
+                }
+                values[i] = null;
+                continue;
+            }
+            if (!(value instanceof String)) {
+                throw new JSONException("Invalid backup option " + fieldName + ".");
+            }
+            values[i] = (String) value;
+        }
+        return values;
+    }
+
+    @Nullable
+    private static String[] requireValidBackupNames(@Nullable String[] backupNames) {
+        if (backupNames == null) {
+            return null;
+        }
+        String[] validBackupNames = new String[backupNames.length];
+        for (int i = 0; i < backupNames.length; ++i) {
+            String backupName = backupNames[i];
+            if (backupName == null) {
+                validBackupNames[i] = null;
+                continue;
+            }
+            backupName = backupName.trim();
+            if (backupName.isEmpty()) {
+                throw new IllegalArgumentException("Backup name must not be blank.");
+            }
+            validBackupNames[i] = backupName;
+        }
+        return validBackupNames;
+    }
+
+    @Nullable
+    private static String[] requireValidRelativeDirs(@Nullable String[] relativeDirs) {
+        if (relativeDirs == null) {
+            return null;
+        }
+        String[] validRelativeDirs = new String[relativeDirs.length];
+        for (int i = 0; i < relativeDirs.length; ++i) {
+            validRelativeDirs[i] = requireValidRelativeDir(relativeDirs[i]);
+        }
+        return validRelativeDirs;
+    }
+
+    @NonNull
+    private static String requireValidRelativeDir(@Nullable String relativeDir) {
+        if (relativeDir == null) {
+            throw new IllegalArgumentException("Backup relative directory must not be null.");
+        }
+        String normalizedRelativeDir = relativeDir.trim().replace('\\', '/');
+        if (normalizedRelativeDir.isEmpty()
+                || !normalizedRelativeDir.contains("/")
+                || normalizedRelativeDir.indexOf(':') != -1) {
+            throw new IllegalArgumentException("Invalid backup relative directory: " + relativeDir);
+        }
+        String[] segments = normalizedRelativeDir.split("/", -1);
+        for (String segment : segments) {
+            if (segment.isEmpty() || ".".equals(segment) || "..".equals(segment)) {
+                throw new IllegalArgumentException("Invalid backup relative directory: " + relativeDir);
+            }
+        }
+        return normalizedRelativeDir;
+    }
+
+    @Nullable
+    private static String[] sanitizeExclusionGlobs(@Nullable String[] exclusionGlobs) {
+        if (exclusionGlobs == null) {
+            return null;
+        }
+        return BackupPathExclusionPatterns.sanitize(exclusionGlobs);
     }
 }
