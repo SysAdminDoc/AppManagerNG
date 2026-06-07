@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager error-details report hardening (source audit, 2026-06-07)
+
+- File-manager empty-state error details now preserve short stack-report lines
+  while normalizing tabs and carriage returns before rendering them.
+- File-manager error details now defuse formula-style line starts introduced by
+  exception messages without changing refresh or error-summary behavior.
+
 ### Fixed - File search display-name hardening (source audit, 2026-06-07)
 
 - File-manager active search chips and empty-search messages now format the
