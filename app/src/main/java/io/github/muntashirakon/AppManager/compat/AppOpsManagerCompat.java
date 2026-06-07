@@ -308,6 +308,17 @@ public class AppOpsManagerCompat {
         }};
     }
 
+    public static boolean isValidMode(int mode) {
+        return sModes.indexOfKey(mode) >= 0;
+    }
+
+    public static boolean isValidOp(int op) {
+        if (op > OP_NONE && op < _NUM_OP) {
+            return true;
+        }
+        return getAllOps().contains(op);
+    }
+
     @NonNull
     public static String modeToName(@IntRange(from = -1) int mode) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
