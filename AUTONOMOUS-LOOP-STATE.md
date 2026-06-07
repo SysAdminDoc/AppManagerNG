@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 199 source-audit closure for batch file operation
+- Result: completed Cycle 200 source-audit closure for duplicate APK review
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch file operation display-name hardening and its verification target.
-- Code: file-manager batch delete and paste progress labels now format
-  path-derived names through the shared file-manager display-name helper, and
-  batch paste copy/delete failure dialogs now show sanitized file display names
-  while preserving raw path names for the underlying file operations.
+  duplicate APK review display-name hardening and its verification target.
+- Code: file-manager duplicate-APK review rows now format both drop and keeper
+  APK filenames before rendering them in the selection dialog, and the shared
+  file-manager display-name helper now supports regular `File` instances as
+  well as `Path` objects.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
