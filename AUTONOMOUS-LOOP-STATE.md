@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 107 source-audit closure for backup metadata
-  archive-type hardening.
+- Result: completed Cycle 108 source-audit closure for backup metadata
+  checksum-algorithm hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata archive-type hardening and its verification target.
-- Code: backup metadata loading now rejects unknown persisted `tar_type` values
-  during info parsing instead of deferring invalid archive formats to
-  restore-time tar extraction paths.
+  backup metadata checksum-algorithm hardening and its verification target.
+- Code: backup metadata loading now rejects unsupported persisted
+  `checksum_algo` values during info parsing instead of letting digest
+  computation produce empty checksums later in restore or verify flows.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

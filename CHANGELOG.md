@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata checksum algorithms (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects unsupported persisted `checksum_algo`
+  values during info parsing instead of letting digest computation produce empty
+  checksums later in restore or verify flows.
+- `CRC32` remains accepted as the backup checksum algorithm that is implemented
+  outside `MessageDigest`.
+
 ### Fixed - Backup metadata archive types (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects unknown persisted `tar_type` values during
