@@ -88,6 +88,15 @@ public final class FmUtils {
         return getDisplayName(entryName, "");
     }
 
+    @NonNull
+    public static String getFailureToastMessage(@NonNull Throwable throwable) {
+        String message = getDisplayName(throwable.getMessage(), "");
+        if (message.isEmpty()) {
+            return "Failed";
+        }
+        return "Failed: " + message;
+    }
+
     @SuppressWarnings("OctalInteger")
     @NonNull
     public static String getFormattedMode(int mode) {

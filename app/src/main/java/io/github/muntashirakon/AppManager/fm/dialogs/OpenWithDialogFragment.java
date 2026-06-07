@@ -269,7 +269,7 @@ public class OpenWithDialogFragment extends DialogFragment {
                     ActivityManagerCompat.startActivity(intent, UserHandleHidden.myUserId());
                     dismiss();
                 } catch (SecurityException e) {
-                    UIUtils.displayLongToast("Failed: " + e.getMessage());
+                    UIUtils.displayLongToast(FmUtils.getFailureToastMessage(e));
                 }
             });
             if (mCustomType == null) {
