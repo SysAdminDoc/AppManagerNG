@@ -52,4 +52,10 @@ public class FilePropertiesDialogFragmentTest {
         assertEquals("/sdcard/fallback",
                 FilePropertiesDialogFragment.formatPropertyDisplayName("\r\n\t", "/sdcard/fallback"));
     }
+
+    @Test
+    public void formatPropertyDisplayPathFlattensControlsAndDefusesFormula() {
+        assertEquals("' =payload sdcard/file.txt",
+                FilePropertiesDialogFragment.formatPropertyDisplayPath("\t=payload\nsdcard/file.txt"));
+    }
 }
