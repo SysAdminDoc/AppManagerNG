@@ -32,6 +32,12 @@ public class BackupDataDirectoryInfo {
         if (dataDir.startsWith(storageDe)) {
             return new BackupDataDirectoryInfo(dataDir, true, TYPE_INTERNAL, TYPE_DEVICE_PROTECTED);
         }
+        if (isAdoptableDataDirectory(dataDir, "user", userId)) {
+            return new BackupDataDirectoryInfo(dataDir, true, TYPE_INTERNAL, TYPE_CREDENTIAL_PROTECTED);
+        }
+        if (isAdoptableDataDirectory(dataDir, "user_de", userId)) {
+            return new BackupDataDirectoryInfo(dataDir, true, TYPE_INTERNAL, TYPE_DEVICE_PROTECTED);
+        }
         if (dataDir.startsWith("/sdcard/")) {
             return getExternalInfo(dataDir, "/sdcard/");
         }
@@ -55,6 +61,29 @@ public class BackupDataDirectoryInfo {
         }
         Log.i(TAG, "getInfo: Unrecognized path %s, returning true as fallback.", dataDir);
         return new BackupDataDirectoryInfo(dataDir, true, TYPE_UNKNOWN, TYPE_CUSTOM);
+    }
+
+    private static boolean isAdoptableDataDirectory(@NonNull String dataDir, @NonNull String storageType,
+                                                    @UserIdInt int userId) {
+        String adoptableVolumeRoot = getAdoptableVolumeRoot(dataDir);
+        if (adoptableVolumeRoot == null) {
+            return false;
+        }
+        String adoptableDataRoot = String.format(Locale.ROOT, "%s%s/%d/", adoptableVolumeRoot, storageType, userId);
+        return dataDir.startsWith(adoptableDataRoot);
+    }
+
+    @Nullable
+    private static String getAdoptableVolumeRoot(@NonNull String dataDir) {
+        final String adoptableRoot = "/mnt/expand/";
+        if (!dataDir.startsWith(adoptableRoot)) {
+            return null;
+        }
+        int volumeEndIndex = dataDir.indexOf('/', adoptableRoot.length());
+        if (volumeEndIndex <= adoptableRoot.length()) {
+            return null;
+        }
+        return dataDir.substring(0, volumeEndIndex + 1);
     }
 
     @Nullable

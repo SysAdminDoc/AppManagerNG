@@ -482,6 +482,19 @@ public final class BackupUtils {
             // /data/user_de/{oldUserId} -> /data/user_de/{newUserId}/
             return Utils.replaceOnce(dataDir, dataUserDeDir, String.format(Locale.ROOT, "/data/user_de/%d/", newUserId));
         }
+        String adoptableVolumeRoot = getAdoptableVolumeRoot(dataDir);
+        if (adoptableVolumeRoot != null) {
+            String adoptableUserDir = String.format(Locale.ROOT, "%suser/%d/", adoptableVolumeRoot, oldUserId);
+            if (dataDir.startsWith(adoptableUserDir)) {
+                return Utils.replaceOnce(dataDir, adoptableUserDir,
+                        String.format(Locale.ROOT, "%suser/%d/", adoptableVolumeRoot, newUserId));
+            }
+            String adoptableUserDeDir = String.format(Locale.ROOT, "%suser_de/%d/", adoptableVolumeRoot, oldUserId);
+            if (dataDir.startsWith(adoptableUserDeDir)) {
+                return Utils.replaceOnce(dataDir, adoptableUserDeDir,
+                        String.format(Locale.ROOT, "%suser_de/%d/", adoptableVolumeRoot, newUserId));
+            }
+        }
         if (dataDir.startsWith("/sdcard/")) {
             // /sdcard/ -> /storage/emulated/{newUserId}/ or /data/media/{newUserId}/ in a multiuser system
             return getExternalStorage(dataDir, "/sdcard/", newUserId);
@@ -506,6 +519,19 @@ public final class BackupUtils {
         }
         Log.i(TAG, "getWritableDataDirectory: Unrecognized path %s, using as is.", dataDir);
         return dataDir;
+    }
+
+    @Nullable
+    private static String getAdoptableVolumeRoot(@NonNull String dataDir) {
+        final String adoptableRoot = "/mnt/expand/";
+        if (!dataDir.startsWith(adoptableRoot)) {
+            return null;
+        }
+        int volumeEndIndex = dataDir.indexOf('/', adoptableRoot.length());
+        if (volumeEndIndex <= adoptableRoot.length()) {
+            return null;
+        }
+        return dataDir.substring(0, volumeEndIndex + 1);
     }
 
     @SuppressLint("SdCardPath")
