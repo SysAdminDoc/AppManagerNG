@@ -134,8 +134,14 @@ public final class BackupUtils {
 
     @NonNull
     public static CharSequence getDisplayBackupName(@NonNull Context context, @Nullable String backupName) {
+        return getDisplayBackupName(context.getText(R.string.base_backup), backupName);
+    }
+
+    @NonNull
+    public static CharSequence getDisplayBackupName(@NonNull CharSequence baseBackupLabel,
+                                                    @Nullable String backupName) {
         String trimmedBackupName = backupName != null ? backupName.trim() : null;
-        return TextUtils.isEmpty(trimmedBackupName) ? context.getText(R.string.base_backup) : trimmedBackupName;
+        return trimmedBackupName == null || trimmedBackupName.isEmpty() ? baseBackupLabel : trimmedBackupName;
     }
 
     @WorkerThread

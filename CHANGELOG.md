@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Duplicate backup cleanup history labels (source audit, 2026-06-07)
+
+- Duplicate-backup cleanup history now keeps the normalized machine
+  `backup_name` separate from the localized `backup_label` used in JSON exports
+  and operation-history previews.
+- Duplicate-cleanup target previews now identify named and base backups instead
+  of showing only package, version, and user identifiers.
+
 ### Fixed - Backup base-name display labels (source audit, 2026-06-07)
 
 - Backup task review rows and Finder matched-backup previews now show the

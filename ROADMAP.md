@@ -74,12 +74,13 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06/2026-06-07 audit closures now include backup
-  base-name display label hardening, backup database backup-name projection
-  hardening, backup metadata backup-name parser hardening, profile backup-data
-  parser hardening, direct backup operation option parser hardening, batch
-  backup string-array parser hardening, DexOpt option parser hardening, batch
-  backup flag parser hardening, batch backup
+- Source-backed 2026-06-06/2026-06-07 audit closures now include duplicate
+  backup cleanup history label hardening, backup base-name display label
+  hardening, backup database backup-name projection hardening, backup metadata
+  backup-name parser hardening, profile backup-data parser hardening, direct
+  backup operation option parser hardening, batch backup string-array parser
+  hardening, DexOpt option parser hardening, batch backup flag parser
+  hardening, batch backup
   import option parser hardening,
   batch freeze option parser hardening, batch network-policy option parser
   hardening, batch permission option parser hardening, batch component option

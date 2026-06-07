@@ -386,7 +386,8 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         Application application = getApplication();
         String operationLabel = application.getString(R.string.delete_duplicate_backups);
         DuplicateBackupCleanupHistoryItem historyItem = new DuplicateBackupCleanupHistoryItem(
-                operationLabel, plan.strategy, plan.entries, deleted, reclaimed);
+                operationLabel, application.getText(R.string.base_backup), plan.strategy, plan.entries,
+                deleted, reclaimed);
         int failed = Math.max(0, plan.entries.size() - deleted);
         OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_CLEANUP,
                 historyItem,
