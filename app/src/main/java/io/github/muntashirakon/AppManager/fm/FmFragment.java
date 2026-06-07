@@ -1657,6 +1657,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     @WorkerThread
     @NonNull
     private FmArchiveUtils.ConflictAction resolveArchiveConflict(@NonNull String entryName) throws IOException {
+        String displayName = FmUtils.getArchiveEntryDisplayName(entryName);
         CountDownLatch waitForUser = new CountDownLatch(1);
         AtomicReference<FmArchiveUtils.ConflictAction> selectedAction =
                 new AtomicReference<>(FmArchiveUtils.ConflictAction.ABORT);
@@ -1669,7 +1670,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             };
             new MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.conflict_detected_while_copying)
-                    .setMessage(getString(R.string.conflict_detected_while_extracting_message, entryName))
+                    .setMessage(getString(R.string.conflict_detected_while_extracting_message, displayName))
                     .setCancelable(false)
                     .setItems(actions, (dialog, which) -> {
                         if (which == 0) {

@@ -45,4 +45,10 @@ public class FmUtilsTest {
 
         assertEquals("' =payload name.apk", FmUtils.getFileDisplayName(file));
     }
+
+    @Test
+    public void getArchiveEntryDisplayNameUsesFormattedEntryName() {
+        assertEquals("' =payload name.txt",
+                FmUtils.getArchiveEntryDisplayName("\t=payload\nname.txt"));
+    }
 }
