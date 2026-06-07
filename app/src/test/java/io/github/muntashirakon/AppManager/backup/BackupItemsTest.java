@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.backup;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -19,7 +20,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.RoboUtils;
+import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -96,6 +99,31 @@ public class BackupItemsTest {
             assertThrows(IllegalArgumentException.class, () -> checksum.add("", "abcd"));
             assertThrows(IllegalArgumentException.class, () -> checksum.add("data1.tar.gz.0", ""));
         }
+    }
+
+    @Test
+    public void readInfoWrapsMalformedCryptoMetadataAsIOException() throws IOException {
+        String backupUuid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+        Path backupPath = Prefs.Storage.getAppManagerDirectory()
+                .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
+                .findOrCreateDirectory(backupUuid);
+        Path infoFile = backupPath.createNewFile(MetadataManager.INFO_V5_FILE, null);
+        writeString(infoFile, "{"
+                + "\"version\":7,"
+                + "\"backup_time\":1,"
+                + "\"flags\":0,"
+                + "\"user_handle\":0,"
+                + "\"tar_type\":\"" + TarUtils.TAR_GZIP + "\","
+                + "\"checksum_algo\":\"" + DigestUtils.SHA_256 + "\","
+                + "\"crypto\":\"" + CryptoUtils.MODE_AES + "\","
+                + "\"iv\":\"zz\""
+                + "}");
+
+        BackupItems.BackupItem backupItem = BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(backupUuid));
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getMessage().contains("for path"));
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
     private static void createFiles(Path directory, String... names) throws IOException {
