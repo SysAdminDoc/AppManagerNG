@@ -23,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -49,6 +50,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporter;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -266,17 +268,32 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             Path profilePath = ProfileManager.findProfilePathById(profile.profileId);
             BaseProfile loaded = BaseProfile.fromPath(profilePath);
             String json = loaded.serializeToJson().toString(2);
-            String subject = getString(R.string.share_profile_subject, profile.name);
+            String profileLabel = formatProfileShareLabel(profile.name);
+            String subject = getString(R.string.share_profile_subject, profileLabel);
             Intent send = new Intent(Intent.ACTION_SEND)
                     .setType("application/json")
                     .putExtra(Intent.EXTRA_SUBJECT, subject)
-                    .putExtra(Intent.EXTRA_TITLE, profile.name + ".am.json")
+                    .putExtra(Intent.EXTRA_TITLE, buildProfileShareFilename(profile.name,
+                            ProfileManager.PROFILE_EXT))
                     .putExtra(Intent.EXTRA_TEXT, json);
             startActivity(Intent.createChooser(send, getString(R.string.share_profile_chooser_title)));
         } catch (IOException | JSONException | RuntimeException e) {
             Log.e(TAG, "Share failed: ", e);
             UIUtils.displayShortToast(R.string.share_failed);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatProfileShareLabel(@Nullable String profileName) {
+        String label = ExportTextUtils.escapeTsvField(profileName).trim();
+        return label.isEmpty() ? "profile" : label;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String buildProfileShareFilename(@Nullable String profileName, @NonNull String suffix) {
+        return ProfileManager.getProfileIdCompat(formatProfileShareLabel(profileName)) + suffix;
     }
 
     @Override
@@ -490,10 +507,12 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                             .show();
                 } else if (id == R.id.action_export) {
                     mActivity.mProfileId = profile.profileId;
-                    mActivity.mExportProfile.launch(profile.name + ".am.json");
+                    mActivity.mExportProfile.launch(buildProfileShareFilename(profile.name,
+                            ProfileManager.PROFILE_EXT));
                 } else if (id == R.id.action_export_upstream_compat) {
                     mActivity.mProfileId = profile.profileId;
-                    mActivity.mExportUpstreamCompat.launch(profile.name + ".upstream-am.json");
+                    mActivity.mExportUpstreamCompat.launch(buildProfileShareFilename(profile.name,
+                            ".upstream-am.json"));
                 } else if (id == R.id.action_share) {
                     mActivity.shareProfileAsJson(profile);
                 } else if (id == R.id.action_copy) {
