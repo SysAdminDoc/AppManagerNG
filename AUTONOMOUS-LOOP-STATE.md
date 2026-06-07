@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 207 source-audit closure for batch rename dialog
+- Result: completed Cycle 208 source-audit closure for file breadcrumb
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch rename dialog display-name hardening and its verification target.
-- Code: File-manager batch rename preview, progress, issue, and result dialogs
-  now format source and target names before rendering them, while batch rename
-  planning and execution still preserve original source names and resolved
-  target names for the underlying rename operations.
+  file breadcrumb display-name hardening and its verification target.
+- Code: File-manager breadcrumb labels and content descriptions now format URI
+  path segments and alternative root labels before rendering them, while
+  breadcrumb navigation still uses the original path parts for URI
+  reconstruction, copy-path actions, favorites, and properties.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmBatchRenameUtilsTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmPathListAdapterTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
