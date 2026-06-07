@@ -364,6 +364,20 @@ public class BackupMetadataV5 implements LocalizedString {
             if (!PackageUtils.validateName(packageName)) {
                 throw new IllegalArgumentException("Malformed backup metadata: invalid package name " + packageName);
             }
+            if (!isBackupFilename(apkName)) {
+                throw new IllegalArgumentException("Malformed backup metadata: invalid APK filename " + apkName);
+            }
+            for (String splitConfig : splitConfigs) {
+                if (!isBackupFilename(splitConfig)) {
+                    throw new IllegalArgumentException("Malformed backup metadata: invalid split APK filename " + splitConfig);
+                }
+            }
+        }
+
+        private static boolean isBackupFilename(@Nullable String filename) {
+            return filename != null && filename.equals(Paths.sanitizeFilename(filename, null,
+                    Paths.SANITIZE_FLAG_FAT_ILLEGAL_CHARS | Paths.SANITIZE_FLAG_UNIX_RESERVED
+                            | Paths.SANITIZE_FLAG_WINDOWS_RESERVED));
         }
 
         @NonNull
