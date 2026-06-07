@@ -33,13 +33,13 @@ public class FinderAdapterTest {
                         ComponentsOption.COMPONENT_TYPE_ACTIVITY))
                 .setMatchedTrackers(componentMap("com.example.AnalyticsService",
                         ComponentsOption.COMPONENT_TYPE_SERVICE))
-                .setMatchedBackups(Arrays.asList(backup("nightly"), backup("before-upgrade")))
+                .setMatchedBackups(Arrays.asList(backup("nightly"), backup("")))
                 .setMatchedSubjectLines(Arrays.asList("CN=Example", "O=Example Org"));
 
         assertEquals("Permissions: android.permission.CAMERA, android.permission.RECORD_AUDIO\n"
                         + "Components: com.example.MainActivity\n"
                         + "Trackers: com.example.AnalyticsService\n"
-                        + "Backups: nightly, before-upgrade\n"
+                        + "Backups: nightly, Base backup\n"
                         + "Signatures: CN=Example, O=Example Org",
                 FinderAdapter.formatMatchedExtras(context, result));
     }
