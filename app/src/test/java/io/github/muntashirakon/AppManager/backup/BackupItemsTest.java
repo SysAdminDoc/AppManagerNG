@@ -192,6 +192,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readMetadataRejectsNegativeVersionCode() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("44444444-4444-4444-4444-444444444444",
+                "com.example", -1L, "base.apk", "[]");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -241,6 +251,11 @@ public class BackupItemsTest {
 
     private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, String apkName,
                                                         String splitConfigs) throws IOException {
+        return createMetadataBackup(backupUuid, packageName, 1L, apkName, splitConfigs);
+    }
+
+    private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, long versionCode,
+                                                        String apkName, String splitConfigs) throws IOException {
         BackupItems.BackupItem backupItem = createInfoBackup(backupUuid, CryptoUtils.MODE_NO_ENCRYPTION, "");
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
@@ -252,7 +267,7 @@ public class BackupItemsTest {
                 + "\"label\":\"Example\","
                 + "\"package_name\":\"" + packageName + "\","
                 + "\"version_name\":\"1\","
-                + "\"version_code\":1,"
+                + "\"version_code\":" + versionCode + ","
                 + "\"data_dirs\":[],"
                 + "\"is_system\":false,"
                 + "\"is_split_apk\":false,"

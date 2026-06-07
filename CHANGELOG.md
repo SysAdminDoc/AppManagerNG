@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata version codes (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects negative persisted `version_code` values
+  before they can be written into backup-list state.
+- Version code `0` remains accepted as the existing unknown-version sentinel used
+  by duplicate-retention logic.
+
 ### Fixed - Backup metadata APK filenames (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects unsafe persisted `apk_name` and
