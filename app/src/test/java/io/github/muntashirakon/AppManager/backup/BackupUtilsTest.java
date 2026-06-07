@@ -7,9 +7,19 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 
 @RunWith(RobolectricTestRunner.class)
 public class BackupUtilsTest {
+
+    @Test
+    public void getDisplayBackupNameUsesBaseLabelForBlankNames() {
+        assertEquals("Base backup", BackupUtils.getDisplayBackupName(RuntimeEnvironment.getApplication(), null));
+        assertEquals("Base backup", BackupUtils.getDisplayBackupName(RuntimeEnvironment.getApplication(), ""));
+        assertEquals("Base backup", BackupUtils.getDisplayBackupName(RuntimeEnvironment.getApplication(), "   "));
+        assertEquals("nightly", BackupUtils.getDisplayBackupName(RuntimeEnvironment.getApplication(), " nightly "));
+        assertEquals("nightly", BackupUtils.getDisplayBackupName(RuntimeEnvironment.getApplication(), "nightly"));
+    }
 
     @Test
     public void getWritableDataDirectory() {

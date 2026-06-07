@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupManager;
+import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
@@ -171,7 +172,7 @@ public class BackupTasksDialogFragment extends DialogFragment {
                             applicationItems.add(item);
                             applicationLabels.add(new SpannableStringBuilder(backup.label)
                                     .append(LangUtils.getSeparatorString())
-                                    .append(backup.backupName)
+                                    .append(BackupUtils.getDisplayBackupName(mActivity, backup.backupName))
                                     .append('\n')
                                     .append(UIUtils.getSmallerText(UIUtils.getSecondaryText(mActivity,
                                             new SpannableStringBuilder(backup.packageName)
@@ -229,7 +230,7 @@ public class BackupTasksDialogFragment extends DialogFragment {
                             applicationItems.add(item);
                             applicationLabels.add(new SpannableStringBuilder().append(backup.label)
                                     .append(LangUtils.getSeparatorString())
-                                    .append(backup.backupName)
+                                    .append(BackupUtils.getDisplayBackupName(mActivity, backup.backupName))
                                     .append('\n')
                                     .append(UIUtils.getSmallerText(UIUtils.getSecondaryText(mActivity, backup.packageName))));
                         }

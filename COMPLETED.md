@@ -14,6 +14,7 @@ historical context and the previous ledger are under
 
 ### Closed on 2026-06-07
 
+- [x] **P2 Backup base-name display label hardening** — Backup task review rows and Finder matched-backup previews now show the localized base-backup label for base backups instead of an empty backup-name slot or package fallback; backup-name preview formatting now uses one shared formatter for blank backup names while preserving explicit named backups. Focused verification: `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupUtilsTest --tests io.github.muntashirakon.AppManager.filters.FinderAdapterTest`. — *Source: ROADMAP.md*
 - [x] **P2 Backup database backup-name projection hardening** — backup-list database rows now trim backup names from both legacy v2 metadata and v5 metadata before writing the Room key; blank direct metadata backup names now project to the base-backup sentinel, keeping retention and display buckets aligned with metadata parsing. Focused verification: `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.db.entity.BackupTest --tests io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5Test`. — *Source: ROADMAP.md*
 
 ### Closed on 2026-06-06

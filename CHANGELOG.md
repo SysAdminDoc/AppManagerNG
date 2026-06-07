@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup base-name display labels (source audit, 2026-06-07)
+
+- Backup task review rows and Finder matched-backup previews now show the
+  localized base-backup label for base backups instead of an empty backup-name
+  slot or package fallback.
+- Backup-name preview formatting now uses one shared formatter for blank backup
+  names while preserving explicit named backups.
+
 ### Fixed - Backup database backup-name projection (source audit, 2026-06-07)
 
 - Backup-list database rows now trim backup names from both legacy v2 metadata
