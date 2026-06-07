@@ -8,15 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 96 source-audit closure for Activity Interceptor
-  pasted ROOT header boolean parsing
-  hardening.
+- Result: completed Cycle 97 source-audit closure for Activity Interceptor
+  pasted USER header hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  pasted ROOT header hardening and its verification target.
-- Code: Activity Interceptor paste handling now accepts only explicit `true` or
-  `false` values for copied `ROOT` headers instead of treating malformed values
-  as `false`, while preserving case-insensitive and whitespace-padded valid
-  values.
+  pasted USER header hardening and its verification target.
+- Code: Activity Interceptor paste handling now ignores negative copied `USER`
+  headers instead of forwarding invalid user IDs into permission checks, while
+  valid decimal and decoded hex values tolerate surrounding whitespace.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.ActivityInterceptorTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

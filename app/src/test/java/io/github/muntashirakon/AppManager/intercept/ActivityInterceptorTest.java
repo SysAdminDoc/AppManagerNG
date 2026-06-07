@@ -66,8 +66,10 @@ public class ActivityInterceptorTest {
     public void getPastedUserHeaderValueHandlesMalformedLines() {
         assertNull(ActivityInterceptor.getPastedUserHeaderValue("USER"));
         assertNull(ActivityInterceptor.getPastedUserHeaderValue("USER\tbad"));
+        assertNull(ActivityInterceptor.getPastedUserHeaderValue("USER\t-1"));
         assertNull(ActivityInterceptor.getPastedUserHeaderValue("ACTION\tandroid.intent.action.VIEW"));
         assertEquals(Integer.valueOf(10), ActivityInterceptor.getPastedUserHeaderValue("USER\t10"));
+        assertEquals(Integer.valueOf(10), ActivityInterceptor.getPastedUserHeaderValue("USER\t 10 "));
         assertEquals(Integer.valueOf(16), ActivityInterceptor.getPastedUserHeaderValue("USER\t0x10"));
     }
 }
