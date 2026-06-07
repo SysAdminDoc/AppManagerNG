@@ -762,7 +762,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 message.append('\n').append(line);
             }
         }
-        return message.toString();
+        return KernelSuDiagnostics.sanitizeReportText(message.toString());
     }
 
     @NonNull
