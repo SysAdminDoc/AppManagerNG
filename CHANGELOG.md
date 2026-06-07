@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Diagnostic ZIP shared text redaction (source audit, 2026-06-07)
+
+- Diagnostic ZIP `device_info.txt` output now uses the same public-issue
+  scrubber as crash logs and logcat entries before the report is shared.
+- Diagnostic ZIP text entries now write through explicit UTF-8 writers instead
+  of relying on the platform default charset.
+
 ### Fixed - Profile JSON UTF-8 export (source audit, 2026-06-07)
 
 - Profile JSON export now writes raw profile definitions with explicit UTF-8
