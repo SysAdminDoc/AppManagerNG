@@ -132,6 +132,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readInfoRejectsNegativeBackupTime() throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                -1L, 0, CryptoUtils.MODE_NO_ENCRYPTION, "");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -140,10 +150,15 @@ public class BackupItemsTest {
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, String crypto, String extraFields)
             throws IOException {
-        return createInfoBackup(backupUuid, 0, crypto, extraFields);
+        return createInfoBackup(backupUuid, 1L, 0, crypto, extraFields);
     }
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, int userHandle, String crypto,
+                                                    String extraFields) throws IOException {
+        return createInfoBackup(backupUuid, 1L, userHandle, crypto, extraFields);
+    }
+
+    private BackupItems.BackupItem createInfoBackup(String backupUuid, long backupTime, int userHandle, String crypto,
                                                     String extraFields) throws IOException {
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
@@ -151,7 +166,7 @@ public class BackupItemsTest {
         Path infoFile = backupPath.createNewFile(MetadataManager.INFO_V5_FILE, null);
         writeString(infoFile, "{"
                 + "\"version\":7,"
-                + "\"backup_time\":1,"
+                + "\"backup_time\":" + backupTime + ","
                 + "\"flags\":0,"
                 + "\"user_handle\":" + userHandle + ","
                 + "\"tar_type\":\"" + TarUtils.TAR_GZIP + "\","

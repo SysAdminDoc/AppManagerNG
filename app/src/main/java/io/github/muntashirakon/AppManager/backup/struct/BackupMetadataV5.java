@@ -198,6 +198,9 @@ public class BackupMetadataV5 implements LocalizedString {
         }
 
         private void verifyInfo() {
+            if (backupTime < 0) {
+                throw new IllegalArgumentException("Malformed backup: negative backup time");
+            }
             if (userId < 0) {
                 throw new IllegalArgumentException("Malformed backup: negative user ID");
             }
