@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Saved log subtitle metadata hardening (source audit, 2026-06-07)
+
+- Saved log viewer subtitles now format the external URI last path segment
+  before showing it in the action bar.
+- Saved-log filename subtitles now flatten tab/newline controls and defuse
+  spreadsheet-style prefixes while allowing blank subtitles.
+
 ### Fixed - Batch installer URI list hardening (source audit, 2026-06-07)
 
 - Batch APK installer multi-stream intents now snapshot caller-supplied URI
