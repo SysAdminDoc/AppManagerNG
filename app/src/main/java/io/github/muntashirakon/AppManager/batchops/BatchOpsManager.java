@@ -150,6 +150,41 @@ public class BatchOpsManager {
     public static final int OP_UNARCHIVE = 24;
     public static final int OP_INSTALL_EXISTING = 25;
 
+    public static boolean isValidQueueOp(int op) {
+        switch (op) {
+            case OP_ADVANCED_FREEZE:
+            case OP_ARCHIVE:
+            case OP_BACKUP_APK:
+            case OP_BACKUP:
+            case OP_BLOCK_COMPONENTS:
+            case OP_BLOCK_TRACKERS:
+            case OP_CLEAR_CACHE:
+            case OP_CLEAR_DATA:
+            case OP_DELETE_BACKUP:
+            case OP_DEXOPT:
+            case OP_DISABLE_BACKGROUND:
+            case OP_EXPORT_RULES:
+            case OP_FORCE_STOP:
+            case OP_FREEZE:
+            case OP_GRANT_PERMISSIONS:
+            case OP_IMPORT_BACKUPS:
+            case OP_INSTALL_EXISTING:
+            case OP_NET_POLICY:
+            case OP_REVOKE_PERMISSIONS:
+            case OP_RESTORE_BACKUP:
+            case OP_SET_APP_OPS:
+            case OP_UNBLOCK_COMPONENTS:
+            case OP_UNBLOCK_TRACKERS:
+            case OP_UNINSTALL:
+            case OP_UNARCHIVE:
+            case OP_UNFREEZE:
+                return true;
+            case OP_NONE:
+            default:
+                return false;
+        }
+    }
+
     private static final String GROUP_ID = BuildConfig.APPLICATION_ID + ".notification_group.BATCH_OPS";
 
     public static class BatchOpsInfo {

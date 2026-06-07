@@ -8,17 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 120 source-audit closure for batch queue target
+- Result: completed Cycle 121 source-audit closure for batch queue operation
   parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch queue target parser hardening and its verification target.
-- Code: persisted batch queue JSON now drops malformed package names,
-  non-integer or negative user IDs, and package/user rows without matching
-  partners before retry or recovery paths use them; in-memory queue target
-  repair also no longer relies on disabled assertions when package and user
-  arrays drift out of sync.
+  batch queue operation parser hardening and its verification target.
+- Code: persisted batch queue JSON now rejects the no-op sentinel and unknown
+  operation IDs before recovery or execution paths use them; queue creation and
+  parcel restoration apply the same runtime operation-ID guard.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.batchops.BatchOpsJournalTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.batchops.BatchQueueItemTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -28,12 +26,12 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed batch or
-  persisted-state parser edge, starting with batch queue operation IDs and
-  option constructors before expanding back into backup/profile/settings parser
-  edges.
-- Start by checking whether persisted queue operation IDs, option tags, or
-  saved batch settings can reach runtime paths without validation, and choose a
-  small source-backed risk that can be tightened without device-only claims.
+  persisted-state parser edge, starting with batch option constructors before
+  expanding back into backup/profile/settings parser edges.
+- Start by checking whether persisted batch option fields such as AppOps modes,
+  network policies, component signatures, permission names, or dexopt options
+  can reach runtime paths without validation, and choose a small source-backed
+  risk that can be tightened without device-only claims.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
