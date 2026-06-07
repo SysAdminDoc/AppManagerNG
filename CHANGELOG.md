@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Scanner missing-signature report hardening (source audit, 2026-06-07)
+
+- Scanner missing-signature reports now format selected signatures one per line
+  instead of sharing raw list text.
+- Scanner report fields now avoid literal null package placeholders, flatten
+  control characters, and defuse spreadsheet-formula prefixes through the shared
+  export text helper.
+
 ### Fixed - Activity Interceptor intent-details export hardening (source audit, 2026-06-07)
 
 - Activity Interceptor copy/share intent details now normalize app-controlled
