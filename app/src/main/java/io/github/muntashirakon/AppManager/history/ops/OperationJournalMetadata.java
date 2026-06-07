@@ -295,7 +295,11 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
     @NonNull
     public String getSearchableText() {
-        return mJsonObject.toString();
+        try {
+            return serializeToJson().toString();
+        } catch (JSONException ignore) {
+            return "";
+        }
     }
 
     @NonNull
@@ -344,18 +348,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
     @NonNull
     public List<String> getWarnings() {
-        JSONArray warnings = mJsonObject.optJSONArray(KEY_WARNINGS);
-        List<String> result = new ArrayList<>();
-        if (warnings == null) {
-            return result;
-        }
-        for (int i = 0; i < warnings.length(); ++i) {
-            String warning = warnings.optString(i, null);
-            if (warning != null) {
-                result.add(warning);
-            }
-        }
-        return result;
+        return getSanitizedStringArray(KEY_WARNINGS, MAX_WARNINGS);
     }
 
     @Nullable
@@ -365,18 +358,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
     @NonNull
     public List<String> getTargetPreview() {
-        JSONArray targetPreview = mJsonObject.optJSONArray(KEY_TARGET_PREVIEW);
-        List<String> targets = new ArrayList<>();
-        if (targetPreview == null) {
-            return targets;
-        }
-        for (int i = 0; i < targetPreview.length(); ++i) {
-            String target = targetPreview.optString(i, null);
-            if (target != null) {
-                targets.add(target);
-            }
-        }
-        return targets;
+        return getSanitizedStringArray(KEY_TARGET_PREVIEW, MAX_TARGET_PREVIEW);
     }
 
     @NonNull
@@ -422,7 +404,55 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     @NonNull
     @Override
     public JSONObject serializeToJson() throws JSONException {
-        return new JSONObject(mJsonObject.toString());
+        JSONObject jsonObject = new JSONObject(mJsonObject.toString());
+        jsonObject.put(KEY_TARGET_PREVIEW, toSanitizedStringArray(getTargetPreview(), MAX_TARGET_PREVIEW));
+        List<String> warnings = getWarnings();
+        if (warnings.isEmpty()) {
+            jsonObject.remove(KEY_WARNINGS);
+        } else {
+            jsonObject.put(KEY_WARNINGS, toSanitizedStringArray(warnings, MAX_WARNINGS));
+        }
+        return jsonObject;
+    }
+
+    @NonNull
+    private List<String> getSanitizedStringArray(@NonNull String key, int maxEntries) {
+        JSONArray array = mJsonObject.optJSONArray(key);
+        List<String> result = new ArrayList<>();
+        if (array == null) {
+            return result;
+        }
+        for (int i = 0; i < array.length() && result.size() < maxEntries; ++i) {
+            String value = sanitizeArrayString(array.opt(i));
+            if (value != null) {
+                result.add(value);
+            }
+        }
+        return result;
+    }
+
+    @Nullable
+    private static String sanitizeArrayString(@Nullable Object rawValue) {
+        if (!(rawValue instanceof String)) {
+            return null;
+        }
+        String value = ((String) rawValue).trim();
+        return value.isEmpty() ? null : value;
+    }
+
+    @NonNull
+    private static JSONArray toSanitizedStringArray(@Nullable List<String> values, int maxEntries) {
+        JSONArray array = new JSONArray();
+        if (values == null) {
+            return array;
+        }
+        for (int i = 0; i < values.size() && array.length() < maxEntries; ++i) {
+            String value = sanitizeArrayString(values.get(i));
+            if (value != null) {
+                array.put(value);
+            }
+        }
+        return array;
     }
 
     public static final class Builder {
@@ -497,22 +527,16 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
         @NonNull
         Builder setTargetPreview(@Nullable List<String> targets) {
-            JSONArray targetPreview = new JSONArray();
-            if (targets != null) {
-                int count = Math.min(targets.size(), MAX_TARGET_PREVIEW);
-                for (int i = 0; i < count; ++i) {
-                    targetPreview.put(targets.get(i));
-                }
-            }
-            put(KEY_TARGET_PREVIEW, targetPreview);
+            put(KEY_TARGET_PREVIEW, toSanitizedStringArray(targets, MAX_TARGET_PREVIEW));
             return this;
         }
 
         @NonNull
         Builder setTargetPreview(@Nullable String target) {
             JSONArray targetPreview = new JSONArray();
-            if (target != null) {
-                targetPreview.put(target);
+            String sanitizedTarget = sanitizeArrayString(target);
+            if (sanitizedTarget != null) {
+                targetPreview.put(sanitizedTarget);
             }
             put(KEY_TARGET_PREVIEW, targetPreview);
             return this;
@@ -526,16 +550,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
         @NonNull
         Builder setWarnings(@Nullable List<String> warnings) {
-            JSONArray warningArray = new JSONArray();
-            if (warnings != null) {
-                int count = Math.min(warnings.size(), MAX_WARNINGS);
-                for (int i = 0; i < count; ++i) {
-                    String warning = warnings.get(i);
-                    if (warning != null && !warning.isEmpty()) {
-                        warningArray.put(warning);
-                    }
-                }
-            }
+            JSONArray warningArray = toSanitizedStringArray(warnings, MAX_WARNINGS);
             if (warningArray.length() > 0) {
                 put(KEY_WARNINGS, warningArray);
             }

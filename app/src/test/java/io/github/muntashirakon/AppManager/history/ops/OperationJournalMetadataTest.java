@@ -3,10 +3,13 @@
 package io.github.muntashirakon.AppManager.history.ops;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +69,53 @@ public class OperationJournalMetadataTest {
         assertTrue(history.getDetailMessage(context).contains("Warnings"));
         assertTrue(history.getDetailMessage(context).contains("runtime permission grant/revoke unavailable"));
         assertEquals(1, history.getExportJson(context).getJSONArray("warnings").length());
+    }
+
+    @Test
+    public void restoredMetadataSanitizesTargetPreviewAndWarningArrays() throws Exception {
+        JSONObject hiddenTarget = new JSONObject().put("hidden", "bad-target");
+        JSONArray targetPreview = new JSONArray()
+                .put(" com.example.first ")
+                .put("")
+                .put("   ")
+                .put(JSONObject.NULL)
+                .put(42)
+                .put(hiddenTarget);
+        for (int i = 0; i < 12; ++i) {
+            targetPreview.put("target-" + i);
+        }
+        JSONArray warnings = new JSONArray()
+                .put(" warning-padded ")
+                .put("")
+                .put(JSONObject.NULL)
+                .put(new JSONObject().put("hidden", "bad-warning"))
+                .put(7);
+        for (int i = 0; i < 30; ++i) {
+            warnings.put("warning-" + i);
+        }
+        OperationJournalMetadata metadata = OperationJournalMetadata.fromJson(new JSONObject()
+                .put("schema_version", 1)
+                .put("operation_label", "Cleanup")
+                .put("target_preview", targetPreview)
+                .put("warnings", warnings)
+                .toString());
+        assertNotNull(metadata);
+
+        assertEquals(8, metadata.getTargetPreview().size());
+        assertEquals("com.example.first", metadata.getTargetPreview().get(0));
+        assertEquals("target-6", metadata.getTargetPreview().get(7));
+        assertEquals(24, metadata.getWarnings().size());
+        assertEquals("warning-padded", metadata.getWarnings().get(0));
+        assertEquals("warning-22", metadata.getWarnings().get(23));
+        assertFalse(metadata.getSearchableText().contains("bad-target"));
+        assertFalse(metadata.getSearchableText().contains("bad-warning"));
+
+        JSONObject serialized = metadata.serializeToJson();
+        assertEquals(8, serialized.getJSONArray("target_preview").length());
+        assertEquals("com.example.first", serialized.getJSONArray("target_preview").getString(0));
+        assertEquals(24, serialized.getJSONArray("warnings").length());
+        assertFalse(serialized.toString().contains("bad-target"));
+        assertFalse(serialized.toString().contains("bad-warning"));
     }
 
     private static List<String> createWarnings(int count) {
