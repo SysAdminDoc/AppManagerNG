@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Hex viewer validation-toast hardening (source audit, 2026-06-07)
+
+- Hex viewer offset and search validation toasts now use the shared hex viewer
+  error-message formatter before rendering exception messages.
+- Hex viewer validation toasts now share the same control-flattening,
+  formula-prefix defusing, and class-name fallback behavior as open/read errors.
+
 ### Fixed - Hex viewer error-message display hardening (source audit, 2026-06-07)
 
 - Hex viewer open/read failure summaries and toasts now format localized
