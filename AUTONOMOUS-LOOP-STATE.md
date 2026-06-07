@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 139 source-audit closure for operation-history row
-  type/status fallback.
+- Result: completed Cycle 140 source-audit closure for operation-history replay
+  payload validation.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  operation-history row type/status fallback and its verification target.
-- Code: Imported or legacy operation-history rows with null or future type
-  values now render as unknown, stay non-replayable, skip target routing, and
-  export with safe unknown labels instead of crashing list sorting, details, or
-  JSON export; null or future status values normalize to failure before filters,
-  summary counts, row colors, detail dialogs, and exports use them.
+  operation-history replay payload validation and its verification target.
+- Code: Operation-history rows now validate their stored batch, installer, or
+  profile replay payload before exposing rerun actions or marking
+  details/exports as replayable; malformed replay payloads stay visible as
+  history, but confirmation text and detail rows report that they are not
+  replayable instead of deferring the failure until service-intent construction.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
@@ -28,12 +28,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed persisted
-  operation-history parser edge, starting with replay preflight and executable
-  intent routing for malformed stored payloads in `OperationPreflight`,
-  `OpHistoryManager`, and their callers.
-- Check whether malformed replay payloads can surface unavailable rerun actions,
-  crash confirmation text, or throw unchecked routing errors before operation
-  history can show a safe non-replayable row.
+  operation-history status consistency edge, starting with failed-status cleanup
+  actions in `OpHistoryActivity`, `OpHistoryManager`, and `OpHistoryDao`.
+- Check whether rows normalized to failure for display/filtering are also
+  included by failed-history cleanup/delete paths instead of remaining behind
+  with a status value the UI no longer presents.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
