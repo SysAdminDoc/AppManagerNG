@@ -101,6 +101,26 @@ public class BatchOpsJournalTest {
     }
 
     @Test
+    public void malformedProgressTargetsAreIgnored() {
+        Context context = RuntimeEnvironment.getApplication();
+        BatchOpsJournal.dismissInterrupted(context);
+
+        BatchOpsJournal.recordExecuting(context, createQueueItem());
+        BatchOpsJournal.recordTargetFinished(context, new UserPackagePair("bad package", 0), false);
+        BatchOpsJournal.recordTargetFinished(context, new UserPackagePair("com.example.bad", -1), true);
+        BatchOpsJournal.recordTargetFinished(context, new UserPackagePair("com.example.one", 0), false);
+        BatchOpsJournal.markInterrupted(context, null);
+        BatchOpsJournal.Entry entry = BatchOpsJournal.getInterruptedOperation(context, false);
+
+        assertNotNull(entry);
+        assertEquals(1, entry.getCompletedTargetCount());
+        assertEquals(0, entry.getFailedTargetCount());
+        assertEquals(1, entry.getRetryTargetCount());
+        BatchQueueItem retryQueue = entry.getRetryQueueItem();
+        assertEquals("com.example.two", retryQueue.getPackages().get(0));
+    }
+
+    @Test
     public void noResultInterruptionRetriesOriginalQueue() {
         Context context = RuntimeEnvironment.getApplication();
         BatchOpsJournal.dismissInterrupted(context);
