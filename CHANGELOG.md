@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch queue target parsing (source audit, 2026-06-06)
+
+- Persisted batch queue JSON now drops malformed package names, non-integer or
+  negative user IDs, and package/user rows without matching partners before
+  retry or recovery paths use them.
+- Batch queue target repair no longer relies on disabled assertions when package
+  and user arrays drift out of sync.
+
 ### Fixed - Batch journal target parsing (source audit, 2026-06-06)
 
 - Interrupted batch-operation progress now drops completed or failed target rows
