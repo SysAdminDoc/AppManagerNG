@@ -79,6 +79,18 @@ public class ProviderQueryUtilsTest {
     }
 
     @Test
+    public void toTsvDefusesFormulaLikeCellsAfterWhitespace() {
+        ProviderQueryUtils.QueryResult result = new ProviderQueryUtils.QueryResult(
+                Uri.parse("content://settings/system"),
+                new String[]{"name"},
+                java.util.Collections.singletonList(java.util.Collections.singletonList(" \t=cmd\npayload")),
+                false,
+                1);
+
+        assertEquals("name\n'  =cmd payload\n", ProviderQueryUtils.toTsv(result));
+    }
+
+    @Test
     public void unprivilegedQueryRequiresReadableCurrentProfileProvider() {
         assertTrue(ProviderQueryUtils.canUseUnprivilegedQuery(true, null, false, "com.example",
                 "io.github.muntashirakon.AppManager", 0, 0));

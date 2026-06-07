@@ -15,6 +15,17 @@ public final class ExportTextUtils {
     }
 
     @NonNull
+    public static String escapeTsvField(@Nullable String value) {
+        if (value == null) {
+            return "";
+        }
+        String escaped = value.replace('\t', ' ')
+                .replace('\r', ' ')
+                .replace('\n', ' ');
+        return defuseCsvFormula(escaped);
+    }
+
+    @NonNull
     public static String defuseCsvFormula(@NonNull String value) {
         if (startsWithSpreadsheetFormula(value)) {
             return "'" + value;

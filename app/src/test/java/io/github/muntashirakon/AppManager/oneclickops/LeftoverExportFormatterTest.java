@@ -34,12 +34,12 @@ public class LeftoverExportFormatterTest {
     @Test
     public void toTsvDefusesFormulaLikeFieldsAndNormalizesLineBreaks() {
         OneClickOpsViewModel.LeftoverEntry entry = new OneClickOpsViewModel.LeftoverEntry(
-                new LeftoverScanner.Leftover(new File("=cmd\npayload"),
-                        "+pkg", LeftoverScanner.KIND_MEDIA),
+                new LeftoverScanner.Leftover(new File(" \t=cmd\npayload"),
+                        " +pkg", LeftoverScanner.KIND_MEDIA),
                 7L);
 
         String export = LeftoverExportFormatter.toTsv(Collections.singletonList(entry));
 
-        assertTrue(export.contains("'+pkg\tmedia\t7\t'=cmd payload"));
+        assertTrue(export.contains("' +pkg\tmedia\t7\t'  =cmd payload"));
     }
 }
