@@ -8,14 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 155 source-audit closure for profile JSON UTF-8
-  export.
+- Result: completed Cycle 156 source-audit closure for diagnostic ZIP shared
+  text redaction.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  raw profile JSON export charset fix and its verification target.
-- Code: Raw profile JSON export now writes explicit UTF-8 bytes, and a focused
-  profile serialization test pins non-ASCII profile names and comments.
+  diagnostic ZIP redaction/charset fix and its verification target.
+- Code: Diagnostic ZIP `device_info.txt` output now runs through the public
+  issue scrubber, and diagnostic ZIP text entries now use explicit UTF-8
+  writers.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.struct.BaseProfileTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -25,7 +26,7 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  structured-export edge, starting with diagnostic ZIP device-info entries and
+  structured-export edge, starting with installer diagnostic copy/share text and
   any remaining `ACTION_SEND`/`CreateDocument` paths that write app- or
   provider-controlled text.
 - Check whether any remaining export surfaces still leak nullable placeholders,
