@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 100 source-audit closure for Activity Interceptor
-  long extra literal parsing.
+- Result: completed Cycle 101 source-audit closure for backup checksum
+  duplicate-row hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  flattened long extra parser hardening and its verification target.
-- Code: flattened Activity Interceptor long extras now use decoded long literal
-  parsing, so `0x2a` restores the same way long array/list entries already do;
-  whitespace-padded decimal values still restore and malformed long literals
-  fail during parse.
+  checksum duplicate-row hardening and its verification target.
+- Code: backup checksum-file loading now rejects duplicate filename rows instead
+  of letting later rows overwrite earlier checksum values; malformed checksum
+  rows continue to fail as `IOException` restore or verify errors.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
