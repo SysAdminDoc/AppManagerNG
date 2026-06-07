@@ -380,6 +380,9 @@ public class BackupMetadataV5 implements LocalizedString {
                     throw new IllegalArgumentException("Malformed backup metadata: invalid split APK filename " + splitConfig);
                 }
             }
+            if (installer != null && !PackageUtils.validateName(installer)) {
+                throw new IllegalArgumentException("Malformed backup metadata: invalid installer package name " + installer);
+            }
         }
 
         private static boolean isBackupFilename(@Nullable String filename) {
