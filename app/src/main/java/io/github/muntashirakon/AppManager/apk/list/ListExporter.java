@@ -320,19 +320,24 @@ public final class ListExporter {
         String installerLabel = item.getInstallerPackageLabel() != null ? item.getInstallerPackageLabel() : "";
         String[] baseRow;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            baseRow = new String[]{item.packageName, item.getPackageLabel(),
-                    String.valueOf(item.getVersionCode()), item.getVersionName(),
+            baseRow = new String[]{item.packageName, emptyIfNull(item.getPackageLabel()),
+                    String.valueOf(item.getVersionCode()), emptyIfNull(item.getVersionName()),
                     String.valueOf(item.getMinSdk()), String.valueOf(item.getTargetSdk()),
-                    item.getSignatureSha256(), String.valueOf(item.getFirstInstallTime()),
+                    emptyIfNull(item.getSignatureSha256()), String.valueOf(item.getFirstInstallTime()),
                     String.valueOf(item.getLastUpdateTime()), installerPackage, installerLabel};
         } else {
-            baseRow = new String[]{item.packageName, item.getPackageLabel(),
-                    String.valueOf(item.getVersionCode()), item.getVersionName(),
-                    String.valueOf(item.getTargetSdk()), item.getSignatureSha256(),
+            baseRow = new String[]{item.packageName, emptyIfNull(item.getPackageLabel()),
+                    String.valueOf(item.getVersionCode()), emptyIfNull(item.getVersionName()),
+                    String.valueOf(item.getTargetSdk()), emptyIfNull(item.getSignatureSha256()),
                     String.valueOf(item.getFirstInstallTime()), String.valueOf(item.getLastUpdateTime()),
                     installerPackage, installerLabel};
         }
         return defuseCsvFormulaFields(includeExtendedMetadata ? append(baseRow, buildExtendedCsvRow(item)) : baseRow);
+    }
+
+    @NonNull
+    private static String emptyIfNull(@Nullable String value) {
+        return value != null ? value : "";
     }
 
     @NonNull

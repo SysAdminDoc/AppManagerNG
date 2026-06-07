@@ -59,6 +59,24 @@ public class ListExporterTest {
     }
 
     @Test
+    public void csvUsesEmptyFieldsForNullableTextMetadata() throws Exception {
+        AppListItem item = buildItem();
+        item.setPackageLabel(null);
+        item.setVersionName(null);
+        item.setSignatureSha256(null);
+        item.setInstallerPackageName(null);
+        item.setInstallerPackageLabel(null);
+        item.setSourceDir(null);
+        item.setPublicSourceDir(null);
+
+        String output = exportCsv(true, item);
+        String row = output.split("\n")[1];
+
+        assertTrue(row.startsWith("com.example.app,,42,,"));
+        assertFalse(output.contains("null"));
+    }
+
+    @Test
     public void jsonDefaultDoesNotAddExtendedKeys() throws Exception {
         JSONObject object = exportJson(false).getJSONObject(0);
 
