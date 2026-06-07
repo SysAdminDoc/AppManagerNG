@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 206 source-audit closure for archive progress
+- Result: completed Cycle 207 source-audit closure for batch rename dialog
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  archive progress display-name hardening and its verification target.
-- Code: Archive creation and extraction progress dialogs now format displayed
-  item labels before rendering them, while progress updates still use the
-  original path or ZIP entry names for archive creation, extraction, reloads,
-  and output-file decisions.
+  batch rename dialog display-name hardening and its verification target.
+- Code: File-manager batch rename preview, progress, issue, and result dialogs
+  now format source and target names before rendering them, while batch rename
+  planning and execution still preserve original source names and resolved
+  target names for the underlying rename operations.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmBatchRenameUtilsTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

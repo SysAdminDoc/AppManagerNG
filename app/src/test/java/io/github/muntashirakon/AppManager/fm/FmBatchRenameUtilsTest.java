@@ -86,4 +86,10 @@ public class FmBatchRenameUtilsTest {
         assertFalse(root.hasFile("a.tmp"));
         assertFalse(root.hasFile("b.tmp"));
     }
+
+    @Test
+    public void getDisplayNameFormatsRenameDialogLabels() {
+        assertEquals("' =payload name.tmp",
+                FmBatchRenameUtils.getDisplayName("\t=payload\nname.tmp"));
+    }
 }
