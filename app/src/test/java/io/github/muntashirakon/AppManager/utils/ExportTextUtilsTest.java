@@ -19,6 +19,11 @@ public class ExportTextUtilsTest {
     }
 
     @Test
+    public void escapeTsvFieldNormalizesControlTextAndDefusesFormulaAfterWhitespace() {
+        assertEquals("'  =cmd payload", ExportTextUtils.escapeTsvField(" \t=cmd\npayload"));
+    }
+
+    @Test
     public void toMarkdownTextFlattensAndEscapesControlText() {
         assertEquals("Example \\# Inject &lt;script&gt; \\[link\\]\\(http://evil/\\)",
                 ExportTextUtils.toMarkdownText("Example\n# Inject <script> [link](http://evil/)"));

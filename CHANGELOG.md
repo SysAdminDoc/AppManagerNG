@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - TSV export formula hardening (source audit, 2026-06-07)
+
+- Provider-query and leftover-folder TSV exports now share the central export
+  text helper instead of each carrying separate tab/newline normalization.
+- TSV cells now defuse spreadsheet formulas even when a provider value, package
+  field, or file path hides the formula trigger behind leading whitespace.
+
 ### Fixed - Structured export escaping utility (source audit, 2026-06-07)
 
 - Structured CSV export formula escaping is now centralized in one shared helper

@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+
 public final class LeftoverExportFormatter {
     private LeftoverExportFormatter() {
     }
@@ -32,21 +34,7 @@ public final class LeftoverExportFormatter {
             if (i > 0) {
                 builder.append('\t');
             }
-            builder.append(escapeTsvField(values[i]));
+            builder.append(ExportTextUtils.escapeTsvField(values[i]));
         }
-    }
-
-    @NonNull
-    private static String escapeTsvField(@NonNull String value) {
-        String escaped = value.replace('\t', ' ')
-                .replace('\r', ' ')
-                .replace('\n', ' ');
-        if (!escaped.isEmpty()) {
-            char first = escaped.charAt(0);
-            if (first == '=' || first == '+' || first == '-' || first == '@') {
-                return "'" + escaped;
-            }
-        }
-        return escaped;
     }
 }
