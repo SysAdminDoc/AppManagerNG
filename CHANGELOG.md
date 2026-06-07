@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File properties metadata display-name hardening (source audit, 2026-06-07)
+
+- File properties now format content-info messages, owner names, group names,
+  and SELinux context labels before rendering them.
+- UID/GID numeric fallbacks and the underlying file property values remain
+  unchanged for permission and context update operations.
+
 ### Fixed - File-manager load-error display-name hardening (source audit, 2026-06-07)
 
 - File-manager not-folder and missing-path load errors now format path-derived

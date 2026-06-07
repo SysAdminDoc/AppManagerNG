@@ -58,4 +58,10 @@ public class FilePropertiesDialogFragmentTest {
         assertEquals("' =payload sdcard/file.txt",
                 FilePropertiesDialogFragment.formatPropertyDisplayPath("\t=payload\nsdcard/file.txt"));
     }
+
+    @Test
+    public void formatPropertyDisplayTextFlattensControlsAndDefusesFormula() {
+        assertEquals("' =payload context",
+                FilePropertiesDialogFragment.formatPropertyDisplayText("\t=payload\ncontext"));
+    }
 }
