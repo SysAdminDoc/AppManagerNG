@@ -419,9 +419,9 @@ public final class SnapshotBundle {
                 if (data == null) continue;
                 String extra = normalizeSerializedExtra(row.serializedExtra);
                 JSONObject obj = new JSONObject();
-                obj.put("type", normalizeOpHistoryType(row.type));
+                obj.put("type", OpHistoryManager.normalizeHistoryType(row.type));
                 obj.put("exec_time", row.execTime);
-                obj.put("status", normalizeOpHistoryStatus(row.status));
+                obj.put("status", OpHistoryManager.normalizeStatus(row.status));
                 obj.put("serialized_data", data);
                 if (extra != null) {
                     obj.put("serialized_extra", extra);
@@ -459,8 +459,8 @@ public final class SnapshotBundle {
             // within the bundle).
             java.util.Set<String> seen = new java.util.HashSet<>();
             for (OpHistory existingRow : AppsDb.getInstance().opHistoryDao().getAll()) {
-                seen.add(opHistoryKey(normalizeOpHistoryType(existingRow.type),
-                        normalizeOpHistoryStatus(existingRow.status),
+                seen.add(opHistoryKey(OpHistoryManager.normalizeHistoryType(existingRow.type),
+                        OpHistoryManager.normalizeStatus(existingRow.status),
                         existingRow.execTime,
                         normalizeSerializedData(existingRow.serializedData),
                         normalizeSerializedExtra(existingRow.serializedExtra)));
@@ -468,8 +468,8 @@ public final class SnapshotBundle {
             for (int i = 0; i < entries.length(); ++i) {
                 JSONObject obj = entries.optJSONObject(i);
                 if (obj == null) continue;
-                String type = normalizeOpHistoryType(getNonBlankString(obj, "type"));
-                String status = normalizeOpHistoryStatus(getNonBlankString(obj, "status"));
+                String type = OpHistoryManager.normalizeHistoryType(getNonBlankString(obj, "type"));
+                String status = OpHistoryManager.normalizeStatus(getNonBlankString(obj, "status"));
                 long execTime = obj.optLong("exec_time", 0);
                 String data = normalizeSerializedData(getNonBlankString(obj, "serialized_data"));
                 String extra = obj.has("serialized_extra")
@@ -502,26 +502,6 @@ public final class SnapshotBundle {
         }
     }
 
-    @NonNull
-    private static String normalizeOpHistoryType(@Nullable String type) {
-        String normalizedType = normalizeToken(type);
-        if (OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(normalizedType)
-                || OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(normalizedType)
-                || OpHistoryManager.HISTORY_TYPE_PROFILE.equals(normalizedType)
-                || OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(normalizedType)
-                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(normalizedType)) {
-            return normalizedType;
-        }
-        return OpHistoryManager.HISTORY_TYPE_UNKNOWN;
-    }
-
-    @NonNull
-    private static String normalizeOpHistoryStatus(@Nullable String status) {
-        return OpHistoryManager.STATUS_SUCCESS.equals(normalizeToken(status))
-                ? OpHistoryManager.STATUS_SUCCESS
-                : OpHistoryManager.STATUS_FAILURE;
-    }
-
     @Nullable
     private static String normalizeSerializedData(@Nullable String data) {
         return isJsonObjectString(data) ? data : null;
@@ -552,15 +532,6 @@ public final class SnapshotBundle {
         }
         String stringValue = (String) value;
         return stringValue.trim().isEmpty() ? null : stringValue;
-    }
-
-    @Nullable
-    private static String normalizeToken(@Nullable String token) {
-        if (token == null) {
-            return null;
-        }
-        String normalizedToken = token.trim();
-        return normalizedToken.isEmpty() ? null : normalizedToken;
     }
 
     /** Content identity for an op-history row (id is autoGenerate and not part of identity). */

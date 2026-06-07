@@ -121,6 +121,28 @@ public class PerAppRollbackManagerTest {
     }
 
     @Test
+    public void buildPlanUsesNormalizedHistoryScalars() throws Exception {
+        OpHistory trimmedFreeze = history(1, 100, BatchOpsManager.OP_FREEZE, null,
+                "com.example.app", 0);
+        trimmedFreeze.type = " " + OpHistoryManager.HISTORY_TYPE_BATCH_OPS + " ";
+        trimmedFreeze.status = " " + OpHistoryManager.STATUS_SUCCESS + " ";
+        OpHistory futureStatus = history(2, 200, BatchOpsManager.OP_FREEZE, null,
+                "com.example.app", 0);
+        futureStatus.status = "future_status";
+        OpHistory futureType = history(3, 300, BatchOpsManager.OP_FREEZE, null,
+                "com.example.app", 0);
+        futureType.type = "future_type";
+
+        PerAppRollbackManager.RollbackPlan plan = PerAppRollbackManager.buildPlan(
+                Arrays.asList(trimmedFreeze, futureStatus, futureType), "com.example.app", 0);
+
+        assertEquals(1, plan.getMatchedHistoryCount());
+        assertEquals(0, plan.getManualReviewCount());
+        assertEquals(1, plan.getRunnableCount());
+        assertEquals(BatchOpsManager.OP_UNFREEZE, plan.getQueueItems().get(0).getOp());
+    }
+
+    @Test
     public void buildPlanOnlyCountsMalformedRowsAfterTargetMatch() throws Exception {
         OpHistory malformedUnrelated = new OpHistory();
         malformedUnrelated.id = 1;
