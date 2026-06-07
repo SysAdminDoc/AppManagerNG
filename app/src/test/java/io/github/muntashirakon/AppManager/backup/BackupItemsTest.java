@@ -122,6 +122,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readInfoRejectsNegativeUserHandle() throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup("dddddddd-dddd-dddd-dddd-dddddddddddd",
+                -1, CryptoUtils.MODE_NO_ENCRYPTION, "");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -130,6 +140,11 @@ public class BackupItemsTest {
 
     private BackupItems.BackupItem createInfoBackup(String backupUuid, String crypto, String extraFields)
             throws IOException {
+        return createInfoBackup(backupUuid, 0, crypto, extraFields);
+    }
+
+    private BackupItems.BackupItem createInfoBackup(String backupUuid, int userHandle, String crypto,
+                                                    String extraFields) throws IOException {
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
                 .findOrCreateDirectory(backupUuid);
@@ -138,7 +153,7 @@ public class BackupItemsTest {
                 + "\"version\":7,"
                 + "\"backup_time\":1,"
                 + "\"flags\":0,"
-                + "\"user_handle\":0,"
+                + "\"user_handle\":" + userHandle + ","
                 + "\"tar_type\":\"" + TarUtils.TAR_GZIP + "\","
                 + "\"checksum_algo\":\"" + DigestUtils.SHA_256 + "\","
                 + "\"crypto\":\"" + crypto + "\""

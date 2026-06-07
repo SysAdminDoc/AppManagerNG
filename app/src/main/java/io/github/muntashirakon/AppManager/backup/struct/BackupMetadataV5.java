@@ -115,7 +115,7 @@ public class BackupMetadataV5 implements LocalizedString {
             this.iv = iv;
             this.aes = aes;
             this.keyIds = keyIds;
-            verifyCrypto();
+            verifyInfo();
         }
 
         public Info(@NonNull JSONObject rootObject) throws JSONException {
@@ -131,7 +131,7 @@ public class BackupMetadataV5 implements LocalizedString {
             this.aes = aesKey != null ? HexEncoding.decode(aesKey) : null;
             String iv = JSONUtils.optString(rootObject, "iv");
             this.iv = iv != null ? HexEncoding.decode(iv) : null;
-            verifyCrypto();
+            verifyInfo();
         }
 
         public void setBackupItem(@NonNull BackupItems.BackupItem backupItem) {
@@ -195,6 +195,13 @@ public class BackupMetadataV5 implements LocalizedString {
                 default:
                     throw new IllegalArgumentException("Malformed backup: unknown crypto mode " + crypto);
             }
+        }
+
+        private void verifyInfo() {
+            if (userId < 0) {
+                throw new IllegalArgumentException("Malformed backup: negative user ID");
+            }
+            verifyCrypto();
         }
 
         @NonNull
