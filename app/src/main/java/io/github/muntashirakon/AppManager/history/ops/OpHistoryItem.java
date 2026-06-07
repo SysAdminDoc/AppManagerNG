@@ -142,7 +142,8 @@ public class OpHistoryItem {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS:
             case OpHistoryManager.HISTORY_TYPE_INSTALLER:
             case OpHistoryManager.HISTORY_TYPE_PROFILE:
-                return metadata == null || metadata.isReplayable();
+                return (metadata == null || metadata.isReplayable())
+                        && OpHistoryManager.canReplayHistoryItem(this);
             default:
                 return false;
         }
@@ -342,7 +343,7 @@ public class OpHistoryItem {
         appendSection(context, detail, R.string.op_history_detail_section_safety);
         appendLine(context, detail, R.string.op_history_detail_risk, getLocalizedRisk(context));
         appendLine(context, detail, R.string.op_history_detail_replayable,
-                context.getString(metadata.isReplayable() ? R.string.yes : R.string.no));
+                context.getString(isReplayable() ? R.string.yes : R.string.no));
         appendLine(context, detail, R.string.op_history_detail_reversible,
                 context.getString(metadata.isReversible() ? R.string.yes : R.string.no));
         appendLine(context, detail, R.string.op_history_detail_restart,

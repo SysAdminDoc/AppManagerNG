@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history replay payload validation (source audit, 2026-06-07)
+
+- Operation-history rows now validate their stored batch, installer, or profile
+  replay payload before exposing rerun actions or marking details/exports as
+  replayable.
+- Malformed replay payloads now stay visible as history, but their confirmation
+  text and detail rows report that they are not replayable instead of deferring
+  the failure until service-intent construction.
+
 ### Fixed - Operation history row type/status fallback (source audit, 2026-06-07)
 
 - Imported or legacy operation-history rows with null or future type values now
