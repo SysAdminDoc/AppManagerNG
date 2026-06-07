@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata installer packages (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects malformed persisted `installer` package
+  names before restore uses them as installer-session metadata.
+- Missing or null installer metadata continues to use the existing AppManagerNG
+  installer fallback.
+
 ### Fixed - Backup metadata data directories (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects empty persisted `data_dirs` entries before
