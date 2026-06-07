@@ -68,6 +68,7 @@ import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -998,9 +999,12 @@ public class ActivityInterceptor extends BaseActivity {
             // Line 1: <no> LABEL   <activity-label>
             // Line 2:      NAME    <activity-name>
             // Line 3:      PACKAGE <package-name>
-            result.append(i).append("\tLABEL  \t").append(activityinfo.loadLabel(pm)).append("\n");
-            result.append(spaces).append("\tNAME   \t").append(activityinfo.name).append("\n");
-            result.append(spaces).append("\tPACKAGE\t").append(activityinfo.packageName).append("\n");
+            result.append(i).append("\tLABEL  \t")
+                    .append(formatIntentDetailsField(activityinfo.loadLabel(pm))).append("\n");
+            result.append(spaces).append("\tNAME   \t")
+                    .append(formatIntentDetailsField(activityinfo.name)).append("\n");
+            result.append(spaces).append("\tPACKAGE\t")
+                    .append(formatIntentDetailsField(activityinfo.packageName)).append("\n");
         }
         // Add activity results
         if (mLastResultCode != null) {
@@ -1019,6 +1023,12 @@ public class ActivityInterceptor extends BaseActivity {
                     .append("\n");
         }
         return result.toString();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatIntentDetailsField(@Nullable CharSequence value) {
+        return ExportTextUtils.escapeTsvField(value != null ? value.toString() : "");
     }
 
     public void launchIntent(@NonNull Intent intent, boolean createChooser) {
