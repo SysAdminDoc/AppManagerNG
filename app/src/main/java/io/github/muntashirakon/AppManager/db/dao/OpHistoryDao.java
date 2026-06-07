@@ -26,6 +26,9 @@ public interface OpHistoryDao {
     @Query("DELETE FROM op_history WHERE status = :status")
     int deleteByStatus(@NonNull String status);
 
+    @Query("DELETE FROM op_history WHERE status IS NOT :status")
+    int deleteByStatusOtherThan(@NonNull String status);
+
     @Query("DELETE FROM op_history WHERE time < :cutoffTime")
     int deleteOlderThan(long cutoffTime);
 
