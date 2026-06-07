@@ -18,6 +18,9 @@ public class BackupUtilsTest {
         assertEquals("/data/user/10/com.example.package", BackupUtils.getWritableDataDirectory("/data/user/10/com.example.package", 0, 10));
         assertEquals("/data/user_de/10/com.example.package", BackupUtils.getWritableDataDirectory("/data/user_de/0/com.example.package", 0, 10));
         assertEquals("/data/user_de/10/com.example.package", BackupUtils.getWritableDataDirectory("/data/user_de/10/com.example.package", 0, 10));
+        assertEquals("/mnt/expand/volume-1/user/10/com.example.package", BackupUtils.getWritableDataDirectory("/mnt/expand/volume-1/user/0/com.example.package", 0, 10));
+        assertEquals("/mnt/expand/volume-1/user_de/10/com.example.package", BackupUtils.getWritableDataDirectory("/mnt/expand/volume-1/user_de/0/com.example.package", 0, 10));
+        assertEquals("/mnt/expand/volume-1/user/0/com.example.package", BackupUtils.getWritableDataDirectory("/mnt/expand/volume-1/user/10/com.example.package", 10, 0));
         // Single user
         assertEquals("/sdcard/Android/data/com.example.package", BackupUtils.getWritableDataDirectory("/sdcard/Android/data/com.example.package", 0, 10));
         assertEquals("/sdcard/Android/data/com.example.package", BackupUtils.getWritableDataDirectory("/storage/sdcard/Android/data/com.example.package", 0, 10));
@@ -61,6 +64,7 @@ public class BackupUtilsTest {
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/data/user/x/com.example"));
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/../user/0/com.example"));
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/volume-1/extra/user/0/com.example"));
+        assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/mnt/expand/volume-1/user/0/com.other"));
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/emulated/0/Download/com.example"));
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/../Android/data/com.example"));
         assertFalse(BackupUtils.isRestorableDataDirectory("com.example", "/storage/1234-5678/Android/data/com.other"));

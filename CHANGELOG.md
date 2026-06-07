@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup adoptable data restore mapping (source audit, 2026-06-06)
+
+- Backup restore now rewrites
+  `/mnt/expand/<volume>/user(_de)/<oldUser>/<package>` data roots to the
+  requested restore user while preserving the private-volume identifier.
+- Adoptable-storage credential- and device-protected roots for the current user
+  now classify as internal app data instead of unknown custom paths.
+
 ### Fixed - Backup removable data directory classification (source audit, 2026-06-06)
 
 - Backup restore now classifies removable-volume
