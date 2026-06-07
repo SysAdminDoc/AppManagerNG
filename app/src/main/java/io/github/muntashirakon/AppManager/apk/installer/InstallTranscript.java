@@ -8,6 +8,8 @@ import androidx.annotation.VisibleForTesting;
 
 import java.util.Locale;
 
+import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
+
 /**
  * Plain-text diagnostic snapshot a user can copy from the install-failure dialog when an install
  * is blocked — Android Developer Verification ("verifier") refusals, signature conflicts, storage
@@ -97,7 +99,9 @@ public final class InstallTranscript {
         sb.append("Package: ").append(orUnknown(packageName)).append('\n');
         sb.append(String.format(Locale.ROOT, "Status: %s (%d)%n", orUnknown(statusName), statusCode));
         if (statusMessage != null && !statusMessage.isEmpty()) {
-            sb.append("Status message: ").append(statusMessage).append('\n');
+            sb.append("Status message: ")
+                    .append(SupportInfoBundle.scrubForPublicIssue(statusMessage))
+                    .append('\n');
         }
         sb.append("Source: ").append(formatSource(sourceUri, redactSource)).append('\n');
         return sb.toString();
