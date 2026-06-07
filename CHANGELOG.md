@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Installer diagnostic message redaction (source audit, 2026-06-07)
+
+- Installer failure transcripts now scrub package names, paths, content URIs,
+  UID tokens, email addresses, and other public-issue-sensitive text from
+  status messages before users copy or share diagnostic text.
+- Installer source URI redaction remains intact while failure detail text now
+  uses the same scrubber as public support bundles and diagnostic ZIP reports.
+
 ### Fixed - Diagnostic ZIP shared text redaction (source audit, 2026-06-07)
 
 - Diagnostic ZIP `device_info.txt` output now uses the same public-issue

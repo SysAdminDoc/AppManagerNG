@@ -198,7 +198,7 @@ public final class SupportInfoBundle {
 
     @VisibleForTesting
     @NonNull
-    static String scrubForPublicIssue(@Nullable String input) {
+    public static String scrubForPublicIssue(@Nullable String input) {
         if (input == null || input.isEmpty()) {
             return "";
         }
