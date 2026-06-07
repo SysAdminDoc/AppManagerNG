@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Accessibility tracker clipboard hardening (source audit, 2026-06-07)
+
+- Leading-activity tracker long-press copy actions now normalize clipboard labels
+  and copied text before writing accessibility-node data to the clipboard.
+- Copied tracker content now preserves report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - File-manager path clipboard hardening (source audit, 2026-06-07)
 
 - File-manager copy-path actions now use copy-specific path formatting instead
