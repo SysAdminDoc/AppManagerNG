@@ -183,12 +183,8 @@ public class ScannerFragment extends Fragment {
                         .setNeutralButton(R.string.send_selected, (dialog, which, selectedItems) -> {
                             String message = formatMissingSignaturesReport(mViewModel.getPackageName(),
                                     selectedItems);
-                            Intent i = new Intent(Intent.ACTION_SEND);
-                            i.setType("message/rfc822");
-                            i.putExtra(Intent.EXTRA_EMAIL, new String[]{"am4android@riseup.net"});
-                            i.putExtra(Intent.EXTRA_SUBJECT, "App Manager: Missing signatures");
-                            i.putExtra(Intent.EXTRA_TEXT, message);
-                            startActivity(Intent.createChooser(i, getText(R.string.signatures)));
+                            startActivity(Intent.createChooser(buildMissingSignaturesEmailIntent(message),
+                                    getText(R.string.signatures)));
                         })
                         .show());
             }
@@ -252,6 +248,20 @@ public class ScannerFragment extends Fragment {
                             selectedItem != null ? selectedItem.toString() : ""));
         }
         return message.toString();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildMissingSignaturesEmailIntent(@NonNull String message) {
+        if (message.isEmpty()) {
+            throw new IllegalArgumentException("No missing-signature report to share");
+        }
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("message/rfc822");
+        intent.putExtra(Intent.EXTRA_EMAIL, new String[]{"am4android@riseup.net"});
+        intent.putExtra(Intent.EXTRA_SUBJECT, "App Manager: Missing signatures");
+        intent.putExtra(Intent.EXTRA_TEXT, message);
+        return intent;
     }
 
     private void publishVirusTotalReport(@NonNull VtFileReport vtFileReport) {
