@@ -121,21 +121,19 @@ public final class ListExporter {
         for (AppListItem appListItem : appListItems) {
             xmlSerializer.startTag("", "package");
             xmlSerializer.attribute("", "name", appListItem.packageName);
-            xmlSerializer.attribute("", "label", appListItem.getPackageLabel());
+            appendXmlAttribute(xmlSerializer, "label", appListItem.getPackageLabel());
             xmlSerializer.attribute("", "versionCode", String.valueOf(appListItem.getVersionCode()));
-            xmlSerializer.attribute("", "versionName", appListItem.getVersionName());
+            appendXmlAttribute(xmlSerializer, "versionName", appListItem.getVersionName());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 xmlSerializer.attribute("", "minSdk", String.valueOf(appListItem.getMinSdk()));
             }
             xmlSerializer.attribute("", "targetSdk", String.valueOf(appListItem.getTargetSdk()));
-            xmlSerializer.attribute("", "signature", appListItem.getSignatureSha256());
+            appendXmlAttribute(xmlSerializer, "signature", appListItem.getSignatureSha256());
             xmlSerializer.attribute("", "firstInstallTime", String.valueOf(appListItem.getFirstInstallTime()));
             xmlSerializer.attribute("", "lastUpdateTime", String.valueOf(appListItem.getLastUpdateTime()));
             if (appListItem.getInstallerPackageName() != null) {
-                xmlSerializer.attribute("", "installerPackageName", appListItem.getInstallerPackageName());
-                if (appListItem.getInstallerPackageLabel() != null) {
-                    xmlSerializer.attribute("", "installerPackageLabel", appListItem.getInstallerPackageLabel());
-                }
+                appendXmlAttribute(xmlSerializer, "installerPackageName", appListItem.getInstallerPackageName());
+                appendXmlAttribute(xmlSerializer, "installerPackageLabel", appListItem.getInstallerPackageLabel());
             }
             if (includeExtendedMetadata) {
                 appendExtendedXmlAttributes(xmlSerializer, appListItem);
@@ -145,6 +143,14 @@ public final class ListExporter {
         xmlSerializer.endTag("", "packages");
         xmlSerializer.endDocument();
         xmlSerializer.flush();
+    }
+
+    private static void appendXmlAttribute(@NonNull XmlSerializer xmlSerializer,
+                                           @NonNull String name,
+                                           @Nullable String value) throws IOException {
+        if (value != null) {
+            xmlSerializer.attribute("", name, value);
+        }
     }
 
     private static void exportCsv(@NonNull Writer writer,

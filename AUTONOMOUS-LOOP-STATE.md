@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 149 source-audit closure for app-list Markdown
-  escaping.
+- Result: completed Cycle 150 source-audit closure for app-list XML nullable
+  fields.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  app-list Markdown escaping and its verification target.
-- Code: App-list Markdown export now flattens embedded line breaks and escapes
-  Markdown control characters plus raw HTML delimiters in app-controlled labels,
-  version names, installer fields, package names, and source paths.
+  app-list XML nullable-field hardening and its verification target.
+- Code: App-list XML export now skips nullable text attributes for absent
+  labels, version names, signatures, installer fields, and source paths while
+  keeping required package identity and numeric attributes intact.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.list.ListExporterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
@@ -26,11 +26,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  structured-export edge, starting with app-list `ListExporter` XML export
-  handling for nullable app labels, version names, installer fields, signature
-  fields, and source paths.
-- Check whether XML export can throw or emit malformed package attributes when
-  optional app metadata is absent while CSV/JSON/Markdown paths keep working.
+  structured-export edge, starting with app-list `ListExporter` CSV rows for
+  nullable app labels, version names, signatures, and extended source paths.
+- Check whether CSV export writes misleading literal `null` placeholders for
+  absent optional app metadata while JSON/XML/Markdown paths omit or normalize
+  those fields.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
