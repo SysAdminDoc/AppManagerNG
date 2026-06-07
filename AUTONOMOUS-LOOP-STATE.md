@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 164 source-audit closure for manifest metadata copy
-  TSV hardening.
+- Result: completed Cycle 165 source-audit closure for root-module report text
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  manifest metadata copy TSV hardening and its verification target.
-- Code: App-info manifest metadata copy text now escapes owner, name, value, and
-  type cells before writing the tab-separated clipboard payload, while leaving
-  the on-screen metadata display unchanged.
+  root-module report text hardening and its verification target.
+- Code: Settings root-module details now sanitize module.prop-derived report
+  text before it is shown or copied from the privilege-health dialog,
+  normalizing tab/carriage-return controls and defusing spreadsheet-formula
+  prefixes at line starts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.details.info.ManifestMetadataInfoTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.runner.RootModuleInfoTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,12 +28,12 @@ Current branch: `main`
 - Continue this same assigned project.
 - Next roadmap target: inspect remaining plain text `ACTION_SEND` result
   previews and clipboard-only diagnostics outside the profile,
-  operation-history, and manifest-metadata flows that still accept
+  operation-history, manifest-metadata, and root-module flows that still accept
   app/provider-controlled labels.
-- Check whether file-manager or settings copy surfaces still leak nullable
-  placeholders, unchecked control text, or spreadsheet-formula entry points that
-  can be pinned with focused host tests without changing import-compatible rule
-  files.
+- Check whether file-manager paths, KernelSU diagnostics, or component-rule copy
+  surfaces still leak nullable placeholders, unchecked control text, or
+  spreadsheet-formula entry points that can be pinned with focused host tests
+  without changing import-compatible rule files.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
