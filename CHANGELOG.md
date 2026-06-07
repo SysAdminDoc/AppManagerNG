@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Default-role metadata sanitization (source audit, 2026-06-06)
+
+- Restored default-app role metadata now trims role names before supported-role
+  validation, so whitespace-padded valid roles are restored instead of dropped.
+- Blank and unsupported default-role entries remain ignored before restore
+  commands are planned.
+
 ### Fixed - Backup checksum row parsing (source audit, 2026-06-06)
 
 - Backup checksum-file loading now reports malformed rows as `IOException`

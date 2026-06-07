@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 98 source-audit closure for backup checksum row
-  parser hardening.
+- Result: completed Cycle 99 source-audit closure for default-role metadata
+  sanitization.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup checksum row parser hardening and its verification target.
-- Code: backup checksum-file loading now reports malformed rows as
-  `IOException` failures instead of unchecked runtime exceptions, and rows with
-  missing separators, empty checksum values, or empty filenames are rejected
-  before restore or verify uses them.
+  default-role metadata sanitization and its verification target.
+- Code: restored default-app role metadata now trims role names before
+  supported-role validation, so whitespace-padded valid roles are restored
+  instead of dropped, while blank and unsupported role entries remain ignored
+  before restore commands are planned.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelperTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
