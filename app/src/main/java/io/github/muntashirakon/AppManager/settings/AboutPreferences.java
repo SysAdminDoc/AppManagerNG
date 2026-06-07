@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -103,12 +104,8 @@ public class AboutPreferences extends PreferenceFragment {
                                 Toast.makeText(requireContext(), R.string.diagnostic_failed, Toast.LENGTH_LONG).show();
                                 return;
                             }
-                            Intent share = new Intent(Intent.ACTION_SEND);
-                            share.setType("application/zip");
-                            share.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diagnostic_report_subject));
-                            share.putExtra(Intent.EXTRA_STREAM, reportUri);
-                            share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            share.setClipData(ClipData.newRawUri("", reportUri));
+                            Intent share = buildDiagnosticShareIntent(reportUri,
+                                    getString(R.string.diagnostic_report_subject));
                             startActivity(Intent.createChooser(share, getString(R.string.pref_export_diagnostics)));
                         });
                     });
@@ -143,5 +140,17 @@ public class AboutPreferences extends PreferenceFragment {
     @Override
     public int getTitle() {
         return R.string.about;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildDiagnosticShareIntent(@NonNull Uri reportUri, @NonNull CharSequence subject) {
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("application/zip");
+        share.putExtra(Intent.EXTRA_SUBJECT, subject);
+        share.putExtra(Intent.EXTRA_STREAM, reportUri);
+        share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        share.setClipData(ClipData.newRawUri("", reportUri));
+        return share;
     }
 }
