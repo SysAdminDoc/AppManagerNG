@@ -202,6 +202,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readMetadataRejectsEmptyDataDirEntry() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("55555555-5555-5555-5555-555555555555",
+                "com.example", 1L, "[\"\"]", "base.apk", "[]");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -256,6 +266,12 @@ public class BackupItemsTest {
 
     private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, long versionCode,
                                                         String apkName, String splitConfigs) throws IOException {
+        return createMetadataBackup(backupUuid, packageName, versionCode, "[]", apkName, splitConfigs);
+    }
+
+    private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, long versionCode,
+                                                        String dataDirs, String apkName, String splitConfigs)
+            throws IOException {
         BackupItems.BackupItem backupItem = createInfoBackup(backupUuid, CryptoUtils.MODE_NO_ENCRYPTION, "");
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
@@ -268,7 +284,7 @@ public class BackupItemsTest {
                 + "\"package_name\":\"" + packageName + "\","
                 + "\"version_name\":\"1\","
                 + "\"version_code\":" + versionCode + ","
-                + "\"data_dirs\":[],"
+                + "\"data_dirs\":" + dataDirs + ","
                 + "\"is_system\":false,"
                 + "\"is_split_apk\":false,"
                 + "\"split_configs\":" + splitConfigs + ","
