@@ -39,6 +39,26 @@ public class ListExporterTest {
     }
 
     @Test
+    public void csvDefusesFormulaLikeAppMetadata() throws Exception {
+        AppListItem item = buildItem();
+        item.setPackageLabel(" \t=LABEL(\"http://evil/\")");
+        item.setVersionName("\n=VERSION(\"http://evil/\")");
+        item.setInstallerPackageLabel("@INSTALLER(\"http://evil/\")");
+        item.setSourceDir(" \t=SOURCE(\"http://evil/\")");
+
+        String output = exportCsv(true, item);
+
+        assertTrue(output.contains("\"' \t=LABEL(\"\"http://evil/\"\")\""));
+        assertTrue(output.contains("\"'\n=VERSION(\"\"http://evil/\"\")\""));
+        assertTrue(output.contains("\"'@INSTALLER(\"\"http://evil/\"\")\""));
+        assertTrue(output.contains("\"' \t=SOURCE(\"\"http://evil/\"\")\""));
+        assertFalse(output.contains("\" \t=LABEL"));
+        assertFalse(output.contains("\"\n=VERSION"));
+        assertFalse(output.contains("\"@INSTALLER"));
+        assertFalse(output.contains("\" \t=SOURCE"));
+    }
+
+    @Test
     public void jsonDefaultDoesNotAddExtendedKeys() throws Exception {
         JSONObject object = exportJson(false).getJSONObject(0);
 
@@ -59,9 +79,13 @@ public class ListExporterTest {
     }
 
     private static String exportCsv(boolean includeExtendedMetadata) throws Exception {
+        return exportCsv(includeExtendedMetadata, buildItem());
+    }
+
+    private static String exportCsv(boolean includeExtendedMetadata, AppListItem item) throws Exception {
         try (StringWriter writer = new StringWriter()) {
             ListExporter.exportItems(writer, ListExporter.EXPORT_TYPE_CSV,
-                    Collections.singletonList(buildItem()), includeExtendedMetadata,
+                    Collections.singletonList(item), includeExtendedMetadata,
                     RuntimeEnvironment.getApplication());
             return writer.toString();
         }

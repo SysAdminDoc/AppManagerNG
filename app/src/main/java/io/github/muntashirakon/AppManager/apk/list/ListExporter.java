@@ -13,6 +13,7 @@ import android.util.Xml;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.pm.PackageInfoCompat;
 
@@ -274,7 +275,7 @@ public final class ListExporter {
                     String.valueOf(item.getFirstInstallTime()), String.valueOf(item.getLastUpdateTime()),
                     installerPackage, installerLabel};
         }
-        return includeExtendedMetadata ? append(baseRow, buildExtendedCsvRow(item)) : baseRow;
+        return defuseCsvFormulaFields(includeExtendedMetadata ? append(baseRow, buildExtendedCsvRow(item)) : baseRow);
     }
 
     @NonNull
@@ -300,6 +301,37 @@ public final class ListExporter {
         Collections.addAll(out, first);
         Collections.addAll(out, second);
         return out.toArray(new String[0]);
+    }
+
+    @NonNull
+    private static String[] defuseCsvFormulaFields(@NonNull String[] values) {
+        String[] safeValues = new String[values.length];
+        for (int i = 0; i < values.length; ++i) {
+            safeValues[i] = defuseCsvFormula(values[i]);
+        }
+        return safeValues;
+    }
+
+    @Nullable
+    private static String defuseCsvFormula(@Nullable String value) {
+        if (value != null && startsWithSpreadsheetFormula(value)) {
+            return "'" + value;
+        }
+        return value;
+    }
+
+    private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
+        for (int i = 0; i < value.length(); ++i) {
+            char c = value.charAt(i);
+            if (c == '=' || c == '+' || c == '-' || c == '@'
+                    || c == '\t' || c == '\r' || c == '\n') {
+                return true;
+            }
+            if (!Character.isWhitespace(c)) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private static void appendExtendedJson(@NonNull JSONObject object, @NonNull AppListItem item)

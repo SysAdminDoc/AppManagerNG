@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App list CSV formula hardening (source audit, 2026-06-07)
+
+- App-list CSV export now defuses spreadsheet formulas hidden behind leading
+  whitespace or newline characters in untrusted app labels, version names,
+  installer labels, and extended source-path fields.
+- CSV hardening is applied to package data rows only, preserving existing
+  headers and non-CSV export behavior.
+
 ### Fixed - Logcat export formula hardening (source audit, 2026-06-07)
 
 - Structured logcat CSV export now defuses spreadsheet formulas hidden behind
