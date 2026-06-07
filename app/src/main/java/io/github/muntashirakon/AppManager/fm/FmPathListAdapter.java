@@ -100,14 +100,15 @@ class FmPathListAdapter extends RecyclerView.Adapter<FmPathListAdapter.PathHolde
     @Override
     public void onBindViewHolder(@NonNull PathHolder holder, int position) {
         String actualPathPart = mPathParts.get(position);
+        String displayPathPart = getDisplayPathPart(actualPathPart);
         String pathPart;
         if (position == 0) {
-            pathPart = mAlternativeRootName != null ? mAlternativeRootName : actualPathPart;
-        } else pathPart = "» " + actualPathPart;
+            pathPart = mAlternativeRootName != null ? getDisplayPathPart(mAlternativeRootName) : displayPathPart;
+        } else pathPart = "» " + displayPathPart;
         holder.textView.setText(pathPart);
         if (position == 0 && pathPart.equals("/")) {
             holder.itemView.setContentDescription(holder.itemView.getContext().getString(R.string.root));
-        } else holder.itemView.setContentDescription(actualPathPart);
+        } else holder.itemView.setContentDescription(displayPathPart);
         holder.itemView.setOnClickListener(v -> {
             if (mCurrentPosition != position) {
                 mViewModel.loadFiles(calculateUri(position));
@@ -151,6 +152,11 @@ class FmPathListAdapter extends RecyclerView.Adapter<FmPathListAdapter.PathHolde
         holder.textView.setTextColor(mCurrentPosition == position
                 ? MaterialColors.getColor(holder.textView, androidx.appcompat.R.attr.colorPrimary)
                 : MaterialColors.getColor(holder.textView, android.R.attr.textColorSecondary));
+    }
+
+    @NonNull
+    static String getDisplayPathPart(@Nullable String pathPart) {
+        return FmUtils.getDisplayName(pathPart, "");
     }
 
     @Override

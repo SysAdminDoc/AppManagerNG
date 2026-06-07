@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File breadcrumb display-name hardening (source audit, 2026-06-07)
+
+- File-manager breadcrumb labels and content descriptions now format URI path
+  segments and alternative root labels before rendering them.
+- Breadcrumb navigation still uses the original path parts for URI
+  reconstruction, copy-path actions, favorites, and properties.
+
 ### Fixed - Batch rename dialog display-name hardening (source audit, 2026-06-07)
 
 - File-manager batch rename preview, progress, issue, and result dialogs now
