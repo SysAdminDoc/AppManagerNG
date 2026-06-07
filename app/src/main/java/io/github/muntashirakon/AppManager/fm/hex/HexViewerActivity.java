@@ -13,6 +13,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.Path;
@@ -83,14 +85,10 @@ public class HexViewerActivity extends BaseActivity {
         }
         mFileSize = Math.max(0, mPath.length());
 
-        String title = getIntent().getStringExtra(Intent.EXTRA_TITLE);
-        if (TextUtils.isEmpty(title)) {
-            title = getString(R.string.title_hex_viewer);
-        }
+        String title = formatExternalMetadataText(getIntent().getStringExtra(Intent.EXTRA_TITLE),
+                getString(R.string.title_hex_viewer));
         String subtitle = getIntent().getStringExtra(EXTRA_SUBTITLE);
-        if (TextUtils.isEmpty(subtitle)) {
-            subtitle = mPath.getName();
-        }
+        subtitle = formatExternalMetadataText(subtitle, mPath.getName());
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle(title);
@@ -116,6 +114,13 @@ public class HexViewerActivity extends BaseActivity {
         mFindButton.setOnClickListener(v -> searchHex());
 
         loadPage(0, HexViewerUtils.NO_HIGHLIGHT);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatExternalMetadataText(@Nullable String value, @NonNull String fallback) {
+        String formatted = ExportTextUtils.escapeTsvField(value).trim();
+        return formatted.isEmpty() ? fallback : formatted;
     }
 
     @Override
