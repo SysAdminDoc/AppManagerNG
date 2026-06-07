@@ -28,7 +28,9 @@ public class DefaultAppRoleBackupHelperTest {
                         "android.app.role.NOTES",
                         DefaultAppRoleBackupHelper.ROLE_DIALER,
                         DefaultAppRoleBackupHelper.ROLE_SMS,
+                        " " + DefaultAppRoleBackupHelper.ROLE_BROWSER + " ",
                         null,
+                        "   ",
                         "",
                         DefaultAppRoleBackupHelper.ROLE_BROWSER,
                 }));

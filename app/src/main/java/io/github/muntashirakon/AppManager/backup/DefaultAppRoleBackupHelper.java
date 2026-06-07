@@ -101,8 +101,12 @@ public final class DefaultAppRoleBackupHelper {
         }
         Set<String> sanitized = new LinkedHashSet<>();
         for (String roleName : roleNames) {
-            if (!isEmpty(roleName) && isSupportedRole(roleName)) {
-                sanitized.add(roleName);
+            if (roleName == null) {
+                continue;
+            }
+            String trimmedRoleName = roleName.trim();
+            if (!isEmpty(trimmedRoleName) && isSupportedRole(trimmedRoleName)) {
+                sanitized.add(trimmedRoleName);
             }
         }
         return sanitized.toArray(new String[0]);
