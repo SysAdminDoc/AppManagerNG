@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 170 source-audit closure for crash report share
+- Result: completed Cycle 171 source-audit closure for Mode Doctor clipboard
   redaction.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  crash report share redaction and its verification target.
-- Code: Crash notification share payloads now scrub report text before handing
-  it to external share targets, preserving report line breaks while normalizing
+  Mode Doctor clipboard redaction and its verification target.
+- Code: Mode Doctor copy-to-clipboard now scrubs diagnostic report text before
+  writing it to the clipboard, preserving report line breaks while normalizing
   tab/carriage-return controls and defusing spreadsheet-formula prefixes at
   line starts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.AMExceptionHandlerTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.PrivilegeModeDoctorTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
