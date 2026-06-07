@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File-manager path clipboard hardening (source audit, 2026-06-07)
+
+- File-manager copy-path actions now use copy-specific path formatting instead
+  of writing raw display paths to the clipboard.
+- Copied paths now flatten tab/newline/carriage-return controls and defuse
+  spreadsheet-formula prefixes per path while leaving on-screen file paths
+  unchanged.
+
 ### Fixed - KernelSU diagnostics report hardening (source audit, 2026-06-07)
 
 - Settings KernelSU diagnostic details now sanitize the final report text before
