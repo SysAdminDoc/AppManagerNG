@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 196 source-audit closure for saved log display
-  filename hardening.
+- Result: completed Cycle 197 source-audit closure for file dialog subtitle
+  display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  saved log display filename hardening and its verification target.
-- Code: saved-log selection dialogs now format legacy saved-log filenames before
-  display, flattening tab/newline controls, defusing spreadsheet-style prefixes,
-  and falling back to the standard log filename when blank.
+  file dialog subtitle display-name hardening and its verification target.
+- Code: Open With and Checksums dialogs now format file subtitles through the
+  shared file-manager display-name helper before rendering path-derived names,
+  flattening tab/newline controls, defusing spreadsheet-style prefixes, and
+  falling back to a sanitized display path when the path name is blank.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelperTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
