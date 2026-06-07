@@ -649,11 +649,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                 promptExtractArchive(selectedFiles.get(0));
             }
         } else if (id == R.id.action_copy_path) {
-            List<String> paths = new ArrayList<>(selectedFiles.size());
-            for (Path path : selectedFiles) {
-                paths.add(FmUtils.getDisplayablePath(path));
-            }
-            Utils.copyToClipboard(mActivity, "Paths", TextUtils.join("\n", paths));
+            Utils.copyToClipboard(mActivity, "Paths", FmUtils.getClipboardPaths(selectedFiles));
         }
         return false;
     }
