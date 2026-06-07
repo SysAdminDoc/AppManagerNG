@@ -11,6 +11,7 @@ import android.provider.DocumentsContract;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,6 +76,11 @@ public final class FmUtils {
     @NonNull
     public static String getPathDisplayName(@NonNull Path path) {
         return getDisplayName(path.getName(), getDisplayablePath(path));
+    }
+
+    @NonNull
+    public static String getFileDisplayName(@NonNull File file) {
+        return getDisplayName(file.getName(), file.getPath());
     }
 
     @SuppressWarnings("OctalInteger")
