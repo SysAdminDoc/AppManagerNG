@@ -74,15 +74,16 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include backup checksum duplicate
-  row hardening, intent long extra literal parsing, default-role metadata
-  sanitization, backup checksum row parser hardening, Activity Interceptor
-  pasted USER header hardening, Activity Interceptor pasted ROOT header
-  hardening, backup archive filename filtering, ADB backup category path
-  hardening, SSAID rule value hardening, URI grant scalar parser hardening,
-  rule numeric negativity hardening, app-op rule numeric hardening, freeze rule
-  method hardening, component rule status-token hardening, rule import boolean
-  token hardening, ADB encrypted key-blob length hardening, ADB backup
+- Source-backed 2026-06-06 audit closures now include backup checksum row
+  generation hardening, backup checksum duplicate row hardening, intent long
+  extra literal parsing, default-role metadata sanitization, backup checksum row
+  parser hardening, Activity Interceptor pasted USER header hardening, Activity
+  Interceptor pasted ROOT header hardening, backup archive filename filtering,
+  ADB backup category path hardening, SSAID rule value hardening, URI grant
+  scalar parser hardening, rule numeric negativity hardening, app-op rule
+  numeric hardening, freeze rule method hardening, component rule status-token
+  hardening, rule import boolean token hardening, ADB encrypted key-blob length
+  hardening, ADB backup
   compression flag hardening, ADB backup numeric header hardening, manifest
   intent-filter name hardening, manifest intent-filter priority hardening,
   dynamic shortcut candidate validation, app action shortcut target validation,
