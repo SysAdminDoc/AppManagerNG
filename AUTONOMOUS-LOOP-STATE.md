@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 153 source-audit closure for TSV export formula
-  hardening.
+- Result: completed Cycle 154 source-audit closure for support bundle preamble
+  redaction.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  provider-query and leftover-folder TSV hardening plus its verification target.
-- Code: `ExportTextUtils` now exposes shared TSV field escaping, and provider
-  query plus leftover-folder exports use it to normalize tab/newline text and
-  defuse spreadsheet formulas hidden behind leading whitespace.
+  support-info preamble redaction and its verification target.
+- Code: Support-info bundle preamble text is now scrubbed before it is written
+  ahead of the public-issue bundle body, so Mode Doctor probe output uses the
+  same package, path, email, and UID redaction path as scrubbed logcat and crash
+  summaries.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest --tests io.github.muntashirakon.AppManager.oneclickops.LeftoverExportFormatterTest --tests io.github.muntashirakon.AppManager.details.components.ProviderQueryUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -26,9 +27,9 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  structured-export edge, starting with profile JSON export/import helpers,
-  support-info text bundles, and any remaining `ACTION_SEND`/`CreateDocument`
-  paths that write app- or provider-controlled text.
+  structured-export edge, starting with profile JSON export/import helpers and
+  any remaining `ACTION_SEND`/`CreateDocument` paths that write app- or
+  provider-controlled text.
 - Check whether any remaining export surfaces still leak nullable placeholders,
   unchecked control text, or spreadsheet-formula entry points that can be pinned
   with focused host tests without changing import-compatible rule files.
