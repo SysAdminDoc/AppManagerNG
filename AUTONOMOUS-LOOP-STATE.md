@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 203 source-audit closure for file drawer display-name
+- Result: completed Cycle 204 source-audit closure for file copy conflict display-name
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file drawer display-name hardening and its verification target.
-- Code: File-manager drawer favorite and location labels now format saved names
-  before rendering them in the drawer, and drawer removal confirmation titles
-  now use the same sanitized display name while rename/edit flows continue to
-  use the stored favorite name.
+  file copy conflict display-name hardening and its verification target.
+- Code: File-manager copy conflict dialogs now format the displayed conflicting
+  file name before rendering it in the confirmation message, while conflict
+  handling still uses the original filesystem name for duplicate detection,
+  keep-both naming, and the underlying copy operation.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
