@@ -65,7 +65,7 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
                            @Nullable ArrayList<Integer> users,
                            @Nullable IBatchOpOptions options) {
         mTitleRes = titleRes;
-        mOp = op;
+        mOp = requireValidQueueOp(op);
         mPackages = packages != null ? packages : new ArrayList<>(0);
         mUsers = users;
         mOptions = options;
@@ -150,7 +150,11 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
 
     protected BatchQueueItem(@NonNull JSONObject jsonObject) throws JSONException {
         mTitleRes = jsonObject.getInt("title_res");
-        mOp = jsonObject.getInt("op");
+        int op = jsonObject.getInt("op");
+        if (!BatchOpsManager.isValidQueueOp(op)) {
+            throw new JSONException("Invalid batch queue operation: " + op);
+        }
+        mOp = op;
         mPackages = new ArrayList<>();
         mUsers = new ArrayList<>();
         deserializeTargets(jsonObject.getJSONArray("packages"), jsonObject.getJSONArray("users"), mPackages, mUsers);
@@ -172,10 +176,17 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
 
     protected BatchQueueItem(@NonNull Parcel in) {
         mTitleRes = in.readInt();
-        mOp = in.readInt();
+        mOp = requireValidQueueOp(in.readInt());
         mPackages = Objects.requireNonNull(in.createStringArrayList());
         mUsers = ParcelUtils.readArrayList(in, Integer.class.getClassLoader());
         mOptions = ParcelCompat.readParcelable(in, IBatchOpOptions.class.getClassLoader(), IBatchOpOptions.class);
+    }
+
+    private static int requireValidQueueOp(int op) {
+        if (!BatchOpsManager.isValidQueueOp(op)) {
+            throw new IllegalArgumentException("Invalid batch queue operation: " + op);
+        }
+        return op;
     }
 
     private static void deserializeTargets(@NonNull JSONArray packagesJson,

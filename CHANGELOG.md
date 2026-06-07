@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch queue operation parsing (source audit, 2026-06-06)
+
+- Persisted batch queue JSON now rejects the no-op sentinel and unknown
+  operation IDs instead of letting invalid integers reach batch execution or
+  recovery result paths.
+- Batch queue creation and parcel restoration now apply the same runtime
+  operation-ID guard as JSON restoration.
+
 ### Fixed - Batch queue target parsing (source audit, 2026-06-06)
 
 - Persisted batch queue JSON now drops malformed package names, non-integer or

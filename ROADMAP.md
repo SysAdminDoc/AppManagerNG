@@ -74,11 +74,11 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06 audit closures now include batch queue target parser
-  hardening, batch journal target parser hardening, profile trigger type parser
-  hardening, backup schedule skipped-detail parser hardening, backup adoptable
-  data-restore mapping, backup removable data-directory classification, backup
-  metadata data-root
+- Source-backed 2026-06-06 audit closures now include batch queue operation
+  parser hardening, batch queue target parser hardening, batch journal target
+  parser hardening, profile trigger type parser hardening, backup schedule
+  skipped-detail parser hardening, backup adoptable data-restore mapping,
+  backup removable data-directory classification, backup metadata data-root
   hardening, backup metadata installer-package hardening, backup metadata
   data-directory hardening, backup metadata version-code hardening, backup
   metadata APK-filename hardening, backup metadata package-name hardening,
