@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 210 source-audit closure for file-manager load-error
+- Result: completed Cycle 211 source-audit closure for file properties metadata
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-manager load-error display-name hardening and its verification target.
-- Code: File-manager not-folder and missing-path load errors now format
-  path-derived names before rendering them in the empty-state error title, while
-  file loading, symlink resolution, and URI state still use the original `Path`
-  and URI values.
+  file properties metadata display-name hardening and its verification target.
+- Code: File properties now format content-info messages, owner names, group
+  names, and SELinux context labels before rendering them, while UID/GID
+  numeric fallbacks and the underlying file property values remain unchanged for
+  permission and context update operations.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmViewModelTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
