@@ -74,12 +74,27 @@ public final class OperationHistoryExporter {
                 histories.size(),
                 histories.size()));
         for (OpHistoryItem history : histories) {
-            text.append("\n\n")
-                    .append(history.getLabel(context))
-                    .append('\n')
-                    .append(history.getDetailMessage(context));
+            text.append("\n\n").append(toTextEntry(context, history));
         }
         return text.toString();
+    }
+
+    @NonNull
+    static String toTextEntry(@NonNull Context context, @NonNull OpHistoryItem history) {
+        return toTextEntry(context, history, history.getDetailMessage(context));
+    }
+
+    @NonNull
+    static String toTextEntry(@NonNull Context context,
+                              @NonNull OpHistoryItem history,
+                              @NonNull String detailMessage) {
+        return ExportTextUtils.toPlainTextReport(history.getLabel(context) + '\n' + detailMessage);
+    }
+
+    @NonNull
+    static String toTextLabel(@NonNull Context context, @NonNull OpHistoryItem history) {
+        String label = ExportTextUtils.escapeTsvField(history.getLabel(context)).trim();
+        return label.isEmpty() ? context.getString(R.string.op_history) : label;
     }
 
     private static void appendCsvLine(@NonNull StringBuilder builder, @NonNull String... values) {

@@ -83,6 +83,29 @@ public final class ExportTextUtils {
         return safeText.toString();
     }
 
+    @NonNull
+    public static String toPlainTextReport(@Nullable String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replace('\t', ' ')
+                .replace('\r', ' ');
+        StringBuilder safeText = new StringBuilder(normalized.length());
+        int lineStart = 0;
+        for (int i = 0; i <= normalized.length(); ++i) {
+            if (i == normalized.length() || normalized.charAt(i) == '\n') {
+                if (i > lineStart) {
+                    safeText.append(defuseCsvFormula(normalized.substring(lineStart, i)));
+                }
+                if (i < normalized.length()) {
+                    safeText.append('\n');
+                    lineStart = i + 1;
+                }
+            }
+        }
+        return safeText.toString();
+    }
+
     private static boolean startsWithSpreadsheetFormula(@NonNull String value) {
         for (int i = 0; i < value.length(); ++i) {
             char c = value.charAt(i);
