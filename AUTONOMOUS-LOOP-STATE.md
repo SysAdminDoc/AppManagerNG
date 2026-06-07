@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 99 source-audit closure for default-role metadata
-  sanitization.
+- Result: completed Cycle 100 source-audit closure for Activity Interceptor
+  long extra literal parsing.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  default-role metadata sanitization and its verification target.
-- Code: restored default-app role metadata now trims role names before
-  supported-role validation, so whitespace-padded valid roles are restored
-  instead of dropped, while blank and unsupported role entries remain ignored
-  before restore commands are planned.
+  flattened long extra parser hardening and its verification target.
+- Code: flattened Activity Interceptor long extras now use decoded long literal
+  parsing, so `0x2a` restores the same way long array/list entries already do;
+  whitespace-padded decimal values still restore and malformed long literals
+  fail during parse.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelperTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.intercept.IntentCompatTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
