@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.content.ComponentName;
@@ -78,5 +79,20 @@ public class ActivityInterceptorTest {
         assertEquals("' =HYPERLINK(\"x\") Fake Column ",
                 ActivityInterceptor.formatIntentDetailsField(
                         "\t=HYPERLINK(\"x\")\nFake\tColumn\r"));
+    }
+
+    @Test
+    public void buildIntentDetailsShareIntentUsesPlainTextBody() {
+        Intent intent = ActivityInterceptor.buildIntentDetailsShareIntent("VERSION\t1\n");
+
+        assertEquals(Intent.ACTION_SEND, intent.getAction());
+        assertEquals("text/plain", intent.getType());
+        assertEquals("VERSION\t1\n", intent.getStringExtra(Intent.EXTRA_TEXT));
+    }
+
+    @Test
+    public void buildIntentDetailsShareIntentRejectsEmptyBody() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ActivityInterceptor.buildIntentDetailsShareIntent(""));
     }
 }

@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Activity Interceptor share-details intent hardening (source audit, 2026-06-07)
+
+- Activity Interceptor details sharing now builds its `ACTION_SEND` intent
+  through a tested helper.
+- Shared intent-detail URI headers now use the same TSV-safe formatter as
+  matching activity fields, and empty share bodies are rejected before launch.
+
 ### Fixed - Scanner missing-signature email intent hardening (source audit, 2026-06-07)
 
 - Scanner missing-signature email sharing now builds its `ACTION_SEND` intent
