@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history metadata arrays (source audit, 2026-06-07)
+
+- Restored operation-history metadata now drops null, blank, and non-string
+  target-preview and warning entries before detail rendering, search, CSV
+  export, or JSON export can use them.
+- Target-preview and warning arrays are capped consistently when read,
+  serialized, or built, so imported or legacy history metadata cannot bypass the
+  preview and warning limits.
+
 ### Fixed - Duplicate backup cleanup history labels (source audit, 2026-06-07)
 
 - Duplicate-backup cleanup history now keeps the normalized machine
