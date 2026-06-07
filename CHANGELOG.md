@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Diagnostic ZIP text line hardening (source audit, 2026-06-07)
+
+- Diagnostic ZIP device-info, crash-log, and logcat text entries now pass
+  through a shared line-safe formatter after public-issue scrubbing.
+- Shared diagnostic ZIP text now preserves report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Logcat clipboard text hardening (source audit, 2026-06-07)
 
 - Live, saved, and per-row logcat copy actions now sanitize copied log text

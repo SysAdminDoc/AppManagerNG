@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 173 source-audit closure for logcat clipboard text
+- Result: completed Cycle 174 source-audit closure for diagnostic ZIP text line
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  logcat clipboard text hardening and its verification target.
-- Code: Live, saved, and per-row logcat copy actions now sanitize copied log
-  text before writing it to the clipboard, preserving selected-line boundaries
-  while normalizing tab/carriage-return controls and defusing
-  spreadsheet-formula prefixes at line starts.
+  diagnostic ZIP text line hardening and its verification target.
+- Code: Diagnostic ZIP device-info, crash-log, and logcat text entries now pass
+  through a shared line-safe formatter after public-issue scrubbing, preserving
+  report line breaks while normalizing tab/carriage-return controls and
+  defusing spreadsheet-formula prefixes at line starts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.helper.LogcatClipboardFormatterTest --tests io.github.muntashirakon.AppManager.logcat.LogcatStructuredExporterTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
