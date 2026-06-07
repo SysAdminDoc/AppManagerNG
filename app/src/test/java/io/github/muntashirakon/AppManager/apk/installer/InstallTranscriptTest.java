@@ -123,6 +123,27 @@ public class InstallTranscriptTest {
     }
 
     @Test
+    public void toShareableTextScrubsStatusMessage() {
+        InstallTranscript transcript = new InstallTranscript(
+                "2026-05-16T12:00:00Z", "0.4.2 (6)", "Generic", "14", 34, "2026-05-01",
+                "arm64-v8a", "auto", "com.example.foo", -2, "STATUS_FAILURE_INVALID",
+                "Failed com.example.secret /storage/emulated/0/Download/private.apk "
+                        + "content://com.android.providers.downloads.documents/document/123 uid=10345 "
+                        + "person@example.com",
+                null,
+                true);
+        String text = transcript.toShareableText();
+
+        assertTrue(text.contains("Status message: Failed <package> <path> content://<redacted> "
+                + "uid=<redacted> <email>"));
+        assertFalse(text.contains("com.example.secret"));
+        assertFalse(text.contains("private.apk"));
+        assertFalse(text.contains("document/123"));
+        assertFalse(text.contains("uid=10345"));
+        assertFalse(text.contains("person@example.com"));
+    }
+
+    @Test
     public void toShareableTextLeavesSourceVerbatimWhenOptedIn() {
         InstallTranscript transcript = new InstallTranscript(
                 "2026-05-16T12:00:00Z", "0.4.2 (6)", "Generic", "14", 34, "2026-05-01",
