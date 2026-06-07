@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Saved log filename validator hardening (source audit, 2026-06-07)
+
+- Saved-log filename validation now rejects all whitespace and control
+  characters before writing files under the saved-log directory.
+- Saved-log filename validation now rejects both forward-slash and backslash
+  path separators while preserving valid `.log` filenames.
+
 ### Fixed - Log export attachment-name hardening (source audit, 2026-06-07)
 
 - Log viewer save/export filename suggestions now format attachment names before
