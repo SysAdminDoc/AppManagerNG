@@ -1743,10 +1743,17 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(titleRes)
                 .setPositiveButton(R.string.close, null);
-        if (!TextUtils.isEmpty(throwable.getLocalizedMessage())) {
-            builder.setMessage(throwable.getLocalizedMessage());
+        String message = formatArchiveErrorMessage(throwable);
+        if (!TextUtils.isEmpty(message)) {
+            builder.setMessage(message);
         }
         builder.show();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatArchiveErrorMessage(@NonNull Throwable throwable) {
+        return ExportTextUtils.toPlainTextReport(throwable.getLocalizedMessage()).trim();
     }
 
     private String findNextBestDisplayName(@NonNull Path basePath, @NonNull String prefix, @Nullable String extension) {
