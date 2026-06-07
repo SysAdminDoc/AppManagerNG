@@ -21,6 +21,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.AndroidViewModel;
@@ -760,15 +761,24 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void shareHistory(@NonNull List<OpHistoryItem> histories, @NonNull String subject) {
-        Intent shareIntent = new Intent(Intent.ACTION_SEND)
-                .setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, subject)
-                .putExtra(Intent.EXTRA_TEXT, OperationHistoryExporter.toText(this, histories));
+        Intent shareIntent = buildHistoryShareIntent(subject, OperationHistoryExporter.toText(this, histories));
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.op_history_share_title)));
         } catch (Throwable e) {
             UIUtils.displayLongToast(R.string.error);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildHistoryShareIntent(@NonNull CharSequence subject, @NonNull String body) {
+        if (body.isEmpty()) {
+            throw new IllegalArgumentException("No operation history text to share");
+        }
+        return new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_TEXT, body);
     }
 
     private void showHistoryCleanupDialog() {

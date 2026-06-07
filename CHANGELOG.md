@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation-history share intent hardening (source audit, 2026-06-07)
+
+- Operation-history text sharing now builds its `ACTION_SEND` intent through a
+  tested helper.
+- Empty operation-history share bodies are rejected before launching an external
+  share, while valid shares keep pinned plain-text MIME, subject, and body
+  behavior.
+
 ### Fixed - Leftover export share intent hardening (source audit, 2026-06-07)
 
 - Leftover-folder TSV export sharing now builds its `ACTION_SEND` intent

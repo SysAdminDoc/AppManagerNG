@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 185 source-audit closure for leftover export share
+- Result: completed Cycle 186 source-audit closure for operation-history share
   intent hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  leftover export share intent hardening and its verification target.
-- Code: leftover-folder TSV export sharing now builds its `ACTION_SEND` intent
-  through a tested helper, rejects empty export requests before launching an
-  external share, and pins TSV MIME, subject, and escaped body behavior for
-  valid exports.
+  operation-history share intent hardening and its verification target.
+- Code: operation-history text sharing now builds its `ACTION_SEND` intent
+  through a tested helper, rejects empty share bodies before launching an
+  external share, and pins plain-text MIME, subject, and body behavior for
+  valid shares.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivityTest --tests io.github.muntashirakon.AppManager.oneclickops.LeftoverExportFormatterTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryActivityTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -28,9 +28,9 @@ Current branch: `main`
 - Continue this same assigned project.
 - Next roadmap target: continue auditing one-off share builders and chooser
   metadata for host-verifiable URI-grant and metadata defects.
-- Check remaining inline text-share builders such as operation-history sharing,
-  scanner email reports, and Activity Interceptor resend/share paths for
-  subject, chooser, or metadata gaps that can be pinned with focused host tests.
+- Check remaining inline text-share builders such as scanner email reports and
+  Activity Interceptor resend/share paths for subject, chooser, or metadata
+  gaps that can be pinned with focused host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
