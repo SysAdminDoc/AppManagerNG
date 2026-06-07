@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Direct backup operation option parsing (source audit, 2026-06-06)
+
+- Backup, restore, and delete operation options now trim and validate package
+  names, reject negative user IDs and backup flag masks, and normalize
+  backup-name, relative-directory, and exclusion-glob fields before Parcel or
+  JSON restoration can reach backup execution.
+- Delete operation Parcel restoration now preserves a null relative-directory
+  list as the base-backup selector instead of rejecting the nullable state its
+  own constructor and serializer support.
+
 ### Fixed - Batch backup string-array parsing (source audit, 2026-06-06)
 
 - Batch backup option backup names are trimmed at constructor, Parcel, and JSON
