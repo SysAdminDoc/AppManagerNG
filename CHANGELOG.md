@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch journal target parsing (source audit, 2026-06-06)
+
+- Interrupted batch-operation progress now drops completed or failed target rows
+  with malformed package names or negative user IDs before persisting or reading
+  journal state.
+- Retry queue reconstruction now ignores malformed progress rows instead of
+  letting them affect completed/failed counters.
+
 ### Fixed - Profile trigger type parsing (source audit, 2026-06-06)
 
 - Persisted profile triggers with unknown future or malformed `type` strings are
