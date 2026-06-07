@@ -547,8 +547,8 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void copyHistoryDetails(@NonNull OpHistoryItem history, @NonNull String detailMessage) {
-        String title = history.getLabel(this);
-        ClipboardUtils.copyToClipboard(this, title, title + "\n\n" + detailMessage);
+        ClipboardUtils.copyToClipboard(this, OperationHistoryExporter.toTextLabel(this, history),
+                OperationHistoryExporter.toTextEntry(this, history, detailMessage));
         UIUtils.displayShortToast(R.string.copied_to_clipboard);
     }
 
