@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history metadata scalars (source audit, 2026-06-07)
+
+- Restored operation-history metadata now clamps target and failed counters to
+  non-negative values and caps failed counts at the sanitized target count
+  before summaries, sorting, details, or exports use them.
+- Metadata serialization now removes malformed exit-code values while preserving
+  valid negative installer status codes, and normalizes invalid risk values to
+  the medium-risk fallback already used by the UI.
+
 ### Fixed - Operation history metadata arrays (source audit, 2026-06-07)
 
 - Restored operation-history metadata now drops null, blank, and non-string

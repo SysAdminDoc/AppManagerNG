@@ -308,11 +308,11 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     public int getTargetCount() {
-        return mJsonObject.optInt(KEY_TARGET_COUNT, 0);
+        return getNonNegativeInt(KEY_TARGET_COUNT);
     }
 
     public int getFailedCount() {
-        return mJsonObject.optInt(KEY_FAILED_COUNT, 0);
+        return Math.min(getTargetCount(), getNonNegativeInt(KEY_FAILED_COUNT));
     }
 
     @Nullable
@@ -405,6 +405,15 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     @Override
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject(mJsonObject.toString());
+        jsonObject.put(KEY_TARGET_COUNT, getTargetCount());
+        jsonObject.put(KEY_FAILED_COUNT, getFailedCount());
+        Integer exitCode = getExitCode();
+        if (exitCode == null) {
+            jsonObject.remove(KEY_EXIT_CODE);
+        } else {
+            jsonObject.put(KEY_EXIT_CODE, exitCode);
+        }
+        jsonObject.put(KEY_RISK, getRisk());
         jsonObject.put(KEY_TARGET_PREVIEW, toSanitizedStringArray(getTargetPreview(), MAX_TARGET_PREVIEW));
         List<String> warnings = getWarnings();
         if (warnings.isEmpty()) {
@@ -413,6 +422,10 @@ public final class OperationJournalMetadata implements IJsonSerializer {
             jsonObject.put(KEY_WARNINGS, toSanitizedStringArray(warnings, MAX_WARNINGS));
         }
         return jsonObject;
+    }
+
+    private int getNonNegativeInt(@NonNull String key) {
+        return Math.max(0, mJsonObject.optInt(key, 0));
     }
 
     @NonNull
@@ -479,13 +492,13 @@ public final class OperationJournalMetadata implements IJsonSerializer {
 
         @NonNull
         Builder setTargetCount(int targetCount) {
-            put(KEY_TARGET_COUNT, targetCount);
+            put(KEY_TARGET_COUNT, Math.max(0, targetCount));
             return this;
         }
 
         @NonNull
         Builder setFailedCount(int failedCount) {
-            put(KEY_FAILED_COUNT, failedCount);
+            put(KEY_FAILED_COUNT, Math.max(0, failedCount));
             return this;
         }
 
