@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata backup-name parsing (source audit, 2026-06-06)
+
+- Backup metadata v5 names are trimmed when created, copied, read from JSON, or
+  serialized, so retention, display, restore lookup, and backup-list database
+  projection paths use one normalized backup-name value.
+- Blank persisted backup names now normalize to the base-backup sentinel before
+  they can be shown or projected as named backups.
+
 ### Fixed - Profile backup-data parsing (source audit, 2026-06-06)
 
 - Persisted profile backup data now trims blank backup names to an absent name,
