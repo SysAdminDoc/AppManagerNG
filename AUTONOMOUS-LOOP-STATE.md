@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 205 source-audit closure for archive extract conflict
+- Result: completed Cycle 206 source-audit closure for archive progress
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  archive extract conflict display-name hardening and its verification target.
-- Code: Archive extraction conflict dialogs now format ZIP entry names before
-  rendering them in the confirmation message, while extraction still uses the
-  original normalized entry name for duplicate detection, keep-both naming, and
-  output file creation.
+  archive progress display-name hardening and its verification target.
+- Code: Archive creation and extraction progress dialogs now format displayed
+  item labels before rendering them, while progress updates still use the
+  original path or ZIP entry names for archive creation, extraction, reloads,
+  and output-file decisions.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
