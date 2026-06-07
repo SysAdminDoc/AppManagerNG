@@ -1561,11 +1561,12 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         String name = source.getName();
         if (dest.hasFile(name)) {
             // Duplicate found. Ask user for what to do.
+            String displayName = FmUtils.getPathDisplayName(source);
             CountDownLatch waitForUser = new CountDownLatch(1);
             AtomicReference<Boolean> keepBoth = new AtomicReference<>(null);
             ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.conflict_detected_while_copying)
-                    .setMessage(getString(R.string.conflict_detected_while_copying_message, name))
+                    .setMessage(getString(R.string.conflict_detected_while_copying_message, displayName))
                     .setCancelable(false)
                     .setOnDismissListener(dialog -> waitForUser.countDown())
                     .setPositiveButton(R.string.replace, (dialog, which) -> keepBoth.set(false))
