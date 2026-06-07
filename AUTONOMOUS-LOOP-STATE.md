@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 151 source-audit closure for app-list CSV nullable
-  fields.
+- Result: completed Cycle 152 source-audit closure for the structured export
+  escaping utility.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  app-list CSV nullable-field hardening and its verification target.
-- Code: App-list CSV export now writes empty fields for absent labels, version
-  names, signatures, installer fields, and source paths instead of literal
-  `null` placeholders while preserving formula hardening on the same row path.
+  shared export text utility and its verification target.
+- Code: Operation-history, logcat, and app-list package exporters now share one
+  utility for CSV formula defusing and quote escaping, and app-list Markdown
+  escaping now uses the same export text utility.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.list.ListExporterTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.list.ListExporterTest --tests io.github.muntashirakon.AppManager.history.ops.OperationHistoryExporterTest --tests io.github.muntashirakon.AppManager.logcat.LogcatStructuredExporterTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -26,11 +26,11 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  structured-export edge, starting with duplicated CSV formula/Markdown escaping
-  helpers across `OperationHistoryExporter`, `LogcatStructuredExporter`, and
-  app-list `ListExporter`.
-- Check whether the repeated escape rules can be centralized in a small
-  host-tested utility without changing existing export output.
+  structured-export edge, starting with app-list JSON/XML/Markdown/CSV parity
+  and any remaining `CreateDocument` export helpers.
+- Check whether any remaining export surfaces still leak nullable placeholders,
+  unescaped control text, or spreadsheet-formula entry points that can be pinned
+  with focused host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Structured export escaping utility (source audit, 2026-06-07)
+
+- Structured CSV export formula escaping is now centralized in one shared helper
+  used by operation history, logcat, and app-list package exports.
+- App-list Markdown escaping now uses the same export text utility, with
+  focused tests pinning formula defusing, quote escaping, and Markdown control
+  text handling.
+
 ### Fixed - App list CSV nullable fields (source audit, 2026-06-07)
 
 - App-list CSV export now writes empty fields for absent app labels, version
