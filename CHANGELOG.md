@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile share metadata hardening (source audit, 2026-06-07)
+
+- Profile JSON share subjects, shared titles, and export filename suggestions
+  now normalize profile names before handing them to share targets or document
+  providers.
+- Profile JSON bodies remain import-compatible while metadata fields flatten
+  control characters, defuse spreadsheet-formula prefixes, and reuse the
+  existing profile filename sanitizer.
+
 ### Fixed - Scanner missing-signature report hardening (source audit, 2026-06-07)
 
 - Scanner missing-signature reports now format selected signatures one per line
