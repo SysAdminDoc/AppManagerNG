@@ -83,6 +83,11 @@ public final class FmUtils {
         return getDisplayName(file.getName(), file.getPath());
     }
 
+    @NonNull
+    static String getArchiveEntryDisplayName(@NonNull String entryName) {
+        return getDisplayName(entryName, "");
+    }
+
     @SuppressWarnings("OctalInteger")
     @NonNull
     public static String getFormattedMode(int mode) {
