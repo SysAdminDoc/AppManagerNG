@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 214 source-audit closure for archive error message
-  report hardening.
+- Result: completed Cycle 215 source-audit closure for file-manager folder
+  error-title hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  archive error message report hardening and its verification target.
-- Code: Archive create/extract error dialogs now normalize localized throwable
-  messages before rendering them, preserving report line breaks while
-  normalizing tabs and carriage returns, defusing formula-style line starts, and
-  hiding empty messages.
+  file-manager folder error-title hardening and its verification target.
+- Code: File-manager folder error empty-state titles now format throwable
+  messages before rendering them, flatten controls, defuse formula-style
+  prefixes, and keep the existing generic error fallback for blank messages.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

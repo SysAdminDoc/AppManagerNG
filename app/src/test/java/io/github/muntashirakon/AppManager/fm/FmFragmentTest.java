@@ -49,4 +49,15 @@ public class FmFragmentTest {
     public void formatArchiveErrorMessageAllowsEmptyMessages() {
         assertEquals("", FmFragment.formatArchiveErrorMessage(new IOException()));
     }
+
+    @Test
+    public void getFolderErrorDisplayTitleFormatsThrowableMessage() {
+        assertEquals("' =payload title",
+                FmFragment.getFolderErrorDisplayTitle(new IOException("\t=payload\ntitle"), "Error").toString());
+    }
+
+    @Test
+    public void getFolderErrorDisplayTitleFallsBackForBlankMessage() {
+        assertEquals("Error", FmFragment.getFolderErrorDisplayTitle(new IOException("\r\n\t"), "Error").toString());
+    }
 }
