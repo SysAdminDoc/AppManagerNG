@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
@@ -30,6 +31,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
@@ -272,16 +274,32 @@ public class ProviderQueryDialogFragment extends DialogFragment {
             UIUtils.displayLongToast(R.string.provider_query_no_results_to_export);
             return;
         }
-        Intent sendIntent = new Intent(Intent.ACTION_SEND)
-                .setType("text/tab-separated-values")
-                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.provider_query_export_subject, packageName,
-                        providerName))
-                .putExtra(Intent.EXTRA_TEXT, ProviderQueryUtils.toTsv(result));
+        String subject = getString(R.string.provider_query_export_subject,
+                formatExportSubjectPart(packageName, "package"),
+                formatExportSubjectPart(providerName, "provider"));
+        Intent sendIntent = buildExportShareIntent(result, subject);
         try {
             startActivity(Intent.createChooser(sendIntent, getString(R.string.provider_query_export_results)));
         } catch (Throwable throwable) {
             UIUtils.displayLongToast(getString(R.string.provider_query_export_failed, getErrorMessage(throwable)));
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildExportShareIntent(@NonNull ProviderQueryUtils.QueryResult result,
+                                         @NonNull CharSequence subject) {
+        return new Intent(Intent.ACTION_SEND)
+                .setType("text/tab-separated-values")
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_TEXT, ProviderQueryUtils.toTsv(result));
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatExportSubjectPart(@Nullable String value, @NonNull String fallback) {
+        String formatted = ExportTextUtils.escapeTsvField(value).trim();
+        return formatted.isEmpty() ? fallback : formatted;
     }
 
     private void updateUriPreview(@NonNull TextView summaryView, @NonNull TextInputEditText authorityInput,
