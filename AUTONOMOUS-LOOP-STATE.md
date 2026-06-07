@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 201 source-audit closure for one-click duplicate APK
-  review display-name hardening.
+- Result: completed Cycle 202 source-audit closure for file properties
+  display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  one-click duplicate APK review display-name hardening and its verification
-  target.
-- Code: One-click duplicate-APK review rows now format both drop and keeper APK
-  filenames before rendering them in the selection dialog, while duplicate-APK
-  deletion still uses the original file candidates.
+  file properties display-name hardening and its verification target.
+- Code: File properties now format the visible filename before rendering it in
+  the properties sheet header, and content-type labels now format the detected
+  type name and MIME label before display.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
