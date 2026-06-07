@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File drawer display-name hardening (source audit, 2026-06-07)
+
+- File-manager drawer favorite and location labels now format saved names before
+  rendering them in the drawer.
+- Drawer removal confirmation titles now use the same sanitized display name
+  while rename/edit flows continue to use the stored favorite name.
+
 ### Fixed - File properties display-name hardening (source audit, 2026-06-07)
 
 - File properties now format the visible filename before rendering it in the

@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 202 source-audit closure for file properties
-  display-name hardening.
+- Result: completed Cycle 203 source-audit closure for file drawer display-name
+  hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file properties display-name hardening and its verification target.
-- Code: File properties now format the visible filename before rendering it in
-  the properties sheet header, and content-type labels now format the detected
-  type name and MIME label before display.
+  file drawer display-name hardening and its verification target.
+- Code: File-manager drawer favorite and location labels now format saved names
+  before rendering them in the drawer, and drawer removal confirmation titles
+  now use the same sanitized display name while rename/edit flows continue to
+  use the stored favorite name.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmActivityOptionsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

@@ -27,6 +27,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.appcompat.widget.AppCompatTextView;
@@ -416,7 +417,7 @@ public class FmActivity extends BaseActivity {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             FmDrawerItem item = mAdapterItems.get(position);
-            holder.labelView.setText(item.name);
+            holder.labelView.setText(getDrawerDisplayName(item));
             if (item.type == FmDrawerItem.ITEM_TYPE_LABEL) {
                 getLabelView(holder, item);
             } else {
@@ -475,7 +476,7 @@ public class FmActivity extends BaseActivity {
                 if (removable) {
                     menu.add(R.string.item_remove).setOnMenuItemClickListener(menuItem -> {
                         new MaterialAlertDialogBuilder(mFmActivity)
-                                .setTitle(context.getString(R.string.remove_filename, item.name))
+                                .setTitle(context.getString(R.string.remove_filename, getDrawerDisplayName(item)))
                                 .setMessage(R.string.are_you_sure)
                                 .setNegativeButton(R.string.no, null)
                                 .setPositiveButton(R.string.yes, (dialog, which) -> {
@@ -527,6 +528,13 @@ public class FmActivity extends BaseActivity {
         @Override
         public int getItemViewType(int position) {
             return mAdapterItems.get(position).type;
+        }
+
+        @VisibleForTesting
+        @NonNull
+        static String getDrawerDisplayName(@NonNull FmDrawerItem item) {
+            String fallback = item.options != null ? FmUtils.getDisplayablePath(item.options.uri) : "";
+            return FmUtils.getDisplayName(item.name, fallback);
         }
 
         public static class ViewHolder extends RecyclerView.ViewHolder {
