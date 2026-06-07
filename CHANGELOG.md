@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch AppOps option parsing (source audit, 2026-06-06)
+
+- Batch AppOps options now reject empty AppOps arrays, invalid operation IDs,
+  wildcard operations mixed with concrete operations, and unsupported AppOps
+  modes before batch execution or recovery can apply them.
+- Constructor, parcel, and JSON restoration paths now share the same AppOps
+  option validation.
+
 ### Fixed - Batch queue operation parsing (source audit, 2026-06-06)
 
 - Persisted batch queue JSON now rejects the no-op sentinel and unknown
