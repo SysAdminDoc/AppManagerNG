@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 190 source-audit closure for code editor external
+- Result: completed Cycle 191 source-audit closure for hex viewer external
   metadata hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  code editor external metadata hardening and its verification target.
-- Code: code editor external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now
-  pass through a tested formatter before reaching toolbar or fragment labels,
-  flattening tab/newline controls, defusing spreadsheet-style prefixes, and
-  falling back to safe defaults when blank.
+  hex viewer external metadata hardening and its verification target.
+- Code: hex viewer external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now
+  pass through a tested formatter before reaching toolbar labels, flattening
+  tab/newline controls, defusing spreadsheet-style prefixes, and falling back
+  to safe defaults when blank.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.editor.CodeEditorActivityTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.hex.HexViewerActivityTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
