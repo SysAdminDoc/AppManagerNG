@@ -61,4 +61,12 @@ public class SaveLogHelperTest {
         assertTrue(SaveLogHelper.isInvalidFilename("event\\log.am.log"));
         assertTrue(SaveLogHelper.isInvalidFilename("event:log.am.log"));
     }
+
+    @Test
+    public void formatDisplayFilenameFlattensControlsDefusesFormulaAndFallsBack() {
+        assertEquals("' =event log.am.log",
+                SaveLogHelper.formatDisplayFilename("\t=event\nlog.am.log"));
+        assertEquals(SaveLogHelper.LOG_FILENAME, SaveLogHelper.formatDisplayFilename("\r\n\t"));
+        assertEquals(SaveLogHelper.LOG_FILENAME, SaveLogHelper.formatDisplayFilename(null));
+    }
 }
