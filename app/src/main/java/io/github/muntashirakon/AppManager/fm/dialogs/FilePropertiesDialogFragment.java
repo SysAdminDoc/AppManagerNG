@@ -254,11 +254,11 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             mNameView.setText(formatPropertyDisplayName(fileProperties.name, fileProperties.readablePath));
         }
         if (noInit || !Objects.equals(mFileProperties.readablePath, fileProperties.readablePath)) {
-            mPathView.setText(fileProperties.readablePath);
+            mPathView.setText(formatPropertyDisplayPath(fileProperties.readablePath));
         }
         if (noInit || !Objects.equals(mFileProperties.targetPath, fileProperties.targetPath)) {
             if (fileProperties.targetPath != null) {
-                mTargetPathView.setText(fileProperties.targetPath);
+                mTargetPathView.setText(formatPropertyDisplayPath(fileProperties.targetPath));
             } else {
                 mTargetPathLayout.setVisibility(View.GONE);
             }
@@ -322,6 +322,12 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
     @NonNull
     static String formatPropertyDisplayName(@Nullable String name, @Nullable String fallback) {
         return FmUtils.getDisplayName(name, fallback);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatPropertyDisplayPath(@Nullable String path) {
+        return FmUtils.getDisplayName(path, "");
     }
 
     private void updateSummary(@NonNull FileProperties fileProperties) {

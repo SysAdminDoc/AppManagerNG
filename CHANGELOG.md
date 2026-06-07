@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File properties path display-name hardening (source audit, 2026-06-07)
+
+- File properties now format readable path and symlink target path fields before
+  rendering them in the properties sheet.
+- File properties still preserve the original readable and target path values
+  for file operations and property loading.
+
 ### Fixed - File breadcrumb display-name hardening (source audit, 2026-06-07)
 
 - File-manager breadcrumb labels and content descriptions now format URI path
