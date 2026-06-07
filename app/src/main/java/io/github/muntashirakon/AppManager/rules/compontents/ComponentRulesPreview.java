@@ -8,6 +8,7 @@ import java.util.Collection;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 
 public final class ComponentRulesPreview {
     private ComponentRulesPreview() {
@@ -66,6 +67,16 @@ public final class ComponentRulesPreview {
                 + wrapIfPresent(ComponentUtils.TAG_SERVICE, services)
                 + wrapIfPresent(ComponentUtils.TAG_BROADCAST, receivers)
                 + "</rules>";
+    }
+
+    @NonNull
+    public static String formatIfwClipboardLabel(@NonNull String packageName) {
+        return ExportTextUtils.escapeTsvField(packageName + " IFW XML");
+    }
+
+    @NonNull
+    public static String formatIfwXmlForClipboard(@NonNull String ifwXml) {
+        return ExportTextUtils.toPlainTextReport(ifwXml);
     }
 
     @NonNull
