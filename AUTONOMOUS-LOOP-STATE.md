@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 105 source-audit closure for backup metadata user-id
+- Result: completed Cycle 106 source-audit closure for backup metadata timestamp
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata user-id hardening and its verification target.
-- Code: backup metadata loading now rejects negative persisted `user_handle`
-  values before they can reach restore or backup-list state, and reports them
-  through the same `IOException` backup read boundary.
+  backup metadata timestamp hardening and its verification target.
+- Code: backup metadata loading now rejects negative persisted `backup_time`
+  values before they can be displayed, sorted, or written into backup-list
+  state, while preserving timestamp `0` as the existing legacy/unknown sentinel.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

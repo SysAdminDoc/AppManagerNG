@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata timestamps (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects negative persisted `backup_time` values
+  before they can be displayed, sorted, or written into backup-list state.
+- Unknown or legacy timestamp `0` values remain accepted for existing retention
+  and cleanup behavior.
+
 ### Fixed - Backup metadata user IDs (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects negative persisted `user_handle` values
