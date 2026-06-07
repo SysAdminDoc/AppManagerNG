@@ -212,6 +212,16 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readMetadataRejectsInvalidInstallerName() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("66666666-6666-6666-6666-666666666666",
+                "com.example", 1L, "[]", "base.apk", "[]", "\"com..installer\"");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -272,6 +282,13 @@ public class BackupItemsTest {
     private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, long versionCode,
                                                         String dataDirs, String apkName, String splitConfigs)
             throws IOException {
+        return createMetadataBackup(backupUuid, packageName, versionCode, dataDirs, apkName, splitConfigs, "null");
+    }
+
+    private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, long versionCode,
+                                                        String dataDirs, String apkName, String splitConfigs,
+                                                        String installerJson)
+            throws IOException {
         BackupItems.BackupItem backupItem = createInfoBackup(backupUuid, CryptoUtils.MODE_NO_ENCRYPTION, "");
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
@@ -292,7 +309,7 @@ public class BackupItemsTest {
                 + "\"apk_name\":\"" + apkName + "\","
                 + "\"instruction_set\":\"arm64\","
                 + "\"key_store\":false,"
-                + "\"installer\":null,"
+                + "\"installer\":" + installerJson + ","
                 + "\"default_roles\":[]"
                 + "}");
         return backupItem;

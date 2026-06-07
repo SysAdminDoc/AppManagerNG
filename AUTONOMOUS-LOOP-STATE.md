@@ -8,13 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 112 source-audit closure for backup metadata
-  data-directory hardening.
+- Result: completed Cycle 113 source-audit closure for backup metadata
+  installer-package hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup metadata data-directory hardening and its verification target.
-- Code: backup metadata loading now rejects empty persisted `data_dirs` entries
-  before restore iteration can dereference or fall through to an invalid data
-  path, while empty arrays remain accepted for APK-only backups.
+  backup metadata installer-package hardening and its verification target.
+- Code: backup metadata loading now rejects malformed persisted `installer`
+  package names before restore uses them as installer-session metadata, while
+  missing or null installer metadata still falls back to the AppManagerNG
+  installer identity.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
