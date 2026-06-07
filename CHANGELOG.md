@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history text report hardening (source audit, 2026-06-07)
+
+- Operation-history plain-text share reports and per-row clipboard copies now
+  pass through a line-aware report sanitizer before leaving the app.
+- The sanitizer preserves report line breaks while replacing tab/carriage-return
+  column controls and defusing spreadsheet-formula prefixes at the start of each
+  line; operation-history clipboard labels are normalized through the same text
+  export helper.
+
 ### Fixed - Profile clipboard label hardening (source audit, 2026-06-07)
 
 - Profile ID copy actions now normalize profile-name clipboard labels before
