@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Archive progress display-name hardening (source audit, 2026-06-07)
+
+- Archive creation and extraction progress dialogs now format displayed item
+  labels before rendering them.
+- Archive progress updates still use the original path or ZIP entry names for
+  archive creation, extraction, reloads, and output-file decisions.
+
 ### Fixed - Archive extract conflict display-name hardening (source audit, 2026-06-07)
 
 - Archive extraction conflict dialogs now format ZIP entry names before

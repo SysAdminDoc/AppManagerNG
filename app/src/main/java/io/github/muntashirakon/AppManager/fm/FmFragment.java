@@ -1704,7 +1704,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             TextView label = labelRef.get();
             TextView counter = counterRef.get();
             if (label != null) {
-                label.setText(labelText);
+                label.setText(FmUtils.getArchiveEntryDisplayName(labelText));
             }
             if (counter != null) {
                 counter.setText(String.format(Locale.getDefault(), "%d/%d", done, total));
