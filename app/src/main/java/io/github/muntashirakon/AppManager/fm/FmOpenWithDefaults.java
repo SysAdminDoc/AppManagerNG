@@ -36,9 +36,19 @@ public final class FmOpenWithDefaults {
             flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
         }
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(FmProvider.getContentUri(path), customType != null ? customType : path.getType());
+        intent.setDataAndType(FmProvider.getContentUri(path), resolveViewMimeType(path, customType));
         intent.setFlags(flags);
         return intent;
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String resolveViewMimeType(@NonNull Path path, @Nullable String customType) {
+        String normalizedCustomType = FmMimeUtils.normalizeMimeType(customType);
+        if (normalizedCustomType != null) {
+            return normalizedCustomType;
+        }
+        return FmMimeUtils.normalizeMimeTypeOrDefault(path.getType());
     }
 
     @Nullable
