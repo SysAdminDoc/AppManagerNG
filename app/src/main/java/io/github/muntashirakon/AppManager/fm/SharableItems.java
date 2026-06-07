@@ -8,12 +8,10 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import io.github.muntashirakon.io.Path;
 
@@ -30,7 +28,7 @@ public class SharableItems {
             throw new IllegalArgumentException("pathList cannot be empty");
         }
         this.pathList = Collections.unmodifiableList(new ArrayList<>(pathList));
-        this.mimeType = normalizeMimeTypeOrDefault(mimeType);
+        this.mimeType = FmMimeUtils.normalizeMimeTypeOrDefault(mimeType);
     }
 
     public Intent toSharableIntent() {
@@ -70,7 +68,7 @@ public class SharableItems {
         for (Path path : pathList) {
             String thisMime = resolveMimeType(path);
             if (splitMime) {
-                thisMime = getMimeMajorType(thisMime);
+                thisMime = FmMimeUtils.getMimeMajorType(thisMime);
             }
             if (mimeType == null) {
                 mimeType = thisMime;
@@ -79,8 +77,8 @@ public class SharableItems {
                     // The first part aren't consistent
                     return "*/*";
                 }
-                String splitMimeType = getMimeMajorType(mimeType);
-                String thisSplitMime = getMimeMajorType(thisMime);
+                String splitMimeType = FmMimeUtils.getMimeMajorType(mimeType);
+                String thisSplitMime = FmMimeUtils.getMimeMajorType(thisMime);
                 if (!splitMimeType.equals(thisSplitMime)) {
                     // The first part aren't consistent
                     return "*/*";
@@ -97,39 +95,10 @@ public class SharableItems {
 
     @NonNull
     private static String resolveMimeType(@NonNull Path path) {
-        String mimeType = normalizeMimeType(path.getPathContentInfo().getMimeType());
+        String mimeType = FmMimeUtils.normalizeMimeType(path.getPathContentInfo().getMimeType());
         if (mimeType == null) {
-            mimeType = normalizeMimeType(path.getType());
+            mimeType = FmMimeUtils.normalizeMimeType(path.getType());
         }
         return mimeType != null ? mimeType : ContentType2.OTHER.getMimeType();
-    }
-
-    @NonNull
-    @VisibleForTesting
-    static String normalizeMimeTypeOrDefault(@Nullable String mimeType) {
-        String normalized = normalizeMimeType(mimeType);
-        return normalized != null ? normalized : ContentType2.OTHER.getMimeType();
-    }
-
-    @Nullable
-    private static String normalizeMimeType(@Nullable String mimeType) {
-        if (mimeType == null) {
-            return null;
-        }
-        String normalized = mimeType.trim();
-        int parameterStart = normalized.indexOf(';');
-        if (parameterStart >= 0) {
-            normalized = normalized.substring(0, parameterStart).trim();
-        }
-        int slash = normalized.indexOf('/');
-        if (slash <= 0 || slash != normalized.lastIndexOf('/') || slash == normalized.length() - 1) {
-            return null;
-        }
-        return normalized.toLowerCase(Locale.ROOT);
-    }
-
-    @NonNull
-    private static String getMimeMajorType(@NonNull String mimeType) {
-        return mimeType.substring(0, mimeType.indexOf('/'));
     }
 }
