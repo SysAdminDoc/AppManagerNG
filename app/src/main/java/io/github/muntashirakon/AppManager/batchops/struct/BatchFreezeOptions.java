@@ -20,7 +20,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
     private boolean mPreferCustom;
 
     public BatchFreezeOptions(@FreezeUtils.FreezeMethod int type, boolean preferCustom) {
-        mType = type;
+        mType = requireValidType(type);
         mPreferCustom = preferCustom;
     }
 
@@ -39,8 +39,12 @@ public class BatchFreezeOptions implements IBatchOpOptions {
 
     protected BatchFreezeOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mType = jsonObject.getInt("type");
-        mPreferCustom = jsonObject.getBoolean("prefer_custom");
+        try {
+            mType = requireValidType(jsonObject.getInt("type"));
+            mPreferCustom = jsonObject.getBoolean("prefer_custom");
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
 
@@ -48,7 +52,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
             = BatchFreezeOptions::new;
 
     protected BatchFreezeOptions(@NonNull Parcel in) {
-        mType = in.readInt();
+        mType = requireValidType(in.readInt());
         mPreferCustom = in.readByte() != 0;
     }
 
@@ -80,5 +84,18 @@ public class BatchFreezeOptions implements IBatchOpOptions {
         jsonObject.put("type", mType);
         jsonObject.put("prefer_custom", mPreferCustom);
         return jsonObject;
+    }
+
+    @FreezeUtils.FreezeMethod
+    private static int requireValidType(int type) {
+        switch (type) {
+            case FreezeUtils.FREEZE_DISABLE:
+            case FreezeUtils.FREEZE_SUSPEND:
+            case FreezeUtils.FREEZE_HIDE:
+            case FreezeUtils.FREEZE_ADV_SUSPEND:
+                return type;
+            default:
+                throw new IllegalArgumentException("Invalid freeze type: " + type);
+        }
     }
 }
