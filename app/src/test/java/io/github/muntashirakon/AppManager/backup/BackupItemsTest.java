@@ -172,6 +172,26 @@ public class BackupItemsTest {
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
+    @Test
+    public void readMetadataRejectsInvalidApkName() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("22222222-2222-2222-2222-222222222222",
+                "com.example", "../base.apk", "[]");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
+    @Test
+    public void readMetadataRejectsInvalidSplitConfigName() throws IOException {
+        BackupItems.BackupItem backupItem = createMetadataBackup("33333333-3333-3333-3333-333333333333",
+                "com.example", "base.apk", "[\"split/evil.apk\"]");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
@@ -216,6 +236,11 @@ public class BackupItemsTest {
     }
 
     private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName) throws IOException {
+        return createMetadataBackup(backupUuid, packageName, "base.apk", "[]");
+    }
+
+    private BackupItems.BackupItem createMetadataBackup(String backupUuid, String packageName, String apkName,
+                                                        String splitConfigs) throws IOException {
         BackupItems.BackupItem backupItem = createInfoBackup(backupUuid, CryptoUtils.MODE_NO_ENCRYPTION, "");
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
@@ -231,9 +256,9 @@ public class BackupItemsTest {
                 + "\"data_dirs\":[],"
                 + "\"is_system\":false,"
                 + "\"is_split_apk\":false,"
-                + "\"split_configs\":[],"
+                + "\"split_configs\":" + splitConfigs + ","
                 + "\"has_rules\":false,"
-                + "\"apk_name\":\"base.apk\","
+                + "\"apk_name\":\"" + apkName + "\","
                 + "\"instruction_set\":\"arm64\","
                 + "\"key_store\":false,"
                 + "\"installer\":null,"

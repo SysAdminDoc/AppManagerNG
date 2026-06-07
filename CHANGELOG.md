@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata APK filenames (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects unsafe persisted `apk_name` and
+  `split_configs` filenames before restore creates package-staging files from
+  them.
+- Base and split APK metadata must remain simple sanitized filenames matching
+  the values generated during backup creation.
+
 ### Fixed - Backup metadata package names (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects malformed persisted `package_name` values
