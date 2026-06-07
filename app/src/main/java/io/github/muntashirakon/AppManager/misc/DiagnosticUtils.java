@@ -7,6 +7,7 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
@@ -14,7 +15,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -60,8 +63,8 @@ public class DiagnosticUtils {
     private static void writeDeviceInfo(@NonNull Context context, @NonNull ZipOutputStream zos)
             throws IOException {
         zos.putNextEntry(new ZipEntry("device_info.txt"));
-        PrintWriter writer = new PrintWriter(zos);
-        writer.println(new DeviceInfo(context));
+        PrintWriter writer = newZipEntryWriter(zos);
+        writer.println(formatDeviceInfoForReport(new DeviceInfo(context).toString()));
         writer.flush();
         zos.closeEntry();
     }
@@ -88,7 +91,7 @@ public class DiagnosticUtils {
                     sb.append(line).append('\n');
                 }
             }
-            PrintWriter writer = new PrintWriter(zos);
+            PrintWriter writer = newZipEntryWriter(zos);
             writer.print(SupportInfoBundle.scrubForPublicIssue(sb.toString()));
             writer.flush();
             zos.closeEntry();
@@ -114,7 +117,7 @@ public class DiagnosticUtils {
                     if (count < MAX_LOGCAT_LINES) count++;
                 }
             }
-            PrintWriter writer = new PrintWriter(zos);
+            PrintWriter writer = newZipEntryWriter(zos);
             int start = (count == MAX_LOGCAT_LINES) ? head : 0;
             for (int i = 0; i < count; i++) {
                 // Scrub each line: see writeCrashLogs — the report is shared externally.
@@ -125,5 +128,16 @@ public class DiagnosticUtils {
         } finally {
             if (process != null) process.destroy();
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatDeviceInfoForReport(@NonNull String deviceInfo) {
+        return SupportInfoBundle.scrubForPublicIssue(deviceInfo);
+    }
+
+    @NonNull
+    private static PrintWriter newZipEntryWriter(@NonNull ZipOutputStream zos) {
+        return new PrintWriter(new OutputStreamWriter(zos, StandardCharsets.UTF_8));
     }
 }
