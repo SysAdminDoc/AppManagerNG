@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+
 /**
  * Active KernelSU diagnostics for the Settings -> Privileges health surface.
  */
@@ -274,6 +276,12 @@ public final class KernelSuDiagnostics {
             default:
                 return rawMode.trim();
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public static String sanitizeReportText(@Nullable String reportText) {
+        return ExportTextUtils.toPlainTextReport(reportText);
     }
 
     @Nullable
