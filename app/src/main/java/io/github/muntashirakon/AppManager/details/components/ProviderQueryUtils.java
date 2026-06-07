@@ -19,6 +19,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+
 public final class ProviderQueryUtils {
     public static final int DEFAULT_ROW_LIMIT = 500;
     public static final int ROW_LIMIT_STEP = 500;
@@ -255,7 +257,7 @@ public final class ProviderQueryUtils {
             if (i > 0) {
                 builder.append('\t');
             }
-            builder.append(escapeTsvCell(values[i]));
+            builder.append(ExportTextUtils.escapeTsvField(values[i]));
         }
         builder.append('\n');
     }
@@ -265,14 +267,9 @@ public final class ProviderQueryUtils {
             if (i > 0) {
                 builder.append('\t');
             }
-            builder.append(escapeTsvCell(values.get(i)));
+            builder.append(ExportTextUtils.escapeTsvField(values.get(i)));
         }
         builder.append('\n');
-    }
-
-    @NonNull
-    private static String escapeTsvCell(@Nullable String value) {
-        return value == null ? "" : value.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ');
     }
 
     public static final class QueryParameter {
