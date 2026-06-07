@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 192 source-audit closure for batch installer URI
-  list hardening.
+- Result: completed Cycle 193 source-audit closure for saved log subtitle
+  metadata hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  batch installer URI list hardening and its verification target.
-- Code: batch APK installer multi-stream intents now snapshot caller-supplied
-  URI lists before setting `EXTRA_STREAM` and `ClipData`, and reject null
-  stream entries before launching the installer flow.
+  saved log subtitle metadata hardening and its verification target.
+- Code: saved log viewer subtitles now format the external URI last path segment
+  before showing it in the action bar, flattening tab/newline controls and
+  defusing spreadsheet-style prefixes while allowing blank subtitles.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivityTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.SavedLogViewerFragmentTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
