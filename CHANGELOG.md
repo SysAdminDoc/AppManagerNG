@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat clipboard text hardening (source audit, 2026-06-07)
+
+- Live, saved, and per-row logcat copy actions now sanitize copied log text
+  before writing it to the clipboard.
+- Copied logcat text now preserves selected-line boundaries while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Component rules IFW clipboard hardening (source audit, 2026-06-07)
 
 - Component-rules IFW XML copy actions now sanitize clipboard labels and copied
