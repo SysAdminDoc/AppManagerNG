@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 212 source-audit closure for file search display-name
-  hardening.
+- Result: completed Cycle 213 source-audit closure for file-manager
+  error-details report hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file search display-name hardening and its verification target.
-- Code: File-manager active search chips and empty-search messages now format
-  the displayed query before rendering it, while file search execution, stored
-  query state, and clear-search behavior still use the original query string.
+  file-manager error-details report hardening and its verification target.
+- Code: File-manager empty-state error details now preserve short stack-report
+  lines while normalizing tabs and carriage returns before rendering them, and
+  formula-style line starts introduced by exception messages are defused without
+  changing refresh or error-summary behavior.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmFragmentTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
