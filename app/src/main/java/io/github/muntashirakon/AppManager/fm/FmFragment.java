@@ -82,6 +82,7 @@ import io.github.muntashirakon.AppManager.oneclickops.ApkDuplicateSelector;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -991,7 +992,13 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             mEmptyViewDetails.setVisibility(View.GONE);
             return;
         }
-        // Only log the first three lines
+        mEmptyViewDetails.setVisibility(View.VISIBLE);
+        mEmptyViewDetails.setText(formatEmptyViewDetails(th));
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatEmptyViewDetails(@NonNull Throwable th) {
         StackTraceElement[] arr = th.getStackTrace();
         StringBuilder report = new StringBuilder(th + "\n");
         int i = 0;
@@ -1011,8 +1018,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                 ++i;
             }
         }
-        mEmptyViewDetails.setVisibility(View.VISIBLE);
-        mEmptyViewDetails.setText(report);
+        return ExportTextUtils.toPlainTextReport(report.toString());
     }
 
     private void createNewFolder(String name) {
