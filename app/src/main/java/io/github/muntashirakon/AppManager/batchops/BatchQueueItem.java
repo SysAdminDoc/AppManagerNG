@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.os.ParcelCompat;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,6 +28,7 @@ import io.github.muntashirakon.AppManager.history.JsonDeserializer;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.util.ParcelUtils;
 
 public class BatchQueueItem implements Parcelable, IJsonSerializer {
@@ -107,7 +109,7 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
                 mUsers.add(userId);
             }
         } else {
-            assert mPackages.size() == mUsers.size();
+            sanitizeTargets(mPackages, mUsers);
         }
         return mUsers;
     }
@@ -149,8 +151,9 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
     protected BatchQueueItem(@NonNull JSONObject jsonObject) throws JSONException {
         mTitleRes = jsonObject.getInt("title_res");
         mOp = jsonObject.getInt("op");
-        mPackages = JSONUtils.getArray(jsonObject.getJSONArray("packages"));
-        mUsers = JSONUtils.getArray(jsonObject.getJSONArray("users"));
+        mPackages = new ArrayList<>();
+        mUsers = new ArrayList<>();
+        deserializeTargets(jsonObject.getJSONArray("packages"), jsonObject.getJSONArray("users"), mPackages, mUsers);
         JSONObject options = jsonObject.optJSONObject("options");
         mOptions = options != null ? IBatchOpOptions.DESERIALIZER.deserialize(options) : null;
     }
@@ -173,6 +176,57 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
         mPackages = Objects.requireNonNull(in.createStringArrayList());
         mUsers = ParcelUtils.readArrayList(in, Integer.class.getClassLoader());
         mOptions = ParcelCompat.readParcelable(in, IBatchOpOptions.class.getClassLoader(), IBatchOpOptions.class);
+    }
+
+    private static void deserializeTargets(@NonNull JSONArray packagesJson,
+                                           @NonNull JSONArray usersJson,
+                                           @NonNull ArrayList<String> packages,
+                                           @NonNull ArrayList<Integer> users) {
+        int count = Math.min(packagesJson.length(), usersJson.length());
+        for (int i = 0; i < count; ++i) {
+            Object packageValue = packagesJson.opt(i);
+            Object userValue = usersJson.opt(i);
+            if (!(packageValue instanceof String)
+                    || !(userValue instanceof Integer || userValue instanceof Long)) {
+                continue;
+            }
+            String packageName = (String) packageValue;
+            long userId = ((Number) userValue).longValue();
+            if (userId > Integer.MAX_VALUE || !isValidTarget(packageName, userId)) {
+                continue;
+            }
+            packages.add(packageName);
+            users.add((int) userId);
+        }
+    }
+
+    private static void sanitizeTargets(@NonNull ArrayList<String> packages,
+                                        @Nullable ArrayList<Integer> users) {
+        if (users == null) {
+            return;
+        }
+        int count = Math.min(packages.size(), users.size());
+        int writeIndex = 0;
+        for (int i = 0; i < count; ++i) {
+            String packageName = packages.get(i);
+            Integer userId = users.get(i);
+            if (packageName == null || userId == null || !isValidTarget(packageName, userId)) {
+                continue;
+            }
+            packages.set(writeIndex, packageName);
+            users.set(writeIndex, userId);
+            ++writeIndex;
+        }
+        while (packages.size() > writeIndex) {
+            packages.remove(packages.size() - 1);
+        }
+        while (users.size() > writeIndex) {
+            users.remove(users.size() - 1);
+        }
+    }
+
+    private static boolean isValidTarget(@NonNull String packageName, long userId) {
+        return userId >= 0 && PackageUtils.validateName(packageName);
     }
 
     public static final JsonDeserializer.Creator<BatchQueueItem> DESERIALIZER = BatchQueueItem::new;

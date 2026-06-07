@@ -8,6 +8,8 @@ import static org.junit.Assert.assertNull;
 
 import android.content.Context;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -118,6 +120,49 @@ public class BatchOpsJournalTest {
         assertEquals(1, entry.getRetryTargetCount());
         BatchQueueItem retryQueue = entry.getRetryQueueItem();
         assertEquals("com.example.two", retryQueue.getPackages().get(0));
+    }
+
+    @Test
+    public void queueJsonDropsMalformedTargetsAndMismatchedUsers() throws Exception {
+        BatchQueueItem queueItem = createQueueItem();
+        JSONObject jsonObject = queueItem.serializeToJson();
+        jsonObject.put("packages", new JSONArray()
+                .put("bad package")
+                .put("com.example.one")
+                .put("com.example.two")
+                .put(7)
+                .put("com.example.extra"));
+        jsonObject.put("users", new JSONArray()
+                .put(0)
+                .put(-1)
+                .put(10)
+                .put(0));
+
+        BatchQueueItem restored = BatchQueueItem.DESERIALIZER.deserialize(jsonObject);
+
+        assertEquals(1, restored.getPackages().size());
+        assertEquals("com.example.two", restored.getPackages().get(0));
+        assertEquals(1, restored.getUsers().size());
+        assertEquals(Integer.valueOf(10), restored.getUsers().get(0));
+    }
+
+    @Test
+    public void getUsersRepairsMismatchedTargets() {
+        BatchQueueItem queueItem = createQueueItem();
+        ArrayList<String> packages = new ArrayList<>();
+        packages.add("com.example.one");
+        packages.add("bad package");
+        packages.add("com.example.extra");
+        ArrayList<Integer> users = new ArrayList<>();
+        users.add(10);
+        users.add(0);
+        queueItem.setPackages(packages);
+        queueItem.setUsers(users);
+
+        assertEquals(1, queueItem.getUsers().size());
+        assertEquals(1, queueItem.getPackages().size());
+        assertEquals("com.example.one", queueItem.getPackages().get(0));
+        assertEquals(Integer.valueOf(10), queueItem.getUsers().get(0));
     }
 
     @Test
