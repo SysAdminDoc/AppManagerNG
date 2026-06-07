@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch rename dialog display-name hardening (source audit, 2026-06-07)
+
+- File-manager batch rename preview, progress, issue, and result dialogs now
+  format source and target names before rendering them.
+- Batch rename planning and execution still preserve original source names and
+  resolved target names for the underlying rename operations.
+
 ### Fixed - Archive progress display-name hardening (source audit, 2026-06-07)
 
 - Archive creation and extraction progress dialogs now format displayed item

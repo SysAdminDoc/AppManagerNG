@@ -198,6 +198,11 @@ final class FmBatchRenameUtils {
         return new BatchResult(results, ThreadUtils.isInterrupted());
     }
 
+    @NonNull
+    static String getDisplayName(@Nullable String name) {
+        return FmUtils.getDisplayName(name, "");
+    }
+
     @Nullable
     private static NameCandidate findAvailableName(@NonNull Path parent, @NonNull String prefix,
                                                    @Nullable String extension, int initialIndex,
