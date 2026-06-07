@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File properties display-name hardening (source audit, 2026-06-07)
+
+- File properties now format the visible filename before rendering it in the
+  properties sheet header.
+- File content-type labels now format the detected type name and MIME label
+  before rendering them, flattening tab/newline controls and defusing
+  spreadsheet-style prefixes.
+
 ### Fixed - One-click duplicate APK review display-name hardening (source audit, 2026-06-07)
 
 - One-click duplicate-APK review rows now format both drop and keeper APK
