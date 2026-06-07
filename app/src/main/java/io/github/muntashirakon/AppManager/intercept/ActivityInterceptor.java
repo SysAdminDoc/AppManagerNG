@@ -928,10 +928,7 @@ public class ActivityInterceptor extends BaseActivity {
 
     @NonNull
     private Intent createShareIntent() {
-        Intent share = new Intent(Intent.ACTION_SEND);
-        share.setType("text/plain");
-        share.putExtra(Intent.EXTRA_TEXT, getIntentDetailsString());
-        return share;
+        return buildIntentDetailsShareIntent(getIntentDetailsString());
     }
 
     @Nullable
@@ -978,7 +975,7 @@ public class ActivityInterceptor extends BaseActivity {
         StringBuilder result = new StringBuilder();
         // NOTE: At least 1 tab have to be present in each non-empty line. Empty lines are ignored.
         // URI <URI> (unused)
-        result.append("URI\t").append(getUri(mMutableIntent)).append("\n");
+        result.append("URI\t").append(formatIntentDetailsField(getUri(mMutableIntent))).append("\n");
         // ROOT <bool>
         if (mUseRoot) result.append("ROOT\t").append(mUseRoot).append("\n");
         // USER <id>
@@ -1029,6 +1026,18 @@ public class ActivityInterceptor extends BaseActivity {
     @NonNull
     static String formatIntentDetailsField(@Nullable CharSequence value) {
         return ExportTextUtils.escapeTsvField(value != null ? value.toString() : "");
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildIntentDetailsShareIntent(@NonNull String details) {
+        if (details.isEmpty()) {
+            throw new IllegalArgumentException("No intent details to share");
+        }
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("text/plain");
+        share.putExtra(Intent.EXTRA_TEXT, details);
+        return share;
     }
 
     public void launchIntent(@NonNull Intent intent, boolean createChooser) {
