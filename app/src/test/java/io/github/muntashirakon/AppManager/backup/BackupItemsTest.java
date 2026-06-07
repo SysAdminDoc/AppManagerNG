@@ -83,6 +83,7 @@ public class BackupItemsTest {
         assertMalformedChecksum("missing-tab.txt", "not-tab-separated\n");
         assertMalformedChecksum("empty-checksum.txt", "\tdata0.tar.gz.0\n");
         assertMalformedChecksum("empty-filename.txt", "abcd\t\n");
+        assertMalformedChecksum("duplicate-filename.txt", "abcd\tdata0.tar.gz.0\nefgh\tdata0.tar.gz.0\n");
     }
 
     private static void createFiles(Path directory, String... names) throws IOException {
