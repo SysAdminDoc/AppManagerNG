@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 174 source-audit closure for diagnostic ZIP text line
-  hardening.
+- Result: completed Cycle 175 source-audit closure for support-info bundle text
+  line hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  diagnostic ZIP text line hardening and its verification target.
-- Code: Diagnostic ZIP device-info, crash-log, and logcat text entries now pass
-  through a shared line-safe formatter after public-issue scrubbing, preserving
-  report line breaks while normalizing tab/carriage-return controls and
-  defusing spreadsheet-formula prefixes at line starts.
+  support-info bundle text line hardening and its verification target.
+- Code: Support-info bundle bodies and caller preambles now pass through a
+  shared line-safe formatter after public-issue scrubbing, preserving report
+  line breaks while normalizing tab/carriage-return controls and defusing
+  spreadsheet-formula prefixes at line starts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
