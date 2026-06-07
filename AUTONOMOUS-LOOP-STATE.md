@@ -8,16 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 154 source-audit closure for support bundle preamble
-  redaction.
+- Result: completed Cycle 155 source-audit closure for profile JSON UTF-8
+  export.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  support-info preamble redaction and its verification target.
-- Code: Support-info bundle preamble text is now scrubbed before it is written
-  ahead of the public-issue bundle body, so Mode Doctor probe output uses the
-  same package, path, email, and UID redaction path as scrubbed logcat and crash
-  summaries.
+  raw profile JSON export charset fix and its verification target.
+- Code: Raw profile JSON export now writes explicit UTF-8 bytes, and a focused
+  profile serialization test pins non-ASCII profile names and comments.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.profiles.struct.BaseProfileTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,7 +25,7 @@ Current branch: `main`
 
 - Continue this same assigned project.
 - Next roadmap target: inspect the next host-verifiable source-backed
-  structured-export edge, starting with profile JSON export/import helpers and
+  structured-export edge, starting with diagnostic ZIP device-info entries and
   any remaining `ACTION_SEND`/`CreateDocument` paths that write app- or
   provider-controlled text.
 - Check whether any remaining export surfaces still leak nullable placeholders,
