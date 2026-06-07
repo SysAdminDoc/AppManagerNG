@@ -22,11 +22,15 @@ import java.io.File;
 import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.ApkQueueItem;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverCleanupHistoryItem;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverScanner;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsViewModel;
+import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 
 @RunWith(RobolectricTestRunner.class)
 public class OpHistoryItemTest {
@@ -326,6 +330,77 @@ public class OpHistoryItemTest {
         assertTrue(OpHistoryManager.canReplayHistoryItem(item));
         assertTrue(item.isReplayable());
         assertNotNull(OpHistoryManager.getExecutableIntent(context, item));
+    }
+
+    @Test
+    public void installExistingReplayNormalizesPackageName() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 16L;
+        row.type = OpHistoryManager.HISTORY_TYPE_INSTALLER;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("package_name", " com.example.app ")
+                .put("install_existing", true)
+                .toString();
+        row.serializedExtra = createReplayableMetadata().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertTrue(OpHistoryManager.canReplayHistoryItem(item));
+        Intent intent = OpHistoryManager.getExecutableIntent(context, item);
+        ApkQueueItem queueItem = IntentCompat.getUnwrappedParcelableExtra(
+                intent, PackageInstallerService.EXTRA_QUEUE_ITEM, ApkQueueItem.class);
+        assertNotNull(queueItem);
+        assertEquals("com.example.app", queueItem.getPackageName());
+    }
+
+    @Test
+    public void validProfileReplayPayloadRemainsReplayable() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 17L;
+        row.type = OpHistoryManager.HISTORY_TYPE_PROFILE;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("profile_id", "profile-a")
+                .put("profile_type", BaseProfile.PROFILE_TYPE_APPS)
+                .put("profile_name", "Profile A")
+                .put("state", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = createReplayableMetadata().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertTrue(OpHistoryManager.canReplayHistoryItem(item));
+        assertTrue(item.isReplayable());
+        assertNotNull(OpHistoryManager.getExecutableIntent(context, item));
+    }
+
+    @Test
+    public void malformedProfileReplayPayloadIsNotReplayable() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 18L;
+        row.type = OpHistoryManager.HISTORY_TYPE_PROFILE;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("profile_id", "profile-a")
+                .put("profile_type", "0")
+                .put("profile_name", "Profile A")
+                .put("state", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = createReplayableMetadata().toString();
+
+        OpHistoryItem item = new OpHistoryItem(row);
+
+        assertFalse(OpHistoryManager.canReplayHistoryItem(item));
+        assertFalse(item.isReplayable());
+        assertTrue(item.getExecutionConfirmationMessage(context)
+                .contains(context.getString(R.string.op_preflight_not_replayable_warning)));
     }
 
     private static JSONObject createReplayableMetadata() throws Exception {

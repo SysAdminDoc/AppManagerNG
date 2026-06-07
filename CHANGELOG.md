@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history replay identity validation (source audit, 2026-06-07)
+
+- Install-existing replay now normalizes stored package names before constructing
+  package-installer queue items, preserving trim-recoverable package targets
+  while rejecting malformed values.
+- Profile replay payloads now require nonblank profile identity fields and an
+  explicit supported profile type before preflight marks the row replayable.
+
 ### Fixed - Operation history target routing (source audit, 2026-06-07)
 
 - Operation-history primary target intents and per-app rollback matching now
