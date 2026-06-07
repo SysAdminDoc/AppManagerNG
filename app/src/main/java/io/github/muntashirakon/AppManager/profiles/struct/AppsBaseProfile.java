@@ -48,9 +48,9 @@ public abstract class AppsBaseProfile extends BaseProfile {
         }
 
         public BackupInfo(@NonNull BackupInfo backupInfo) {
-            name = backupInfo.name;
-            flags = backupInfo.flags;
-            exclusionGlobs = backupInfo.exclusionGlobs != null ? backupInfo.exclusionGlobs.clone() : null;
+            name = sanitizeBackupName(backupInfo.name);
+            flags = requireBackupFlags(backupInfo.flags);
+            exclusionGlobs = sanitizeExclusionGlobs(backupInfo.exclusionGlobs);
         }
     }
 
@@ -369,9 +369,9 @@ public abstract class AppsBaseProfile extends BaseProfile {
         // Backup info
         if (backupData != null) {
             JSONObject backupInfo = new JSONObject();
-            backupInfo.put("name", backupData.name);
-            backupInfo.put("flags", backupData.flags);
-            backupInfo.put("exclusion_globs", JSONUtils.getJSONArray(backupData.exclusionGlobs));
+            backupInfo.put("name", sanitizeBackupName(backupData.name));
+            backupInfo.put("flags", requireBackupFlags(backupData.flags));
+            backupInfo.put("exclusion_globs", JSONUtils.getJSONArray(sanitizeExclusionGlobs(backupData.exclusionGlobs)));
             profileObj.put("backup_data", backupInfo);
         }
         profileObj.put("export_rules", exportRules);
@@ -412,11 +412,11 @@ public abstract class AppsBaseProfile extends BaseProfile {
         try {
             JSONObject backupInfo = profileObj.getJSONObject("backup_data");
             backupData = new AppsBaseProfile.BackupInfo();
-            backupData.name = JSONUtils.getString(backupInfo, "name", null);
-            backupData.flags = backupInfo.getInt("flags");
-            backupData.exclusionGlobs = BackupPathExclusionPatterns.sanitize(
-                    JSONUtils.getArray(String.class, backupInfo.optJSONArray("exclusion_globs")));
-        } catch (JSONException ignore) {
+            backupData.name = sanitizeBackupName(JSONUtils.getString(backupInfo, "name", null));
+            backupData.flags = requireBackupFlags(backupInfo.getInt("flags"));
+            backupData.exclusionGlobs = sanitizeExclusionGlobs(readOptionalStringArray(backupInfo, "exclusion_globs"));
+        } catch (JSONException | IllegalArgumentException ignore) {
+            backupData = null;
         }
         exportRules = JSONUtils.getIntOrNull(profileObj, "export_rules");
         // Misc
@@ -430,5 +430,56 @@ public abstract class AppsBaseProfile extends BaseProfile {
             saveApk = miscConfig.contains("save_apk");
         } catch (Exception ignore) {
         }
+    }
+
+    @Nullable
+    private static String sanitizeBackupName(@Nullable String backupName) {
+        if (backupName == null) {
+            return null;
+        }
+        backupName = backupName.trim();
+        return backupName.isEmpty() ? null : backupName;
+    }
+
+    @BackupFlags.BackupFlag
+    private static int requireBackupFlags(int flags) {
+        if (flags < 0) {
+            throw new IllegalArgumentException("Profile backup flags must not be negative: " + flags);
+        }
+        return flags;
+    }
+
+    @Nullable
+    private static String[] sanitizeExclusionGlobs(@Nullable String[] exclusionGlobs) {
+        if (exclusionGlobs == null) {
+            return null;
+        }
+        return BackupPathExclusionPatterns.sanitize(exclusionGlobs);
+    }
+
+    @Nullable
+    private static String[] readOptionalStringArray(@NonNull JSONObject jsonObject, @NonNull String key)
+            throws JSONException {
+        Object value = jsonObject.opt(key);
+        if (value == null || value == JSONObject.NULL) {
+            return null;
+        }
+        if (!(value instanceof JSONArray)) {
+            throw new JSONException("Invalid profile backup exclusion globs.");
+        }
+        JSONArray jsonArray = (JSONArray) value;
+        String[] values = new String[jsonArray.length()];
+        for (int i = 0; i < jsonArray.length(); ++i) {
+            value = jsonArray.get(i);
+            if (value == JSONObject.NULL) {
+                values[i] = null;
+                continue;
+            }
+            if (!(value instanceof String)) {
+                throw new JSONException("Invalid profile backup exclusion glob.");
+            }
+            values[i] = (String) value;
+        }
+        return values;
     }
 }
