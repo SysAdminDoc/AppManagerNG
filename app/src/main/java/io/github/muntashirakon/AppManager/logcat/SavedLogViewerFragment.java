@@ -12,6 +12,7 @@ import android.widget.Filter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.os.BundleCompat;
 
 import java.lang.ref.WeakReference;
@@ -22,6 +23,7 @@ import io.github.muntashirakon.AppManager.logcat.helper.LogcatClipboardFormatter
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
@@ -54,7 +56,7 @@ public class SavedLogViewerFragment extends AbsLogViewerFragment implements LogV
             updateEmptyState();
             return;
         }
-        mFilename = uri.getLastPathSegment();
+        mFilename = formatSubtitle(uri.getLastPathSegment());
         mViewModel.openLogsFromFile(uri, new WeakReference<>(this));
     }
 
@@ -105,6 +107,12 @@ public class SavedLogViewerFragment extends AbsLogViewerFragment implements LogV
     protected int getDefaultEmptyStateMessageRes() {
         return mLogFileUnavailable ? R.string.log_viewer_empty_saved_unavailable_message
                 : R.string.log_viewer_empty_saved_message;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatSubtitle(@Nullable String filename) {
+        return ExportTextUtils.escapeTsvField(filename).trim();
     }
 
     @Override
