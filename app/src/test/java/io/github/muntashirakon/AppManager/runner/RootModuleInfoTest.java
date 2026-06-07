@@ -87,4 +87,22 @@ public class RootModuleInfoTest {
                         + "/data/adb/modules/example/module.prop",
                 RootModuleInfo.formatForDisplay(result.modules));
     }
+
+    @Test
+    public void formatForDisplayDefusesModuleControlledReportLines() {
+        RootModuleInfo.Result result = RootModuleInfo.parseProbeOutput(Arrays.asList(
+                "__AM_MODULE__",
+                "source=magisk",
+                "path=/data/adb/modules/formula/module.prop",
+                "status=active",
+                "id=formula",
+                "name==HYPERLINK(\"http://evil/\")",
+                "version=1\t2",
+                "description=@WEBSERVICE(\"http://evil/\")"));
+
+        assertEquals("'=HYPERLINK(\"http://evil/\") 1 2 (Magisk/MMRL)\n"
+                        + "'@WEBSERVICE(\"http://evil/\")\n"
+                        + "/data/adb/modules/formula/module.prop",
+                RootModuleInfo.formatForDisplay(result.modules));
+    }
 }

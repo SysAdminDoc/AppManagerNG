@@ -13,6 +13,7 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 
 /**
  * Read-only module inventory for Magisk/MMRL-style modules and LSPosed module
@@ -216,7 +217,7 @@ public final class RootModuleInfo {
                 message.append("\n").append(module.path);
             }
         }
-        return message.toString();
+        return ExportTextUtils.toPlainTextReport(message.toString());
     }
 
     private static boolean privilegedShellAvailable() {
