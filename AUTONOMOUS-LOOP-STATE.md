@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 103 source-audit closure for backup metadata
-  parse-error wrapping.
+- Result: completed Cycle 104 source-audit closure for backup crypto mode
+  parsing hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  metadata parse-error wrapping and its verification target.
-- Code: backup metadata loading now reports malformed crypto fields as
-  `IOException` failures instead of leaking unchecked validation exceptions from
-  JSON parsing, and both info and metadata JSON read paths share that boundary.
+  backup crypto mode parsing hardening and its verification target.
+- Code: backup metadata loading now rejects unknown persisted crypto modes
+  during info parsing instead of deferring them to later restore setup paths, and
+  reports them through the same `IOException` backup read boundary.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

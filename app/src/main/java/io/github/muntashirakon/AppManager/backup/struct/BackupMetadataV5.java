@@ -191,7 +191,9 @@ public class BackupMetadataV5 implements LocalizedString {
                     }
                     break;
                 case CryptoUtils.MODE_NO_ENCRYPTION:
+                    break;
                 default:
+                    throw new IllegalArgumentException("Malformed backup: unknown crypto mode " + crypto);
             }
         }
 

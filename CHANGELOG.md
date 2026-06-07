@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup crypto mode parsing (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects unknown persisted crypto modes during
+  info parsing instead of deferring them to later restore setup paths.
+- Malformed crypto modes are reported through the same `IOException` backup
+  read boundary as other malformed metadata.
+
 ### Fixed - Backup metadata parse errors (source audit, 2026-06-06)
 
 - Backup metadata loading now reports malformed crypto fields as `IOException`
