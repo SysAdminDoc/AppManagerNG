@@ -104,7 +104,7 @@ public class ChecksumsDialogFragment extends DialogFragment {
         mTextView.setVisibility(View.GONE);
         DialogTitleBuilder titleBuilder = new DialogTitleBuilder(requireActivity())
                 .setTitle(R.string.checksums)
-                .setSubtitle(FmUtils.getDisplayName(mPath.getName(), FmUtils.getDisplayablePath(mPath)))
+                .setSubtitle(FmUtils.getPathDisplayName(mPath))
                 .setEndIcon(R.drawable.ic_content_paste, v -> {
                     String data = ClipboardUtils.readHashValueFromClipboard(v.getContext());
                     if (data != null) {

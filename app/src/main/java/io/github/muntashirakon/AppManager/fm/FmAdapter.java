@@ -79,7 +79,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         FmItem item = mAdapterList.get(position);
         holder.itemView.setTag(item.path);
-        holder.title.setText(item.getName());
+        holder.title.setText(FmUtils.getPathDisplayName(item.path));
         // Load attributes
         cacheAndLoadAttributes(holder, item);
         if (item.isDirectory) {
@@ -316,7 +316,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         });
         deleteAction.setOnMenuItemClickListener(menuItem -> {
             new MaterialAlertDialogBuilder(mFmActivity)
-                    .setTitle(mFmActivity.getString(R.string.delete_filename, item.path.getName()))
+                    .setTitle(mFmActivity.getString(R.string.delete_filename, FmUtils.getPathDisplayName(item.path)))
                     .setMessage(R.string.are_you_sure)
                     .setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.confirm_file_deletion, (dialog, which) -> {
