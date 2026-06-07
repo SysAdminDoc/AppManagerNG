@@ -33,6 +33,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.LinearLayoutCompat;
@@ -945,7 +946,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         boolean hasQuery = !TextUtils.isEmpty(query);
         mSearchFilterContainer.setVisibility(hasQuery ? View.VISIBLE : View.GONE);
         if (hasQuery) {
-            mSearchFilterChip.setText(getString(R.string.fm_search_active_filter, query));
+            mSearchFilterChip.setText(getString(R.string.fm_search_active_filter, getSearchDisplayQuery(query)));
         }
     }
 
@@ -963,10 +964,16 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
     private void handleSearchEmptyView() {
         String query = mModel.getQueryString();
         handleEmptyView(io.github.muntashirakon.ui.R.drawable.ic_search, getString(R.string.fm_search_empty_title),
-                getString(R.string.fm_search_empty_message, query), null);
+                getString(R.string.fm_search_empty_message, getSearchDisplayQuery(query)), null);
         mEmptyViewAction.setText(R.string.main_empty_action_clear_search);
         mEmptyViewAction.setIconResource(io.github.muntashirakon.ui.R.drawable.ic_clear);
         mEmptyViewAction.setOnClickListener(v -> clearSearchQuery());
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getSearchDisplayQuery(@Nullable String query) {
+        return FmUtils.getDisplayName(query, "");
     }
 
     private void handleEmptyView(@DrawableRes int icon, @Nullable CharSequence title,
