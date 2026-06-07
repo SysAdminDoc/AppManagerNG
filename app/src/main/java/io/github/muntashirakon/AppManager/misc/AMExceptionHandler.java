@@ -11,11 +11,13 @@ import android.net.Uri;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
@@ -61,8 +63,7 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
         }
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_SUBJECT, "AppManager NG: Crash Report");
-        String body = report.toString();
-        i.putExtra(Intent.EXTRA_TEXT, body);
+        i.putExtra(Intent.EXTRA_TEXT, formatCrashReportForShare(report));
         if (crashUri != null) {
             i.putExtra(Intent.EXTRA_STREAM, crashUri);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -84,5 +85,11 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
         NotificationUtils.displayHighPriorityNotification(mContext, builder.build());
         // Manage the rests via the default handler
         mDefaultExceptionHandler.uncaughtException(t, e);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatCrashReportForShare(@NonNull CharSequence report) {
+        return ExportTextUtils.toPlainTextReport(SupportInfoBundle.scrubForPublicIssue(report.toString()));
     }
 }
