@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -67,7 +68,8 @@ public final class SupportInfoBundle {
     @NonNull
     public static Path writeTextBundle(@NonNull Context context, @Nullable CharSequence preamble) throws IOException {
         Date now = new Date();
-        String text = buildText(context.getApplicationContext(), formatUtc(now), readScrubbedLogcatTail());
+        String text = formatBundleTextForPublicIssue(
+                buildText(context.getApplicationContext(), formatUtc(now), readScrubbedLogcatTail()));
         File dir = FileCache.getGlobalFileCache().createCachedDir("support-info");
         File file = new File(dir, buildFileName(Build.DEVICE, now));
         try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
@@ -220,7 +222,13 @@ public final class SupportInfoBundle {
         if (preamble == null || preamble.length() == 0) {
             return "";
         }
-        return scrubForPublicIssue(preamble.toString()) + "\n\n";
+        return formatBundleTextForPublicIssue(preamble.toString()) + "\n\n";
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatBundleTextForPublicIssue(@Nullable String text) {
+        return ExportTextUtils.toPlainTextReport(scrubForPublicIssue(text));
     }
 
     @VisibleForTesting

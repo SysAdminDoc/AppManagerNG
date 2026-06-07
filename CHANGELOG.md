@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Support-info bundle text line hardening (source audit, 2026-06-07)
+
+- Support-info bundle bodies and caller preambles now pass through a shared
+  line-safe formatter after public-issue scrubbing.
+- Shared support-info text now preserves report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Diagnostic ZIP text line hardening (source audit, 2026-06-07)
 
 - Diagnostic ZIP device-info, crash-log, and logcat text entries now pass
