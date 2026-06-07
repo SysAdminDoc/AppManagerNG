@@ -367,6 +367,11 @@ public class BackupMetadataV5 implements LocalizedString {
             if (versionCode < 0) {
                 throw new IllegalArgumentException("Malformed backup metadata: negative version code");
             }
+            for (String dataDir : dataDirs) {
+                if (TextUtils.isEmpty(dataDir)) {
+                    throw new IllegalArgumentException("Malformed backup metadata: empty data directory");
+                }
+            }
             if (!isBackupFilename(apkName)) {
                 throw new IllegalArgumentException("Malformed backup metadata: invalid APK filename " + apkName);
             }

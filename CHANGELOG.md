@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata data directories (source audit, 2026-06-06)
+
+- Backup metadata loading now rejects empty persisted `data_dirs` entries before
+  restore iteration can dereference or fall through to an invalid data path.
+- Empty `data_dirs` arrays remain accepted for APK-only backups.
+
 ### Fixed - Backup metadata version codes (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects negative persisted `version_code` values
