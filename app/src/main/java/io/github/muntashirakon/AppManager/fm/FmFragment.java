@@ -1258,7 +1258,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     // Update label
                     TextView l = labelRef.get();
                     if (l != null) {
-                        ThreadUtils.postOnMainThread(() -> l.setText(path.getName()));
+                        ThreadUtils.postOnMainThread(() -> l.setText(FmUtils.getPathDisplayName(path)));
                     }
                     if (ThreadUtils.isInterrupted()) {
                         break;
@@ -1494,7 +1494,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     // Update label
                     TextView l = labelRef.get();
                     if (l != null) {
-                        ThreadUtils.postOnMainThread(() -> l.setText(sourcePath.getName()));
+                        ThreadUtils.postOnMainThread(() -> l.setText(FmUtils.getPathDisplayName(sourcePath)));
                     }
                     if (ThreadUtils.isInterrupted()) {
                         break;
@@ -1508,7 +1508,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                         // Failed to copy, abort
                         ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
                                 .setTitle(R.string.error)
-                                .setMessage(getString(R.string.failed_to_copy_specified_file, sourcePath.getName()))
+                                .setMessage(getString(R.string.failed_to_copy_specified_file,
+                                        FmUtils.getPathDisplayName(sourcePath)))
                                 .setPositiveButton(R.string.close, null)
                                 .show());
                         return;
@@ -1518,7 +1519,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                             // Failed to move, abort
                             ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
                                     .setTitle(R.string.error)
-                                    .setMessage(getString(R.string.failed_to_delete_specified_file_after_copying, sourcePath.getName()))
+                                    .setMessage(getString(R.string.failed_to_delete_specified_file_after_copying,
+                                            FmUtils.getPathDisplayName(sourcePath)))
                                     .setPositiveButton(R.string.close, null)
                                     .show());
                             return;
