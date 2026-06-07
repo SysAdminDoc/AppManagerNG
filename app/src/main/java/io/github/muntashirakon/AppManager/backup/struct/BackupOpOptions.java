@@ -13,8 +13,6 @@ import androidx.core.os.ParcelCompat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Objects;
-
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -37,21 +35,21 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
 
     public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName,
                            boolean override, @Nullable String[] exclusionGlobs) {
-        this.packageName = packageName;
-        this.userId = userId;
-        this.flags = new BackupFlags(flags);
-        this.backupName = backupName;
+        this.packageName = BackupOperationOptionValidator.requirePackageName(packageName);
+        this.userId = BackupOperationOptionValidator.requireUserId(userId);
+        this.flags = BackupOperationOptionValidator.requireBackupFlags(flags);
+        this.backupName = BackupOperationOptionValidator.sanitizeBackupName(backupName);
         this.override = override;
-        this.exclusionGlobs = exclusionGlobs;
+        this.exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs);
     }
 
     protected BackupOpOptions(@NonNull Parcel in) {
-        packageName = Objects.requireNonNull(in.readString());
-        userId = in.readInt();
-        flags = new BackupFlags(in.readInt());
-        backupName = in.readString();
+        packageName = BackupOperationOptionValidator.requirePackageName(in.readString());
+        userId = BackupOperationOptionValidator.requireUserId(in.readInt());
+        flags = BackupOperationOptionValidator.requireBackupFlags(in.readInt());
+        backupName = BackupOperationOptionValidator.sanitizeBackupName(in.readString());
         override = ParcelCompat.readBoolean(in);
-        exclusionGlobs = in.createStringArray();
+        exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(in.createStringArray());
     }
 
     public static final Creator<BackupOpOptions> CREATOR = new Creator<BackupOpOptions>() {
@@ -75,33 +73,40 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(packageName);
-        dest.writeInt(userId);
-        dest.writeInt(this.flags.getFlags());
-        dest.writeString(backupName);
+        dest.writeString(BackupOperationOptionValidator.requirePackageName(packageName));
+        dest.writeInt(BackupOperationOptionValidator.requireUserId(userId));
+        dest.writeInt(BackupOperationOptionValidator.requireBackupFlags(this.flags.getFlags()).getFlags());
+        dest.writeString(BackupOperationOptionValidator.sanitizeBackupName(backupName));
         ParcelCompat.writeBoolean(dest, override);
-        dest.writeStringArray(exclusionGlobs);
+        dest.writeStringArray(BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs));
     }
 
     public BackupOpOptions(@NonNull JSONObject jsonObject) throws JSONException {
-        packageName = jsonObject.getString("package_name");
-        userId = jsonObject.getInt("user_id");
-        flags = new BackupFlags(jsonObject.getInt("flags"));
-        backupName = JSONUtils.optString(jsonObject, "backup_name");
-        override = jsonObject.getBoolean("override");
-        exclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
+        try {
+            packageName = BackupOperationOptionValidator.requirePackageName(jsonObject.getString("package_name"));
+            userId = BackupOperationOptionValidator.requireUserId(jsonObject.getInt("user_id"));
+            flags = BackupOperationOptionValidator.requireBackupFlags(jsonObject.getInt("flags"));
+            backupName = BackupOperationOptionValidator.sanitizeBackupName(JSONUtils.optString(jsonObject, "backup_name"));
+            override = jsonObject.getBoolean("override");
+            exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(
+                    BackupOperationOptionValidator.readStringArray(jsonObject, "exclusion_globs",
+                            false, "exclusion glob"));
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     @NonNull
     @Override
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("package_name", packageName);
-        jsonObject.put("user_id", userId);
-        jsonObject.put("flags", flags.getFlags());
-        jsonObject.put("backup_name", backupName);
+        jsonObject.put("package_name", BackupOperationOptionValidator.requirePackageName(packageName));
+        jsonObject.put("user_id", BackupOperationOptionValidator.requireUserId(userId));
+        jsonObject.put("flags", BackupOperationOptionValidator.requireBackupFlags(flags.getFlags()).getFlags());
+        jsonObject.put("backup_name", BackupOperationOptionValidator.sanitizeBackupName(backupName));
         jsonObject.put("override", override);
-        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(exclusionGlobs));
+        jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(
+                BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs)));
         return jsonObject;
     }
 }

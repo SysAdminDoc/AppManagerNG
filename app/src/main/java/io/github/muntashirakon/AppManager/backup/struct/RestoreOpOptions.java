@@ -12,8 +12,6 @@ import androidx.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Objects;
-
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -28,17 +26,17 @@ public class RestoreOpOptions implements Parcelable, IJsonSerializer {
     public final BackupFlags flags;
 
     public RestoreOpOptions(@NonNull String packageName, int userId, @Nullable String relativeDir, int flags) {
-        this.packageName = packageName;
-        this.userId = userId;
-        this.relativeDir = relativeDir;
-        this.flags = new BackupFlags(flags);
+        this.packageName = BackupOperationOptionValidator.requirePackageName(packageName);
+        this.userId = BackupOperationOptionValidator.requireUserId(userId);
+        this.relativeDir = BackupOperationOptionValidator.sanitizeRelativeDir(relativeDir);
+        this.flags = BackupOperationOptionValidator.requireBackupFlags(flags);
     }
 
     protected RestoreOpOptions(@NonNull Parcel in) {
-        packageName = Objects.requireNonNull(in.readString());
-        userId = in.readInt();
-        relativeDir = in.readString();
-        flags = new BackupFlags(in.readInt());
+        packageName = BackupOperationOptionValidator.requirePackageName(in.readString());
+        userId = BackupOperationOptionValidator.requireUserId(in.readInt());
+        relativeDir = BackupOperationOptionValidator.sanitizeRelativeDir(in.readString());
+        flags = BackupOperationOptionValidator.requireBackupFlags(in.readInt());
     }
 
     public static final Creator<RestoreOpOptions> CREATOR = new Creator<RestoreOpOptions>() {
@@ -62,27 +60,31 @@ public class RestoreOpOptions implements Parcelable, IJsonSerializer {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(packageName);
-        dest.writeInt(userId);
-        dest.writeString(relativeDir);
-        dest.writeInt(this.flags.getFlags());
+        dest.writeString(BackupOperationOptionValidator.requirePackageName(packageName));
+        dest.writeInt(BackupOperationOptionValidator.requireUserId(userId));
+        dest.writeString(BackupOperationOptionValidator.sanitizeRelativeDir(relativeDir));
+        dest.writeInt(BackupOperationOptionValidator.requireBackupFlags(this.flags.getFlags()).getFlags());
     }
 
     public RestoreOpOptions(@NonNull JSONObject jsonObject) throws JSONException {
-        packageName = jsonObject.getString("package_name");
-        userId = jsonObject.getInt("user_id");
-        relativeDir = JSONUtils.optString(jsonObject, "relative_dir");
-        flags = new BackupFlags(jsonObject.getInt("flags"));
+        try {
+            packageName = BackupOperationOptionValidator.requirePackageName(jsonObject.getString("package_name"));
+            userId = BackupOperationOptionValidator.requireUserId(jsonObject.getInt("user_id"));
+            relativeDir = BackupOperationOptionValidator.sanitizeRelativeDir(JSONUtils.optString(jsonObject, "relative_dir"));
+            flags = BackupOperationOptionValidator.requireBackupFlags(jsonObject.getInt("flags"));
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     @NonNull
     @Override
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("package_name", packageName);
-        jsonObject.put("user_id", userId);
-        jsonObject.put("relative_dir", relativeDir);
-        jsonObject.put("flags", flags.getFlags());
+        jsonObject.put("package_name", BackupOperationOptionValidator.requirePackageName(packageName));
+        jsonObject.put("user_id", BackupOperationOptionValidator.requireUserId(userId));
+        jsonObject.put("relative_dir", BackupOperationOptionValidator.sanitizeRelativeDir(relativeDir));
+        jsonObject.put("flags", BackupOperationOptionValidator.requireBackupFlags(flags.getFlags()).getFlags());
         return jsonObject;
     }
 }
