@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile trigger type parsing (source audit, 2026-06-06)
+
+- Persisted profile triggers with unknown future or malformed `type` strings are
+  now skipped instead of silently becoming time-of-day triggers.
+- Missing trigger types keep the existing default to time-of-day for legacy
+  stored entries.
+
 ### Fixed - Backup schedule skipped-detail parsing (source audit, 2026-06-06)
 
 - Scheduled-backup last-run skipped-package details now drop persisted rows with
