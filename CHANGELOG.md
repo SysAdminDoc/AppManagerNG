@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - APK share MIME hardening (source audit, 2026-06-07)
+
+- App-info APK sharing now builds its `ACTION_SEND` intent through a tested
+  helper.
+- Shared APK/APKS exports now use the concrete exported file MIME type instead
+  of the broad `application/*` type while preserving stream URI grants and
+  `ClipData`.
+
 ### Fixed - Editor share MIME hardening (source audit, 2026-06-07)
 
 - Code editor file sharing now builds its `ACTION_SEND` intent through a
