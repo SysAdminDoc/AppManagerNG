@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Root module report text hardening (source audit, 2026-06-07)
+
+- Settings root-module details now sanitize module.prop-derived report text
+  before it is shown or copied from the privilege-health dialog.
+- Module-controlled names, versions, descriptions, and paths now preserve report
+  line breaks while normalizing tab/carriage-return controls and defusing
+  spreadsheet-formula prefixes at line starts.
+
 ### Fixed - Manifest metadata copy TSV hardening (source audit, 2026-06-07)
 
 - App-info manifest metadata copy text now escapes owner, name, value, and type
