@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 189 source-audit closure for support-info share
-  intent attachment hardening.
+- Result: completed Cycle 190 source-audit closure for code editor external
+  metadata hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  support-info share intent attachment hardening and its verification target.
-- Code: support-info bundle sharing now builds its attachment `ACTION_SEND`
-  intent through a tested URI-based helper, and attachment shares pin
-  plain-text MIME, subject, stream URI, read-grant, and `ClipData` behavior
-  before launching the external chooser.
+  code editor external metadata hardening and its verification target.
+- Code: code editor external `EXTRA_TITLE` and `EXTRA_SUBJECT` metadata now
+  pass through a tested formatter before reaching toolbar or fragment labels,
+  flattening tab/newline controls, defusing spreadsheet-style prefixes, and
+  falling back to safe defaults when blank.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.editor.CodeEditorActivityTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

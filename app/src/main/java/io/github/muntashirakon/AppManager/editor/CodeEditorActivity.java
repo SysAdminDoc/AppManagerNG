@@ -11,6 +11,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -18,6 +19,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.io.Paths;
 
 public class CodeEditorActivity extends BaseActivity {
@@ -46,10 +48,8 @@ public class CodeEditorActivity extends BaseActivity {
         setSupportActionBar(findViewById(R.id.toolbar));
         LinearProgressIndicator progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
-        String title = getIntent().getStringExtra(Intent.EXTRA_TITLE);
-        if (title == null) {
-            title = getString(R.string.title_code_editor);
-        }
+        String title = formatExternalMetadataText(getIntent().getStringExtra(Intent.EXTRA_TITLE),
+                getString(R.string.title_code_editor));
         String subtitle = getIntent().getStringExtra(Intent.EXTRA_SUBJECT);
         Uri fileUri = IntentCompat.getDataUri(getIntent());
         boolean readOnly = getIntent().getBooleanExtra(EXTRA_READ_ONLY, false);
@@ -60,6 +60,7 @@ public class CodeEditorActivity extends BaseActivity {
                 subtitle = "Untitled.txt";
             }
         }
+        subtitle = formatExternalMetadataText(subtitle, "Untitled.txt");
         if (fileUri == null) {
             progressIndicator.hide();
         }
@@ -84,6 +85,13 @@ public class CodeEditorActivity extends BaseActivity {
             actionBar.setTitle(title);
             actionBar.setSubtitle(subtitle);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatExternalMetadataText(@Nullable String value, @NonNull String fallback) {
+        String formatted = ExportTextUtils.escapeTsvField(value).trim();
+        return formatted.isEmpty() ? fallback : formatted;
     }
 
     @Override
