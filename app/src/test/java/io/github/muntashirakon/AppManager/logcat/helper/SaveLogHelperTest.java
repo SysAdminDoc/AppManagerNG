@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.logcat.helper;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -45,5 +46,19 @@ public class SaveLogHelperTest {
 
         assertEquals(Arrays.asList("new-" + "\u03b4", "last"), savedLog.getLogLines());
         assertTrue(savedLog.isTruncated());
+    }
+
+    @Test
+    public void isInvalidFilenameRejectsWhitespaceControlsAndPathSeparators() {
+        assertFalse(SaveLogHelper.isInvalidFilename("2026-06-07-120000.am.log"));
+
+        assertTrue(SaveLogHelper.isInvalidFilename(null));
+        assertTrue(SaveLogHelper.isInvalidFilename("events.txt"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event log.am.log"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event\tlog.am.log"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event\nlog.am.log"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event/log.am.log"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event\\log.am.log"));
+        assertTrue(SaveLogHelper.isInvalidFilename("event:log.am.log"));
     }
 }
