@@ -52,5 +52,25 @@ public class BackupDataDirectoryInfoTest {
         assertEquals(BackupDataDirectoryInfo.TYPE_EXTERNAL, sdcardCustom.type);
         assertEquals(BackupDataDirectoryInfo.TYPE_CUSTOM, sdcardCustom.subtype);
         assertFalse(sdcardCustom.isMounted);
+        BackupDataDirectoryInfo removableAndroidData = BackupDataDirectoryInfo.getInfo("/storage/1234-5678/Android/data/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_EXTERNAL, removableAndroidData.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_ANDROID_DATA, removableAndroidData.subtype);
+        assertFalse(removableAndroidData.isMounted);
+        BackupDataDirectoryInfo removableAndroidObb = BackupDataDirectoryInfo.getInfo("/storage/1234-5678/Android/obb/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_EXTERNAL, removableAndroidObb.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_ANDROID_OBB, removableAndroidObb.subtype);
+        assertFalse(removableAndroidObb.isMounted);
+        BackupDataDirectoryInfo removableAndroidMedia = BackupDataDirectoryInfo.getInfo("/storage/1234-5678/Android/media/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_EXTERNAL, removableAndroidMedia.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_ANDROID_MEDIA, removableAndroidMedia.subtype);
+        assertFalse(removableAndroidMedia.isMounted);
+        BackupDataDirectoryInfo otherUserEmulatedData = BackupDataDirectoryInfo.getInfo("/storage/emulated/10/Android/data/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_UNKNOWN, otherUserEmulatedData.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_CUSTOM, otherUserEmulatedData.subtype);
+        assertTrue(otherUserEmulatedData.isMounted);
+        BackupDataDirectoryInfo nestedVolumeData = BackupDataDirectoryInfo.getInfo("/storage/1234-5678/nested/Android/data/package.name", 0);
+        assertEquals(BackupDataDirectoryInfo.TYPE_UNKNOWN, nestedVolumeData.type);
+        assertEquals(BackupDataDirectoryInfo.TYPE_CUSTOM, nestedVolumeData.subtype);
+        assertTrue(nestedVolumeData.isMounted);
     }
 }

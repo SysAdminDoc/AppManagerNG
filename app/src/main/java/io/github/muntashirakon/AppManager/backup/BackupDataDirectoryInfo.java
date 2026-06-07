@@ -7,6 +7,7 @@ import android.annotation.UserIdInt;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import java.lang.annotation.Retention;
@@ -44,12 +45,35 @@ public class BackupDataDirectoryInfo {
         if (dataDir.startsWith(storageEmulatedDir)) {
             return getExternalInfo(dataDir, storageEmulatedDir);
         }
+        String storageVolumeRoot = getStorageVolumeRoot(dataDir);
+        if (storageVolumeRoot != null) {
+            return getExternalInfo(dataDir, storageVolumeRoot);
+        }
         String dataMediaDir = String.format(Locale.ROOT, "/data/media/%d/", userId);
         if (dataDir.startsWith(dataMediaDir)) {
             return getExternalInfo(dataDir, dataMediaDir);
         }
         Log.i(TAG, "getInfo: Unrecognized path %s, returning true as fallback.", dataDir);
         return new BackupDataDirectoryInfo(dataDir, true, TYPE_UNKNOWN, TYPE_CUSTOM);
+    }
+
+    @Nullable
+    private static String getStorageVolumeRoot(@NonNull String dataDir) {
+        final String storageRoot = "/storage/";
+        if (!dataDir.startsWith(storageRoot)) {
+            return null;
+        }
+        if (dataDir.startsWith("/storage/emulated/")) {
+            return null;
+        }
+        int volumeEndIndex = dataDir.indexOf('/', storageRoot.length());
+        if (volumeEndIndex <= storageRoot.length()) {
+            return null;
+        }
+        if (!dataDir.startsWith("/Android/", volumeEndIndex)) {
+            return null;
+        }
+        return dataDir.substring(0, volumeEndIndex + 1);
     }
 
     @NonNull

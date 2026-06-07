@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup removable data directory classification (source audit, 2026-06-06)
+
+- Backup restore now classifies removable-volume
+  `/storage/<volume>/Android/data|obb|media/<package>` roots as external app
+  data, OBB, or media directories instead of unknown custom paths.
+- Cross-user `/storage/emulated/<user>` roots and nested removable paths remain
+  outside the generic removable-volume classifier.
+
 ### Fixed - Backup metadata data roots (source audit, 2026-06-06)
 
 - Backup metadata loading now rejects persisted `data_dirs` entries outside
