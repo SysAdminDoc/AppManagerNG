@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Mode Doctor clipboard redaction (source audit, 2026-06-07)
+
+- Mode Doctor copy-to-clipboard now scrubs diagnostic report text before writing
+  it to the clipboard.
+- Copied Mode Doctor details now preserve report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Crash report share redaction (source audit, 2026-06-07)
 
 - Crash notification share payloads now scrub report text before handing it to

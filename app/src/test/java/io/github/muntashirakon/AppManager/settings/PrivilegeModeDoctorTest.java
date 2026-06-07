@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -45,5 +46,21 @@ public class PrivilegeModeDoctorTest {
         assertTrue(report.text.contains("WARN - Shizuku binder: binder=false"));
         assertTrue(PrivilegeModeDoctor.buildSupportPreamble(report.text)
                 .startsWith("Mode Doctor probe\n=================\nAppManagerNG mode doctor"));
+    }
+
+    @Test
+    public void formatReportForClipboardScrubsAndSanitizesReportText() {
+        String formatted = PrivilegeModeDoctor.formatReportForClipboard(
+                "=cmd\tpayload\nsource=com.example.secret uid=10345 person@example.com /sdcard/private");
+
+        assertTrue(formatted.startsWith("'=cmd payload\n"));
+        assertTrue(formatted.contains("uid=<redacted>"));
+        assertTrue(formatted.contains("<email>"));
+        assertTrue(formatted.contains("<path>"));
+        assertFalse(formatted.contains("\t"));
+        assertFalse(formatted.contains("com.example.secret"));
+        assertFalse(formatted.contains("10345"));
+        assertFalse(formatted.contains("person@example.com"));
+        assertFalse(formatted.contains("/sdcard/private"));
     }
 }

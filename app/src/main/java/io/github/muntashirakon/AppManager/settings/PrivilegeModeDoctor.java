@@ -17,6 +17,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
@@ -26,6 +27,7 @@ import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 
 public final class PrivilegeModeDoctor {
     private PrivilegeModeDoctor() {
@@ -335,6 +337,11 @@ public final class PrivilegeModeDoctor {
     @NonNull
     static String buildSupportPreamble(@NonNull String modeDoctorReport) {
         return "Mode Doctor probe\n=================\n" + modeDoctorReport;
+    }
+
+    @NonNull
+    static String formatReportForClipboard(@NonNull String report) {
+        return ExportTextUtils.toPlainTextReport(SupportInfoBundle.scrubForPublicIssue(report));
     }
 
     @NonNull
