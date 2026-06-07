@@ -103,7 +103,33 @@ public class BackupItemsTest {
 
     @Test
     public void readInfoWrapsMalformedCryptoMetadataAsIOException() throws IOException {
-        String backupUuid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+        BackupItems.BackupItem backupItem = createInfoBackup("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                CryptoUtils.MODE_AES, ",\"iv\":\"zz\"");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getMessage().contains("for path"));
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
+    @Test
+    public void readInfoRejectsUnknownCryptoMode() throws IOException {
+        BackupItems.BackupItem backupItem = createInfoBackup("cccccccc-cccc-cccc-cccc-cccccccccccc",
+                "rot13", "");
+
+        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
+
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
+    private static void createFiles(Path directory, String... names) throws IOException {
+        for (String name : names) {
+            directory.createNewFile(name, null);
+        }
+    }
+
+    private BackupItems.BackupItem createInfoBackup(String backupUuid, String crypto, String extraFields)
+            throws IOException {
         Path backupPath = Prefs.Storage.getAppManagerDirectory()
                 .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
                 .findOrCreateDirectory(backupUuid);
@@ -115,21 +141,10 @@ public class BackupItemsTest {
                 + "\"user_handle\":0,"
                 + "\"tar_type\":\"" + TarUtils.TAR_GZIP + "\","
                 + "\"checksum_algo\":\"" + DigestUtils.SHA_256 + "\","
-                + "\"crypto\":\"" + CryptoUtils.MODE_AES + "\","
-                + "\"iv\":\"zz\""
+                + "\"crypto\":\"" + crypto + "\""
+                + extraFields
                 + "}");
-
-        BackupItems.BackupItem backupItem = BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(backupUuid));
-        IOException exception = assertThrows(IOException.class, backupItem::getInfo);
-
-        assertTrue(exception.getMessage().contains("for path"));
-        assertTrue(exception.getCause() instanceof IllegalArgumentException);
-    }
-
-    private static void createFiles(Path directory, String... names) throws IOException {
-        for (String name : names) {
-            directory.createNewFile(name, null);
-        }
+        return BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(backupUuid));
     }
 
     private void assertMalformedChecksum(String filename, String contents) throws IOException {
