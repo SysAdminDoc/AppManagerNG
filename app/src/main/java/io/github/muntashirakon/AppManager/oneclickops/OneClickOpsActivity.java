@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchAppOpsOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchComponentOptions;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
+import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -634,10 +635,12 @@ public class OneClickOpsActivity extends BaseActivity {
             for (ApkDuplicateSelector.Candidate drop : group.drop) {
                 indices.add(drops.size());
                 drops.add(drop);
-                labels.add(new SpannableStringBuilder(drop.path.getName())
+                String dropName = FmUtils.getFileDisplayName(drop.path);
+                String keeperName = FmUtils.getFileDisplayName(group.keeper.path);
+                labels.add(new SpannableStringBuilder(dropName)
                         .append("\n").append(getSmallerText(drop.packageName + " v" + drop.versionCode
                                 + " · " + Formatter.formatShortFileSize(this, drop.sizeBytes)
-                                + " · " + getString(R.string.apk_duplicate_keeping, group.keeper.path.getName()))));
+                                + " · " + getString(R.string.apk_duplicate_keeping, keeperName))));
             }
         }
         new SearchableMultiChoiceDialogBuilder<>(this, indices, labels)

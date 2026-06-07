@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 200 source-audit closure for duplicate APK review
-  display-name hardening.
+- Result: completed Cycle 201 source-audit closure for one-click duplicate APK
+  review display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  duplicate APK review display-name hardening and its verification target.
-- Code: file-manager duplicate-APK review rows now format both drop and keeper
-  APK filenames before rendering them in the selection dialog, and the shared
-  file-manager display-name helper now supports regular `File` instances as
-  well as `Path` objects.
+  one-click duplicate APK review display-name hardening and its verification
+  target.
+- Code: One-click duplicate-APK review rows now format both drop and keeper APK
+  filenames before rendering them in the selection dialog, while duplicate-APK
+  deletion still uses the original file candidates.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.

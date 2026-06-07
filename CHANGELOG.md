@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - One-click duplicate APK review display-name hardening (source audit, 2026-06-07)
+
+- One-click duplicate-APK review rows now format both drop and keeper APK
+  filenames before rendering them in the selection dialog.
+- One-click duplicate-APK deletion still uses the original file candidates; only
+  the user-facing review labels are sanitized.
+
 ### Fixed - Duplicate APK review display-name hardening (source audit, 2026-06-07)
 
 - File-manager duplicate-APK review rows now format both drop and keeper APK
