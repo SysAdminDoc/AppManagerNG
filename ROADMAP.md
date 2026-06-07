@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 171 - 2026-06-07.
+> Last researched: Cycle 172 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -74,12 +74,12 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06/2026-06-07 audit closures now include Mode Doctor
-  clipboard redaction, crash report share redaction, copyable error clipboard
-  hardening, accessibility tracker clipboard hardening, file-manager path
-  clipboard hardening, KernelSU diagnostics report hardening, root module report
-  text hardening, manifest metadata copy TSV hardening, operation history text
-  report hardening, profile
+- Source-backed 2026-06-06/2026-06-07 audit closures now include component
+  rules IFW clipboard hardening, Mode Doctor clipboard redaction, crash report
+  share redaction, copyable error clipboard hardening, accessibility tracker
+  clipboard hardening, file-manager path clipboard hardening, KernelSU
+  diagnostics report hardening, root module report text hardening, manifest
+  metadata copy TSV hardening, operation history text report hardening, profile
   clipboard label hardening, profile share metadata hardening, scanner
   missing-signature report hardening, Activity Interceptor intent-details export
   hardening, logcat saved-log UTF-8 export, installer diagnostic message

@@ -170,7 +170,9 @@ public class ComponentRulesPreferences extends PreferenceFragment {
                 .setMessage(detail)
                 .enableAnchors()
                 .setPositiveButton(R.string.copy, (dialog, which, isChecked) -> {
-                    Utils.copyToClipboard(requireContext(), row.packageName + " IFW XML", row.ifwXml);
+                    Utils.copyToClipboard(requireContext(),
+                            ComponentRulesPreview.formatIfwClipboardLabel(row.packageName),
+                            ComponentRulesPreview.formatIfwXmlForClipboard(row.ifwXml));
                     UIUtils.displayShortToast(R.string.component_rules_ifw_xml_copied);
                 })
                 .setNeutralButton(R.string.app_info, (dialog, which, isChecked) ->
