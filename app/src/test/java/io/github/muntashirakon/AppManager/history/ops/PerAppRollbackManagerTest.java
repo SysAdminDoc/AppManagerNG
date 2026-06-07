@@ -143,6 +143,28 @@ public class PerAppRollbackManagerTest {
     }
 
     @Test
+    public void buildPlanSkipsMalformedTargetScalars() throws Exception {
+        OpHistory stringUser = history(1, 100, BatchOpsManager.OP_FREEZE, null,
+                "com.example.app", 0);
+        JSONObject stringUserData = new JSONObject(stringUser.serializedData);
+        stringUserData.put("users", new JSONArray().put("0"));
+        stringUser.serializedData = stringUserData.toString();
+
+        OpHistory missingUser = singleAction(2, 200, SingleAppActionHistoryItem.ACTION_FREEZE,
+                "com.example.app", 0, "Freeze");
+        JSONObject missingUserData = new JSONObject(missingUser.serializedData);
+        missingUserData.remove("user_id");
+        missingUser.serializedData = missingUserData.toString();
+
+        PerAppRollbackManager.RollbackPlan plan = PerAppRollbackManager.buildPlan(
+                Arrays.asList(stringUser, missingUser), "com.example.app", 0);
+
+        assertEquals(0, plan.getMatchedHistoryCount());
+        assertEquals(0, plan.getManualReviewCount());
+        assertEquals(0, plan.getRunnableCount());
+    }
+
+    @Test
     public void buildPlanOnlyCountsMalformedRowsAfterTargetMatch() throws Exception {
         OpHistory malformedUnrelated = new OpHistory();
         malformedUnrelated.id = 1;

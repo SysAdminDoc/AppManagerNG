@@ -134,7 +134,9 @@ public final class PerAppRollbackManager {
         JSONArray users = jsonObject.getJSONArray("users");
         int count = Math.min(packages.length(), users.length());
         for (int i = 0; i < count; ++i) {
-            if (packageName.equals(packages.getString(i)) && userId == users.getInt(i)) {
+            String targetPackage = getPackageName(packages.opt(i));
+            Integer targetUser = OpHistoryManager.normalizeUserId(users.opt(i));
+            if (packageName.equals(targetPackage) && targetUser != null && userId == targetUser) {
                 return true;
             }
         }
@@ -144,8 +146,9 @@ public final class PerAppRollbackManager {
     private static boolean targetsSingleAppAction(@NonNull JSONObject jsonObject,
                                                   @NonNull String packageName,
                                                   int userId) {
-        return packageName.equals(jsonObject.optString("package_name"))
-                && userId == jsonObject.optInt("user_id", userId);
+        String targetPackage = getPackageName(jsonObject.opt("package_name"));
+        Integer targetUser = OpHistoryManager.normalizeUserId(jsonObject.opt("user_id"));
+        return packageName.equals(targetPackage) && targetUser != null && userId == targetUser;
     }
 
     private static int indexOf(@NonNull BatchQueueItem item, @NonNull String packageName, int userId) {
@@ -161,12 +164,20 @@ public final class PerAppRollbackManager {
     }
 
     @Nullable
+    private static String getPackageName(@Nullable Object value) {
+        return value instanceof String ? OpHistoryManager.normalizePackageName((String) value) : null;
+    }
+
+    @Nullable
     private static BatchQueueItem getInverseSingleAppAction(@NonNull JSONObject jsonObject) {
-        String packageName = jsonObject.optString("package_name");
-        if (packageName.isEmpty()) {
+        String packageName = getPackageName(jsonObject.opt("package_name"));
+        if (packageName == null) {
             return null;
         }
-        int userId = jsonObject.optInt("user_id", 0);
+        Integer userId = OpHistoryManager.normalizeUserId(jsonObject.opt("user_id"));
+        if (userId == null) {
+            return null;
+        }
         String action = jsonObject.optString("action");
         String target = jsonObject.optString("target_label");
         switch (action) {
