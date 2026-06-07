@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 177 source-audit closure for file-share helper input
+- Result: completed Cycle 178 source-audit closure for open-with MIME fallback
   hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-share helper input hardening and its verification target.
-- Code: File-share chooser construction now copies share path lists at helper
-  creation time, rejects empty share requests before URI construction, and
-  normalizes custom MIME strings before they reach share intents or `ClipData`.
+  open-with MIME fallback hardening and its verification target.
+- Code: File-manager open-with intents now normalize custom MIME strings before
+  calling `Intent.setDataAndType`; malformed or parameterized custom values fall
+  back to the file's detected type through the shared file-manager MIME helper.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.SharableItemsTest --tests io.github.muntashirakon.AppManager.fm.FmBatchApkInstallUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmOpenWithDefaultsTest --tests io.github.muntashirakon.AppManager.fm.SharableItemsTest --tests io.github.muntashirakon.AppManager.fm.FmBatchApkInstallUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -25,11 +25,12 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next roadmap target: continue auditing remaining share and open-with helpers
-  for host-verifiable URI-grant, MIME-type, and mutable-input defects.
-- Check whether open-with defaults, one-off share builders, or chooser metadata
-  still trust nullable MIME strings, mutable caller lists, or unchecked
-  provider-controlled values that can be pinned with focused host tests.
+- Next roadmap target: continue auditing one-off share builders and chooser
+  metadata for host-verifiable URI-grant and metadata defects.
+- Check whether support ZIP, crash/log attachments, APK share intents, or
+  editor/logcat share paths still trust nullable metadata, omit chooser grant
+  evidence, or expose unchecked provider-controlled values that can be pinned
+  with focused host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
