@@ -67,4 +67,13 @@ public class ComponentRulesPreviewTest {
         assertFalse(xml.contains(".Provider"));
         assertFalse(xml.contains(".DisabledOnly"));
     }
+
+    @Test
+    public void formatIfwClipboardTextSanitizesLabelAndReportLines() {
+        String label = ComponentRulesPreview.formatIfwClipboardLabel("=pkg\tname");
+        String xml = ComponentRulesPreview.formatIfwXmlForClipboard("<rules>\r\n=payload\tcell\n</rules>");
+
+        assertEquals("'=pkg name IFW XML", label);
+        assertEquals("<rules> \n'=payload cell\n</rules>", xml);
+    }
 }
