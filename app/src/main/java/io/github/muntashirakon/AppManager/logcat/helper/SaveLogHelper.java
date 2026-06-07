@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.logcat.struct.SavedLog;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -84,11 +85,18 @@ public class SaveLogHelper {
         CharSequence[] fileNames = new CharSequence[files.size()];
         DateFormat dateFormat = DateFormat.getDateTimeInstance();
         for (int i = 0; i < files.size(); ++i) {
-            fileNames[i] = new SpannableStringBuilder(files.get(i).getName())
+            fileNames[i] = new SpannableStringBuilder(formatDisplayFilename(files.get(i).getName()))
                     .append("\n").append(UIUtils.getSmallerText(UIUtils.getSecondaryText(context,
                             dateFormat.format(new Date(files.get(i).lastModified())))));
         }
         return fileNames;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatDisplayFilename(@Nullable String filename) {
+        String formattedName = ExportTextUtils.escapeTsvField(filename).trim();
+        return formattedName.isEmpty() ? LOG_FILENAME : formattedName;
     }
 
     @NonNull

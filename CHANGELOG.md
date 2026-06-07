@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Saved log display filename hardening (source audit, 2026-06-07)
+
+- Saved-log selection dialogs now format legacy saved-log filenames before
+  display.
+- Saved-log display names now flatten tab/newline controls, defuse
+  spreadsheet-style prefixes, and fall back to the standard log filename when
+  blank.
+
 ### Fixed - Saved log filename validator hardening (source audit, 2026-06-07)
 
 - Saved-log filename validation now rejects all whitespace and control

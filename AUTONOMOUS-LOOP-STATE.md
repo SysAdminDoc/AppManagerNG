@@ -8,14 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 195 source-audit closure for saved log filename
-  validator hardening.
+- Result: completed Cycle 196 source-audit closure for saved log display
+  filename hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  saved log filename validator hardening and its verification target.
-- Code: saved-log filename validation now rejects all whitespace and control
-  characters before writing files under the saved-log directory, and rejects
-  both forward-slash and backslash path separators while preserving valid `.log`
-  filenames.
+  saved log display filename hardening and its verification target.
+- Code: saved-log selection dialogs now format legacy saved-log filenames before
+  display, flattening tab/newline controls, defusing spreadsheet-style prefixes,
+  and falling back to the standard log filename when blank.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelperTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
