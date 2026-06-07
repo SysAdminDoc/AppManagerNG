@@ -45,6 +45,7 @@ import androidx.annotation.PluralsRes;
 import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentActivity;
@@ -353,10 +354,16 @@ public class UIUtils {
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)
                 .setNeutralButton(R.string.copy, (d, w) -> {
-                    ClipboardUtils.copyToClipboard(context, "error", message.toString());
+                    ClipboardUtils.copyToClipboard(context, "error", formatCopyableErrorText(message));
                     displayShortToast(R.string.copied_to_clipboard);
                 })
                 .show();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatCopyableErrorText(@NonNull CharSequence message) {
+        return ExportTextUtils.toPlainTextReport(message.toString());
     }
 
     @NonNull

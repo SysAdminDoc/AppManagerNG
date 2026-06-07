@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Copyable error clipboard hardening (source audit, 2026-06-07)
+
+- Shared copyable-error dialogs now sanitize clipboard text without changing the
+  on-screen error message.
+- Copied error details now preserve report line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Accessibility tracker clipboard hardening (source audit, 2026-06-07)
 
 - Leading-activity tracker long-press copy actions now normalize clipboard labels
