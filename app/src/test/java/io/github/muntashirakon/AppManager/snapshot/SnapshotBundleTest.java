@@ -19,11 +19,19 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import io.github.muntashirakon.AppManager.db.AppsDb;
+import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 
 @RunWith(RobolectricTestRunner.class)
 public class SnapshotBundleTest {
@@ -122,6 +130,61 @@ public class SnapshotBundleTest {
         assertEquals(0, root.getJSONArray("entries").length());
     }
 
+    @Test
+    public void opHistorySerializerNormalizesSnapshotRows() throws Exception {
+        OpHistory futureStatus = opHistoryRow(1L, " future_type ", " future_status ",
+                "{\"package_name\":\"com.example.app\"}", "not json");
+        OpHistory blankData = opHistoryRow(2L, OpHistoryManager.HISTORY_TYPE_BATCH_OPS,
+                OpHistoryManager.STATUS_SUCCESS, " ", null);
+
+        String json = SnapshotBundle.serializeOpHistory(Arrays.asList(futureStatus, blankData));
+        JSONArray entries = new JSONObject(json).getJSONArray("entries");
+
+        assertEquals(1, entries.length());
+        JSONObject entry = entries.getJSONObject(0);
+        assertEquals(OpHistoryManager.HISTORY_TYPE_UNKNOWN, entry.getString("type"));
+        assertEquals(OpHistoryManager.STATUS_FAILURE, entry.getString("status"));
+        assertEquals("{\"package_name\":\"com.example.app\"}", entry.getString("serialized_data"));
+        assertFalse(entry.has("serialized_extra"));
+    }
+
+    @Test
+    public void opHistoryImportNormalizesScalarsAndPreservesIdempotency() throws Exception {
+        JSONObject root = new JSONObject()
+                .put("schema_version", SnapshotBundle.SCHEMA_VERSION)
+                .put("entries", new JSONArray()
+                        .put(new JSONObject()
+                                .put("type", " future_type ")
+                                .put("status", " future_status ")
+                                .put("exec_time", 1_700_000_000_000L)
+                                .put("serialized_data", "{\"package_name\":\"com.example.app\"}")
+                                .put("serialized_extra", "not json"))
+                        .put(new JSONObject()
+                                .put("type", OpHistoryManager.HISTORY_TYPE_BATCH_OPS)
+                                .put("status", OpHistoryManager.STATUS_SUCCESS)
+                                .put("exec_time", 1_700_000_000_001L)
+                                .put("serialized_data", " ")));
+
+        runOnBackground(() -> {
+            AppsDb db = AppsDb.getInstance();
+            db.opHistoryDao().deleteAll();
+            try {
+                assertEquals(1, SnapshotBundle.importOpHistory(root.toString()));
+                assertEquals(0, SnapshotBundle.importOpHistory(root.toString()));
+                List<OpHistory> rows = db.opHistoryDao().getAll();
+                assertEquals(1, rows.size());
+                OpHistory row = rows.get(0);
+                assertEquals(OpHistoryManager.HISTORY_TYPE_UNKNOWN, row.type);
+                assertEquals(OpHistoryManager.STATUS_FAILURE, row.status);
+                assertEquals("{\"package_name\":\"com.example.app\"}", row.serializedData);
+                assertNull(row.serializedExtra);
+            } finally {
+                db.opHistoryDao().deleteAll();
+            }
+            return null;
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Excluded-prefs invariant
     // -----------------------------------------------------------------------
@@ -213,6 +276,28 @@ public class SnapshotBundleTest {
         } catch (SnapshotImportException expected) {
             assertTrue(expected.getMessage().contains("newer AppManagerNG"));
         }
+    }
+
+    private static OpHistory opHistoryRow(long id,
+                                          String type,
+                                          String status,
+                                          String serializedData,
+                                          String serializedExtra) {
+        OpHistory row = new OpHistory();
+        row.id = id;
+        row.type = type;
+        row.execTime = 1_700_000_000_000L + id;
+        row.status = status;
+        row.serializedData = serializedData;
+        row.serializedExtra = serializedExtra;
+        return row;
+    }
+
+    private static <T> T runOnBackground(Callable<T> callable) throws Exception {
+        FutureTask<T> task = new FutureTask<>(callable);
+        Thread thread = new Thread(task);
+        thread.start();
+        return task.get();
     }
 
     // -----------------------------------------------------------------------

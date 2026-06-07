@@ -415,15 +415,16 @@ public final class SnapshotBundle {
             JSONArray arr = new JSONArray();
             for (OpHistory row : rows) {
                 if (row == null) continue;
+                String data = normalizeSerializedData(row.serializedData);
+                if (data == null) continue;
+                String extra = normalizeSerializedExtra(row.serializedExtra);
                 JSONObject obj = new JSONObject();
-                obj.put("type", row.type);
+                obj.put("type", normalizeOpHistoryType(row.type));
                 obj.put("exec_time", row.execTime);
-                obj.put("status", row.status);
-                if (row.serializedData != null) {
-                    obj.put("serialized_data", row.serializedData);
-                }
-                if (row.serializedExtra != null) {
-                    obj.put("serialized_extra", row.serializedExtra);
+                obj.put("status", normalizeOpHistoryStatus(row.status));
+                obj.put("serialized_data", data);
+                if (extra != null) {
+                    obj.put("serialized_extra", extra);
                 }
                 arr.put(obj);
             }
@@ -442,7 +443,8 @@ public final class SnapshotBundle {
      * @return number of entries appended
      */
     @WorkerThread
-    private static int importOpHistory(@NonNull String json) {
+    @VisibleForTesting
+    static int importOpHistory(@NonNull String json) {
         try {
             JSONObject root = new JSONObject(json);
             JSONArray entries = root.optJSONArray("entries");
@@ -457,21 +459,24 @@ public final class SnapshotBundle {
             // within the bundle).
             java.util.Set<String> seen = new java.util.HashSet<>();
             for (OpHistory existingRow : AppsDb.getInstance().opHistoryDao().getAll()) {
-                seen.add(opHistoryKey(existingRow.type, existingRow.status,
-                        existingRow.execTime, existingRow.serializedData, existingRow.serializedExtra));
+                seen.add(opHistoryKey(normalizeOpHistoryType(existingRow.type),
+                        normalizeOpHistoryStatus(existingRow.status),
+                        existingRow.execTime,
+                        normalizeSerializedData(existingRow.serializedData),
+                        normalizeSerializedExtra(existingRow.serializedExtra)));
             }
             for (int i = 0; i < entries.length(); ++i) {
                 JSONObject obj = entries.optJSONObject(i);
                 if (obj == null) continue;
-                String type = obj.optString("type", null);
-                String status = obj.optString("status", null);
+                String type = normalizeOpHistoryType(getNonBlankString(obj, "type"));
+                String status = normalizeOpHistoryStatus(getNonBlankString(obj, "status"));
                 long execTime = obj.optLong("exec_time", 0);
-                String data = obj.optString("serialized_data", null);
+                String data = normalizeSerializedData(getNonBlankString(obj, "serialized_data"));
                 String extra = obj.has("serialized_extra")
                         && !obj.isNull("serialized_extra")
-                        ? obj.optString("serialized_extra", null)
+                        ? normalizeSerializedExtra(getNonBlankString(obj, "serialized_extra"))
                         : null;
-                if (type == null || status == null || data == null) {
+                if (data == null) {
                     continue;
                 }
                 if (!seen.add(opHistoryKey(type, status, execTime, data, extra))) {
@@ -495,6 +500,67 @@ public final class SnapshotBundle {
             Log.w(TAG, "Could not parse op-history JSON during snapshot import.", e);
             return 0;
         }
+    }
+
+    @NonNull
+    private static String normalizeOpHistoryType(@Nullable String type) {
+        String normalizedType = normalizeToken(type);
+        if (OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(normalizedType)
+                || OpHistoryManager.HISTORY_TYPE_INSTALLER.equals(normalizedType)
+                || OpHistoryManager.HISTORY_TYPE_PROFILE.equals(normalizedType)
+                || OpHistoryManager.HISTORY_TYPE_CLEANUP.equals(normalizedType)
+                || OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(normalizedType)) {
+            return normalizedType;
+        }
+        return OpHistoryManager.HISTORY_TYPE_UNKNOWN;
+    }
+
+    @NonNull
+    private static String normalizeOpHistoryStatus(@Nullable String status) {
+        return OpHistoryManager.STATUS_SUCCESS.equals(normalizeToken(status))
+                ? OpHistoryManager.STATUS_SUCCESS
+                : OpHistoryManager.STATUS_FAILURE;
+    }
+
+    @Nullable
+    private static String normalizeSerializedData(@Nullable String data) {
+        return isJsonObjectString(data) ? data : null;
+    }
+
+    @Nullable
+    private static String normalizeSerializedExtra(@Nullable String extra) {
+        return isJsonObjectString(extra) ? extra : null;
+    }
+
+    private static boolean isJsonObjectString(@Nullable String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            new JSONObject(value);
+            return true;
+        } catch (JSONException e) {
+            return false;
+        }
+    }
+
+    @Nullable
+    private static String getNonBlankString(@NonNull JSONObject obj, @NonNull String key) {
+        Object value = obj.opt(key);
+        if (!(value instanceof String)) {
+            return null;
+        }
+        String stringValue = (String) value;
+        return stringValue.trim().isEmpty() ? null : stringValue;
+    }
+
+    @Nullable
+    private static String normalizeToken(@Nullable String token) {
+        if (token == null) {
+            return null;
+        }
+        String normalizedToken = token.trim();
+        return normalizedToken.isEmpty() ? null : normalizedToken;
     }
 
     /** Content identity for an op-history row (id is autoGenerate and not part of identity). */

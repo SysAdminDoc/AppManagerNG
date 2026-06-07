@@ -44,6 +44,7 @@ public final class OpHistoryManager {
     public static final String HISTORY_TYPE_PROFILE = "profile";
     public static final String HISTORY_TYPE_CLEANUP = "cleanup";
     public static final String HISTORY_TYPE_SINGLE_APP_ACTION = "single_app_action";
+    public static final String HISTORY_TYPE_UNKNOWN = "unknown";
 
     @Retention(RetentionPolicy.SOURCE)
     @StringDef({HISTORY_TYPE_BATCH_OPS, HISTORY_TYPE_INSTALLER, HISTORY_TYPE_PROFILE, HISTORY_TYPE_CLEANUP,
