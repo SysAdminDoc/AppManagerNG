@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - KernelSU diagnostics report hardening (source audit, 2026-06-07)
+
+- Settings KernelSU diagnostic details now sanitize the final report text before
+  it is displayed or copied from the privilege-health dialog.
+- Standalone sulog denial lines now preserve report line breaks while
+  normalizing tab/carriage-return controls and defusing spreadsheet-formula
+  prefixes at line starts.
+
 ### Fixed - Root module report text hardening (source audit, 2026-06-07)
 
 - Settings root-module details now sanitize module.prop-derived report text
