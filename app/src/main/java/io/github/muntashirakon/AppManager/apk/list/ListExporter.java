@@ -195,9 +195,9 @@ public final class ListExporter {
                                        boolean includeExtendedMetadata) throws IOException {
         writer.write("# Package Info\n\n");
         for (AppListItem appListItem : appListItems) {
-            writer.append("## ").append(appListItem.getPackageLabel()).append("\n\n")
-                    .append("**Package name:** ").append(appListItem.packageName).append("\n")
-                    .append("**Version:** ").append(appListItem.getVersionName()).append(" (")
+            writer.append("## ").append(toMarkdownText(appListItem.getPackageLabel())).append("\n\n")
+                    .append("**Package name:** ").append(toMarkdownText(appListItem.packageName)).append("\n")
+                    .append("**Version:** ").append(toMarkdownText(appListItem.getVersionName())).append(" (")
                     .append(String.valueOf(appListItem.getVersionCode())).append(")\n");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 writer.append("**Min SDK:** ").append(String.valueOf(appListItem.getMinSdk()))
@@ -213,9 +213,9 @@ public final class ListExporter {
             if (appListItem.getInstallerPackageName() != null) {
                 writer.append("**Installer:** ");
                 if (appListItem.getInstallerPackageLabel() != null) {
-                    writer.append(appListItem.getInstallerPackageLabel()).append(" (");
+                    writer.append(toMarkdownText(appListItem.getInstallerPackageLabel())).append(" (");
                 }
-                writer.append(appListItem.getInstallerPackageName());
+                writer.append(toMarkdownText(appListItem.getInstallerPackageName()));
                 if (appListItem.getInstallerPackageLabel() != null) {
                     writer.append(")");
                 }
@@ -243,11 +243,62 @@ public final class ListExporter {
                         .append(String.valueOf(appListItem.isStopped()))
                         .append("\n");
                 if (appListItem.getPublicSourceDir() != null) {
-                    writer.append("**Source:** ").append(appListItem.getPublicSourceDir()).append("\n");
+                    writer.append("**Source:** ").append(toMarkdownText(appListItem.getPublicSourceDir()))
+                            .append("\n");
                 }
             }
             writer.append("\n\n");
         }
+    }
+
+    @NonNull
+    private static String toMarkdownText(@Nullable String value) {
+        String text = String.valueOf(value);
+        StringBuilder safeText = new StringBuilder(text.length());
+        boolean pendingSpace = false;
+        for (int i = 0; i < text.length(); ++i) {
+            char c = text.charAt(i);
+            if (c == '\r' || c == '\n' || c == '\t') {
+                pendingSpace = true;
+                continue;
+            }
+            if (pendingSpace && safeText.length() > 0 && safeText.charAt(safeText.length() - 1) != ' ') {
+                safeText.append(' ');
+            }
+            pendingSpace = false;
+            switch (c) {
+                case '&':
+                    safeText.append("&amp;");
+                    break;
+                case '<':
+                    safeText.append("&lt;");
+                    break;
+                case '>':
+                    safeText.append("&gt;");
+                    break;
+                case '\\':
+                case '`':
+                case '*':
+                case '_':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '(':
+                case ')':
+                case '#':
+                case '+':
+                case '-':
+                case '!':
+                case '|':
+                    safeText.append('\\').append(c);
+                    break;
+                default:
+                    safeText.append(c);
+                    break;
+            }
+        }
+        return safeText.toString();
     }
 
     @NonNull
