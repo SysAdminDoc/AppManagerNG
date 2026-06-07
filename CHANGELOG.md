@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history scalar normalization (source audit, 2026-06-07)
+
+- Operation-history type and status normalization is now centralized so the UI,
+  snapshot import/export, and per-app rollback planning agree on trimmed known
+  tokens and safe unknown/failure fallbacks.
+- Per-app rollback planning now recognizes trim-recoverable successful batch and
+  single-app rows while continuing to ignore future types and non-success
+  statuses.
+
 ### Fixed - Operation history snapshot normalization (source audit, 2026-06-07)
 
 - Snapshot operation-history export/import now normalizes future or blank type

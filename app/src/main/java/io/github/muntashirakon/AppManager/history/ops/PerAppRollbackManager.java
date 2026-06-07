@@ -45,7 +45,7 @@ public final class PerAppRollbackManager {
         int matchedHistoryCount = 0;
         int manualReviewCount = 0;
         for (OpHistory row : sortedRows) {
-            if (!OpHistoryManager.STATUS_SUCCESS.equals(row.status)) {
+            if (!OpHistoryManager.STATUS_SUCCESS.equals(OpHistoryManager.normalizeStatus(row.status))) {
                 continue;
             }
             JSONObject sourceJson;
@@ -54,7 +54,8 @@ public final class PerAppRollbackManager {
             } catch (JSONException e) {
                 continue;
             }
-            if (OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(row.type)) {
+            String historyType = OpHistoryManager.normalizeHistoryType(row.type);
+            if (OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION.equals(historyType)) {
                 if (!targetsSingleAppAction(sourceJson, packageName, userId)) {
                     continue;
                 }
@@ -67,7 +68,7 @@ public final class PerAppRollbackManager {
                 }
                 continue;
             }
-            if (!OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(row.type)) {
+            if (!OpHistoryManager.HISTORY_TYPE_BATCH_OPS.equals(historyType)) {
                 continue;
             }
             try {
