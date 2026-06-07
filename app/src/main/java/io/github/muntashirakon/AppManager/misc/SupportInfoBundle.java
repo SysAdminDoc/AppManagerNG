@@ -82,9 +82,15 @@ public final class SupportInfoBundle {
     @NonNull
     public static Intent buildShareIntent(@NonNull Context context, @NonNull Path bundlePath) {
         Uri uri = FmProvider.getContentUri(bundlePath);
+        return buildShareIntent(context.getString(R.string.support_info_bundle_subject), uri);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildShareIntent(@NonNull CharSequence subject, @NonNull Uri uri) {
         Intent intent = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.support_info_bundle_subject))
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
                 .putExtra(Intent.EXTRA_STREAM, uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setClipData(ClipData.newRawUri("", uri));
