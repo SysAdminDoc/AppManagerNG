@@ -86,6 +86,18 @@ public class BackupItemsTest {
         assertMalformedChecksum("duplicate-filename.txt", "abcd\tdata0.tar.gz.0\nefgh\tdata0.tar.gz.0\n");
     }
 
+    @Test
+    public void checksumWriterRejectsMalformedRows() throws IOException {
+        Path checksumFile = testDir.createNewFile("checksums.txt", null);
+
+        try (BackupItems.Checksum checksum = new BackupItems.Checksum(checksumFile, "w")) {
+            checksum.add("data0.tar.gz.0", "abcd");
+            assertThrows(IllegalArgumentException.class, () -> checksum.add("data0.tar.gz.0", "efgh"));
+            assertThrows(IllegalArgumentException.class, () -> checksum.add("", "abcd"));
+            assertThrows(IllegalArgumentException.class, () -> checksum.add("data1.tar.gz.0", ""));
+        }
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);

@@ -8,13 +8,13 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 101 source-audit closure for backup checksum
-  duplicate-row hardening.
+- Result: completed Cycle 102 source-audit closure for backup checksum row
+  generation hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  checksum duplicate-row hardening and its verification target.
-- Code: backup checksum-file loading now rejects duplicate filename rows instead
-  of letting later rows overwrite earlier checksum values; malformed checksum
-  rows continue to fail as `IOException` restore or verify errors.
+  checksum writer hardening and its verification target.
+- Code: backup checksum-file writing now rejects empty checksum values, empty
+  filenames, and duplicate filenames before emitting rows, keeping generated
+  checksum files compatible with the stricter reader used by restore and verify.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
