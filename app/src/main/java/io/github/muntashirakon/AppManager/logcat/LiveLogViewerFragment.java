@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.logcat;
 import static io.github.muntashirakon.AppManager.logcat.LogViewerActivity.UPDATE_CHECK_INTERVAL;
 
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -20,6 +19,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logcat.helper.LogcatClipboardFormatter;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -145,7 +145,7 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
             displaySaveLogDialog(true);
         } else if (id == R.id.action_copy) {
             ThreadUtils.postOnBackgroundThread(() -> {
-                String logs = TextUtils.join("\n", getSelectedLogsAsStrings());
+                String logs = LogcatClipboardFormatter.formatLines(getSelectedLogsAsStrings());
                 ThreadUtils.postOnMainThread(() -> Utils.copyToClipboard(ContextUtils.getContext(), "Logs", logs));
             });
         } else if (id == R.id.action_export) {
