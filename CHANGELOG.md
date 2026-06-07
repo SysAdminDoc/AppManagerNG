@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Batch backup flag parsing (source audit, 2026-06-06)
+
+- Batch backup options now reject negative persisted, parcelled, or constructed
+  backup flag masks before backup, restore, or delete operations can interpret
+  them as every known backup flag.
+- Zero and positive backup flag masks remain accepted.
+
 ### Fixed - Batch backup import option parsing (source audit, 2026-06-06)
 
 - Batch backup import options now reject unsupported persisted, parcelled, or
