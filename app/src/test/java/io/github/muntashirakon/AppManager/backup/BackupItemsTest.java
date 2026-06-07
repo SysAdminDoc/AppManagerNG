@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.After;
 import org.junit.Before;
@@ -11,6 +12,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,9 +78,30 @@ public class BackupItemsTest {
                 namesOf(backupItem.getKeyStoreFiles()));
     }
 
+    @Test
+    public void checksumReaderRejectsMalformedRowsAsIOException() throws IOException {
+        assertMalformedChecksum("missing-tab.txt", "not-tab-separated\n");
+        assertMalformedChecksum("empty-checksum.txt", "\tdata0.tar.gz.0\n");
+        assertMalformedChecksum("empty-filename.txt", "abcd\t\n");
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
+        }
+    }
+
+    private void assertMalformedChecksum(String filename, String contents) throws IOException {
+        Path checksumFile = testDir.createNewFile(filename, null);
+        writeString(checksumFile, contents);
+
+        IOException exception = assertThrows(IOException.class, () -> new BackupItems.Checksum(checksumFile, "r"));
+        assertEquals("Illegal lines found in the checksum file.", exception.getMessage());
+    }
+
+    private static void writeString(Path file, String contents) throws IOException {
+        try (OutputStream os = file.openOutputStream()) {
+            os.write(contents.getBytes(StandardCharsets.UTF_8));
         }
     }
 
