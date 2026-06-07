@@ -63,6 +63,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
 import androidx.core.app.ActivityCompat;
@@ -195,6 +196,7 @@ import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.IntentUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
+import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -491,15 +493,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     ThreadUtils.postOnMainThread(() -> {
                         showProgressIndicator(false);
                         Context ctx = ContextUtils.getContext();
-                        Uri apkUri = FmProvider.getContentUri(tmpApkSource);
-                        Intent intent = new Intent(Intent.ACTION_SEND)
-                                .setType("application/*")
-                                .putExtra(Intent.EXTRA_STREAM, apkUri)
-                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
-                        // reach the chooser target on Android 18+ (auto-grant removed
-                        // for SEND/SEND_MULTIPLE/IMAGE_CAPTURE).
-                        intent.setClipData(ClipData.newRawUri("", apkUri));
+                        Intent intent = buildApkShareIntent(tmpApkSource);
                         ctx.startActivity(Intent.createChooser(intent, ctx.getString(R.string.share_apk))
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                     });
@@ -720,6 +714,21 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else UIUtils.displayShortToast(R.string.only_works_in_root_or_adb_mode);
         } else return false;
         return true;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildApkShareIntent(@NonNull Path apkPath) {
+        Uri apkUri = FmProvider.getContentUri(apkPath);
+        Intent intent = new Intent(Intent.ACTION_SEND)
+                .setType(MimeTypeUtils.normalizeMimeTypeOrDefault(apkPath.getType()))
+                .putExtra(Intent.EXTRA_STREAM, apkUri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+        // reach the chooser target on Android 18+ (auto-grant removed
+        // for SEND/SEND_MULTIPLE/IMAGE_CAPTURE).
+        intent.setClipData(ClipData.newRawUri("", apkUri));
+        return intent;
     }
 
     // NF-08: manage user-authored tags (AppTagStore) for this package. These
