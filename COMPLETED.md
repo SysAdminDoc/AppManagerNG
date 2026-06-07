@@ -12,6 +12,10 @@ historical context and the previous ledger are under
 
 ## Shipped Features
 
+### Closed on 2026-06-07
+
+- [x] **P2 Backup database backup-name projection hardening** — backup-list database rows now trim backup names from both legacy v2 metadata and v5 metadata before writing the Room key; blank direct metadata backup names now project to the base-backup sentinel, keeping retention and display buckets aligned with metadata parsing. Focused verification: `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.db.entity.BackupTest --tests io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5Test`. — *Source: ROADMAP.md*
+
 ### Closed on 2026-06-06
 
 - [x] **P2 Backup metadata backup-name parser hardening** — backup metadata v5 names are now trimmed when created, copied, read from JSON, or serialized, so retention, display, restore lookup, and backup-list database projection paths use one normalized backup-name value; blank persisted backup names now normalize to the base-backup sentinel before they can be shown or projected as named backups. Focused verification: `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5Test`. — *Source: ROADMAP.md*
