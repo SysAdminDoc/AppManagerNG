@@ -206,13 +206,13 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             if (contentInfo != null) {
                 String name = formatPropertyDisplayName(contentInfo.getName(), "");
                 String mime = formatPropertyDisplayName(contentInfo.getMimeType(), "");
-                String message = contentInfo.getMessage();
+                String message = formatPropertyDisplayText(contentInfo.getMessage());
                 if (!TextUtils.isEmpty(mime)) {
                     mTypeView.setText(String.format(Locale.ROOT, "%s (%s)", name, mime));
                 } else {
                     mTypeView.setText(name);
                 }
-                if (message != null) {
+                if (!TextUtils.isEmpty(message)) {
                     TextInputLayoutCompat.fromTextInputEditText(mMoreInfoView).setVisibility(View.VISIBLE);
                     mMoreInfoView.setText(message);
                 }
@@ -223,12 +223,14 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
         mViewModel.getOwnerLiveData().observe(getViewLifecycleOwner(), ownerName -> {
             assert mFileProperties != null;
             assert mFileProperties.uidGidPair != null;
-            mOwnerView.setText(String.format(Locale.ROOT, "%s (%d)", ownerName, mFileProperties.uidGidPair.uid));
+            String owner = formatPropertyDisplayName(ownerName, String.valueOf(mFileProperties.uidGidPair.uid));
+            mOwnerView.setText(String.format(Locale.ROOT, "%s (%d)", owner, mFileProperties.uidGidPair.uid));
         });
         mViewModel.getGroupLiveData().observe(getViewLifecycleOwner(), groupName -> {
             assert mFileProperties != null;
             assert mFileProperties.uidGidPair != null;
-            mGroupView.setText(String.format(Locale.ROOT, "%s (%d)", groupName, mFileProperties.uidGidPair.gid));
+            String group = formatPropertyDisplayName(groupName, String.valueOf(mFileProperties.uidGidPair.gid));
+            mGroupView.setText(String.format(Locale.ROOT, "%s (%d)", group, mFileProperties.uidGidPair.gid));
         });
 
         // Load live data
@@ -305,7 +307,9 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             }
         }
         if (noInit || !Objects.equals(mFileProperties.context, fileProperties.context)) {
-            mSelinuxContextView.setText(fileProperties.context != null ? fileProperties.context : "--");
+            mSelinuxContextView.setText(fileProperties.context != null
+                    ? formatPropertyDisplayText(fileProperties.context)
+                    : "--");
         }
         mFileProperties = fileProperties;
         // Load others
@@ -328,6 +332,12 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
     @NonNull
     static String formatPropertyDisplayPath(@Nullable String path) {
         return FmUtils.getDisplayName(path, "");
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatPropertyDisplayText(@Nullable String text) {
+        return FmUtils.getDisplayName(text, "");
     }
 
     private void updateSummary(@NonNull FileProperties fileProperties) {
