@@ -15,6 +15,7 @@ import androidx.annotation.VisibleForTesting;
 
 import java.util.Locale;
 
+import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.io.Path;
 
 public final class FmOpenWithDefaults {
@@ -44,11 +45,11 @@ public final class FmOpenWithDefaults {
     @NonNull
     @VisibleForTesting
     static String resolveViewMimeType(@NonNull Path path, @Nullable String customType) {
-        String normalizedCustomType = FmMimeUtils.normalizeMimeType(customType);
+        String normalizedCustomType = MimeTypeUtils.normalizeMimeType(customType);
         if (normalizedCustomType != null) {
             return normalizedCustomType;
         }
-        return FmMimeUtils.normalizeMimeTypeOrDefault(path.getType());
+        return MimeTypeUtils.normalizeMimeTypeOrDefault(path.getType());
     }
 
     @Nullable
