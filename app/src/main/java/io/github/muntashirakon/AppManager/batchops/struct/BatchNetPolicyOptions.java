@@ -18,7 +18,7 @@ public class BatchNetPolicyOptions implements IBatchOpOptions {
     private int mPolicies;
 
     public BatchNetPolicyOptions(@NetPolicy int policies) {
-        mPolicies = policies;
+        mPolicies = requireValidPolicies(policies);
     }
 
     @NetPolicy
@@ -27,7 +27,7 @@ public class BatchNetPolicyOptions implements IBatchOpOptions {
     }
 
     protected BatchNetPolicyOptions(@NonNull Parcel in) {
-        mPolicies = in.readInt();
+        mPolicies = requireValidPolicies(in.readInt());
     }
 
     public static final Creator<BatchNetPolicyOptions> CREATOR = new Creator<BatchNetPolicyOptions>() {
@@ -56,7 +56,11 @@ public class BatchNetPolicyOptions implements IBatchOpOptions {
 
     protected BatchNetPolicyOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mPolicies = jsonObject.getInt("policies");
+        try {
+            mPolicies = requireValidPolicies(jsonObject.getInt("policies"));
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     public static final JsonDeserializer.Creator<BatchNetPolicyOptions> DESERIALIZER
@@ -69,5 +73,12 @@ public class BatchNetPolicyOptions implements IBatchOpOptions {
         jsonObject.put("tag", TAG);
         jsonObject.put("policies", mPolicies);
         return jsonObject;
+    }
+
+    private static int requireValidPolicies(int policies) {
+        if (policies < 0) {
+            throw new IllegalArgumentException("Network policies must not be negative: " + policies);
+        }
+        return policies;
     }
 }
