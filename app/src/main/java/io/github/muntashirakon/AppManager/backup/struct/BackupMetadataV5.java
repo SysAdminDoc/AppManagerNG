@@ -23,6 +23,8 @@ import org.json.JSONException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -208,7 +210,19 @@ public class BackupMetadataV5 implements LocalizedString {
             if (ArrayUtils.indexOf(TAR_TYPES, tarType) == -1) {
                 throw new IllegalArgumentException("Malformed backup: unknown tar type " + tarType);
             }
+            verifyChecksumAlgorithm();
             verifyCrypto();
+        }
+
+        private void verifyChecksumAlgorithm() {
+            if (DigestUtils.CRC32.equals(checksumAlgo)) {
+                return;
+            }
+            try {
+                MessageDigest.getInstance(checksumAlgo);
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalArgumentException("Malformed backup: unsupported checksum algorithm " + checksumAlgo, e);
+            }
         }
 
         @NonNull
