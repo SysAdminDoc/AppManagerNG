@@ -243,7 +243,11 @@ public class OpHistoryItem {
         if (packageName == null) {
             return null;
         }
-        return AppDetailsActivity.getIntent(context, packageName, getPrimaryUserId());
+        Integer userId = getPrimaryUserId();
+        if (userId == null) {
+            return null;
+        }
+        return AppDetailsActivity.getIntent(context, packageName, userId);
     }
 
     @NonNull
@@ -369,32 +373,39 @@ public class OpHistoryItem {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS: {
                 JSONArray packages = jsonData.optJSONArray("packages");
                 if (packages != null && packages.length() == 1) {
-                    return packages.optString(0, null);
+                    Object packageName = packages.opt(0);
+                    if (packageName instanceof String) {
+                        return OpHistoryManager.normalizePackageName((String) packageName);
+                    }
                 }
                 return null;
             }
             case OpHistoryManager.HISTORY_TYPE_INSTALLER:
-                return JSONUtils.optString(jsonData, "package_name");
+                return OpHistoryManager.normalizePackageName(JSONUtils.optString(jsonData, "package_name"));
             case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
-                return JSONUtils.optString(jsonData, "package_name");
+                return OpHistoryManager.normalizePackageName(JSONUtils.optString(jsonData, "package_name"));
             default:
                 return null;
         }
     }
 
-    private int getPrimaryUserId() {
+    @Nullable
+    private Integer getPrimaryUserId() {
         switch (getType()) {
             case OpHistoryManager.HISTORY_TYPE_BATCH_OPS: {
                 JSONArray users = jsonData.optJSONArray("users");
-                if (users != null && users.length() > 0) {
-                    return users.optInt(0, UserHandleHidden.myUserId());
+                if (users != null && users.length() == 1) {
+                    return OpHistoryManager.normalizeUserId(users.opt(0));
                 }
-                break;
+                return null;
             }
+            case OpHistoryManager.HISTORY_TYPE_INSTALLER:
+                return UserHandleHidden.myUserId();
             case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
-                return jsonData.optInt("user_id", UserHandleHidden.myUserId());
+                return OpHistoryManager.normalizeUserId(jsonData.opt("user_id"));
+            default:
+                return null;
         }
-        return UserHandleHidden.myUserId();
     }
 
     private static void appendSection(@NonNull Context context,

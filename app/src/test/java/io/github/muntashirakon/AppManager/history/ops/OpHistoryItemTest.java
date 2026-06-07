@@ -110,6 +110,68 @@ public class OpHistoryItemTest {
     }
 
     @Test
+    public void malformedSingleAppActionTargetHasNoPrimaryIntent() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 16L;
+        row.type = OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("action", SingleAppActionHistoryItem.ACTION_FREEZE)
+                .put("operation_label", "Freeze")
+                .put("package_name", "com.example.app")
+                .put("target_label", "")
+                .toString();
+        row.serializedExtra = null;
+
+        assertNull(new OpHistoryItem(row).getPrimaryTargetIntent(context));
+    }
+
+    @Test
+    public void batchHistoryUsesSingleValidTargetIntent() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 18L;
+        row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("title_res", R.string.batch_ops)
+                .put("op", BatchOpsManager.OP_FREEZE)
+                .put("packages", new JSONArray().put("com.example.app"))
+                .put("users", new JSONArray().put(0))
+                .put("options", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = null;
+
+        Intent targetIntent = new OpHistoryItem(row).getPrimaryTargetIntent(context);
+
+        assertNotNull(targetIntent);
+        assertEquals("com.example.app", targetIntent.getStringExtra("android.intent.extra.PACKAGE_NAME"));
+    }
+
+    @Test
+    public void malformedBatchTargetHasNoPrimaryIntent() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistory row = new OpHistory();
+        row.id = 17L;
+        row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = new JSONObject()
+                .put("title_res", R.string.batch_ops)
+                .put("op", BatchOpsManager.OP_FREEZE)
+                .put("packages", new JSONArray().put("com.example.app"))
+                .put("users", new JSONArray().put("0"))
+                .put("options", JSONObject.NULL)
+                .toString();
+        row.serializedExtra = null;
+
+        assertNull(new OpHistoryItem(row).getPrimaryTargetIntent(context));
+    }
+
+    @Test
     public void componentActionHistoryIsNonReplayableAndAuditable() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         SingleAppActionHistoryItem historyItem = new SingleAppActionHistoryItem(

@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history target routing (source audit, 2026-06-07)
+
+- Operation-history primary target intents and per-app rollback matching now
+  require normalized valid package names plus explicit non-negative numeric user
+  IDs before routing to app details or queueing inverse actions.
+- Malformed batch user arrays and single-app rows with missing or nonnumeric
+  user IDs no longer produce misleading primary targets or rollback matches.
+
 ### Fixed - Operation history scalar normalization (source audit, 2026-06-07)
 
 - Operation-history type and status normalization is now centralized so the UI,
