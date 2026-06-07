@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup metadata parse errors (source audit, 2026-06-06)
+
+- Backup metadata loading now reports malformed crypto fields as `IOException`
+  failures instead of leaking unchecked validation exceptions from JSON parsing.
+- Both info and metadata JSON read paths use the same restore/verify error
+  boundary for malformed persisted backup data.
+
 ### Fixed - Backup checksum row generation (source audit, 2026-06-06)
 
 - Backup checksum-file writing now rejects empty checksum values, empty
