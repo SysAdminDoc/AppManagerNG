@@ -118,7 +118,10 @@ public final class OpHistoryManager {
 
     @WorkerThread
     public static int deleteHistoryItemsByStatus(@Status String status) {
-        return AppsDb.getInstance().opHistoryDao().deleteByStatus(status);
+        if (STATUS_SUCCESS.equals(status)) {
+            return AppsDb.getInstance().opHistoryDao().deleteByStatus(STATUS_SUCCESS);
+        }
+        return AppsDb.getInstance().opHistoryDao().deleteByStatusOtherThan(STATUS_SUCCESS);
     }
 
     @WorkerThread

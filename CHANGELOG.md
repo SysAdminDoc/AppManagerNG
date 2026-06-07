@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history failed cleanup matching (source audit, 2026-06-07)
+
+- Failed-history cleanup now deletes every stored row that the UI normalizes as
+  failed, including imported or future status tokens, while successful-history
+  cleanup remains limited to exact `success` rows.
+- Added a Robolectric Room regression test for the generated operation-history
+  DAO delete queries.
+
 ### Fixed - Operation history replay payload validation (source audit, 2026-06-07)
 
 - Operation-history rows now validate their stored batch, installer, or profile
