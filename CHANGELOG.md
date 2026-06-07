@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Activity Interceptor intent-details export hardening (source audit, 2026-06-07)
+
+- Activity Interceptor copy/share intent details now normalize app-controlled
+  matching-activity labels, names, and packages before writing the tab-delimited
+  diagnostic text.
+- Matching-activity fields now flatten tabs and line breaks and defuse
+  spreadsheet-formula prefixes through the shared export text helper.
+
 ### Fixed - Logcat saved-log UTF-8 export (source audit, 2026-06-07)
 
 - Logcat saved logs and temporary share attachments now write text through

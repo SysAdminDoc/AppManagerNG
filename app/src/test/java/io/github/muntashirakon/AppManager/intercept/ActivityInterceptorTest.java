@@ -72,4 +72,11 @@ public class ActivityInterceptorTest {
         assertEquals(Integer.valueOf(10), ActivityInterceptor.getPastedUserHeaderValue("USER\t 10 "));
         assertEquals(Integer.valueOf(16), ActivityInterceptor.getPastedUserHeaderValue("USER\t0x10"));
     }
+
+    @Test
+    public void formatIntentDetailsFieldFlattensControlTextAndDefusesFormula() {
+        assertEquals("' =HYPERLINK(\"x\") Fake Column ",
+                ActivityInterceptor.formatIntentDetailsField(
+                        "\t=HYPERLINK(\"x\")\nFake\tColumn\r"));
+    }
 }
