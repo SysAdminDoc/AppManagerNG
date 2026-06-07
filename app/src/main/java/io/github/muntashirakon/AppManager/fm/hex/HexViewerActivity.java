@@ -280,9 +280,10 @@ public class HexViewerActivity extends BaseActivity {
         return input.getText() == null ? "" : input.getText().toString();
     }
 
+    @VisibleForTesting
     @NonNull
-    private static String getErrorMessage(@NonNull Throwable throwable) {
-        String message = throwable.getLocalizedMessage();
+    static String getErrorMessage(@NonNull Throwable throwable) {
+        String message = ExportTextUtils.escapeTsvField(throwable.getLocalizedMessage()).trim();
         return TextUtils.isEmpty(message) ? throwable.getClass().getSimpleName() : message;
     }
 }

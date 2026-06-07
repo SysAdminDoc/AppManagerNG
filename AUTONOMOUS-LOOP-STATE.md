@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 216 source-audit closure for file-manager failure
-  toast message hardening.
+- Result: completed Cycle 217 source-audit closure for hex viewer error-message
+  display hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file-manager failure toast message hardening and its verification target.
-- Code: File-manager open-file and Open With launch failure toasts now format
-  exception messages before rendering them, flatten controls, defuse
-  formula-style prefixes, and fall back to the existing generic failure text for
-  blank exception messages.
+  hex viewer error-message display hardening and its verification target.
+- Code: Hex viewer open/read failure summaries and toasts now format localized
+  throwable messages before rendering them, flatten controls, defuse
+  formula-style prefixes, and keep the throwable class-name fallback for blank
+  messages.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.hex.HexViewerActivityTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
