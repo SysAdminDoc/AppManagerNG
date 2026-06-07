@@ -17,7 +17,7 @@ are under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
 [`docs/archive/`](docs/archive/). Do not add new unchecked work to separate root
 research files.
 
-> Last researched: Cycle 149 - 2026-06-07.
+> Last researched: Cycle 150 - 2026-06-07.
 
 ## Implementer Instructions
 
@@ -74,10 +74,11 @@ than by historical priority tier:
   in this checkout on 2026-06-05.
 - Most T19 / T20 / T21 rows below already have their data layer + JVM tests
   shipped; the open part is the Android-side UI wiring, called out per row.
-- Source-backed 2026-06-06/2026-06-07 audit closures now include app-list
-  Markdown escaping, app-list CSV formula hardening, logcat export formula
-  hardening, operation history export formula hardening, operation history
-  replay identity validation, operation history target routing,
+- Source-backed 2026-06-06/2026-06-07 audit closures now include app-list XML
+  nullable-field hardening, app-list Markdown escaping, app-list CSV formula
+  hardening, logcat export formula hardening, operation history export formula
+  hardening, operation history replay identity validation, operation history
+  target routing,
   operation history shared scalar normalization, operation history snapshot
   normalization, operation history failed cleanup matching,
   operation history replay payload validation,

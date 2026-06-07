@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - App list XML nullable fields (source audit, 2026-06-07)
+
+- App-list XML export now skips nullable text attributes for absent labels,
+  version names, signatures, installer fields, and source paths instead of
+  throwing or writing malformed package attributes.
+- XML export tests now cover missing optional app metadata while keeping
+  required package identity and numeric attributes intact.
+
 ### Fixed - App list Markdown escaping (source audit, 2026-06-07)
 
 - App-list Markdown export now flattens embedded line breaks and escapes
