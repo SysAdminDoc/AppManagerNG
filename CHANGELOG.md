@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Leftover export share intent hardening (source audit, 2026-06-07)
+
+- Leftover-folder TSV export sharing now builds its `ACTION_SEND` intent
+  through a tested helper.
+- Empty leftover export requests are rejected before launching an external
+  share, while valid exports keep pinned TSV MIME, subject, and escaped body
+  behavior.
+
 ### Fixed - Provider-query share subject hardening (source audit, 2026-06-07)
 
 - Provider-query TSV export sharing now builds its `ACTION_SEND` intent through
