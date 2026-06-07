@@ -312,12 +312,12 @@ public class BackupMetadataV5 implements LocalizedString {
 
         public Metadata(@Nullable String backupName) {
             this.version = MetadataManager.getCurrentBackupMetaVersion();
-            this.backupName = backupName;
+            this.backupName = sanitizeBackupName(backupName);
         }
 
         public Metadata(@NonNull Metadata metadata) {
             version = metadata.version;
-            backupName = metadata.backupName;
+            backupName = sanitizeBackupName(metadata.backupName);
             label = metadata.label;
             packageName = metadata.packageName;
             versionName = metadata.versionName;
@@ -340,7 +340,7 @@ public class BackupMetadataV5 implements LocalizedString {
 
         public Metadata(@NonNull JSONObject rootObject) throws JSONException {
             version = rootObject.getInt("version");
-            backupName = JSONUtils.optString(rootObject, "backup_name");
+            backupName = sanitizeBackupName(JSONUtils.optString(rootObject, "backup_name"));
             label = rootObject.getString("label");
             packageName = rootObject.getString("package_name");
             versionName = rootObject.getString("version_name");
@@ -359,6 +359,15 @@ public class BackupMetadataV5 implements LocalizedString {
                     ? JSONUtils.getArray(String.class, defaultRolesArray)
                     : ArrayUtils.emptyArray(String.class);
             verifyMetadata();
+        }
+
+        @Nullable
+        private static String sanitizeBackupName(@Nullable String backupName) {
+            if (backupName == null) {
+                return null;
+            }
+            String normalizedBackupName = backupName.trim();
+            return normalizedBackupName.isEmpty() ? null : normalizedBackupName;
         }
 
         private void verifyMetadata() {
