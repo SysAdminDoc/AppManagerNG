@@ -940,7 +940,14 @@ public class ActivityInterceptor extends BaseActivity {
         if (parts.length < 2 || !"ROOT".equals(parts[0])) {
             return null;
         }
-        return Boolean.parseBoolean(parts[1]);
+        String rawValue = parts[1].trim();
+        if ("true".equalsIgnoreCase(rawValue)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(rawValue)) {
+            return false;
+        }
+        return null;
     }
 
     @Nullable
