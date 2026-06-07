@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,6 +22,7 @@ import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public class DexOptOptions implements Parcelable, IJsonSerializer {
     public static final String ROOT_ONLY_CLEAR_PROFILE_DATA = "clear_profile_data";
@@ -50,8 +52,8 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     }
 
     protected DexOptOptions(@NonNull Parcel in) {
-        packages = in.createStringArray();
-        compilerFiler = in.readString();
+        packages = requireValidPackages(in.createStringArray());
+        compilerFiler = normalizeCompilerFilter(in.readString());
         compileLayouts = in.readByte() != 0;
         clearProfileData = in.readByte() != 0;
         checkProfiles = in.readByte() != 0;
@@ -62,8 +64,8 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeStringArray(packages);
-        dest.writeString(compilerFiler);
+        dest.writeStringArray(requireValidPackages(packages));
+        dest.writeString(normalizeCompilerFilter(compilerFiler));
         dest.writeByte((byte) (compileLayouts ? 1 : 0));
         dest.writeByte((byte) (clearProfileData ? 1 : 0));
         dest.writeByte((byte) (checkProfiles ? 1 : 0));
@@ -73,13 +75,17 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     }
 
     protected DexOptOptions(@NonNull JSONObject jsonObject) throws JSONException {
-        packages = JSONUtils.getArray(String.class, jsonObject.optJSONArray("packages"));
-        compilerFiler = JSONUtils.optString(jsonObject, "compiler_filter");
-        if (compilerFiler == null) {
-            compilerFiler = JSONUtils.optString(jsonObject, "compiler_filer");
-        }
-        if (compilerFiler == null) {
-            compilerFiler = getDefaultCompilerFilterForInstallation();
+        try {
+            packages = deserializePackages(jsonObject.optJSONArray("packages"));
+            compilerFiler = normalizeCompilerFilter(JSONUtils.optString(jsonObject, "compiler_filter"));
+            if (compilerFiler == null) {
+                compilerFiler = normalizeCompilerFilter(JSONUtils.optString(jsonObject, "compiler_filer"));
+            }
+            if (compilerFiler == null) {
+                compilerFiler = getDefaultCompilerFilterForInstallation();
+            }
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
         }
         compileLayouts = jsonObject.getBoolean("compile_layouts");
         clearProfileData = jsonObject.getBoolean("clear_profile_data");
@@ -115,8 +121,8 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     @NonNull
     private DexOptOptions copy() {
         DexOptOptions options = new DexOptOptions();
-        options.packages = packages != null ? packages.clone() : null;
-        options.compilerFiler = compilerFiler;
+        options.packages = requireValidPackages(packages);
+        options.compilerFiler = normalizeCompilerFilter(compilerFiler);
         options.compileLayouts = compileLayouts;
         options.clearProfileData = clearProfileData;
         options.checkProfiles = checkProfiles;
@@ -130,8 +136,8 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
     @Override
     public JSONObject serializeToJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("packages", JSONUtils.getJSONArray(packages));
-        jsonObject.put("compiler_filter", compilerFiler);
+        jsonObject.put("packages", JSONUtils.getJSONArray(requireValidPackages(packages)));
+        jsonObject.put("compiler_filter", normalizeCompilerFilter(compilerFiler));
         jsonObject.put("compile_layouts", compileLayouts);
         jsonObject.put("clear_profile_data", clearProfileData);
         jsonObject.put("check_profiles", checkProfiles);
@@ -162,20 +168,77 @@ public class DexOptOptions implements Parcelable, IJsonSerializer {
 
     @NonNull
     static String getDefaultCompilerFilterForInstallation() {
-        String profile = SystemProperties.get("pm.dexopt.install");
+        return getSystemCompilerFilter("pm.dexopt.install");
+    }
+
+    @NonNull
+    static String getDefaultCompilerFilter() {
+        return getSystemCompilerFilter("dalvik.vm.dex2oat-filter");
+    }
+
+    @NonNull
+    private static String getSystemCompilerFilter(@NonNull String propertyName) {
+        String profile = SystemProperties.get(propertyName);
         if (TextUtils.isEmpty(profile)) {
+            return "speed";
+        }
+        profile = profile.trim();
+        if (profile.isEmpty()) {
             return "speed";
         }
         return profile;
     }
 
-    @NonNull
-    static String getDefaultCompilerFilter() {
-        String profile = SystemProperties.get("dalvik.vm.dex2oat-filter");
-        if (TextUtils.isEmpty(profile)) {
-            return "speed";
+    @Nullable
+    private static String[] deserializePackages(@Nullable JSONArray packagesJson) throws JSONException {
+        if (packagesJson == null) {
+            return null;
         }
-        return profile;
+        String[] packages = new String[packagesJson.length()];
+        for (int i = 0; i < packagesJson.length(); ++i) {
+            Object value = packagesJson.get(i);
+            if (!(value instanceof String)) {
+                throw new JSONException("Invalid dexopt package name.");
+            }
+            packages[i] = (String) value;
+        }
+        try {
+            return requireValidPackages(packages);
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
+    }
+
+    @Nullable
+    private static String[] requireValidPackages(@Nullable String[] packages) {
+        if (packages == null) {
+            return null;
+        }
+        String[] validPackages = new String[packages.length];
+        for (int i = 0; i < packages.length; ++i) {
+            String packageName = packages[i];
+            if (packageName == null) {
+                throw new IllegalArgumentException("Invalid dexopt package name.");
+            }
+            String normalizedPackageName = packageName.trim();
+            if (!PackageUtils.validateName(normalizedPackageName)) {
+                throw new IllegalArgumentException("Invalid dexopt package name: " + packageName);
+            }
+            validPackages[i] = normalizedPackageName;
+        }
+        return validPackages;
+    }
+
+    @Nullable
+    private static String normalizeCompilerFilter(@Nullable String compilerFilter) {
+        if (compilerFilter == null) {
+            return null;
+        }
+        String normalizedCompilerFilter = compilerFilter.trim();
+        if (normalizedCompilerFilter.isEmpty()) {
+            throw new IllegalArgumentException("DexOpt compiler filter must not be empty.");
+        }
+        return normalizedCompilerFilter;
     }
 
     public static final class SanitizationResult {
