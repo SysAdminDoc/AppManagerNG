@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Diagnostic ZIP share intent attachment hardening (source audit, 2026-06-07)
+
+- Diagnostic ZIP sharing now builds its `ACTION_SEND` intent through a tested
+  helper.
+- Diagnostic ZIP attachments now have pinned ZIP MIME, subject, URI stream,
+  read-grant, and `ClipData` behavior before the chooser is launched.
+
 ### Fixed - Crash share intent attachment hardening (source audit, 2026-06-07)
 
 - Crash notification sharing now builds its `ACTION_SEND` intent through a
