@@ -6,9 +6,11 @@ import android.os.Parcel;
 
 import androidx.annotation.NonNull;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
@@ -20,7 +22,7 @@ public class BatchPermissionOptions implements IBatchOpOptions {
     private String[] mPermissions;
 
     public BatchPermissionOptions(@NonNull String[] permissions) {
-        mPermissions = permissions;
+        mPermissions = requireValidPermissions(permissions);
     }
 
     @NonNull
@@ -29,7 +31,7 @@ public class BatchPermissionOptions implements IBatchOpOptions {
     }
 
     protected BatchPermissionOptions(@NonNull Parcel in) {
-        mPermissions = Objects.requireNonNull(in.createStringArray());
+        mPermissions = requireValidPermissions(Objects.requireNonNull(in.createStringArray()));
     }
 
     @Override
@@ -39,7 +41,7 @@ public class BatchPermissionOptions implements IBatchOpOptions {
 
     protected BatchPermissionOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mPermissions = JSONUtils.getArray(String.class, jsonObject.getJSONArray("permissions"));
+        mPermissions = deserializePermissions(jsonObject.getJSONArray("permissions"));
     }
 
     public static final JsonDeserializer.Creator<BatchPermissionOptions> DESERIALIZER
@@ -72,4 +74,43 @@ public class BatchPermissionOptions implements IBatchOpOptions {
             return new BatchPermissionOptions[size];
         }
     };
+
+    @NonNull
+    private static String[] deserializePermissions(@NonNull JSONArray permissionsJson) throws JSONException {
+        String[] permissions = new String[permissionsJson.length()];
+        for (int i = 0; i < permissionsJson.length(); ++i) {
+            Object value = permissionsJson.get(i);
+            if (!(value instanceof String)) {
+                throw new JSONException("Invalid permission name.");
+            }
+            permissions[i] = (String) value;
+        }
+        try {
+            return requireValidPermissions(permissions);
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
+    }
+
+    @NonNull
+    private static String[] requireValidPermissions(@NonNull String[] permissions) {
+        if (permissions.length == 0) {
+            throw new IllegalArgumentException("Permission options must include at least one permission.");
+        }
+        ArrayList<String> validPermissions = new ArrayList<>(permissions.length);
+        for (String permission : permissions) {
+            if (permission == null) {
+                throw new IllegalArgumentException("Invalid permission name.");
+            }
+            String normalizedPermission = permission.trim();
+            if (normalizedPermission.isEmpty()) {
+                throw new IllegalArgumentException("Invalid permission name.");
+            }
+            validPermissions.add(normalizedPermission);
+        }
+        if (validPermissions.contains("*") && validPermissions.size() != 1) {
+            throw new IllegalArgumentException("Permission wildcard cannot be mixed with explicit permissions.");
+        }
+        return validPermissions.toArray(new String[0]);
+    }
 }
