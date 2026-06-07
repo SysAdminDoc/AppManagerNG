@@ -8,15 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 178 source-audit closure for open-with MIME fallback
-  hardening.
+- Result: completed Cycle 179 source-audit closure for logcat share attachment
+  MIME hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  open-with MIME fallback hardening and its verification target.
-- Code: File-manager open-with intents now normalize custom MIME strings before
-  calling `Intent.setDataAndType`; malformed or parameterized custom values fall
-  back to the file's detected type through the shared file-manager MIME helper.
+  logcat share attachment MIME hardening and its verification target.
+- Code: Logcat attachment share intents now normalize caller-supplied MIME
+  strings before setting `ACTION_SEND` types; malformed values fall back to the
+  attachment file type through a shared MIME utility used by file-manager share
+  and open-with intents.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmOpenWithDefaultsTest --tests io.github.muntashirakon.AppManager.fm.SharableItemsTest --tests io.github.muntashirakon.AppManager.fm.FmBatchApkInstallUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.utils.MimeTypeUtilsTest --tests io.github.muntashirakon.AppManager.logcat.LogViewerActivityTest --tests io.github.muntashirakon.AppManager.fm.FmOpenWithDefaultsTest --tests io.github.muntashirakon.AppManager.fm.SharableItemsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,10 +28,10 @@ Current branch: `main`
 - Continue this same assigned project.
 - Next roadmap target: continue auditing one-off share builders and chooser
   metadata for host-verifiable URI-grant and metadata defects.
-- Check whether support ZIP, crash/log attachments, APK share intents, or
-  editor/logcat share paths still trust nullable metadata, omit chooser grant
-  evidence, or expose unchecked provider-controlled values that can be pinned
-  with focused host tests.
+- Check whether support ZIP, crash attachments, APK share intents, or editor
+  share paths still trust nullable metadata, omit chooser grant evidence, or
+  expose unchecked provider-controlled values that can be pinned with focused
+  host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

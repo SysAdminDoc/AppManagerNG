@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.io.Path;
 
 public class SharableItems {
@@ -28,7 +29,7 @@ public class SharableItems {
             throw new IllegalArgumentException("pathList cannot be empty");
         }
         this.pathList = Collections.unmodifiableList(new ArrayList<>(pathList));
-        this.mimeType = FmMimeUtils.normalizeMimeTypeOrDefault(mimeType);
+        this.mimeType = MimeTypeUtils.normalizeMimeTypeOrDefault(mimeType);
     }
 
     public Intent toSharableIntent() {
@@ -68,7 +69,7 @@ public class SharableItems {
         for (Path path : pathList) {
             String thisMime = resolveMimeType(path);
             if (splitMime) {
-                thisMime = FmMimeUtils.getMimeMajorType(thisMime);
+                thisMime = MimeTypeUtils.getMimeMajorType(thisMime);
             }
             if (mimeType == null) {
                 mimeType = thisMime;
@@ -77,8 +78,8 @@ public class SharableItems {
                     // The first part aren't consistent
                     return "*/*";
                 }
-                String splitMimeType = FmMimeUtils.getMimeMajorType(mimeType);
-                String thisSplitMime = FmMimeUtils.getMimeMajorType(thisMime);
+                String splitMimeType = MimeTypeUtils.getMimeMajorType(mimeType);
+                String thisSplitMime = MimeTypeUtils.getMimeMajorType(thisMime);
                 if (!splitMimeType.equals(thisSplitMime)) {
                     // The first part aren't consistent
                     return "*/*";
@@ -95,9 +96,9 @@ public class SharableItems {
 
     @NonNull
     private static String resolveMimeType(@NonNull Path path) {
-        String mimeType = FmMimeUtils.normalizeMimeType(path.getPathContentInfo().getMimeType());
+        String mimeType = MimeTypeUtils.normalizeMimeType(path.getPathContentInfo().getMimeType());
         if (mimeType == null) {
-            mimeType = FmMimeUtils.normalizeMimeType(path.getType());
+            mimeType = MimeTypeUtils.normalizeMimeType(path.getType());
         }
         return mimeType != null ? mimeType : ContentType2.OTHER.getMimeType();
     }

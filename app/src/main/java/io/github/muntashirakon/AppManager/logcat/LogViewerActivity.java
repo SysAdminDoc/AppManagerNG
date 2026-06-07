@@ -20,6 +20,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
@@ -60,6 +61,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 import io.github.muntashirakon.AppManager.utils.BetterActivityResult;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
+import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -117,22 +119,39 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
             .registerForActivityResult(this, new ActivityResultContracts.CreateDocument("*/*"));
 
     public static void startChooser(@NonNull Context context, @Nullable String subject,
-                                    @NonNull String attachmentType, @NonNull Path attachment) {
-        Uri attachmentUri = FmProvider.getContentUri(attachment);
-        Intent actionSendIntent = new Intent(Intent.ACTION_SEND)
-                .setType(attachmentType)
-                .putExtra(Intent.EXTRA_SUBJECT, subject)
-                .putExtra(Intent.EXTRA_STREAM, attachmentUri)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
-        // reach the chooser target on Android 18+ (auto-grant removed).
-        actionSendIntent.setClipData(ClipData.newRawUri("", attachmentUri));
+                                    @Nullable String attachmentType, @NonNull Path attachment) {
+        Intent actionSendIntent = buildShareIntent(subject, attachmentType, attachment);
         try {
             context.startActivity(Intent.createChooser(actionSendIntent, context.getResources().getText(R.string.send_log_title))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (Exception e) {
             UIUtils.displayLongToast(e.getMessage());
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildShareIntent(@Nullable String subject, @Nullable String attachmentType,
+                                   @NonNull Path attachment) {
+        Uri attachmentUri = FmProvider.getContentUri(attachment);
+        Intent actionSendIntent = new Intent(Intent.ACTION_SEND)
+                .setType(resolveAttachmentType(attachmentType, attachment))
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_STREAM, attachmentUri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+        // reach the chooser target on Android 18+ (auto-grant removed).
+        actionSendIntent.setClipData(ClipData.newRawUri("", attachmentUri));
+        return actionSendIntent;
+    }
+
+    @NonNull
+    private static String resolveAttachmentType(@Nullable String attachmentType, @NonNull Path attachment) {
+        String normalizedAttachmentType = MimeTypeUtils.normalizeMimeType(attachmentType);
+        if (normalizedAttachmentType != null) {
+            return normalizedAttachmentType;
+        }
+        return MimeTypeUtils.normalizeMimeTypeOrDefault(attachment.getType());
     }
 
     @Override

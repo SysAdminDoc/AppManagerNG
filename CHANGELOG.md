@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Logcat share attachment MIME hardening (source audit, 2026-06-07)
+
+- Logcat attachment share intents now normalize caller-supplied MIME strings
+  before setting `ACTION_SEND` types.
+- Malformed logcat attachment MIME values now fall back to the attachment file
+  type through a shared MIME utility used by file-manager share and open-with
+  intents.
+
 ### Fixed - Open-with MIME fallback hardening (source audit, 2026-06-07)
 
 - File-manager open-with intents now normalize custom MIME strings before

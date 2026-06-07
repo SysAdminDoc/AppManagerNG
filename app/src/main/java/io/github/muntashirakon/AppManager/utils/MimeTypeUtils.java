@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package io.github.muntashirakon.AppManager.fm;
+package io.github.muntashirakon.AppManager.utils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Locale;
 
-final class FmMimeUtils {
-    private FmMimeUtils() {
+public final class MimeTypeUtils {
+    private static final String DEFAULT_MIME_TYPE = "application/octet-stream";
+
+    private MimeTypeUtils() {
     }
 
     @NonNull
-    static String normalizeMimeTypeOrDefault(@Nullable String mimeType) {
+    public static String normalizeMimeTypeOrDefault(@Nullable String mimeType) {
         String normalized = normalizeMimeType(mimeType);
-        return normalized != null ? normalized : ContentType2.OTHER.getMimeType();
+        return normalized != null ? normalized : DEFAULT_MIME_TYPE;
     }
 
     @Nullable
-    static String normalizeMimeType(@Nullable String mimeType) {
+    public static String normalizeMimeType(@Nullable String mimeType) {
         if (mimeType == null) {
             return null;
         }
@@ -35,7 +37,7 @@ final class FmMimeUtils {
     }
 
     @NonNull
-    static String getMimeMajorType(@NonNull String mimeType) {
+    public static String getMimeMajorType(@NonNull String mimeType) {
         return mimeType.substring(0, mimeType.indexOf('/'));
     }
 }
