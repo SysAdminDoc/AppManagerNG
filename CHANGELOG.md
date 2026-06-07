@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Component rules IFW clipboard hardening (source audit, 2026-06-07)
+
+- Component-rules IFW XML copy actions now sanitize clipboard labels and copied
+  XML text before writing preview rules to the clipboard.
+- Copied IFW previews now preserve XML line breaks while normalizing
+  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
+  line starts.
+
 ### Fixed - Mode Doctor clipboard redaction (source audit, 2026-06-07)
 
 - Mode Doctor copy-to-clipboard now scrubs diagnostic report text before writing

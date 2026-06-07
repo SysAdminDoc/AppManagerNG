@@ -8,16 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 171 source-audit closure for Mode Doctor clipboard
-  redaction.
+- Result: completed Cycle 172 source-audit closure for component rules IFW
+  clipboard hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  Mode Doctor clipboard redaction and its verification target.
-- Code: Mode Doctor copy-to-clipboard now scrubs diagnostic report text before
-  writing it to the clipboard, preserving report line breaks while normalizing
-  tab/carriage-return controls and defusing spreadsheet-formula prefixes at
-  line starts.
+  component rules IFW clipboard hardening and its verification target.
+- Code: Component-rules IFW XML copy actions now sanitize clipboard labels and
+  copied XML text before writing preview rules to the clipboard, preserving XML
+  line breaks while normalizing tab/carriage-return controls and defusing
+  spreadsheet-formula prefixes at line starts.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.PrivilegeModeDoctorTest --tests io.github.muntashirakon.AppManager.misc.SupportInfoBundleTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.rules.compontents.ComponentRulesPreviewTest --tests io.github.muntashirakon.AppManager.utils.ExportTextUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -26,8 +26,8 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next roadmap target: inspect component-rule copy surfaces and remaining
-  generic copy/share helpers that still accept app/provider-controlled labels.
+- Next roadmap target: inspect remaining generic copy/share helpers that still
+  accept app/provider-controlled labels or diagnostics.
 - Check whether remaining copy/share diagnostics still leak nullable
   placeholders, unchecked control text, or spreadsheet-formula entry points that
   can be pinned with focused host tests without changing import-compatible rule
