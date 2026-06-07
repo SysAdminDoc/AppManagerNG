@@ -29,8 +29,6 @@ import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.io.Path;
 
 public class OpHistoryItem {
-    private static final String HISTORY_TYPE_UNKNOWN = "unknown";
-
     private final OpHistory opHistory;
     public final JSONObject jsonData;
     @Nullable
@@ -44,7 +42,7 @@ public class OpHistoryItem {
 
     @NonNull
     public String getType() {
-        return isKnownType(opHistory.type) ? opHistory.type : HISTORY_TYPE_UNKNOWN;
+        return isKnownType(opHistory.type) ? opHistory.type : OpHistoryManager.HISTORY_TYPE_UNKNOWN;
     }
 
     public long getId() {

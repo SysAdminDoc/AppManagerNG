@@ -8,17 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 141 source-audit closure for operation-history failed
-  cleanup matching.
+- Result: completed Cycle 142 source-audit closure for operation-history
+  snapshot normalization.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  operation-history failed cleanup matching and its verification target.
-- Code: Failed-history cleanup now deletes every stored row that the UI
-  normalizes as failed, including imported or future status tokens, while
-  successful-history cleanup remains limited to exact `success` rows; a
-  Robolectric Room regression test covers the generated operation-history DAO
-  delete queries.
+  operation-history snapshot normalization and its verification target.
+- Code: Snapshot operation-history import/export now normalizes future or blank
+  type and status tokens to the live unknown/failure fallbacks, skips rows
+  without valid JSON object payload data, drops malformed optional extra
+  metadata, and keys re-import idempotency from the normalized stored row.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.db.dao.OpHistoryDaoTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.snapshot.SnapshotBundleTest --tests io.github.muntashirakon.AppManager.history.ops.OpHistoryItemTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,12 +26,13 @@ Current branch: `main`
 ## Next Cycle
 
 - Continue this same assigned project.
-- Next roadmap target: inspect the next host-verifiable source-backed persisted
-  operation-history snapshot edge, starting with import/export type, status,
-  and data normalization in `SnapshotBundle`.
-- Check whether snapshot-imported operation-history rows with blank, unknown, or
-  malformed scalar fields preserve idempotency while avoiding rows that the live
-  UI must immediately sanitize again.
+- Next roadmap target: inspect the next host-verifiable source-backed
+  operation-history rollback/planner edge, starting with
+  `PerAppRollbackManager` status/type handling for malformed or future history
+  rows.
+- Check whether rollback and per-app planning paths compare raw persisted
+  operation-history scalars where they should use the same normalized view as
+  the operation-history UI.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual

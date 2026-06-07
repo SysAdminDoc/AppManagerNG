@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Operation history snapshot normalization (source audit, 2026-06-07)
+
+- Snapshot operation-history export/import now normalizes future or blank type
+  and status tokens to the same unknown/failure fallbacks used by the live
+  operation-history UI.
+- Snapshot import/export now skips rows without valid JSON object payload data
+  and drops malformed optional extra metadata while preserving normalized
+  idempotency keys for re-imports.
+
 ### Fixed - Operation history failed cleanup matching (source audit, 2026-06-07)
 
 - Failed-history cleanup now deletes every stored row that the UI normalizes as
