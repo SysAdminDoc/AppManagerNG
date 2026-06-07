@@ -63,6 +63,15 @@ public final class FmUtils {
         return builder.toString();
     }
 
+    @NonNull
+    public static String getDisplayName(@Nullable String name, @Nullable String fallback) {
+        String displayName = ExportTextUtils.escapeTsvField(name).trim();
+        if (!displayName.isEmpty()) {
+            return displayName;
+        }
+        return ExportTextUtils.escapeTsvField(fallback).trim();
+    }
+
     @SuppressWarnings("OctalInteger")
     @NonNull
     public static String getFormattedMode(int mode) {

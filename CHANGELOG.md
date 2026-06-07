@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File dialog subtitle display-name hardening (source audit, 2026-06-07)
+
+- Open With and Checksums dialogs now format file subtitles through the shared
+  file-manager display-name helper before rendering path-derived names.
+- File dialog display names now flatten tab/newline controls, defuse
+  spreadsheet-style prefixes, and fall back to a sanitized display path when the
+  path name is blank.
+
 ### Fixed - Saved log display filename hardening (source audit, 2026-06-07)
 
 - Saved-log selection dialogs now format legacy saved-log filenames before

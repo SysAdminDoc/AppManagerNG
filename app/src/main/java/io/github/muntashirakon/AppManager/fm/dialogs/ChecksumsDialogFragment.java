@@ -44,6 +44,7 @@ import java.util.zip.CRC32;
 
 import aosp.libcore.util.HexEncoding;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -103,7 +104,7 @@ public class ChecksumsDialogFragment extends DialogFragment {
         mTextView.setVisibility(View.GONE);
         DialogTitleBuilder titleBuilder = new DialogTitleBuilder(requireActivity())
                 .setTitle(R.string.checksums)
-                .setSubtitle(mPath.getName())
+                .setSubtitle(FmUtils.getDisplayName(mPath.getName(), FmUtils.getDisplayablePath(mPath)))
                 .setEndIcon(R.drawable.ic_content_paste, v -> {
                     String data = ClipboardUtils.readHashValueFromClipboard(v.getContext());
                     if (data != null) {
