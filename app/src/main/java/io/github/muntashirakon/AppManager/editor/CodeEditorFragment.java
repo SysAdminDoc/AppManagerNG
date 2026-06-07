@@ -29,6 +29,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.core.os.BundleCompat;
@@ -52,6 +53,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.app.AndroidFragment;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
@@ -587,15 +589,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         } else if (id == R.id.action_share) {
             Path filePath = mViewModel.getSourceFile();
             if (filePath != null) {
-                Uri fileUri = FmProvider.getContentUri(filePath);
-                Intent intent = new Intent(Intent.ACTION_SEND)
-                        .setType(filePath.getType())
-                        .putExtra(Intent.EXTRA_STREAM, fileUri)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
-                // reach the chooser target on Android 18+ (auto-grant removed).
-                intent.setClipData(ClipData.newRawUri("", fileUri));
-                startActivity(Intent.createChooser(intent, getString(R.string.share)));
+                startActivity(Intent.createChooser(buildShareIntent(filePath), getString(R.string.share)));
             }
             return true;
         } else if (id == R.id.action_java_smali_toggle) {
@@ -614,6 +608,20 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
         }
         return false;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildShareIntent(@NonNull Path filePath) {
+        Uri fileUri = FmProvider.getContentUri(filePath);
+        Intent intent = new Intent(Intent.ACTION_SEND)
+                .setType(MimeTypeUtils.normalizeMimeTypeOrDefault(filePath.getType()))
+                .putExtra(Intent.EXTRA_STREAM, fileUri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        // ClipData is required for FLAG_GRANT_READ_URI_PERMISSION to
+        // reach the chooser target on Android 18+ (auto-grant removed).
+        intent.setClipData(ClipData.newRawUri("", fileUri));
+        return intent;
     }
 
     private void showProgressIndicator(boolean show) {
