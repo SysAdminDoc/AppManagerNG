@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
@@ -129,6 +130,12 @@ public final class BackupUtils {
             return "GZip";
         }
         return TAR_TYPES_READABLE[i];
+    }
+
+    @NonNull
+    public static CharSequence getDisplayBackupName(@NonNull Context context, @Nullable String backupName) {
+        String trimmedBackupName = backupName != null ? backupName.trim() : null;
+        return TextUtils.isEmpty(trimmedBackupName) ? context.getText(R.string.base_backup) : trimmedBackupName;
     }
 
     @WorkerThread
