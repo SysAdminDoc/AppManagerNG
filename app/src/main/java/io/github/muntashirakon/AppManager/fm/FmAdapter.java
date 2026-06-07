@@ -148,7 +148,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
                 ActivityManagerCompat.startActivity(defaultIntent, UserHandleHidden.myUserId());
                 return;
             } catch (SecurityException e) {
-                UIUtils.displayLongToast("Failed: " + e.getMessage());
+                UIUtils.displayLongToast(FmUtils.getFailureToastMessage(e));
             }
         }
         OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(path);

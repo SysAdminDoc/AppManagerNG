@@ -51,4 +51,15 @@ public class FmUtilsTest {
         assertEquals("' =payload name.txt",
                 FmUtils.getArchiveEntryDisplayName("\t=payload\nname.txt"));
     }
+
+    @Test
+    public void getFailureToastMessageFormatsThrowableMessage() {
+        assertEquals("Failed: ' =payload action",
+                FmUtils.getFailureToastMessage(new SecurityException("\t=payload\raction")));
+    }
+
+    @Test
+    public void getFailureToastMessageFallsBackForBlankMessage() {
+        assertEquals("Failed", FmUtils.getFailureToastMessage(new SecurityException()));
+    }
 }
