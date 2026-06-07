@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Archive extract conflict display-name hardening (source audit, 2026-06-07)
+
+- Archive extraction conflict dialogs now format ZIP entry names before
+  rendering them in the confirmation message.
+- Archive extraction still uses the original normalized entry name for duplicate
+  detection, keep-both naming, and output file creation.
+
 ### Fixed - File copy conflict display-name hardening (source audit, 2026-06-07)
 
 - File-manager copy conflict dialogs now format the displayed conflicting file

@@ -8,14 +8,14 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 204 source-audit closure for file copy conflict display-name
-  hardening.
+- Result: completed Cycle 205 source-audit closure for archive extract conflict
+  display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file copy conflict display-name hardening and its verification target.
-- Code: File-manager copy conflict dialogs now format the displayed conflicting
-  file name before rendering it in the confirmation message, while conflict
-  handling still uses the original filesystem name for duplicate detection,
-  keep-both naming, and the underlying copy operation.
+  archive extract conflict display-name hardening and its verification target.
+- Code: Archive extraction conflict dialogs now format ZIP entry names before
+  rendering them in the confirmation message, while extraction still uses the
+  original normalized entry name for duplicate detection, keep-both naming, and
+  output file creation.
 - Verification: passed
   `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
