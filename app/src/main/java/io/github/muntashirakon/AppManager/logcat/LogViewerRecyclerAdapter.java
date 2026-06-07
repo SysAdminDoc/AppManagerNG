@@ -29,6 +29,7 @@ import java.util.Set;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logcat.helper.LogcatClipboardFormatter;
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -452,7 +453,8 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
             menu.add(R.string.copy_to_clipboard)
                     .setIcon(R.drawable.ic_content_copy)
                     .setOnMenuItemClickListener(menuItem -> {
-                        Utils.copyToClipboard(context, null, holder.logLine.getOriginalLine());
+                        Utils.copyToClipboard(context, null,
+                                LogcatClipboardFormatter.formatLine(holder.logLine.getOriginalLine()));
                         return true;
                     });
             menu.add(R.string.item_select)
