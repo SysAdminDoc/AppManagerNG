@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Log export attachment-name hardening (source audit, 2026-06-07)
+
+- Log viewer save/export filename suggestions now format attachment names before
+  launching the SAF create-document picker.
+- Log export attachment names now flatten tab/newline controls, defuse
+  spreadsheet-style prefixes, and fall back to the standard log filename when
+  both explicit and path-derived names are blank.
+
 ### Fixed - Saved log subtitle metadata hardening (source audit, 2026-06-07)
 
 - Saved log viewer subtitles now format the external URI last path segment

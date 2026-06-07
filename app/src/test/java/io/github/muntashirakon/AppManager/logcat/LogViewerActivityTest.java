@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import io.github.muntashirakon.AppManager.fm.FmProvider;
+import io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelper;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -62,5 +63,15 @@ public class LogViewerActivityTest {
         assertTrue((intent.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
         assertNotNull(intent.getClipData());
         assertEquals(uri, intent.getClipData().getItemAt(0).getUri());
+    }
+
+    @Test
+    public void formatAttachmentNameFlattensControlsDefusesFormulaAndFallsBack() {
+        assertEquals("' =report csv",
+                LogViewerActivity.formatAttachmentName("\t=report\ncsv", "fallback.log"));
+        assertEquals("' @fallback log",
+                LogViewerActivity.formatAttachmentName(null, "\t@fallback\nlog"));
+        assertEquals(SaveLogHelper.LOG_FILENAME,
+                LogViewerActivity.formatAttachmentName("\n\t", "\r\n"));
     }
 }
