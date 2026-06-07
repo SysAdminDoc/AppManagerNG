@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Scanner missing-signature email intent hardening (source audit, 2026-06-07)
+
+- Scanner missing-signature email sharing now builds its `ACTION_SEND` intent
+  through a tested helper.
+- Missing-signature email shares now pin recipient, MIME type, subject, body,
+  and empty-body rejection before launching the external chooser.
+
 ### Fixed - Operation-history share intent hardening (source audit, 2026-06-07)
 
 - Operation-history text sharing now builds its `ACTION_SEND` intent through a
