@@ -206,7 +206,7 @@ public final class IntentCompat {
                 return list;
             }
             case TYPE_LONG:
-                return Long.parseLong(rawValue);
+                return Long.decode(rawValue.trim());
             case TYPE_LONG_ARR: {
                 if (rawValue.isEmpty()) {
                     return new long[0];
