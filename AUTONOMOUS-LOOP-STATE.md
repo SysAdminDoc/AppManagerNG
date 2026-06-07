@@ -8,17 +8,16 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 116 source-audit closure for backup adoptable
-  data-restore mapping.
+- Result: completed Cycle 117 source-audit closure for backup schedule
+  skipped-detail parser hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  backup adoptable data-restore mapping and its verification target.
-- Code: backup restore now rewrites
-  `/mnt/expand/<volume>/user(_de)/<oldUser>/<package>` roots to the requested
-  restore user while preserving the private-volume identifier, and classifies
-  current-user adoptable CE/DE roots as internal app data instead of unknown
-  custom paths.
+  backup schedule skipped-detail parser hardening and its verification target.
+- Code: scheduled-backup last-run skipped-package details now drop persisted
+  rows with malformed package names or negative user IDs before Settings
+  displays them, while preserving tolerant handling for valid rows, unknown
+  skipped reasons, and malformed JSON.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.BackupUtilsTest --tests io.github.muntashirakon.AppManager.backup.BackupDataDirectoryInfoTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.backup.schedule.AutoBackupSchedulerTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

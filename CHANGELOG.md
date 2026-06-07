@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup schedule skipped-detail parsing (source audit, 2026-06-06)
+
+- Scheduled-backup last-run skipped-package details now drop persisted rows with
+  malformed package names or negative user IDs before Settings displays them.
+- Valid skipped-package rows, unknown skipped-reason rows, and malformed JSON
+  keep the existing tolerant parser behavior.
+
 ### Fixed - Backup adoptable data restore mapping (source audit, 2026-06-06)
 
 - Backup restore now rewrites

@@ -177,6 +177,16 @@ public class AutoBackupSchedulerTest {
         assertTrue(AutoBackupScheduler.deserializeSkippedDetails("not json").isEmpty());
         assertTrue(AutoBackupScheduler.deserializeSkippedDetails(
                 "[{\"package\":\"com.example\",\"reason\":\"UNKNOWN\"}]").isEmpty());
+        java.util.List<AutoBackupScheduler.SkippedPackage> restored =
+                AutoBackupScheduler.deserializeSkippedDetails("["
+                        + "{\"package\":\"bad package\",\"user\":0,\"reason\":\"BACKED_UP_RECENTLY\"},"
+                        + "{\"package\":\"com.negative\",\"user\":-1,\"reason\":\"BACKED_UP_RECENTLY\"},"
+                        + "{\"package\":\"com.valid\",\"user\":10,\"reason\":\"BACKED_UP_RECENTLY\"}"
+                        + "]");
+
+        assertEquals(1, restored.size());
+        assertEquals("com.valid", restored.get(0).packageName);
+        assertEquals(10, restored.get(0).userId);
     }
 
     private static long millis(int year, int month, int day, int hour, int minute) {
