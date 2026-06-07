@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Duplicate APK review display-name hardening (source audit, 2026-06-07)
+
+- File-manager duplicate-APK review rows now format both drop and keeper APK
+  filenames before rendering them in the selection dialog.
+- The shared file-manager display-name helper now supports regular `File`
+  instances as well as `Path` objects, with tests covering control-character and
+  spreadsheet-style prefixes.
+
 ### Fixed - Batch file operation display-name hardening (source audit, 2026-06-07)
 
 - File-manager batch delete and paste progress labels now format path-derived
