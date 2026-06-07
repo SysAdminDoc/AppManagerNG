@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Backup checksum row generation (source audit, 2026-06-06)
+
+- Backup checksum-file writing now rejects empty checksum values, empty
+  filenames, and duplicate filenames before emitting rows.
+- Generated checksum files remain compatible with the stricter checksum reader
+  used by restore and verify.
+
 ### Fixed - Backup checksum duplicate rows (source audit, 2026-06-06)
 
 - Backup checksum-file loading now rejects duplicate filename rows instead of

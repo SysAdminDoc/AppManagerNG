@@ -626,6 +626,9 @@ public class BackupItems {
                 if (!"w".equals(mMode)) {
                     throw new IllegalStateException("add is inaccessible in mode " + mMode);
                 }
+                if (fileName.isEmpty() || checksum.isEmpty() || mChecksums.containsKey(fileName)) {
+                    throw new IllegalArgumentException("Illegal checksum entry.");
+                }
                 mWriter.println(String.format("%s\t%s", checksum, fileName));
                 mChecksums.put(fileName, checksum);
                 mWriter.flush();
