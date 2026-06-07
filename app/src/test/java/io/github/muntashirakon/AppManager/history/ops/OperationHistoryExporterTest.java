@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
@@ -75,11 +76,52 @@ public class OperationHistoryExporterTest {
         assertFalse(exported.contains("\"=HYPERLINK"));
     }
 
+    @Test
+    public void exportCsvDefusesWhitespacePrefixedFormulaInjection() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        OpHistoryItem leadingSpace = createInstallerHistoryWithLabel(
+                " \t=HYPERLINK(\"http://evil/\",\"click\")");
+        OpHistoryItem leadingNewline = createInstallerHistoryWithLabel(
+                "\n=HYPERLINK(\"http://evil/\",\"click\")");
+
+        String exported = OperationHistoryExporter.toCsv(context,
+                Arrays.asList(leadingSpace, leadingNewline));
+
+        assertTrue("expected whitespace-prefixed formula-injection defuse",
+                exported.contains("\"' \t=HYPERLINK(\"\"http://evil/\"\",\"\"click\"\")\""));
+        assertTrue("expected newline-prefixed formula-injection defuse",
+                exported.contains("\"'\n=HYPERLINK(\"\"http://evil/\"\",\"\"click\"\")\""));
+        assertFalse(exported.contains("\" \t=HYPERLINK"));
+        assertFalse(exported.contains("\"\n=HYPERLINK"));
+    }
+
+    @Test
+    public void exportJsonKeepsFailureAndWarningsStructured() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        String failureMessage = "\n=HYPERLINK(\"http://evil/\",\"click\")";
+        String warning = "@WEBSERVICE(\"http://evil/\")";
+        OpHistoryItem history = createInstallerHistoryWithLabelAndExtra("Example App", createInstallerExtra()
+                .put("failure_message", failureMessage)
+                .put("warnings", new JSONArray().put(warning)));
+
+        String exported = OperationHistoryExporter.toJson(context, Collections.singletonList(history));
+        JSONObject entry = new JSONObject(exported).getJSONArray("entries").getJSONObject(0);
+
+        assertEquals(failureMessage, entry.getString("failure_message"));
+        assertEquals(warning, entry.getJSONArray("warnings").getString(0));
+    }
+
     private static OpHistoryItem createInstallerHistory() throws Exception {
         return createInstallerHistoryWithLabel("Example App");
     }
 
     private static OpHistoryItem createInstallerHistoryWithLabel(String appLabel) throws Exception {
+        return createInstallerHistoryWithLabelAndExtra(appLabel, createInstallerExtra());
+    }
+
+    private static OpHistoryItem createInstallerHistoryWithLabelAndExtra(String appLabel,
+                                                                         JSONObject serializedExtra)
+            throws Exception {
         OpHistory opHistory = new OpHistory();
         opHistory.id = 42;
         opHistory.type = OpHistoryManager.HISTORY_TYPE_INSTALLER;
@@ -90,7 +132,12 @@ public class OperationHistoryExporterTest {
                 .put("app_label", appLabel)
                 .put("install_existing", true)
                 .toString();
-        opHistory.serializedExtra = new JSONObject()
+        opHistory.serializedExtra = serializedExtra.toString();
+        return new OpHistoryItem(opHistory);
+    }
+
+    private static JSONObject createInstallerExtra() throws Exception {
+        return new JSONObject()
                 .put("schema_version", 1)
                 .put("mode_label", "ADB")
                 .put("operation_label", "Install")
@@ -104,8 +151,6 @@ public class OperationHistoryExporterTest {
                 .put("rollback_hint", "reinstall")
                 .put("target_preview", new JSONArray().put("com.example.app"))
                 .put("bootstrap_signature",
-                        "LocalServer bootstrap succeeded: Google/oriole/oriole (sdk=36, id=BP2A, mode=adb_wifi, uid=2000, appUid=10345) \u2014 OK")
-                .toString();
-        return new OpHistoryItem(opHistory);
+                        "LocalServer bootstrap succeeded: Google/oriole/oriole (sdk=36, id=BP2A, mode=adb_wifi, uid=2000, appUid=10345) \u2014 OK");
     }
 }
