@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Profile backup-data parsing (source audit, 2026-06-06)
+
+- Persisted profile backup data now trims blank backup names to an absent name,
+  rejects negative backup flag masks, and sanitizes custom exclusion globs before
+  profile execution can build batch backup options.
+- Malformed profile backup-data glob arrays are ignored with the backup-data
+  block instead of leaking unchecked array-cast failures during profile loading.
+
 ### Fixed - Direct backup operation option parsing (source audit, 2026-06-06)
 
 - Backup, restore, and delete operation options now trim and validate package
