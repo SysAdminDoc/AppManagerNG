@@ -7,9 +7,13 @@ import android.content.Intent;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import io.github.muntashirakon.io.Path;
 
@@ -17,13 +21,16 @@ public class SharableItems {
     public final List<Path> pathList;
     public final String mimeType;
 
-    public SharableItems(List<Path> pathList) {
+    public SharableItems(@NonNull List<Path> pathList) {
         this(pathList, findBestMimeType(pathList));
     }
 
-    public SharableItems(List<Path> pathList, String mimeType) {
-        this.pathList = pathList;
-        this.mimeType = mimeType;
+    public SharableItems(@NonNull List<Path> pathList, @Nullable String mimeType) {
+        if (pathList.isEmpty()) {
+            throw new IllegalArgumentException("pathList cannot be empty");
+        }
+        this.pathList = Collections.unmodifiableList(new ArrayList<>(pathList));
+        this.mimeType = normalizeMimeTypeOrDefault(mimeType);
     }
 
     public Intent toSharableIntent() {
@@ -61,12 +68,9 @@ public class SharableItems {
         String mimeType = null;
         boolean splitMime = false;
         for (Path path : pathList) {
-            String thisMime = path.getPathContentInfo().getMimeType();
-            if (thisMime == null) {
-                thisMime = path.getType();
-            }
+            String thisMime = resolveMimeType(path);
             if (splitMime) {
-                thisMime = thisMime.split("/")[0];
+                thisMime = getMimeMajorType(thisMime);
             }
             if (mimeType == null) {
                 mimeType = thisMime;
@@ -75,8 +79,8 @@ public class SharableItems {
                     // The first part aren't consistent
                     return "*/*";
                 }
-                String splitMimeType = mimeType.split("/")[0];
-                String thisSplitMime = thisMime.split("/")[0];
+                String splitMimeType = getMimeMajorType(mimeType);
+                String thisSplitMime = getMimeMajorType(thisMime);
                 if (!splitMimeType.equals(thisSplitMime)) {
                     // The first part aren't consistent
                     return "*/*";
@@ -89,5 +93,43 @@ public class SharableItems {
             mimeType = ContentType2.OTHER.getMimeType();
         }
         return splitMime ? (mimeType + "/*") : mimeType;
+    }
+
+    @NonNull
+    private static String resolveMimeType(@NonNull Path path) {
+        String mimeType = normalizeMimeType(path.getPathContentInfo().getMimeType());
+        if (mimeType == null) {
+            mimeType = normalizeMimeType(path.getType());
+        }
+        return mimeType != null ? mimeType : ContentType2.OTHER.getMimeType();
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String normalizeMimeTypeOrDefault(@Nullable String mimeType) {
+        String normalized = normalizeMimeType(mimeType);
+        return normalized != null ? normalized : ContentType2.OTHER.getMimeType();
+    }
+
+    @Nullable
+    private static String normalizeMimeType(@Nullable String mimeType) {
+        if (mimeType == null) {
+            return null;
+        }
+        String normalized = mimeType.trim();
+        int parameterStart = normalized.indexOf(';');
+        if (parameterStart >= 0) {
+            normalized = normalized.substring(0, parameterStart).trim();
+        }
+        int slash = normalized.indexOf('/');
+        if (slash <= 0 || slash != normalized.lastIndexOf('/') || slash == normalized.length() - 1) {
+            return null;
+        }
+        return normalized.toLowerCase(Locale.ROOT);
+    }
+
+    @NonNull
+    private static String getMimeMajorType(@NonNull String mimeType) {
+        return mimeType.substring(0, mimeType.indexOf('/'));
     }
 }
