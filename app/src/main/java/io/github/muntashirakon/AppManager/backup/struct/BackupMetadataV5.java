@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup.struct;
 
 import static io.github.muntashirakon.AppManager.backup.BackupUtils.getReadableTarType;
+import static io.github.muntashirakon.AppManager.backup.BackupUtils.isRestorableDataDirectory;
 import static io.github.muntashirakon.AppManager.backup.BackupUtils.TAR_TYPES;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSecondaryText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
@@ -370,6 +371,9 @@ public class BackupMetadataV5 implements LocalizedString {
             for (String dataDir : dataDirs) {
                 if (TextUtils.isEmpty(dataDir)) {
                     throw new IllegalArgumentException("Malformed backup metadata: empty data directory");
+                }
+                if (!isRestorableDataDirectory(packageName, dataDir)) {
+                    throw new IllegalArgumentException("Malformed backup metadata: invalid data directory " + dataDir);
                 }
             }
             if (!isBackupFilename(apkName)) {
