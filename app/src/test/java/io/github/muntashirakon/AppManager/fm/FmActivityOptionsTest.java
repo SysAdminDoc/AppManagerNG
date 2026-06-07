@@ -55,4 +55,15 @@ public class FmActivityOptionsTest {
         assertEquals(Build.VERSION.SDK_INT, readOnly.dexApiLevel);
         assertEquals(Build.VERSION.SDK_INT, readWrite.dexApiLevel);
     }
+
+    @Test
+    public void drawerDisplayNameFlattensControlsDefusesFormulaAndFallsBack() {
+        FmActivity.Options options = new FmActivity.Options(Uri.parse("file:///sdcard/fallback"), false, false, false);
+        FmDrawerItem formulaName = new FmDrawerItem(1, "\t=payload\nfolder", options,
+                FmDrawerItem.ITEM_TYPE_FAVORITE);
+        FmDrawerItem blankName = new FmDrawerItem(2, "\r\n\t", options, FmDrawerItem.ITEM_TYPE_FAVORITE);
+
+        assertEquals("' =payload folder", FmActivity.DrawerRecyclerViewAdapter.getDrawerDisplayName(formulaName));
+        assertEquals("/sdcard/fallback", FmActivity.DrawerRecyclerViewAdapter.getDrawerDisplayName(blankName));
+    }
 }
