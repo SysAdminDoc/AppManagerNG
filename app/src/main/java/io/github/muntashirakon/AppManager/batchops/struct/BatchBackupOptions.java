@@ -44,7 +44,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               @Nullable String[] backupNames,
                               @Nullable String[] relativeDirs,
                               @Nullable String[] exclusionGlobs) {
-        mFlags = flags;
+        mFlags = requireValidFlags(flags);
         mBackupNames = backupNames;
         mRelativeDirs = relativeDirs;
         mExclusionGlobs = exclusionGlobs;
@@ -109,7 +109,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
     }
 
     protected BatchBackupOptions(@NonNull Parcel in) {
-        mFlags = in.readInt();
+        mFlags = requireValidFlags(in.readInt());
         mBackupNames = in.createStringArray();
         mRelativeDirs = in.createStringArray();
         mExclusionGlobs = in.createStringArray();
@@ -144,10 +144,14 @@ public class BatchBackupOptions implements IBatchOpOptions {
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mFlags = jsonObject.getInt("flags");
-        mBackupNames = JSONUtils.getArray(String.class, jsonObject.optJSONArray("backup_names"));
-        mRelativeDirs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("relative_dirs"));
-        mExclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
+        try {
+            mFlags = requireValidFlags(jsonObject.getInt("flags"));
+            mBackupNames = JSONUtils.getArray(String.class, jsonObject.optJSONArray("backup_names"));
+            mRelativeDirs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("relative_dirs"));
+            mExclusionGlobs = JSONUtils.getArray(String.class, jsonObject.optJSONArray("exclusion_globs"));
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     public static final JsonDeserializer.Creator<BatchBackupOptions> DESERIALIZER
@@ -163,5 +167,13 @@ public class BatchBackupOptions implements IBatchOpOptions {
         jsonObject.put("relative_dirs", JSONUtils.getJSONArray(mRelativeDirs));
         jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(mExclusionGlobs));
         return jsonObject;
+    }
+
+    @BackupFlags.BackupFlag
+    private static int requireValidFlags(int flags) {
+        if (flags < 0) {
+            throw new IllegalArgumentException("Backup flags must not be negative: " + flags);
+        }
+        return flags;
     }
 }
