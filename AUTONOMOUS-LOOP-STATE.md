@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 218 source-audit closure for hex viewer
-  validation-toast hardening.
+- Result: completed Cycle 219 source-audit closure for batch rename
+  failure-message hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  hex viewer validation-toast hardening and its verification target.
-- Code: Hex viewer offset and search validation toasts now use the shared hex
-  viewer error-message formatter before rendering exception messages, sharing
-  the same control-flattening, formula-prefix defusing, and class-name fallback
-  behavior as open/read errors.
+  batch rename failure-message hardening and its verification target.
+- Code: File-manager batch rename result dialogs now format runtime failure
+  messages before rendering failed-row reasons, flatten controls, defuse
+  formula-style prefixes, and continue to omit blank failure messages.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.hex.HexViewerActivityTest --tests io.github.muntashirakon.AppManager.fm.hex.HexViewerUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmBatchRenameUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on

@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.fm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -91,5 +92,16 @@ public class FmBatchRenameUtilsTest {
     public void getDisplayNameFormatsRenameDialogLabels() {
         assertEquals("' =payload name.tmp",
                 FmBatchRenameUtils.getDisplayName("\t=payload\nname.tmp"));
+    }
+
+    @Test
+    public void getFailureMessageFormatsThrowableMessage() {
+        assertEquals("' =payload reason",
+                FmBatchRenameUtils.getFailureMessage(new IllegalStateException("\t=payload\rreason")));
+    }
+
+    @Test
+    public void getFailureMessageReturnsNullForBlankMessage() {
+        assertNull(FmBatchRenameUtils.getFailureMessage(new IllegalStateException("\r\n\t")));
     }
 }

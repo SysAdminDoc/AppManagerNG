@@ -185,7 +185,7 @@ final class FmBatchRenameUtils {
             try {
                 success = entry.source.renameTo(entry.targetName);
             } catch (RuntimeException e) {
-                failureMessage = e.getLocalizedMessage();
+                failureMessage = getFailureMessage(e);
             }
             if (!success && TextUtils.isEmpty(failureMessage)) {
                 failureMessage = null;
@@ -201,6 +201,12 @@ final class FmBatchRenameUtils {
     @NonNull
     static String getDisplayName(@Nullable String name) {
         return FmUtils.getDisplayName(name, "");
+    }
+
+    @Nullable
+    static String getFailureMessage(@NonNull Throwable throwable) {
+        String message = FmUtils.getDisplayName(throwable.getLocalizedMessage(), "");
+        return TextUtils.isEmpty(message) ? null : message;
     }
 
     @Nullable
