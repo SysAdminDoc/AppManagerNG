@@ -298,7 +298,11 @@ public final class AutoBackupScheduler {
                     continue;
                 }
                 String packageName = object.optString(JSON_PACKAGE, "");
-                if (packageName.isEmpty()) {
+                if (!PackageUtils.validateName(packageName)) {
+                    continue;
+                }
+                int userId = object.optInt(JSON_USER, 0);
+                if (userId < 0) {
                     continue;
                 }
                 SkipReason reason;
@@ -308,7 +312,7 @@ public final class AutoBackupScheduler {
                     continue;
                 }
                 skippedDetails.add(new SkippedPackage(packageName,
-                        object.optInt(JSON_USER, 0),
+                        userId,
                         reason,
                         Math.max(0L, object.optLong(JSON_LAST_BACKUP, 0L))));
             }
