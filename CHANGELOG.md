@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Intent long extra literal parsing (source audit, 2026-06-06)
+
+- Activity Interceptor flattened long extras now accept decoded long literals
+  such as `0x2a`, matching long array/list parsing behavior.
+- Whitespace-padded decimal long extras continue to restore, while malformed
+  long literals still fail during parse.
+
 ### Fixed - Default-role metadata sanitization (source audit, 2026-06-06)
 
 - Restored default-app role metadata now trims role names before supported-role
