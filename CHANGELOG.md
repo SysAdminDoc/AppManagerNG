@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - File copy conflict display-name hardening (source audit, 2026-06-07)
+
+- File-manager copy conflict dialogs now format the displayed conflicting file
+  name before rendering it in the confirmation message.
+- Copy conflict handling still uses the original filesystem name for duplicate
+  detection, keep-both naming, and the underlying copy operation.
+
 ### Fixed - File drawer display-name hardening (source audit, 2026-06-07)
 
 - File-manager drawer favorite and location labels now format saved names before
