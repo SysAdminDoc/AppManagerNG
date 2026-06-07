@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Provider-query share subject hardening (source audit, 2026-06-07)
+
+- Provider-query TSV export sharing now builds its `ACTION_SEND` intent through
+  a tested helper.
+- Provider-query export subjects now normalize package and provider-name tokens
+  before handing them to external share targets.
+
 ### Fixed - Diagnostic ZIP share intent attachment hardening (source audit, 2026-06-07)
 
 - Diagnostic ZIP sharing now builds its `ACTION_SEND` intent through a tested

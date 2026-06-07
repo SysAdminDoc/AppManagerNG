@@ -8,15 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 183 source-audit closure for diagnostic ZIP share
-  intent attachment hardening.
+- Result: completed Cycle 184 source-audit closure for provider-query share
+  subject hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  diagnostic ZIP share intent attachment hardening and its verification target.
-- Code: diagnostic ZIP sharing now builds its `ACTION_SEND` intent through a
-  tested helper; diagnostic ZIP attachments have pinned ZIP MIME, subject, URI
-  stream, read-grant, and `ClipData` behavior before the chooser is launched.
+  provider-query share subject hardening and its verification target.
+- Code: provider-query TSV export sharing now builds its `ACTION_SEND` intent
+  through a tested helper, and export subjects normalize package and
+  provider-name tokens before handing them to external share targets.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.settings.AboutPreferencesTest --tests io.github.muntashirakon.AppManager.misc.DiagnosticUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.details.components.ProviderQueryDialogFragmentTest --tests io.github.muntashirakon.AppManager.details.components.ProviderQueryUtilsTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
@@ -27,10 +27,10 @@ Current branch: `main`
 - Continue this same assigned project.
 - Next roadmap target: continue auditing one-off share builders and chooser
   metadata for host-verifiable URI-grant and metadata defects.
-- Check whether remaining text or attachment share builders still inline
-  chooser metadata, trust nullable subjects, omit grant evidence, or expose
-  unchecked provider-controlled values that can be pinned with focused host
-  tests.
+- Check remaining inline text-share builders such as leftover-folder exports,
+  operation-history sharing, scanner email reports, and Activity Interceptor
+  resend/share paths for subject, chooser, or metadata gaps that can be pinned
+  with focused host tests.
 - Verification target: focused JVM/static tests for any source change, Java
   compile for touched app code, docs/state update, and `rtk git diff --check`.
 - Parked follow-ups: device-only Running Apps restore walkthrough, manual
