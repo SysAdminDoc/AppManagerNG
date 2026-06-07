@@ -8,16 +8,15 @@ Current branch: `main`
 
 ## Latest Cycle
 
-- Result: completed Cycle 208 source-audit closure for file breadcrumb
+- Result: completed Cycle 209 source-audit closure for file properties path
   display-name hardening.
 - Updated: `ROADMAP.md`, `COMPLETED.md`, and `CHANGELOG.md` now record the
-  file breadcrumb display-name hardening and its verification target.
-- Code: File-manager breadcrumb labels and content descriptions now format URI
-  path segments and alternative root labels before rendering them, while
-  breadcrumb navigation still uses the original path parts for URI
-  reconstruction, copy-path actions, favorites, and properties.
+  file properties path display-name hardening and its verification target.
+- Code: File properties now format readable path and symlink target path fields
+  before rendering them in the properties sheet, while preserving the original
+  readable and target path values for file operations and property loading.
 - Verification: passed
-  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.FmPathListAdapterTest --tests io.github.muntashirakon.AppManager.fm.FmUtilsTest`;
+  `:app:compileFullDebugJavaWithJavac :app:testFullDebugUnitTest --tests io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragmentTest`;
   `rtk git diff --check`; and prohibited tool/attribution diff scan.
 - Environment note: the ignored local `local.properties` still points at
   `C:\Users\--\AppData\Local\Android\Sdk` so Gradle can use the installed SDK on
