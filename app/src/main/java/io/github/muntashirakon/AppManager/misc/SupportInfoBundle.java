@@ -59,9 +59,9 @@ public final class SupportInfoBundle {
     /**
      * Variant that lets a caller (e.g. Mode Doctor) inline a probe report or
      * other free-form section above the standard support bundle. The
-     * {@code preamble}, if non-null, is written verbatim followed by a blank
-     * line before the regular bundle body so an analyst opening the file sees
-     * the contextual report first and the environment dump below.
+     * {@code preamble}, if non-null, is scrubbed and followed by a blank line
+     * before the regular bundle body so an analyst opening the file sees the
+     * contextual report first and the environment dump below.
      */
     @WorkerThread
     @NonNull
@@ -71,10 +71,7 @@ public final class SupportInfoBundle {
         File dir = FileCache.getGlobalFileCache().createCachedDir("support-info");
         File file = new File(dir, buildFileName(Build.DEVICE, now));
         try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-            if (preamble != null && preamble.length() > 0) {
-                writer.write(preamble.toString());
-                writer.write("\n\n");
-            }
+            writer.write(formatPreambleForPublicIssue(preamble));
             writer.write(text);
         }
         return Paths.get(file);
@@ -215,6 +212,15 @@ public final class SupportInfoBundle {
         scrubbed = scrubbed.replaceAll("\\b[a-zA-Z][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*){1,}\\b", "<package>");
         scrubbed = scrubbed.replaceAll("\\b\\d{5,7}\\b", "<id>");
         return scrubbed;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String formatPreambleForPublicIssue(@Nullable CharSequence preamble) {
+        if (preamble == null || preamble.length() == 0) {
+            return "";
+        }
+        return scrubForPublicIssue(preamble.toString()) + "\n\n";
     }
 
     @VisibleForTesting

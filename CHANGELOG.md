@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Support bundle preamble redaction (source audit, 2026-06-07)
+
+- Support-info bundles now scrub caller-supplied preamble text before writing it
+  ahead of the standard public-issue bundle body.
+- Mode Doctor probe text now shares the same package, path, email, and UID
+  redaction path used by scrubbed logcat and local crash summaries.
+
 ### Fixed - TSV export formula hardening (source audit, 2026-06-07)
 
 - Provider-query and leftover-folder TSV exports now share the central export
