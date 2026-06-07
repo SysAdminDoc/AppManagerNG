@@ -27,8 +27,8 @@ public class BatchBackupImportOptions implements IBatchOpOptions {
 
     public BatchBackupImportOptions(@ImportType int importType, @NonNull Uri directory,
                                     boolean removeImportedDirectory) {
-        mImportType = importType;
-        mDirectory = directory;
+        mImportType = requireValidImportType(importType);
+        mDirectory = requireValidDirectory(directory);
         mRemoveImportedDirectory = removeImportedDirectory;
     }
 
@@ -47,9 +47,9 @@ public class BatchBackupImportOptions implements IBatchOpOptions {
     }
 
     protected BatchBackupImportOptions(@NonNull Parcel in) {
-        mImportType = in.readInt();
-        mDirectory = Objects.requireNonNull(ParcelCompat.readParcelable(in,
-                Uri.class.getClassLoader(), Uri.class));
+        mImportType = requireValidImportType(in.readInt());
+        mDirectory = requireValidDirectory(Objects.requireNonNull(ParcelCompat.readParcelable(in,
+                Uri.class.getClassLoader(), Uri.class)));
         mRemoveImportedDirectory = in.readByte() != 0;
     }
 
@@ -81,9 +81,13 @@ public class BatchBackupImportOptions implements IBatchOpOptions {
 
     protected BatchBackupImportOptions(@NonNull JSONObject jsonObject) throws JSONException {
         assert jsonObject.getString("tag").equals(TAG);
-        mImportType = jsonObject.getInt("import_type");
-        mDirectory = Uri.parse(jsonObject.getString("directory"));
-        mRemoveImportedDirectory = jsonObject.getBoolean("remove_imported_directory");
+        try {
+            mImportType = requireValidImportType(jsonObject.getInt("import_type"));
+            mDirectory = requireValidDirectory(Uri.parse(jsonObject.getString("directory")));
+            mRemoveImportedDirectory = jsonObject.getBoolean("remove_imported_directory");
+        } catch (IllegalArgumentException e) {
+            throw new JSONException(e.getMessage());
+        }
     }
 
     public static final JsonDeserializer.Creator<BatchBackupImportOptions> DESERIALIZER
@@ -98,5 +102,25 @@ public class BatchBackupImportOptions implements IBatchOpOptions {
         jsonObject.put("directory", mDirectory.toString());
         jsonObject.put("remove_imported_directory", mRemoveImportedDirectory);
         return jsonObject;
+    }
+
+    @ImportType
+    private static int requireValidImportType(int importType) {
+        switch (importType) {
+            case ImportType.OAndBackup:
+            case ImportType.TitaniumBackup:
+            case ImportType.SwiftBackup:
+                return importType;
+            default:
+                throw new IllegalArgumentException("Unsupported backup import type: " + importType);
+        }
+    }
+
+    @NonNull
+    private static Uri requireValidDirectory(@NonNull Uri directory) {
+        if (directory.toString().trim().isEmpty()) {
+            throw new IllegalArgumentException("Backup import directory must not be empty.");
+        }
+        return directory;
     }
 }
