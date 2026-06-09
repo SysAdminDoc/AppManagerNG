@@ -39,3 +39,7 @@ release.jks
 .factory/
 codexprompt.md
 codexprompt-*.md
+
+# Markdown files local-only (except README)
+*.md
+!README.md
