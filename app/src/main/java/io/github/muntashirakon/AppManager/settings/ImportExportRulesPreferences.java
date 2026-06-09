@@ -83,6 +83,7 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
                     // Back button pressed.
                     return;
                 }
+                ProgressIndicatorCompat.setVisibility(mActivity.progressIndicator, true);
                 ThreadUtils.postOnBackgroundThread(() -> {
                     List<String> failedFiles = ExternalComponentsImporter.applyFromWatt(uris, Users.getUsersIds());
                     ThreadUtils.postOnMainThread(() -> displayImportExternalRulesFailedPackagesDialog(failedFiles));
@@ -95,6 +96,7 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
                     // Back button pressed.
                     return;
                 }
+                ProgressIndicatorCompat.setVisibility(mActivity.progressIndicator, true);
                 ThreadUtils.postOnBackgroundThread(() -> {
                     List<String> failedFiles = ExternalComponentsImporter.applyFromBlocker(uris, Users.getUsersIds());
                     ThreadUtils.postOnMainThread(() -> displayImportExternalRulesFailedPackagesDialog(failedFiles));

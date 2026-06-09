@@ -6,9 +6,11 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.filters.FinderActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity;
@@ -79,8 +81,11 @@ public class ShortcutDispatchActivity extends Activity {
             } catch (ActivityNotFoundException e) {
                 // Target component disabled (e.g. user disabled it via PackageManager) or
                 // removed by an upgrade migration that didn't update shortcuts.xml. Don't
-                // crash the trampoline; just no-op and let the user retry from MainActivity.
+                // crash the trampoline; tell the user why nothing happened so they aren't
+                // left tapping a dead shortcut, then let them retry from the app.
                 Log.w(TAG, "Shortcut target unavailable; trampoline finishing.", e);
+                Toast.makeText(getApplicationContext(), R.string.shortcut_target_unavailable,
+                        Toast.LENGTH_LONG).show();
             }
         } finally {
             // Single exit point. The Theme.NoDisplay activity contract requires finish() to be

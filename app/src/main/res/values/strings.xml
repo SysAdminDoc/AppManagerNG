@@ -593,6 +593,7 @@
     <string name="one_click_ops_section_maintenance_summary">Clean leftover data, trim caches, and optimize runtime artifacts with permission-aware safeguards.</string>
     <string name="changelog">Changelog</string>
     <string name="changelog_could_not_be_loaded">The changelog could not be loaded.</string>
+    <string name="shortcut_target_unavailable">This shortcut\'s target is no longer available. Open AppManagerNG and recreate the shortcut.</string>
     <string name="external_apk_no_app_op">External APK does not have any app operations</string>
     <string name="manifest_viewer">Manifest viewer</string>
     <plurals name="no_of_trackers">
