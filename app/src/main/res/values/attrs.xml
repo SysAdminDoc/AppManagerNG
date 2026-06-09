@@ -1,5 +1,10 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
+    <!-- Warning banner colors. Resolved from the theme (not the system night qualifier)
+         so AMOLED/dark themes keep the dark pair even when the device is in light mode. -->
+    <attr name="premiumWarningBg" format="color" />
+    <attr name="premiumWarningContent" format="color" />
+
     <attr name="barChartViewStyle" format="reference" />
     <declare-styleable name="BarChartView">
         <!-- Bar appearance -->

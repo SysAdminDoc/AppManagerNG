@@ -91,7 +91,11 @@ public final class ServerConfig {
     @AnyThread
     @NonNull
     public static String getServerRunnerAdbCommand() throws IndexOutOfBoundsException {
-        return getServerRunnerCommand(0) + " || " + getServerRunnerCommand(1);
+        // Prefer the internal device-encrypted copy (index 1); fall back to the external-storage
+        // copy (index 0) only if the ADB shell uid cannot traverse to the private path on this
+        // device. This keeps the external copy off the primary path to avoid the swap-the-script
+        // local privilege escalation, while preserving compatibility via the fallback.
+        return getServerRunnerCommand(1) + " || " + getServerRunnerCommand(0);
     }
 
     /**

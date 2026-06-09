@@ -41,7 +41,7 @@
             android:paddingHorizontal="@dimen/padding_medium"
             android:paddingVertical="@dimen/padding_small"
             android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
-            android:textColor="@color/premium_warning_content"
+            android:textColor="?attr/premiumWarningContent"
             android:visibility="gone"
             tools:text="Security patch 2026-04-01 is older than the recommended patch level for ADB workflows."
             tools:visibility="visible" />
@@ -289,7 +289,7 @@
                         android:paddingVertical="@dimen/padding_small"
                         android:text="@string/onboarding_mode_shizuku_android17_warning"
                         android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
-                        android:textColor="@color/premium_warning_content"
+                        android:textColor="?attr/premiumWarningContent"
                         android:visibility="gone"
                         tools:visibility="visible" />
 

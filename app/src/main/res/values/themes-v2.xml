@@ -47,9 +47,17 @@
         <item name="listItemPaddingHorizontal">@dimen/premium_main_list_padding_horizontal</item>
         <item name="listItemCornerRadius">@dimen/premium_radius_card</item>
         <item name="listItemIndicatorWidth">@dimen/premium_space_8</item>
+        <!-- Night-aware aliases: light in values/, dark in values-night/. Correct for the
+             normal theme in both light and dark; AMOLED/Dark override below. -->
+        <item name="premiumWarningBg">@color/premium_warning_bg</item>
+        <item name="premiumWarningContent">@color/premium_warning_content</item>
     </style>
 
     <style name="AppTheme.V2.Dark" parent="AppTheme.V2">
+        <!-- Force the dark warning pair regardless of the system night qualifier, so the
+             always-dark AMOLED theme never shows the light banner on a black surface. -->
+        <item name="premiumWarningBg">@color/premium_warning_bg_dark</item>
+        <item name="premiumWarningContent">@color/premium_warning_content_dark</item>
         <item name="android:colorBackground">@color/premium_surface_0_dark</item>
         <item name="colorPrimary">@color/premium_brand_300</item>
         <item name="colorOnPrimary">@color/premium_brand_950</item>

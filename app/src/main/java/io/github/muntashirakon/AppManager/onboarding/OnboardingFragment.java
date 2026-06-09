@@ -209,7 +209,9 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void applyWarningTextStyle(@NonNull TextView warning) {
-        int warningColor = ContextCompat.getColor(requireContext(), R.color.premium_warning_content);
+        // Resolve from the theme attribute (not the raw color) so AMOLED keeps the dark pair.
+        int warningColor = MaterialColors.getColor(warning, R.attr.premiumWarningContent,
+                ContextCompat.getColor(requireContext(), R.color.premium_warning_content));
         warning.setTextColor(warningColor);
         warning.setCompoundDrawablePadding(getResources().getDimensionPixelSize(R.dimen.premium_space_8));
         Drawable icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_security_network);
