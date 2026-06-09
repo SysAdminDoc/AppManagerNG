@@ -356,6 +356,10 @@ JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_endpw
 JNIEXPORT void JNICALL Java_io_github_muntashirakon_compat_system_OsCompat_utimensat
   (JNIEnv *env, jclass clazz, jint dirfd, jstring pathname, jobject atime, jobject mtime, jint flags) {
     const char *path = env->GetStringUTFChars(pathname, 0);
+    if (path == nullptr) {
+        // Allocation failure: bail rather than passing null to utimensat.
+        return;
+    }
     struct timespec times[2];
     times[0] = javaStructTimespecToTimespec(env, atime);
     times[1] = javaStructTimespecToTimespec(env, mtime);
