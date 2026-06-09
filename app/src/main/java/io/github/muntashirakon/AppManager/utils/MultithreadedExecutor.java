@@ -6,7 +6,6 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -17,40 +16,23 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import io.github.muntashirakon.AppManager.logs.Log;
-
 public class MultithreadedExecutor implements ExecutorService {
-    // Guarded by MultithreadedExecutor.class.
-    private static final List<MultithreadedExecutor> sExecutorCache = new ArrayList<>();
-
     @AnyThread
     @NonNull
-    public static synchronized MultithreadedExecutor getNewInstance() {
-        if (sExecutorCache.size() > 0) {
-            // Check if any executor has been shutdown
-            for (MultithreadedExecutor executor : sExecutorCache) {
-                if (executor.isTerminated()) {
-                    executor.renew();
-                    return executor;
-                }
-            }
-        }
-        MultithreadedExecutor executor = new MultithreadedExecutor();
-        sExecutorCache.add(executor);
-        return executor;
+    public static MultithreadedExecutor getNewInstance() {
+        // Always hand out a fresh executor. The previous shared-cache-and-renew scheme
+        // mutated mExecutor in place, so a finished operation still inside awaitCompletion()
+        // could have its executor swapped out from under it and wedge on an unrelated
+        // operation's workload; it also leaked every terminated wrapper into a static list.
+        // A fixed thread pool is cheap to create relative to the work it runs.
+        return new MultithreadedExecutor();
     }
 
     @NonNull
-    private volatile ExecutorService mExecutor;
+    private final ExecutorService mExecutor;
 
     private MultithreadedExecutor() {
         mExecutor = createExecutor();
-    }
-
-    private void renew() {
-        if (mExecutor.isTerminated()) {
-            mExecutor = createExecutor();
-        }
     }
 
     @NonNull
@@ -104,7 +86,11 @@ public class MultithreadedExecutor implements ExecutorService {
             try {
                 awaitTermination(1, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                Log.e("MultithreadedExecutor", e);
+                // Restore the interrupt flag and stop waiting so cooperative cancellation
+                // (e.g. WorkManager onStopped) can actually break the loop.
+                Thread.currentThread().interrupt();
+                shutdownNow();
+                return;
             }
         }
     }
