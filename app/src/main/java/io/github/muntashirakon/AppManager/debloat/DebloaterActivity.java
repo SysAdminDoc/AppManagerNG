@@ -73,6 +73,11 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             if (mProgressIndicator != null) {
                 mProgressIndicator.hide();
             }
+            // A batch op (uninstall/freeze) just changed install/frozen state — reload it so
+            // the rows, filters, and "Put back" affordance no longer act on stale data.
+            if (viewModel != null) {
+                viewModel.loadPackages(true);
+            }
         }
     };
     private final OnBackPressedCallback mOnBackPressedCallback = new OnBackPressedCallback(false) {
@@ -308,7 +313,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         } else if (viewModel.hasActiveFilters()) {
             viewModel.clearFilters();
         } else {
-            viewModel.loadPackages();
+            // No search/filter to clear: this is a genuine refresh, so recompute install state.
+            viewModel.loadPackages(true);
         }
     }
 

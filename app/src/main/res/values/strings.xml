@@ -50,6 +50,10 @@
         <item quantity="one">Showing %1$d of %2$d app</item>
         <item quantity="other">Showing %1$d of %2$d apps</item>
     </plurals>
+    <plurals name="cleanup_items_failed_suffix">
+        <item quantity="one">%1$d item could not be deleted</item>
+        <item quantity="other">%1$d items could not be deleted</item>
+    </plurals>
     <plurals name="main_status_all_apps">
         <item quantity="one">Showing %1$d app</item>
         <item quantity="other">Showing %1$d apps</item>
@@ -588,6 +592,7 @@
     <string name="one_click_ops_section_maintenance_title">Maintenance</string>
     <string name="one_click_ops_section_maintenance_summary">Clean leftover data, trim caches, and optimize runtime artifacts with permission-aware safeguards.</string>
     <string name="changelog">Changelog</string>
+    <string name="changelog_could_not_be_loaded">The changelog could not be loaded.</string>
     <string name="external_apk_no_app_op">External APK does not have any app operations</string>
     <string name="manifest_viewer">Manifest viewer</string>
     <plurals name="no_of_trackers">
@@ -3293,6 +3298,7 @@
     <string name="delete_duplicate_backups_confirm">Delete the redundant same-version backup copies, keeping your chosen copy of each package? This cannot be undone.</string>
     <string name="delete_duplicate_backups_confirm_with_reclaim">Delete <xliff:g id="count" example="4">%1$d</xliff:g> redundant same-version backup(s), reclaiming about <xliff:g id="size" example="400 MB">%2$s</xliff:g>? The kept copy of each app version is preserved.</string>
     <string name="no_duplicate_backups_found_message">No duplicate backups were found.</string>
+    <string name="duplicate_backup_scan_failed_message">The duplicate backup scan could not be completed. Please try again.</string>
     <string name="duplicate_backups_pruned">Removed <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s).</string>
     <string name="duplicate_backups_pruned_with_reclaim">Deleted <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s), reclaimed <xliff:g id="size" example="400 MB">%2$s</xliff:g>.</string>
     <string name="authenticate_to_delete_backups">Authenticate to delete backups</string>

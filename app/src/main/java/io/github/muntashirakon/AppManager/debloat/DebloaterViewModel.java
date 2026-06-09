@@ -179,8 +179,19 @@ public class DebloaterViewModel extends AndroidViewModel {
 
     @AnyThread
     public void loadPackages() {
+        loadPackages(false);
+    }
+
+    /**
+     * @param reloadInstallInfo when {@code true}, the installed/frozen/user state of every
+     *                          debloat entry is recomputed. Pass {@code true} after a batch
+     *                          operation (uninstall/freeze) so the list and its filters stop
+     *                          acting on stale state; {@code false} for plain filter/sort.
+     */
+    @AnyThread
+    public void loadPackages(boolean reloadInstallInfo) {
         mExecutor.submit(() -> {
-            loadDebloatObjects();
+            loadDebloatObjects(reloadInstallInfo);
             List<DebloatObject> debloatObjects = new ArrayList<>();
             if (mFilterFlags == DebloaterListOptions.FILTER_NO_FILTER) {
                 debloatObjects.addAll(mDebloatObjects);
@@ -258,11 +269,15 @@ public class DebloaterViewModel extends AndroidViewModel {
     }
 
     @WorkerThread
-    private void loadDebloatObjects() {
-        if (!mDebloatObjects.isEmpty()) {
+    private void loadDebloatObjects(boolean reloadInstallInfo) {
+        if (!mDebloatObjects.isEmpty() && !reloadInstallInfo) {
             return;
         }
-        mDebloatObjects.addAll(StaticDataset.getDebloatObjectsWithInstalledInfo(getApplication()));
+        // getDebloatObjectsWithInstalledInfo() recomputes installed/frozen/user state on
+        // each call, so re-running it refreshes the cache instead of serving stale state.
+        List<DebloatObject> withInfo = StaticDataset.getDebloatObjectsWithInstalledInfo(getApplication());
+        mDebloatObjects.clear();
+        mDebloatObjects.addAll(withInfo);
         Collections.sort(mDebloatObjects, (o1, o2) -> CharSequence.compare(o1.getLabelOrPackageName(), o2.getLabelOrPackageName()));
     }
 }
