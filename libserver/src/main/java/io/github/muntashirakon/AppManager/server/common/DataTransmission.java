@@ -25,6 +25,15 @@ public final class DataTransmission implements Closeable {
      */
     public static final String PROTOCOL_VERSION = "1.2.4";
 
+    /**
+     * Hard cap on a single length-prefixed message. The length is read straight off the
+     * socket before authentication, so an unbounded value lets any local peer trigger a
+     * multi-gigabyte allocation (OutOfMemoryError kills the accept loop) or a negative
+     * size (NegativeArraySizeException drops the listener). 64 MiB is far above any real
+     * command payload while keeping a malformed packet cheap to reject.
+     */
+    private static final int MAX_MESSAGE_LENGTH = 64 * 1024 * 1024;
+
     public enum Role {
         Server,
         Client
@@ -129,6 +138,9 @@ public final class DataTransmission implements Closeable {
     @NonNull
     private byte[] readMessage() throws IOException {
         int len = mInputStream.readInt();
+        if (len < 0 || len > MAX_MESSAGE_LENGTH) {
+            throw new IOException("Invalid message length: " + len);
+        }
         byte[] bytes = new byte[len];
         mInputStream.readFully(bytes, 0, len);
         return bytes;
