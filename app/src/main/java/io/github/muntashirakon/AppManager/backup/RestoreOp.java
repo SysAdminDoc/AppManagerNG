@@ -689,8 +689,19 @@ class RestoreOp implements Closeable {
         }
         // Restore data
         try (InputStream is = dataFiles[0].openInputStream()) {
-            ParcelFileDescriptor fd = ParcelFileDescriptorUtil.pipeFrom(is);
-            BackupCompat.adbRestore(mUserId, fd);
+            ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+            ParcelFileDescriptor readSide = pipe[0];
+            ParcelFileDescriptor writeSide = pipe[1];
+            // The transfer thread feeds the .ab stream into writeSide; adbRestore reads readSide.
+            // Close our copy of readSide after adbRestore returns and join the transfer thread so
+            // the read descriptor is not leaked on every ADB restore.
+            ParcelFileDescriptorUtil.TransferThread t = ParcelFileDescriptorUtil.pipeFrom(is, writeSide);
+            try {
+                BackupCompat.adbRestore(mUserId, readSide);
+            } finally {
+                readSide.close();
+            }
+            t.join();
         } catch (Throwable th) {
             throw new BackupException("Failed to restore ADB data", th);
         }

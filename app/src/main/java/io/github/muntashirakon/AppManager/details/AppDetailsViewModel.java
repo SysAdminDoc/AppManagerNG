@@ -417,7 +417,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                                 (ChoiceGenerator<AppDetailsAppOpItem>) item ->
                                         lowercaseIfNotRegex(item.name, mSearchType),
                                 mSearchType);
-                    } else appDetailsItems = mAppOpItems;
+                    } else appDetailsItems = new ArrayList<>(mAppOpItems);
                 }
                 Collections.sort(appDetailsItems, (o1, o2) -> {
                     switch (mSortOrderAppOps) {
@@ -445,7 +445,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         appDetailsItems = AdvancedSearchView.matches(mSearchQuery, mUsesPermissionItems,
                                 (ChoiceGenerator<AppDetailsPermissionItem>) item -> lowercaseIfNotRegex(item.name,
                                         mSearchType), mSearchType);
-                    } else appDetailsItems = mUsesPermissionItems;
+                    } else appDetailsItems = new ArrayList<>(mUsesPermissionItems);
                 }
                 Collections.sort(appDetailsItems, (o1, o2) -> {
                     switch (mSortOrderPermissions) {
@@ -469,11 +469,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
             case AppDetailsFragment.OVERLAYS: {
                 List<AppDetailsOverlayItem> appDetailsItems;
                 synchronized (mOverlays) {
+                    // mOverlays has no backing list; its value is null until loadOverlays() posts.
+                    List<AppDetailsOverlayItem> base = mOverlays.getValue();
+                    if (base == null) {
+                        base = Collections.emptyList();
+                    }
                     if (!TextUtils.isEmpty(mSearchQuery)) {
-                        appDetailsItems = AdvancedSearchView.matches(mSearchQuery, mOverlays.getValue(),
+                        appDetailsItems = AdvancedSearchView.matches(mSearchQuery, base,
                                 (ChoiceGenerator<AppDetailsOverlayItem>) item -> lowercaseIfNotRegex(item.name,
                                         mSearchType), mSearchType);
-                    } else appDetailsItems = mOverlays.getValue();
+                    } else appDetailsItems = new ArrayList<>(base);
                 }
                 Collections.sort(appDetailsItems, (o1, o2) -> {
                     switch (mSortOrderOverlays) {

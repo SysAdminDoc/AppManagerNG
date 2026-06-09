@@ -577,8 +577,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             synchronized (mApplicationItems) {
                 mApplicationItems.clear();
                 mApplicationItems.addAll(updatedApplicationItems);
-                // select apps again
-                for (ApplicationItem item : getSelectedApplicationItems()) {
+                // Re-select apps again. select() structurally modifies the selection
+                // map, so iterate over a snapshot to avoid a ConcurrentModificationException
+                // when two or more apps are selected during a list reload.
+                for (ApplicationItem item : new ArrayList<>(getSelectedApplicationItems())) {
                     select(item);
                 }
                 sortApplicationList(mSortBy, mReverseSort);
@@ -832,14 +834,17 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                         return -mode * Long.compare(o1.lastUsageTime, o2.lastUsageTime);
                     case MainListOptions.SORT_BY_TARGET_SDK:
                         // null on top
-                        if (o1.targetSdk == null) return -mode;
+                        if (o1.targetSdk == null && o2.targetSdk == null) return 0;
+                        else if (o1.targetSdk == null) return -mode;
                         else if (o2.targetSdk == null) return +mode;
                         return mode * o1.targetSdk.compareTo(o2.targetSdk);
                     case MainListOptions.SORT_BY_SHARED_ID:
                         return mode * Integer.compare(o1.uid, o2.uid);
                     case MainListOptions.SORT_BY_SHA:
                         // null on top
-                        if (o1.sha == null) {
+                        if (o1.sha == null && o2.sha == null) {
+                            return 0;
+                        } else if (o1.sha == null) {
                             return -mode;
                         } else if (o2.sha == null) {
                             return +mode;

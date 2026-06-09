@@ -29,6 +29,21 @@ public class ParcelFileDescriptorUtil {
         return readSide;
     }
 
+    /**
+     * Feed {@code inputStream} into {@code writeSide} on a background thread and return the
+     * thread so the caller can {@link Thread#join()} it. The caller owns (and must close) the
+     * matching read side; closing it only after the transfer thread has been joined avoids the
+     * descriptor leak the single-argument overload incurs when the read side is consumed by a
+     * binder call.
+     */
+    @NonNull
+    public static TransferThread pipeFrom(@NonNull InputStream inputStream,
+                                          @NonNull ParcelFileDescriptor writeSide) {
+        TransferThread t = new TransferThread(inputStream, new ParcelFileDescriptor.AutoCloseOutputStream(writeSide));
+        t.start();
+        return t;
+    }
+
 
     @NonNull
     public static TransferThread pipeTo(@NonNull OutputStream outputStream,
@@ -52,7 +67,7 @@ public class ParcelFileDescriptorUtil {
     }
 
 
-    static class TransferThread extends Thread {
+    public static class TransferThread extends Thread {
         private final InputStream mIn;
         private final OutputStream mOut;
 
