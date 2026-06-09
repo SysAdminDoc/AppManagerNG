@@ -46,7 +46,13 @@ public final class BatchOpsJournal {
     }
 
     public static synchronized void recordIntent(@NonNull Context context, @NonNull BatchQueueItem item) {
-        writeEntry(context, item, STATE_INTENT_RECORDED, null);
+        // A new batch op begins here. Start a fresh record (new id/created_at, empty
+        // target sets) instead of inheriting them from a prior entry that may still be
+        // sitting in the journal (e.g. an interrupted op the user chose "Not now" on).
+        // Inheriting stale completed/failed targets would make a later interrupted-op
+        // retry skip packages that this op never actually processed.
+        writeEntry(context, item, STATE_INTENT_RECORDED, null,
+                new ArrayList<>(0), new ArrayList<>(0), true);
     }
 
     public static synchronized void recordExecuting(@NonNull Context context, @NonNull BatchQueueItem item) {
@@ -132,9 +138,19 @@ public final class BatchOpsJournal {
                                    @Nullable String reason,
                                    @Nullable List<UserPackagePair> completedTargets,
                                    @Nullable List<UserPackagePair> failedTargets) {
+        writeEntry(context, item, state, reason, completedTargets, failedTargets, false);
+    }
+
+    private static void writeEntry(@NonNull Context context,
+                                   @NonNull BatchQueueItem item,
+                                   @NonNull String state,
+                                   @Nullable String reason,
+                                   @Nullable List<UserPackagePair> completedTargets,
+                                   @Nullable List<UserPackagePair> failedTargets,
+                                   boolean freshEntry) {
         try {
             long now = System.currentTimeMillis();
-            JSONObject existing = readEntryJson(context);
+            JSONObject existing = freshEntry ? null : readEntryJson(context);
             long id = existing != null ? existing.optLong(KEY_ID, now) : now;
             long createdAt = existing != null ? existing.optLong(KEY_CREATED_AT, now) : now;
             item.getUsers();

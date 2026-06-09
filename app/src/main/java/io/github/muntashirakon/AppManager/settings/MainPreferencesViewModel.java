@@ -35,6 +35,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.changelog.Changelog;
 import io.github.muntashirakon.AppManager.changelog.ChangelogParser;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.db.entity.App;
@@ -52,6 +53,7 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class MainPreferencesViewModel extends AndroidViewModel implements Ops.AdbConnectionInterface {
+    public static final String TAG = MainPreferencesViewModel.class.getSimpleName();
     private final Object mRulesLock = new Object();
     private final MutableLiveData<List<UserInfo>> mSelectUsers = new SingleLiveEvent<>();
     private final MutableLiveData<Changelog> mChangeLog = new SingleLiveEvent<>();
@@ -87,7 +89,10 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
                 Changelog changelog = new ChangelogParser(getApplication(), R.raw.changelog).parse();
                 mChangeLog.postValue(changelog);
             } catch (IOException | XmlPullParserException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Could not parse changelog", e);
+                // Post null so the observer can surface an error instead of silently
+                // doing nothing when the user taps "What's new".
+                mChangeLog.postValue(null);
             }
         });
     }

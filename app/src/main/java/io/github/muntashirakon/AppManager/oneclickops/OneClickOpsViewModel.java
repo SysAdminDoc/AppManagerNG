@@ -63,11 +63,11 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> mTrimCachesResult = new MutableLiveData<>();
     private final MutableLiveData<String[]> mAppsInstalledByAmForDexOpt = new MutableLiveData<>();
     private final MutableLiveData<List<LeftoverEntry>> mLeftoverScanResult = new MutableLiveData<>();
-    private final MutableLiveData<Pair<Integer, Long>> mLeftoverDeleteResult = new MutableLiveData<>();
+    private final MutableLiveData<CleanupResult> mLeftoverDeleteResult = new MutableLiveData<>();
     private final MutableLiveData<List<ApkDuplicateSelector.DuplicateGroup>> mApkDuplicates = new MutableLiveData<>();
-    private final MutableLiveData<Pair<Integer, Long>> mApkDuplicateDeleteResult = new MutableLiveData<>();
+    private final MutableLiveData<CleanupResult> mApkDuplicateDeleteResult = new MutableLiveData<>();
     private final MutableLiveData<DuplicateBackupPlan> mDuplicateBackupPlan = new MutableLiveData<>();
-    private final MutableLiveData<Pair<Integer, Long>> mDuplicateBackupDeleteResult = new MutableLiveData<>();
+    private final MutableLiveData<CleanupResult> mDuplicateBackupDeleteResult = new MutableLiveData<>();
 
     @Nullable
     private Future<?> mFutureResult;
@@ -113,7 +113,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         return mLeftoverScanResult;
     }
 
-    public LiveData<Pair<Integer, Long>> watchLeftoverDeleteResult() {
+    public LiveData<CleanupResult> watchLeftoverDeleteResult() {
         return mLeftoverDeleteResult;
     }
 
@@ -121,7 +121,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         return mApkDuplicates;
     }
 
-    public LiveData<Pair<Integer, Long>> watchApkDuplicateDeleteResult() {
+    public LiveData<CleanupResult> watchApkDuplicateDeleteResult() {
         return mApkDuplicateDeleteResult;
     }
 
@@ -129,7 +129,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         return mDuplicateBackupPlan;
     }
 
-    public LiveData<Pair<Integer, Long>> watchDuplicateBackupDeleteResult() {
+    public LiveData<CleanupResult> watchDuplicateBackupDeleteResult() {
         return mDuplicateBackupDeleteResult;
     }
 
@@ -173,7 +173,10 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
             Pair<Integer, Long> result = ApkDuplicateOperations.deleteCandidates(dropFiles);
-            mApkDuplicateDeleteResult.postValue(result);
+            int deleted = result.first != null ? result.first : 0;
+            long reclaimed = result.second != null ? result.second : 0L;
+            mApkDuplicateDeleteResult.postValue(new CleanupResult(deleted,
+                    Math.max(0, dropFiles.size() - deleted), reclaimed));
         });
     }
 
@@ -181,6 +184,23 @@ public class OneClickOpsViewModel extends AndroidViewModel {
      * A single leftover folder paired with its precomputed on-disk size so the
      * review dialog never walks the file system on the main thread (T19-B).
      */
+    /**
+     * Summary of a cleanup deletion run. Unlike a bare (count, bytes) pair this also
+     * carries the number of items that could not be deleted so the UI can tell the user
+     * about partial failures instead of reporting unqualified success.
+     */
+    public static class CleanupResult {
+        public final int deleted;
+        public final int failed;
+        public final long reclaimedBytes;
+
+        public CleanupResult(int deleted, int failed, long reclaimedBytes) {
+            this.deleted = deleted;
+            this.failed = failed;
+            this.reclaimedBytes = reclaimedBytes;
+        }
+    }
+
     public static class LeftoverEntry {
         @NonNull
         public final LeftoverScanner.Leftover leftover;
@@ -248,7 +268,9 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                 mDuplicateBackupPlan.postValue(new DuplicateBackupPlan(strategy, entries, reclaimable));
             } catch (Throwable th) {
                 io.github.muntashirakon.AppManager.logs.Log.w(TAG, "Duplicate backup scan failed", th);
-                mDuplicateBackupPlan.postValue(new DuplicateBackupPlan(strategy, Collections.emptyList(), 0L));
+                // Post null to signal failure — distinct from a successful empty scan, which
+                // posts a non-null empty plan. The observer surfaces an error for null.
+                mDuplicateBackupPlan.postValue(null);
             }
         });
     }
@@ -260,6 +282,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
             int deleted = 0;
+            int failed = 0;
             long reclaimed = 0L;
             for (DuplicateBackupEntry entry : plan.entries) {
                 if (ThreadUtils.isInterrupted()) {
@@ -275,16 +298,18 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                         io.github.muntashirakon.AppManager.logs.Log.i(TAG, "Deleted duplicate backup "
                                 + entry.backup.relativeDir + " (" + entry.size + " bytes)");
                     } else {
+                        ++failed;
                         io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                                 "Failed to delete duplicate backup: " + entry.backup.relativeDir);
                     }
                 } catch (Throwable th) {
+                    ++failed;
                     io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                             "Error deleting duplicate backup: " + entry.backup.relativeDir, th);
                 }
             }
             recordDuplicateBackupCleanupHistory(plan, deleted, reclaimed);
-            mDuplicateBackupDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+            mDuplicateBackupDeleteResult.postValue(new CleanupResult(deleted, failed, reclaimed));
         });
     }
 
@@ -342,6 +367,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
         }
         mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
             int deleted = 0;
+            int failed = 0;
             long reclaimed = 0L;
             for (LeftoverEntry entry : entries) {
                 if (ThreadUtils.isInterrupted()) {
@@ -356,16 +382,18 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                                 + entry.leftover.packageName + " (" + entry.size + " bytes): "
                                 + entry.leftover.path);
                     } else {
+                        ++failed;
                         io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                                 "Failed to delete leftover folder: " + entry.leftover.path);
                     }
                 } catch (Throwable th) {
+                    ++failed;
                     io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                             "Error deleting leftover folder: " + entry.leftover.path, th);
                 }
             }
             recordLeftoverCleanupHistory(entries, deleted, reclaimed);
-            mLeftoverDeleteResult.postValue(new Pair<>(deleted, reclaimed));
+            mLeftoverDeleteResult.postValue(new CleanupResult(deleted, failed, reclaimed));
         });
     }
 
