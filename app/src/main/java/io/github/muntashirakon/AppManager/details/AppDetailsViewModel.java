@@ -654,24 +654,31 @@ public class AppDetailsViewModel extends AndroidViewModel {
             Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::pauseWatcher);
             String componentName = componentItem.name;
             synchronized (mBlockerLocker) {
-                waitForBlockerOrExit();
-                mBlocker.setMutable();
-                if (mBlocker.hasComponentName(componentName)) {
-                    // Simply delete it
-                    mBlocker.deleteComponent(componentName);
+                try {
+                    waitForBlockerOrExit();
+                    mBlocker.setMutable();
+                    if (mBlocker.hasComponentName(componentName)) {
+                        // Simply delete it
+                        mBlocker.deleteComponent(componentName);
+                    }
+                    // Add to the list
+                    mBlocker.addComponent(componentName, type, componentStatus);
+                    // Direct edits should take effect immediately. The saved rule
+                    // list and the actual component state should not drift apart.
+                    mBlocker.applyRules(true);
+                    // Set new status
+                    setRuleApplicationStatus();
+                    // Commit changes
+                    mBlocker.commit();
+                    recordComponentRuleHistory(componentName, type, componentStatus, true, null);
+                    mBlocker.setReadOnly();
+                } finally {
+                    // Always resume the watcher and wake waiters, even if applyRules/commit
+                    // throws (e.g. privilege loss mid-session) — otherwise the watcher stays
+                    // paused and App Details stops reacting to package changes.
+                    Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::resumeWatcher);
+                    mBlockerLocker.notifyAll();
                 }
-                // Add to the list
-                mBlocker.addComponent(componentName, type, componentStatus);
-                // Direct edits should take effect immediately. The saved rule
-                // list and the actual component state should not drift apart.
-                mBlocker.applyRules(true);
-                // Set new status
-                setRuleApplicationStatus();
-                // Commit changes
-                mBlocker.commit();
-                recordComponentRuleHistory(componentName, type, componentStatus, true, null);
-                mBlocker.setReadOnly();
-                Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::resumeWatcher);
             }
         });
     }
