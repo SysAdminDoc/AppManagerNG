@@ -246,7 +246,11 @@ class LocalServerManager {
         if (!Ops.hasRoot()) {
             throw new Exception("Root access denied");
         }
-        String command = ServerConfig.getServerRunnerCommand(0);
+        // Run the internal device-encrypted copy (index 1), not the external-storage copy.
+        // root can always read the app-private DE cache, and unlike external storage no other
+        // app can overwrite it — closing a local privilege-escalation where a malicious app
+        // with external-storage write access swaps the JAR/script that root then executes.
+        String command = ServerConfig.getServerRunnerCommand(1);
         // + "\n" + "supolicy --live 'allow qti_init_shell zygote_exec file execute'";
         Log.d(TAG, "useRootStartServer: %s", command);
         Runner.Result result = Runner.runCommand(command);

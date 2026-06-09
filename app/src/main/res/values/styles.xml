@@ -81,7 +81,7 @@
 
     <style name="Widget.AppTheme.Chip.MainFilter" parent="Widget.AppTheme.Chip.Filter">
         <item name="chipMinHeight">32dp</item>
-        <item name="chipMinTouchTargetSize">40dp</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
@@ -90,7 +90,7 @@
 
     <style name="Widget.AppTheme.Chip.MainSuggestion" parent="Widget.AppTheme.Chip.Suggestion">
         <item name="chipMinHeight">32dp</item>
-        <item name="chipMinTouchTargetSize">40dp</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipStrokeWidth">1dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>

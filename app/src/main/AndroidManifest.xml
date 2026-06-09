@@ -1781,9 +1781,15 @@
             app at all) but no-ops unless Settings → Privacy → "Permission
             change monitor" is enabled. ROADMAP T9 (Permission Change Monitor).
         -->
+        <!--
+            Not exported: PACKAGE_REPLACED is a protected system broadcast, which the OS
+            still delivers to a non-exported manifest receiver. Keeping it non-exported
+            stops other apps from directly delivering a spoofed intent to drive the
+            snapshot/diff pipeline for an arbitrary package.
+        -->
         <receiver
             android:name=".permission.monitor.PermissionChangeReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_REPLACED" />
                 <data android:scheme="package" />
