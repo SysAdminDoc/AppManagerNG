@@ -418,10 +418,28 @@ class BackupOp implements Closeable {
             String filePrefix = BackupUtils.getDataFilePrefix(index, ".ab");
             Path abFile = mBackupItem.getUnencryptedBackupPath().createNewFile(filePrefix, null);
             try (OutputStream os = abFile.openOutputStream()) {
-                ParcelFileDescriptor fd = ParcelFileDescriptorUtil.pipeTo(os);
-                BackupCompat.adbBackup(mUserId, fd, false, false, false,
-                        false, false, false, false, true,
-                        new String[]{mPackageName});
+                ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+                ParcelFileDescriptor readSide = pipe[0];
+                ParcelFileDescriptor writeSide = pipe[1];
+                // The transfer thread drains readSide into os. We must close our copy of
+                // writeSide after handing it to adbBackup so the reader sees EOF, then join
+                // the transfer thread before closing os — otherwise the tail of the .ab
+                // stream is lost (truncated backup with a self-consistent checksum) and the
+                // thread + descriptors leak.
+                ParcelFileDescriptorUtil.TransferThread t = ParcelFileDescriptorUtil.pipeTo(os, readSide);
+                try {
+                    BackupCompat.adbBackup(mUserId, writeSide, false, false, false,
+                            false, false, false, false, true,
+                            new String[]{mPackageName});
+                } finally {
+                    writeSide.close();
+                }
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Interrupted while finishing ADB backup transfer", e);
+                }
             }
             return new Path[]{abFile};
         } catch (Throwable th) {

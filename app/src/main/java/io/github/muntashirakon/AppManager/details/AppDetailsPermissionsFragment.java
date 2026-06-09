@@ -838,9 +838,12 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         } else throw new Exception("Couldn't grant permission: " + permName);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        // togglePermission attempts the opposite of the current state and
+                        // leaves it unchanged on failure: a currently-granted permission was
+                        // a revoke attempt, a currently-revoked one a grant attempt.
                         ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(permissionItem.isGranted()
-                                ? R.string.failed_to_grant_permission
-                                : R.string.failed_to_revoke_permission));
+                                ? R.string.failed_to_revoke_permission
+                                : R.string.failed_to_grant_permission));
                     }
                 }));
             } else {

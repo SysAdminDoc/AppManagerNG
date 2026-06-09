@@ -107,7 +107,12 @@ public final class BackupRetentionPolicy {
         for (Backup b : stale) {
             try {
                 BackupItems.BackupItem item = b.getItem();
-                if (item != null && item.delete()) {
+                if (item == null || item.isFrozen()) {
+                    // Frozen backups are explicitly protected from deletion by the user;
+                    // automated retention must skip them, mirroring manual deleteBackup().
+                    continue;
+                }
+                if (item.delete()) {
                     ++deleted;
                 }
             } catch (Throwable t) {
@@ -345,7 +350,11 @@ public final class BackupRetentionPolicy {
             for (Backup b : duplicates) {
                 try {
                     BackupItems.BackupItem item = b.getItem();
-                    if (item != null && item.delete()) {
+                    if (item == null || item.isFrozen()) {
+                        // Frozen backups are user-protected; never auto-delete them.
+                        continue;
+                    }
+                    if (item.delete()) {
                         ++deleted;
                     }
                 } catch (Throwable t) {
