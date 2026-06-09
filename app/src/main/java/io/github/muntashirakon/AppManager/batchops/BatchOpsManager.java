@@ -464,14 +464,19 @@ public class BatchOpsManager {
                     boolean failed = false;
                     try {
                         backupManager.backup(options.getBackupOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
-                    } catch (BackupException e) {
+                    } catch (Throwable e) {
+                        // Catch Throwable, not just BackupException: a RuntimeException
+                        // (Room insert failure, validator IllegalArgument, etc.) would
+                        // otherwise vanish into the unread Future, leaving the package out
+                        // of failedPackages so the op is wrongly reported successful.
                         failed = true;
                         log("====> op=BACKUP_RESTORE, mode=BACKUP pkg=" + pair, e);
                         failedPackages.add(pair);
-                    }
-                    recordTargetFinished(pair, failed);
-                    if (subProgressHandler != null) {
-                        ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
+                    } finally {
+                        recordTargetFinished(pair, failed);
+                        if (subProgressHandler != null) {
+                            ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
+                        }
                     }
                 });
             }
@@ -595,7 +600,9 @@ public class BatchOpsManager {
                             // Since the conversion was successful, remove the files for it.
                             converter.cleanup();
                         }
-                    } catch (BackupException e) {
+                    } catch (Throwable e) {
+                        // Catch Throwable so a RuntimeException doesn't vanish into the
+                        // unread Future and leave the file silently counted as imported.
                         log("====> op=IMPORT_BACKUP, pkg=" + converter.getPackageName(), e);
                         failedPkgList.add(new UserPackagePair(converter.getPackageName(), userId));
                     }
@@ -1038,23 +1045,28 @@ public class BatchOpsManager {
         }
         int max = info.size();
         UserPackagePair pair;
-        for (int i = 0; i < max; ++i) {
-            updateProgress(lastProgress, i + 1);
-            pair = info.getPair(i);
-            boolean uninstalled;
-            if (canUsePmUninstall) {
-                uninstalled = RootlessDebloat.uninstallForUser(pair, false);
-            } else {
-                PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                uninstalled = installer.uninstall(pair.getPackageName(), pair.getUserId(), false);
+        try {
+            for (int i = 0; i < max; ++i) {
+                updateProgress(lastProgress, i + 1);
+                pair = info.getPair(i);
+                boolean uninstalled;
+                if (canUsePmUninstall) {
+                    uninstalled = RootlessDebloat.uninstallForUser(pair, false);
+                } else {
+                    PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                    uninstalled = installer.uninstall(pair.getPackageName(), pair.getUserId(), false);
+                }
+                if (!uninstalled) {
+                    log("====> op=UNINSTALL, pkg=" + pair);
+                    failedPackages.add(pair);
+                }
+                recordTargetFinished(pair, !uninstalled);
             }
-            if (!uninstalled) {
-                log("====> op=UNINSTALL, pkg=" + pair);
-                failedPackages.add(pair);
-            }
-            recordTargetFinished(pair, !uninstalled);
+        } finally {
+            // Always disable accessibility uninstall interception, even if the loop throws —
+            // otherwise it stays armed and auto-confirms uninstall dialogs outside the app.
+            accessibility.enableUninstall(false);
         }
-        accessibility.enableUninstall(false);
         return new Result(failedPackages);
     }
 

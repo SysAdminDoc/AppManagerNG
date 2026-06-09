@@ -21,6 +21,7 @@ import java.io.IOException;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsResultsActivity;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
@@ -36,6 +37,7 @@ import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.io.Path;
 
 public class ProfileApplierService extends ForegroundService {
+    private static final String TAG = ProfileApplierService.class.getSimpleName();
     private static final String EXTRA_QUEUE_ITEM = "queue_item";
     private static final String EXTRA_NOTIFY = "notify";
     /**
@@ -92,19 +94,27 @@ public class ProfileApplierService extends ForegroundService {
         SelfBatteryOptimization.autoFixIfPossible(this);
         boolean notify = intent.getBooleanExtra(EXTRA_NOTIFY, true);
         Path tempProfilePath = item.getTempProfilePath();
+        ProfileManager profileManager = null;
         try {
-            ProfileManager profileManager = new ProfileManager(item.getProfileId(), tempProfilePath);
+            profileManager = new ProfileManager(item.getProfileId(), tempProfilePath);
             profileManager.applyProfile(item.getState(), mProgressHandler);
-            profileManager.conclude();
             boolean requiresRestart = profileManager.requiresRestart();
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, true,
                     OperationJournalMetadata.forProfile(this, item, true, requiresRestart, null));
             sendNotification(item.getProfileName(), Activity.RESULT_OK, notify, requiresRestart);
-        } catch (IOException e) {
+        } catch (Throwable e) {
+            // Catch Throwable, not just IOException: applyProfile -> BatchOpsManager can throw
+            // RuntimeException (e.g. a profile op whose options failed to deserialize). Letting
+            // it propagate kills the service with no history row and no failure notification.
+            Log.w(TAG, "Failed to apply profile " + item.getProfileId(), e);
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, false,
                     OperationJournalMetadata.forProfile(this, item, false, false, e));
             sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false);
         } finally {
+            if (profileManager != null) {
+                // Always close the profile log writer.
+                profileManager.conclude();
+            }
             if (tempProfilePath != null) {
                 tempProfilePath.delete();
             }

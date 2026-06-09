@@ -51,8 +51,9 @@ public final class AdapterUtils {
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
             if (newItemPosition < mStartPosition) {
-                // Both values are null
-                return true;
+                // A placeholder slot in the new list only matches an old placeholder
+                // (both null). Matching an old data row here would emit a bogus move.
+                return oldItemPosition < mStartPosition;
             }
             if (mNewList == null) {
                 return false;
@@ -63,8 +64,8 @@ public final class AdapterUtils {
         @Override
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
             if (newItemPosition < mStartPosition) {
-                // Both values are null
-                return true;
+                // Only equal when both sides are placeholders.
+                return oldItemPosition < mStartPosition;
             }
             return false;
         }

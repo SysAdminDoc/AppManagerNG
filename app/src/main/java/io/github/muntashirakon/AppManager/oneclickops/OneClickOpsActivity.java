@@ -124,22 +124,22 @@ public class OneClickOpsActivity extends BaseActivity {
         mViewModel.watchLeftoverDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(getString(R.string.leftover_files_deleted, result.first,
-                    Formatter.formatShortFileSize(this, result.second)));
+            UIUtils.displayLongToast(appendFailures(getString(R.string.leftover_files_deleted, result.deleted,
+                    Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
         mViewModel.watchApkDuplicates().observe(this, this::reviewApkDuplicates);
         mViewModel.watchApkDuplicateDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(getString(R.string.duplicate_apks_deleted, result.first,
-                    Formatter.formatShortFileSize(this, result.second)));
+            UIUtils.displayLongToast(appendFailures(getString(R.string.duplicate_apks_deleted, result.deleted,
+                    Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
         mViewModel.watchDuplicateBackupPlan().observe(this, this::reviewDuplicateBackups);
         mViewModel.watchDuplicateBackupDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(getString(R.string.duplicate_backups_pruned_with_reclaim, result.first,
-                    Formatter.formatShortFileSize(this, result.second)));
+            UIUtils.displayLongToast(appendFailures(getString(R.string.duplicate_backups_pruned_with_reclaim,
+                    result.deleted, Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
     }
 
@@ -674,10 +674,24 @@ public class OneClickOpsActivity extends BaseActivity {
                 .show();
     }
 
+    @NonNull
+    private CharSequence appendFailures(@NonNull String successMessage, int failed) {
+        if (failed <= 0) {
+            return successMessage;
+        }
+        return successMessage + " " + getResources().getQuantityString(
+                R.plurals.cleanup_items_failed_suffix, failed, failed) + ".";
+    }
+
     private void reviewDuplicateBackups(@Nullable OneClickOpsViewModel.DuplicateBackupPlan plan) {
         CpuUtils.releaseWakeLock(wakeLock);
         setBusy(false);
-        if (plan == null || plan.isEmpty()) {
+        if (plan == null) {
+            // Null signals a failed scan; an empty-but-non-null plan means "nothing found".
+            showInfoDialog(R.string.delete_duplicate_backups, R.string.duplicate_backup_scan_failed_message);
+            return;
+        }
+        if (plan.isEmpty()) {
             showInfoDialog(R.string.delete_duplicate_backups, R.string.no_duplicate_backups_found_message);
             return;
         }

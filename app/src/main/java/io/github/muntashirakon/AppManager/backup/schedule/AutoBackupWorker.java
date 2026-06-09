@@ -122,8 +122,16 @@ public class AutoBackupWorker extends Worker {
             AutoBackupProgressHandler progressHandler = new AutoBackupProgressHandler(context);
             progressHandler.onProgressStart(pairs.size(), 0,
                     context.getString(R.string.auto_backup_progress_preparing));
-            BatchOpsManager.Result result = new BatchOpsManager().performOp(
-                    BatchOpsInfo.fromUserPackagePair(BatchOpsManager.OP_BACKUP, pairs, options), progressHandler);
+            BatchOpsManager batchOpsManager = new BatchOpsManager();
+            BatchOpsManager.Result result;
+            try {
+                result = batchOpsManager.performOp(
+                        BatchOpsInfo.fromUserPackagePair(BatchOpsManager.OP_BACKUP, pairs, options), progressHandler);
+            } finally {
+                // Flush and close the batch-ops log writer; otherwise per-package failure
+                // diagnostics from the unattended run are dropped and the file handle leaks.
+                batchOpsManager.conclude();
+            }
             progressHandler.onResult(null);
             int failed = result.getFailedPackages().size();
             int success = Math.max(0, pairs.size() - failed);

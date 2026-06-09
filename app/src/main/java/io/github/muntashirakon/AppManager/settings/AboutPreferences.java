@@ -27,6 +27,7 @@ import io.github.muntashirakon.AppManager.changelog.ChangelogRecyclerAdapter;
 import io.github.muntashirakon.AppManager.misc.DiagnosticUtils;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.AlertDialogBuilder;
 import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 
@@ -124,6 +125,10 @@ public class AboutPreferences extends PreferenceFragment {
         super.onViewCreated(view, savedInstanceState);
         // Observe Changelog
         mModel.getChangeLog().observe(getViewLifecycleOwner(), changelog -> {
+            if (changelog == null) {
+                UIUtils.displayLongToast(R.string.changelog_could_not_be_loaded);
+                return;
+            }
             View v = View.inflate(requireContext(), R.layout.dialog_whats_new, null);
             RecyclerView recyclerView = v.findViewById(android.R.id.list);
             recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
