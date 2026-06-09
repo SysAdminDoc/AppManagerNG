@@ -27,6 +27,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -444,12 +445,29 @@ public class AppInfoViewModel extends AndroidViewModel {
             }
             mTagCloud.postValue(tagCloud);
         } catch (Throwable th) {
+            if (isInterruption(th)) {
+                // A newer load cancelled this one (Future.cancel(true)); the result is
+                // already obsolete, so drop it instead of crashing the app.
+                return;
+            }
             // Unknown behaviour
             ThreadUtils.postOnMainThread(() -> {
                 // Throw Runtime exception in main thread to crash the app
                 throw new RuntimeException(th);
             });
         }
+    }
+
+    private static boolean isInterruption(@Nullable Throwable th) {
+        if (Thread.currentThread().isInterrupted()) {
+            return true;
+        }
+        for (Throwable t = th; t != null; t = t.getCause()) {
+            if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
@@ -600,6 +618,10 @@ public class AppInfoViewModel extends AndroidViewModel {
             populateSigningCertInfo(appInfo, packageInfo, isExternalApk);
             mAppInfo.postValue(appInfo);
         } catch (Throwable th) {
+            if (isInterruption(th)) {
+                // A newer load cancelled this one; drop the obsolete result silently.
+                return;
+            }
             // Unknown behaviour
             ThreadUtils.postOnMainThread(() -> {
                 // Throw Runtime exception in main thread to crash the app
