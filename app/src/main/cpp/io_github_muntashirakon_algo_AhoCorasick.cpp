@@ -23,9 +23,16 @@ Java_io_github_muntashirakon_algo_AhoCorasick_createNative(JNIEnv *env, jobject,
     std::vector<std::string> patterns(len);
     for (jsize i = 0; i < len; ++i) {
         auto jstr = (jstring) env->GetObjectArrayElement(patternArray, i);
+        if (jstr == nullptr) {
+            continue;
+        }
         const char *chars = env->GetStringUTFChars(jstr, nullptr);
-        patterns[i] = chars;
-        env->ReleaseStringUTFChars(jstr, chars);
+        if (chars != nullptr) {
+            // Constructing std::string from a null pointer is undefined behaviour;
+            // GetStringUTFChars returns null on allocation failure.
+            patterns[i] = chars;
+            env->ReleaseStringUTFChars(jstr, chars);
+        }
         env->DeleteLocalRef(jstr);
     }
 
@@ -52,6 +59,10 @@ Java_io_github_muntashirakon_algo_AhoCorasick_searchNative(JNIEnv *env, jobject,
         ac = instances[instance_id];
     }
     const char *ctext = env->GetStringUTFChars(text, nullptr);
+    if (ctext == nullptr) {
+        // Allocation failure: return an empty result rather than dereferencing null.
+        return env->NewIntArray(0);
+    }
     std::string input(ctext);
     env->ReleaseStringUTFChars(text, ctext);
 
