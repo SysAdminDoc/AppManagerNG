@@ -40,6 +40,8 @@ release.jks
 codexprompt.md
 codexprompt-*.md
 
-# Markdown files local-only (except README)
+# Markdown files local-only (except README, RESEARCH, ROADMAP)
 *.md
 !README.md
+!/RESEARCH.md
+!/ROADMAP.md
