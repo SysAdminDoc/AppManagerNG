@@ -46,6 +46,8 @@ Reliability & data safety
   with a next-step button for users who defer it.
 - Scanner results can now be exported as a JSON report containing APK metadata,
   checksums, tracker/library matches, missing signatures, and online-report status.
+- Profiles no longer expose the inherited "export blocking rules" option that
+  had never been implemented and silently did nothing when applied.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.

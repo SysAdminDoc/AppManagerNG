@@ -675,18 +675,6 @@ public class AppsProfileViewModel extends AndroidViewModel {
         return mProfile == null || mProfile.users == null ? Users.getUsersIds() : mProfile.users;
     }
 
-    public void setExportRules(@Nullable Integer flags) {
-        if (mProfile == null) return;
-        setModified(true);
-        mProfile.exportRules = flags;
-    }
-
-    @Nullable
-    public Integer getExportRules() {
-        if (mProfile == null) return null;
-        return mProfile.exportRules;
-    }
-
     public void setComponents(@Nullable String[] components) {
         if (mProfile == null) return;
         setModified(true);
