@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 
 final class AutoBackupDiagnostics {
@@ -40,7 +41,8 @@ final class AutoBackupDiagnostics {
         WorkInfo manual = latest(workManager.getWorkInfosForUniqueWork(
                 AutoBackupScheduler.MANUAL_WORK_NAME).get());
         if (scheduled == null && manual == null) {
-            return appContext.getString(R.string.auto_backup_diagnostics_no_work);
+            return appendBatteryDiagnostics(appContext,
+                    appContext.getString(R.string.auto_backup_diagnostics_no_work));
         }
         StringBuilder sb = new StringBuilder();
         if (scheduled != null) {
@@ -54,7 +56,7 @@ final class AutoBackupDiagnostics {
             sb.append(formatWork(appContext, appContext.getString(R.string.auto_backup_diagnostics_manual),
                     manual, findJob(appContext, manual)));
         }
-        return sb.toString();
+        return appendBatteryDiagnostics(appContext, sb.toString());
     }
 
     @Nullable
@@ -126,6 +128,11 @@ final class AutoBackupDiagnostics {
             detail.append(context.getString(R.string.auto_backup_diagnostics_recent,
                     describePendingReasons(recent.getPendingJobReasons())));
         }
+    }
+
+    @NonNull
+    private static String appendBatteryDiagnostics(@NonNull Context context, @NonNull String detail) {
+        return detail + "; " + SelfBatteryOptimization.formatDiagnostics(context);
     }
 
     @NonNull
