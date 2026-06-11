@@ -101,6 +101,8 @@ Reliability & data safety
   notification replacement if manual and periodic workers ever overlap.
 - Scheduled backup status now includes the next configured run time directly in
   the preference summary.
+- Main-list tracker, permission, and backup badges now keep their severity tint
+  but use night-aware semantic content colors for text contrast.
 - Release builds now run R8 minification and resource shrinking; invalid
   baseline-profile class flags were corrected so optimized release APKs build
   successfully.
