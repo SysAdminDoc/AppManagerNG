@@ -7,4 +7,9 @@
         android:icon="@drawable/ic_get_app"
         android:title="@string/install"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_export_report"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/scanner_export_report"
+        app:showAsAction="ifRoom" />
 </menu>
