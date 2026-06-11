@@ -1379,6 +1379,9 @@
     <string name="profile_trigger_on_network_wifi">When Wi-Fi is connected</string>
     <string name="profile_trigger_on_network_any">When any network is connected</string>
     <string name="profile_trigger_on_boot">After device boot</string>
+    <string name="profile_trigger_on_app_install">When an app is installed</string>
+    <string name="profile_trigger_on_app_update">When an app is updated</string>
+    <string name="profile_trigger_on_app_uninstall">When an app is uninstalled</string>
     <string name="profile_trigger_summary">%1$s\n%2$s\n%3$s</string>
     <string name="profile_trigger_last_run_never">Never run</string>
     <string name="profile_trigger_last_run_format">%1$s: %2$s</string>
@@ -1391,6 +1394,7 @@
     <string name="profile_trigger_diagnostics_unknown">Not checked yet</string>
     <string name="profile_trigger_diagnostics_unavailable">Unavailable</string>
     <string name="profile_trigger_diagnostics_boot">Runs after device boot; no periodic WorkManager request</string>
+    <string name="profile_trigger_diagnostics_package_event">Runs after matching package broadcasts; no periodic WorkManager request</string>
     <string name="profile_trigger_diagnostics_no_work">No WorkManager request</string>
     <string name="profile_trigger_diagnostics_work">WorkManager: <xliff:g id="state" example="enqueued">%1$s</xliff:g>, attempt <xliff:g id="attempt" example="0">%2$d</xliff:g>, stop: <xliff:g id="stop_reason" example="not stopped">%3$s</xliff:g></string>
     <string name="profile_trigger_diagnostics_next">, next: <xliff:g id="time" example="5/26/26, 2:00 AM">%1$s</xliff:g></string>

@@ -183,6 +183,9 @@ public class ProfileTriggerStoreTest {
                 ProfileTrigger.TYPE_ON_NETWORK_WIFI,
                 ProfileTrigger.TYPE_ON_NETWORK_ANY,
                 ProfileTrigger.TYPE_ON_BOOT,
+                ProfileTrigger.TYPE_ON_APP_INSTALL,
+                ProfileTrigger.TYPE_ON_APP_UPDATE,
+                ProfileTrigger.TYPE_ON_APP_UNINSTALL,
         }) {
             String label = ProfileTrigger.typeAsString(type);
             assertEquals(type, ProfileTrigger.parseTypeString(label));

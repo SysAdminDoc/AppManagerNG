@@ -6,15 +6,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
+
+import androidx.test.core.app.ApplicationProvider;
 import androidx.work.Constraints;
 import androidx.work.NetworkType;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+@RunWith(RobolectricTestRunner.class)
 public class RoutineSchedulerTest {
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
@@ -62,6 +69,33 @@ public class RoutineSchedulerTest {
     public void workNameAndInputDataAreStablePerTrigger() {
         assertEquals("routine_trigger_abc", RoutineScheduler.uniqueWorkName("abc"));
         assertEquals("abc", RoutineScheduler.inputData("abc").getString(RoutineWorker.KEY_TRIGGER_ID));
+    }
+
+    @Test
+    public void packageEventTriggersAreBroadcastOnlyAndFilterEnabledMatches() {
+        Context context = ApplicationProvider.getApplicationContext();
+        ProfileTriggerStore store = new ProfileTriggerStore(context);
+        for (ProfileTrigger trigger : store.all()) {
+            store.remove(trigger.id);
+        }
+        ProfileTrigger install = new ProfileTrigger.Builder("profile-a", ProfileTrigger.TYPE_ON_APP_INSTALL).build();
+        ProfileTrigger disabledInstall = new ProfileTrigger.Builder("profile-b", ProfileTrigger.TYPE_ON_APP_INSTALL)
+                .enabled(false)
+                .build();
+        ProfileTrigger update = new ProfileTrigger.Builder("profile-c", ProfileTrigger.TYPE_ON_APP_UPDATE).build();
+        store.put(install);
+        store.put(disabledInstall);
+        store.put(update);
+
+        assertTrue(RoutineScheduler.isPackageEventTrigger(ProfileTrigger.TYPE_ON_APP_INSTALL));
+        assertEquals(0L, RoutineScheduler.getInitialDelayMillis(install, System.currentTimeMillis()));
+        assertEquals(NetworkType.NOT_REQUIRED, RoutineScheduler.buildConstraints(install).getRequiredNetworkType());
+
+        List<ProfileTrigger> matches = RoutineScheduler.matchingPackageEventTriggers(
+                store, ProfileTrigger.TYPE_ON_APP_INSTALL);
+
+        assertEquals(1, matches.size());
+        assertEquals(install.id, matches.get(0).id);
     }
 
     private static long millis(int year, int month, int day, int hour, int minute) {

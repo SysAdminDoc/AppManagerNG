@@ -452,14 +452,20 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                 ProfileTrigger.TYPE_ON_CHARGING,
                 ProfileTrigger.TYPE_ON_NETWORK_WIFI,
                 ProfileTrigger.TYPE_ON_NETWORK_ANY,
-                ProfileTrigger.TYPE_ON_BOOT
+                ProfileTrigger.TYPE_ON_BOOT,
+                ProfileTrigger.TYPE_ON_APP_INSTALL,
+                ProfileTrigger.TYPE_ON_APP_UPDATE,
+                ProfileTrigger.TYPE_ON_APP_UNINSTALL
         };
         CharSequence[] labels = {
                 getString(R.string.profile_trigger_type_time_of_day),
                 getString(R.string.profile_trigger_on_charging),
                 getString(R.string.profile_trigger_on_network_wifi),
                 getString(R.string.profile_trigger_on_network_any),
-                getString(R.string.profile_trigger_on_boot)
+                getString(R.string.profile_trigger_on_boot),
+                getString(R.string.profile_trigger_on_app_install),
+                getString(R.string.profile_trigger_on_app_update),
+                getString(R.string.profile_trigger_on_app_uninstall)
         };
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.profile_trigger_add)
