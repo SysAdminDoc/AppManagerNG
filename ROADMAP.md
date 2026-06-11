@@ -217,13 +217,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: each ported commit attributed in CHANGELOG; profile-with-custom-expression filter test added; APKS merge of a fixture split-bundle round-trips; v4.1.0 tag (due ~2026-06-21) re-diffed after release for stragglers.
   Complexity: M
 
-- [ ] P1 — Resolve ADB-backup v1 header FIXME (data-loss class)
-  Why: backup/adb/AndroidBackupHeader.java:375 "May not work for backup file version 1" has sat since 2023 in a restore path; mis-parsing an old-format archive is silent data loss at the worst moment.
-  Evidence: backup/adb/AndroidBackupHeader.java:375 (verified in tree); RESEARCH.md §Security
-  Touches: backup/adb/AndroidBackupHeader.java, app/src/test/ (v1/v2/v3 header fixture corpus)
-  Acceptance: fixture archives for every android-backup header version parse correctly under unit test, or v1 is explicitly rejected with a user-readable "unsupported version" error — never a wrong-data parse.
-  Complexity: S
-
 - [ ] P1 — Root-detection retune for 2026 root managers (upstream #1967 + Magisk 30.7 caps change)
   Why: Upstream's accepted P1 "root not detected on Android 16" (#1967) hits the same probe stack NG owns (runner/RootManagerInfo); separately Magisk v30.7 now preserves capabilities by default, inverting the assumption behind NG's shipped KernelSU/Magisk drop-cap diagnostics, and KernelSU-Next 3.1.0 moved paths again.
   Evidence: https://github.com/MuntashirAkon/AppManager/issues/1967 ; https://github.com/topjohnwu/Magisk/releases (v30.7 caps default); runner/RootManagerInfo (verified, probes /data/adb/{magisk,ksu,ap})
