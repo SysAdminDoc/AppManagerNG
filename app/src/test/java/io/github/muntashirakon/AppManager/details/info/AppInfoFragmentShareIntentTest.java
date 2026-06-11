@@ -66,4 +66,14 @@ public class AppInfoFragmentShareIntentTest {
         assertEquals(apks.getType(), intent.getType());
         assertNotEquals("application/*", intent.getType());
     }
+
+    @Test
+    public void buildAppVerifierShareIntentUsesPackageThenColonSeparatedSha256() {
+        Intent intent = AppInfoFragment.buildAppVerifierShareIntent(" io.github.example.app ",
+                "aa:bb:cc:dd");
+
+        assertEquals(Intent.ACTION_SEND, intent.getAction());
+        assertEquals("text/plain", intent.getType());
+        assertEquals("io.github.example.app\nAA:BB:CC:DD", intent.getStringExtra(Intent.EXTRA_TEXT));
+    }
 }

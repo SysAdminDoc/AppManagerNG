@@ -143,13 +143,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: a v3.2-signed sample APK shows the correct scheme list (not "unknown"/crash); audit doc records the verdict if apksig upstream lags.
   Complexity: S
 
-- [ ] P3 — AppVerifier-format share integration
-  Why: NG's README already tells users to verify releases with AppVerifier; an in-app "share verification info" (package + SHA-256 cert hash in AppVerifier's expected text format) closes the loop for any installed app at S cost.
-  Evidence: https://github.com/soupslurpr/AppVerifier (README format, verified); README.md:131
-  Touches: details/info/AppInfoFragment.java (share action), utils/ (formatter)
-  Acceptance: share sheet from an app's signature card produces text AppVerifier parses directly (package name + colon-separated SHA-256).
-  Complexity: S
-
 - [ ] P3 — APK export device-specificity labeling
   Why: Power users archive APKs ahead of verification enforcement and are burned by device-trimmed splits rendering wrong elsewhere — an XDA PSA exists solely to explain AM's extract vs Aurora's export; labeling exports (and warning on share) is cheap clarity.
   Evidence: XDA PSA thread 4784234 (RESEARCH.md Sources); apk/splitapk/SplitApkExporter.java
