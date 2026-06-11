@@ -13,7 +13,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.provider.DocumentsContract;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -1278,11 +1277,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     if (ThreadUtils.isInterrupted()) {
                         break;
                     }
-                    // Sleep, delete, progress
-                    SystemClock.sleep(2_000);
-                    if (ThreadUtils.isInterrupted()) {
-                        break;
-                    }
+                    // Delete, progress
                     path.delete();
                     TextView c = counterRef.get();
                     int finalI = i;
@@ -1522,11 +1517,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     if (ThreadUtils.isInterrupted()) {
                         break;
                     }
-                    // Sleep, copy, progress
-                    SystemClock.sleep(2_000);
-                    if (ThreadUtils.isInterrupted()) {
-                        break;
-                    }
+                    // Copy, progress
                     if (!copy(sourcePath, targetPath)) {
                         // Failed to copy, abort
                         ThreadUtils.postOnMainThread(() -> {
