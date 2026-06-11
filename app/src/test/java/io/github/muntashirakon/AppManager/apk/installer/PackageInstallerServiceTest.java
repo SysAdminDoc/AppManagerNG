@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.apk.installer;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SECURITY;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_SUCCESS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,6 +56,15 @@ public class PackageInstallerServiceTest {
         assertEquals(subject, progressHandler.lastInfo.getBody());
         assertEquals(details, progressHandler.lastInfo.getStyle());
         assertNotEquals(context.getString(R.string.done), progressHandler.lastInfo.getBody());
+    }
+
+    @Test
+    public void recoveryHintFromStatusIsUserFacingText() {
+        Context context = RuntimeEnvironment.getApplication();
+        String hint = PackageInstallerService.getRecoveryHintFromStatus(context, STATUS_FAILURE_SECURITY);
+
+        assertTrue(hint.contains("APK"));
+        assertFalse(hint.contains("STATUS_FAILURE_SECURITY"));
     }
 
     private static final class FakeProgressHandler extends QueuedProgressHandler {

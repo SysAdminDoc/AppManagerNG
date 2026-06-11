@@ -165,4 +165,21 @@ public class InstallTranscriptTest {
         assertTrue(text.contains("Android: unknown (API 0, patch unknown)"));
         assertTrue(text.contains("Status: unknown (0)"));
     }
+
+    @Test
+    public void toShareableTextIncludesExplanationAndRecoveryHintWithRawStatus() {
+        InstallTranscript transcript = new InstallTranscript(
+                "2026-05-16T12:00:00Z", "0.4.2 (6)", "Generic", "14", 34, "2026-05-01",
+                "arm64-v8a", "auto", "com.example.foo", -2, "STATUS_FAILURE_SECURITY",
+                "Could not access the APK files.",
+                "Grant access to the APK source and retry.",
+                null,
+                null,
+                true);
+        String text = transcript.toShareableText();
+
+        assertTrue(text.contains("Status: STATUS_FAILURE_SECURITY (-2)"));
+        assertTrue(text.contains("Status explanation: Could not access the APK files."));
+        assertTrue(text.contains("Recovery hint: Grant access to the APK source and retry."));
+    }
 }

@@ -861,6 +861,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                                                @Nullable String statusMessage, boolean displayOpenAndAppInfo,
                                                int statusCode) {
         SpannableStringBuilder ssb = new SpannableStringBuilder(message);
+        if (statusCode != STATUS_SUCCESS) {
+            ssb.append("\n\n").append(PackageInstallerService.getRecoveryHintFromStatus(this, statusCode));
+        }
         if (statusMessage != null) {
             ssb.append("\n\n").append(UIUtils.getItalicString(statusMessage));
         }
@@ -1031,8 +1034,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             }
         }
         return new InstallTranscript(timestamp, version, device, Build.VERSION.RELEASE, Build.VERSION.SDK_INT,
-                patch, abi, mode, packageName, statusCode, InstallTranscript.statusName(statusCode), statusMessage,
-                sourceUri, true);
+                patch, abi, mode, packageName, statusCode, InstallTranscript.statusName(statusCode),
+                getStringFromStatus(statusCode, null),
+                PackageInstallerService.getRecoveryHintFromStatus(this, statusCode),
+                statusMessage, sourceUri, true);
     }
 
     @NonNull
