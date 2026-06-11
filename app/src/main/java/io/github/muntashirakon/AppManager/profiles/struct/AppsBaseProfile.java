@@ -4,9 +4,11 @@ package io.github.muntashirakon.AppManager.profiles.struct;
 
 import android.app.AppOpsManager;
 import android.content.Context;
+import android.os.UserHandleHidden;
 import android.text.TextUtils;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -26,15 +28,77 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchAppOpsOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchComponentOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchPermissionOptions;
+import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileLogger;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
 
 public abstract class AppsBaseProfile extends BaseProfile {
     public static final String TAG = AppsBaseProfile.class.getSimpleName();
+    public static final int PROFILE_OP_COMPONENTS = 1;
+    public static final int PROFILE_OP_APP_OPS = 2;
+    public static final int PROFILE_OP_PERMISSIONS = 3;
+    public static final int PROFILE_OP_FREEZE = 4;
+    public static final int PROFILE_OP_FORCE_STOP = 5;
+    public static final int PROFILE_OP_CLEAR_CACHE = 6;
+    public static final int PROFILE_OP_CLEAR_DATA = 7;
+    public static final int PROFILE_OP_TRACKERS = 8;
+
+    @IntDef({
+            PROFILE_OP_COMPONENTS,
+            PROFILE_OP_APP_OPS,
+            PROFILE_OP_PERMISSIONS,
+            PROFILE_OP_FREEZE,
+            PROFILE_OP_FORCE_STOP,
+            PROFILE_OP_CLEAR_CACHE,
+            PROFILE_OP_CLEAR_DATA,
+            PROFILE_OP_TRACKERS,
+    })
+    public @interface ProfileOperation {
+    }
+
+    public static class PrivilegeCapabilities {
+        public final boolean canModifyComponents;
+        public final boolean canModifyAppOps;
+        public final boolean canModifyPermissions;
+        public final boolean canFreezePackages;
+        public final boolean canForceStopPackages;
+        public final boolean canClearCache;
+        public final boolean canClearData;
+
+        public PrivilegeCapabilities(boolean canModifyComponents,
+                                     boolean canModifyAppOps,
+                                     boolean canModifyPermissions,
+                                     boolean canFreezePackages,
+                                     boolean canForceStopPackages,
+                                     boolean canClearCache,
+                                     boolean canClearData) {
+            this.canModifyComponents = canModifyComponents;
+            this.canModifyAppOps = canModifyAppOps;
+            this.canModifyPermissions = canModifyPermissions;
+            this.canFreezePackages = canFreezePackages;
+            this.canForceStopPackages = canForceStopPackages;
+            this.canClearCache = canClearCache;
+            this.canClearData = canClearData;
+        }
+
+        @NonNull
+        public static PrivilegeCapabilities fromCurrentMode() {
+            return new PrivilegeCapabilities(
+                    SelfPermissions.canModifyAppComponentStates(UserHandleHidden.myUserId(), null, true),
+                    SelfPermissions.canModifyAppOpMode(),
+                    SelfPermissions.canModifyPermissions(),
+                    SelfPermissions.canFreezeUnfreezePackages(),
+                    SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES),
+                    SelfPermissions.canClearAppCache(),
+                    SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+            );
+        }
+    }
 
     public static class BackupInfo {
         @Nullable
@@ -108,16 +172,21 @@ public abstract class AppsBaseProfile extends BaseProfile {
     }
 
     protected ProfileApplierResult apply(@NonNull List<String> packageList, List<Integer> assocUsers, @NonNull String state, @Nullable ProfileLogger logger, @Nullable ProgressHandler progressHandler) {
+        List<Integer> unsupportedOperations = getUnsupportedOperations(PrivilegeCapabilities.fromCurrentMode());
         // Send progress
         if (progressHandler != null) {
-            progressHandler.postUpdate(calculateMaxProgress(packageList), 0);
+            progressHandler.postUpdate(calculateMaxProgress(packageList, unsupportedOperations), 0);
         }
         ProfileApplierResult profileApplierResult = new ProfileApplierResult();
+        profileApplierResult.recordSkippedOperations(unsupportedOperations);
+        for (@ProfileOperation int operation : unsupportedOperations) {
+            log(logger, "====> Skipped unsupported profile operation: " + operation);
+        }
         BatchOpsManager batchOpsManager = new BatchOpsManager(logger);
         BatchOpsManager.Result result;
         // Apply component blocking
         String[] components = this.components;
-        if (components != null) {
+        if (components != null && !unsupportedOperations.contains(PROFILE_OP_COMPONENTS)) {
             log(logger, "====> Started block/unblock components. State: " + state);
             BatchComponentOptions options = new BatchComponentOptions(components);
             int op;
@@ -137,7 +206,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
         } else Log.d(TAG, "Skipped components.");
         // Apply app ops blocking
         int[] appOps = this.appOps;
-        if (appOps != null) {
+        if (appOps != null && !unsupportedOperations.contains(PROFILE_OP_APP_OPS)) {
             log(logger, "====> Started ignore/default components. State: " + state);
             int mode;
             switch (state) {
@@ -156,7 +225,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
         } else Log.d(TAG, "Skipped app ops.");
         // Apply permissions
         String[] permissions = this.permissions;
-        if (permissions != null) {
+        if (permissions != null && !unsupportedOperations.contains(PROFILE_OP_PERMISSIONS)) {
             log(logger, "====> Started grant/revoke permissions.");
             int op;
             switch (state) {
@@ -181,7 +250,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             // TODO(18/11/20): Export rules
         } else Log.d(TAG, "Skipped export rules.");
         // Disable/enable
-        if (this.freeze) {
+        if (this.freeze && !unsupportedOperations.contains(PROFILE_OP_FREEZE)) {
             log(logger, "====> Started freeze/unfreeze. State: " + state);
             int op;
             switch (state) {
@@ -199,28 +268,28 @@ public abstract class AppsBaseProfile extends BaseProfile {
             recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped disable/enable.");
         // Force-stop
-        if (this.forceStop) {
+        if (this.forceStop && !unsupportedOperations.contains(PROFILE_OP_FORCE_STOP)) {
             log(logger, "====> Started force-stop.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_FORCE_STOP, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
             recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped force stop.");
         // Clear cache
-        if (this.clearCache) {
+        if (this.clearCache && !unsupportedOperations.contains(PROFILE_OP_CLEAR_CACHE)) {
             log(logger, "====> Started clear cache.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_CLEAR_CACHE, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
             recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped clear cache.");
         // Clear data
-        if (this.clearData) {
+        if (this.clearData && !unsupportedOperations.contains(PROFILE_OP_CLEAR_DATA)) {
             log(logger, "====> Started clear data.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_CLEAR_DATA, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
             recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped clear data.");
         // Block trackers
-        if (this.blockTrackers) {
+        if (this.blockTrackers && !unsupportedOperations.contains(PROFILE_OP_TRACKERS)) {
             log(logger, "====> Started block trackers. State: " + state);
             int op;
             switch (state) {
@@ -285,18 +354,49 @@ public abstract class AppsBaseProfile extends BaseProfile {
         }
     }
 
-    private int calculateMaxProgress(@NonNull List<String> userPackagePairs) {
+    @NonNull
+    public List<Integer> getUnsupportedOperations(@NonNull PrivilegeCapabilities capabilities) {
+        List<Integer> unsupportedOperations = new ArrayList<>();
+        if (components != null && !capabilities.canModifyComponents) {
+            unsupportedOperations.add(PROFILE_OP_COMPONENTS);
+        }
+        if (appOps != null && !capabilities.canModifyAppOps) {
+            unsupportedOperations.add(PROFILE_OP_APP_OPS);
+        }
+        if (permissions != null && !capabilities.canModifyPermissions) {
+            unsupportedOperations.add(PROFILE_OP_PERMISSIONS);
+        }
+        if (freeze && !capabilities.canFreezePackages) {
+            unsupportedOperations.add(PROFILE_OP_FREEZE);
+        }
+        if (forceStop && !capabilities.canForceStopPackages) {
+            unsupportedOperations.add(PROFILE_OP_FORCE_STOP);
+        }
+        if (clearCache && !capabilities.canClearCache) {
+            unsupportedOperations.add(PROFILE_OP_CLEAR_CACHE);
+        }
+        if (clearData && !capabilities.canClearData) {
+            unsupportedOperations.add(PROFILE_OP_CLEAR_DATA);
+        }
+        if (blockTrackers && !capabilities.canModifyComponents) {
+            unsupportedOperations.add(PROFILE_OP_TRACKERS);
+        }
+        return unsupportedOperations;
+    }
+
+    private int calculateMaxProgress(@NonNull List<String> userPackagePairs,
+                                     @NonNull List<Integer> unsupportedOperations) {
         int packageCount = userPackagePairs.size();
         int opCount = 0;
-        if (components != null) ++opCount;
-        if (appOps != null) ++opCount;
-        if (permissions != null) ++opCount;
+        if (components != null && !unsupportedOperations.contains(PROFILE_OP_COMPONENTS)) ++opCount;
+        if (appOps != null && !unsupportedOperations.contains(PROFILE_OP_APP_OPS)) ++opCount;
+        if (permissions != null && !unsupportedOperations.contains(PROFILE_OP_PERMISSIONS)) ++opCount;
         // if (profile.exportRules != null) ++opCount; todo
-        if (freeze) ++opCount;
-        if (forceStop) ++opCount;
-        if (clearCache) ++opCount;
-        if (clearData) ++opCount;
-        if (blockTrackers) ++opCount;
+        if (freeze && !unsupportedOperations.contains(PROFILE_OP_FREEZE)) ++opCount;
+        if (forceStop && !unsupportedOperations.contains(PROFILE_OP_FORCE_STOP)) ++opCount;
+        if (clearCache && !unsupportedOperations.contains(PROFILE_OP_CLEAR_CACHE)) ++opCount;
+        if (clearData && !unsupportedOperations.contains(PROFILE_OP_CLEAR_DATA)) ++opCount;
+        if (blockTrackers && !unsupportedOperations.contains(PROFILE_OP_TRACKERS)) ++opCount;
         if (saveApk) ++opCount;
         if (backupData != null) ++opCount;
         return opCount * packageCount;

@@ -14,6 +14,8 @@ public class ProfileApplierResult {
     private boolean mFailed;
     @NonNull
     private final Set<String> mFailedPackages = new LinkedHashSet<>();
+    @NonNull
+    private final Set<Integer> mSkippedOperations = new LinkedHashSet<>();
 
     public void setRequiresRestart(boolean requiresRestart) {
         mRequiresRestart = requiresRestart;
@@ -41,8 +43,25 @@ public class ProfileApplierResult {
         mFailed = true;
     }
 
+    public void recordSkippedOperations(@NonNull Iterable<Integer> skippedOperations) {
+        for (Integer operation : skippedOperations) {
+            if (operation != null) {
+                mSkippedOperations.add(operation);
+            }
+        }
+    }
+
+    public boolean hasSkippedOperations() {
+        return !mSkippedOperations.isEmpty();
+    }
+
+    @NonNull
+    public Set<Integer> getSkippedOperations() {
+        return mSkippedOperations;
+    }
+
     public boolean isSuccessful() {
-        return !mFailed;
+        return !mFailed && mSkippedOperations.isEmpty();
     }
 
     @NonNull
