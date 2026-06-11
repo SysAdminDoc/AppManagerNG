@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.onboarding;
 
+import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -31,9 +32,11 @@ import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
@@ -111,6 +114,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Nullable
     private CapabilitySnapshot mCapabilitySnapshot;
     private int mCapabilityProbeGeneration;
+    private boolean mNotificationPermissionPromptShown;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -151,6 +155,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         // default (MODE_AUTO) and that's still meaningful information.
         highlightActiveMode(view, Ops.getMode());
         bindNextStepTiles(view);
+        maybePromptForNotificationPermission(view);
         // "Re-check capabilities" — for users who toggle Wireless debugging or
         // grant root from another app while the sheet is open. Re-bind the
         // capability badges and the active-mode highlight without dismissing
@@ -276,6 +281,12 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @VisibleForTesting
     static boolean shouldRunCapabilityProbe(boolean forceProbe, @Nullable Object snapshot) {
         return forceProbe || snapshot == null;
+    }
+
+    @VisibleForTesting
+    static boolean shouldPromptForNotificationPermission(int sdk, boolean permissionGranted,
+                                                         boolean promptAlreadyShown) {
+        return sdk >= Build.VERSION_CODES.TIRAMISU && !permissionGranted && !promptAlreadyShown;
     }
 
     @NonNull
@@ -832,6 +843,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
      * destination screen is the user's next focus.
      */
     private void bindNextStepTiles(@NonNull View root) {
+        bindNotificationPermissionTile(root);
         View privileges = root.findViewById(R.id.onboarding_next_step_privileges);
         if (privileges != null) {
             privileges.setOnClickListener(v -> launchNextStep(
@@ -945,6 +957,45 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         if (mBoundView != null) {
             refreshCapabilityStatuses(mBoundView, false);
         }
+    }
+
+    private void bindNotificationPermissionTile(@NonNull View root) {
+        View notifications = root.findViewById(R.id.onboarding_next_step_notifications);
+        if (notifications == null) return;
+        boolean granted = SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || granted) {
+            notifications.setVisibility(View.GONE);
+            notifications.setOnClickListener(null);
+            return;
+        }
+        notifications.setVisibility(View.VISIBLE);
+        notifications.setOnClickListener(v -> requestNotificationPermission(root));
+    }
+
+    private void maybePromptForNotificationPermission(@NonNull View root) {
+        boolean granted = SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS);
+        if (!shouldPromptForNotificationPermission(Build.VERSION.SDK_INT, granted,
+                mNotificationPermissionPromptShown)) {
+            return;
+        }
+        mNotificationPermissionPromptShown = true;
+        root.post(() -> {
+            if (isAdded()) {
+                requestNotificationPermission(root);
+            }
+        });
+    }
+
+    private void requestNotificationPermission(@NonNull View root) {
+        FragmentActivity activity = requireActivity();
+        NotificationUtils.requestPostNotificationsForWorkflow(activity,
+                R.string.onboarding_notification_permission_title,
+                R.string.onboarding_notification_permission_message,
+                () -> {
+                    if (isAdded()) {
+                        bindNotificationPermissionTile(root);
+                    }
+                });
     }
 
     @Override
