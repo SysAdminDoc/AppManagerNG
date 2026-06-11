@@ -29,16 +29,25 @@ device, or need on-device visual verification.
   scroll restore is device-gated and noted as such.
   Complexity: M
 
-- [ ] INIT-2 — Backup atomic overwrite (close the 2020 overwrite TODO, safely)
-  Why: re-backing-up to an existing slot requires deleting first, creating a data-loss
-  window. Implement write-new-then-swap so an interrupted overwrite leaves the previous
-  backup intact. (The user-protect half already exists via freeze; retention/bulk-delete
-  already skip frozen backups.)
-  Touches: backup/BackupManager.java, backup/BackupItems.java (temp-then-commit swap),
-  backup/dialog/ (offer overwrite when a same-name backup exists)
-  Acceptance: overwrite offered when a same-name backup exists; an injected mid-overwrite
-  failure leaves the previous backup readable (JVM test with BackupItems/BackupManager
-  harness, which already exists).
+- [x] INIT-2a — Lock in the backup commit data-safety property (DONE 2026-06-11)
+  Finding: BackupItems.commit() already writes the new backup to a temp dir and swaps it
+  into place BEFORE deleting previous backups (new-before-old), so a crash mid-commit
+  leaves the previous backup intact — the commit path is already crash-safe for the common
+  UUID-named flow. Added BackupItemsTest.commitSwapsNewPayloadIntoPlaceBeforeRemovingPreviousBackup
+  to guard this property against regression.
+
+- [ ] INIT-2b — Backup overwrite-option UI + move-aside for custom-name collisions (device-gated)
+  Why: the net-new in the 2020 overwrite TODO is a UX feature — offer "overwrite" when a
+  same-NAME backup exists instead of forcing a manual pre-delete (which opens a no-backup
+  window). For custom-name collisions where mBackupPath can be pre-populated, harden
+  commit() to move-the-existing-aside → swap → delete-aside (rollback on failure) so even
+  that window closes. NOT patched blind: moveTo/rename-aside rollback semantics differ
+  between file-backed and SAF-backed Path implementations and the JVM harness only exercises
+  the file backend — a wrong rollback could corrupt backups on SAF storage.
+  Touches: backup/dialog/ (overwrite option), backup/BackupItems.java (move-aside commit)
+  Acceptance: overwrite offered on same-name collision; an injected mid-swap failure leaves
+  the previous backup readable, verified on both file and SAF (Android/data) storage on a
+  device.
   Complexity: M
 
 - [ ] INIT-3 — Regression test safety net for the 2026-06-11 audit fixes
@@ -51,26 +60,40 @@ device, or need on-device visual verification.
   the existing :app:testFlossDebugUnitTest suite.
   Complexity: S
 
-- [ ] INIT-4 — Device-wide analytics / discovery dashboard
-  Why: the category's stickiest discovery surface (Inure analytics, AppDash insight cards);
-  NG already computes every datapoint (installer source, target SDK, signing, usage) but
-  offers no aggregate view. Pure presentation + aggregation over existing predicates.
-  (Promotes the existing P3 "Device-wide analytics dashboard" item to active.)
-  Touches: new dashboard fragment under main/ or a menu entry, filters/options/ (reuse
-  predicates as tap-through), existing chart utilities
-  Acceptance: a screen shows installer-source / targetSDK / signing distributions + an
-  "unused 30/60/90 days" card; tapping a segment opens the main list pre-filtered. The
-  aggregation is covered by a JVM test; the rendered screen is device-gated for visual.
+- [x] INIT-4a — Device-wide analytics aggregation data layer (DONE 2026-06-11)
+  Shipped `analytics/DeviceAnalyticsAggregator` — a pure, Android-free aggregation turning a
+  flat list of per-app datapoints (installer label, target SDK, installed, last-used millis)
+  into installer-source / target-SDK distributions and cumulative "unused in 30/60/90 days"
+  counts, with apps lacking usage data tracked separately as "unknown". `nowMillis` is
+  injected for deterministic buckets. Covered by `DeviceAnalyticsAggregatorTest` (6 cases:
+  ordering, ascending SDK, exact day boundaries, unknown-usage, uninstalled totals, empty).
+  Follows the project's "ship the tested data layer, wire UI next" pattern.
+
+- [ ] INIT-4b — Analytics / discovery dashboard screen (device-gated UI wiring)
+  Why: render the INIT-4a summary as the discovery surface (Inure/AppDash-style) with
+  tap-through to a pre-filtered main list — the highest-value "feels premium" feature.
+  Touches: new dashboard fragment + menu entry under main/, build AppDatapoint list from the
+  loaded ApplicationItem set (installer via getInstallerInfo, targetSdk, lastUsageTime),
+  reuse filters/options/ predicates for segment tap-through, existing chart utilities
+  Acceptance: a screen shows installer-source / targetSDK distributions + an "unused
+  30/60/90 days" card; tapping a segment opens the main list pre-filtered to it; verified on
+  a device in light/dark/AMOLED. (Visual + tap-through need on-device verification.)
   Complexity: M
 
-- [ ] INIT-5 — i18n intake scaffolding (Weblate config + CONTRIBUTING + NG-string audit)
-  Why: 44 inherited locales at 30-40%, NG strings English-only, README promises a Weblate
-  link that does not exist. (Promotes the existing P2 "Fork-owned translation pipeline"
-  item; the hosted Weblate instance itself remains maintainer/external-gated.)
-  Touches: .github/ (Weblate config), CONTRIBUTING.md (translation section), README link
-  Acceptance: a committed Weblate project config + contributor docs; the hosted instance
-  is filed as the remaining maintainer action.
-  Complexity: S
+- [ ] INIT-5 — i18n intake (maintainer-gated: external Weblate instance is the blocker)
+  Why: 44 inherited locales at 30-40%, NG strings English-only, README:187 promises
+  "Weblate (link TBD)". Re-scoped after inspection: the committable repo-side artifacts are
+  thin and hollow without the actual hosted service — a `.weblate` component config pointing
+  at a non-existent project would be fake polish, and CONTRIBUTING.md is gitignored here
+  (`*.md` with only README/RESEARCH/ROADMAP excepted), so a tracked contributor translation
+  doc would need a `.gitignore` exception first. The real blocker is standing up the hosted
+  Weblate (or Crowdin) project — a maintainer/account action, not code.
+  Touches (once the instance exists): `.gitignore` (un-ignore CONTRIBUTING.md), CONTRIBUTING.md
+  (translation section), README:187 (replace "link TBD"), optional `.weblate` + sync workflow
+  Acceptance: a hosted translation project is live and linked from README; top-5 inherited
+  locales get the NG-string components; CI accepts translation commits. Until then this stays
+  maintainer-gated rather than shipping placeholder config.
+  Complexity: S (once unblocked)
 
 ### Device-gated (specced, not patched blind — see detailed entries below)
 
