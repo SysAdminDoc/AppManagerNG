@@ -118,6 +118,7 @@ public class AppPref {
         PREF_LOCAL_CRASH_SINK_ENABLED_BOOL,
 
         PREF_FREEZE_TYPE_INT,
+        PREF_EDITOR_WORD_WRAP_BOOL,
         PREF_FM_DISPLAY_IN_LAUNCHER_BOOL,
         PREF_FM_HOME_STR,
         PREF_FM_LAST_PATH_STR,
@@ -446,6 +447,7 @@ public class AppPref {
             case PREF_LOG_VIEWER_EXPAND_BY_DEFAULT_BOOL:
             case PREF_APP_THEME_PURE_BLACK_BOOL:
             case PREF_DISPLAY_CHANGELOG_BOOL:
+            case PREF_EDITOR_WORD_WRAP_BOOL:
             case PREF_ONBOARDING_SHOWN_BOOL:
             case PREF_MAIN_TOUR_SHOWN_BOOL:
             case PREF_FM_DISPLAY_IN_LAUNCHER_BOOL:

@@ -76,6 +76,9 @@ Reliability & data safety
   component/tracker deltas.
 - File-manager batch paste and delete progress no longer pause for a fixed two
   seconds per file before doing the actual I/O.
+- The code editor now remembers the word-wrap toggle across sessions and maps
+  common Kotlin, HTML, CSS, TOML, INI, and shell-script extensions to bundled
+  highlighters.
 - Batch grant/revoke permissions records a failing package once, not once per
   failing permission, fixing inflated failure counts, duplicated retry-queue
   entries and duplicated result-screen rows.
