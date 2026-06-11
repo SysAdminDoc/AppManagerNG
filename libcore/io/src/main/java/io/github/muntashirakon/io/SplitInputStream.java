@@ -56,7 +56,8 @@ public class SplitInputStream extends InputStream {
         byte[] bytes = new byte[1];
         int readBytes = read(bytes);
         if (readBytes != 1) return -1;
-        else return bytes[0];
+            // Mask to 0..255; a raw signed byte of 0xFF would otherwise return -1 (false EOF).
+        else return bytes[0] & 0xFF;
     }
 
     @Override

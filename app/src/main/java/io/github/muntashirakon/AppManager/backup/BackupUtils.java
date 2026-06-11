@@ -293,8 +293,10 @@ public final class BackupUtils {
         HashMap<String, List<BackupMetadataV5>> backupMetadata = new HashMap<>();
         List<BackupItems.BackupItem> backupPaths = BackupItems.findAllBackupItems();
         for (BackupItems.BackupItem backupItem : backupPaths) {
-            try {
-                BackupMetadataV5 metadataV5 = backupItem.getMetadata();
+            // try-with-resources: getMetadata() decrypts to a temp file and opens a Crypto holding
+            // key material; without close() each listing leaks a plaintext temp copy and key bytes.
+            try (BackupItems.BackupItem item = backupItem) {
+                BackupMetadataV5 metadataV5 = item.getMetadata();
                 BackupMetadataV5.Metadata metadata = metadataV5.metadata;
                 if (!backupMetadata.containsKey(metadata.packageName)) {
                     backupMetadata.put(metadata.packageName, new ArrayList<>());

@@ -169,7 +169,7 @@ public class BackupItems {
         }
     }
 
-    public static class BackupItem {
+    public static class BackupItem implements Closeable {
         public static final String TAG = BackupItem.class.getSimpleName();
 
         @NonNull
@@ -556,6 +556,17 @@ public class BackupItems {
                 }
             }
             return false;
+        }
+
+        /**
+         * Releases temporary decrypted files and any open {@link Crypto} key material. Read-only
+         * enumeration paths (listing/deleting backups) must call this — otherwise every encrypted
+         * backup they touch leaks a plaintext temp copy of its metadata and leaves derived key
+         * material un-wiped for the lifetime of the process. Equivalent to {@link #cleanup()}.
+         */
+        @Override
+        public void close() {
+            cleanup();
         }
 
         public void cleanup() {
