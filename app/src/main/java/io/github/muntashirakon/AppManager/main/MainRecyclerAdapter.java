@@ -961,7 +961,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             this.itemView = (MaterialCardView) itemView;
             icon = itemView.findViewById(R.id.icon);
             attentionBadge = itemView.findViewById(R.id.attention_badge);
-            debugIcon = itemView.findViewById(R.id.favorite_icon);
+            debugIcon = itemView.findViewById(R.id.debug_indicator);
             label = itemView.findViewById(R.id.label);
             packageName = itemView.findViewById(R.id.packageName);
             version = itemView.findViewById(R.id.version);
