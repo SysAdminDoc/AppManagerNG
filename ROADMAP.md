@@ -219,13 +219,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: overwrite is offered when a same-name backup exists and is atomic — an interrupted overwrite leaves the previous backup intact (unit test with injected failure).
   Complexity: M
 
-- [ ] P2 — Wipe cryptographic material in SessionMonitoringService
-  Why: The service holds key material with a "TODO: Wipe memory?" (line 138) — char[]/byte[] secrets should be zeroed after use per the project's own keystore handling precedent (v0.3.0 zeroed keystore char[]s).
-  Evidence: session/SessionMonitoringService.java:138 (verified); RESEARCH.md §Security
-  Touches: session/SessionMonitoringService.java, crypto/ helpers if a shared zeroing util is extracted
-  Acceptance: secrets are zeroed on session close/destroy paths (including error paths); no plaintext key material outlives its use scope.
-  Complexity: S
-
 - [ ] P2 — 2026-06-09 deferred-audit reliability batch
   Why: The deep audit deferred seven verified-real, low-individual-cost reliability bugs that were lost when the old ROADMAP section was replaced; re-itemizing them prevents silent drop: AppUsageViewModel live-list CME; stale-position notifyItemChanged in AppDetails fragments; ApkWhatsNewFinder singleton shared temp-set; SAF pending-write fields lost on process death + profile-export main-thread IO; OneClickOps onPause busy-clear without scan-cancel; retention pruners leaving stale Room rows with no broadcast; commit() skipping the previous-backup freeze flag.
   Evidence: 2026-06-09 audit session record (commits 4f46a0e9..079e96f1 shipped the non-deferred half); usage/AppUsageViewModel.java + apk/whatsnew/ApkWhatsNewFinder.java verified present

@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import io.github.muntashirakon.AppManager.crypto.RandomChar;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 public final class AuthManager {
     public static final int AUTH_KEY_SIZE = 24;
@@ -22,7 +23,11 @@ public final class AuthManager {
     @NonNull
     public static String generateKey() {
         char[] authKey = new char[AUTH_KEY_SIZE];
-        new RandomChar().nextChars(authKey);
-        return new String(authKey);
+        try {
+            new RandomChar().nextChars(authKey);
+            return new String(authKey);
+        } finally {
+            Utils.clearChars(authKey);
+        }
     }
 }
