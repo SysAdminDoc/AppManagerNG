@@ -18,6 +18,7 @@
     <dimen name="main_list_title_badge_padding_end">40dp</dimen>
     <dimen name="main_list_badge_min_height">30dp</dimen>
     <dimen name="main_list_badge_min_width">42dp</dimen>
+    <dimen name="main_list_badge_max_width">112dp</dimen>
     <dimen name="main_list_badge_padding_horizontal">10dp</dimen>
     <dimen name="main_list_badge_padding_vertical">4dp</dimen>
     <dimen name="main_status_min_height">48dp</dimen>
