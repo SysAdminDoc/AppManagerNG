@@ -32,7 +32,7 @@ ext {
     hiddenapibypass_version = "6.1" // https://github.com/LSPosed/AndroidHiddenApiBypass
     json_version = "20251224" // JVM org.json implementation for local unit tests; Android supplies org.json at runtime
     guava_version = "32.1.3-android" // WorkManager exposes ListenableFuture; compile against Guava because runtime already packages it via smali/editor deps
-    jadx_version = "1.4.7" // https://github.com/MuntashirAkon/jadx-android
+    jadx_version = "1.4.7" // https://github.com/MuntashirAkon/jadx-android — CVE-2024-32653 affects jadx-gui's ADB launch action; AppManagerNG ships only jadx-core/dex-input
     jb_annotation_version = "26.1.0" // https://github.com/JetBrains/java-annotations (Compile-only)
     libadb_version = "3.1.1" // https://github.com/MuntashirAkon/libadb-android
     libsu_version = "6.0.0" // https://github.com/topjohnwu/libsu
