@@ -16,6 +16,7 @@ import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 /**
  * Trims a package's backup set down to the user-configured retention policy.
@@ -103,16 +104,17 @@ public final class BackupRetentionPolicy {
     private static int pruneFromList(@NonNull List<Backup> backups, int maxCount,
                                      int maxAgeDays, long nowMillis) {
         List<Backup> stale = selectStaleBackups(backups, maxCount, maxAgeDays, nowMillis);
+        return pruneSelectedBackups(stale, BackupRetentionPolicy::deletePrunedBackup);
+    }
+
+    @WorkerThread
+    @VisibleForTesting
+    static int pruneSelectedBackups(@NonNull List<Backup> backups,
+                                    @NonNull BackupPruneCallback callback) {
         int deleted = 0;
-        for (Backup b : stale) {
+        for (Backup b : backups) {
             try {
-                BackupItems.BackupItem item = b.getItem();
-                if (item == null || item.isFrozen()) {
-                    // Frozen backups are explicitly protected from deletion by the user;
-                    // automated retention must skip them, mirroring manual deleteBackup().
-                    continue;
-                }
-                if (item.delete()) {
+                if (callback.delete(b)) {
                     ++deleted;
                 }
             } catch (Throwable t) {
@@ -120,6 +122,21 @@ public final class BackupRetentionPolicy {
             }
         }
         return deleted;
+    }
+
+    @WorkerThread
+    private static boolean deletePrunedBackup(@NonNull Backup backup) throws Throwable {
+        BackupItems.BackupItem item = backup.getItem();
+        if (item == null || item.isFrozen()) {
+            // Frozen backups are explicitly protected from deletion by the user;
+            // automated retention must skip them, mirroring manual deleteBackup().
+            return false;
+        }
+        if (!item.delete()) {
+            return false;
+        }
+        BackupUtils.deleteBackupToDbAndBroadcast(ContextUtils.getContext(), backup);
+        return true;
     }
 
     /**
@@ -346,22 +363,7 @@ public final class BackupRetentionPolicy {
         try {
             List<Backup> all = AppsDb.getInstance().backupDao().getAll();
             List<Backup> duplicates = selectVersionDuplicates(all, strategy, sizeResolver);
-            int deleted = 0;
-            for (Backup b : duplicates) {
-                try {
-                    BackupItems.BackupItem item = b.getItem();
-                    if (item == null || item.isFrozen()) {
-                        // Frozen backups are user-protected; never auto-delete them.
-                        continue;
-                    }
-                    if (item.delete()) {
-                        ++deleted;
-                    }
-                } catch (Throwable t) {
-                    Log.w(TAG, "Failed to delete duplicate backup " + b.relativeDir, t);
-                }
-            }
-            return deleted;
+            return pruneSelectedBackups(duplicates, BackupRetentionPolicy::deletePrunedBackup);
         } catch (Throwable t) {
             Log.w(TAG, "Backup duplicate prune failed", t);
             return 0;
@@ -390,6 +392,10 @@ public final class BackupRetentionPolicy {
      */
     public interface BackupSizeResolver {
         long sizeOnDisk(@NonNull Backup backup);
+    }
+
+    interface BackupPruneCallback {
+        boolean delete(@NonNull Backup backup) throws Throwable;
     }
 
     private static final Comparator<Backup> NEWEST_FIRST_DETERMINISTIC = (a, b) -> {

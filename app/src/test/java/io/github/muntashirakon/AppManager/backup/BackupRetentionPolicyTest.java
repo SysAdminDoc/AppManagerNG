@@ -315,6 +315,21 @@ public class BackupRetentionPolicyTest {
     }
 
     @Test
+    public void pruneSelectedBackupsCountsOnlySuccessfulMetadataCleanupCandidates() {
+        Backup a = backup("com.foo", 0, "old", NOW - 2 * DAY);
+        Backup b = backup("com.foo", 0, "newer", NOW - DAY);
+        List<Backup> attempted = new ArrayList<>();
+
+        int deleted = BackupRetentionPolicy.pruneSelectedBackups(Arrays.asList(a, b), row -> {
+            attempted.add(row);
+            return row == a;
+        });
+
+        assertEquals(1, deleted);
+        assertEquals(Arrays.asList(a, b), attempted);
+    }
+
+    @Test
     public void nullEntriesAndNullPackageNamesAreSkipped() {
         List<Backup> backups = new ArrayList<>();
         backups.add(null);
