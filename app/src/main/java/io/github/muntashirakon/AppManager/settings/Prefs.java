@@ -936,6 +936,14 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_SIGNING_CERT_CHANGE_MONITOR_BOOL, enabled);
         }
 
+        public static boolean isAppChangeAuditorEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_APP_CHANGE_AUDITOR_BOOL);
+        }
+
+        public static void setAppChangeAuditorEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_APP_CHANGE_AUDITOR_BOOL, enabled);
+        }
+
         public static boolean isLocalCrashSinkEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_LOCAL_CRASH_SINK_ENABLED_BOOL);
         }

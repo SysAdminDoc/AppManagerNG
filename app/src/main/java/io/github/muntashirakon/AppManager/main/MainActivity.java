@@ -495,6 +495,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (id == R.id.action_settings) {
             Intent settingsIntent = SettingsActivity.getSettingsIntent(this);
             startActivity(settingsIntent);
+        } else if (id == R.id.action_app_change_feed) {
+            Intent settingsIntent = SettingsActivity.getSettingsIntent(this, "privacy_prefs", "app_change_feed");
+            startActivity(settingsIntent);
         } else if (id == R.id.action_app_usage) {
             Intent usageIntent = new Intent(this, AppUsageActivity.class);
             startActivity(usageIntent);

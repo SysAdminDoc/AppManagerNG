@@ -77,6 +77,18 @@
         app:summary="@string/pref_signing_cert_change_monitor_msg"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="app_change_feed"
+        app:title="@string/app_change_feed_title"
+        app:summary="@string/app_change_feed_summary"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
+        app:key="app_change_auditor"
+        app:title="@string/pref_app_change_auditor"
+        app:summary="@string/pref_app_change_auditor_msg"
+        app:iconSpaceReserved="false" />
+
     <SwitchPreferenceCompat
         app:key="local_crash_sink_enabled"
         app:title="@string/pref_local_crash_sink"

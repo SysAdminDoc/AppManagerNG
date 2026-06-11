@@ -24,10 +24,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
+import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
@@ -225,6 +228,25 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
             return true;
         });
+        // App Change Auditor: component + tracker deltas, sharing the same feed
+        // as permission and signing-cert monitors.
+        requirePreference("app_change_feed").setOnPreferenceClickListener(preference -> {
+            showAppChangeFeed();
+            return true;
+        });
+        SwitchPreferenceCompat appChangeAuditor = requirePreference("app_change_auditor");
+        appChangeAuditor.setChecked(Prefs.Privacy.isAppChangeAuditorEnabled());
+        appChangeAuditor.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            Prefs.Privacy.setAppChangeAuditorEnabled(enabled);
+            if (enabled) {
+                Context appContext = requireContext().getApplicationContext();
+                ThreadUtils.postOnBackgroundThread(() ->
+                        io.github.muntashirakon.AppManager.permission.monitor.ComponentChangeMonitor
+                                .primeSnapshotsForAllPackages(appContext));
+            }
+            return true;
+        });
         // Local crash sink
         SwitchPreferenceCompat localCrashSink = requirePreference("local_crash_sink_enabled");
         localCrashSink.setChecked(Prefs.Privacy.isLocalCrashSinkEnabled());
@@ -242,6 +264,48 @@ public class PrivacyPreferences extends PreferenceFragment {
             mImportSnapshot.launch(new String[]{MIME_ZIP, "application/octet-stream", "*/*"});
             return true;
         });
+    }
+
+    private void showAppChangeFeed() {
+        Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<AppChangeFeedEntry> entries = new AppChangeFeedStore(appContext).readAll();
+            String message = formatAppChangeFeed(entries);
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.app_change_feed_title)
+                        .setMessage(message)
+                        .setPositiveButton(R.string.ok, null)
+                        .show();
+            });
+        });
+    }
+
+    @NonNull
+    private String formatAppChangeFeed(@NonNull List<AppChangeFeedEntry> entries) {
+        if (entries.isEmpty()) {
+            return getString(R.string.app_change_feed_empty);
+        }
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+        StringBuilder builder = new StringBuilder();
+        int count = Math.min(entries.size(), 20);
+        for (int i = 0; i < count; ++i) {
+            AppChangeFeedEntry entry = entries.get(i);
+            if (builder.length() > 0) builder.append("\n\n");
+            builder.append(entry.title)
+                    .append("\n")
+                    .append(entry.packageName)
+                    .append(" - ")
+                    .append(format.format(new Date(entry.timestampMillis)))
+                    .append("\n")
+                    .append(entry.body);
+        }
+        int hidden = entries.size() - count;
+        if (hidden > 0) {
+            builder.append("\n\n").append(getString(R.string.app_change_feed_more, hidden));
+        }
+        return builder.toString();
     }
 
     private void exportSnapshot(@NonNull Context appContext, @NonNull Uri target) {
