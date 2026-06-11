@@ -7,11 +7,13 @@ import androidx.annotation.WorkerThread;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.crypto.CryptoException;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
+import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.Path;
 
 @WorkerThread
@@ -152,6 +154,7 @@ class VerifyOp implements Closeable {
                         "\nRequired: " + mChecksum.get(file.getName()));
             }
         }
+        verifyTarReadable("APK", backupSourceFiles);
     }
 
     private void verifyKeyStore() throws BackupException {
@@ -170,6 +173,7 @@ class VerifyOp implements Closeable {
                         "\nRequired: " + mChecksum.get(file.getName()));
             }
         }
+        verifyTarReadable("KeyStore", keyStoreFiles);
     }
 
     private void verifyData() throws BackupException {
@@ -189,7 +193,43 @@ class VerifyOp implements Closeable {
                             "\nRequired: " + mChecksum.get(file.getName()));
                 }
             }
+            verifyDataArchiveReadable(i, dataFiles);
         }
+    }
+
+    private void verifyDataArchiveReadable(int index, @NonNull Path[] dataFiles) throws BackupException {
+        Path[] readableFiles = decryptForArchiveRead("data files at index " + index, dataFiles);
+        if (isAdbBackup(readableFiles)) {
+            return;
+        }
+        verifyTarReadable("data files at index " + index, readableFiles, false);
+    }
+
+    private void verifyTarReadable(@NonNull String label, @NonNull Path[] files) throws BackupException {
+        verifyTarReadable(label, files, true);
+    }
+
+    private void verifyTarReadable(@NonNull String label, @NonNull Path[] files, boolean decrypt)
+            throws BackupException {
+        Path[] readableFiles = decrypt ? decryptForArchiveRead(label, files) : files;
+        try {
+            TarUtils.testReadable(mBackupInfo.tarType, readableFiles);
+        } catch (IOException | RuntimeException th) {
+            throw new BackupException("Could not read " + label + " archive.", th);
+        }
+    }
+
+    @NonNull
+    private Path[] decryptForArchiveRead(@NonNull String label, @NonNull Path[] files) throws BackupException {
+        try {
+            return mBackupItem.decrypt(files);
+        } catch (IOException | IndexOutOfBoundsException e) {
+            throw new BackupException("Failed to decrypt " + label + " " + Arrays.toString(files), e);
+        }
+    }
+
+    private static boolean isAdbBackup(@NonNull Path[] files) {
+        return files.length == 1 && files[0].getName().endsWith(".ab");
     }
 
     private void verifyExtras() throws BackupException {
