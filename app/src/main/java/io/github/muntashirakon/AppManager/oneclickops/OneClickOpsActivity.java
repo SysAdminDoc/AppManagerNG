@@ -309,8 +309,8 @@ public class OneClickOpsActivity extends BaseActivity {
                                                     int deleted = io.github.muntashirakon.AppManager.backup
                                                             .BackupRetentionPolicy.pruneWithPolicy(policy[0], policy[1]);
                                                     io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
-                                                            UIUtils.displayLongToast(getString(
-                                                                    R.string.backup_retention_prune_done, deleted)));
+                                                            UIUtils.displayLongToast(getResources().getQuantityString(
+                                                                    R.plurals.backup_retention_prune_done, deleted, deleted)));
                                                 }))
                                         .setNegativeButton(R.string.cancel, null)
                                         .show();

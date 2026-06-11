@@ -167,10 +167,11 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                         } else mModel.setComponents(null);
                         updateComponentsPref(componentsPref);
                     })
-                    .setNegativeButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
+                    .setNeutralButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
                         mModel.setComponents(null);
                         updateComponentsPref(componentsPref);
                     })
+                    .setNegativeButton(R.string.cancel, null)
                     .show();
             return true;
         });
@@ -189,10 +190,11 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                         } else mModel.setAppOps(null);
                         updateAppOpsPref(appOpsPref);
                     })
-                    .setNegativeButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
+                    .setNeutralButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
                         mModel.setAppOps(null);
                         updateAppOpsPref(appOpsPref);
                     })
+                    .setNegativeButton(R.string.cancel, null)
                     .show();
             return true;
         });
@@ -211,10 +213,11 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                         } else mModel.setPermissions(null);
                         updatePermissionsPref(permissionsPref);
                     })
-                    .setNegativeButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
+                    .setNeutralButton(R.string.disable, (dialog, which, inputText, isChecked) -> {
                         mModel.setPermissions(null);
                         updatePermissionsPref(permissionsPref);
                     })
+                    .setNegativeButton(R.string.cancel, null)
                     .show();
             return true;
         });

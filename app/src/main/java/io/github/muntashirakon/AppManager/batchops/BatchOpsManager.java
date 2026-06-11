@@ -883,8 +883,12 @@ public class BatchOpsManager {
                     } catch (Throwable e) {
                         failed = true;
                         log("====> op=GRANT_OR_REVOKE_PERMISSIONS, pkg=" + pair, e);
-                        failedPackages.add(pair);
                     }
+                }
+                if (failed) {
+                    // Record the package once, not once per failing permission, so result counts,
+                    // the failed-apps list, retry queue and journal don't multiply-count it.
+                    failedPackages.add(pair);
                 }
                 recordTargetFinished(pair, failed);
             }

@@ -193,6 +193,11 @@ public class RunningAppsViewModel extends AndroidViewModel {
                     filterAndSort();
                 } catch (Throwable th) {
                     Log.e("RunningApps", th);
+                    // Still emit a (now-empty) list so the observer hides the progress indicator
+                    // and shows the empty state — otherwise a parse failure leaves it spinning
+                    // forever with no feedback.
+                    mProcessList.clear();
+                    filterAndSort();
                 }
             }
         });
