@@ -266,9 +266,18 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                             requireActivity().getOnBackPressedDispatcher().onBackPressed();
                         })
                         .setNeutralButton(R.string.save_and_exit, (dialog, which) -> {
-                            saveFile();
-                            setEnabled(false);
-                            requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                            if (mViewModel != null && mViewModel.isBackedByAFile() && mViewModel.canWrite()) {
+                                // Writable file: the save persists inline, so exiting now is safe.
+                                saveFile();
+                                setEnabled(false);
+                                requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                            } else {
+                                // Save routes through a SAF picker (no backing file) or a read-only
+                                // confirmation dialog. Don't finish the activity — that would cancel
+                                // the picker/dialog and silently discard the edits. Let the user
+                                // complete the save flow and leave afterwards.
+                                saveFile();
+                            }
                         })
                         .show();
                 return;

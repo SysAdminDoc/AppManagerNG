@@ -162,7 +162,7 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
             ThreadUtils.postOnBackgroundThread(() -> {
                 mConstraint = viewModel == null ? null : viewModel.getSearchQuery();
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     ProgressIndicatorCompat.setVisibility(progressIndicator, false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);

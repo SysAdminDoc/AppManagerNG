@@ -541,7 +541,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     mUserId = UserHandleHidden.myUserId();
                 }
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     ProgressIndicatorCompat.setVisibility(progressIndicator, false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
