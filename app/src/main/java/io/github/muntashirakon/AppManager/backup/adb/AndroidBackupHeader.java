@@ -17,6 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -25,7 +27,10 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.zip.Deflater;
@@ -164,6 +169,7 @@ final class AndroidBackupHeader {
         byte[] newUserSalt = randomBytes(PBKDF2_SALT_SIZE);
         byte[] encryptionKey = new byte[256 / 8];
         byte[] checksumSalt = randomBytes(PBKDF2_SALT_SIZE);
+        byte[] userKeyBytes = null;
         byte[] userIv = null;
         byte[] encryptionIv = null;
         byte[] encryptionKeyBytes = null;
@@ -197,7 +203,8 @@ final class AndroidBackupHeader {
 
             // line 8: IV of the user key [hex]
             Cipher mkC = Cipher.getInstance(TRANSFORMATION);
-            mkC.init(Cipher.ENCRYPT_MODE, userKey);
+            userKeyBytes = userKey.getEncoded();
+            mkC.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(userKeyBytes, "AES"));
 
             userIv = mkC.getIV();
             headerbuf.append(byteArrayToHex(userIv));
@@ -239,6 +246,7 @@ final class AndroidBackupHeader {
             clearBytes(newUserSalt);
             clearBytes(encryptionKey);
             clearBytes(checksumSalt);
+            clearBytes(userKeyBytes);
             clearBytes(userIv);
             clearBytes(encryptionIv);
             clearBytes(encryptionKeyBytes);
@@ -418,10 +426,25 @@ final class AndroidBackupHeader {
     @NonNull
     private static SecretKey buildCharArrayKey(String algorithm, char[] pwArray, byte[] salt, int rounds)
             throws Exception {
-        // FIXME: 18/2/23 May not work for backup file version 1
-        SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(algorithm);
+        SecretKeyFactory keyFactory = getSecretKeyFactory(algorithm);
         KeySpec ks = new PBEKeySpec(pwArray, salt, rounds, PBKDF2_KEY_SIZE);
         return keyFactory.generateSecret(ks);
+    }
+
+    @NonNull
+    private static SecretKeyFactory getSecretKeyFactory(@NonNull String algorithm) throws NoSuchAlgorithmException {
+        try {
+            return SecretKeyFactory.getInstance(algorithm);
+        } catch (NoSuchAlgorithmException e) {
+            if (!PBKDF_FALLBACK.equals(algorithm)) {
+                throw e;
+            }
+            Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+            if (provider == null) {
+                provider = new BouncyCastleProvider();
+            }
+            return SecretKeyFactory.getInstance(algorithm, provider);
+        }
     }
 
     /**
