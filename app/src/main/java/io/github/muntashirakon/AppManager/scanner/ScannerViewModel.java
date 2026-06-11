@@ -12,6 +12,7 @@ import android.util.Pair;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -24,16 +25,23 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.regex.Pattern;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -46,6 +54,7 @@ import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
+import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
 import io.github.muntashirakon.algo.AhoCorasick;
 import io.github.muntashirakon.io.IoUtils;
@@ -210,6 +219,150 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
 
     public Collection<String> getNativeLibraries() {
         return mNativeLibraries;
+    }
+
+    @NonNull
+    public String getDefaultReportFileName() {
+        String source = mPackageName;
+        if (source == null && mApkFile != null) {
+            source = mApkFile.getName();
+        }
+        if (source == null && mApkUri != null) {
+            source = mApkUri.getLastPathSegment();
+        }
+        String safeSource = sanitizeReportFilePart(source);
+        if (safeSource.isEmpty()) {
+            safeSource = "apk";
+        }
+        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
+        return getApplication().getString(R.string.scanner_export_filename, safeSource + "-" + timestamp);
+    }
+
+    @NonNull
+    public String buildScanReportJson() throws JSONException {
+        long now = System.currentTimeMillis();
+        JSONObject report = new JSONObject();
+        report.put("schema_version", 1);
+        report.put("generated_at", now);
+        report.put("generated_at_label", DateUtils.formatLongDateTime(getApplication(), now));
+        report.put("app_manager_version_name", BuildConfig.VERSION_NAME);
+        report.put("app_manager_version_code", BuildConfig.VERSION_CODE);
+        report.put("device", buildDeviceJson());
+        report.put("apk", buildApkJson());
+        report.put("checksums", checksumsToJson(mApkChecksumsLiveData.getValue()));
+        report.put("tracker_matches", signatureMatchesToJson(mTrackerClassesLiveData.getValue()));
+        report.put("tracker_classes", stringCollectionToJson(mTrackerClasses));
+        report.put("library_matches", signatureMatchesToJson(mLibraryClassesLiveData.getValue()));
+        report.put("native_libraries", stringCollectionToJson(mNativeLibraries));
+        report.put("missing_signatures", stringCollectionToJson(mMissingClassesLiveData.getValue()));
+        report.put("virus_total", buildVirusTotalJson());
+        report.put("pithus", buildPithusJson());
+        return report.toString(2);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String sanitizeReportFilePart(@Nullable String value) {
+        if (value == null) return "";
+        return value.trim().replaceAll("[^A-Za-z0-9._-]+", "_").replaceAll("_+", "_");
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static JSONArray signatureMatchesToJson(@Nullable List<SignatureInfo> signatures) throws JSONException {
+        JSONArray items = new JSONArray();
+        if (signatures == null) {
+            return items;
+        }
+        for (SignatureInfo signature : signatures) {
+            JSONObject item = new JSONObject();
+            item.put("label", signature.label);
+            item.put("signature", signature.signature);
+            item.put("type", signature.type);
+            item.put("match_count", signature.getCount());
+            item.put("classes", stringCollectionToJson(signature.classes));
+            items.put(item);
+        }
+        return items;
+    }
+
+    @NonNull
+    private JSONObject buildDeviceJson() throws JSONException {
+        JSONObject device = new JSONObject();
+        device.put("manufacturer", Build.MANUFACTURER);
+        device.put("model", Build.MODEL);
+        device.put("sdk_int", Build.VERSION.SDK_INT);
+        device.put("release", Build.VERSION.RELEASE);
+        return device;
+    }
+
+    @NonNull
+    private JSONObject buildApkJson() throws JSONException {
+        JSONObject apk = new JSONObject();
+        putNullable(apk, "package_name", mPackageName);
+        putNullable(apk, "uri", mApkUri != null ? mApkUri.toString() : null);
+        putNullable(apk, "path", mApkFile != null ? mApkFile.getAbsolutePath() : null);
+        apk.put("all_class_count", mAllClasses != null ? mAllClasses.size() : JSONObject.NULL);
+        apk.put("tracker_class_count", mTrackerClasses != null ? mTrackerClasses.size() : JSONObject.NULL);
+        apk.put("native_library_count", mNativeLibraries != null ? mNativeLibraries.size() : JSONObject.NULL);
+        return apk;
+    }
+
+    @NonNull
+    private JSONObject buildVirusTotalJson() throws JSONException {
+        JSONObject vt = new JSONObject();
+        VtFileReport report = mVtFileReportLiveData.getValue();
+        vt.put("enabled", mVt != null);
+        vt.put("available", report != null);
+        if (report != null) {
+            vt.put("permalink", report.permalink);
+            vt.put("scan_date", report.scanDate);
+            vt.put("positives", report.getPositives());
+            vt.put("total", report.getTotal());
+        }
+        String uploadPermalink = mVtFileUploadLiveData.getValue();
+        putNullable(vt, "queued_upload_permalink", uploadPermalink);
+        return vt;
+    }
+
+    @NonNull
+    private JSONObject buildPithusJson() throws JSONException {
+        JSONObject pithus = new JSONObject();
+        putNullable(pithus, "report_url", mPithusReportLiveData.getValue());
+        pithus.put("available", mPithusReportLiveData.getValue() != null);
+        return pithus;
+    }
+
+    @NonNull
+    private static JSONArray checksumsToJson(@Nullable Pair<String, String>[] checksums) throws JSONException {
+        JSONArray items = new JSONArray();
+        if (checksums == null) {
+            return items;
+        }
+        for (Pair<String, String> checksum : checksums) {
+            JSONObject item = new JSONObject();
+            item.put("algorithm", checksum.first);
+            item.put("value", checksum.second);
+            items.put(item);
+        }
+        return items;
+    }
+
+    @NonNull
+    private static JSONArray stringCollectionToJson(@Nullable Collection<String> values) {
+        JSONArray items = new JSONArray();
+        if (values == null) {
+            return items;
+        }
+        for (String value : values) {
+            items.put(value);
+        }
+        return items;
+    }
+
+    private static void putNullable(@NonNull JSONObject object, @NonNull String key,
+                                    @Nullable String value) throws JSONException {
+        object.put(key, value != null ? value : JSONObject.NULL);
     }
 
     public Uri getUriFromClassName(String className) throws FileNotFoundException {
