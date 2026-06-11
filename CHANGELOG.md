@@ -34,6 +34,9 @@ Reliability & data safety
   can't silently disappear from the UI while still consuming storage.
 - `SplitInputStream.read()` masks the returned byte to 0–255; a raw `0xFF` data
   byte previously returned -1 (a false EOF) in the split-archive IO primitive.
+- Hostile or malformed binary Android manifests now fail as checked parser
+  errors instead of leaking unchecked ARSC parser crashes into APK parsing,
+  scanner, or manifest-viewer paths.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
