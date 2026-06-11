@@ -28,6 +28,7 @@ import android.util.Pair;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.InputStream;
@@ -63,6 +64,7 @@ import io.github.muntashirakon.AppManager.filters.FilterablePermissionInfo;
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
 import io.github.muntashirakon.AppManager.filters.options.ComponentsOption;
 import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -82,6 +84,26 @@ import io.github.muntashirakon.io.Path;
  * Stores an application info
  */
 public class ApplicationItem extends PackageItemInfo implements IFilterableAppInfo {
+    private static final String TAG = ApplicationItem.class.getSimpleName();
+    private static final OtherInfoResolver DEFAULT_OTHER_INFO_RESOLVER = new OtherInfoResolver() {
+        @Override
+        public int checkPermission(@NonNull String permissionName, @NonNull String packageName, int userId) {
+            return PermissionCompat.checkPermission(permissionName, packageName, userId);
+        }
+
+        @Override
+        public boolean isAppInactive(@NonNull String packageName, int userId) {
+            return UsageStatsManagerCompat.isAppInactive(packageName, userId);
+        }
+    };
+
+    @VisibleForTesting
+    interface OtherInfoResolver {
+        int checkPermission(@NonNull String permissionName, @NonNull String packageName, int userId);
+
+        boolean isAppInactive(@NonNull String packageName, int userId);
+    }
+
     /**
      * Version name
      */
@@ -247,6 +269,11 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     }
 
     public void generateOtherInfo() {
+        generateOtherInfo(DEFAULT_OTHER_INFO_RESOLVER);
+    }
+
+    @VisibleForTesting
+    void generateOtherInfo(@NonNull OtherInfoResolver resolver) {
         isStopped = (flags & ApplicationInfo.FLAG_STOPPED) != 0;
         isSystem = (flags & ApplicationInfo.FLAG_SYSTEM) != 0;
         isPersistent = (flags & ApplicationInfo.FLAG_PERSISTENT) != 0;
@@ -254,8 +281,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             usesCleartextTraffic = (flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0;
         }
         for (int userId : userIds) {
-            canReadLogs |= (PermissionCompat.checkPermission(Manifest.permission.READ_LOGS, packageName, userId) == PackageManager.PERMISSION_GRANTED);
-            isAppInactive |= UsageStatsManagerCompat.isAppInactive(packageName, userId);
+            canReadLogs |= canReadLogs(resolver, userId);
+            isAppInactive |= isAppInactive(resolver, userId);
         }
         allowClearingUserData = (flags & ApplicationInfo.FLAG_ALLOW_CLEAR_USER_DATA) != 0;
         // UID
@@ -307,6 +334,25 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
                 if (backupFlagsStr.length() > 0) backupFlagsStr.append("+");
                 backupFlagsStr.append("rules");
             }
+        }
+    }
+
+    private boolean canReadLogs(@NonNull OtherInfoResolver resolver, int userId) {
+        try {
+            return resolver.checkPermission(Manifest.permission.READ_LOGS, packageName, userId)
+                    == PackageManager.PERMISSION_GRANTED;
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not read READ_LOGS grant for %s (user %d).", e, packageName, userId);
+            return false;
+        }
+    }
+
+    private boolean isAppInactive(@NonNull OtherInfoResolver resolver, int userId) {
+        try {
+            return resolver.isAppInactive(packageName, userId);
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not read inactive state for %s (user %d).", e, packageName, userId);
+            return false;
         }
     }
 
