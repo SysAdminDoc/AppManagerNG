@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -35,6 +36,53 @@ public final class InstallDependencyChecker {
     public enum IssueKind {
         MIN_SDK_TOO_HIGH,
         MISSING_SHARED_LIBRARY,
+        INCOMPATIBLE_ABI_SPLIT,
+        MISMATCHED_DENSITY_SPLIT,
+    }
+
+    private static final int SPLIT_TYPE_ABI = 1;
+    private static final int SPLIT_TYPE_DENSITY = 2;
+
+    /**
+     * Minimal split metadata needed for device compatibility checks. The activity converts
+     * {@link io.github.muntashirakon.AppManager.apk.ApkFile.Entry} into this pure-Java shape so
+     * the selection logic stays unit-testable.
+     */
+    public static final class SplitInfo {
+        @NonNull
+        public final String id;
+        @NonNull
+        public final String label;
+        @Nullable
+        public final String feature;
+        public final boolean selected;
+        private final int type;
+        @Nullable
+        private final String abi;
+        private final int density;
+
+        private SplitInfo(@NonNull String id, @NonNull String label, @Nullable String feature,
+                          boolean selected, int type, @Nullable String abi, int density) {
+            this.id = id;
+            this.label = label;
+            this.feature = feature;
+            this.selected = selected;
+            this.type = type;
+            this.abi = abi;
+            this.density = density;
+        }
+
+        @NonNull
+        public static SplitInfo abi(@NonNull String id, @NonNull String label, @Nullable String feature,
+                                    boolean selected, @NonNull String abi) {
+            return new SplitInfo(id, label, feature, selected, SPLIT_TYPE_ABI, abi, 0);
+        }
+
+        @NonNull
+        public static SplitInfo density(@NonNull String id, @NonNull String label,
+                                        @Nullable String feature, boolean selected, int density) {
+            return new SplitInfo(id, label, feature, selected, SPLIT_TYPE_DENSITY, null, density);
+        }
     }
 
     /**
@@ -78,13 +126,21 @@ public final class InstallDependencyChecker {
      *                            null} when the platform did not surface the data (pre-API-26).
      * @param installedLibraries  the names returned by {@code PackageManager
      *                            .getSystemSharedLibraryNames()}; {@code null} skips the check.
-     * @return zero or more {@link Issue}s ordered minSdk → missing-libraries.
+     * @param splitInfos          selected and available ABI/density split metadata; {@code null}
+     *                            skips split compatibility checks.
+     * @param supportedAbis       {@link android.os.Build#SUPPORTED_ABIS}; {@code null} skips ABI
+     *                            compatibility checks.
+     * @param deviceDensity       current display density DPI; non-positive skips density matching.
+     * @return zero or more {@link Issue}s ordered minSdk → missing-libraries → split warnings.
      */
     @NonNull
     public static List<Issue> check(int apkMinSdk, int deviceApi,
                                     @Nullable Collection<String> requiredLibraries,
-                                    @Nullable Collection<String> installedLibraries) {
-        List<Issue> issues = new ArrayList<>(2);
+                                    @Nullable Collection<String> installedLibraries,
+                                    @Nullable Collection<SplitInfo> splitInfos,
+                                    @Nullable Collection<String> supportedAbis,
+                                    int deviceDensity) {
+        List<Issue> issues = new ArrayList<>(4);
         Issue minSdkIssue = checkMinSdk(apkMinSdk, deviceApi);
         if (minSdkIssue != null) {
             issues.add(minSdkIssue);
@@ -93,7 +149,23 @@ public final class InstallDependencyChecker {
         if (libraryIssue != null) {
             issues.add(libraryIssue);
         }
+        Issue abiIssue = checkAbiSplits(splitInfos, supportedAbis);
+        if (abiIssue != null) {
+            issues.add(abiIssue);
+        }
+        Issue densityIssue = checkDensitySplits(splitInfos, deviceDensity);
+        if (densityIssue != null) {
+            issues.add(densityIssue);
+        }
         return issues;
+    }
+
+    @NonNull
+    public static List<Issue> check(int apkMinSdk, int deviceApi,
+                                    @Nullable Collection<String> requiredLibraries,
+                                    @Nullable Collection<String> installedLibraries) {
+        return check(apkMinSdk, deviceApi, requiredLibraries, installedLibraries,
+                null, null, 0);
     }
 
     /**
@@ -149,6 +221,86 @@ public final class InstallDependencyChecker {
         }
         if (missing.isEmpty()) return null;
         return new Issue(IssueKind.MISSING_SHARED_LIBRARY, 0, 0, missing);
+    }
+
+    @Nullable
+    public static Issue checkAbiSplits(@Nullable Collection<SplitInfo> splitInfos,
+                                       @Nullable Collection<String> supportedAbis) {
+        if (splitInfos == null || splitInfos.isEmpty() || supportedAbis == null || supportedAbis.isEmpty()) {
+            return null;
+        }
+        Set<String> supported = new HashSet<>();
+        for (String supportedAbi : supportedAbis) {
+            if (supportedAbi == null) continue;
+            String trimmed = supportedAbi.trim();
+            if (!trimmed.isEmpty()) {
+                supported.add(trimmed);
+            }
+        }
+        if (supported.isEmpty()) {
+            return null;
+        }
+        List<String> incompatible = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (SplitInfo splitInfo : splitInfos) {
+            if (splitInfo == null || !splitInfo.selected || splitInfo.type != SPLIT_TYPE_ABI
+                    || splitInfo.abi == null) {
+                continue;
+            }
+            String abi = splitInfo.abi.trim();
+            if (abi.isEmpty() || supported.contains(abi)) {
+                continue;
+            }
+            String label = splitInfo.label + " (" + abi + ")";
+            if (seen.add(label)) {
+                incompatible.add(label);
+            }
+        }
+        if (incompatible.isEmpty()) {
+            return null;
+        }
+        return new Issue(IssueKind.INCOMPATIBLE_ABI_SPLIT, 0, 0, incompatible);
+    }
+
+    @Nullable
+    public static Issue checkDensitySplits(@Nullable Collection<SplitInfo> splitInfos,
+                                           int deviceDensity) {
+        if (splitInfos == null || splitInfos.isEmpty() || deviceDensity <= 0) {
+            return null;
+        }
+        List<String> mismatched = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (SplitInfo selectedSplit : splitInfos) {
+            if (selectedSplit == null || !selectedSplit.selected
+                    || selectedSplit.type != SPLIT_TYPE_DENSITY || selectedSplit.density <= 0) {
+                continue;
+            }
+            SplitInfo bestSplit = null;
+            int bestDistance = Integer.MAX_VALUE;
+            for (SplitInfo candidate : splitInfos) {
+                if (candidate == null || candidate.type != SPLIT_TYPE_DENSITY || candidate.density <= 0
+                        || !Objects.equals(selectedSplit.feature, candidate.feature)) {
+                    continue;
+                }
+                int distance = Math.abs(candidate.density - deviceDensity);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestSplit = candidate;
+                }
+            }
+            if (bestSplit == null || bestSplit.density == selectedSplit.density) {
+                continue;
+            }
+            String label = selectedSplit.label + " (" + selectedSplit.density + " dpi; closest is "
+                    + bestSplit.label + ", " + bestSplit.density + " dpi)";
+            if (seen.add(label)) {
+                mismatched.add(label);
+            }
+        }
+        if (mismatched.isEmpty()) {
+            return null;
+        }
+        return new Issue(IssueKind.MISMATCHED_DENSITY_SPLIT, 0, 0, mismatched);
     }
 
     /**
