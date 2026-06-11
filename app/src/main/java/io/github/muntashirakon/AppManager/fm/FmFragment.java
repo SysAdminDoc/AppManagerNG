@@ -1529,23 +1529,29 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     }
                     if (!copy(sourcePath, targetPath)) {
                         // Failed to copy, abort
-                        ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
-                                .setTitle(R.string.error)
-                                .setMessage(getString(R.string.failed_to_copy_specified_file,
-                                        FmUtils.getPathDisplayName(sourcePath)))
-                                .setPositiveButton(R.string.close, null)
-                                .show());
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (!isAdded()) return;  // fragment gone (e.g. rotation mid-paste)
+                            new MaterialAlertDialogBuilder(requireContext())
+                                    .setTitle(R.string.error)
+                                    .setMessage(getString(R.string.failed_to_copy_specified_file,
+                                            FmUtils.getPathDisplayName(sourcePath)))
+                                    .setPositiveButton(R.string.close, null)
+                                    .show();
+                        });
                         return;
                     }
                     if (task.type == TYPE_CUT) {
                         if (!sourcePath.delete()) {
                             // Failed to move, abort
-                            ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
-                                    .setTitle(R.string.error)
-                                    .setMessage(getString(R.string.failed_to_delete_specified_file_after_copying,
-                                            FmUtils.getPathDisplayName(sourcePath)))
-                                    .setPositiveButton(R.string.close, null)
-                                    .show());
+                            ThreadUtils.postOnMainThread(() -> {
+                                if (!isAdded()) return;
+                                new MaterialAlertDialogBuilder(requireContext())
+                                        .setTitle(R.string.error)
+                                        .setMessage(getString(R.string.failed_to_delete_specified_file_after_copying,
+                                                FmUtils.getPathDisplayName(sourcePath)))
+                                        .setPositiveButton(R.string.close, null)
+                                        .show();
+                            });
                             return;
                         }
                     }
@@ -1585,15 +1591,24 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             String displayName = FmUtils.getPathDisplayName(source);
             CountDownLatch waitForUser = new CountDownLatch(1);
             AtomicReference<Boolean> keepBoth = new AtomicReference<>(null);
-            ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.conflict_detected_while_copying)
-                    .setMessage(getString(R.string.conflict_detected_while_copying_message, displayName))
-                    .setCancelable(false)
-                    .setOnDismissListener(dialog -> waitForUser.countDown())
-                    .setPositiveButton(R.string.replace, (dialog, which) -> keepBoth.set(false))
-                    .setNegativeButton(R.string.action_stop_service, (dialog, which) -> keepBoth.set(null))
-                    .setNeutralButton(R.string.copy_keep_both_file, (dialog, which) -> keepBoth.set(true))
-                    .show());
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) {
+                    // Fragment detached before we could ask: abort this file and release the
+                    // worker, which would otherwise block on await() forever.
+                    keepBoth.set(null);
+                    waitForUser.countDown();
+                    return;
+                }
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.conflict_detected_while_copying)
+                        .setMessage(getString(R.string.conflict_detected_while_copying_message, displayName))
+                        .setCancelable(false)
+                        .setOnDismissListener(dialog -> waitForUser.countDown())
+                        .setPositiveButton(R.string.replace, (dialog, which) -> keepBoth.set(false))
+                        .setNegativeButton(R.string.action_stop_service, (dialog, which) -> keepBoth.set(null))
+                        .setNeutralButton(R.string.copy_keep_both_file, (dialog, which) -> keepBoth.set(true))
+                        .show();
+            });
             try {
                 waitForUser.await();
             } catch (InterruptedException ignore) {
@@ -1683,6 +1698,11 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         AtomicReference<FmArchiveUtils.ConflictAction> selectedAction =
                 new AtomicReference<>(FmArchiveUtils.ConflictAction.ABORT);
         ThreadUtils.postOnMainThread(() -> {
+            if (!isAdded()) {
+                // Detached before we could ask: keep the ABORT default and release the worker.
+                waitForUser.countDown();
+                return;
+            }
             CharSequence[] actions = new CharSequence[]{
                     getString(R.string.replace),
                     getString(R.string.copy_keep_both_file),

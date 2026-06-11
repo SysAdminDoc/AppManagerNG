@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -68,6 +69,8 @@ public class LogViewerViewModel extends AndroidViewModel {
     private volatile boolean mCollapsedMode;
     private volatile int mLogLevel;
     private volatile LogcatReader mReader;
+    @Nullable
+    private Future<?> mLogcatReaderFuture;
 
     private final Pattern mFilterPattern;
     private final MutableLiveData<Boolean> mExpandLogsLiveData = new MutableLiveData<>();
@@ -87,6 +90,12 @@ public class LogViewerViewModel extends AndroidViewModel {
 
     @Override
     protected void onCleared() {
+        // Wake a paused reader first: it may be parked in mLock.wait() (the user selected a log
+        // line), and shutdown() does not interrupt it — without this the pool thread waits forever.
+        synchronized (mLock) {
+            mPaused = false;
+            mLock.notifyAll();
+        }
         killLogcatReaderInternal();
         mExecutor.shutdown();
         super.onCleared();
@@ -126,7 +135,19 @@ public class LogViewerViewModel extends AndroidViewModel {
 
     @AnyThread
     public void startLogcat(@Nullable WeakReference<LogLinesAvailableInterface> logLinesAvailableInterface) {
-        mExecutor.submit(() -> {
+        // Ensure only one reader loop ever runs. The fragment calls this from onViewCreated, so a
+        // rotation would otherwise start a second loop against the same reader — silently dropping
+        // log lines and leaking the previous logcat process/thread. Supersede any running loop.
+        Future<?> previous = mLogcatReaderFuture;
+        if (previous != null && !previous.isDone()) {
+            killLogcatReaderInternal();          // make readLine() return -> loop exits
+            synchronized (mLock) {
+                mPaused = false;
+                mLock.notifyAll();               // wake it if it parked while paused
+            }
+            previous.cancel(true);
+        }
+        mLogcatReaderFuture = mExecutor.submit(() -> {
             mKilled = false;
             try {
                 mReader = LogcatReaderLoader.create(true).loadReader();
