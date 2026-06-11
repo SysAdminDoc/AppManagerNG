@@ -11,13 +11,6 @@ into it — existing items take precedence over duplicates.
 
 ### P0
 
-- [ ] P0 — Port upstream Android 16 hidden-API refresh
-  Why: Upstream refreshed the hidden-API surface for Android 16 after the fork pin (commits eff7f58 + 04ed88d, 2026-05-25/27); NG's privileged core (hiddenapi/ stubs + compat wrappers) predates it and the project's own audit doctrine calls this the "80-hour cliff" to amortize.
-  Evidence: https://github.com/MuntashirAkon/AppManager/commits/master ; docs/architecture/README.md (doc 03); docs/audits/README.md
-  Touches: hiddenapi/src/main/java/**, app/src/main/java/io/github/muntashirakon/AppManager/compat/
-  Acceptance: upstream A16 hidden-API commits cherry-picked/adapted; privileged ops (app-ops edit, freeze, net policy) verified on an Android 16 emulator in CI; doc 03 updated with the audit verdict.
-  Complexity: M
-
 - [ ] P0 — Android 17 behavior-change audit batch (API 37)
   Why: A17 stable is imminent (Beta 4.1 2026-06-01); targetSdk-37 changes hit NG's core mechanics: static-final fields unmodifiable via reflection (hidden-API bypass stack), lock-free MessageQueue (reflection into privates breaks), ACCESS_LOCAL_NETWORK runtime permission (wireless-ADB mDNS discovery), cleartext-attribute deprecation (localhost carve-out).
   Evidence: https://developer.android.com/about/versions/17/behavior-changes-17 ; https://developer.android.com/about/versions/17/behavior-changes-all

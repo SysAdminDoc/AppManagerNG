@@ -1,33 +1,37 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # docs/architecture/
 
-Architecture notes for AppManagerNG. Three docs cover the load-bearing subsystems that
-power the rest of the app; everything else is either ordinary Android-Views code or
-described inline at the relevant `app/` package tree.
+Architecture notes for AppManagerNG. The tracked repository currently keeps this
+index as the durable architecture surface; deeper topic docs may exist in local
+or archived working copies, but they are not part of the tracked checkout unless
+listed below.
 
 ## Documents
 
 | # | Topic | What it covers |
 |---|---|---|
-| 01 | [Privilege providers](01-privilege-providers.md) | Root / Shizuku / Sui / ADB / no-root path selection; the `Runner` decision tree; the `LocalServices` binder bridge; root-manager detection; the `SelfPermissions.checkSelfOrRemotePermission()` capability fan-out pattern. |
-| 02 | [Backup format](02-backup-format.md) | On-disk layout; metadata schema v1–v7; the five crypto modes (`MODE_NO_ENCRYPTION` / `MODE_AES` / `MODE_RSA` / `MODE_ECC` / `MODE_OPEN_PGP`); platform-Keystore vs file-BKS surfaces; the cross-version restore contract; network-destination considerations. |
-| 03 | [Hidden-API bypass](03-hidden-api-bypass.md) | The 4-layer stack: `dev.rikka.tools.refine` + `AndroidHiddenApiBypass` runtime, the `hiddenapi/` stub source set (~80 files across 13 subsystem namespaces), `compat/*Compat.java` wrappers, and `app/` call sites. The Android-version migration cliff and how the proposed Compatibility Harness amortises it. |
-| 04 | [Filter & Finder](04-filter-finder.md) | The `IFilterableAppInfo` contract, the `FilterOption` registry (28 options as of iter-145), the expression-tree evaluator, the iter-143 multi-tag store (NF-08), the iter-145 saved filter presets, and where filter logic deliberately isn't (Debloater, Permission Inspector, Profiles). |
-| 05 | [Routine scheduler](05-routine-scheduler.md) | NF-09 contract: the iter-145 `ProfileTrigger` + `ProfileTriggerStore` data layer, the planned `RoutineWorker` shape, the five trigger types and their WorkManager Constraints mapping, the boot-receiver plumbing, the Settings → Profiles → Schedules UI mockup, and the verification plan for when the executor lands. |
+| Index | This file | Tracked architecture status, update triggers, and cross-cutting references. |
+
+## Current Verdicts
+
+- 2026-06-11: Android 16 hidden-API stubs were ported from upstream
+  `MuntashirAkon/AppManager` commits `eff7f587c` and `04ed88d03` into
+  AppManagerNG commits `62aded77a` and `4daff20f`. Local verification:
+  `:hiddenapi:compileDebugJavaWithJavac :app:compileFlossDebugJavaWithJavac`.
+  The instrumented emulator gate now runs the hidden-API compatibility baseline
+  on API 36 and API 37.
 
 ## When to update
 
-- A new subsystem becomes load-bearing — write its own doc here.
-- A schema, crypto mode, or privilege path changes shape — extend the relevant doc.
-- A new Android version's hidden-API surface materially changes — note it in doc 03 §3 alongside the audit verdict.
+- A new subsystem becomes load-bearing — write or track its own doc here.
+- A schema, crypto mode, or privilege path changes shape — extend the relevant tracked doc.
+- A new Android version's hidden-API surface materially changes — note it above alongside the audit verdict.
 - A doc starts disagreeing with the source tree — fix the doc, not the source. The source is authoritative.
 
 ## Cross-cutting references
 
-- [`docs/audits/`](../audits/) — per-behavior-change verdicts. Read these alongside doc 03 to see what's been actively checked.
+- [`docs/audits/`](../audits/) — per-behavior-change verdicts.
 - [`docs/audits/README.md`](../audits/README.md) — the audit-doc doctrine that pairs with these architecture docs.
-- [`docs/policy/minsdk-21-ceiling.md`](../policy/minsdk-21-ceiling.md) — the dep-floor decision tree that gates several architecture choices (Material Components ceiling, Activity / Biometric / Room / WebKit pinned lines).
-- [`PROJECT_CONTEXT.md`](../../PROJECT_CONTEXT.md) — canonical project entry point with reading order.
 - [`ROADMAP.md`](../../ROADMAP.md) — the planning surface that schedules architecture changes.
 
 Closes ROADMAP **T11 — Developer Experience → Architecture Documentation** row and
