@@ -84,8 +84,19 @@ public final class SigningCertChangeMonitor {
         SigningCertChangeDiff.Result diff = SigningCertChangeDiff.compute(packageName, before, after);
         store.put(packageName, after);
         if (diff.isInteresting()) {
+            String label = resolveLabel(appContext, packageName);
+            boolean replaced = diff.kind == SigningCertChangeDiff.Kind.REPLACED;
+            String title = appContext.getString(replaced
+                    ? R.string.signing_cert_change_replaced_title
+                    : R.string.signing_cert_change_rotated_title, label);
+            String body = appContext.getString(replaced
+                            ? R.string.signing_cert_change_replaced_body
+                            : R.string.signing_cert_change_rotated_body,
+                    shortJoin(diff.added),
+                    shortJoin(diff.removed));
+            new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("signing_cert", packageName, title, body));
             try {
-                postNotification(appContext, packageName, diff);
+                postNotification(appContext, packageName, title, body);
             } catch (Throwable t) {
                 Log.w(TAG, "Could not post signing-cert change notification for " + packageName, t);
             }
@@ -176,17 +187,8 @@ public final class SigningCertChangeMonitor {
     @WorkerThread
     private static void postNotification(@NonNull Context appContext,
                                          @NonNull String packageName,
-                                         @NonNull SigningCertChangeDiff.Result diff) {
-        String label = resolveLabel(appContext, packageName);
-        boolean replaced = diff.kind == SigningCertChangeDiff.Kind.REPLACED;
-        String title = appContext.getString(replaced
-                ? R.string.signing_cert_change_replaced_title
-                : R.string.signing_cert_change_rotated_title, label);
-        String body = appContext.getString(replaced
-                        ? R.string.signing_cert_change_replaced_body
-                        : R.string.signing_cert_change_rotated_body,
-                shortJoin(diff.added),
-                shortJoin(diff.removed));
+                                         @NonNull String title,
+                                         @NonNull String body) {
         Intent contentIntent = AppDetailsActivity.getIntent(appContext, packageName, 0, true);
         // Hash to a stable but per-package notification id so a follow-up alert
         // for the same package replaces the previous instead of stacking.
