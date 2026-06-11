@@ -43,12 +43,12 @@
             android:background="@drawable/main_status_background"
             android:gravity="center_vertical"
             android:minHeight="@dimen/premium_main_status_min_height"
-            android:paddingHorizontal="@dimen/premium_space_16"
-            android:paddingVertical="@dimen/premium_space_8"
+            android:paddingHorizontal="@dimen/premium_space_20"
+            android:paddingVertical="@dimen/premium_space_12"
             android:lineSpacingExtra="@dimen/main_status_line_spacing"
             android:text="@string/main_status_loading"
             android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textColor="?attr/colorOnSurface"
             android:visibility="gone"
             tools:visibility="visible" />
 

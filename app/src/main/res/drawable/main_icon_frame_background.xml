@@ -21,7 +21,7 @@
     </item>
     <item>
         <shape>
-            <solid android:color="?attr/colorSurfaceContainerHigh" />
+            <solid android:color="?attr/colorSecondaryContainer" />
             <stroke
                 android:width="@dimen/premium_stroke_hairline"
                 android:color="?attr/colorOutlineVariant" />
