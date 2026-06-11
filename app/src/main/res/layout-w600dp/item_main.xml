@@ -28,13 +28,28 @@
             android:layout_marginEnd="@dimen/main_list_icon_margin_end"
             android:orientation="vertical">
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/icon"
+            <FrameLayout
                 android:layout_width="@dimen/main_list_icon_size"
                 android:layout_height="@dimen/main_list_icon_size"
-                android:layout_gravity="center"
-                tools:srcCompat="@mipmap/ic_launcher_round"
-                android:contentDescription="@string/str_logo" />
+                android:layout_gravity="center">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/str_logo"
+                    tools:srcCompat="@mipmap/ic_launcher_round" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/attention_badge"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="end|top"
+                    android:src="@drawable/bg_attention_dot"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </FrameLayout>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -45,11 +60,13 @@
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/favorite_icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/item_favorite"
+                android:layout_width="@dimen/premium_favorite_hit_size"
+                android:layout_height="@dimen/premium_favorite_hit_size"
                 android:layout_gravity="end|top"
-                android:contentDescription="@string/main_list_debuggable_indicator" />
+                android:contentDescription="@string/main_list_debuggable_indicator"
+                android:padding="@dimen/premium_space_4"
+                android:src="@drawable/ic_code"
+                app:tint="?attr/colorTertiary" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -62,7 +79,9 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:paddingEnd="@dimen/main_list_title_badge_padding_end"
                     android:textAppearance="?android:attr/textAppearanceListItem"
+                    tools:ignore="RtlSymmetry"
                     tools:text="@string/app_name" />
 
                 <androidx.appcompat.widget.AppCompatTextView
@@ -91,6 +110,7 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
+                        android:maxWidth="@dimen/main_list_badge_max_width"
                         android:minHeight="@dimen/main_list_badge_min_height"
                         android:minWidth="@dimen/main_list_badge_min_width"
                         android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
@@ -110,6 +130,7 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
+                        android:maxWidth="@dimen/main_list_badge_max_width"
                         android:minHeight="@dimen/main_list_badge_min_height"
                         android:minWidth="@dimen/main_list_badge_min_width"
                         android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
@@ -127,6 +148,7 @@
                         android:ellipsize="end"
                         android:gravity="center"
                         android:maxLines="1"
+                        android:maxWidth="@dimen/main_list_badge_max_width"
                         android:minHeight="@dimen/main_list_badge_min_height"
                         android:minWidth="@dimen/main_list_badge_min_width"
                         android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
