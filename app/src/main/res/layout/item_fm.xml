@@ -36,8 +36,9 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_gravity="center"
-                    android:background="@color/fm_icon_background"
+                    android:background="@drawable/main_icon_frame_background"
                     android:contentDescription="@string/str_logo"
+                    android:padding="@dimen/premium_space_4"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.SmallComponent"
                     tools:srcCompat="@mipmap/ic_launcher_round" />
 

@@ -292,7 +292,7 @@ into it — existing items take precedence over duplicates.
   Complexity: S
 
 - [ ] P3 — Theme/a11y coherence pass (deferred-audit visual debt)
-  Why: The 2026-06-09 audit verified divergent dark palettes across NG-added screens, dead premium design tokens, favorite_icon drawable misused as a debuggable indicator, fm_icon_background inconsistencies, and tracker/perm badges under the 48dp touch-target minimum — small fixes that compound into perceived quality.
+  Why: The 2026-06-09 audit verified divergent dark palettes across NG-added screens, dead premium design tokens, and tracker/perm badges under the 48dp touch-target minimum — small fixes that compound into perceived quality.
   Evidence: 2026-06-09 audit session record (deferred list); res/ themes and the named drawables (spot-verified)
   Touches: app/src/main/res/ (themes, drawables, dimens), details/ badge layouts
   Acceptance: NG-added screens share one dark palette token set; the misused drawables are replaced with purpose-named assets; all interactive badges hit ≥48dp touch targets (a11y scanner clean on those screens).
