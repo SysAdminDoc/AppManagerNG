@@ -53,6 +53,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.app.AndroidFragment;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -306,6 +307,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mEditor.setTypefaceText(Typeface.MONOSPACE);
         mEditor.setTextSize(14);
         mEditor.setLineSpacing(2f, 1.1f);
+        mEditor.setWordwrap(Prefs.Editor.isWordWrapEnabled());
         mEditor.subscribeEvent(ContentChangeEvent.class, (event, unsubscribe) -> {
             if (!mTextModified && event.getAction() != ContentChangeEvent.ACTION_SET_NEW_TEXT) {
                 markTextModified();
@@ -586,7 +588,9 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
         } else if (id == R.id.action_wrap) {
             if (mEditor != null) {
-                mEditor.setWordwrap(!mEditor.isWordwrap());
+                boolean wordWrap = !mEditor.isWordwrap();
+                mEditor.setWordwrap(wordWrap);
+                Prefs.Editor.setWordWrapEnabled(wordWrap);
                 return true;
             }
         } else if (id == R.id.action_save) {
