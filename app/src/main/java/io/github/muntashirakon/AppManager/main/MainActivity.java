@@ -109,8 +109,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     MainViewModel viewModel;
 
     private MainRecyclerAdapter mAdapter;
+    private RecyclerView mRecyclerView;
     private AdvancedSearchView mSearchView;
     private LinearProgressIndicator mProgressIndicator;
+
+    /** Debounce window for live search filtering (ms) — see INIT-1. */
+    private static final long SEARCH_DEBOUNCE_MS = 300L;
+    private static final String STATE_LIST_LAYOUT = "main_list_layout_state";
+    @Nullable
+    private Runnable mPendingSearch;
+    /** Saved RecyclerView layout state to restore after the async list re-populates. */
+    @Nullable
+    private android.os.Parcelable mPendingListState;
     private SwipeRefreshLayout mSwipeRefresh;
     private MultiSelectionView mMultiSelectionView;
     private View mEmptyState;
@@ -244,6 +254,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
         setContentView(R.layout.activity_main_v2);
+        if (savedInstanceState != null) {
+            // Restored after the async list re-populates (see the applicationItems observer).
+            mPendingListState = savedInstanceState.getParcelable(STATE_LIST_LAYOUT);
+        }
         setSupportActionBar(findViewById(R.id.toolbar));
         getOnBackPressedDispatcher().addCallback(this, mOnBackPressedCallback);
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
@@ -285,6 +299,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         mEmptyStateAction = mEmptyState.findViewById(R.id.empty_state_action);
         mEmptyStateAction.setOnClickListener(v -> handleEmptyStateAction());
         RecyclerView recyclerView = findViewById(R.id.item_list);
+        mRecyclerView = recyclerView;
         recyclerView.requestFocus(); // Initially (the view isn't actually focusable)
         recyclerView.setEmptyView(mEmptyState);
         mSwipeRefresh = findViewById(R.id.swipe_refresh);
@@ -339,6 +354,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) mAdapter.setDefaultList(applicationItems);
             showProgressIndicator(false);
+            // Restore the pre-rotation scroll position once the list is actually populated.
+            // Posting defers to after the adapter lays out, so the layout manager has rows to
+            // anchor against. One-shot: cleared so later list updates don't yank the user back.
+            if (mPendingListState != null && mRecyclerView != null && !applicationItems.isEmpty()) {
+                final android.os.Parcelable state = mPendingListState;
+                mPendingListState = null;
+                mRecyclerView.post(() -> {
+                    if (mRecyclerView != null && mRecyclerView.getLayoutManager() != null) {
+                        mRecyclerView.getLayoutManager().onRestoreInstanceState(state);
+                    }
+                });
+            }
             int trackerSum = 0;
             int permGrantedSum = 0;
             for (io.github.muntashirakon.AppManager.main.ApplicationItem item : applicationItems) {
@@ -713,6 +740,16 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Persist the list scroll position across rotation / process death.
+        if (mRecyclerView != null && mRecyclerView.getLayoutManager() != null) {
+            outState.putParcelable(STATE_LIST_LAYOUT,
+                    mRecyclerView.getLayoutManager().onSaveInstanceState());
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         // Cancel the category-breakdown worker: it captures this Activity (getString, view writes)
         // and runs hundreds of PackageInfo binder calls for large installs, so leaving it running
@@ -720,6 +757,11 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         if (mCategoryBreakdownFuture != null) {
             mCategoryBreakdownFuture.cancel(true);
             mCategoryBreakdownFuture = null;
+        }
+        // Drop any pending debounced search so it can't fire into a destroyed activity.
+        if (mSearchView != null && mPendingSearch != null) {
+            mSearchView.removeCallbacks(mPendingSearch);
+            mPendingSearch = null;
         }
         super.onDestroy();
     }
@@ -1453,12 +1495,32 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
     @Override
     public boolean onQueryTextChange(String searchQuery, @AdvancedSearchView.SearchType int type) {
-        if (viewModel != null) viewModel.setSearchQuery(searchQuery, type);
+        if (viewModel == null || mSearchView == null) {
+            return true;
+        }
+        // Debounce live filtering: re-filtering on every keystroke is the main perceived-lag
+        // source on large installs. Coalesce rapid keystrokes into one filter pass after a short
+        // pause; submit (below) still filters immediately. The VM additionally skips a redundant
+        // pass when the normalized query is unchanged.
+        if (mPendingSearch != null) {
+            mSearchView.removeCallbacks(mPendingSearch);
+        }
+        mPendingSearch = () -> {
+            mPendingSearch = null;
+            if (viewModel != null) viewModel.setSearchQuery(searchQuery, type);
+        };
+        mSearchView.postDelayed(mPendingSearch, SEARCH_DEBOUNCE_MS);
         return true;
     }
 
     @Override
     public boolean onQueryTextSubmit(String query, int type) {
-        return false;
+        // Apply immediately on submit, cancelling any pending debounced pass.
+        if (mSearchView != null && mPendingSearch != null) {
+            mSearchView.removeCallbacks(mPendingSearch);
+            mPendingSearch = null;
+        }
+        if (viewModel != null) viewModel.setSearchQuery(query, type);
+        return true;
     }
 }
