@@ -49,6 +49,8 @@ Reliability & data safety
 - Scanner results now show the bundled tracker database date/signature count,
   scan-report exports include the database metadata, and network-enabled builds
   can check the tracked upstream resource version on launch.
+- Pithus report lookups are kept after live endpoint verification, now reject
+  malformed hashes before network access, and use bounded request timeouts.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
