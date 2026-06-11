@@ -22,6 +22,7 @@ import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
+import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
@@ -49,6 +50,7 @@ public class AppManager extends Application {
         Security.addProvider(new BouncyCastleProvider());
         ProfilingTriggerHelper.registerTriggersIfSupported(this);
         DebloatDefinitionsUpdater.scheduleUpdateIfAllowed(this);
+        TrackerDatabaseFreshnessChecker.scheduleCheckIfAllowed(this);
         OpHistoryPruneScheduler.scheduleOrCancel(this);
     }
 

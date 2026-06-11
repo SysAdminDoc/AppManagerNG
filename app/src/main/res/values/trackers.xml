@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
+    <string name="tracker_database_version" translatable="false">2026-04-30</string>
+
     <string-array name="tracker_signatures">
         <item>com.threesixtydialog.sdk.</item>
         <item>com.abtasty</item>

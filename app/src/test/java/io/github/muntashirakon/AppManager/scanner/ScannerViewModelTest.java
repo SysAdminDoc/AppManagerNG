@@ -33,4 +33,24 @@ public class ScannerViewModelTest {
         assertEquals(3, item.getInt("match_count"));
         assertEquals("com.example.analytics.Sdk", item.getJSONArray("classes").getString(0));
     }
+
+    @Test
+    public void buildTrackerDatabaseJsonExportsFreshnessMetadata() throws Exception {
+        JSONObject database = ScannerViewModel.buildTrackerDatabaseJson(
+                "2026-04-30", 1985, "2026-06-11", 42L);
+
+        assertEquals("2026-04-30", database.getString("bundled_version"));
+        assertEquals(1985, database.getInt("signature_count"));
+        assertEquals("2026-06-11", database.getString("latest_checked_version"));
+        assertEquals(42L, database.getLong("last_check_time"));
+    }
+
+    @Test
+    public void buildTrackerDatabaseJsonUsesNullsWhenNeverChecked() throws Exception {
+        JSONObject database = ScannerViewModel.buildTrackerDatabaseJson(
+                "2026-04-30", 1985, "", 0L);
+
+        assertEquals(JSONObject.NULL, database.get("latest_checked_version"));
+        assertEquals(JSONObject.NULL, database.get("last_check_time"));
+    }
 }
