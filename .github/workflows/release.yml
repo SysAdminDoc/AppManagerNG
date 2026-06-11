@@ -117,6 +117,34 @@ jobs:
           fi
           echo "ASSET_LIST=$ASSET_LIST" >> "$GITHUB_OUTPUT"
 
+      - name: Report APK sizes
+        env:
+          APK_SIZE_LIMIT_BYTES: ${{ vars.APK_SIZE_LIMIT_BYTES }}
+        run: |
+          LIMIT_BYTES="${APK_SIZE_LIMIT_BYTES:-31457280}"
+          RELEASE_ASSET_DIR="app/build/outputs/apk/release"
+          echo "### APK sizes" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| APK | Size | Limit | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | ---: | ---: | --- |" >> "$GITHUB_STEP_SUMMARY"
+          FAIL=0
+          shopt -s nullglob
+          for APK in "$RELEASE_ASSET_DIR"/*.apk; do
+            SIZE_BYTES="$(stat -c%s "$APK")"
+            SIZE_MIB="$(awk "BEGIN { printf \"%.2f MiB\", $SIZE_BYTES / 1048576 }")"
+            LIMIT_MIB="$(awk "BEGIN { printf \"%.2f MiB\", $LIMIT_BYTES / 1048576 }")"
+            STATUS="OK"
+            if (( SIZE_BYTES > LIMIT_BYTES )); then
+              STATUS="Over limit"
+              FAIL=1
+            fi
+            echo "| $(basename "$APK") | $SIZE_MIB | $LIMIT_MIB | $STATUS |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          if (( FAIL != 0 )); then
+            echo "::error::One or more APKs exceed APK_SIZE_LIMIT_BYTES=$LIMIT_BYTES" >&2
+            exit 1
+          fi
+
       - name: Attest APK provenance
         uses: actions/attest@v4
         with:
