@@ -345,6 +345,13 @@ public final class AppearanceUtils {
                     }
                     break;
             }
+            if (Prefs.Appearance.isPureBlackTheme() && newNightMode != Configuration.UI_MODE_NIGHT_UNDEFINED) {
+                // AMOLED renders black surfaces (AppTheme_V2_Amoled) regardless of night mode.
+                // Force night-qualified resources so -night colors (search highlight, tracker
+                // badges, red) load too; otherwise the day-mode values render on black and become
+                // unreadable (e.g. near-white highlight under near-white text).
+                newNightMode = Configuration.UI_MODE_NIGHT_YES;
+            }
             overrideConf.uiMode = newNightMode | (overrideConf.uiMode & ~Configuration.UI_MODE_NIGHT_MASK);
         }
 
