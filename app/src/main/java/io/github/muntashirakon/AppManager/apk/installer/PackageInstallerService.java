@@ -121,8 +121,9 @@ public class PackageInstallerService extends ForegroundService {
                 ? apkQueueItem.getInstallerOptions()
                 : InstallerOptions.getDefault();
         List<String> selectedSplitIds = Objects.requireNonNull(apkQueueItem.getSelectedSplits());
-        try (InstallerPrivilegeCascade.Activation ignored =
-                     InstallerPrivilegeCascade.activateBestAvailable(this, mProgressHandler)) {
+        try (InstallerPrivilegeCascade.Activation ignored = options.isForceAdbInstall()
+                ? InstallerPrivilegeCascade.activateAdbForDeveloperVerification(this, mProgressHandler)
+                : InstallerPrivilegeCascade.activateBestAvailable(this, mProgressHandler)) {
             // Install package
             PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
             installer.setAppLabel(apkQueueItem.getAppLabel());

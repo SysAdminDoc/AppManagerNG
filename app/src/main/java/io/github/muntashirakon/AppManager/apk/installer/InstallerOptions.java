@@ -47,6 +47,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
     private boolean mSignApkFiles;
     private boolean mForceDexOpt;
     private boolean mBlockTrackers;
+    private boolean mForceAdbInstall;
 
     private InstallerOptions() {
         mUserId = UserHandleHidden.myUserId();
@@ -68,6 +69,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         mSignApkFiles = Prefs.Installer.canSignApk();
         mForceDexOpt = Prefs.Installer.forceDexOpt();
         mBlockTrackers = Prefs.Installer.blockTrackers();
+        mForceAdbInstall = false;
     }
 
     protected InstallerOptions(@NonNull Parcel in) {
@@ -84,6 +86,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         mSignApkFiles = ParcelCompat.readBoolean(in);
         mForceDexOpt = ParcelCompat.readBoolean(in);
         mBlockTrackers = ParcelCompat.readBoolean(in);
+        mForceAdbInstall = ParcelCompat.readBoolean(in);
     }
 
     public void copy(@NonNull InstallerOptions options) {
@@ -100,6 +103,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         mSignApkFiles = options.mSignApkFiles;
         mForceDexOpt = options.mForceDexOpt;
         mBlockTrackers = options.mBlockTrackers;
+        mForceAdbInstall = options.mForceAdbInstall;
     }
 
     @Override
@@ -117,6 +121,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         ParcelCompat.writeBoolean(dest, mSignApkFiles);
         ParcelCompat.writeBoolean(dest, mForceDexOpt);
         ParcelCompat.writeBoolean(dest, mBlockTrackers);
+        ParcelCompat.writeBoolean(dest, mForceAdbInstall);
     }
 
     protected InstallerOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -126,7 +131,9 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         mOriginatingPackage = JSONUtils.optString(jsonObject, "originating_package");
         String originatingUri = JSONUtils.optString(jsonObject, "originating_uri", null);
         mOriginatingUri = originatingUri != null ? Uri.parse(originatingUri) : null;
-        mSetOriginatingPackage = jsonObject.optBoolean("set_originating_package", Prefs.Installer.isSetOriginatingPackage());
+        mSetOriginatingPackage = jsonObject.has("set_originating_package")
+                ? jsonObject.getBoolean("set_originating_package")
+                : Prefs.Installer.isSetOriginatingPackage();
         mPackageSource = jsonObject.getInt("package_source");
         mInstallScenario = jsonObject.getInt("install_scenario");
         mRequestUpdateOwnership = jsonObject.getBoolean("request_update_ownership");
@@ -134,6 +141,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         mSignApkFiles = jsonObject.getBoolean("sign_apk_files");
         mForceDexOpt = jsonObject.getBoolean("force_dex_opt");
         mBlockTrackers = jsonObject.getBoolean("block_trackers");
+        mForceAdbInstall = jsonObject.optBoolean("force_adb_install", false);
     }
 
     @NonNull
@@ -153,6 +161,7 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
         jsonObject.put("sign_apk_files", mSignApkFiles);
         jsonObject.put("force_dex_opt", mForceDexOpt);
         jsonObject.put("block_trackers", mBlockTrackers);
+        jsonObject.put("force_adb_install", mForceAdbInstall);
         return jsonObject;
     }
 
@@ -282,5 +291,13 @@ public class InstallerOptions implements Parcelable, IJsonSerializer {
 
     public void setBlockTrackers(boolean blockTrackers) {
         mBlockTrackers = blockTrackers;
+    }
+
+    public boolean isForceAdbInstall() {
+        return mForceAdbInstall;
+    }
+
+    public void setForceAdbInstall(boolean forceAdbInstall) {
+        mForceAdbInstall = forceAdbInstall;
     }
 }

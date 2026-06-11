@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.apk.ApkSource;
+
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerActivityTest {
     @Test
@@ -50,5 +52,44 @@ public class PackageInstallerActivityTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(), input));
+    }
+
+    @Test
+    public void developerVerificationAdbRetryAllowsCachedApkSource() {
+        ApkQueueItem item = ApkQueueItem.fromApkSource(ApkSource.getApkSource(
+                Uri.parse("content://example.test/apk/blocked.apk"),
+                "application/vnd.android.package-archive"));
+
+        assertTrue(PackageInstallerActivity.canRetryDeveloperVerificationFailureViaAdb(
+                "INSTALL_FAILED_ABORTED\nDeveloper verification: developer identity blocked or unverified (DEVELOPER_BLOCKED)",
+                item,
+                true));
+    }
+
+    @Test
+    public void developerVerificationAdbRetryRequiresVerifierReasonAndAdb() {
+        ApkQueueItem item = ApkQueueItem.fromApkSource(ApkSource.getApkSource(
+                Uri.parse("file:///sdcard/Download/app.apk"),
+                "application/vnd.android.package-archive"));
+
+        assertEquals(false, PackageInstallerActivity.canRetryDeveloperVerificationFailureViaAdb(
+                "INSTALL_FAILED_ABORTED",
+                item,
+                true));
+        assertEquals(false, PackageInstallerActivity.canRetryDeveloperVerificationFailureViaAdb(
+                "Developer verification: network unavailable during developer verification (NETWORK_UNAVAILABLE)",
+                item,
+                false));
+    }
+
+    @Test
+    public void developerVerificationAdbRetryRejectsInstallExistingItems() {
+        Intent intent = new Intent().setData(Uri.parse("package:com.example.blocked"));
+        ApkQueueItem installExistingItem = ApkQueueItem.fromIntent(intent, null).get(0);
+
+        assertEquals(false, PackageInstallerActivity.canRetryDeveloperVerificationFailureViaAdb(
+                "Developer verification: developer identity blocked or unverified (DEVELOPER_BLOCKED)",
+                installExistingItem,
+                true));
     }
 }
