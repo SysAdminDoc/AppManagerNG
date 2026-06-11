@@ -22,4 +22,13 @@ public class OnboardingFragmentTest {
         assertFalse(OnboardingFragment.isSecurityPatchBefore("2026-5-1", "2026-05-01"));
         assertFalse(OnboardingFragment.isSecurityPatchBefore("2026-04-01", "unknown"));
     }
+
+    @Test
+    public void capabilityProbeRunsOnlyForMissingSnapshotOrForcedRefresh() {
+        Object cachedSnapshot = new Object();
+
+        assertTrue(OnboardingFragment.shouldRunCapabilityProbe(false, null));
+        assertTrue(OnboardingFragment.shouldRunCapabilityProbe(true, cachedSnapshot));
+        assertFalse(OnboardingFragment.shouldRunCapabilityProbe(false, cachedSnapshot));
+    }
 }
