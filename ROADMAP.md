@@ -20,13 +20,6 @@ into it — existing items take precedence over duplicates.
 
 ### P1
 
-- [ ] P1 — Post-backup verification pass
-  Why: The category's #1 verified user pain is discovering corrupt/unrestorable backups at restore time; verifying at backup time (per-file checksums against the metadata manifest + test-extract of archive headers) converts silent failure into immediate, actionable failure.
-  Evidence: XDA thread 4783472 (AM/Swift/Neo all failed restore); GrapheneOS forum 22082 (Seedvault distrust); RESEARCH.md §Security
-  Touches: backup/BackupManager.java, backup/BackupOp.java, backup/MetadataManager, backup/dialog/ (result surfacing)
-  Acceptance: every backup ends with a verify step whose result (verified / N files failed) is recorded in the backup metadata and shown in the backup list UI; a deliberately truncated archive is flagged at backup time in a unit test.
-  Complexity: M
-
 - [ ] P1 — Backup/restore round-trip integration tests in emulator CI
   Why: The backup engine has the repo's highest debt concentration (10+ TODOs), zero integration coverage, and is the subsystem users distrust most; the android17-emulator.yml workflow already exists to ride on.
   Evidence: RESEARCH.md §Architecture (test gaps); backup/adb/AndroidBackupHeader.java:375 FIXME; .github/workflows/android17-emulator.yml

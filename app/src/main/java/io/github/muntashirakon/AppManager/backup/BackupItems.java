@@ -258,6 +258,18 @@ public class BackupItems {
         }
 
         @NonNull
+        BackupItem getReadOnlyVerificationView() {
+            if (!mBackupMode) {
+                return this;
+            }
+            BackupItem backupItem = new BackupItem(mTempBackupPath);
+            if (mBackupNameSet) {
+                backupItem.setBackupName(mBackupName);
+            }
+            return backupItem;
+        }
+
+        @NonNull
         public Path getBackupPath() {
             return mBackupMode ? mTempBackupPath : mBackupPath;
         }
@@ -535,6 +547,9 @@ public class BackupItems {
                 if (!mBackupSuccess) {
                     // Backup wasn't successful, delete the directory
                     mTempBackupPath.delete();
+                    if (mBackupPath.exists() && mBackupPath.isDirectory() && mBackupPath.listFiles().length == 0) {
+                        mBackupPath.delete();
+                    }
                 }
             }
             for (Path file : mTemporaryFiles) {
