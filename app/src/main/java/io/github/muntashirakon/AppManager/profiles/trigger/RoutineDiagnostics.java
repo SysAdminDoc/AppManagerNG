@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 
 final class RoutineDiagnostics {
@@ -36,15 +37,17 @@ final class RoutineDiagnostics {
             throws ExecutionException, InterruptedException {
         Context appContext = context.getApplicationContext();
         if (trigger.type == ProfileTrigger.TYPE_ON_BOOT) {
-            return appContext.getString(R.string.profile_trigger_diagnostics_boot);
+            return appendBatteryDiagnostics(appContext,
+                    appContext.getString(R.string.profile_trigger_diagnostics_boot));
         }
         WorkInfo workInfo = latest(WorkManager.getInstance(appContext)
                 .getWorkInfosForUniqueWork(RoutineScheduler.uniqueWorkName(trigger.id))
                 .get());
         if (workInfo == null) {
-            return appContext.getString(R.string.profile_trigger_diagnostics_no_work);
+            return appendBatteryDiagnostics(appContext,
+                    appContext.getString(R.string.profile_trigger_diagnostics_no_work));
         }
-        return formatWork(appContext, workInfo, findJob(appContext, workInfo));
+        return appendBatteryDiagnostics(appContext, formatWork(appContext, workInfo, findJob(appContext, workInfo)));
     }
 
     @Nullable
@@ -114,6 +117,11 @@ final class RoutineDiagnostics {
             detail.append(context.getString(R.string.profile_trigger_diagnostics_recent,
                     describePendingReasons(recent.getPendingJobReasons())));
         }
+    }
+
+    @NonNull
+    private static String appendBatteryDiagnostics(@NonNull Context context, @NonNull String detail) {
+        return detail + "; " + SelfBatteryOptimization.formatDiagnostics(context);
     }
 
     @NonNull
