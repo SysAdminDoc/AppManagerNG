@@ -74,6 +74,8 @@ Reliability & data safety
   escalation, signing-key changes, and opt-in component/tracker diffs write to
   the same feed, with a main-menu route and notification coverage for
   component/tracker deltas.
+- File-manager batch paste and delete progress no longer pause for a fixed two
+  seconds per file before doing the actual I/O.
 - Batch grant/revoke permissions records a failing package once, not once per
   failing permission, fixing inflated failure counts, duplicated retry-queue
   entries and duplicated result-screen rows.
