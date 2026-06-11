@@ -45,6 +45,7 @@ import javax.security.auth.DestroyFailedException;
 import javax.security.auth.x500.X500Principal;
 
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 // Copyright 2021 Muntashir Al-Islam
 // Copyright 2018 New Vector Ltd
@@ -177,9 +178,13 @@ public class CompatUtil {
             Log.i(TAG, "RSA + wrapped AES local protection keys found in keystore");
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(RSA_WRAP_LOCAL_PROTECTION_KEY_ALIAS, null);
             byte[] wrappedAesKey = Base64.decode(wrappedAesKeyString, 0);
-            Cipher cipher = Cipher.getInstance(RSA_WRAP_CIPHER_TYPE);
-            cipher.init(Cipher.UNWRAP_MODE, privateKey);
-            return (SecretKey) cipher.unwrap(wrappedAesKey, "AES", Cipher.SECRET_KEY);
+            try {
+                Cipher cipher = Cipher.getInstance(RSA_WRAP_CIPHER_TYPE);
+                cipher.init(Cipher.UNWRAP_MODE, privateKey);
+                return (SecretKey) cipher.unwrap(wrappedAesKey, "AES", Cipher.SECRET_KEY);
+            } finally {
+                Utils.clearBytes(wrappedAesKey);
+            }
         }
         // Key does not exist
         return null;
@@ -266,7 +271,19 @@ public class CompatUtil {
         cipher.init(Cipher.DECRYPT_MODE, keyAndVersion.getSecretKey(), spec);
 
         ByteBuffer decryptedBuffer = ByteBuffer.allocate(cipher.getOutputSize(encryptedBuffer.remaining()));
-        cipher.doFinal(encryptedBuffer, decryptedBuffer);
-        return decryptedBuffer.array();
+        try {
+            cipher.doFinal(encryptedBuffer, decryptedBuffer);
+            return decryptedBuffer.array();
+        } finally {
+            destroyKeyNoThrow(keyAndVersion.getSecretKey());
+        }
+    }
+
+    private static void destroyKeyNoThrow(@NonNull SecretKey secretKey) {
+        try {
+            SecretKeyCompat.destroy(secretKey);
+        } catch (DestroyFailedException e) {
+            Log.w(TAG, "Could not destroy transient key", e);
+        }
     }
 }
