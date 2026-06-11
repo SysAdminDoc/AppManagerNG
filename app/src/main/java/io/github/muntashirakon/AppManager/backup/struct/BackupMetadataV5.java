@@ -289,6 +289,10 @@ public class BackupMetadataV5 implements LocalizedString {
     }
 
     public static class Metadata implements IJsonSerializer {
+        public static final String VERIFICATION_STATUS_UNKNOWN = "unknown";
+        public static final String VERIFICATION_STATUS_VERIFIED = "verified";
+        public static final String VERIFICATION_STATUS_FAILED = "failed";
+
         // For backward compatibility only
         public final int version;  // version
         @Nullable
@@ -309,6 +313,10 @@ public class BackupMetadataV5 implements LocalizedString {
         public String installer;  // installer
         @NonNull
         public String[] defaultRoles = new String[0];  // default_roles
+        @NonNull
+        public String verificationStatus = VERIFICATION_STATUS_UNKNOWN;  // verification_status
+        public long verificationTime;  // verification_time
+        public int verificationFailedFiles;  // verification_failed_files
 
         public Metadata(@Nullable String backupName) {
             this.version = MetadataManager.getCurrentBackupMetaVersion();
@@ -336,6 +344,9 @@ public class BackupMetadataV5 implements LocalizedString {
             keyStore = metadata.keyStore;
             installer = metadata.installer;
             defaultRoles = metadata.defaultRoles.clone();
+            verificationStatus = metadata.verificationStatus;
+            verificationTime = metadata.verificationTime;
+            verificationFailedFiles = metadata.verificationFailedFiles;
         }
 
         public Metadata(@NonNull JSONObject rootObject) throws JSONException {
@@ -358,7 +369,21 @@ public class BackupMetadataV5 implements LocalizedString {
             defaultRoles = defaultRolesArray != null
                     ? JSONUtils.getArray(String.class, defaultRolesArray)
                     : ArrayUtils.emptyArray(String.class);
+            String verificationStatus = JSONUtils.optString(rootObject, "verification_status");
+            this.verificationStatus = verificationStatus != null ? verificationStatus : VERIFICATION_STATUS_UNKNOWN;
+            verificationTime = rootObject.optLong("verification_time", 0L);
+            verificationFailedFiles = rootObject.optInt("verification_failed_files", 0);
             verifyMetadata();
+        }
+
+        public void markVerified(long verificationTime) {
+            this.verificationStatus = VERIFICATION_STATUS_VERIFIED;
+            this.verificationTime = verificationTime;
+            this.verificationFailedFiles = 0;
+        }
+
+        public boolean isVerified() {
+            return VERIFICATION_STATUS_VERIFIED.equals(verificationStatus) && verificationFailedFiles == 0;
         }
 
         @Nullable
@@ -396,6 +421,18 @@ public class BackupMetadataV5 implements LocalizedString {
             if (installer != null && !PackageUtils.validateName(installer)) {
                 throw new IllegalArgumentException("Malformed backup metadata: invalid installer package name " + installer);
             }
+            if (!VERIFICATION_STATUS_UNKNOWN.equals(verificationStatus)
+                    && !VERIFICATION_STATUS_VERIFIED.equals(verificationStatus)
+                    && !VERIFICATION_STATUS_FAILED.equals(verificationStatus)) {
+                throw new IllegalArgumentException("Malformed backup metadata: invalid verification status "
+                        + verificationStatus);
+            }
+            if (verificationTime < 0) {
+                throw new IllegalArgumentException("Malformed backup metadata: negative verification time");
+            }
+            if (verificationFailedFiles < 0) {
+                throw new IllegalArgumentException("Malformed backup metadata: negative verification failed-file count");
+            }
         }
 
         private static boolean isBackupFilename(@Nullable String filename) {
@@ -424,6 +461,9 @@ public class BackupMetadataV5 implements LocalizedString {
             rootObject.put("key_store", keyStore);
             rootObject.put("installer", installer);
             rootObject.put("default_roles", JSONUtils.getJSONArray(defaultRoles));
+            rootObject.put("verification_status", verificationStatus);
+            rootObject.put("verification_time", verificationTime);
+            rootObject.put("verification_failed_files", verificationFailedFiles);
             return rootObject;
         }
     }
@@ -466,6 +506,16 @@ public class BackupMetadataV5 implements LocalizedString {
         subtitleText.append(", ")
                 .append(context.getString(R.string.size)).append(LangUtils.getSeparatorString()).append(Formatter
                         .formatFileSize(context, info.getBackupSize()));
+        if (metadata.isVerified()) {
+            subtitleText.append(", ").append(context.getString(R.string.verified));
+        } else if (metadata.verificationFailedFiles > 0) {
+            subtitleText.append(", ").append(context.getResources().getQuantityString(
+                    R.plurals.backup_verification_failed_files,
+                    metadata.verificationFailedFiles,
+                    metadata.verificationFailedFiles));
+        } else {
+            subtitleText.append(", ").append(context.getString(R.string.not_verified));
+        }
 
         if (info.isFrozen()) {
             subtitleText.append(", ").append(context.getText(R.string.frozen));

@@ -251,6 +251,34 @@ public final class TarUtils {
         }
     }
 
+    /**
+     * Read every entry in a split tar archive without writing it anywhere. This is used by backup
+     * verification to catch self-consistent but unrestorable archives, for example files truncated
+     * before their checksum was recorded.
+     */
+    @WorkerThread
+    public static void testReadable(@NonNull @TarType String type, @NonNull Path[] sources) throws IOException {
+        byte[] buffer = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+        try (SplitInputStream sis = new SplitInputStream(sources);
+             BufferedInputStream bis = new BufferedInputStream(sis);
+             InputStream is = createDecompressedStream(bis, type)) {
+            try (TarArchiveInputStream tis = new TarArchiveInputStream(is)) {
+                TarArchiveEntry entry;
+                while ((entry = tis.getNextEntry()) != null) {
+                    if (entry.isDirectory()) {
+                        continue;
+                    }
+                    // Drain the entry body so truncation and decompressor errors surface here.
+                    //noinspection StatementWithEmptyBody
+                    while (tis.read(buffer) != -1) {
+                    }
+                }
+            } finally {
+                is.close();
+            }
+        }
+    }
+
     @Contract("_, _ -> new")
     @NonNull
     public static InputStream createDecompressedStream(@NonNull InputStream compressedStream,

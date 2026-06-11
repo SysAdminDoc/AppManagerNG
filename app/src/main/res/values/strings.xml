@@ -2477,6 +2477,10 @@
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> backup selected</item>
         <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> backups selected</item>
     </plurals>
+    <plurals name="backup_verification_failed_files">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> file failed verification</item>
+        <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> files failed verification</item>
+    </plurals>
     <string name="backup_review_apps_title">Review apps to back up</string>
     <string name="restore_review_apps_title">Review apps to restore</string>
     <string name="backup_empty_all_apps_title">No installed apps to back up</string>
