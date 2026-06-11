@@ -36,6 +36,7 @@ import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.view.ProgressIndicatorCompat;
 
 public class ImportExportRulesPreferences extends PreferenceFragment {
+    private static final String MIME_ANY = "*/*";
     private static final String MIME_JSON = "application/json";
     private static final String MIME_TSV = "text/tab-separated-values";
     private static final String MIME_XML = "text/xml";
@@ -102,6 +103,19 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
                     ThreadUtils.postOnMainThread(() -> displayImportExternalRulesFailedPackagesDialog(failedFiles));
                 });
             });
+    private final ActivityResultLauncher<String> mImportFromMyAndroidTools = registerForActivityResult(
+            new ActivityResultContracts.GetMultipleContents(),
+            uris -> {
+                if (uris == null || uris.isEmpty()) {
+                    // Back button pressed.
+                    return;
+                }
+                ProgressIndicatorCompat.setVisibility(mActivity.progressIndicator, true);
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    List<String> failedFiles = ExternalComponentsImporter.applyFromMyAndroidTools(uris, Users.getUsersIds());
+                    ThreadUtils.postOnMainThread(() -> displayImportExternalRulesFailedPackagesDialog(failedFiles));
+                });
+            });
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -141,6 +155,11 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
         ((Preference) Objects.requireNonNull(findPreference("import_blocker")))
                 .setOnPreferenceClickListener(preference -> {
                     mImportFromBlocker.launch(MIME_JSON);
+                    return true;
+                });
+        ((Preference) Objects.requireNonNull(findPreference("import_my_android_tools")))
+                .setOnPreferenceClickListener(preference -> {
+                    mImportFromMyAndroidTools.launch(MIME_ANY);
                     return true;
                 });
     }
