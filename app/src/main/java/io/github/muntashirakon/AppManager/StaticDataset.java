@@ -90,6 +90,15 @@ public class StaticDataset {
         return ContextUtils.getContext().getResources().getStringArray(R.array.tracker_signatures);
     }
 
+    @NonNull
+    public static String getTrackerDatabaseVersion() {
+        return ContextUtils.getContext().getString(R.string.tracker_database_version);
+    }
+
+    public static int getTrackerDatabaseSignatureCount() {
+        return ContextUtils.getContext().getResources().getStringArray(R.array.tracker_signatures).length;
+    }
+
     public static synchronized AhoCorasick getSearchableTrackerSignatures() {
         // Synchronized: AhoCorasick owns native memory released via cleanup(); a race
         // between two first-callers (or a first-caller and cleanup()) could leak the

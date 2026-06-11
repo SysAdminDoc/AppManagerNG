@@ -27,11 +27,13 @@ import java.util.Date;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
+import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotBundle;
@@ -169,10 +171,24 @@ public class PrivacyPreferences extends PreferenceFragment {
         autoUpdateDebloatDefinitions.setChecked(optionalNetworkFeaturesAvailable
                 && Prefs.Privacy.autoUpdateDebloatDefinitions());
         updateDebloatDefinitionsPreference(autoUpdateDebloatDefinitions, FeatureController.isInternetEnabled());
+        SwitchPreferenceCompat trackerDatabaseFreshness = requirePreference("tracker_database_freshness_check");
+        trackerDatabaseFreshness.setChecked(optionalNetworkFeaturesAvailable
+                && Prefs.Privacy.checkTrackerDatabaseFreshness());
+        updateTrackerDatabaseFreshnessPreference(trackerDatabaseFreshness, FeatureController.isInternetEnabled());
         toggleInternet.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean isEnabled = (boolean) newValue;
             FeatureController.getInstance().modifyState(FeatureController.FEAT_INTERNET, isEnabled);
             updateDebloatDefinitionsPreference(autoUpdateDebloatDefinitions, FeatureController.isInternetEnabled());
+            updateTrackerDatabaseFreshnessPreference(trackerDatabaseFreshness, FeatureController.isInternetEnabled());
+            return true;
+        });
+        trackerDatabaseFreshness.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            Prefs.Privacy.setCheckTrackerDatabaseFreshness(enabled);
+            if (enabled) {
+                TrackerDatabaseFreshnessChecker.scheduleCheckIfAllowed(requireContext());
+            }
+            updateTrackerDatabaseFreshnessPreference(trackerDatabaseFreshness, FeatureController.isInternetEnabled());
             return true;
         });
         // Authorization Management
@@ -342,6 +358,27 @@ public class PrivacyPreferences extends PreferenceFragment {
             preference.setSummary(R.string.pref_auto_update_debloat_definitions_msg);
         } else {
             preference.setSummary(getString(R.string.pref_auto_update_debloat_definitions_msg_current, version));
+        }
+    }
+
+    private void updateTrackerDatabaseFreshnessPreference(@NonNull SwitchPreferenceCompat preference,
+                                                          boolean internetEnabled) {
+        if (!FeatureController.areOptionalNetworkFeaturesAvailable()) {
+            preference.setEnabled(false);
+            preference.setSummary(R.string.pref_check_tracker_database_msg_floss_disabled);
+            return;
+        }
+        preference.setEnabled(internetEnabled);
+        if (!internetEnabled) {
+            preference.setSummary(R.string.pref_check_tracker_database_msg_no_internet);
+            return;
+        }
+        String latestVersion = Prefs.Privacy.getLatestTrackerDatabaseVersion();
+        if (TextUtils.isEmpty(latestVersion)) {
+            preference.setSummary(R.string.pref_check_tracker_database_msg);
+        } else {
+            preference.setSummary(getString(R.string.pref_check_tracker_database_msg_current,
+                    StaticDataset.getTrackerDatabaseVersion(), latestVersion));
         }
     }
 

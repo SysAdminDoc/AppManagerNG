@@ -46,6 +46,9 @@ Reliability & data safety
   with a next-step button for users who defer it.
 - Scanner results can now be exported as a JSON report containing APK metadata,
   checksums, tracker/library matches, missing signatures, and online-report status.
+- Scanner results now show the bundled tracker database date/signature count,
+  scan-report exports include the database metadata, and network-enabled builds
+  can check the tracked upstream resource version on launch.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so

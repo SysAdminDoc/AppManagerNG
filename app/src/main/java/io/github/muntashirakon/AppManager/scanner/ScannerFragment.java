@@ -49,6 +49,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.scanner.vt.VtAvEngineResult;
@@ -397,6 +398,11 @@ public class ScannerFragment extends Fragment {
                 foundTrackerList.append("\n").append(categoryBreakdown);
             }
         }
+        CharSequence databaseSummary = getTrackerDatabaseSummary(requireContext());
+        if (foundTrackerList.length() > 0) {
+            foundTrackerList.append("\n");
+        }
+        foundTrackerList.append(databaseSummary);
 
         int totalTrackerClasses = mViewModel.getTrackerClasses().size();
         // Get summary
@@ -422,7 +428,8 @@ public class ScannerFragment extends Fragment {
         TextView trackerInfoDescription = view.findViewById(R.id.tracker_description);
         trackerInfoTitle.setText(coloredSummary);
         if (totalTrackersFound == 0) {
-            trackerInfoDescription.setVisibility(View.GONE);
+            trackerInfoDescription.setVisibility(View.VISIBLE);
+            trackerInfoDescription.setText(foundTrackerList);
             return;
         }
         trackerInfoDescription.setVisibility(View.VISIBLE);
@@ -434,6 +441,28 @@ public class ScannerFragment extends Fragment {
                     finalHasSecondDegree, filterLabels, filterMessages);
             fragment.show(getParentFragmentManager(), TrackerInfoDialog.TAG);
         });
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static CharSequence getTrackerDatabaseSummary(@NonNull Context context) {
+        SpannableStringBuilder summary = new SpannableStringBuilder(context.getString(
+                R.string.scanner_tracker_database_summary,
+                StaticDataset.getTrackerDatabaseVersion(),
+                StaticDataset.getTrackerDatabaseSignatureCount()));
+        String latestVersion = Prefs.Privacy.getLatestTrackerDatabaseVersion();
+        if (!TextUtils.isEmpty(latestVersion)
+                && !latestVersion.equals(StaticDataset.getTrackerDatabaseVersion())) {
+            summary.append("\n").append(context.getString(R.string.scanner_tracker_database_latest, latestVersion));
+        }
+        long lastCheck = Prefs.Privacy.getLastTrackerDatabaseCheckTime();
+        if (lastCheck > 0) {
+            summary.append("\n").append(context.getString(R.string.scanner_tracker_database_last_checked,
+                    DateUtils.formatLongDateTime(context, lastCheck)));
+        } else {
+            summary.append("\n").append(context.getString(R.string.scanner_tracker_database_not_checked));
+        }
+        return summary;
     }
 
     @NonNull
