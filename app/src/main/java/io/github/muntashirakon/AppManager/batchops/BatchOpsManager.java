@@ -19,6 +19,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
@@ -1099,6 +1100,7 @@ public class BatchOpsManager {
     @NonNull
     private Result opPerformDexOpt(@NonNull BatchOpsInfo info) {
         List<UserPackagePair> failedPackages = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
         IPackageManager pm = PackageManagerCompat.getPackageManager();
         DexOptOptions rawOptions = ((BatchDexOptOptions) Objects.requireNonNull(info.options)).getDexOptOptions();
         DexOptOptions.SanitizationResult sanitizationResult = rawOptions.sanitizeForExecution(SelfPermissions.isSystemOrRoot());
@@ -1131,6 +1133,12 @@ public class BatchOpsManager {
                 // Ignore App Manager
                 recordTargetFinished(pair, false);
                 continue;
+            }
+            String skippedRootOnlyWarning = getDexOptRootOnlySkipWarning(packageName, sanitizationResult);
+            if (skippedRootOnlyWarning != null) {
+                log("====> op=DEXOPT, pkg=" + packageName + ", skipped-root-only-options="
+                        + sanitizationResult.getSkippedRootOnlyOptionsSummary());
+                warnings.add(skippedRootOnlyWarning);
             }
             boolean failed = false;
             DexOptimizer dexOptimizer = new DexOptimizer(pm, packageName);
@@ -1172,7 +1180,36 @@ public class BatchOpsManager {
             }
             recordTargetFinished(pair, failed);
         }
-        return new Result(failedPackages);
+        Result result = new Result(failedPackages);
+        result.addWarnings(warnings);
+        return result;
+    }
+
+    @VisibleForTesting
+    @Nullable
+    static String getDexOptRootOnlySkipWarning(@NonNull String packageName,
+                                               @NonNull DexOptOptions.SanitizationResult sanitizationResult) {
+        if (!sanitizationResult.hasSkippedRootOnlyOptions()) {
+            return null;
+        }
+        List<String> optionLabels = new ArrayList<>(sanitizationResult.skippedRootOnlyOptions.size());
+        for (String option : sanitizationResult.skippedRootOnlyOptions) {
+            optionLabels.add(getDexOptRootOnlyOptionLabel(option));
+        }
+        return packageName + ": skipped " + String.join(", ", optionLabels)
+                + " because this dexopt mode requires root/system privileges.";
+    }
+
+    @NonNull
+    private static String getDexOptRootOnlyOptionLabel(@NonNull String option) {
+        switch (option) {
+            case DexOptOptions.ROOT_ONLY_CLEAR_PROFILE_DATA:
+                return "clear profile data";
+            case DexOptOptions.ROOT_ONLY_FORCE_DEX_OPT:
+                return "force dexopt";
+            default:
+                return option;
+        }
     }
 
     private void log(@Nullable String message, @Nullable Throwable th) {
