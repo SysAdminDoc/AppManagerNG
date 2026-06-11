@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.App;
@@ -237,8 +238,9 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
             List<BackupMetadataV5> metadataList = new ArrayList<>();
             for (Backup backup : backups) {
                 BackupMetadataV5 metadata;
-                try {
-                    metadata = backup.getItem().getMetadata();
+                // try-with-resources releases the decrypted temp metadata + key material per item.
+                try (BackupItems.BackupItem item = backup.getItem()) {
+                    metadata = item.getMetadata();
                     metadataList.add(metadata);
                 } catch (IOException e) {
                     // Not found

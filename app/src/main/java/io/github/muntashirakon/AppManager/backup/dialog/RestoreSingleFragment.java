@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.fm.SharableItems;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
 import io.github.muntashirakon.io.Path;
@@ -46,6 +47,8 @@ public class RestoreSingleFragment extends Fragment {
     public static RestoreSingleFragment getInstance() {
         return new RestoreSingleFragment();
     }
+
+    private static final String TAG = RestoreSingleFragment.class.getSimpleName();
 
     private BackupRestoreDialogViewModel mViewModel;
     private Context mContext;
@@ -115,24 +118,36 @@ public class RestoreSingleFragment extends Fragment {
 
             freezeMenuItem.setOnMenuItemClickListener(item -> {
                 List<BackupMetadataV5> selectedBackups = adapter.getSelectedBackups();
+                int failed = 0;
                 for (BackupMetadataV5 metadata : selectedBackups) {
                     try {
                         metadata.info.getBackupItem().freeze();
                         ++adapter.mFrozenBackupSelectionCount;
-                    } catch (IOException ignore) {
+                    } catch (IOException e) {
+                        Log.w(TAG, "Could not freeze backup", e);
+                        ++failed;
                     }
+                }
+                if (failed > 0) {
+                    UIUtils.displayLongToastPl(R.plurals.alert_failed_to_freeze, failed, failed);
                 }
                 adapter.notifyItemRangeChanged(0, adapter.getItemCount(), AdapterUtils.STUB);
                 return true;
             });
             unfreezeMenuItem.setOnMenuItemClickListener(item -> {
                 List<BackupMetadataV5> selectedBackups = adapter.getSelectedBackups();
+                int failed = 0;
                 for (BackupMetadataV5 metadata : selectedBackups) {
                     try {
                         metadata.info.getBackupItem().unfreeze();
                         --adapter.mFrozenBackupSelectionCount;
-                    } catch (IOException ignore) {
+                    } catch (IOException e) {
+                        Log.w(TAG, "Could not unfreeze backup", e);
+                        ++failed;
                     }
+                }
+                if (failed > 0) {
+                    UIUtils.displayLongToastPl(R.plurals.alert_failed_to_unfreeze, failed, failed);
                 }
                 adapter.notifyItemRangeChanged(0, adapter.getItemCount(), AdapterUtils.STUB);
                 return true;
