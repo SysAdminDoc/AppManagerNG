@@ -199,7 +199,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
             ThreadUtils.postOnBackgroundThread(() -> {
                 mRequestedProperty = mNeededProperty;
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     ProgressIndicatorCompat.setVisibility(progressIndicator, false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);

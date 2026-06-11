@@ -184,7 +184,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed_to_reset_app_ops));
                 } else {
                     ThreadUtils.postOnMainThread(() -> {
-                        if (!isDetached()) {
+                        if (isAdded()) {
                             refreshDetails();
                         }
                     });
@@ -198,7 +198,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         && viewModel.ignoreDangerousAppOps(), false);
                 if (isSuccessful) {
                     ThreadUtils.postOnMainThread(() -> {
-                        if (!isDetached()) {
+                        if (isAdded()) {
                             refreshDetails();
                         }
                     });
@@ -241,7 +241,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         ThreadUtils.postOnBackgroundThread(() -> {
                             if (viewModel != null && viewModel.setAppOp(op, mode)) {
                                 ThreadUtils.postOnMainThread(() -> {
-                                    if (!isDetached()) {
+                                    if (isAdded()) {
                                         refreshDetails();
                                     }
                                 });
@@ -268,7 +268,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         ThreadUtils.postOnBackgroundThread(() -> {
                             if (viewModel != null && viewModel.setAppOps(audioVolumeOps, opMode)) {
                                 ThreadUtils.postOnMainThread(() -> {
-                                    if (!isDetached()) {
+                                    if (isAdded()) {
                                         refreshDetails();
                                     }
                                 });
@@ -289,7 +289,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                             R.string.failed_to_deny_dangerous_perms));
                 }
                 ThreadUtils.postOnMainThread(() -> {
-                    if (!isDetached()) {
+                    if (isAdded()) {
                         refreshDetails();
                     }
                 });
@@ -498,7 +498,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 mConstraint = viewModel == null ? null : viewModel.getSearchQuery();
                 mCanModifyAppOpMode = SelfPermissions.canModifyAppOpMode();
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     ProgressIndicatorCompat.setVisibility(progressIndicator, false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);

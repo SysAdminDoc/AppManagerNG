@@ -41,7 +41,8 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.lifecycle.SoftInputLifeCycleObserver;
 import io.github.muntashirakon.view.TextInputLayoutCompat;
 
-public class CreateShortcutDialogFragment extends DialogFragment {
+public class CreateShortcutDialogFragment extends DialogFragment
+        implements IconPickerDialogFragment.IconPickerListener {
     public static final String TAG = CreateShortcutDialogFragment.class.getSimpleName();
 
     private static final String ARG_SHORTCUT_INFO = "info";
@@ -115,13 +116,10 @@ public class CreateShortcutDialogFragment extends DialogFragment {
         });
         mShortcutIconLayout.setEndIconOnClickListener(v -> {
             IconPickerDialogFragment dialog = new IconPickerDialogFragment();
-            dialog.attachIconPickerListener(icon -> {
-                mShortcutIconField.setText(icon.name);
-                Drawable drawable = icon.loadIcon(mPm);
-                mShortcutInfo.setIcon(UIUtils.getBitmapFromDrawable(drawable));
-                mShortcutIconPreview.setImageDrawable(drawable);
-            });
-            dialog.show(getParentFragmentManager(), IconPickerDialogFragment.TAG);
+            // Host as a child fragment so the picker resolves its listener from this parent
+            // (which implements IconPickerListener) and the callback survives a rotation while
+            // the picker is open — a transient lambda listener would be lost on config change.
+            dialog.show(getChildFragmentManager(), IconPickerDialogFragment.TAG);
         });
         mShortcutNameField.setText(mShortcutInfo.getName());
         mShortcutNamePreview.setText(mShortcutInfo.getName());
@@ -149,6 +147,17 @@ public class CreateShortcutDialogFragment extends DialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         getLifecycle().addObserver(new SoftInputLifeCycleObserver(new WeakReference<>(mShortcutNameField)));
+    }
+
+    @Override
+    public void iconPicked(@NonNull android.content.pm.PackageItemInfo icon) {
+        if (mShortcutIconField == null || mShortcutInfo == null) {
+            return;
+        }
+        mShortcutIconField.setText(icon.name);
+        Drawable drawable = icon.loadIcon(mPm);
+        mShortcutInfo.setIcon(UIUtils.getBitmapFromDrawable(drawable));
+        mShortcutIconPreview.setImageDrawable(drawable);
     }
 
 

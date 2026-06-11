@@ -712,6 +712,18 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         unregisterReceiver(mBatchOpsBroadCastReceiver);
     }
 
+    @Override
+    protected void onDestroy() {
+        // Cancel the category-breakdown worker: it captures this Activity (getString, view writes)
+        // and runs hundreds of PackageInfo binder calls for large installs, so leaving it running
+        // keeps the destroyed Activity reachable until it finishes.
+        if (mCategoryBreakdownFuture != null) {
+            mCategoryBreakdownFuture.cancel(true);
+            mCategoryBreakdownFuture = null;
+        }
+        super.onDestroy();
+    }
+
     private static final int[][] QUICK_FILTER_CHIPS = {
             {R.id.chip_user, MainListOptions.FILTER_USER_APPS},
             {R.id.chip_system, MainListOptions.FILTER_SYSTEM_APPS},
@@ -785,7 +797,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             }
             String breakdown = sb.length() == 0 ? null : sb.toString();
             io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() -> {
-                if (mListStatusView == null) return;
+                if (mListStatusView == null || isDestroyed()) return;
                 if (breakdown == null) {
                     // Only OTHER: clear the placeholder and leave the base line.
                     clearBreakdownProgress();
