@@ -42,7 +42,7 @@ ext {
     room_version = "2.7.2" // API 21-22 support dropped in 2.8.x
     shizuku_version = "13.1.5" // https://github.com/RikkaApps/Shizuku-API — UserService binder path for rootless privileged mode
     simplemagic_version = "1.17" // https://github.com/j256/simplemagic
-    sora_editor_version = "0.22.2" // https://github.com/MuntashirAkon/sora-editor
+    sora_editor_version = "0.24.6" // Last API 21-compatible release before upstream raises minSdk to 23
     speed_dial_version = "3.3.0" // https://github.com/leinardi/FloatingActionButtonSpeedDial
     splashscreen_version = "1.2.0"
     sun_security_version = "1.1" // https://github.com/MuntashirAkon/sun-security-android
