@@ -226,3 +226,151 @@ into it — existing items take precedence over duplicates.
   Touches: app/src/main/res/ (focus order, leanback banner, manifest LEANBACK feature flags), main/, details/
   Acceptance: main list → app details → batch ops are fully operable with a D-pad on an Android TV emulator; app appears in the TV launcher with a banner.
   Complexity: M
+
+## Research-Driven Additions (Pass 2 — 2026-06-10)
+
+### P1
+
+- [ ] P1 — Fix main-list infinite-load on Android 16 private space (upstream #1982, fork-first)
+  Why: Private-space profiles throw SecurityException (INTERACT_ACROSS_USERS) inside UsageStatsManagerCompat.isAppInactive during ApplicationItem.generateOtherInfo; the exception is swallowed in the main-list load path and the list never renders — accepted P1/S0 upstream with no upstream fix committed yet.
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1982 (exact repro + stack); main/ApplicationItem.java calls isAppInactive (verified in tree)
+  Touches: main/ApplicationItem.java, main/MainViewModel.java (stop swallowing Throwable in loadApplicationItems), compat/UsageStatsManagerCompat.java (per-user guard)
+  Acceptance: with a private-space profile present on an A16 emulator the main list renders (private-space rows degrade gracefully); load-path exceptions are logged with package context, never silently swallowed.
+  Complexity: S
+
+- [ ] P1 — Port upstream post-pin crash/correctness batch (2026-05-26 → 06-02)
+  Why: Eight uncatalogued upstream fixes land cleanly on a 3d11bcb-pinned tree and close silent-corruption/crash classes: APKS compile regression, profile custom-expression filters matching wrong app sets, am-start link resolution, two NPEs, Debloater missing uninstalled system apps, broken Finder/Debloater nav, editor symbol cropping at large font scale.
+  Evidence: upstream commits 706c36fb, daa54ac0 (closes #1718), 4a25c3f0, 3bf97856, 184df334, 329b8dc1, 4d3da96b, 0d1be565 — https://github.com/MuntashirAkon/AppManager/commits/master
+  Touches: apk/ (APKS compile), filters/ + profiles/ (custom expressions), intercept/, debloat/, finder/, editor/
+  Acceptance: each ported commit attributed in CHANGELOG; profile-with-custom-expression filter test added; APKS merge of a fixture split-bundle round-trips; v4.1.0 tag (due ~2026-06-21) re-diffed after release for stragglers.
+  Complexity: M
+
+- [ ] P1 — Resolve ADB-backup v1 header FIXME (data-loss class)
+  Why: backup/adb/AndroidBackupHeader.java:375 "May not work for backup file version 1" has sat since 2023 in a restore path; mis-parsing an old-format archive is silent data loss at the worst moment.
+  Evidence: backup/adb/AndroidBackupHeader.java:375 (verified in tree); RESEARCH.md §Security
+  Touches: backup/adb/AndroidBackupHeader.java, app/src/test/ (v1/v2/v3 header fixture corpus)
+  Acceptance: fixture archives for every android-backup header version parse correctly under unit test, or v1 is explicitly rejected with a user-readable "unsupported version" error — never a wrong-data parse.
+  Complexity: S
+
+- [ ] P1 — Root-detection retune for 2026 root managers (upstream #1967 + Magisk 30.7 caps change)
+  Why: Upstream's accepted P1 "root not detected on Android 16" (#1967) hits the same probe stack NG owns (runner/RootManagerInfo); separately Magisk v30.7 now preserves capabilities by default, inverting the assumption behind NG's shipped KernelSU/Magisk drop-cap diagnostics, and KernelSU-Next 3.1.0 moved paths again.
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1967 ; https://github.com/topjohnwu/Magisk/releases (v30.7 caps default); runner/RootManagerInfo (verified, probes /data/adb/{magisk,ksu,ap})
+  Touches: runner/RootManagerInfo.java, the drop-cap diagnostic surfaces, settings/Ops.java (root mode init), docs/audits/ (dated probe-matrix audit)
+  Acceptance: root detected on an A16 emulator rooted with current Magisk and with KSU-Next; drop-cap diagnostics show correct guidance for Magisk ≥30.7 (caps preserved by default); probe matrix documented.
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Backup overwrite option (close the 2020 TODO)
+  Why: Users must delete an existing backup before re-backing-up to the same slot; the TODO has been open since 2020-09-18 and the delete-first dance multiplies data-loss windows (no backup exists between delete and new backup).
+  Evidence: backup/dialog/ BackupFragment "TODO: Add overwrite option" (verified in tree); RESEARCH.md §Security
+  Touches: backup/dialog/ (option UI), backup/BackupManager.java (atomic replace: write-new-then-swap, never delete-first)
+  Acceptance: overwrite is offered when a same-name backup exists and is atomic — an interrupted overwrite leaves the previous backup intact (unit test with injected failure).
+  Complexity: M
+
+- [ ] P2 — Wipe cryptographic material in SessionMonitoringService
+  Why: The service holds key material with a "TODO: Wipe memory?" (line 138) — char[]/byte[] secrets should be zeroed after use per the project's own keystore handling precedent (v0.3.0 zeroed keystore char[]s).
+  Evidence: session/SessionMonitoringService.java:138 (verified); RESEARCH.md §Security
+  Touches: session/SessionMonitoringService.java, crypto/ helpers if a shared zeroing util is extracted
+  Acceptance: secrets are zeroed on session close/destroy paths (including error paths); no plaintext key material outlives its use scope.
+  Complexity: S
+
+- [ ] P2 — 2026-06-09 deferred-audit reliability batch
+  Why: The deep audit deferred eight verified-real, low-individual-cost reliability bugs that were lost when the old ROADMAP section was replaced; re-itemizing them prevents silent drop: AppUsageViewModel live-list CME; stale-position notifyItemChanged in AppDetails fragments; ApkWhatsNewFinder singleton shared temp-set; SAF pending-write fields lost on process death + profile-export main-thread IO; OneClickOps onPause busy-clear without scan-cancel; retention pruners leaving stale Room rows with no broadcast; commit() skipping the previous-backup freeze flag; verify-backups surfacing raw getMessage().
+  Evidence: 2026-06-09 audit session record (commits 4f46a0e9..079e96f1 shipped the non-deferred half); usage/AppUsageViewModel.java + apk/whatsnew/ApkWhatsNewFinder.java verified present
+  Touches: usage/, details/ fragments, apk/whatsnew/, profiles/ (export IO), oneclickops/, backup/ (pruners, commit, verify), db/
+  Acceptance: each sub-item fixed with a regression test where JVM-testable; batch may ship across multiple commits; none re-deferred without a dated decision note.
+  Complexity: M
+
+- [ ] P2 — sora-editor bump 0.22.2 → 0.24.6 (last minSdk-21 release — time-boxed)
+  Why: The pinned fork build 0.22.2 misses upstream 0.24.4–0.24.6 fixes for IME composing-text corruption, completion-list scroll ANR, IndexOutOfBounds on completion, and emoji deletion; 0.24.6 (2026-06-10) is the final release supporting minSdk 21, so deferring past the minSdk decision forfeits the window.
+  Evidence: https://github.com/Rosemoe/sora-editor/releases (0.24.4/0.24.5/0.24.6 notes); versions.gradle:45 (fork pin, verified)
+  Touches: versions.gradle, editor/ (API drift), possibly the MuntashirAkon/sora-editor fork (rebase) or a switch to upstream artifacts
+  Acceptance: editor opens/edits/saves java+xml+smali fixtures with completion and wordwrap working; the IME composing regression (type-with-gboard scenario) verified on device or emulator; pin decision recorded in the dependency ledger.
+  Complexity: M
+
+- [ ] P2 — ApplicationStartInfo "why did this app start" panel (API 35+)
+  Why: ActivityManager.getHistoricalProcessStartReasons() exposes per-start reason (alarm/broadcast/push/job/launcher), start type, and create→first-frame timings — a forensic per-app surface that fits NG's inspection identity and that no manager in the niche ships; NG has zero usage of the API today (verified).
+  Evidence: https://developer.android.com/reference/android/app/ApplicationStartInfo ; grep: no ApplicationStartInfo in tree (verified)
+  Touches: details/info/ (new card or tab), usage/ (data layer), compat/ActivityManagerCompat.java
+  Acceptance: on API 35+, app details shows recent starts with reason + latency; below API 35 the card is absent (not an error); zero-start apps show an empty state.
+  Complexity: M
+
+- [ ] P2 — Assistant-launched privileged services/broadcasts without root (upstream #1973)
+  Why: Accepted-but-unbuilt upstream feature extending the proven secure-settings assistant trick (already used for non-exported activities) to services and broadcasts in no-root/WRITE_SECURE_SETTINGS mode — a genuine fork-first capability in NG's "rootless power" lane.
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1973 (accepted, P3, no implementation)
+  Touches: details/ (component launch actions), the assistant-launch helper used for activities, settings/Ops.java (mode gating)
+  Acceptance: in WRITE_SECURE_SETTINGS mode a non-exported service can be started and a broadcast sent from the component list, with the same confirmation UX as the existing activity path; cleanly refused (with reason) where the mechanism is unavailable.
+  Complexity: M
+
+- [ ] P2 — ADB-mode graceful degradation for "reset optimization profile" (upstream #1733)
+  Why: clearApplicationProfileData is system-only ("Only the system can clear all profile data"), so the dexopt reset action hard-fails whole batches in ADB mode instead of skipping with a per-op warning — one of only two issues still blocking upstream v4.1.0.
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1733
+  Touches: the dexopt/optimization action paths (apk/dexopt or details/ action), batchops/ result reporting
+  Acceptance: in ADB mode the reset-profile op reports "skipped: requires system/root" per package without failing the batch; root mode unchanged.
+  Complexity: S
+
+- [ ] P2 — Advanced Protection + Developer Verifier state surfacing (companion to the existing P0 installer item)
+  Why: Android 16+ Advanced Protection (AdvancedProtectionManager) blocks sideloading outright and the verification "advanced flow" for power users goes global Aug 2026 (developer mode + one-day wait + biometric) — NG should detect both states and explain them before an install fails, and its sideload-verification doc predates both.
+  Evidence: https://developer.android.com/about/versions/17/features (AdvancedProtectionManager); https://android.gadgethacks.com/news/google-keeps-android-sideloading-for-power-users-in-2026/ (advanced flow, Aug 2026); docs/sideload-verification.md (predates)
+  Touches: apk/installer/ (pre-flight check + explainer), settings/ or onboarding Mode Doctor (state row), docs/sideload-verification.md
+  Acceptance: on a device with Advanced Protection active, NG shows the state and the documented consequence before attempting an install; the in-app FAQ describes the advanced flow and Limited Distribution Accounts accurately.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Device-wide analytics dashboard (install-source / SDK / signing distributions)
+  Why: Inure's analytics panel and AppDash's insight cards ("unused apps", "storage-heavy") are the category's stickiest discovery surfaces; NG already computes every datapoint (installer source, target SDK, signing info, usage) but offers no aggregate view with tap-through to a filtered list.
+  Evidence: https://github.com/Hamza417/Inure (FEATURES.md analytics panel); https://appdash.app/ (insight cards); NG filters already support these predicates (filters/options/)
+  Touches: main/ or a new dashboard fragment, filters/ (reuse predicates as tap-through), existing chart utilities
+  Acceptance: a dashboard screen shows at least installer-source, targetSdk, and signing distributions plus an "unused 30/60/90 days" card; tapping any segment opens the main list pre-filtered to it.
+  Complexity: M
+
+- [ ] P3 — Version-watch panel (full flavor): installed vs latest from static indexes
+  Why: APKUpdater (3.8k★, active) proves demand for multi-source update awareness without being a store; AppDash paywalls it; checking F-Droid/IzzyOnDroid index-v2 + GitHub releases against installed versions fits the full flavor's opt-in network doctrine and NG stays a manager (notify, don't install).
+  Evidence: https://github.com/rumboalla/apkupdater ; https://appdash.app/ ; f-droid index-v2 format (RESEARCH.md Sources)
+  Touches: full-flavor source set (new updates/ package), settings/PrivacyPreferences (opt-in + source toggles), WorkManager scheduled check
+  Acceptance: with the toggle on, a scheduled check lists apps whose installed version trails the chosen indexes, with a signing-cert mismatch warning where the index cert differs; floss flavor compiles the feature out entirely.
+  Complexity: L
+
+- [ ] P3 — Boot-component manager view
+  Why: A dedicated "what starts at boot" surface (BOOT_COMPLETED receivers across all apps, batch-blockable) is a classic MyAndroidTools/Inure feature NG can build almost entirely from existing component-blocking plumbing; today only NG's own BootReceiver references BOOT_COMPLETED (verified).
+  Evidence: Inure boot manager (FEATURES.md); https://github.com/lihenggui/blocker (MyAndroidTools rule import demand); grep: no cross-app boot view in tree (verified)
+  Touches: new view under main menu (reuse component list UI), rules/compontents/ (existing IFW/disable paths), filters/
+  Acceptance: a screen lists every app with BOOT_COMPLETED/LOCKED_BOOT_COMPLETED receivers and their enable state; per-row and batch block/unblock work through the existing rule store with undo.
+  Complexity: M
+
+- [ ] P3 — Per-app standby-bucket inspect/set (privileged)
+  Why: Brevent built a product on `am set-standby-bucket` and Inure ships a battery panel; NG has the privilege plumbing but no standby-bucket surface (verified no usage) — a narrow inspect/set row in app details is the policy-not-boost framing that fits NG.
+  Evidence: https://github.com/brevent/Brevent ; Inure battery panel; grep: no setAppStandbyBucket in tree (verified). Cross-check the v0.5.x "background-run rule persistence" scope before building (RESEARCH.md Open Questions).
+  Touches: compat/UsageStatsManagerCompat.java (get/setAppStandbyBucket), details/info/ (row), batchops/ (optional batch set)
+  Acceptance: app details shows the current bucket on API 28+; in root/ADB/Shizuku modes the user can pin a bucket (active/working set/frequent/rare/restricted) and the change persists across the details screen reload.
+  Complexity: M
+
+- [ ] P3 — Tracker report rollup: company → category → jurisdiction
+  Why: TrackerControl's grouped presentation (parent company, ads/analytics/social category, HQ country) with plain-language blurbs is meaningfully more legible than flat library lists and is pure offline metadata; NG's TrackerInfoDialog already resolves tracker identity (verified) — the rollup is presentation work.
+  Evidence: https://trackercontrol.org/ ; scanner/TrackerInfoDialog.java + rules/compontents/TrackerCategory.java (verified)
+  Touches: scanner/ (report screen grouping), tracker metadata (extend the bundled dataset with company/category/country columns), strings (blurbs)
+  Acceptance: the per-app tracker report groups findings by parent company with category chips and a one-line "what this category means"; flat list remains available as a toggle; works fully offline.
+  Complexity: M
+
+- [ ] P3 — AppFunctions exposure datapoint (API 36+)
+  Why: Apps exposing agent-callable functions (android.app.appfunctions) are a new privacy-relevant surface; "this app exposes N agent functions" is a cheap, fork-first inspection datapoint consistent with NG's exported-component reporting.
+  Evidence: https://developer.android.com/ai/appfunctions ; no AppFunctions reference in tree (Assumption: API surface stable at 36)
+  Touches: details/info/ tag cloud or components list (new chip/section), compat/ (AppFunctionManager wrapper)
+  Acceptance: on API 36+, apps declaring AppFunctions show a chip with the function count; tapping lists the declared functions; absent below API 36.
+  Complexity: S
+
+- [ ] P3 — Theme/a11y coherence pass (deferred-audit visual debt)
+  Why: The 2026-06-09 audit verified divergent dark palettes across NG-added screens, dead premium design tokens, favorite_icon drawable misused as a debuggable indicator, fm_icon_background inconsistencies, and tracker/perm badges under the 48dp touch-target minimum — small fixes that compound into perceived quality.
+  Evidence: 2026-06-09 audit session record (deferred list); res/ themes and the named drawables (spot-verified)
+  Touches: app/src/main/res/ (themes, drawables, dimens), details/ badge layouts
+  Acceptance: NG-added screens share one dark palette token set; the misused drawables are replaced with purpose-named assets; all interactive badges hit ≥48dp touch targets (a11y scanner clean on those screens).
+  Complexity: M
+
+- [ ] P3 — Terminal: implement or formally defer (decision item)
+  Why: terminal/TermActivity has shipped as a 4-TODO mock since the fork (completion, history, init script absent); a stub feature in the menu erodes trust — either wire a real terminal (Termux-style PTY) or hide it behind Pro Mode with a "preview" label and a dated decision record.
+  Evidence: terminal/TermActivity.java:49,95,104,181 (verified TODOs)
+  Touches: terminal/, main menu registration, docs/ (decision record)
+  Acceptance: a dated decision doc exists; the menu either offers a working PTY terminal (run `id` in privileged mode, see output) or labels the entry "preview" with the mock's limits stated in-UI.
+  Complexity: S (defer) / XL (implement)
