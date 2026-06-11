@@ -42,6 +42,17 @@ public class BatchFreezeOptionsTest {
 
         assertEquals(FreezeUtils.FREEZE_ADV_SUSPEND, options.getType());
         assertTrue(options.isPreferCustom());
+        assertFalse(options.isAllowCriticalPackages());
+    }
+
+    @Test
+    public void jsonRestorationAcceptsCriticalPackageOverride() throws Exception {
+        BatchFreezeOptions options = BatchFreezeOptions.DESERIALIZER.deserialize(jsonOptions(
+                FreezeUtils.FREEZE_ADV_SUSPEND, true, true));
+
+        assertEquals(FreezeUtils.FREEZE_ADV_SUSPEND, options.getType());
+        assertTrue(options.isPreferCustom());
+        assertTrue(options.isAllowCriticalPackages());
     }
 
     @Test
@@ -63,10 +74,34 @@ public class BatchFreezeOptionsTest {
         }
     }
 
+    @Test
+    public void parcelRoundTripPreservesCriticalPackageOverride() {
+        BatchFreezeOptions options = new BatchFreezeOptions(FreezeUtils.FREEZE_HIDE, true, true);
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+
+            BatchFreezeOptions restored = BatchFreezeOptions.CREATOR.createFromParcel(parcel);
+
+            assertEquals(FreezeUtils.FREEZE_HIDE, restored.getType());
+            assertTrue(restored.isPreferCustom());
+            assertTrue(restored.isAllowCriticalPackages());
+        } finally {
+            parcel.recycle();
+        }
+    }
+
     private static JSONObject jsonOptions(int type, boolean preferCustom) throws JSONException {
         return new JSONObject()
                 .put("tag", BatchFreezeOptions.TAG)
                 .put("type", type)
                 .put("prefer_custom", preferCustom);
+    }
+
+    private static JSONObject jsonOptions(int type, boolean preferCustom,
+                                          boolean allowCriticalPackages) throws JSONException {
+        return jsonOptions(type, preferCustom)
+                .put("allow_critical_packages", allowCriticalPackages);
     }
 }

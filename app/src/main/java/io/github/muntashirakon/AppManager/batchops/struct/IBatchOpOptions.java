@@ -19,6 +19,8 @@ public interface IBatchOpOptions extends Parcelable, IJsonSerializer {
             return BatchBackupImportOptions.DESERIALIZER.deserialize(jsonObject);
         } else if (BatchBackupOptions.TAG.equals(tag)) {
             return BatchBackupOptions.DESERIALIZER.deserialize(jsonObject);
+        } else if (BatchSafetyOptions.TAG.equals(tag)) {
+            return BatchSafetyOptions.DESERIALIZER.deserialize(jsonObject);
         } else if (BatchComponentOptions.TAG.equals(tag)) {
             return BatchComponentOptions.DESERIALIZER.deserialize(jsonObject);
         } else if (BatchDexOptOptions.TAG.equals(tag)) {

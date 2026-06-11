@@ -37,9 +37,11 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
+import io.github.muntashirakon.AppManager.batchops.struct.BatchSafetyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
+import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -330,8 +332,13 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                     if (selectedItem == null) {
                         return;
                     }
-                    BatchFreezeOptions options = new BatchFreezeOptions(selectedItem, checkBox.isChecked());
-                    handleBatchOp(BatchOpsManager.OP_ADVANCED_FREEZE, options);
+                    List<DebloatObject> selectedObjects = viewModel != null
+                            ? viewModel.getSelectedDebloatObjects() : java.util.Collections.emptyList();
+                    runWithCriticalPackageConfirmation(selectedObjects, allowCriticalPackages -> {
+                        BatchFreezeOptions options = new BatchFreezeOptions(selectedItem, checkBox.isChecked(),
+                                allowCriticalPackages);
+                        handleBatchOp(BatchOpsManager.OP_ADVANCED_FREEZE, options);
+                    });
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .setNeutralButton(R.string.unfreeze, (dialog, which, selectedItem) ->
@@ -437,16 +444,21 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                 .setPositiveButton(hasOemFallbacks ? R.string.debloat_oem_safe_action
                                 : (usesPmUninstall ? R.string.remove_for_user : R.string.uninstall),
                         (dialog, which) -> {
-                            if (hasOemFallbacks) {
-                                handleDebloatWithOemFallback(selectedObjects);
-                            } else {
-                                handleBatchOp(BatchOpsManager.OP_UNINSTALL);
-                            }
+                            runWithCriticalPackageConfirmation(selectedObjects, allowCriticalPackages -> {
+                                if (hasOemFallbacks) {
+                                    handleDebloatWithOemFallback(selectedObjects, allowCriticalPackages);
+                                } else {
+                                    handleBatchOp(BatchOpsManager.OP_UNINSTALL,
+                                            allowCriticalPackages ? new BatchSafetyOptions(true) : null);
+                                }
+                            });
                         })
                 .setNegativeButton(R.string.cancel, null);
         if (hasOemFallbacks) {
             builder.setNeutralButton(usesPmUninstall ? R.string.remove_for_user : R.string.uninstall,
-                    (dialog, which) -> handleBatchOp(BatchOpsManager.OP_UNINSTALL));
+                    (dialog, which) -> runWithCriticalPackageConfirmation(selectedObjects,
+                            allowCriticalPackages -> handleBatchOp(BatchOpsManager.OP_UNINSTALL,
+                                    allowCriticalPackages ? new BatchSafetyOptions(true) : null)));
         }
         builder.show();
     }
@@ -588,7 +600,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         return false;
     }
 
-    private void handleDebloatWithOemFallback(@NonNull List<DebloatObject> selectedObjects) {
+    private void handleDebloatWithOemFallback(@NonNull List<DebloatObject> selectedObjects,
+                                              boolean allowCriticalPackages) {
         if (viewModel == null) return;
         List<DebloatObject> uninstallObjects = new ArrayList<>();
         List<DebloatObject> freezeObjects = new ArrayList<>();
@@ -600,10 +613,12 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             }
         }
         if (!uninstallObjects.isEmpty()) {
-            startBatchOp(BatchOpsManager.OP_UNINSTALL, viewModel.getPackagesWithUsers(uninstallObjects), null);
+            startBatchOp(BatchOpsManager.OP_UNINSTALL, viewModel.getPackagesWithUsers(uninstallObjects),
+                    allowCriticalPackages ? new BatchSafetyOptions(true) : null);
         }
         if (!freezeObjects.isEmpty()) {
-            BatchFreezeOptions options = new BatchFreezeOptions(Prefs.Blocking.getDefaultFreezingMethod(), false);
+            BatchFreezeOptions options = new BatchFreezeOptions(Prefs.Blocking.getDefaultFreezingMethod(), false,
+                    allowCriticalPackages);
             startBatchOp(BatchOpsManager.OP_ADVANCED_FREEZE, viewModel.getPackagesWithUsers(freezeObjects), options);
         }
         mMultiSelectionView.cancel();
@@ -628,5 +643,37 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         BatchOpsManager.Result input = new BatchOpsManager.Result(userPackagePairs);
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(op, input.getFailedPackages(), input.getAssociatedUsers(), options);
         ContextCompat.startForegroundService(this, BatchOpsService.getServiceIntent(this, item));
+    }
+
+    private void runWithCriticalPackageConfirmation(@NonNull List<DebloatObject> selectedObjects,
+                                                    @NonNull CriticalPackageAction action) {
+        List<String> criticalPackages = new ArrayList<>();
+        int criticalPackageCount = 0;
+        for (DebloatObject debloatObject : selectedObjects) {
+            if (CriticalPackageGuard.isCriticalPackage(debloatObject.packageName)) {
+                ++criticalPackageCount;
+                if (criticalPackages.size() < 5) {
+                    criticalPackages.add(debloatObject.getLabelOrPackageName().toString());
+                }
+            }
+        }
+        if (criticalPackageCount == 0) {
+            action.run(false);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.debloat_critical_package_confirm_title)
+                .setMessage(getResources().getQuantityString(
+                        R.plurals.debloat_critical_package_confirm_message,
+                        criticalPackageCount,
+                        criticalPackageCount,
+                        TextUtils.join(", ", criticalPackages)))
+                .setPositiveButton(R.string.action_continue, (dialog, which) -> action.run(true))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private interface CriticalPackageAction {
+        void run(boolean allowCriticalPackages);
     }
 }
