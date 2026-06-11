@@ -570,6 +570,16 @@
             android:textColor="?attr/colorOnSurface" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/onboarding_next_step_notifications"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:text="@string/onboarding_next_step_notifications"
+            app:icon="@drawable/ic_default_notification"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/onboarding_next_step_privileges"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"

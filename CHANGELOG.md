@@ -42,6 +42,8 @@ Reliability & data safety
   release-build lint checks.
 - Onboarding capability cards now reuse cached root/Shizuku/Dhizuku/ADB probe
   results on normal resumes; the Re-check button is the explicit fresh-probe path.
+- Fresh Android 13+ onboarding now explains and requests notification permission,
+  with a next-step button for users who defer it.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
