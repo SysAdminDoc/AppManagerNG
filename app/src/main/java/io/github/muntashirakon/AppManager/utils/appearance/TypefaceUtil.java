@@ -131,7 +131,9 @@ public class TypefaceUtil {
             }
         }
         allFontsForThisApp.putAll(fontsMap);
-        field.set(null, allFontsForThisApp);
+        // allFontsForThisApp is the map object already stored in Typeface.sSystemFontMap.
+        // Mutating it in place is enough; writing it back with Field.set(null, ...)
+        // throws on Android 17 when targeting API 37 because the field is static-final.
         field.setAccessible(false);
     }
 }
