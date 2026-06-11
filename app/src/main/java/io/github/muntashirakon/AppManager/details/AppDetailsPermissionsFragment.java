@@ -752,7 +752,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 ThreadUtils.postOnBackgroundThread(() -> {
                     if (viewModel != null && viewModel.setAppOpMode(item, nextMode)) {
                         ThreadUtils.postOnMainThread(() -> {
-                            notifyItemChanged(index, AdapterUtils.STUB);
+                            AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
                             UIUtils.displayShortToast(AppOpsManagerCompat.modeToName(nextMode));
                         });
                     } else {
@@ -771,7 +771,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                             // TODO: 22/5/23 Perform using a ViewModel
                             ThreadUtils.postOnBackgroundThread(() -> {
                                 if (viewModel != null && viewModel.setAppOpMode(item, opMode)) {
-                                    ThreadUtils.postOnMainThread(() -> notifyItemChanged(index, AdapterUtils.STUB));
+                                    ThreadUtils.postOnMainThread(() ->
+                                            AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item));
                                 } else {
                                     ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
                                             R.string.failed_to_change_app_op_mode));
@@ -834,7 +835,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 holder.itemView.setOnClickListener(v -> ThreadUtils.postOnBackgroundThread(() -> {
                     try {
                         if (Objects.requireNonNull(viewModel).togglePermission(permissionItem)) {
-                            ThreadUtils.postOnMainThread(() -> notifyItemChanged(index, AdapterUtils.STUB));
+                            ThreadUtils.postOnMainThread(() ->
+                                    AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, permissionItem));
                         } else throw new Exception("Couldn't grant permission: " + permName);
                     } catch (Exception e) {
                         e.printStackTrace();
