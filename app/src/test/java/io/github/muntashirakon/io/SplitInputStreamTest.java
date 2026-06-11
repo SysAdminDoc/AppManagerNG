@@ -60,6 +60,31 @@ public class SplitInputStreamTest {
     }
 
     @Test
+    public void singleByteReadMasksHighBytesAndReportsEofOnce() throws IOException {
+        // Regression: read() must return 0..255 (or -1 for EOF). A raw signed byte of 0xFF
+        // previously sign-extended to -1, an indistinguishable false EOF, truncating any
+        // split archive whose data contained 0xFF read one byte at a time.
+        File file = new File("/tmp/split_single_byte_read.bin");
+        junkFiles.add(file);
+        byte[] payload = new byte[256];
+        for (int i = 0; i < 256; i++) {
+            payload[i] = (byte) i; // includes 0x80..0xFF, the previously-broken range
+        }
+        try (OutputStream outputStream = new FileOutputStream(file)) {
+            outputStream.write(payload);
+        }
+        List<Path> singleFile = new ArrayList<>();
+        singleFile.add(Paths.get(file));
+        try (SplitInputStream splitInputStream = new SplitInputStream(singleFile)) {
+            for (int i = 0; i < 256; i++) {
+                assertEquals("byte " + i, i, splitInputStream.read());
+            }
+            // Stream is exhausted: now (and only now) read() returns -1.
+            assertEquals(-1, splitInputStream.read());
+        }
+    }
+
+    @Test
     public void skip() throws IOException {
         try (SplitInputStream splitInputStream = new SplitInputStream(fileList)) {
             // For 1 KB
