@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.backup.BackupManager;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -177,7 +178,8 @@ public class BackupTasksDialogFragment extends DialogFragment {
                                     .append(UIUtils.getSmallerText(UIUtils.getSecondaryText(mActivity,
                                             new SpannableStringBuilder(backup.packageName)
                                                     .append('\n')
-                                                    .append(e.getMessage())))));
+                                                    .append(getString(R.string.backup_verification_failed_action))))));
+                            Log.w(TAG, "Backup verification failed for " + backup.relativeDir, e);
                         }
                     }
                     if (ThreadUtils.isInterrupted()) return;
