@@ -3002,6 +3002,11 @@
     <string name="rootless_debloat_confirmation_risky_examples">Review first: %1$s.</string>
     <string name="rootless_debloat_confirmation_footer">This removes apps from the selected user profile. System packages can usually be restored later with Install existing if the base APK remains on the device.</string>
     <string name="rootless_debloat_confirmation_oem_footer">OEM-safe actions remove eligible apps and freeze OEM-protected apps instead. Choose Remove for user only if you explicitly want to bypass the safer fallback.</string>
+    <string name="debloat_critical_package_confirm_title">Critical system package selected</string>
+    <plurals name="debloat_critical_package_confirm_message">
+        <item quantity="one">%1$d selected app is part of Android, Google Play services, vendor telephony, location, or AppManagerNG itself: %2$s.\n\nContinuing can break phone, location, package management, or recovery access for this user.</item>
+        <item quantity="other">%1$d selected apps are part of Android, Google Play services, vendor telephony, location, or AppManagerNG itself: %2$s.\n\nContinuing can break phone, location, package management, or recovery access for this user.</item>
+    </plurals>
     <string name="debloat_oem_safe_action">Apply OEM-safe actions</string>
     <string name="remove_for_user">Remove for user</string>
     <string name="system_app_put_back">Put back</string>

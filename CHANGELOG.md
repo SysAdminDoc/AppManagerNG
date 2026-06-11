@@ -54,6 +54,10 @@ Reliability & data safety
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
   release line, with search/replace and TextMate language loading migrated to
   the new upstream APIs.
+- Debloater and destructive batch operations now share a critical-package guard:
+  guarded uninstall/freeze/disable targets require explicit confirmation, and
+  system-app batches write a pre-op snapshot plus ADB install-existing rescue
+  commands to the backup volume before changing packages.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
