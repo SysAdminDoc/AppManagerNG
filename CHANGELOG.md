@@ -103,6 +103,8 @@ Reliability & data safety
   the preference summary.
 - Main-list tracker, permission, and backup badges now keep their severity tint
   but use night-aware semantic content colors for text contrast.
+- Release CI now writes APK sizes to the workflow summary and fails if an APK
+  exceeds the configurable `APK_SIZE_LIMIT_BYTES` threshold (30 MiB by default).
 - Release builds now run R8 minification and resource shrinking; invalid
   baseline-profile class flags were corrected so optimized release APKs build
   successfully.
