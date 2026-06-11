@@ -1,7 +1,7 @@
 ﻿{
     "schema":  1,
     "generatedBy":  "scripts/generate-hidden-api-baseline.ps1",
-    "generatedOn":  "2026-05-18",
+    "generatedOn":  "2026-06-11",
     "sourceRoot":  "hiddenapi/src/main/java",
     "classes":  [
                     {
@@ -278,16 +278,6 @@
                                         {
                                             "kind":  "field",
                                             "name":  "MIUI_OP_END",
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "throwUOE",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
                                             "minSdk":  1,
                                             "deprecated":  false
                                         },
@@ -1013,7 +1003,7 @@
                                                                "ParcelFileDescriptor"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -1366,6 +1356,24 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "registerReceiverWithFeature",
+                                            "parameterCount":  9,
+                                            "parameters":  [
+                                                               "IApplicationThread",
+                                                               "String",
+                                                               "String",
+                                                               "String",
+                                                               "IIntentReceiver",
+                                                               "IntentFilter",
+                                                               "String",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  31,
                                             "deprecated":  false
                                         },
                                         {
@@ -1442,6 +1450,55 @@
                                                                "int"
                                                            ],
                                             "minSdk":  30,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "broadcastIntentWithFeature",
+                                            "parameterCount":  15,
+                                            "parameters":  [
+                                                               "IApplicationThread",
+                                                               "String",
+                                                               "Intent",
+                                                               "String",
+                                                               "IIntentReceiver",
+                                                               "int",
+                                                               "String",
+                                                               "Bundle",
+                                                               "String[]",
+                                                               "String[]",
+                                                               "int",
+                                                               "Bundle",
+                                                               "boolean",
+                                                               "boolean",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "broadcastIntentWithFeature",
+                                            "parameterCount":  16,
+                                            "parameters":  [
+                                                               "IApplicationThread",
+                                                               "String",
+                                                               "Intent",
+                                                               "String",
+                                                               "IIntentReceiver",
+                                                               "int",
+                                                               "String",
+                                                               "Bundle",
+                                                               "String[]",
+                                                               "String[]",
+                                                               "String[]",
+                                                               "int",
+                                                               "Bundle",
+                                                               "boolean",
+                                                               "boolean",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
                                             "deprecated":  false
                                         },
                                         {
@@ -1473,36 +1530,12 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "attachApplication",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "IApplicationThread",
-                                                               "long"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "getTasks",
                                             "parameterCount":  1,
                                             "parameters":  [
                                                                "int"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getContentProviderExternal",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "IBinder",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  29,
                                             "deprecated":  false
                                         },
                                         {
@@ -1516,6 +1549,19 @@
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getContentProviderExternal",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int",
+                                                               "IBinder",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  29,
+                                            "deprecated":  false
                                         },
                                         {
                                             "kind":  "method",
@@ -1835,7 +1881,7 @@
                                                                "int"
                                                            ],
                                             "minSdk":  24,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -1846,7 +1892,7 @@
                                                                "int"
                                                            ],
                                             "minSdk":  24,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -1925,19 +1971,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "serviceDoneExecuting",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "IBinder",
-                                                               "int",
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "getIntentSender",
                                             "parameterCount":  10,
                                             "parameters":  [
@@ -1978,16 +2011,6 @@
                                         {
                                             "kind":  "method",
                                             "name":  "cancelIntentSender",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "IIntentSender"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getPackageForIntentSender",
                                             "parameterCount":  1,
                                             "parameters":  [
                                                                "IIntentSender"
@@ -2059,6 +2082,17 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "stopAppForUser",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "forceStopPackage",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -2066,6 +2100,17 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "forceStopPackageEvenWhenStopping",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -2159,66 +2204,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "bindBackupAgent",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "backupAgentCreated",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "IBinder",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "unbindBackupAgent",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "ApplicationInfo"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getUidForIntentSender",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "IIntentSender"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "handleIncomingUser",
-                                            "parameterCount":  7,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "int",
-                                                               "boolean",
-                                                               "boolean",
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "addPackageDependency",
                                             "parameterCount":  1,
                                             "parameters":  [
@@ -2238,6 +2223,20 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "killApplication",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int",
+                                                               "int",
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -2304,21 +2303,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "crashApplication",
-                                            "parameterCount":  6,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "String",
-                                                               "int",
-                                                               "String",
-                                                               "boolean"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "isUserRunning",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -2361,6 +2345,26 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "registerProcessObserver",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "IProcessObserver"
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "unregisterProcessObserver",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "IProcessObserver"
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "isIntentSenderTargetedToPackage",
                                             "parameterCount":  1,
                                             "parameters":  [
@@ -2384,7 +2388,7 @@
                                             "name":  "showBootMessage",
                                             "parameterCount":  2,
                                             "parameters":  [
-                                                               "java.lang.CharSequence",
+                                                               "CharSequence",
                                                                "boolean"
                                                            ],
                                             "minSdk":  1,
@@ -2462,26 +2466,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "isIntentSenderAForegroundService",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "IIntentSender"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "isIntentSenderABroadcast",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "IIntentSender"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "startActivityAsUser",
                                             "parameterCount":  11,
                                             "parameters":  [
@@ -2524,89 +2508,6 @@
                                         {
                                             "kind":  "method",
                                             "name":  "getRunningUserIds",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestTelephonyBugReport",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestWifiBugReport",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestInteractiveBugReportWithDescription",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestInteractiveBugReport",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestFullBugReport",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "requestRemoteBugReport",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "launchBugReportHandlerApp",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getBugreportWhitelistedPackages",
                                             "parameterCount":  0,
                                             "parameters":  [
 
@@ -2689,28 +2590,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "appNotRespondingViaProvider",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "IBinder"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "setProcessMemoryTrimLevel",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "getTagForIntentSender",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -2766,19 +2645,6 @@
                                             "parameterCount":  0,
                                             "parameters":  [
 
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "checkPermissionWithToken",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "int",
-                                                               "IBinder"
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  false
@@ -2851,16 +2717,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "updateDeviceOwner",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "startBinderTracking",
                                             "parameterCount":  0,
                                             "parameters":  [
@@ -2881,18 +2737,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "positionTaskInStack",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "suppressResizeConfigChanges",
                                             "parameterCount":  1,
                                             "parameters":  [
@@ -2903,31 +2747,10 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "isAppStartModeDisabled",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "int",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "killPackageDependents",
                                             "parameterCount":  2,
                                             "parameters":  [
                                                                "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "removeStack",
-                                            "parameterCount":  1,
-                                            "parameters":  [
                                                                "int"
                                                            ],
                                             "minSdk":  1,
@@ -3010,6 +2833,24 @@
                                                                "Bundle"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "sendIntentSender",
+                                            "parameterCount":  9,
+                                            "parameters":  [
+                                                               "IApplicationThread",
+                                                               "IIntentSender",
+                                                               "IBinder",
+                                                               "int",
+                                                               "Intent",
+                                                               "String",
+                                                               "IIntentReceiver",
+                                                               "String",
+                                                               "Bundle"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -3050,6 +2891,17 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "restartUserInBackground",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -3154,16 +3006,6 @@
                                             "parameters":  [
                                                                "int[]",
                                                                "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "setProcessStateSummary",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "byte[]"
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  false
@@ -3477,6 +3319,18 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "setNotificationListenerAccessGranted",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "ComponentName",
+                                                               "boolean",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "setNotificationAssistantAccessGranted",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -3496,6 +3350,19 @@
                                                                "boolean"
                                                            ],
                                             "minSdk":  27,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setNotificationListenerAccessGrantedForUser",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "ComponentName",
+                                                               "int",
+                                                               "boolean",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  31,
                                             "deprecated":  false
                                         },
                                         {
@@ -3554,6 +3421,75 @@
                                             "parameterCount":  0,
                                             "parameters":  [
 
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/app/IProcessObserver.java",
+                        "stub":  "android.app.IProcessObserver",
+                        "runtime":  "android.app.IProcessObserver",
+                        "minSdk":  1,
+                        "members":  [
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onProcessStarted",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "int",
+                                                               "String",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onForegroundActivitiesChanged",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onProcessStateChanged",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onForegroundServicesChanged",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  29,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onProcessDied",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int"
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  false
@@ -3688,6 +3624,20 @@
                                                                "boolean"
                                                            ],
                                             "minSdk":  29,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "checkGrantUriPermission_ignoreNonSystem",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "int",
+                                                               "String",
+                                                               "Uri",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  35,
                                             "deprecated":  false
                                         }
                                     ]
@@ -3916,6 +3866,18 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "queryArtManagedStats",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  36,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "queryStatsForUid",
                                             "parameterCount":  3,
                                             "parameters":  [
@@ -4034,6 +3996,20 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "queryUsageStats",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "int",
+                                                               "long",
+                                                               "long",
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  31,
                                             "deprecated":  false
                                         },
                                         {
@@ -4115,6 +4091,17 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "queryEventsWithFilter",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "UsageEventsQuery",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "setAppInactive",
                                             "parameterCount":  3,
                                             "parameters":  [
@@ -4123,6 +4110,16 @@
                                                                "int"
                                                            ],
                                             "minSdk":  23,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "isAppStandbyEnabled",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -4158,7 +4155,7 @@
                                                                "int"
                                                            ],
                                             "minSdk":  23,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -4228,6 +4225,41 @@
                                                                "int"
                                                            ],
                                             "minSdk":  28,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getAppMinStandbyBucket",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setEstimatedLaunchTime",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "long",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setEstimatedLaunchTimes",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "ParceledListSlice",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  33,
                                             "deprecated":  false
                                         },
                                         {
@@ -4347,6 +4379,29 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "reportUserInteraction",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "reportUserInteractionWithBundle",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int",
+                                                               "PersistableBundle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "getUsageSource",
                                             "parameterCount":  0,
                                             "parameters":  [
@@ -4363,6 +4418,27 @@
 
                                                            ],
                                             "minSdk":  29,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getLastTimeAnyComponentUsed",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getAppStandbyConstant",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "String"
+                                                           ],
+                                            "minSdk":  33,
                                             "deprecated":  false
                                         }
                                     ]
@@ -4720,6 +4796,12 @@
                                         },
                                         {
                                             "kind":  "field",
+                                            "name":  "privateFlagsExt",
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
                                             "name":  "seInfo",
                                             "minSdk":  26,
                                             "deprecated":  false
@@ -4744,6 +4826,12 @@
                                         },
                                         {
                                             "kind":  "field",
+                                            "name":  "networkSecurityConfigRes",
+                                            "minSdk":  24,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
                                             "name":  "zygotePreloadName",
                                             "minSdk":  29,
                                             "deprecated":  false
@@ -4756,6 +4844,162 @@
 
                                                            ],
                                             "minSdk":  28,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/content/pm/ArchivedActivityParcel.java",
+                        "stub":  "android.content.pm.ArchivedActivityParcel",
+                        "runtime":  "android.content.pm.ArchivedActivityParcel",
+                        "minSdk":  34,
+                        "members":  [
+                                        {
+                                            "kind":  "field",
+                                            "name":  "title",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "originalComponentName",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "iconBitmap",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "monochromeIconBitmap",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "creator",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "describeContents",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "writeToParcel",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "Parcel",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/content/pm/ArchivedPackageParcel.java",
+                        "stub":  "android.content.pm.ArchivedPackageParcel",
+                        "runtime":  "android.content.pm.ArchivedPackageParcel",
+                        "minSdk":  34,
+                        "members":  [
+                                        {
+                                            "kind":  "field",
+                                            "name":  "packageName",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "signingDetails",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "versionCode",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "versionCodeMajor",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "targetSdkVersion",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "defaultToDeviceProtectedStorage",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "requestLegacyExternalStorage",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "userDataFragile",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "archivedActivities",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "creator",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "describeContents",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "writeToParcel",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "Parcel",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         }
                                     ]
@@ -5098,6 +5342,81 @@
                                                            ],
                                             "minSdk":  34,
                                             "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setAllowUnlimitedSilentUpdates",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "String"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setSilentUpdatesThrottleTime",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "long"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "requestArchive",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "String",
+                                                               "String",
+                                                               "int",
+                                                               "IntentSender",
+                                                               "UserHandle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "requestUnarchive",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "String",
+                                                               "String",
+                                                               "IntentSender",
+                                                               "UserHandle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "installPackageArchived",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "ArchivedPackageParcel",
+                                                               "PackageInstaller.SessionParams",
+                                                               "IntentSender",
+                                                               "String",
+                                                               "UserHandle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "reportUnarchivalStatus",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "long",
+                                                               "PendingIntent",
+                                                               "UserHandle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
                                         }
                                     ]
                     },
@@ -5237,7 +5556,7 @@
                                                                "IntentSender"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -5329,6 +5648,17 @@
                                                            ],
                                             "minSdk":  29,
                                             "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "requestUserPreapproval",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "PackageInstaller.PreapprovalDetails",
+                                                               "IntentSender"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
                                         }
                                     ]
                     },
@@ -5406,7 +5736,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  23,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -5610,7 +5940,7 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  true
+                                            "deprecated":  false
                                         },
                                         {
                                             "kind":  "method",
@@ -5648,6 +5978,16 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "getTargetSdkVersion",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "String"
+                                                           ],
+                                            "minSdk":  31,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "getActivityInfo",
                                             "parameterCount":  3,
                                             "parameters":  [
@@ -5680,6 +6020,19 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "activitySupportsIntentAsUser",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "ComponentName",
+                                                               "Intent",
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -5796,7 +6149,7 @@
                                                                "PermissionInfo"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  true
+                                            "deprecated":  false
                                         },
                                         {
                                             "kind":  "method",
@@ -5806,7 +6159,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  true
+                                            "deprecated":  false
                                         },
                                         {
                                             "kind":  "method",
@@ -5840,7 +6193,7 @@
                                                                "int"
                                                            ],
                                             "minSdk":  23,
-                                            "deprecated":  true
+                                            "deprecated":  false
                                         },
                                         {
                                             "kind":  "method",
@@ -5986,6 +6339,18 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "checkSignatures",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -6087,7 +6452,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -6235,19 +6600,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "queryContentProviders",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "int",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  26,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "getInstalledPackages",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -6366,28 +6718,6 @@
                                             "parameters":  [
                                                                "String",
                                                                "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  true
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getInstrumentationInfo",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "ComponentName",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "queryInstrumentation",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
                                                                "int"
                                                            ],
                                             "minSdk":  1,
@@ -6560,6 +6890,21 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "addPreferredActivity",
+                                            "parameterCount":  6,
+                                            "parameters":  [
+                                                               "IntentFilter",
+                                                               "int",
+                                                               "ComponentName[]",
+                                                               "ComponentName",
+                                                               "int",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  31,
                                             "deprecated":  false
                                         },
                                         {
@@ -6623,6 +6968,17 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "clearPersistentPreferredActivity",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "IntentFilter",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "addCrossProfileIntentFilter",
                                             "parameterCount":  6,
                                             "parameters":  [
@@ -6648,6 +7004,20 @@
                                                                "int"
                                                            ],
                                             "minSdk":  23,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "removeCrossProfileIntentFilter",
+                                            "parameterCount":  5,
+                                            "parameters":  [
+                                                               "IntentFilter",
+                                                               "String",
+                                                               "int",
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -6749,6 +7119,17 @@
                                         },
                                         {
                                             "kind":  "method",
+                                            "name":  "getUnsuspendablePackagesForUser",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String[]",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  29,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
                                             "name":  "isPackageSuspendedForUser",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -6756,6 +7137,28 @@
                                                                "int"
                                                            ],
                                             "minSdk":  24,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "isPackageQuarantinedForUser",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "isPackageStoppedForUser",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -6771,97 +7174,13 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "getUnsuspendablePackagesForUser",
+                                            "name":  "getSuspendingPackage",
                                             "parameterCount":  2,
                                             "parameters":  [
-                                                               "String[]",
+                                                               "String",
                                                                "int"
                                                            ],
-                                            "minSdk":  29,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getPreferredActivityBackup",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "restorePreferredActivities",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "byte[]",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getDefaultAppsBackup",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "restoreDefaultApps",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "byte[]",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getIntentFilterVerificationBackup",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "restoreIntentFilterVerification",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "byte[]",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  23,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getPermissionGrantBackup",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  24,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "restorePermissionGrants",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "byte[]",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  24,
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -6970,20 +7289,6 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "logAppProcessStartIfNeeded",
-                                            "parameterCount":  5,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int",
-                                                               "String",
-                                                               "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  24,
                                             "deprecated":  false
                                         },
                                         {
@@ -7113,6 +7418,19 @@
                                                                "int"
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "clearApplicationUserData",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "String",
+                                                               "IPackageDataObserver",
+                                                               "int",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         },
                                         {
@@ -7155,7 +7473,7 @@
 
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -7165,7 +7483,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -7200,16 +7518,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "systemReady",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "hasSystemUidErrors",
                                             "parameterCount":  0,
                                             "parameters":  [
@@ -7230,23 +7538,13 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "performFstrimIfNeeded",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  24,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "updatePackagesIfNeeded",
                                             "parameterCount":  0,
                                             "parameters":  [
 
                                                            ],
                                             "minSdk":  24,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -7382,16 +7680,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "dumpProfiles",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "String"
-                                                           ],
-                                            "minSdk":  24,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "forceDexOpt",
                                             "parameterCount":  1,
                                             "parameters":  [
@@ -7418,26 +7706,6 @@
                                                                "List\u003cString\u003e"
                                                            ],
                                             "minSdk":  28,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "reconcileSecondaryDexFiles",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "String"
-                                                           ],
-                                            "minSdk":  26,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "nextPackageToClean",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "PackageCleanItem"
-                                                           ],
-                                            "minSdk":  1,
                                             "deprecated":  false
                                         },
                                         {
@@ -7683,16 +7951,6 @@
                                         {
                                             "kind":  "method",
                                             "name":  "isFirstBoot",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "isOnlyCoreApps",
                                             "parameterCount":  0,
                                             "parameters":  [
 
@@ -8414,16 +8672,6 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "getContentCaptureServicePackageName",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  30,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
                                             "name":  "isPackageStateProtected",
                                             "parameterCount":  2,
                                             "parameters":  [
@@ -8503,6 +8751,91 @@
 
                                                            ],
                                             "minSdk":  29,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getArchivedPackage",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getArchivedAppIcon",
+                                            "parameterCount":  3,
+                                            "parameters":  [
+                                                               "String",
+                                                               "UserHandle",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "isAppArchivable",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "UserHandle"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getDomainVerificationAgent",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getDomainVerificationAgent",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "int"
+                                                           ],
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "setPageSizeAppCompatFlagsSettingsOverride",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "String",
+                                                               "boolean"
+                                                           ],
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "isPageSizeCompatEnabled",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "String"
+                                                           ],
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getPageSizeCompatWarningMessage",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "String"
+                                                           ],
+                                            "minSdk":  35,
                                             "deprecated":  false
                                         }
                                     ]
@@ -8738,11 +9071,10 @@
                                         },
                                         {
                                             "kind":  "method",
-                                            "name":  "queryInstrumentation",
-                                            "parameterCount":  2,
+                                            "name":  "getSystemAvailableFeatures",
+                                            "parameterCount":  0,
                                             "parameters":  [
-                                                               "String",
-                                                               "int"
+
                                                            ],
                                             "minSdk":  24,
                                             "deprecated":  false
@@ -8765,17 +9097,7 @@
                         "runtime":  "android.content.pm.IPackageMoveObserver",
                         "minSdk":  1,
                         "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "packageMoved",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        }
+
                                     ]
                     },
                     {
@@ -9096,6 +9418,134 @@
                         "minSdk":  1,
                         "members":  [
 
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/content/pm/SigningDetails.java",
+                        "stub":  "android.content.pm.SigningDetails",
+                        "runtime":  "android.content.pm.SigningDetails",
+                        "minSdk":  34,
+                        "members":  [
+                                        {
+                                            "kind":  "method",
+                                            "name":  "hasSignatures",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "hasPastSigningCertificates",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "hasCertificate",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "Signature"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "hasCertificate",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "Signature",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "hasCertificate",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "byte[]"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "creator",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "describeContents",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "writeToParcel",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "Parcel",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/content/pm/SigningDetails.java",
+                        "stub":  "android.content.pm.SigningDetails$CertCapabilities",
+                        "runtime":  "android.content.pm.SigningDetails$CertCapabilities",
+                        "minSdk":  34,
+                        "members":  [
+                                        {
+                                            "kind":  "field",
+                                            "name":  "INSTALLED_DATA",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "SHARED_USER_ID",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "PERMISSION",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "ROLLBACK",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "AUTH",
+                                            "minSdk":  34,
+                                            "deprecated":  false
+                                        }
                                     ]
                     },
                     {
@@ -9970,60 +10420,7 @@
                         "runtime":  "android.net.INetworkPolicyListener",
                         "minSdk":  1,
                         "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "onUidRulesChanged",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "onMeteredIfacesChanged",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "java.lang.String[]"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "onRestrictBackgroundChanged",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "boolean"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "onUidPoliciesChanged",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "onSubscriptionOverride",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        }
+
                                     ]
                     },
                     {
@@ -10207,7 +10604,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  23,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -10218,6 +10615,27 @@
                                                                "String"
                                                            ],
                                             "minSdk":  27,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getUidStats",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  28,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getUidStats",
+                                            "parameterCount":  1,
+                                            "parameters":  [
+                                                               "int"
+                                                           ],
+                                            "minSdk":  35,
                                             "deprecated":  false
                                         }
                                     ]
@@ -10313,6 +10731,59 @@
 
                                                            ],
                                             "minSdk":  1,
+                                            "deprecated":  false
+                                        }
+                                    ]
+                    },
+                    {
+                        "sourceFile":  "hiddenapi/src/main/java/android/net/netstats/StatsResult.java",
+                        "stub":  "android.net.netstats.StatsResult",
+                        "runtime":  "android.net.netstats.StatsResult",
+                        "minSdk":  35,
+                        "members":  [
+                                        {
+                                            "kind":  "field",
+                                            "name":  "rxBytes",
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "rxPackets",
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "txBytes",
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "field",
+                                            "name":  "txPackets",
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "describeContents",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  35,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "writeToParcel",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "Parcel",
+                                                               "int"
+                                                           ],
+                                            "minSdk":  35,
                                             "deprecated":  false
                                         }
                                     ]
@@ -10667,7 +11138,7 @@
                                                                "boolean"
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -10688,16 +11159,6 @@
                                             "parameters":  [
                                                                "int",
                                                                "boolean"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getManagedProfileBadge",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  false
@@ -10778,6 +11239,16 @@
                                             "parameters":  [
                                                                "Parcel",
                                                                "int"
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "creator",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
                                                            ],
                                             "minSdk":  1,
                                             "deprecated":  false
@@ -11036,6 +11507,16 @@
                                                            ],
                                             "minSdk":  31,
                                             "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "creator",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  26,
+                                            "deprecated":  false
                                         }
                                     ]
                     },
@@ -11199,6 +11680,16 @@
                                         {
                                             "kind":  "method",
                                             "name":  "getUserLabel",
+                                            "parameterCount":  0,
+                                            "parameters":  [
+
+                                                           ],
+                                            "minSdk":  1,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "getUuid",
                                             "parameterCount":  0,
                                             "parameters":  [
 
@@ -11398,7 +11889,7 @@
                         "sourceFile":  "hiddenapi/src/main/java/android/permission/IOnPermissionsChangeListener.java",
                         "stub":  "android.permission.IOnPermissionsChangeListener",
                         "runtime":  "android.permission.IOnPermissionsChangeListener",
-                        "minSdk":  1,
+                        "minSdk":  30,
                         "members":  [
                                         {
                                             "kind":  "method",
@@ -11407,7 +11898,18 @@
                                             "parameters":  [
                                                                "int"
                                                            ],
-                                            "minSdk":  1,
+                                            "minSdk":  30,
+                                            "deprecated":  false
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "onPermissionsChanged",
+                                            "parameterCount":  2,
+                                            "parameters":  [
+                                                               "int",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  34,
                                             "deprecated":  false
                                         }
                                     ]
@@ -12262,377 +12764,6 @@
                                     ]
                     },
                     {
-                        "sourceFile":  "hiddenapi/src/main/java/android/util/TypedXmlPullParser.java",
-                        "stub":  "android.util.TypedXmlPullParser",
-                        "runtime":  "android.util.TypedXmlPullParser",
-                        "minSdk":  31,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeIndex",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeIndexOrThrow",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeBytesHex",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeBytesBase64",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeInt",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeIntHex",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeLong",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeLongHex",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeFloat",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeDouble",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeBoolean",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "getAttributeBytesHex",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "return getAttributeBytesHex(getAttributeIndexOrThrow(namespace",
-                                                               "name)"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
-                        "sourceFile":  "hiddenapi/src/main/java/android/util/TypedXmlSerializer.java",
-                        "stub":  "android.util.TypedXmlSerializer",
-                        "runtime":  "android.util.TypedXmlSerializer",
-                        "minSdk":  31,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeInterned",
-                                            "parameterCount":  9,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "XmlSerializer attributeBytesHex(String",
-                                                               "String",
-                                                               "XmlSerializer attributeBytesBase64(String",
-                                                               "String",
-                                                               "XmlSerializer attributeInt(String",
-                                                               "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeIntHex",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeLong",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "long"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeLongHex",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "long"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeFloat",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "float"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeDouble",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "double"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "attributeBoolean",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "String",
-                                                               "String",
-                                                               "boolean"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
-                        "sourceFile":  "hiddenapi/src/main/java/android/util/XmlHidden.java",
-                        "stub":  "android.util.XmlHidden",
-                        "runtime":  "android.util.Xml",
-                        "minSdk":  31,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "newFastPullParser",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "newBinaryPullParser",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "resolvePullParser",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "InputStream"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "newFastSerializer",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "newBinarySerializer",
-                                            "parameterCount":  0,
-                                            "parameters":  [
-
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "resolveSerializer",
-                                            "parameterCount":  1,
-                                            "parameters":  [
-                                                               "OutputStream"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        },
-                                        {
-                                            "kind":  "method",
-                                            "name":  "copy",
-                                            "parameterCount":  2,
-                                            "parameters":  [
-                                                               "XmlPullParser",
-                                                               "XmlSerializer"
-                                                           ],
-                                            "minSdk":  31,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
-                        "sourceFile":  "hiddenapi/src/main/java/com/android/internal/app/IAppOpsActiveCallback.java",
-                        "stub":  "com.android.internal.app.IAppOpsActiveCallback",
-                        "runtime":  "com.android.internal.app.IAppOpsActiveCallback",
-                        "minSdk":  1,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "opActiveChanged",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "String",
-                                                               "boolean"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
-                        "sourceFile":  "hiddenapi/src/main/java/com/android/internal/app/IAppOpsCallback.java",
-                        "stub":  "com.android.internal.app.IAppOpsCallback",
-                        "runtime":  "com.android.internal.app.IAppOpsCallback",
-                        "minSdk":  1,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "opChanged",
-                                            "parameterCount":  3,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "String"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
-                        "sourceFile":  "hiddenapi/src/main/java/com/android/internal/app/IAppOpsNotedCallback.java",
-                        "stub":  "com.android.internal.app.IAppOpsNotedCallback",
-                        "runtime":  "com.android.internal.app.IAppOpsNotedCallback",
-                        "minSdk":  1,
-                        "members":  [
-                                        {
-                                            "kind":  "method",
-                                            "name":  "opNoted",
-                                            "parameterCount":  4,
-                                            "parameters":  [
-                                                               "int",
-                                                               "int",
-                                                               "String",
-                                                               "int"
-                                                           ],
-                                            "minSdk":  1,
-                                            "deprecated":  false
-                                        }
-                                    ]
-                    },
-                    {
                         "sourceFile":  "hiddenapi/src/main/java/com/android/internal/app/IAppOpsService.java",
                         "stub":  "com.android.internal.app.IAppOpsService",
                         "runtime":  "com.android.internal.app.IAppOpsService",
@@ -12737,7 +12868,7 @@
 
                                                            ],
                                             "minSdk":  1,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",
@@ -12772,6 +12903,19 @@
                                                                "String"
                                                            ],
                                             "minSdk":  29,
+                                            "deprecated":  true
+                                        },
+                                        {
+                                            "kind":  "method",
+                                            "name":  "checkOperationRaw",
+                                            "parameterCount":  4,
+                                            "parameters":  [
+                                                               "int",
+                                                               "int",
+                                                               "String",
+                                                               "String"
+                                                           ],
+                                            "minSdk":  31,
                                             "deprecated":  false
                                         }
                                     ]
@@ -12932,7 +13076,7 @@
                                                                "String"
                                                            ],
                                             "minSdk":  30,
-                                            "deprecated":  false
+                                            "deprecated":  true
                                         },
                                         {
                                             "kind":  "method",

@@ -1,22 +1,17 @@
-name: Android 17 emulator gate
+name: Android platform emulator gate
 
 on:
   schedule:
-    # Weekly run, so the API 37 system image drift surfaces without burning
+    # Weekly run, so API 36/37 system image drift surfaces without burning
     # CI minutes on every push.
     - cron: '0 4 * * 1'
   workflow_dispatch:
-    inputs:
-      api-level:
-        description: 'Android API level to boot (default 37 / Android 17)'
-        default: '37'
-        required: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: android17-emulator-${{ github.ref }}
+  group: android-platform-emulator-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -27,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: ['37']
+        api-level: ['36', '37']
         arch: ['x86_64']
     env:
       AM_NG_EMULATOR_API_LEVEL: ${{ matrix.api-level }}
@@ -102,22 +97,22 @@ jobs:
             adb logcat -c || true
             ./gradlew :app:connectedFlossDebugAndroidTest \
               -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest
-            adb logcat -d > "${GITHUB_WORKSPACE}/android17-emulator-logcat.txt" || true
+            adb logcat -d > "${GITHUB_WORKSPACE}/android-platform-emulator-logcat.txt" || true
 
       - name: Upload instrumented test reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: android17-connectedAndroidTest-reports-api${{ matrix.api-level }}
+          name: android-platform-connectedAndroidTest-reports-api${{ matrix.api-level }}
           path: |
             app/build/reports/androidTests/connected/
-            android17-emulator-logcat.txt
+            android-platform-emulator-logcat.txt
           if-no-files-found: warn
 
       - name: Upload hidden-API descriptor report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: android17-hidden-api-report-api${{ matrix.api-level }}
+          name: android-platform-hidden-api-report-api${{ matrix.api-level }}
           path: app/build/outputs/connected_android_test_additional_output/
           if-no-files-found: warn
