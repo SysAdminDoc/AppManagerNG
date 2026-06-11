@@ -132,8 +132,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
     public String[] permissions;  // permissions
     @Nullable
     public BackupInfo backupData;  // backup_data
-    @Nullable
-    public Integer exportRules;  // export_rules
     /**
      * Whether to freeze or unfreeze the selected packages. This only functions when the value is
      * set to {@code true} and {@link #state} {@code on} means freeze and
@@ -162,7 +160,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
         appOps = profile.appOps != null ? profile.appOps.clone() : null;
         permissions = profile.permissions != null ? profile.permissions.clone() : null;
         backupData = profile.backupData != null ? new AppsBaseProfile.BackupInfo(profile.backupData) : null;
-        exportRules = profile.exportRules != null ? profile.exportRules : null;
         freeze = profile.freeze;
         forceStop = profile.forceStop;
         clearCache = profile.clearCache;
@@ -243,12 +240,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
             result = batchOpsManager.performOp(info, progressHandler);
             recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped permissions.");
-        // Backup rules
-        Integer rulesFlag = this.exportRules;
-        if (rulesFlag != null) {
-            log(logger, "====> Not implemented export rules.");
-            // TODO(18/11/20): Export rules
-        } else Log.d(TAG, "Skipped export rules.");
         // Disable/enable
         if (this.freeze && !unsupportedOperations.contains(PROFILE_OP_FREEZE)) {
             log(logger, "====> Started freeze/unfreeze. State: " + state);
@@ -391,7 +382,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
         if (components != null && !unsupportedOperations.contains(PROFILE_OP_COMPONENTS)) ++opCount;
         if (appOps != null && !unsupportedOperations.contains(PROFILE_OP_APP_OPS)) ++opCount;
         if (permissions != null && !unsupportedOperations.contains(PROFILE_OP_PERMISSIONS)) ++opCount;
-        // if (profile.exportRules != null) ++opCount; todo
         if (freeze && !unsupportedOperations.contains(PROFILE_OP_FREEZE)) ++opCount;
         if (forceStop && !unsupportedOperations.contains(PROFILE_OP_FORCE_STOP)) ++opCount;
         if (clearCache && !unsupportedOperations.contains(PROFILE_OP_CLEAR_CACHE)) ++opCount;
@@ -419,7 +409,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
         if (appOps != null) arrayList.add(context.getString(R.string.app_ops));
         if (permissions != null) arrayList.add(context.getString(R.string.permissions));
         if (backupData != null) arrayList.add(context.getString(R.string.backup_restore));
-        if (exportRules != null) arrayList.add(context.getString(R.string.blocking_rules));
         if (freeze) arrayList.add(context.getString(R.string.freeze));
         if (forceStop) arrayList.add(context.getString(R.string.force_stop));
         if (clearCache) arrayList.add(context.getString(R.string.clear_cache));
@@ -462,7 +451,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
             backupInfo.put("exclusion_globs", JSONUtils.getJSONArray(sanitizeExclusionGlobs(backupData.exclusionGlobs)));
             profileObj.put("backup_data", backupInfo);
         }
-        profileObj.put("export_rules", exportRules);
         // Misc
         JSONArray jsonArray = new JSONArray();
         if (freeze) jsonArray.put("freeze");
@@ -506,7 +494,6 @@ public abstract class AppsBaseProfile extends BaseProfile {
         } catch (JSONException | IllegalArgumentException ignore) {
             backupData = null;
         }
-        exportRules = JSONUtils.getIntOrNull(profileObj, "export_rules");
         // Misc
         try {
             List<String> miscConfig = JSONUtils.getArray(profileObj.getJSONArray("misc"));
