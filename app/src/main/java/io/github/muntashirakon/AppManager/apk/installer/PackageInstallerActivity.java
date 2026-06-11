@@ -873,7 +873,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                     try {
                         startActivity(intent);
                     } catch (Throwable th) {
-                        UIUtils.displayLongToast(th.getMessage());
+                        UIUtils.displayLongToast(R.string.installer_open_app_failed);
                     } finally {
                         goToNext();
                     }

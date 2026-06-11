@@ -34,6 +34,7 @@ import io.github.muntashirakon.AppManager.settings.crypto.ImportExportKeyStoreDi
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
@@ -117,12 +118,16 @@ public class AdvancedPreferences extends PreferenceFragment {
                     .setInputImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfoCompat.IME_FLAG_NO_PERSONALIZED_LEARNING)
                     .setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) -> {
-                        if (inputText != null && TextUtils.isDigitsOnly(inputText)) {
-                            int c = Integer.decode(inputText.toString());
-                            MultithreadedExecutor.setThreadCount(c);
-                            mThreadCount = MultithreadedExecutor.getThreadCount();
-                            threadCountPref.setSummary(getResources().getQuantityString(R.plurals.pref_thread_count_msg, mThreadCount, mThreadCount));
+                        // Parse defensively: TextUtils.isDigitsOnly passes overflowing values like
+                        // "99999999999", and Integer.decode would then throw in this handler.
+                        Integer c = parsePositiveInt(inputText);
+                        if (c == null) {
+                            UIUtils.displayShortToast(R.string.failed_to_parse_some_numbers);
+                            return;
                         }
+                        MultithreadedExecutor.setThreadCount(c);
+                        mThreadCount = MultithreadedExecutor.getThreadCount();
+                        threadCountPref.setSummary(getResources().getQuantityString(R.plurals.pref_thread_count_msg, mThreadCount, mThreadCount));
                     })
                     .show();
             return true;
@@ -139,12 +144,15 @@ public class AdvancedPreferences extends PreferenceFragment {
                     .setInputImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfoCompat.IME_FLAG_NO_PERSONALIZED_LEARNING)
                     .setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) -> {
-                        if (inputText != null && TextUtils.isDigitsOnly(inputText)) {
-                            int c = Integer.decode(inputText.toString());
-                            // TODO: 10/18/25 If the port number is different, restart the local server with this new port if possible.
-                            Prefs.Misc.setAdbLocalServerPort(c);
-                            adbLsPort.setSummary(String.valueOf(c));
+                        Integer c = parsePositiveInt(inputText);
+                        if (c == null || c < 1 || c > 65535) {
+                            UIUtils.displayShortToast(R.string.port_number_invalid);
+                            return;
                         }
+                        // TODO: 10/18/25 If the port number is different, restart the local server with this new port if possible.
+                        Prefs.Misc.setAdbLocalServerPort(c);
+                        adbLsPort.setSummary(String.valueOf((int) c));
+                        UIUtils.displayShortToast(R.string.adb_local_server_port_restart_notice);
                     })
                     .show();
             return true;
@@ -212,5 +220,26 @@ public class AdvancedPreferences extends PreferenceFragment {
         chip.setText(text);
         apkFormats.addView(chip);
         return chip;
+    }
+
+    /**
+     * Parses user input into a positive int, returning {@code null} for empty, non-numeric, or
+     * overflowing values (so callers can show an error instead of crashing on Integer.decode).
+     */
+    @Nullable
+    private static Integer parsePositiveInt(@Nullable CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        String text = input.toString().trim();
+        if (text.isEmpty() || !TextUtils.isDigitsOnly(text)) {
+            return null;
+        }
+        try {
+            int value = Integer.parseInt(text);
+            return value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
