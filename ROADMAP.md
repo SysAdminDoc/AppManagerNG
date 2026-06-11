@@ -275,13 +275,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: in WRITE_SECURE_SETTINGS mode a non-exported service can be started and a broadcast sent from the component list, with the same confirmation UX as the existing activity path; cleanly refused (with reason) where the mechanism is unavailable.
   Complexity: M
 
-- [ ] P2 — ADB-mode graceful degradation for "reset optimization profile" (upstream #1733)
-  Why: clearApplicationProfileData is system-only ("Only the system can clear all profile data"), so the dexopt reset action hard-fails whole batches in ADB mode instead of skipping with a per-op warning — one of only two issues still blocking upstream v4.1.0.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1733
-  Touches: the dexopt/optimization action paths (apk/dexopt or details/ action), batchops/ result reporting
-  Acceptance: in ADB mode the reset-profile op reports "skipped: requires system/root" per package without failing the batch; root mode unchanged.
-  Complexity: S
-
 - [ ] P2 — Advanced Protection + Developer Verifier state surfacing (companion to the existing P0 installer item)
   Why: Android 16+ Advanced Protection (AdvancedProtectionManager) blocks sideloading outright and the verification "advanced flow" for power users goes global Aug 2026 (developer mode + one-day wait + biometric) — NG should detect both states and explain them before an install fails, and its sideload-verification doc predates both.
   Evidence: https://developer.android.com/about/versions/17/features (AdvancedProtectionManager); https://android.gadgethacks.com/news/google-keeps-android-sideloading-for-power-users-in-2026/ (advanced flow, Aug 2026); docs/sideload-verification.md (predates)
