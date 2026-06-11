@@ -52,16 +52,19 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TimeZone;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
@@ -184,6 +187,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private boolean mBatchDowngradeWarningShown;
     private boolean mSplitCertMismatchDialogShown;
     private boolean mSplitCertMismatchCheckInProgress;
+    private boolean mSplitCompatibilityWarningShown;
     private final View.OnClickListener mAppInfoClickListener = v -> {
         assert mCurrentItem != null;
         try {
@@ -272,7 +276,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 mDialogHelper.showParseFailedDialog(v -> triggerCancel());
                 return;
             }
-            mPendingDependencyIssues = collectDependencyIssues(newPackageInfo);
+            mPendingDependencyIssues = collectDependencyIssues(newPackageInfo, false);
             mDialogHelper.onParseSuccess(mModel.getAppLabel(), getVersionInfoWithTrackers(newPackageInfo),
                     mModel.getAppIcon(), v -> displayInstallerOptions((dialog1, which, options) -> {
                         if (options != null) {
@@ -702,6 +706,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                     .show();
             return;
         }
+        if (maybeShowSplitCompatibilityWarning()) {
+            return;
+        }
         if (maybeShowSplitCertMismatchDialog()) {
             return;
         }
@@ -761,6 +768,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private void triggerBatchInstall() {
         try {
             mModel.selectDefaultSplitsForInstallation();
+            mPendingDependencyIssues = collectDependencyIssues(mModel.getNewPackageInfo(), true);
             if (!mBatchDowngradeWarningShown
                     && isDowngrade(mModel.getInstalledPackageInfo(), mModel.getNewPackageInfo())) {
                 InstallerPrivilegeCascade.Plan privilegePlan = InstallerPrivilegeCascade.getPreviewPlan(this);
@@ -820,6 +828,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             mBatchDowngradeWarningShown = false;
             mSplitCertMismatchDialogShown = false;
             mSplitCertMismatchCheckInProgress = false;
+            mSplitCompatibilityWarningShown = false;
             mDialogHelper.initProgress(v -> goToNext());
             synchronized (mApkQueue) {
                 mCurrentItem = Objects.requireNonNull(mApkQueue.poll());
@@ -938,7 +947,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     @NonNull
-    private List<InstallDependencyChecker.Issue> collectDependencyIssues(@NonNull PackageInfo newPackageInfo) {
+    private List<InstallDependencyChecker.Issue> collectDependencyIssues(@NonNull PackageInfo newPackageInfo,
+                                                                         boolean prepareSelectedSplits) {
         ApplicationInfo applicationInfo = newPackageInfo.applicationInfo;
         int apkMinSdk = 0;
         if (applicationInfo != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -964,7 +974,33 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             Log.w(TAG, "Could not fetch system shared library names.", th);
         }
         return InstallDependencyChecker.check(apkMinSdk, Build.VERSION.SDK_INT,
-                requiredLibraries, installedLibraries);
+                requiredLibraries, installedLibraries, collectSplitInfos(prepareSelectedSplits),
+                java.util.Arrays.asList(Build.SUPPORTED_ABIS), StaticDataset.DEVICE_DENSITY);
+    }
+
+    @Nullable
+    private List<InstallDependencyChecker.SplitInfo> collectSplitInfos(boolean prepareSelectedSplits) {
+        if (mModel == null || mModel.getApkFile() == null || !mModel.getApkFile().isSplit()) {
+            return null;
+        }
+        Set<String> selectedSplits;
+        if (prepareSelectedSplits) {
+            selectedSplits = new HashSet<>(mModel.getSelectedSplitsForInstallation());
+        } else {
+            selectedSplits = new HashSet<>(mModel.getSelectedSplits());
+        }
+        List<InstallDependencyChecker.SplitInfo> splitInfos = new ArrayList<>();
+        for (ApkFile.Entry entry : mModel.getApkFile().getEntries()) {
+            boolean selected = selectedSplits.contains(entry.id);
+            if (entry.type == ApkFile.APK_SPLIT_ABI) {
+                splitInfos.add(InstallDependencyChecker.SplitInfo.abi(
+                        entry.id, entry.name, entry.getFeature(), selected, entry.getAbi()));
+            } else if (entry.type == ApkFile.APK_SPLIT_DENSITY) {
+                splitInfos.add(InstallDependencyChecker.SplitInfo.density(
+                        entry.id, entry.name, entry.getFeature(), selected, entry.getDensity()));
+            }
+        }
+        return splitInfos;
     }
 
     @Nullable
@@ -1009,9 +1045,65 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             case MISSING_SHARED_LIBRARY:
                 return getString(R.string.installer_dependency_missing_shared_library,
                         InstallDependencyChecker.joinMissingNames(issue.missingNames));
+            case INCOMPATIBLE_ABI_SPLIT:
+                return getString(R.string.installer_dependency_incompatible_abi_split,
+                        InstallDependencyChecker.joinMissingNames(issue.missingNames));
+            case MISMATCHED_DENSITY_SPLIT:
+                return getString(R.string.installer_dependency_mismatched_density_split,
+                        InstallDependencyChecker.joinMissingNames(issue.missingNames));
             default:
                 return null;
         }
+    }
+
+    @UiThread
+    private boolean maybeShowSplitCompatibilityWarning() {
+        if (mSplitCompatibilityWarningShown
+                || mModel.getApkFile() == null
+                || !mModel.getApkFile().isSplit()) {
+            return false;
+        }
+        try {
+            mPendingDependencyIssues = collectDependencyIssues(mModel.getNewPackageInfo(), true);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Could not prepare selected splits for compatibility check.", e);
+            UIUtils.displayShortToast(R.string.failed_to_fetch_package_info);
+            triggerCancel();
+            return true;
+        }
+        List<CharSequence> splitWarnings = new ArrayList<>();
+        for (InstallDependencyChecker.Issue issue : mPendingDependencyIssues) {
+            if (issue.kind != InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT
+                    && issue.kind != InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT) {
+                continue;
+            }
+            CharSequence line = formatDependencyIssue(issue);
+            if (line != null) {
+                splitWarnings.add(line);
+            }
+        }
+        if (splitWarnings.isEmpty()) {
+            mSplitCompatibilityWarningShown = true;
+            return false;
+        }
+        StringBuilder message = new StringBuilder();
+        for (int i = 0; i < splitWarnings.size(); i++) {
+            if (i > 0) {
+                message.append("\n\n");
+            }
+            message.append(splitWarnings.get(i));
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.installer_split_dependency_warning_title)
+                .setMessage(message)
+                .setCancelable(false)
+                .setNegativeButton(R.string.cancel, (dialog, which) -> triggerCancel())
+                .setPositiveButton(R.string.action_continue, (dialog, which) -> {
+                    mSplitCompatibilityWarningShown = true;
+                    triggerInstall();
+                })
+                .show();
+        return true;
     }
 
     @NonNull

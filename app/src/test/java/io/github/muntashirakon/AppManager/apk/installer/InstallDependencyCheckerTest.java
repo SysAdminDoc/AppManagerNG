@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class InstallDependencyCheckerTest {
@@ -104,6 +105,80 @@ public class InstallDependencyCheckerTest {
         assertEquals(2, issues.size());
         assertEquals(InstallDependencyChecker.IssueKind.MIN_SDK_TOO_HIGH, issues.get(0).kind);
         assertEquals(InstallDependencyChecker.IssueKind.MISSING_SHARED_LIBRARY, issues.get(1).kind);
+    }
+
+    @Test
+    public void checkAbiSplitsReturnsIssueForSelectedUnsupportedAbi() {
+        InstallDependencyChecker.Issue issue = InstallDependencyChecker.checkAbiSplits(
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.abi("base", "config.arm64_v8a",
+                                null, true, "arm64-v8a"),
+                        InstallDependencyChecker.SplitInfo.abi("x86", "config.x86",
+                                null, true, "x86")),
+                InstallDependencyChecker.namesList("arm64-v8a"));
+
+        assertNotNull(issue);
+        assertEquals(InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT, issue.kind);
+        assertEquals(1, issue.missingNames.size());
+        assertEquals("config.x86 (x86)", issue.missingNames.get(0));
+    }
+
+    @Test
+    public void checkAbiSplitsIgnoresUnselectedUnsupportedAbi() {
+        assertNull(InstallDependencyChecker.checkAbiSplits(
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.abi("x86", "config.x86",
+                                null, false, "x86")),
+                InstallDependencyChecker.namesList("arm64-v8a")));
+    }
+
+    @Test
+    public void checkDensitySplitsReturnsIssueWhenSelectedDensityIsNotClosestAvailable() {
+        InstallDependencyChecker.Issue issue = InstallDependencyChecker.checkDensitySplits(
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.density("hdpi", "config.hdpi",
+                                null, false, 240),
+                        InstallDependencyChecker.SplitInfo.density("xxhdpi", "config.xxhdpi",
+                                null, true, 480)),
+                260);
+
+        assertNotNull(issue);
+        assertEquals(InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT, issue.kind);
+        assertEquals(1, issue.missingNames.size());
+        assertEquals("config.xxhdpi (480 dpi; closest is config.hdpi, 240 dpi)",
+                issue.missingNames.get(0));
+    }
+
+    @Test
+    public void checkDensitySplitsAcceptsOnlyAvailableDensityEvenWhenNotExact() {
+        assertNull(InstallDependencyChecker.checkDensitySplits(
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.density("xxhdpi", "config.xxhdpi",
+                                null, true, 480)),
+                260));
+    }
+
+    @Test
+    public void checkAggregateIncludesSplitCompatibilityIssuesLast() {
+        List<InstallDependencyChecker.Issue> issues = InstallDependencyChecker.check(
+                34, 30,
+                InstallDependencyChecker.namesList("androidx.window.extensions"),
+                InstallDependencyChecker.namesList("org.apache.http.legacy"),
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.abi("x86", "config.x86",
+                                null, true, "x86"),
+                        InstallDependencyChecker.SplitInfo.density("hdpi", "config.hdpi",
+                                null, false, 240),
+                        InstallDependencyChecker.SplitInfo.density("xxhdpi", "config.xxhdpi",
+                                null, true, 480)),
+                InstallDependencyChecker.namesList("arm64-v8a"),
+                260);
+
+        assertEquals(4, issues.size());
+        assertEquals(InstallDependencyChecker.IssueKind.MIN_SDK_TOO_HIGH, issues.get(0).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.MISSING_SHARED_LIBRARY, issues.get(1).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT, issues.get(2).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT, issues.get(3).kind);
     }
 
     @Test
