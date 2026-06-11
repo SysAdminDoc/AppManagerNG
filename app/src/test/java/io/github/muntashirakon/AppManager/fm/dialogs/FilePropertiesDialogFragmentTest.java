@@ -3,6 +3,8 @@
 package io.github.muntashirakon.AppManager.fm.dialogs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,5 +65,20 @@ public class FilePropertiesDialogFragmentTest {
     public void formatPropertyDisplayTextFlattensControlsAndDefusesFormula() {
         assertEquals("' =payload context",
                 FilePropertiesDialogFragment.formatPropertyDisplayText("\t=payload\ncontext"));
+    }
+
+    @Test
+    public void shouldShowOpenWithOnlyForReadableFiles() {
+        FilePropertiesDialogFragment.FileProperties file = new FilePropertiesDialogFragment.FileProperties();
+        file.canRead = true;
+        file.isDirectory = false;
+        assertTrue(FilePropertiesDialogFragment.shouldShowOpenWith(file));
+
+        file.isDirectory = true;
+        assertFalse(FilePropertiesDialogFragment.shouldShowOpenWith(file));
+
+        file.isDirectory = false;
+        file.canRead = false;
+        assertFalse(FilePropertiesDialogFragment.shouldShowOpenWith(file));
     }
 }
