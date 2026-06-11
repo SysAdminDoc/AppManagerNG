@@ -16,9 +16,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -106,6 +109,64 @@ public class Android17BehaviorContractTest {
             }
         }
         assertTrue("Resources.mSystem static-final write must stay gated below Android 17", guarded);
+    }
+
+    @Test
+    public void messageQueuePrivateImplementationIsNotReflected() throws Exception {
+        Path root = findProjectRoot();
+        List<String> offenders = new ArrayList<>();
+        for (Path sourceRoot : sourceRoots(root)) {
+            if (!Files.exists(sourceRoot)) {
+                continue;
+            }
+            try (Stream<Path> stream = Files.walk(sourceRoot)) {
+                stream.filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(path -> collectMessageQueueReflectionOffenders(root, path, offenders));
+            }
+        }
+        Collections.sort(offenders);
+
+        assertTrue("Android 17 lock-free MessageQueue can break private-field reflection:\n"
+                + String.join("\n", offenders), offenders.isEmpty());
+    }
+
+    private static List<Path> sourceRoots(Path root) {
+        List<Path> roots = new ArrayList<>();
+        roots.add(root.resolve("app/src/main/java"));
+        roots.add(root.resolve("libcore/compat/src/main/java"));
+        roots.add(root.resolve("libcore/io/src/main/java"));
+        roots.add(root.resolve("libcore/ui/src/main/java"));
+        roots.add(root.resolve("libserver/src/main/java"));
+        roots.add(root.resolve("server/src/main/java"));
+        roots.add(root.resolve("hiddenapi/src/main/java"));
+        return roots;
+    }
+
+    private static void collectMessageQueueReflectionOffenders(Path root,
+                                                               Path path,
+                                                               List<String> offenders) {
+        try {
+            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (isMessageQueuePrivateImplementationReference(line)) {
+                    offenders.add(root.relativize(path) + ":" + (i + 1) + ": " + line.trim());
+                }
+            }
+        } catch (IOException e) {
+            offenders.add(root.relativize(path) + ": " + e.getMessage());
+        }
+    }
+
+    private static boolean isMessageQueuePrivateImplementationReference(String line) {
+        return line.contains("MessageQueue.class.getDeclaredField")
+                || line.contains("MessageQueue.class.getDeclaredMethod")
+                || line.contains("\"mMessages\"")
+                || line.contains("\"mIdleHandlers\"")
+                || line.contains("\"mBlocked\"")
+                || line.contains("\"mQuitting\"")
+                || line.contains("\"postSyncBarrier\"")
+                || line.contains("\"removeSyncBarrier\"");
     }
 
     private static Set<String> setOf(String... values) {
