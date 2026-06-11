@@ -20,10 +20,10 @@
     <color name="premium_surface_1_light">#FFFFFF</color>
     <color name="premium_surface_2_light">#F1F4F6</color>
     <color name="premium_surface_3_light">#E7EDF0</color>
-    <color name="premium_surface_0_dark">#111315</color>
-    <color name="premium_surface_1_dark">#181C1F</color>
-    <color name="premium_surface_2_dark">#20262A</color>
-    <color name="premium_surface_3_dark">#2A3136</color>
+    <color name="premium_surface_0_dark">#090D0F</color>
+    <color name="premium_surface_1_dark">#101719</color>
+    <color name="premium_surface_2_dark">#172022</color>
+    <color name="premium_surface_3_dark">#202A2D</color>
 
     <!-- AMOLED surfaces -->
     <color name="premium_surface_0_amoled">#000000</color>
@@ -44,8 +44,8 @@
     <color name="premium_outline_muted_light">#B8C4CA</color>
     <color name="premium_outline_focus_light">#149C91</color>
     <color name="premium_outline_danger_light">#C12A20</color>
-    <color name="premium_outline_hairline_dark">#323A3F</color>
-    <color name="premium_outline_muted_dark">#4B565D</color>
+    <color name="premium_outline_hairline_dark">#273236</color>
+    <color name="premium_outline_muted_dark">#445258</color>
     <color name="premium_outline_focus_dark">#5FCABD</color>
     <color name="premium_outline_danger_dark">#FFB4AB</color>
     <color name="premium_outline_hairline_amoled">#1E2629</color>
@@ -102,11 +102,11 @@
     <color name="premium_info_content">@color/premium_info_content_light</color>
 
     <!-- Dark elevation overlays precomputed from brand tint over surface-0. -->
-    <color name="premium_elevated_1_dark">#141A1B</color>
-    <color name="premium_elevated_2_dark">#161D1E</color>
-    <color name="premium_elevated_3_dark">#182021</color>
-    <color name="premium_elevated_4_dark">#192324</color>
-    <color name="premium_elevated_5_dark">#1A2526</color>
+    <color name="premium_elevated_1_dark">#0D1416</color>
+    <color name="premium_elevated_2_dark">#101A1C</color>
+    <color name="premium_elevated_3_dark">#142124</color>
+    <color name="premium_elevated_4_dark">#18282B</color>
+    <color name="premium_elevated_5_dark">#1D3033</color>
 
     <!-- AMOLED elevation overlays keep surface-0 pure black. -->
     <color name="premium_elevated_1_amoled">#010707</color>
