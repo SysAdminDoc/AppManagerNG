@@ -37,6 +37,9 @@ Reliability & data safety
 - Hostile or malformed binary Android manifests now fail as checked parser
   errors instead of leaking unchecked ARSC parser crashes into APK parsing,
   scanner, or manifest-viewer paths.
+- Pull requests now get a consolidated CI workflow for app lint, app unit
+  tests, and dependency review; app lint now fails on errors and includes
+  release-build lint checks.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
