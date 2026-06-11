@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <com.google.android.material.chip.Chip xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.AppTheme.Chip.Assist.Elevated.Padded"
+    style="@style/Widget.AppTheme.Chip.MainFilter"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:minHeight="@dimen/premium_chip_min_height"
     tools:text="@tools:sample/cities" />
