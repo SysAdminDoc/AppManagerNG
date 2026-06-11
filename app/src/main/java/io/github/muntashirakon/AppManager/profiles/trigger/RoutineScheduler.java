@@ -48,12 +48,10 @@ public final class RoutineScheduler {
     }
 
     public static void scheduleOrCancel(@NonNull Context context, @NonNull ProfileTrigger trigger) {
-        if (trigger.type == ProfileTrigger.TYPE_ON_BOOT) {
-            // Boot triggers are (re)scheduled as one-time work by
-            // enqueueBootTriggers() on each boot, under the SAME unique work
-            // name. applyAll() must not cancel an *enabled* boot trigger's
-            // pending one-time job (that would silently prevent the boot
-            // profile from applying); only tear down a disabled one.
+        if (trigger.type == ProfileTrigger.TYPE_ON_BOOT || isPackageEventTrigger(trigger.type)) {
+            // Boot/package-event triggers are scheduled as one-time work only when
+            // their matching broadcast arrives. applyAll() must not invent periodic
+            // jobs for enabled broadcast triggers; only tear down disabled ones.
             if (!trigger.enabled) {
                 cancel(context, trigger);
             }
@@ -67,7 +65,7 @@ public final class RoutineScheduler {
     }
 
     public static void schedule(@NonNull Context context, @NonNull ProfileTrigger trigger) {
-        if (trigger.type == ProfileTrigger.TYPE_ON_BOOT) {
+        if (trigger.type == ProfileTrigger.TYPE_ON_BOOT || isPackageEventTrigger(trigger.type)) {
             return;
         }
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
@@ -88,6 +86,16 @@ public final class RoutineScheduler {
             if (trigger.enabled && trigger.type == ProfileTrigger.TYPE_ON_BOOT) {
                 enqueueOneTime(context, trigger);
             }
+        }
+    }
+
+    public static void enqueuePackageEventTriggers(@NonNull Context context, @ProfileTrigger.Type int triggerType) {
+        if (!isPackageEventTrigger(triggerType)) {
+            return;
+        }
+        ProfileTriggerStore store = new ProfileTriggerStore(context);
+        for (ProfileTrigger trigger : matchingPackageEventTriggers(store, triggerType)) {
+            enqueueOneTime(context, trigger);
         }
     }
 
@@ -172,6 +180,12 @@ public final class RoutineScheduler {
                 return context.getString(R.string.profile_trigger_on_network_any);
             case ProfileTrigger.TYPE_ON_BOOT:
                 return context.getString(R.string.profile_trigger_on_boot);
+            case ProfileTrigger.TYPE_ON_APP_INSTALL:
+                return context.getString(R.string.profile_trigger_on_app_install);
+            case ProfileTrigger.TYPE_ON_APP_UPDATE:
+                return context.getString(R.string.profile_trigger_on_app_update);
+            case ProfileTrigger.TYPE_ON_APP_UNINSTALL:
+                return context.getString(R.string.profile_trigger_on_app_uninstall);
             case ProfileTrigger.TYPE_TIME_OF_DAY:
             default:
                 return context.getString(R.string.profile_trigger_time_of_day,
@@ -187,6 +201,8 @@ public final class RoutineScheduler {
         if (diagnostics == null || diagnostics.isEmpty()) {
             diagnostics = trigger.type == ProfileTrigger.TYPE_ON_BOOT
                     ? context.getString(R.string.profile_trigger_diagnostics_boot)
+                    : isPackageEventTrigger(trigger.type)
+                    ? context.getString(R.string.profile_trigger_diagnostics_package_event)
                     : context.getString(R.string.profile_trigger_diagnostics_unknown);
         }
         return context.getString(R.string.profile_trigger_summary, state, last,
@@ -230,6 +246,9 @@ public final class RoutineScheduler {
                 break;
             case ProfileTrigger.TYPE_TIME_OF_DAY:
             case ProfileTrigger.TYPE_ON_BOOT:
+            case ProfileTrigger.TYPE_ON_APP_INSTALL:
+            case ProfileTrigger.TYPE_ON_APP_UPDATE:
+            case ProfileTrigger.TYPE_ON_APP_UNINSTALL:
             default:
                 builder.setRequiredNetworkType(NetworkType.NOT_REQUIRED);
         }
@@ -240,6 +259,29 @@ public final class RoutineScheduler {
     static long getRepeatIntervalMillis(@NonNull ProfileTrigger trigger) {
         return trigger.type == ProfileTrigger.TYPE_TIME_OF_DAY
                 ? DAILY_INTERVAL_MILLIS : MIN_PERIODIC_INTERVAL_MILLIS;
+    }
+
+    @VisibleForTesting
+    static boolean isPackageEventTrigger(@ProfileTrigger.Type int triggerType) {
+        return triggerType == ProfileTrigger.TYPE_ON_APP_INSTALL
+                || triggerType == ProfileTrigger.TYPE_ON_APP_UPDATE
+                || triggerType == ProfileTrigger.TYPE_ON_APP_UNINSTALL;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static java.util.List<ProfileTrigger> matchingPackageEventTriggers(@NonNull ProfileTriggerStore store,
+                                                                       @ProfileTrigger.Type int triggerType) {
+        java.util.ArrayList<ProfileTrigger> triggers = new java.util.ArrayList<>();
+        if (!isPackageEventTrigger(triggerType)) {
+            return triggers;
+        }
+        for (ProfileTrigger trigger : store.all()) {
+            if (trigger.enabled && trigger.type == triggerType) {
+                triggers.add(trigger);
+            }
+        }
+        return triggers;
     }
 
     @VisibleForTesting

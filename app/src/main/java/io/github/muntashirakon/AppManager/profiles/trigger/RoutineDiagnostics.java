@@ -40,6 +40,10 @@ final class RoutineDiagnostics {
             return appendBatteryDiagnostics(appContext,
                     appContext.getString(R.string.profile_trigger_diagnostics_boot));
         }
+        if (RoutineScheduler.isPackageEventTrigger(trigger.type)) {
+            return appendBatteryDiagnostics(appContext,
+                    appContext.getString(R.string.profile_trigger_diagnostics_package_event));
+        }
         WorkInfo workInfo = latest(WorkManager.getInstance(appContext)
                 .getWorkInfosForUniqueWork(RoutineScheduler.uniqueWorkName(trigger.id))
                 .get());

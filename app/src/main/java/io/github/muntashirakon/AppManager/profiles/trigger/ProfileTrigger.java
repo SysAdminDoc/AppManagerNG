@@ -25,7 +25,7 @@ import java.util.UUID;
  * only to {@link #TYPE_TIME_OF_DAY}; the {@link #profileId} is opaque to the
  * trigger and resolved by the executor.</p>
  *
- * <p>Five trigger types are defined up-front and are all handled by the
+ * <p>Trigger types are defined up-front and are all handled by the
  * scheduler executor.</p>
  */
 public final class ProfileTrigger {
@@ -34,9 +34,13 @@ public final class ProfileTrigger {
     public static final int TYPE_ON_NETWORK_WIFI = 2;
     public static final int TYPE_ON_NETWORK_ANY = 3;
     public static final int TYPE_ON_BOOT = 4;
+    public static final int TYPE_ON_APP_INSTALL = 5;
+    public static final int TYPE_ON_APP_UPDATE = 6;
+    public static final int TYPE_ON_APP_UNINSTALL = 7;
 
     @IntDef({TYPE_TIME_OF_DAY, TYPE_ON_CHARGING, TYPE_ON_NETWORK_WIFI,
-            TYPE_ON_NETWORK_ANY, TYPE_ON_BOOT})
+            TYPE_ON_NETWORK_ANY, TYPE_ON_BOOT, TYPE_ON_APP_INSTALL,
+            TYPE_ON_APP_UPDATE, TYPE_ON_APP_UNINSTALL})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Type {}
 
@@ -111,7 +115,10 @@ public final class ProfileTrigger {
                 || type == TYPE_ON_CHARGING
                 || type == TYPE_ON_NETWORK_WIFI
                 || type == TYPE_ON_NETWORK_ANY
-                || type == TYPE_ON_BOOT;
+                || type == TYPE_ON_BOOT
+                || type == TYPE_ON_APP_INSTALL
+                || type == TYPE_ON_APP_UPDATE
+                || type == TYPE_ON_APP_UNINSTALL;
     }
 
     @NonNull
@@ -169,6 +176,9 @@ public final class ProfileTrigger {
             case TYPE_ON_NETWORK_WIFI: return "on_network_wifi";
             case TYPE_ON_NETWORK_ANY: return "on_network_any";
             case TYPE_ON_BOOT: return "on_boot";
+            case TYPE_ON_APP_INSTALL: return "on_app_install";
+            case TYPE_ON_APP_UPDATE: return "on_app_update";
+            case TYPE_ON_APP_UNINSTALL: return "on_app_uninstall";
             case TYPE_TIME_OF_DAY:
             default: return "time_of_day";
         }
@@ -181,6 +191,9 @@ public final class ProfileTrigger {
             case "on_network_wifi": return TYPE_ON_NETWORK_WIFI;
             case "on_network_any": return TYPE_ON_NETWORK_ANY;
             case "on_boot": return TYPE_ON_BOOT;
+            case "on_app_install": return TYPE_ON_APP_INSTALL;
+            case "on_app_update": return TYPE_ON_APP_UPDATE;
+            case "on_app_uninstall": return TYPE_ON_APP_UNINSTALL;
             case "time_of_day": return TYPE_TIME_OF_DAY;
             default: return -1;
         }
