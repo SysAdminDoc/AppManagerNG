@@ -4,8 +4,10 @@ package io.github.muntashirakon.AppManager.fm.dialogs;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -48,6 +50,7 @@ import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.fm.FmItem;
+import io.github.muntashirakon.AppManager.fm.FmOpenWithDefaults;
 import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.fm.icons.FmIconFetcher;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -144,7 +147,8 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
         mOpenWithView = bodyView.findViewById(R.id.open_with);
         mOpenWithLayout = TextInputLayoutCompat.fromTextInputEditText(mOpenWithView);
         TextInputLayoutCompat.fixEndIcon(mOpenWithLayout);
-        // TODO: 16/11/22 Handle open with
+        mOpenWithView.setOnClickListener(v -> openWith(path));
+        mOpenWithLayout.setEndIconOnClickListener(v -> openWith(path));
         mOpenWithLayout.setVisibility(View.GONE);
         mSizeView = bodyView.findViewById(R.id.size);
         mDateCreatedView = bodyView.findViewById(R.id.date_created);
@@ -265,6 +269,10 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
                 mTargetPathLayout.setVisibility(View.GONE);
             }
         }
+        if (noInit || mFileProperties.isDirectory != fileProperties.isDirectory
+                || mFileProperties.canRead != fileProperties.canRead) {
+            updateOpenWith(fileProperties);
+        }
         if (noInit || mFileProperties.size != fileProperties.size) {
             if (fileProperties.size != -1) {
                 mSizeView.setText(String.format(Locale.getDefault(), "%s (%,d bytes)",
@@ -320,6 +328,51 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             mViewModel.loadOwnerInfo(fileProperties.uidGidPair.uid);
             mViewModel.loadGroupInfo(fileProperties.uidGidPair.gid);
         }
+    }
+
+    private void updateOpenWith(@NonNull FileProperties fileProperties) {
+        if (!shouldShowOpenWith(fileProperties)) {
+            mOpenWithLayout.setVisibility(View.GONE);
+            return;
+        }
+        mOpenWithLayout.setVisibility(View.VISIBLE);
+        mOpenWithView.setText(getOpenWithLabel(requireContext(), fileProperties.path));
+    }
+
+    private void openWith(@NonNull Path path) {
+        if (!hasMatchingOpenWithActivity(requireContext(), path)) {
+            UIUtils.displayShortToast(R.string.no_apps_to_handle);
+            return;
+        }
+        OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(path);
+        fragment.show(getParentFragmentManager(), OpenWithDialogFragment.TAG);
+    }
+
+    @VisibleForTesting
+    static boolean shouldShowOpenWith(@NonNull FileProperties fileProperties) {
+        return !fileProperties.isDirectory && fileProperties.canRead;
+    }
+
+    @VisibleForTesting
+    static boolean hasMatchingOpenWithActivity(@NonNull Context context, @NonNull Path path) {
+        Intent intent = FmOpenWithDefaults.buildViewIntent(path, null);
+        List<ResolveInfo> handlers = context.getPackageManager().queryIntentActivities(intent, 0);
+        return !handlers.isEmpty();
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getOpenWithLabel(@NonNull Context context, @NonNull Path path) {
+        Intent defaultIntent = FmOpenWithDefaults.getDefaultIntent(context, path);
+        if (defaultIntent == null) {
+            return context.getString(R.string.file_open_with_os_default_dialog);
+        }
+        PackageManager pm = context.getPackageManager();
+        ResolveInfo resolvedInfo = pm.resolveActivity(defaultIntent, 0);
+        if (resolvedInfo == null) {
+            return context.getString(R.string.file_open_with_os_default_dialog);
+        }
+        return resolvedInfo.loadLabel(pm).toString();
     }
 
     @VisibleForTesting
