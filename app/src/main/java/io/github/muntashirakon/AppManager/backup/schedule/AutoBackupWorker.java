@@ -24,6 +24,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -44,7 +45,7 @@ public class AutoBackupWorker extends Worker {
     static final String KEY_MANUAL = "manual";
     private static final String TAG = AutoBackupWorker.class.getSimpleName();
     private static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.AUTO_BACKUP";
-    private static final int FOREGROUND_NOTIFICATION_ID = 0x4a11;
+    private static final int FOREGROUND_NOTIFICATION_ID_NAMESPACE = 0x4a11_0000;
     private static final int RESULT_NOTIFICATION_ID = 0x4a12;
     // Periodic and "Run now" runs use different unique work names, so WorkManager can run them
     // concurrently. Guard against that here: two simultaneous backups over the same due-package
@@ -197,11 +198,19 @@ public class AutoBackupWorker extends Worker {
                                                 boolean progressIndeterminate) {
         Notification notification = buildForegroundNotification(getApplicationContext(),
                 title, body, progressMax, progress, progressIndeterminate);
+        int notificationId = foregroundNotificationIdFor(getId());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return new ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification,
+            return new ForegroundInfo(notificationId, notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         }
-        return new ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification);
+        return new ForegroundInfo(notificationId, notification);
+    }
+
+    static int foregroundNotificationIdFor(@NonNull UUID workerId) {
+        long most = workerId.getMostSignificantBits();
+        long least = workerId.getLeastSignificantBits();
+        int mixed = (int) (most ^ (most >>> 32) ^ least ^ (least >>> 32));
+        return FOREGROUND_NOTIFICATION_ID_NAMESPACE | (mixed & 0x0000ffff);
     }
 
     @NonNull
