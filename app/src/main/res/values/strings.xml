@@ -1205,6 +1205,10 @@
     <string name="profile_apply_review_filters_summary">Runs this profile against apps matching its saved filters. Choose the state to apply before continuing.</string>
     <string name="profile_apply_review_meta">%1$s profile - default state %2$s</string>
     <string name="profile_apply_review_id">ID: %1$s</string>
+    <string name="profile_apply_privilege_warning_title">Some profile actions need more privilege</string>
+    <string name="profile_apply_privilege_warning_message">The current mode cannot run: %1$s. Apply the supported actions only, or cancel.</string>
+    <string name="profile_apply_supported_ops">Apply supported actions</string>
+    <string name="profile_apply_skipped_privileged_ops">Skipped actions needing more privilege: %1$s</string>
     <string name="quick_freeze_tile_label">Freeze profile</string>
     <string name="quick_freeze_tile_set_profile">Use for Quick Settings freeze tile</string>
     <string name="quick_freeze_tile_clear_profile">Remove from Quick Settings freeze tile</string>
