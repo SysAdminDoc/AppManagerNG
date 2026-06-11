@@ -254,6 +254,31 @@ public class BackupItemsTest {
         assertTrue(!previous.exists());
     }
 
+    @Test
+    public void commitSwapsNewPayloadIntoPlaceBeforeRemovingPreviousBackup() throws IOException {
+        // Data-safety property (INIT-2 regression guard): commit moves the fully-written new
+        // backup into its final location and only then removes the previous backup, so the
+        // previous backup is never destroyed before the replacement is committed.
+        String previousUuid = "99999999-9999-9999-9999-999999999999";
+        Path previousPath = Prefs.Storage.getAppManagerDirectory()
+                .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
+                .findOrCreateDirectory(previousUuid);
+        previousPath.createNewFile(MetadataManager.INFO_V5_FILE, null);
+        BackupItems.BackupItem previous = BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(previousUuid));
+
+        BackupItems.BackupItem replacement = BackupItems.createBackupItemGracefully(0, null, "com.example");
+        replacement.getInfoFile();
+        replacement.getBackupPath().createNewFile("payload", null);
+        replacement.setPreviousBackups(Collections.singletonList(previous));
+
+        replacement.commit();
+
+        // New backup's payload landed at the committed location...
+        assertTrue(replacement.getBackupPath().hasFile("payload"));
+        // ...and the previous backup is gone (deleted after the swap, not before).
+        assertTrue(!previous.exists());
+    }
+
     private static void createFiles(Path directory, String... names) throws IOException {
         for (String name : names) {
             directory.createNewFile(name, null);
