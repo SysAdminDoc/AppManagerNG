@@ -4397,11 +4397,11 @@
     <issue
         id="WrongThreadInterprocedural"
         message="Interprocedural thread annotation violation (WorkerThread to UiThread):&#xA;AppDetailsViewModel#filterAndSortItemsInternal -> AdvancedSearchView#matches"
-        errorLine1="                        appDetailsItems = AdvancedSearchView.matches(mSearchQuery, base,"
+        errorLine1="                        appDetailsItems = AdvancedSearchView.matches(mSearchQuery, mUsesPermissionItems,"
         errorLine2="                                                             ^">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="478"
+            line="445"
             column="62"/>
     </issue>
 
@@ -4506,7 +4506,7 @@
 
     <issue
         id="WrongThreadInterprocedural"
-        message="Interprocedural thread annotation violation (UiThread to WorkerThread):&#xA;PackageInstallerActivity#displayChangesOrInstallationPrompt -> PackageInstallerActivity#displayInstallationPrompt -> InstallerPrivilegeCascade#getPreviewPlan -> MiuiUtils#isMiuiOptimizationDisabled -> SystemProperties#get -> Runner#runCommand -> Runner#runCommand -> Runner#runCommand -> Runner#run -> NormalShell#runCommand"
+        message="Interprocedural thread annotation violation (UiThread to WorkerThread):&#xA;PackageInstallerActivity#displayChangesOrInstallationPrompt -> PackageInstallerActivity#displayInstallationPrompt -> InstallerPrivilegeCascade#getPreviewPlan -> MiuiUtils#isMiuiOptimizationDisabled -> SystemProperties#get -> Runner#runCommand -> Runner#runCommand -> Runner#runCommand -> Runner#run -> PrivilegedShell#runCommand"
         errorLine1="        displayInstallationPrompt(actionRes, false);"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -5865,7 +5865,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java"
-            line="460"
+            line="511"
             column="27"/>
     </issue>
 
@@ -31520,12 +31520,12 @@
     <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="                rootStatus.setText(baseStr + &quot; · &quot; + suffix);"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        rootStatus.setText(baseStr + &quot; · &quot; + suffix);"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java"
-            line="314"
-            column="36"/>
+            line="368"
+            column="28"/>
     </issue>
 
     <issue
