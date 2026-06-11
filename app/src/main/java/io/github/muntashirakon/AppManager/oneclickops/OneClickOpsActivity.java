@@ -775,7 +775,16 @@ public class OneClickOpsActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         CpuUtils.releaseWakeLock(wakeLock);
+        if (mViewModel != null && shouldCancelPendingWorkOnDestroy(isFinishing(), isChangingConfigurations())) {
+            mViewModel.cancelCurrentTask();
+            setBusy(false);
+        }
         super.onDestroy();
+    }
+
+    @VisibleForTesting
+    static boolean shouldCancelPendingWorkOnDestroy(boolean isFinishing, boolean isChangingConfigurations) {
+        return isFinishing && !isChangingConfigurations;
     }
 
     private void launchService(@NonNull BatchQueueItem queueItem) {
