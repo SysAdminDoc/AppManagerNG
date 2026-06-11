@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -230,6 +231,27 @@ public class BackupItemsTest {
         IOException exception = assertThrows(IOException.class, backupItem::getMetadata);
 
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    }
+
+    @Test
+    public void commitPreservesFreezeMarkerFromReplacedBackup() throws IOException {
+        String previousUuid = "88888888-8888-8888-8888-888888888888";
+        Path previousPath = Prefs.Storage.getAppManagerDirectory()
+                .findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY)
+                .findOrCreateDirectory(previousUuid);
+        previousPath.createNewFile(MetadataManager.INFO_V5_FILE, null);
+        BackupItems.BackupItem previous = BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(previousUuid));
+        previous.freeze();
+
+        BackupItems.BackupItem replacement = BackupItems.createBackupItemGracefully(0, null, "com.example");
+        replacement.getInfoFile();
+        replacement.getBackupPath().createNewFile("payload", null);
+        replacement.setPreviousBackups(Collections.singletonList(previous));
+
+        replacement.commit();
+
+        assertTrue(replacement.isFrozen());
+        assertTrue(!previous.exists());
     }
 
     private static void createFiles(Path directory, String... names) throws IOException {

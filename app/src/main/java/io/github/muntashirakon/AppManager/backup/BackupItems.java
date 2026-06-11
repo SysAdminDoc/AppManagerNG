@@ -526,8 +526,12 @@ public class BackupItems {
                 if (!delete()) {
                     throw new IOException("Could not delete " + mBackupPath);
                 }
+                boolean freezeCommittedBackup = hasFrozenPreviousBackup();
                 if (!mTempBackupPath.moveTo(mBackupPath)) {
                     throw new IOException("Could not move " + mTempBackupPath + " to " + mBackupPath);
+                }
+                if (freezeCommittedBackup) {
+                    mBackupPath.createNewFile(FREEZE, null);
                 }
                 if (mPreviousBackups != null) {
                     for (BackupItem previousBackup : mPreviousBackups) {
@@ -540,6 +544,18 @@ public class BackupItems {
                 // Set backup mode to false to make it read-only
                 mBackupMode = false;
             }
+        }
+
+        private boolean hasFrozenPreviousBackup() {
+            if (mPreviousBackups == null) {
+                return false;
+            }
+            for (BackupItem previousBackup : mPreviousBackups) {
+                if (previousBackup.isFrozen()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void cleanup() {
