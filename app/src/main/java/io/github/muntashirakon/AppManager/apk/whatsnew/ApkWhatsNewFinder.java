@@ -12,6 +12,7 @@ import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
 
@@ -63,8 +64,6 @@ public class ApkWhatsNewFinder {
         if (sInstance == null) sInstance = new ApkWhatsNewFinder();
         return sInstance;
     }
-
-    private final Set<String> mTmpInfo = new HashSet<>();
 
     /**
      * Get changes between two packages: one is the apk file and other is the installed app
@@ -199,15 +198,16 @@ public class ApkWhatsNewFinder {
         return changes;
     }
 
+    @VisibleForTesting
     @NonNull
-    private List<Change> findChanges(Set<String> newInfo, Set<String> oldInfo) {
+    static List<Change> findChanges(@NonNull Set<String> newInfo, @NonNull Set<String> oldInfo) {
         List<Change> changeList = new ArrayList<>();
-        mTmpInfo.clear();
-        mTmpInfo.addAll(newInfo);
-        newInfo.removeAll(oldInfo);
-        for (String info : newInfo) changeList.add(new Change(CHANGE_ADD, info));
-        oldInfo.removeAll(mTmpInfo);
-        for (String info : oldInfo) changeList.add(new Change(CHANGE_REMOVED, info));
+        Set<String> addedInfo = new HashSet<>(newInfo);
+        addedInfo.removeAll(oldInfo);
+        for (String info : addedInfo) changeList.add(new Change(CHANGE_ADD, info));
+        Set<String> removedInfo = new HashSet<>(oldInfo);
+        removedInfo.removeAll(newInfo);
+        for (String info : removedInfo) changeList.add(new Change(CHANGE_REMOVED, info));
         return changeList;
     }
 
