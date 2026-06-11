@@ -530,6 +530,9 @@
     <string name="export_options">Export options</string>
     <string name="import_failed">Import failed!</string>
     <string name="export_failed">Export failed!</string>
+    <string name="scanner_export_report">Export scan report</string>
+    <string name="scanner_export_success">Scan report exported.</string>
+    <string name="scanner_export_filename" translatable="false">appmanagerng-scan-report-%1$s.json</string>
     <string name="keyboard_type">Keyboard type</string>
     <string name="navigation">Navigation</string>
     <string name="touchscreen">Touchscreen</string>

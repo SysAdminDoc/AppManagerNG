@@ -44,6 +44,8 @@ Reliability & data safety
   results on normal resumes; the Re-check button is the explicit fresh-probe path.
 - Fresh Android 13+ onboarding now explains and requests notification permission,
   with a next-step button for users who defer it.
+- Scanner results can now be exported as a JSON report containing APK metadata,
+  checksums, tracker/library matches, missing signatures, and online-report status.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
