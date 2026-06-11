@@ -12,6 +12,9 @@ Installer
 - Batch APK installs now stop for explicit confirmation when a queued APK is a
   downgrade, and the queue dialog lets the user skip that individual item
   instead of silently attempting the downgrade.
+- Installer failures now pair the localized error with recovery guidance, and
+  copied diagnostics include the explanation and hint while preserving the raw
+  status code for triage.
 - Profile apply now warns before running actions that the current privilege
   mode cannot support, lets the user apply only supported actions, and reports
   skipped privileged actions in the completion notification.
