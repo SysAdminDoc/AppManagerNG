@@ -6,6 +6,7 @@ import android.app.Application;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -24,8 +25,9 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 public class AppUsageViewModel extends AndroidViewModel {
     private final MutableLiveData<List<PackageUsageInfo>> mPackageUsageInfoListLiveData = new MutableLiveData<>();
     private final MutableLiveData<PackageUsageInfo> mPackageUsageInfoLiveData = new MutableLiveData<>();
-    private final List<PackageUsageInfo> mPackageUsageInfoList = Collections.synchronizedList(new ArrayList<>());
-    private final List<PackageUsageInfo.Entry> mPackageUsageEntries = Collections.synchronizedList(new ArrayList<>());
+    private final Object mUsageLock = new Object();
+    private final List<PackageUsageInfo> mPackageUsageInfoList = new ArrayList<>();
+    private final List<PackageUsageInfo.Entry> mPackageUsageEntries = new ArrayList<>();
 
     private long mTotalScreenTime;
     private boolean mHasMultipleUsers;
@@ -47,7 +49,9 @@ public class AppUsageViewModel extends AndroidViewModel {
     }
 
     public List<PackageUsageInfo.Entry> getPackageUsageEntries() {
-        return mPackageUsageEntries;
+        synchronized (mUsageLock) {
+            return new ArrayList<>(mPackageUsageEntries);
+        }
     }
 
     public void setCurrentDate(long currentDate) {
@@ -80,11 +84,15 @@ public class AppUsageViewModel extends AndroidViewModel {
     }
 
     public long getTotalScreenTime() {
-        return mTotalScreenTime;
+        synchronized (mUsageLock) {
+            return mTotalScreenTime;
+        }
     }
 
     public boolean hasMultipleUsers() {
-        return mHasMultipleUsers;
+        synchronized (mUsageLock) {
+            return mHasMultipleUsers;
+        }
     }
 
     public void loadNext() {
@@ -109,49 +117,72 @@ public class AppUsageViewModel extends AndroidViewModel {
             int[] userIds = Users.getUsersIds();
             AppUsageStatsManager usageStatsManager = AppUsageStatsManager.getInstance();
             TimeInterval interval = UsageUtils.getTimeInterval(mCurrentInterval, mCurrentDate);
-            mPackageUsageInfoList.clear();
+            List<PackageUsageInfo> packageUsageInfoList = new ArrayList<>();
             for (int userId : userIds) {
-                ExUtils.exceptionAsIgnored(() -> mPackageUsageInfoList.addAll(usageStatsManager
+                ExUtils.exceptionAsIgnored(() -> packageUsageInfoList.addAll(usageStatsManager
                         .getUsageStats(interval, userId)));
             }
-            mTotalScreenTime = 0;
+            long totalScreenTime = 0;
             Set<Integer> users = new HashSet<>(3);
-            mPackageUsageEntries.clear();
-            for (PackageUsageInfo appItem : mPackageUsageInfoList) {
+            List<PackageUsageInfo.Entry> packageUsageEntries = new ArrayList<>();
+            for (PackageUsageInfo appItem : packageUsageInfoList) {
                 if (appItem.entries != null) {
-                    mPackageUsageEntries.addAll(appItem.entries);
+                    packageUsageEntries.addAll(appItem.entries);
                 }
-                mTotalScreenTime += appItem.screenTime;
+                totalScreenTime += appItem.screenTime;
                 users.add(appItem.userId);
             }
-            mHasMultipleUsers = users.size() > 1;
+            replaceUsageData(packageUsageInfoList, packageUsageEntries, totalScreenTime, users.size() > 1);
             sortItems();
         });
     }
 
     private void sortItems() {
         Collator collator = Collator.getInstance();
-        Collections.sort(mPackageUsageInfoList, ((o1, o2) -> {
-            switch (mSortOrder) {
-                case SortOrder.SORT_BY_APP_LABEL:
-                    return collator.compare(o1.appLabel, o2.appLabel);
-                case SortOrder.SORT_BY_LAST_USED:
-                    return -Long.compare(o1.lastUsageTime, o2.lastUsageTime);
-                case SortOrder.SORT_BY_MOBILE_DATA:
-                    if (o1.mobileData == null) return o2.mobileData == null ? 0 : -1;
-                    return -o1.mobileData.compareTo(o2.mobileData);
-                case SortOrder.SORT_BY_PACKAGE_NAME:
-                    return o1.packageName.compareToIgnoreCase(o2.packageName);
-                case SortOrder.SORT_BY_SCREEN_TIME:
-                    return -Long.compare(o1.screenTime, o2.screenTime);
-                case SortOrder.SORT_BY_TIMES_OPENED:
-                    return -Integer.compare(o1.timesOpened, o2.timesOpened);
-                case SortOrder.SORT_BY_WIFI_DATA:
-                    if (o1.wifiData == null) return o2.wifiData == null ? 0 : -1;
-                    return -o1.wifiData.compareTo(o2.wifiData);
-            }
-            return 0;
-        }));
-        mPackageUsageInfoListLiveData.postValue(mPackageUsageInfoList);
+        List<PackageUsageInfo> snapshot;
+        synchronized (mUsageLock) {
+            Collections.sort(mPackageUsageInfoList, ((o1, o2) -> {
+                switch (mSortOrder) {
+                    case SortOrder.SORT_BY_APP_LABEL:
+                        return collator.compare(o1.appLabel, o2.appLabel);
+                    case SortOrder.SORT_BY_LAST_USED:
+                        return -Long.compare(o1.lastUsageTime, o2.lastUsageTime);
+                    case SortOrder.SORT_BY_MOBILE_DATA:
+                        if (o1.mobileData == null) return o2.mobileData == null ? 0 : -1;
+                        return -o1.mobileData.compareTo(o2.mobileData);
+                    case SortOrder.SORT_BY_PACKAGE_NAME:
+                        return o1.packageName.compareToIgnoreCase(o2.packageName);
+                    case SortOrder.SORT_BY_SCREEN_TIME:
+                        return -Long.compare(o1.screenTime, o2.screenTime);
+                    case SortOrder.SORT_BY_TIMES_OPENED:
+                        return -Integer.compare(o1.timesOpened, o2.timesOpened);
+                    case SortOrder.SORT_BY_WIFI_DATA:
+                        if (o1.wifiData == null) return o2.wifiData == null ? 0 : -1;
+                        return -o1.wifiData.compareTo(o2.wifiData);
+                }
+                return 0;
+            }));
+            snapshot = new ArrayList<>(mPackageUsageInfoList);
+        }
+        mPackageUsageInfoListLiveData.postValue(snapshot);
+    }
+
+    private void replaceUsageData(@NonNull List<PackageUsageInfo> packageUsageInfoList,
+                                  @NonNull List<PackageUsageInfo.Entry> packageUsageEntries,
+                                  long totalScreenTime, boolean hasMultipleUsers) {
+        synchronized (mUsageLock) {
+            mPackageUsageInfoList.clear();
+            mPackageUsageInfoList.addAll(packageUsageInfoList);
+            mPackageUsageEntries.clear();
+            mPackageUsageEntries.addAll(packageUsageEntries);
+            mTotalScreenTime = totalScreenTime;
+            mHasMultipleUsers = hasMultipleUsers;
+        }
+    }
+
+    @VisibleForTesting
+    void replaceUsageDataForTesting(@NonNull List<PackageUsageInfo> packageUsageInfoList,
+                                    @NonNull List<PackageUsageInfo.Entry> packageUsageEntries) {
+        replaceUsageData(packageUsageInfoList, packageUsageEntries, 0, false);
     }
 }
