@@ -226,8 +226,8 @@ dependencies {
     implementation "androidx.window:window:${window_version}"
     implementation "androidx.work:work-runtime:${work_version}"
     compileOnly "com.google.guava:guava:${guava_version}"
-    implementation "io.github.Rosemoe.sora-editor:editor:${sora_editor_version}"
-    implementation "io.github.Rosemoe.sora-editor:language-textmate:${sora_editor_version}"
+    implementation "io.github.rosemoe:editor:${sora_editor_version}"
+    implementation "io.github.rosemoe:language-textmate:${sora_editor_version}"
     implementation "com.github.MuntashirAkon:time-duration-picker:${duration_picker}"
 
     // Utility
