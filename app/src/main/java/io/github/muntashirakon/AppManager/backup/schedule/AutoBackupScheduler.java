@@ -337,6 +337,16 @@ public final class AutoBackupScheduler {
         return computeInitialDelayMillis(hour, minute, nowMillis, TimeZone.getDefault());
     }
 
+    public static long computeNextRunTimeMillis(int hour, int minute, long nowMillis) {
+        return computeNextRunTimeMillis(hour, minute, nowMillis, TimeZone.getDefault());
+    }
+
+    @VisibleForTesting
+    public static long computeNextRunTimeMillis(int hour, int minute, long nowMillis,
+                                                @NonNull TimeZone timeZone) {
+        return nowMillis + computeInitialDelayMillis(hour, minute, nowMillis, timeZone);
+    }
+
     @VisibleForTesting
     public static long computeInitialDelayMillis(int hour, int minute, long nowMillis,
                                                  @NonNull TimeZone timeZone) {

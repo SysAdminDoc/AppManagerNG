@@ -3295,7 +3295,9 @@
     <string name="pref_backup_schedule_shortcut_msg">Add a home screen shortcut that queues this scheduled backup immediately.</string>
     <string name="pref_backup_schedule_shortcut_requested">Backup shortcut request sent to launcher.</string>
     <string name="pref_backup_schedule_status">Schedule status</string>
-    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nFreshness: <xliff:g id="freshness" example="1 day">%5$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%6$s</xliff:g>\nDiagnostics: <xliff:g id="diagnostics" example="Scheduled: enqueued, attempt 0">%7$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%8$s</xliff:g></string>
+    <string name="pref_backup_schedule_status_msg">State: <xliff:g id="state" example="Enabled">%1$s</xliff:g>\nTime: <xliff:g id="time" example="2:00 AM">%2$s</xliff:g>\nCharging: <xliff:g id="charging" example="Required">%3$s</xliff:g>\nNetwork: <xliff:g id="network" example="Unmetered network">%4$s</xliff:g>\nFreshness: <xliff:g id="freshness" example="1 day">%5$s</xliff:g>\nBattery: <xliff:g id="battery" example="Exempt">%6$s</xliff:g>\n<xliff:g id="next_run" example="Next run: 5/18/26, 2:00 AM">%7$s</xliff:g>\nDiagnostics: <xliff:g id="diagnostics" example="Scheduled: enqueued, attempt 0">%8$s</xliff:g>\n<xliff:g id="last_run" example="Last run: yesterday - Backed up 3 apps">%9$s</xliff:g></string>
+    <string name="pref_backup_schedule_next_run">Next run: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g></string>
+    <string name="pref_backup_schedule_next_run_disabled">Next run: disabled</string>
     <string name="pref_backup_schedule_state_enabled">Enabled</string>
     <string name="pref_backup_schedule_state_disabled">Disabled</string>
     <string name="pref_backup_schedule_charging_required">Required</string>

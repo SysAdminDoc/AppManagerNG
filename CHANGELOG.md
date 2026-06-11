@@ -96,6 +96,8 @@ Reliability & data safety
   and Room/backup-dir races.
 - Auto-backup foreground notifications now use a stable per-worker ID, avoiding
   notification replacement if manual and periodic workers ever overlap.
+- Scheduled backup status now includes the next configured run time directly in
+  the preference summary.
 - The batch-results screen no longer deletes the shared batch-ops log while a
   retried or queued operation is still writing it.
 - Running Apps surfaces an empty state instead of an indefinitely spinning

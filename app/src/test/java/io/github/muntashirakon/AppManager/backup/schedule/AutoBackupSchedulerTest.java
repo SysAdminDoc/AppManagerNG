@@ -47,6 +47,15 @@ public class AutoBackupSchedulerTest {
     }
 
     @Test
+    public void nextRunTimeUsesConfiguredWallClock() {
+        long now = millis(2026, Calendar.MAY, 18, 23, 30);
+
+        long nextRun = AutoBackupScheduler.computeNextRunTimeMillis(2, 15, now, UTC);
+
+        assertEquals(millis(2026, Calendar.MAY, 19, 2, 15), nextRun);
+    }
+
+    @Test
     public void invalidTimeInputsAreClamped() {
         assertEquals(0, AutoBackupScheduler.sanitizeHour(-4));
         assertEquals(23, AutoBackupScheduler.sanitizeHour(90));
