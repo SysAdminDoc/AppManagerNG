@@ -157,6 +157,16 @@ public final class InstallerDialogHelper {
                                               @NonNull View.OnClickListener appInfoButtonListener,
                                               @androidx.annotation.Nullable CharSequence trackerCallout,
                                               @NonNull List<CharSequence> privilegeChips) {
+        showInstallConfirmationDialog(installButtonRes, R.string.cancel, onClickButtonsListener,
+                appInfoButtonListener, trackerCallout, privilegeChips);
+    }
+
+    public void showInstallConfirmationDialog(@StringRes int installButtonRes,
+                                              @StringRes int cancelButtonRes,
+                                              @NonNull OnClickButtonsListener onClickButtonsListener,
+                                              @NonNull View.OnClickListener appInfoButtonListener,
+                                              @androidx.annotation.Nullable CharSequence trackerCallout,
+                                              @NonNull List<CharSequence> privilegeChips) {
         // Buttons
         mNeutralBtn.setVisibility(View.VISIBLE);
         mNeutralBtn.setText(R.string.app_info);
@@ -165,7 +175,7 @@ public final class InstallerDialogHelper {
         mPositiveBtn.setText(installButtonRes);
         mPositiveBtn.setOnClickListener(v -> onClickButtonsListener.triggerInstall());
         mNegativeBtn.setVisibility(View.VISIBLE);
-        mNegativeBtn.setText(R.string.cancel);
+        mNegativeBtn.setText(cancelButtonRes);
         mNegativeBtn.setOnClickListener(v -> onClickButtonsListener.triggerCancel());
         // Body
         mLayout.setVisibility(View.GONE);
