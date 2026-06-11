@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotBundle;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotImportException;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class PrivacyPreferences extends PreferenceFragment {
     private static final String MIME_ZIP = "application/zip";
@@ -241,19 +242,19 @@ public class PrivacyPreferences extends PreferenceFragment {
         }
         final SnapshotBundle.ExportResult finalResult = result;
         final Throwable finalFailure = failure;
+        // Use the app-context toast helpers (not requireContext) and don't gate on isAdded():
+        // the result arrives after a SAF round-trip, so the user may have navigated away — the
+        // success/failure feedback (especially failure) must not be silently dropped.
         ThreadUtils.postOnMainThread(() -> {
-            if (!isAdded()) return;
             if (finalFailure != null || finalResult == null) {
-                Toast.makeText(requireContext(), R.string.snapshot_export_failed, Toast.LENGTH_LONG).show();
+                UIUtils.displayLongToast(R.string.snapshot_export_failed);
                 return;
             }
-            Toast.makeText(requireContext(),
-                    getString(R.string.snapshot_export_done,
-                            finalResult.prefsCount,
-                            finalResult.profilesCount,
-                            finalResult.rulesCount,
-                            finalResult.opHistoryCount),
-                    Toast.LENGTH_LONG).show();
+            UIUtils.displayLongToast(R.string.snapshot_export_done,
+                    finalResult.prefsCount,
+                    finalResult.profilesCount,
+                    finalResult.rulesCount,
+                    finalResult.opHistoryCount);
         });
     }
 
@@ -275,21 +276,16 @@ public class PrivacyPreferences extends PreferenceFragment {
         final SnapshotBundle.ImportResult finalResult = result;
         final String finalFailure = failureMessage;
         ThreadUtils.postOnMainThread(() -> {
-            if (!isAdded()) return;
             if (finalResult == null) {
-                Toast.makeText(requireContext(),
-                        getString(R.string.snapshot_import_failed,
-                                finalFailure != null ? finalFailure : ""),
-                        Toast.LENGTH_LONG).show();
+                UIUtils.displayLongToast(R.string.snapshot_import_failed,
+                        finalFailure != null ? finalFailure : "");
                 return;
             }
-            Toast.makeText(requireContext(),
-                    getString(R.string.snapshot_import_done,
-                            finalResult.prefsRestored,
-                            finalResult.profilesRestored,
-                            finalResult.rulesRestored,
-                            finalResult.opHistoryRestored),
-                    Toast.LENGTH_LONG).show();
+            UIUtils.displayLongToast(R.string.snapshot_import_done,
+                    finalResult.prefsRestored,
+                    finalResult.profilesRestored,
+                    finalResult.rulesRestored,
+                    finalResult.opHistoryRestored);
         });
     }
 
