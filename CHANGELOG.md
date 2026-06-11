@@ -48,6 +48,9 @@ Reliability & data safety
   checksums, tracker/library matches, missing signatures, and online-report status.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
+- App details now builds its info list from a captured application context, so
+  detaching the fragment mid-load cannot kill the background list build during
+  resource lookup and leave the progress indicator stuck.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
