@@ -1,6 +1,6 @@
-HSPLio/github/muntashirakon/AppManager/main/SplashActivity;
-HSPLio/github/muntashirakon/AppManager/main/MainActivity;
-HSPLio/github/muntashirakon/AppManager/AppManager;
-HSPLio/github/muntashirakon/AppManager/settings/Prefs;
-HSPLio/github/muntashirakon/AppManager/main/MainViewModel;
-HSPLio/github/muntashirakon/AppManager/main/ApplicationItem;
+Lio/github/muntashirakon/AppManager/main/SplashActivity;
+Lio/github/muntashirakon/AppManager/main/MainActivity;
+Lio/github/muntashirakon/AppManager/AppManager;
+Lio/github/muntashirakon/AppManager/settings/Prefs;
+Lio/github/muntashirakon/AppManager/main/MainViewModel;
+Lio/github/muntashirakon/AppManager/main/ApplicationItem;
