@@ -102,20 +102,22 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     /**
-     * The fragment's bound root view, retained between onViewCreated and onResume so we can
-     * silently refresh capability badges when the user returns from Developer options
-     * (toggling USB debugging, Wireless debugging, or granting root) without forcing them to
-     * tap "Re-check". Cleared in onDestroyView to avoid retaining a detached view.
+     * The fragment's bound root view, retained between onViewCreated and onResume so cached
+     * capability badges can be rebound after focus changes without re-running root/ADB probes.
+     * Cleared in onDestroyView to avoid retaining a detached view.
      */
     @Nullable
     private View mBoundView;
+    @Nullable
+    private CapabilitySnapshot mCapabilitySnapshot;
+    private int mCapabilityProbeGeneration;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mBoundView = view;
         bindAdbPatchLevelWarning(view);
-        refreshCapabilityStatuses(view);
+        refreshCapabilityStatuses(view, false);
         bindCardActions(view, R.id.card_mode_auto, R.id.info_mode_auto, View.NO_ID, Ops.MODE_AUTO,
                 R.string.onboarding_mode_auto_title, R.string.onboarding_mode_auto_summary,
                 R.string.onboarding_mode_auto_explainer);
@@ -157,7 +159,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         View recheck = view.findViewById(R.id.btn_recheck);
         if (recheck != null) {
             recheck.setOnClickListener(v -> {
-                refreshCapabilityStatuses(view);
+                refreshCapabilityStatuses(view, true);
                 highlightActiveMode(view, Ops.getMode());
                 com.google.android.material.snackbar.Snackbar.make(view,
                         R.string.onboarding_recheck_done,
@@ -179,25 +181,24 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         warning.setVisibility(View.VISIBLE);
     }
 
-    private void bindShizukuWarning(@Nullable TextView warning) {
+    private void bindShizukuWarning(@Nullable TextView warning, @NonNull CapabilitySnapshot snapshot) {
         if (warning == null) return;
-        if (ShizukuBridge.isRootBacked()) {
+        if (snapshot.shizukuRootBacked) {
             warning.setText(R.string.onboarding_mode_shizuku_root_backed_warning);
             applyWarningTextStyle(warning);
             warning.setOnClickListener(v -> startWirelessAdbSetup());
             warning.setVisibility(View.VISIBLE);
             return;
         }
-        ShizukuBridge.OemCompatibilityWarning oemWarning =
-                ShizukuBridge.getOemCompatibilityWarning(requireContext());
-        if (oemWarning != null) {
-            warning.setText(getString(oemWarning.bannerTextRes, oemWarning.fallbackVersion));
+        if (snapshot.shizukuOemWarning != null) {
+            warning.setText(getString(snapshot.shizukuOemWarning.bannerTextRes,
+                    snapshot.shizukuOemWarning.fallbackVersion));
             applyWarningTextStyle(warning);
             warning.setOnClickListener(v -> openShizukuPinnedArchive());
             warning.setVisibility(View.VISIBLE);
             return;
         }
-        if (!ShizukuBridge.hasAndroid17CompatibilityRisk(requireContext())) {
+        if (!snapshot.shizukuAndroid17Risk) {
             warning.setOnClickListener(null);
             warning.setVisibility(View.GONE);
             return;
@@ -256,33 +257,75 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     /**
-     * Re-evaluate every capability badge against the current device state. Called
-     * on bind and from the "Re-check" button so a user who toggles Wireless
-     * debugging from quick-settings or grants root from another app can see the
-     * new state without dismissing the sheet.
+     * Re-evaluate every capability badge against the current device state. The first bind
+     * captures a snapshot; later lifecycle resumes only re-bind that snapshot. The explicit
+     * "Re-check" action is the only post-bind path that refreshes root/Shizuku/Dhizuku/ADB
+     * probes.
      */
-    private void refreshCapabilityStatuses(@NonNull View view) {
+    private void refreshCapabilityStatuses(@NonNull View view, boolean forceProbe) {
+        CapabilitySnapshot snapshot = mCapabilitySnapshot;
+        boolean runProbes = shouldRunCapabilityProbe(forceProbe, snapshot);
+        if (runProbes) {
+            snapshot = captureCapabilitySnapshot();
+            mCapabilitySnapshot = snapshot;
+            mCapabilityProbeGeneration++;
+        }
+        bindCapabilityStatuses(view, snapshot, mCapabilityProbeGeneration, runProbes);
+    }
+
+    @VisibleForTesting
+    static boolean shouldRunCapabilityProbe(boolean forceProbe, @Nullable Object snapshot) {
+        return forceProbe || snapshot == null;
+    }
+
+    @NonNull
+    private CapabilitySnapshot captureCapabilitySnapshot() {
+        CapabilitySnapshot snapshot = new CapabilitySnapshot();
+        snapshot.rootAvailable = Ops.hasRoot();
+        snapshot.shizukuRecommendedVersion = ShizukuBridge.isRecommendedManagerVersion(requireContext());
+        snapshot.shizukuVersionName = ShizukuBridge.getInstalledVersionName(requireContext());
+        snapshot.shizukuHasPermission = ShizukuBridge.hasPermission();
+        snapshot.shizukuRootBacked = ShizukuBridge.isRootBacked();
+        snapshot.shizukuSupportsUserService = ShizukuBridge.supportsUserService();
+        snapshot.shizukuOemWarning = ShizukuBridge.getOemCompatibilityWarning(requireContext());
+        snapshot.shizukuAndroid17Risk = ShizukuBridge.hasAndroid17CompatibilityRisk(requireContext());
+        snapshot.shizukuOfferAutoStart = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
+        snapshot.dhizukuResult = DhizukuBridge.probe(requireContext());
+        snapshot.wirelessDebuggingActive = isWirelessDebuggingActive();
+        snapshot.hasPairedAdbDevice = ServerConfig.hasPairedAdbDevice();
+        snapshot.usbDebuggingEnabled = isUsbDebuggingEnabled();
+        snapshot.adbTcpipSessionDetected = mAdbTcpipSessionDetected;
+        return snapshot;
+    }
+
+    private void bindCapabilityStatuses(@NonNull View view, @NonNull CapabilitySnapshot snapshot,
+                                        int generation, boolean runAsyncProbes) {
         TextView rootStatus = view.findViewById(R.id.status_root);
-        bindCapabilityStatus(rootStatus, Ops.hasRoot(),
+        bindCapabilityStatus(rootStatus, snapshot.rootAvailable,
                 R.string.onboarding_mode_root_status_detected,
                 R.string.onboarding_mode_root_status_missing);
+        bindRootManagerStatus(rootStatus, snapshot.rootManagerInfo);
         TextView shizukuStatus = view.findViewById(R.id.status_shizuku);
         TextView shizukuAutoStartHint = view.findViewById(R.id.hint_shizuku_autostart);
         View shizukuAutoStartAction = view.findViewById(R.id.action_shizuku_autostart);
-        bindShizukuStatus(shizukuStatus, shizukuAutoStartHint, shizukuAutoStartAction);
+        bindShizukuStatus(shizukuStatus, shizukuAutoStartHint, shizukuAutoStartAction, snapshot);
         TextView dhizukuStatus = view.findViewById(R.id.status_dhizuku);
-        bindDhizukuStatus(dhizukuStatus);
+        bindDhizukuStatus(dhizukuStatus, snapshot);
         TextView shizukuAndroid17Warning = view.findViewById(R.id.warning_shizuku_android17);
-        bindShizukuWarning(shizukuAndroid17Warning);
+        bindShizukuWarning(shizukuAndroid17Warning, snapshot);
         TextView adbWifiStatus = view.findViewById(R.id.status_adb_wifi);
-        bindAdbWifiStatus(adbWifiStatus);
+        bindAdbWifiStatus(adbWifiStatus, snapshot);
         TextView adbTcpStatus = view.findViewById(R.id.status_adb_tcp);
         View adbTcpipAction = view.findViewById(R.id.action_use_adb_tcpip);
-        bindAdbTcpStatus(adbTcpStatus, adbTcpipAction);
+        bindAdbTcpStatus(adbTcpStatus, adbTcpipAction, snapshot);
         // Run the root-manager probe off the UI thread — marker checks shell out
         // when root is granted (~50–150ms). Without root, falls back to a fast
         // PackageManager lookup. Either way, we don't want to block bind().
-        refreshRootManagerStatus(rootStatus);
+        if (runAsyncProbes) {
+            refreshRootManagerStatus(rootStatus, snapshot, generation);
+            refreshAdbTcpipSessionStatus(adbTcpStatus, adbTcpipAction, snapshot, generation);
+        }
     }
 
     /**
@@ -292,7 +335,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
      * already-bound root status line so users replaying the wizard see exactly
      * which root provider is live.
      */
-    private void refreshRootManagerStatus(@Nullable TextView rootStatus) {
+    private void refreshRootManagerStatus(@Nullable TextView rootStatus, @NonNull CapabilitySnapshot snapshot,
+                                          int generation) {
         if (rootStatus == null) return;
         // Capture the Application context now, on the main thread, so a fragment that's been
         // detached by the time the background task starts can't trigger an
@@ -302,18 +346,26 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         ThreadUtils.postOnBackgroundThread(() -> {
             RootManagerInfo info = RootManagerInfo.detect(appContext);
             ThreadUtils.postOnMainThread(() -> {
-                if (!isAdded()) return;
-                CharSequence base = rootStatus.getText();
-                if (base == null) return;
-                String suffix = buildRootManagerSuffix(info);
-                if (suffix.isEmpty()) return;
-                // Idempotent: avoid stacking suffixes if refresh fires repeatedly.
-                String baseStr = base.toString();
-                int sepIdx = baseStr.indexOf(" · ");
-                if (sepIdx >= 0) baseStr = baseStr.substring(0, sepIdx);
-                rootStatus.setText(baseStr + " · " + suffix);
+                if (!isAdded() || generation != mCapabilityProbeGeneration || snapshot != mCapabilitySnapshot) {
+                    return;
+                }
+                snapshot.rootManagerInfo = info;
+                bindRootManagerStatus(rootStatus, info);
             });
         });
+    }
+
+    private void bindRootManagerStatus(@Nullable TextView rootStatus, @Nullable RootManagerInfo info) {
+        if (rootStatus == null || info == null) return;
+        CharSequence base = rootStatus.getText();
+        if (base == null) return;
+        String suffix = buildRootManagerSuffix(info);
+        if (suffix.isEmpty()) return;
+        // Idempotent: avoid stacking suffixes if cached status is rebound repeatedly.
+        String baseStr = base.toString();
+        int sepIdx = baseStr.indexOf(" · ");
+        if (sepIdx >= 0) baseStr = baseStr.substring(0, sepIdx);
+        rootStatus.setText(baseStr + " · " + suffix);
     }
 
     @NonNull
@@ -417,26 +469,25 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint,
-                                   @Nullable View autoStartAction) {
+                                   @Nullable View autoStartAction, @NonNull CapabilitySnapshot snapshot) {
         if (statusView == null) return;
         int statusRes;
         Object[] args = null;
         boolean available;
-        boolean recommendedVersion = ShizukuBridge.isRecommendedManagerVersion(requireContext());
-        String versionName = ShizukuBridge.getInstalledVersionName(requireContext());
-        if (!recommendedVersion && ShizukuBridge.supportsUserService() && versionName != null) {
+        if (!snapshot.shizukuRecommendedVersion && snapshot.shizukuSupportsUserService
+                && snapshot.shizukuVersionName != null) {
             statusRes = R.string.onboarding_mode_shizuku_status_update_recommended;
-            args = new Object[]{versionName};
+            args = new Object[]{snapshot.shizukuVersionName};
             available = false;
-        } else if (ShizukuBridge.hasPermission()) {
-            if (ShizukuBridge.isRootBacked()) {
+        } else if (snapshot.shizukuHasPermission) {
+            if (snapshot.shizukuRootBacked) {
                 statusRes = R.string.onboarding_mode_shizuku_status_root_backed;
                 available = false;
             } else {
                 statusRes = R.string.onboarding_mode_shizuku_status_ready;
                 available = true;
             }
-        } else if (ShizukuBridge.supportsUserService()) {
+        } else if (snapshot.shizukuSupportsUserService) {
             statusRes = R.string.onboarding_mode_shizuku_status_needs_permission;
             available = true;
         } else {
@@ -444,12 +495,12 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             available = false;
         }
         bindCapabilityStatus(statusView, available, statusRes, statusRes, args);
-        bindShizukuAutoStartHint(autoStartHint, autoStartAction, recommendedVersion);
+        bindShizukuAutoStartHint(autoStartHint, autoStartAction, snapshot);
     }
 
-    private void bindDhizukuStatus(@Nullable TextView statusView) {
+    private void bindDhizukuStatus(@Nullable TextView statusView, @NonNull CapabilitySnapshot snapshot) {
         if (statusView == null) return;
-        DhizukuBridge.Result result = DhizukuBridge.probe(requireContext());
+        DhizukuBridge.Result result = snapshot.dhizukuResult;
         if (!result.isInstalled() && !result.isOfficialOwner()) {
             statusView.setVisibility(View.GONE);
             return;
@@ -488,7 +539,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void bindShizukuAutoStartHint(@Nullable TextView autoStartHint, @Nullable View autoStartAction,
-                                          boolean recommendedVersion) {
+                                          @NonNull CapabilitySnapshot snapshot) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             if (autoStartHint != null) {
                 autoStartHint.setVisibility(View.GONE);
@@ -500,13 +551,12 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
         if (autoStartHint != null) {
             autoStartHint.setVisibility(View.VISIBLE);
-            autoStartHint.setText(recommendedVersion
+            autoStartHint.setText(snapshot.shizukuRecommendedVersion
                     ? R.string.onboarding_mode_shizuku_autostart_tip
                     : R.string.onboarding_mode_shizuku_update_for_autostart);
         }
         if (autoStartAction != null) {
-            boolean showAction = ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
-            autoStartAction.setVisibility(showAction ? View.VISIBLE : View.GONE);
+            autoStartAction.setVisibility(snapshot.shizukuOfferAutoStart ? View.VISIBLE : View.GONE);
             autoStartAction.setOnClickListener(v -> openShizukuAutoStartSettings());
         }
     }
@@ -528,13 +578,13 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
     }
 
-    private void bindAdbWifiStatus(@Nullable TextView statusView) {
+    private void bindAdbWifiStatus(@Nullable TextView statusView, @NonNull CapabilitySnapshot snapshot) {
         if (statusView == null) return;
-        if (isWirelessDebuggingActive()) {
+        if (snapshot.wirelessDebuggingActive) {
             bindCapabilityStatus(statusView, true,
                     R.string.onboarding_mode_adb_wifi_status_active,
                     R.string.onboarding_mode_adb_wifi_status_active);
-        } else if (ServerConfig.hasPairedAdbDevice()) {
+        } else if (snapshot.hasPairedAdbDevice) {
             bindCapabilityStatus(statusView, false,
                     R.string.onboarding_mode_adb_wifi_status_paired,
                     R.string.onboarding_mode_adb_wifi_status_paired);
@@ -545,35 +595,34 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
     }
 
-    private void bindAdbTcpStatus(@Nullable TextView statusView, @Nullable View useTcpipAction) {
-        bindCapabilityStatus(statusView, isUsbDebuggingEnabled(),
-                R.string.onboarding_mode_adb_tcp_status_active,
-                R.string.onboarding_mode_adb_tcp_status_inactive);
-        if (useTcpipAction != null) {
-            useTcpipAction.setVisibility(mAdbTcpipSessionDetected ? View.VISIBLE : View.GONE);
+    private void bindAdbTcpStatus(@Nullable TextView statusView, @Nullable View useTcpipAction,
+                                  @NonNull CapabilitySnapshot snapshot) {
+        if (snapshot.adbTcpipSessionDetected) {
+            bindCapabilityStatus(statusView, true,
+                    R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
+                    R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
+                    new Object[]{AdbTcpipProbe.DEFAULT_TCPIP_PORT});
+        } else {
+            bindCapabilityStatus(statusView, snapshot.usbDebuggingEnabled,
+                    R.string.onboarding_mode_adb_tcp_status_active,
+                    R.string.onboarding_mode_adb_tcp_status_inactive);
         }
-        refreshAdbTcpipSessionStatus(statusView, useTcpipAction);
+        if (useTcpipAction != null) {
+            useTcpipAction.setVisibility(snapshot.adbTcpipSessionDetected ? View.VISIBLE : View.GONE);
+        }
     }
 
-    private void refreshAdbTcpipSessionStatus(@Nullable TextView statusView, @Nullable View useTcpipAction) {
+    private void refreshAdbTcpipSessionStatus(@Nullable TextView statusView, @Nullable View useTcpipAction,
+                                              @NonNull CapabilitySnapshot snapshot, int generation) {
         ThreadUtils.postOnBackgroundThread(() -> {
             boolean reachable = AdbTcpipProbe.isDefaultTcpipSessionReachable();
             ThreadUtils.postOnMainThread(() -> {
-                if (!isAdded()) return;
+                if (!isAdded() || generation != mCapabilityProbeGeneration || snapshot != mCapabilitySnapshot) {
+                    return;
+                }
                 mAdbTcpipSessionDetected = reachable;
-                if (useTcpipAction != null) {
-                    useTcpipAction.setVisibility(reachable ? View.VISIBLE : View.GONE);
-                }
-                if (reachable) {
-                    bindCapabilityStatus(statusView, true,
-                            R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
-                            R.string.onboarding_mode_adb_tcp_status_tcpip_detected,
-                            new Object[]{AdbTcpipProbe.DEFAULT_TCPIP_PORT});
-                } else {
-                    bindCapabilityStatus(statusView, isUsbDebuggingEnabled(),
-                            R.string.onboarding_mode_adb_tcp_status_active,
-                            R.string.onboarding_mode_adb_tcp_status_inactive);
-                }
+                snapshot.adbTcpipSessionDetected = reachable;
+                bindAdbTcpStatus(statusView, useTcpipAction, snapshot);
             });
         });
     }
@@ -891,11 +940,10 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Re-evaluate capability badges silently when the wizard regains focus,
-        // so a user who toggled USB debugging or Wireless debugging in
-        // Developer options sees the new state without re-tapping Re-check.
+        // Re-bind cached capability badges when the wizard regains focus without
+        // shelling out or probing ADB again. Users can tap Re-check for a fresh read.
         if (mBoundView != null) {
-            refreshCapabilityStatuses(mBoundView);
+            refreshCapabilityStatuses(mBoundView, false);
         }
     }
 
@@ -918,5 +966,27 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         // again. They land on Auto by default which auto-detects at runtime anyway.
         AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
         super.onCancel(dialog);
+    }
+
+    private static final class CapabilitySnapshot {
+        boolean rootAvailable;
+        boolean shizukuRecommendedVersion;
+        @Nullable
+        String shizukuVersionName;
+        boolean shizukuHasPermission;
+        boolean shizukuRootBacked;
+        boolean shizukuSupportsUserService;
+        @Nullable
+        ShizukuBridge.OemCompatibilityWarning shizukuOemWarning;
+        boolean shizukuAndroid17Risk;
+        boolean shizukuOfferAutoStart;
+        @NonNull
+        DhizukuBridge.Result dhizukuResult;
+        boolean wirelessDebuggingActive;
+        boolean hasPairedAdbDevice;
+        boolean usbDebuggingEnabled;
+        boolean adbTcpipSessionDetected;
+        @Nullable
+        RootManagerInfo rootManagerInfo;
     }
 }

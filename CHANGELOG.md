@@ -40,6 +40,8 @@ Reliability & data safety
 - Pull requests now get a consolidated CI workflow for app lint, app unit
   tests, and dependency review; app lint now fails on errors and includes
   release-build lint checks.
+- Onboarding capability cards now reuse cached root/Shizuku/Dhizuku/ADB probe
+  results on normal resumes; the Re-check button is the explicit fresh-probe path.
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
