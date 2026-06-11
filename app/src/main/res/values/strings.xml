@@ -728,6 +728,9 @@
 
     <!-- Onboarding -> "Next steps" tiles on the final step (EI-05) -->
     <string name="onboarding_next_steps_title">Next steps</string>
+    <string name="onboarding_notification_permission_title">Allow onboarding notifications?</string>
+    <string name="onboarding_notification_permission_message">AppManagerNG uses notifications for long-running installs, batch operations, backups, restore jobs, and wireless ADB pairing. Allow notifications so these workflows can keep reporting progress after you leave the screen.</string>
+    <string name="onboarding_next_step_notifications">Allow workflow notifications</string>
     <string name="onboarding_next_step_privileges">Run Mode Doctor &amp; Privileges check</string>
     <string name="onboarding_next_step_permission_inspector">Audit dangerous permissions</string>
     <string name="onboarding_next_step_backup">Set up Scheduled Auto-Backup</string>
