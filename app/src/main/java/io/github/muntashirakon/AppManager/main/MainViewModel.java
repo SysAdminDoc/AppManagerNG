@@ -286,10 +286,29 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     }
 
     public void setSearchQuery(String searchQuery, @AdvancedSearchView.SearchType int searchType) {
-        this.mSearchQuery = searchType != AdvancedSearchView.SEARCH_TYPE_REGEX ? searchQuery.toLowerCase(Locale.ROOT) : searchQuery;
+        String normalized = normalizeSearchQuery(searchQuery, searchType);
+        // Coalesce: a debounced or repeated callback with an unchanged normalized query/type
+        // shouldn't kick another full filter pass over the install.
+        if (searchType == mSearchType && Objects.equals(normalized, mSearchQuery)) {
+            return;
+        }
+        this.mSearchQuery = normalized;
         this.mSearchType = searchType;
         cancelIfRunning();
         mFilterResult = executor.submit(this::filterItemsByFlags);
+    }
+
+    /**
+     * Normalizes a raw search query the same way {@link #setSearchQuery} stores it: lower-cased
+     * for non-regex search types, left verbatim for regex. Extracted as a pure static so the
+     * coalescing contract can be unit-tested without a live ViewModel.
+     */
+    @NonNull
+    public static String normalizeSearchQuery(@NonNull String searchQuery,
+                                              @AdvancedSearchView.SearchType int searchType) {
+        return searchType != AdvancedSearchView.SEARCH_TYPE_REGEX
+                ? searchQuery.toLowerCase(Locale.ROOT)
+                : searchQuery;
     }
 
     @Override
