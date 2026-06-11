@@ -62,13 +62,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: batch uninstall/disable of a guarded package requires an explicit second confirmation naming the risk; every batch system-app operation auto-exports a snapshot + generates a plain-text `adb shell cmd package install-existing ...` rescue script in the backup volume.
   Complexity: M
 
-- [ ] P1 — Scheduler self-heal: detect and fix AM's own battery-optimization restriction
-  Why: RoutineScheduler and AutoBackup ride WorkManager, which OEM battery managers silently kill (the same root cause as upstream's pinned #1596 "ADB mode lost" on Samsung); SD Maid SE ships "auto-fix battery optimization via root or ADB" for exactly this.
-  Evidence: SD Maid SE releases (RESEARCH.md §Competitive); https://github.com/MuntashirAkon/AppManager/issues/1596
-  Touches: profiles/trigger/RoutineScheduler.java, profiles/trigger/RoutineDiagnostics.java, backup/AutoBackupDiagnostics, settings/ (health surface)
-  Acceptance: when AM is battery-restricted, diagnostics show it and (in privileged modes) offer one-tap `deviceidle whitelist` self-exemption; restriction state is logged in trigger run results.
-  Complexity: S
-
 - [ ] P1 — Port upstream main-list performance/correctness batch
   Why: Upstream fixed the "app list loads forever" class (#1982 remains its last v4.1.0 blocker) with a search debouncer, ListAdapter migration, scroll-position restore, IME fixes, and filter-highlight fixes — all post-pin and directly applicable to NG's main list.
   Evidence: upstream commits bba53eb, 8cf2c1e, 69b28cb, 5418038, 886ad90, ab2b17f (RESEARCH.md §Competitive)

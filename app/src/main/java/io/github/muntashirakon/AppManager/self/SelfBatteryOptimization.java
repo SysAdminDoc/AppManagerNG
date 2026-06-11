@@ -8,11 +8,14 @@ import android.os.PowerManager;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -56,6 +59,36 @@ public final class SelfBatteryOptimization {
     public static boolean canAutoFix() {
         return isSupported()
                 && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.DEVICE_POWER);
+    }
+
+    @NonNull
+    public static String formatDiagnostics(@NonNull Context context) {
+        Context appContext = context.getApplicationContext();
+        boolean supported = isSupported();
+        boolean exempt = supported && isExempt(appContext);
+        boolean canAutoFix = false;
+        if (supported && !exempt) {
+            try {
+                canAutoFix = canAutoFix();
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not determine battery optimization auto-fix state.", e);
+            }
+        }
+        return appContext.getString(getDiagnosticsLabelRes(supported, exempt, canAutoFix));
+    }
+
+    @StringRes
+    @VisibleForTesting
+    static int getDiagnosticsLabelRes(boolean supported, boolean exempt, boolean canAutoFix) {
+        if (!supported) {
+            return R.string.self_battery_optimization_diagnostics_unsupported;
+        }
+        if (exempt) {
+            return R.string.self_battery_optimization_diagnostics_exempt;
+        }
+        return canAutoFix
+                ? R.string.self_battery_optimization_diagnostics_restricted_autofix
+                : R.string.self_battery_optimization_diagnostics_restricted_manual;
     }
 
     @WorkerThread

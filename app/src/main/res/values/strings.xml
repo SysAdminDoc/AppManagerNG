@@ -1360,6 +1360,10 @@
     <string name="profile_trigger_diagnostics_next">, next: <xliff:g id="time" example="5/26/26, 2:00 AM">%1$s</xliff:g></string>
     <string name="profile_trigger_diagnostics_pending">, pending: <xliff:g id="reasons" example="charging constraint">%1$s</xliff:g></string>
     <string name="profile_trigger_diagnostics_recent">, recent: <xliff:g id="reasons" example="quota">%1$s</xliff:g></string>
+    <string name="profile_trigger_battery_optimization_title">Battery optimization for routine schedules</string>
+    <string name="profile_trigger_battery_optimization_msg">Routine schedules are more reliable when AppManagerNG is exempt from Android battery optimization. Open Android\'s exemption prompt now?</string>
+    <string name="profile_trigger_battery_optimization_fix">Fix battery</string>
+    <string name="profile_trigger_battery_auto_fixed">Battery optimization exemption enabled for routine schedules.</string>
     <string name="profile_state">Profile state</string>
     <string name="allow_routine_ops_msg">Allow the profile to be used in the routine operations</string>
     <string name="profile_force_stop_msg">Force-stops apps</string>
@@ -2517,6 +2521,10 @@
     <string name="pref_battery_optimization_state_exempt">Exempt — power-saving will not pause AppManagerNG.</string>
     <string name="pref_battery_optimization_state_optimized">Optimized — system may pause AppManagerNG when idle. Tap to request an exemption.</string>
     <string name="pref_battery_optimization_unsupported">Battery optimization controls are not available on this device.</string>
+    <string name="self_battery_optimization_diagnostics_unsupported">Battery optimization: not applicable</string>
+    <string name="self_battery_optimization_diagnostics_exempt">Battery optimization: exempt</string>
+    <string name="self_battery_optimization_diagnostics_restricted_manual">Battery optimization: restricted; request exemption in system settings</string>
+    <string name="self_battery_optimization_diagnostics_restricted_autofix">Battery optimization: restricted; privileged auto-fix available</string>
     <string name="changelog_type_new">New</string>
     <string name="changelog_type_fix">Fix</string>
     <string name="changelog_type_improve">Improve</string>
