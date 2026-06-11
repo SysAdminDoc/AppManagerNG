@@ -98,6 +98,37 @@ public final class InstallerPrivilegeCascade {
         return new Activation(appContext, originalMode, null, plan);
     }
 
+    @NonNull
+    public static Activation activateAdbForDeveloperVerification(@NonNull Context context,
+                                                                 @Nullable ProgressHandler progressHandler) {
+        Context appContext = context.getApplicationContext();
+        String originalMode = Ops.getMode();
+        Plan plan = buildPlan(false,
+                SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET) && AdbUtils.isAdbdRunning(),
+                false,
+                false,
+                false,
+                false);
+        if (!ROUTE_ADB.equals(plan.selectedRoute)) {
+            return new Activation(appContext, originalMode, null, plan);
+        }
+        postProgress(appContext, progressHandler,
+                appContext.getString(R.string.installer_developer_verification_adb_retry_progress));
+        try {
+            Ops.setMode(Ops.MODE_ADB_OVER_TCP);
+            int status = Ops.init(appContext, true);
+            if (status == Ops.STATUS_SUCCESS
+                    && SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
+                return new Activation(appContext, originalMode, Ops.MODE_ADB_OVER_TCP, plan);
+            }
+            Log.w(TAG, "Developer verification ADB retry failed with status %d", status);
+        } catch (Throwable e) {
+            Log.e(TAG, "Developer verification ADB retry failed.", e);
+        }
+        restoreMode(appContext, originalMode);
+        return new Activation(appContext, originalMode, null, plan);
+    }
+
     @VisibleForTesting
     @NonNull
     static Plan buildPlan(boolean currentPrivileged,

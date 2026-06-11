@@ -11,13 +11,6 @@ into it — existing items take precedence over duplicates.
 
 ### P0
 
-- [ ] P0 — Developer Verification install-failure handling + ADB escape-hatch UX
-  Why: Enforcement starts 2026-09-30 (BR/ID/SG/TH); the platform verifier intercedes in PackageInstallerSession.handleInstall() and NG's session installs will surface new failure statuses; ADB installs are exempt, and NG uniquely owns a wireless-ADB mode it can offer as the documented fallback.
-  Evidence: https://developer.android.com/developer-verification/guides/faq ; https://developer.android.com/about/versions/16/qpr2/release-notes ; agnostic-apollo gist (RESEARCH.md Sources); docs/sideload-verification.md (predates QPR2 APIs)
-  Touches: apk/installer/ (PackageInstallerActivity, PackageInstallerService, InstallerPrivilegeCascade.java), docs/sideload-verification.md
-  Acceptance: a verifier-blocked install shows a specific explanation (not a generic failure) with a one-tap path to retry via ADB mode when available; QPR2 force-verification adb test command produces the new dialog in an emulator run.
-  Complexity: M
-
 - [ ] P0 — Port upstream Android 16 hidden-API refresh
   Why: Upstream refreshed the hidden-API surface for Android 16 after the fork pin (commits eff7f58 + 04ed88d, 2026-05-25/27); NG's privileged core (hiddenapi/ stubs + compat wrappers) predates it and the project's own audit doctrine calls this the "80-hour cliff" to amortize.
   Evidence: https://github.com/MuntashirAkon/AppManager/commits/master ; docs/architecture/README.md (doc 03); docs/audits/README.md

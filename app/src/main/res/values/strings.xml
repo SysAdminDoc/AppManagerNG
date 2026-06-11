@@ -1923,6 +1923,8 @@
     <string name="developer_verification_failure_unknown">unknown verifier failure</string>
     <string name="developer_verification_failure_network">network unavailable during developer verification</string>
     <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>
+    <string name="installer_retry_with_adb">Retry with ADB</string>
+    <string name="installer_developer_verification_adb_retry_progress">Retrying through ADB mode, which Android Developer Verification exempts.</string>
     <string name="installer_session_sha256_title">APK SHA-256</string>
     <string name="installer_session_sha256_message">These are the bytes AppManagerNG wrote into the install session. Compare this checksum with the publisher\'s posted SHA-256 before accepting Android\'s install prompt:\n\n%1$s</string>
     <string name="installer_split_cert_mismatch_title">Split APK signing mismatch</string>
