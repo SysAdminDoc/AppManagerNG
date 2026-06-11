@@ -59,6 +59,8 @@ Reliability & data safety
   notified as failed instead of always reporting success.
 - Routine triggers honour a profile's "Allow routine ops" switch — it was
   enforced nowhere, so opted-out profiles still ran on schedule.
+- Profile routine triggers can now run from app install, update, and uninstall
+  broadcasts without creating no-op periodic WorkManager jobs.
 - Batch grant/revoke permissions records a failing package once, not once per
   failing permission, fixing inflated failure counts, duplicated retry-queue
   entries and duplicated result-screen rows.
