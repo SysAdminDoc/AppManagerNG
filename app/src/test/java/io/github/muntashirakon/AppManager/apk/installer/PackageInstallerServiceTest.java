@@ -67,6 +67,17 @@ public class PackageInstallerServiceTest {
         assertFalse(hint.contains("STATUS_FAILURE_SECURITY"));
     }
 
+    @Test
+    public void staleInstallSessionRequiresPositivePastTimestampBeyondTimeout() {
+        long now = 60_000L;
+        long timeout = 30_000L;
+
+        assertTrue(PackageInstallerService.isStaleInstallSession(30_000L, now, timeout));
+        assertFalse(PackageInstallerService.isStaleInstallSession(30_001L, now, timeout));
+        assertFalse(PackageInstallerService.isStaleInstallSession(0L, now, timeout));
+        assertFalse(PackageInstallerService.isStaleInstallSession(70_000L, now, timeout));
+    }
+
     private static final class FakeProgressHandler extends QueuedProgressHandler {
         final NotificationInfo lastInfo = new NotificationInfo()
                 .setTitle("Installing Example")

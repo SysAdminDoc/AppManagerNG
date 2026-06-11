@@ -9,6 +9,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Installer
 
+- App startup now abandons stale package-installer sessions older than 30
+  minutes so repeated interrupted installs do not exhaust the platform session
+  quota.
 - Batch APK installs now stop for explicit confirmation when a queued APK is a
   downgrade, and the queue dialog lets the user skip that individual item
   instead of silently attempting the downgrade.
