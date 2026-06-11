@@ -435,9 +435,10 @@
     <string name="sort_by_times_opened">Times opened</string>
     <string name="sort_by_mobile_data">Mobile data</string>
     <string name="pref_import_export_blocking_rules">Import/export blocking rules</string>
-    <string name="pref_import_export_blocking_rules_msg">Import/export rules, import external rules from Watt or Blocker.</string>
+    <string name="pref_import_export_blocking_rules_msg">Import/export rules, import external rules from Watt, Blocker, or MyAndroidTools.</string>
     <string name="pref_import_watt">Import from Watt</string>
     <string name="pref_import_blocker">Import from Blocker</string>
+    <string name="pref_import_my_android_tools">Import from MyAndroidTools</string>
     <string name="the_import_was_successful">Imported</string>
     <string name="the_export_was_successful">Exported</string>
     <plurals name="failed_to_import_files">
@@ -544,6 +545,7 @@
     <string name="pref_import_msg">Import previously exported blocking rules from App Manager.</string>
     <string name="pref_import_watt_msg">Import blocking rules from Watt, each file containing rules for a single named package as <tt>packagename.xml</tt> etc.</string>
     <string name="pref_import_blocker_msg">Import blocking rules from Blocker, each file containing rules for a single package.</string>
+    <string name="pref_import_my_android_tools_msg">Import MyAndroidTools text backups or <tt>.ifw</tt> backup archives.</string>
     <string name="component_rules_loading_summary">Scanning AppManagerNG rules and active IFW files.</string>
     <string name="component_rules_overview_title">Component rules overview</string>
     <string name="component_rules_overview_summary">%1$d packages. %2$d IFW entries, %3$d PackageManager/provider entries. IFW path: %4$s</string>
