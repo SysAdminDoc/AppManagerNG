@@ -15,6 +15,9 @@ Installer
 - Installer failures now pair the localized error with recovery guidance, and
   copied diagnostics include the explanation and hint while preserving the raw
   status code for triage.
+- Split APK installs now warn before commit when the selected ABI split is not
+  supported by the device, or when a selected density split is not the closest
+  available match for the device density.
 - Profile apply now warns before running actions that the current privilege
   mode cannot support, lets the user apply only supported actions, and reports
   skipped privileged actions in the completion notification.
