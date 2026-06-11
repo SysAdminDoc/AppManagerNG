@@ -70,6 +70,10 @@ Reliability & data safety
   enforced nowhere, so opted-out profiles still ran on schedule.
 - Profile routine triggers can now run from app install, update, and uninstall
   broadcasts without creating no-op periodic WorkManager jobs.
+- App update auditing now has a persistent local app-change feed: permission
+  escalation, signing-key changes, and opt-in component/tracker diffs write to
+  the same feed, with a main-menu route and notification coverage for
+  component/tracker deltas.
 - Batch grant/revoke permissions records a failing package once, not once per
   failing permission, fixing inflated failure counts, duplicated retry-queue
   entries and duplicated result-screen rows.

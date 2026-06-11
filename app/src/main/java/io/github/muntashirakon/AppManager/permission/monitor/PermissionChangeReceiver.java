@@ -34,7 +34,8 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         if (packageName == null || packageName.isEmpty()) return;
         boolean permMonitorOn = Prefs.Privacy.isPermissionChangeMonitorEnabled();
         boolean certMonitorOn = Prefs.Privacy.isSigningCertChangeMonitorEnabled();
-        if (!permMonitorOn && !certMonitorOn) return;
+        boolean componentMonitorOn = Prefs.Privacy.isAppChangeAuditorEnabled();
+        if (!permMonitorOn && !certMonitorOn && !componentMonitorOn) return;
         final Context appContext = context.getApplicationContext();
         final String pkg = packageName;
         // Use goAsync() so the broadcast result stays alive across the
@@ -54,6 +55,13 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
                         SigningCertChangeMonitor.onPackageReplaced(appContext, pkg);
                     } catch (Throwable t) {
                         Log.w(TAG, "Signing-cert change monitor failed for " + pkg, t);
+                    }
+                }
+                if (componentMonitorOn) {
+                    try {
+                        ComponentChangeMonitor.onPackageReplaced(appContext, pkg);
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Component change monitor failed for " + pkg, t);
                     }
                 }
             } finally {
