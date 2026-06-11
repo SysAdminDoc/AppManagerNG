@@ -304,3 +304,72 @@ into it — existing items take precedence over duplicates.
   Touches: terminal/, main menu registration, docs/ (decision record)
   Acceptance: a dated decision doc exists; the menu either offers a working PTY terminal (run `id` in privileged mode, see output) or labels the entry "preview" with the mock's limits stated in-UI.
   Complexity: S (defer) / XL (implement)
+
+## Deep Audit Follow-ups (2026-06-11)
+
+Deferred from the 2026-06-11 deep engineering/QA/UX audit pass. The fixed half
+of that pass is in the commit history / CHANGELOG `Unreleased`. Items below were
+verified real but are device-gated, design-verification-gated, or carry enough
+regression risk to need their own change.
+
+### P1
+
+- [ ] P1 — ADB-mode privileged backend runs from world-accessible external storage (LPE)
+  Why: The DE-private-storage hardening for the privileged server was applied only to the root path. ADB mode still launches `run_server.sh` + `am.jar` from `getExternalCachePath()` via the `getServerRunnerCommand(1) + " || " + getServerRunnerCommand(0)` fallback in `ServerConfig.getServerRunnerAdbCommand` — and because the ADB shell uid (2000) cannot read the DE-private index-1 copy, the index-0 external-storage branch is effectively always taken. On pre-scoped-storage devices (or via all-files access) another app can overwrite those artifacts and gain code execution in AM's ADB-privileged backend. Compounded by `AssetsUtils.copyFile` only refreshing on length mismatch (no digest, `force=BuildConfig.DEBUG`), so a same-length planted file is never overwritten.
+  Evidence: servermanager/ServerConfig.java:54-71,91-99; servermanager/LocalServerManager.java:230-236; utils/AssetsUtils.java:36-43
+  Touches: servermanager/ServerConfig.java, servermanager/LocalServerManager.java, utils/AssetsUtils.java
+  Acceptance: the ADB-privileged backend is staged to `/data/local/tmp` (chown 2000:2000, chmod 700) or another non-world-writable path instead of `/sdcard`; the external index-0 copies are no longer written; `copyFile` verifies content (digest) and always refreshes the privileged artifacts on init. Verify root + ADB modes still start on a rooted A16 emulator. (Device-gated: touches the privileged bootstrap, cannot be validated headless.)
+  Complexity: M
+
+### P2
+
+- [ ] P2 — RootService main.jar staged via external storage before privileged copy (TOCTOU)
+  Why: For the ADB/non-root RootService channel, `main.jar` is written to `getExternalCachePath()` then a later privileged shell `cp` copies it into `/data/local/tmp` and runs it via `app_process`. Between the app write and the privileged `cp`, another app with external-storage write access can swap the jar, so the privileged backend loads attacker bytes.
+  Evidence: ipc/RootServiceManager.java:170-201,228-268
+  Touches: ipc/RootServiceManager.java
+  Acceptance: `main.jar` is dumped to app-internal (DE cache) storage, never external, before the privileged `cp`; or a digest is verified inside the privileged script before `app_process` loads it. (Device-gated.)
+  Complexity: S
+
+- [ ] P2 — AppInfoFragment list build resolves strings on a background thread (silent stuck progress)
+  Why: `setupVerticalView` and its `setAppIdentity`/`setMoreInfo`/`setStorageAndCache`/`setDataUsage` helpers call dozens of `Fragment.getString()` on the worker thread inside `mListFuture`. After `onDetach()` cancels with `cancel(true)`, the next `getString()` throws via `requireContext()`; because `ThreadUtils.postOnBackgroundThread` swallows the exception into the unobserved Future, the worker dies mid-list and `mLoadedItemCount` never reaches 4, so a tab revisit before a fresh emission can leave the progress indicator stuck.
+  Evidence: details/info/AppInfoFragment.java:3576-3611 (and the setters invoked from the same worker)
+  Touches: details/info/AppInfoFragment.java
+  Acceptance: snapshot `Context appContext = requireContext().getApplicationContext()` before submitting and resolve all strings from it (not `Fragment.getString()`); the list builds fully even if the fragment detaches mid-load. (Large file, broad surface — wants its own focused change + manual walkthrough.)
+  Complexity: M
+
+- [ ] P2 — Main-list badge text colors fail 4.5:1 contrast in some themes
+  Why: `MainRecyclerAdapter.applyBadgeStyle` sets the badge text to a saturated raw `ColorCodes` hue over a ~17%-alpha tint of the same hue, so the tracker-count badge text (#FF8017 orange) reads ~2.0:1 on a light card and the blocked-tracker badge (salem_green) ~3.3:1 on a dark card — both below the 4.5:1 text minimum.
+  Evidence: MainRecyclerAdapter.java:630-642; ColorCodes.java:38-40,116-118; libcore colors.xml:18
+  Touches: MainRecyclerAdapter.java (applyBadgeStyle), colors-v2.xml (night-aware on-container aliases)
+  Acceptance: badge content colors route through night-aware semantic on-container aliases (e.g. premium_warning_content / premium_success_content) so text hits ≥4.5:1 in light, dark and AMOLED; verified with a contrast checker against rendered screens. (Needs on-device visual verification — colors can't be validated headless.)
+  Complexity: S
+
+### P3
+
+- [ ] P3 — Clickable main-list badges have <48dp touch targets
+  Why: `tracker_indicator` and `perm_indicator` are clickable (`setClickable(true)` + click listener) but render at `premium_badge_min_height/width` = 24dp with no TouchDelegate. Two clickable badges share one `FlowLayout` parent, so a single `TouchDelegate` (one target rect per view) can't cover both.
+  Evidence: MainRecyclerAdapter.java:420-422,457-459; item_main_v2.xml:115-116,136-137; dimens-v2.xml:76-77
+  Touches: MainRecyclerAdapter.java (composite touch delegate on the badge row), item_main_v2.xml
+  Acceptance: each clickable badge has a ≥48dp effective hit rect via a composite/multi-target TouchDelegate posted on the parent FlowLayout (visual size stays 24dp); a11y scanner clean. (Needs on-device touch verification.)
+  Complexity: S
+
+- [ ] P3 — Dead V2 premium design tokens (colors / dimens / styles / attr)
+  Why: The premium resource system shipped a number of tokens that have zero references: precomputed elevation-overlay colors (`premium_elevated_1..5_{dark,amoled}`), unused brand ramp steps (`premium_brand_25/50/400/500/700/800`), several `premium_*` dimens/type tokens, dead V2 styles (`SearchBarCard`, `Button.EFAB`, `BottomSheet.Content`, `Dialog.Content`, `EmptyState`, `Skeleton`, `ShapeAppearance.AppTheme.V2.Card`), and the unused `listItemIndicatorWidth` attr (declared 8dp in themes-v2 / 9dp in styles — also mutually inconsistent). Dead tokens inflate the resource table and mislead future work.
+  Evidence: colors-v2.xml + values-night/colors-v2.xml; dimens-v2.xml; themes-v2.xml:135,197,203,207,211,215,224; libcore attrs.xml:8
+  Touches: app/src/main/res/values* (colors-v2, dimens-v2, themes-v2), libcore/ui/.../attrs.xml + styles.xml
+  Acceptance: each token confirmed zero-reference (incl. R.* usage in Java) then removed; build + resource merge green; no behavior change.
+  Complexity: S
+
+- [ ] P3 — Sibling list rows diverge from the V2 card treatment
+  Why: ~15 list-row layouts (e.g. item_debloater.xml) still use the classic `Widget.AppTheme.CardView.ListItem.Outlined` (bg `?colorSurface`, elevation 0) while the main list uses `Widget.AppTheme.V2.Card.ListRow` (bg `?colorSurfaceContainerLow`, 1dp elevation, hairline stroke), so adjacent NG screens render visibly different card surfaces.
+  Evidence: layout/item_debloater.xml:4 (+ ~14 sibling row layouts); themes-v2.xml V2.Card.ListRow
+  Touches: app/src/main/res/layout/item_*.xml
+  Acceptance: NG list rows share the V2 card treatment; spot-checked across debloater / permission / one-click lists in light, dark and AMOLED. (Visual — needs on-device verification.)
+  Complexity: S
+
+- [ ] P3 — `BatchOpsResultsActivity` still single-foreground-notification-ID across workers (defense-in-depth)
+  Why: AutoBackupWorker's manual + periodic runs share `FOREGROUND_NOTIFICATION_ID`/`RESULT_NOTIFICATION_ID`. The new process-wide run guard prevents concurrent runs (the real correctness issue), but deriving the foreground id from `getId()` would remove the last way two notifications can clobber each other if the guard is ever relaxed.
+  Evidence: backup/schedule/AutoBackupWorker.java:46-47,177-188
+  Touches: backup/schedule/AutoBackupWorker.java
+  Acceptance: foreground notification id derived from the worker id; result notification unaffected.
+  Complexity: S
