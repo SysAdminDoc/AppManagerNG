@@ -30,6 +30,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
+import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -97,11 +98,16 @@ public class ProfileApplierService extends ForegroundService {
         ProfileManager profileManager = null;
         try {
             profileManager = new ProfileManager(item.getProfileId(), tempProfilePath);
-            profileManager.applyProfile(item.getState(), mProgressHandler);
+            ProfileApplierResult result = profileManager.applyProfile(item.getState(), mProgressHandler);
             boolean requiresRestart = profileManager.requiresRestart();
-            OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, true,
-                    OperationJournalMetadata.forProfile(this, item, true, requiresRestart, null));
-            sendNotification(item.getProfileName(), Activity.RESULT_OK, notify, requiresRestart);
+            // A profile that completed without throwing can still have failed for some/all packages
+            // (batch ops report failures as data, they don't throw). Reflect that in history + the
+            // notification instead of always claiming success.
+            boolean success = result.isSuccessful();
+            OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, success,
+                    OperationJournalMetadata.forProfile(this, item, success, requiresRestart, null));
+            sendNotification(item.getProfileName(), success ? Activity.RESULT_OK : Activity.RESULT_CANCELED,
+                    notify, requiresRestart);
         } catch (Throwable e) {
             // Catch Throwable, not just IOException: applyProfile -> BatchOpsManager can throw
             // RuntimeException (e.g. a profile op whose options failed to deserialize). Letting

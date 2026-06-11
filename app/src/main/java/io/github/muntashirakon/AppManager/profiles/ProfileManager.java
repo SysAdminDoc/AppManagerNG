@@ -191,13 +191,15 @@ public class ProfileManager {
     }
 
     @SuppressLint("SwitchIntDef")
-    public void applyProfile(@Nullable String state, @Nullable ProgressHandler progressHandler) {
+    @NonNull
+    public ProfileApplierResult applyProfile(@Nullable String state, @Nullable ProgressHandler progressHandler) {
         // Set state
         if (state == null) state = mProfile.state;
         log("====> Started execution with state " + state);
         ProfileApplierResult result = mProfile.apply(state, mLogger, progressHandler);
         mRequiresRestart = result.requiresRestart();
         log("====> Execution completed.");
+        return result;
     }
 
     public void conclude() {

@@ -404,7 +404,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                                         .BackupRetentionPolicy.pruneAll();
                                 io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
                                         io.github.muntashirakon.AppManager.utils.UIUtils.displayLongToast(
-                                                getString(R.string.backup_retention_prune_done, deleted)));
+                                                getResources().getQuantityString(R.plurals.backup_retention_prune_done, deleted, deleted)));
                             }))
                     .setNegativeButton(R.string.cancel, null)
                     .show();

@@ -24,6 +24,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -45,6 +46,10 @@ public class AutoBackupWorker extends Worker {
     private static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.AUTO_BACKUP";
     private static final int FOREGROUND_NOTIFICATION_ID = 0x4a11;
     private static final int RESULT_NOTIFICATION_ID = 0x4a12;
+    // Periodic and "Run now" runs use different unique work names, so WorkManager can run them
+    // concurrently. Guard against that here: two simultaneous backups over the same due-package
+    // set produce duplicate archives and race on the backup dir / Room rows.
+    private static final AtomicBoolean sRunning = new AtomicBoolean(false);
 
     public AutoBackupWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
@@ -64,6 +69,15 @@ public class AutoBackupWorker extends Worker {
             AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_disabled));
             AutoBackupScheduler.refreshDiagnostics(context);
             return Result.success();
+        }
+        if (!sRunning.compareAndSet(false, true)) {
+            // Another auto-backup run is already in flight. Skip the manual one; reschedule the
+            // periodic one so its due packages still get backed up once the current run finishes.
+            Log.w(TAG, "Auto-backup already running; skipping this run (manual=" + manual + ")");
+            String message = context.getString(R.string.auto_backup_result_already_running);
+            AutoBackupScheduler.recordRunResult(message);
+            AutoBackupScheduler.refreshDiagnostics(context);
+            return manual ? Result.success() : Result.retry();
         }
         try {
             String runningMessage = context.getString(R.string.auto_backup_running);
@@ -155,6 +169,8 @@ public class AutoBackupWorker extends Worker {
             AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, true);
             return Result.failure();
+        } finally {
+            sRunning.set(false);
         }
     }
 

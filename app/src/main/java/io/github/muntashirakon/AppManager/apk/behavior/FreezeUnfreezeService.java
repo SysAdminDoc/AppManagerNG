@@ -33,7 +33,7 @@ import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
@@ -57,8 +57,10 @@ public class FreezeUnfreezeService extends Service {
 
     private static final String STOP_ACTION = BuildConfig.APPLICATION_ID + ".action.STOP_FREEZE_UNFREEZE_MONITOR";
 
-    private final Map<String, FreezeUnfreezeShortcutInfo> mPackagesToShortcut = new HashMap<>();
-    private final Map<String, String> mPackagesToNotificationTag = new HashMap<>();
+    // Mutated on the main thread (onHandleIntent) but iterated on a background thread
+    // (freezeAllPackages via the screen-lock receiver); use concurrent maps to avoid CME.
+    private final Map<String, FreezeUnfreezeShortcutInfo> mPackagesToShortcut = new ConcurrentHashMap<>();
+    private final Map<String, String> mPackagesToNotificationTag = new ConcurrentHashMap<>();
     private ScreenLockChecker mScreenLockChecker;
     private final BroadcastReceiver mScreenLockedReceiver = new BroadcastReceiver() {
         @Override
@@ -88,6 +90,10 @@ public class FreezeUnfreezeService extends Service {
     public void onCreate() {
         super.onCreate();
         mWakeLock = CpuUtils.getPartialWakeLock("freeze_unfreeze");
+        // Acquire immediately: the freeze pass runs right after ACTION_SCREEN_OFF, exactly when the
+        // CPU is about to suspend. Without holding the lock the pass can be suspended mid-run and
+        // packages stay unfrozen. The helper carries a 2 h safety timeout.
+        CpuUtils.acquireWakeLock(mWakeLock);
     }
 
     @Override
