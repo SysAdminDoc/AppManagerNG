@@ -606,6 +606,16 @@ public final class Prefs {
         }
     }
 
+    public static final class Editor {
+        public static boolean isWordWrapEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_EDITOR_WORD_WRAP_BOOL);
+        }
+
+        public static void setWordWrapEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_EDITOR_WORD_WRAP_BOOL, enabled);
+        }
+    }
+
     public static final class Installer {
         public static boolean installInBackground() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_INSTALLER_ALWAYS_ON_BACKGROUND_BOOL);

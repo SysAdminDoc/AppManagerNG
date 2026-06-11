@@ -68,13 +68,21 @@ public class CodeEditorViewModel extends AndroidViewModel {
     // TODO: 12/9/22 Another option is to store them as assets/resources
     private static final Map<String, String> EXT_TO_LANGUAGE_MAP = new HashMap<String, String>() {{
         // We skip the default ones
+        put("bash", "sh");
+        put("cfg", "properties");
+        put("conf", "properties");
+        put("css", "properties");
         put("cmd", "sh");
         put("htm", "xml");
         put("html", "xml");
+        put("ini", "properties");
         put("kt", "kotlin");
+        put("kts", "kotlin");
         put("prop", "properties");
+        put("toml", "properties");
         put("tokens", "properties");
         put("xhtml", "xml");
+        put("zsh", "sh");
     }};
 
     @IntDef({XML_TYPE_NONE, XML_TYPE_AXML, XML_TYPE_ABX})
@@ -328,7 +336,8 @@ public class CodeEditorViewModel extends AndroidViewModel {
 
     @Contract("!null -> !null")
     @Nullable
-    private static String getLanguageFromExt(@Nullable String ext) {
+    @VisibleForTesting
+    static String getLanguageFromExt(@Nullable String ext) {
         String lang = EXT_TO_LANGUAGE_MAP.get(ext);
         if (lang != null) return lang;
         return ext;
