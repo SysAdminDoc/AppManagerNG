@@ -59,7 +59,7 @@
             android:layout_weight="1">
 
             <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/favorite_icon"
+                android:id="@+id/debug_indicator"
                 android:layout_width="@dimen/premium_favorite_hit_size"
                 android:layout_height="@dimen/premium_favorite_hit_size"
                 android:layout_gravity="end|top"
