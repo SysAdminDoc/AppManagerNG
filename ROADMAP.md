@@ -213,7 +213,7 @@ into it — existing items take precedence over duplicates.
   Complexity: M
 
 - [ ] P2 — 2026-06-09 deferred-audit reliability batch
-  Why: The deep audit deferred verified-real, low-individual-cost reliability bugs that were lost when the old ROADMAP section was replaced; re-itemizing them prevents silent drop: SAF pending-write fields lost on process death + profile-export main-thread IO; retention pruners leaving stale Room rows with no broadcast.
+  Why: The deep audit deferred verified-real, low-individual-cost reliability bugs that were lost when the old ROADMAP section was replaced; re-itemizing them prevents silent drop: SAF pending-write fields lost on process death + profile-export main-thread IO.
   Evidence: 2026-06-09 audit session record (commits 4f46a0e9..079e96f1 shipped the non-deferred half); usage/AppUsageViewModel.java + apk/whatsnew/ApkWhatsNewFinder.java verified present
   Touches: usage/, details/ fragments, apk/whatsnew/, profiles/ (export IO), oneclickops/, backup/ (pruners, commit, verify), db/
   Acceptance: each sub-item fixed with a regression test where JVM-testable; batch may ship across multiple commits; none re-deferred without a dated decision note.
