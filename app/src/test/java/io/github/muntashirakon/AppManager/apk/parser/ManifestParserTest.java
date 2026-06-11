@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.apk.parser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -73,6 +74,24 @@ public class ManifestParserTest {
                 ManifestParser.normalizeIntentFilterName(" android.intent.action.VIEW "));
     }
 
+    @Test
+    public void parseComponentsRejectsHostileBinaryXmlAsIoException() {
+        assertThrows(IOException.class,
+                () -> new ManifestParser(hostileBinaryXml()).parseComponents());
+    }
+
+    @Test
+    public void parseMetadataRejectsHostileBinaryXmlAsIoException() {
+        assertThrows(IOException.class,
+                () -> new ManifestParser(hostileBinaryXml()).parseMetadata());
+    }
+
+    @Test
+    public void parseUsesSdkLibrariesRejectsHostileBinaryXmlAsIoException() {
+        assertThrows(IOException.class,
+                () -> new ManifestParser(hostileBinaryXml()).parseUsesSdkLibraries());
+    }
+
     private static void assertResourceMetadata(List<ManifestMetadata> metadata, ManifestMetadata row, String name) {
         assertNotNull("Missing resource metadata for " + name + "; candidates: "
                 + describeCandidates(metadata, name), row);
@@ -120,5 +139,15 @@ public class ManifestParserTest {
             }
         }
         return false;
+    }
+
+    private static byte[] hostileBinaryXml() {
+        return new byte[]{
+                0x03, 0x00, 0x08, 0x00,
+                0x28, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x1c, 0x00,
+                0x10, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00
+        };
     }
 }

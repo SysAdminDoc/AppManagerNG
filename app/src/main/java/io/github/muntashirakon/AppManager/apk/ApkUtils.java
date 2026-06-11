@@ -285,6 +285,10 @@ public final class ApkUtils {
                 manifestAttrs.put(attrName, attr.getValueAsString());
             }
             return manifestAttrs;
+        } catch (ApkFile.ApkFileException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new ApkFile.ApkFileException("Malformed AndroidManifest.xml.", e);
         }
     }
 

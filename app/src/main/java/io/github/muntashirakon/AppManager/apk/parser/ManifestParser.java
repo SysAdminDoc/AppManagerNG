@@ -67,132 +67,125 @@ public class ManifestParser {
 
     @NonNull
     public List<ManifestSdkLibrary> parseUsesSdkLibraries() throws IOException {
-        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
-            ResXmlDocument xmlBlock = new ResXmlDocument();
-            xmlBlock.readBytes(reader);
-            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
-            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
-            if (!TAG_MANIFEST.equals(resManifestElement.getName())) {
-                throw new IOException("\"manifest\" tag not found.");
+        ResXmlElement resManifestElement = readManifestElement();
+        List<ManifestSdkLibrary> sdkLibraries = new ArrayList<>();
+        Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_USES_SDK_LIBRARY);
+        while (resXmlElementIt.hasNext()) {
+            ResXmlElement elem = resXmlElementIt.next();
+            String name = getAttributeValue(elem, ATTR_NAME);
+            if (name == null || name.trim().isEmpty()) {
+                continue;
             }
-            List<ManifestSdkLibrary> sdkLibraries = new ArrayList<>();
-            Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_USES_SDK_LIBRARY);
-            while (resXmlElementIt.hasNext()) {
-                ResXmlElement elem = resXmlElementIt.next();
-                String name = getAttributeValue(elem, ATTR_NAME);
-                if (name == null || name.trim().isEmpty()) {
-                    continue;
-                }
-                sdkLibraries.add(new ManifestSdkLibrary(name, getLongAttributeValue(elem, ATTR_VERSION_MAJOR, -1),
-                        getAttributeValue(elem, ATTR_CERT_DIGEST)));
-            }
-            return sdkLibraries;
+            sdkLibraries.add(new ManifestSdkLibrary(name, getLongAttributeValue(elem, ATTR_VERSION_MAJOR, -1),
+                    getAttributeValue(elem, ATTR_CERT_DIGEST)));
         }
+        return sdkLibraries;
     }
 
     public List<ManifestComponent> parseComponents() throws IOException {
-        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
-            ResXmlDocument xmlBlock = new ResXmlDocument();
-            xmlBlock.readBytes(reader);
-            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
-            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
-            // manifest
-            if (!TAG_MANIFEST.equals(resManifestElement.getName())) {
-                throw new IOException("\"manifest\" tag not found.");
-            }
-            String packageName = getAttributeValue(resManifestElement, ATTR_MANIFEST_PACKAGE);
-            if (packageName == null) {
-                throw new IOException("\"manifest\" does not have required attribute \"package\".");
-            }
-            mPackageName = packageName;
-            // manifest -> application
-            ResXmlElement resApplicationElement = null;
-            Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_APPLICATION);
-            if (resXmlElementIt.hasNext()) {
-                resApplicationElement = resXmlElementIt.next();
-            }
-            if (resXmlElementIt.hasNext()) {
-                throw new IOException("\"manifest\" has duplicate \"application\" tags.");
-            }
-            if (resApplicationElement == null) {
-                Log.i(TAG, "package %s does not have \"application\" tag.", mPackageName);
-                return Collections.emptyList();
-            }
-            // manifest -> application -> component
-            List<ManifestComponent> componentIfList = new ArrayList<>(resApplicationElement.getElementsCount());
-            String tagName;
-            resXmlElementIt = resApplicationElement.getElements();
-            while (resXmlElementIt.hasNext()) {
-                ResXmlElement elem = resXmlElementIt.next();
-                tagName = elem.getName();
-                if (tagName != null) {
-                    switch (tagName) {
-                        case TAG_ACTIVITY:
-                        case TAG_ACTIVITY_ALIAS:
-                        case TAG_SERVICE:
-                        case TAG_RECEIVER:
-                        case TAG_PROVIDER:
-                            componentIfList.add(parseComponentInfo(elem, tagName));
-                            break;
-                    }
-                }
-            }
-            return componentIfList;
+        ResXmlElement resManifestElement = readManifestElement();
+        String packageName = getAttributeValue(resManifestElement, ATTR_MANIFEST_PACKAGE);
+        if (packageName == null) {
+            throw new IOException("\"manifest\" does not have required attribute \"package\".");
         }
-    }
-
-    @NonNull
-    public List<ManifestMetadata> parseMetadata() throws IOException {
-        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
-            ResXmlDocument xmlBlock = new ResXmlDocument();
-            xmlBlock.readBytes(reader);
-            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
-            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
-            if (!TAG_MANIFEST.equals(resManifestElement.getName())) {
-                throw new IOException("\"manifest\" tag not found.");
-            }
-            String packageName = getAttributeValue(resManifestElement, ATTR_MANIFEST_PACKAGE);
-            if (packageName == null) {
-                throw new IOException("\"manifest\" does not have required attribute \"package\".");
-            }
-            mPackageName = packageName;
-            ResXmlElement resApplicationElement = null;
-            Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_APPLICATION);
-            if (resXmlElementIt.hasNext()) {
-                resApplicationElement = resXmlElementIt.next();
-            }
-            if (resXmlElementIt.hasNext()) {
-                throw new IOException("\"manifest\" has duplicate \"application\" tags.");
-            }
-            if (resApplicationElement == null) {
-                Log.i(TAG, "package %s does not have \"application\" tag.", mPackageName);
-                return Collections.emptyList();
-            }
-
-            List<ManifestMetadata> metadata = new ArrayList<>(resApplicationElement.getElementsCount());
-            collectMetadata(resApplicationElement, ManifestMetadata.OWNER_APPLICATION, mPackageName, metadata);
-            resXmlElementIt = resApplicationElement.getElements();
-            while (resXmlElementIt.hasNext()) {
-                ResXmlElement elem = resXmlElementIt.next();
-                String tagName = elem.getName();
-                if (tagName == null) {
-                    continue;
-                }
+        mPackageName = packageName;
+        // manifest -> application
+        ResXmlElement resApplicationElement = null;
+        Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_APPLICATION);
+        if (resXmlElementIt.hasNext()) {
+            resApplicationElement = resXmlElementIt.next();
+        }
+        if (resXmlElementIt.hasNext()) {
+            throw new IOException("\"manifest\" has duplicate \"application\" tags.");
+        }
+        if (resApplicationElement == null) {
+            Log.i(TAG, "package %s does not have \"application\" tag.", mPackageName);
+            return Collections.emptyList();
+        }
+        // manifest -> application -> component
+        List<ManifestComponent> componentIfList = new ArrayList<>(resApplicationElement.getElementsCount());
+        String tagName;
+        resXmlElementIt = resApplicationElement.getElements();
+        while (resXmlElementIt.hasNext()) {
+            ResXmlElement elem = resXmlElementIt.next();
+            tagName = elem.getName();
+            if (tagName != null) {
                 switch (tagName) {
                     case TAG_ACTIVITY:
                     case TAG_ACTIVITY_ALIAS:
                     case TAG_SERVICE:
                     case TAG_RECEIVER:
                     case TAG_PROVIDER:
-                        String componentName = getAttributeValue(elem, ATTR_NAME);
-                        if (componentName != null) {
-                            collectMetadata(elem, tagName,
-                                    new ComponentName(mPackageName, componentName).flattenToShortString(), metadata);
-                        }
+                        componentIfList.add(parseComponentInfo(elem, tagName));
                         break;
                 }
             }
-            return metadata;
+        }
+        return componentIfList;
+    }
+
+    @NonNull
+    public List<ManifestMetadata> parseMetadata() throws IOException {
+        ResXmlElement resManifestElement = readManifestElement();
+        String packageName = getAttributeValue(resManifestElement, ATTR_MANIFEST_PACKAGE);
+        if (packageName == null) {
+            throw new IOException("\"manifest\" does not have required attribute \"package\".");
+        }
+        mPackageName = packageName;
+        ResXmlElement resApplicationElement = null;
+        Iterator<ResXmlElement> resXmlElementIt = resManifestElement.getElements(TAG_APPLICATION);
+        if (resXmlElementIt.hasNext()) {
+            resApplicationElement = resXmlElementIt.next();
+        }
+        if (resXmlElementIt.hasNext()) {
+            throw new IOException("\"manifest\" has duplicate \"application\" tags.");
+        }
+        if (resApplicationElement == null) {
+            Log.i(TAG, "package %s does not have \"application\" tag.", mPackageName);
+            return Collections.emptyList();
+        }
+
+        List<ManifestMetadata> metadata = new ArrayList<>(resApplicationElement.getElementsCount());
+        collectMetadata(resApplicationElement, ManifestMetadata.OWNER_APPLICATION, mPackageName, metadata);
+        resXmlElementIt = resApplicationElement.getElements();
+        while (resXmlElementIt.hasNext()) {
+            ResXmlElement elem = resXmlElementIt.next();
+            String tagName = elem.getName();
+            if (tagName == null) {
+                continue;
+            }
+            switch (tagName) {
+                case TAG_ACTIVITY:
+                case TAG_ACTIVITY_ALIAS:
+                case TAG_SERVICE:
+                case TAG_RECEIVER:
+                case TAG_PROVIDER:
+                    String componentName = getAttributeValue(elem, ATTR_NAME);
+                    if (componentName != null) {
+                        collectMetadata(elem, tagName,
+                                new ComponentName(mPackageName, componentName).flattenToShortString(), metadata);
+                    }
+                    break;
+            }
+        }
+        return metadata;
+    }
+
+    @NonNull
+    private ResXmlElement readManifestElement() throws IOException {
+        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
+            ResXmlDocument xmlBlock = new ResXmlDocument();
+            xmlBlock.readBytes(reader);
+            xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
+            ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
+            if (resManifestElement == null || !TAG_MANIFEST.equals(resManifestElement.getName())) {
+                throw new IOException("\"manifest\" tag not found.");
+            }
+            return resManifestElement;
+        } catch (IOException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new IOException("Malformed binary AndroidManifest.xml.", e);
         }
     }
 
