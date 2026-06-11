@@ -575,14 +575,21 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     public void listAppsInstalledByAmForDexOpt() {
         postCancellableTask(() -> {
+            int userId = UserHandleHidden.myUserId();
             HashSet<String> packageNames = new HashSet<>();
             for (ApplicationInfo applicationInfo : PackageUtils.getAllApplications(0)) {
                 if (packageNames.contains(applicationInfo.packageName)) {
                     continue;
                 }
-                packageNames.add(applicationInfo.packageName);
                 if (ThreadUtils.isInterrupted()) {
                     return;
+                }
+                // Without privilege, the platform only lets us dexopt packages App Manager itself
+                // installed. Restrict the list accordingly — previously it offered every installed
+                // app, so the batch op mass-failed (or silently no-opped) for everything else.
+                if (BuildConfig.APPLICATION_ID.equals(
+                        PackageManagerCompat.getInstallerPackageName(applicationInfo.packageName, userId))) {
+                    packageNames.add(applicationInfo.packageName);
                 }
             }
             mAppsInstalledByAmForDexOpt.postValue(packageNames.toArray(new String[0]));
