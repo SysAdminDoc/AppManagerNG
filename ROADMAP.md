@@ -7,6 +7,84 @@ Live checklist of incomplete work. Historical surfaces are archived under
 If a live copy of this file exists on another machine, merge these additions
 into it — existing items take precedence over duplicates.
 
+## Active Build Initiative — Quality & Capability Push (2026-06-11)
+
+Sequenced from the post-audit improvement review. Items already specced in detail
+elsewhere in this file are cross-referenced rather than duplicated. "Building now"
+items are verifiable headless (compile / resource merge / JVM tests) and are being
+implemented this initiative; "device-gated" items carry full specs but are NOT
+patched blind — they touch the privileged bootstrap, need an emulator/rooted
+device, or need on-device visual verification.
+
+### Building now (verifiable headless)
+
+- [ ] INIT-1 — Main-list perceived performance: search debounce + scroll-position restore
+  Why: the main list is the highest-friction screen; per-keystroke re-filtering and lost
+  scroll position on rotation/return are the things users feel. (Subset of the upstream
+  "main-list performance/correctness batch" that does not require the full ListAdapter swap.)
+  Touches: main/MainActivity (search handler), main/MainViewModel (debounced filter),
+  main/MainRecyclerAdapter / RecyclerView state save-restore
+  Acceptance: typing debounces filtering (≈300 ms); rotation/return restores scroll
+  position; a JVM test covers the debounce/coalescing helper. Visual confirmation of
+  scroll restore is device-gated and noted as such.
+  Complexity: M
+
+- [ ] INIT-2 — Backup atomic overwrite (close the 2020 overwrite TODO, safely)
+  Why: re-backing-up to an existing slot requires deleting first, creating a data-loss
+  window. Implement write-new-then-swap so an interrupted overwrite leaves the previous
+  backup intact. (The user-protect half already exists via freeze; retention/bulk-delete
+  already skip frozen backups.)
+  Touches: backup/BackupManager.java, backup/BackupItems.java (temp-then-commit swap),
+  backup/dialog/ (offer overwrite when a same-name backup exists)
+  Acceptance: overwrite offered when a same-name backup exists; an injected mid-overwrite
+  failure leaves the previous backup readable (JVM test with BackupItems/BackupManager
+  harness, which already exists).
+  Complexity: M
+
+- [ ] INIT-3 — Regression test safety net for the 2026-06-11 audit fixes
+  Why: the lifecycle/data fixes have nothing stopping them regressing. Cover the
+  JVM-testable data paths: ProfileApplierResult failure aggregation, BatchOpsManager
+  grant/revoke single-package-per-failure, SplitInputStream 0xFF masking, and the
+  AutoBackupWorker concurrency guard contract.
+  Touches: app/src/test/ (new focused unit tests)
+  Acceptance: tests fail against the pre-fix behaviour and pass against current; run in
+  the existing :app:testFlossDebugUnitTest suite.
+  Complexity: S
+
+- [ ] INIT-4 — Device-wide analytics / discovery dashboard
+  Why: the category's stickiest discovery surface (Inure analytics, AppDash insight cards);
+  NG already computes every datapoint (installer source, target SDK, signing, usage) but
+  offers no aggregate view. Pure presentation + aggregation over existing predicates.
+  (Promotes the existing P3 "Device-wide analytics dashboard" item to active.)
+  Touches: new dashboard fragment under main/ or a menu entry, filters/options/ (reuse
+  predicates as tap-through), existing chart utilities
+  Acceptance: a screen shows installer-source / targetSDK / signing distributions + an
+  "unused 30/60/90 days" card; tapping a segment opens the main list pre-filtered. The
+  aggregation is covered by a JVM test; the rendered screen is device-gated for visual.
+  Complexity: M
+
+- [ ] INIT-5 — i18n intake scaffolding (Weblate config + CONTRIBUTING + NG-string audit)
+  Why: 44 inherited locales at 30-40%, NG strings English-only, README promises a Weblate
+  link that does not exist. (Promotes the existing P2 "Fork-owned translation pipeline"
+  item; the hosted Weblate instance itself remains maintainer/external-gated.)
+  Touches: .github/ (Weblate config), CONTRIBUTING.md (translation section), README link
+  Acceptance: a committed Weblate project config + contributor docs; the hosted instance
+  is filed as the remaining maintainer action.
+  Complexity: S
+
+### Device-gated (specced, not patched blind — see detailed entries below)
+
+- [ ] INIT-D1 — Full main-list ListAdapter / DiffUtil migration (supersedes the manual
+  adapter plumbing that generated many lifecycle bugs). View-ID preservation needs a
+  device. See "Port upstream main-list performance/correctness batch".
+- [ ] INIT-D2 — ADB-mode privileged backend off external storage + copyFile digest (LPE).
+  See "Deep Audit Follow-ups (2026-06-11) → P1".
+- [ ] INIT-D3 — HMAC mutual auth + native run_server port. See "Port HMAC mutual auth …".
+- [ ] INIT-D4 — Suspend target app during backup (SIGSTOP). Needs privilege to verify.
+  See "Pause target app during backup".
+- [ ] INIT-D5 — Backup round-trip emulator CI. Needs the emulator runner. See "Backup/
+  restore round-trip integration tests in emulator CI".
+
 ## Research-Driven Additions
 
 ### P0
