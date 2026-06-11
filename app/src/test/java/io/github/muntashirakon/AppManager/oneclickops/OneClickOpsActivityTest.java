@@ -41,4 +41,11 @@ public class OneClickOpsActivityTest {
         assertThrows(IllegalArgumentException.class,
                 () -> OneClickOpsActivity.buildLeftoverShareIntent(Collections.emptyList(), "Leftover folders"));
     }
+
+    @Test
+    public void shouldCancelPendingWorkOnlyWhenFinishingWithoutConfigurationChange() {
+        assertTrue(OneClickOpsActivity.shouldCancelPendingWorkOnDestroy(true, false));
+        assertFalse(OneClickOpsActivity.shouldCancelPendingWorkOnDestroy(true, true));
+        assertFalse(OneClickOpsActivity.shouldCancelPendingWorkOnDestroy(false, false));
+    }
 }
