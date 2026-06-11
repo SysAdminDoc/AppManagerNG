@@ -20,6 +20,7 @@ import static io.github.muntashirakon.AppManager.utils.Utils.openAsFolderInFM;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ComponentName;
@@ -2329,8 +2330,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
 
     /**
      * Surface the full SHA-256 fingerprint plus the Subject and Issuer DNs
-     * with a Copy button (digest-only, matching the existing
-     * AppVerifier / {@code apksigner verify --print-certs} cross-check flow).
+     * with Copy and AppVerifier-compatible Share actions.
      * Subject and Issuer are RFC 2253 distinguished names from the X.509
      * certificate; they're informational only — only the fingerprint is
      * cryptographically meaningful, but the DNs let users see who the
@@ -2359,8 +2359,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         displayShortToast(R.string.copied_to_clipboard);
                     }
                 })
+                .setNeutralButton(R.string.share, (d, w) -> shareAppVerifierInfo(context, fingerprint))
                 .setNegativeButton(R.string.close, null)
                 .show();
+    }
+
+    private void shareAppVerifierInfo(@NonNull Context context, @NonNull String fingerprint) {
+        Intent shareIntent = buildAppVerifierShareIntent(mPackageName, fingerprint)
+                .putExtra(Intent.EXTRA_SUBJECT,
+                        context.getString(R.string.cert_fingerprint_share_subject, mPackageName));
+        try {
+            context.startActivity(Intent.createChooser(shareIntent,
+                    context.getString(R.string.cert_fingerprint_share_chooser_title)));
+        } catch (ActivityNotFoundException e) {
+            Log.e(TAG, e);
+            displayShortToast(R.string.share_failed);
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildAppVerifierShareIntent(@NonNull String packageName, @NonNull String fingerprint) {
+        return new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, AppVerifierShareFormatter.format(packageName, fingerprint));
     }
 
     /**
