@@ -62,6 +62,17 @@
                     tools:text="@string/profile_apply_review_apps_summary" />
 
                 <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/profile_apply_review_warning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_small"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorError"
+                    android:visibility="gone"
+                    tools:text="@string/profile_apply_privilege_warning_title"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/profile_apply_review_meta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

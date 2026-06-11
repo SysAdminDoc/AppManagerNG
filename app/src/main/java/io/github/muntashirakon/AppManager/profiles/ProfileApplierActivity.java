@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Queue;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -184,12 +186,10 @@ public class ProfileApplierActivity extends BaseActivity {
         info.state = info.state != null ? info.state : info.profile.state;
         switch (info.shortcutType) {
             case ST_SIMPLE:
-                Intent intent = ProfileApplierService.getIntent(this,
-                        ProfileQueueItem.fromProfiledApplierInfo(info), info.notify);
-                ContextCompat.startForegroundService(this, intent);
-                next();
+                maybeWarnThenApplySimpleProfile(info);
                 break;
             case ST_ADVANCED:
+                List<Integer> unsupportedOperations = getUnsupportedOperations(info);
                 final String[] statesL = new String[]{
                         getString(R.string.on),
                         getString(R.string.off)
@@ -200,13 +200,12 @@ public class ProfileApplierActivity extends BaseActivity {
                         .setSubtitle(R.string.choose_a_profile_state);
                 new SearchableSingleChoiceDialogBuilder<>(this, states, statesL)
                         .setTitle(titleBuilder.build())
-                        .setView(createApplyReviewView(info))
+                        .setView(createApplyReviewView(info, unsupportedOperations))
                         .setSelection(info.state)
-                        .setPositiveButton(R.string.apply_now, (dialog, which, selectedState) -> {
+                        .setPositiveButton(unsupportedOperations.isEmpty() ? R.string.apply_now
+                                : R.string.profile_apply_supported_ops, (dialog, which, selectedState) -> {
                             info.state = selectedState;
-                            Intent aIntent = ProfileApplierService.getIntent(this,
-                                    ProfileQueueItem.fromProfiledApplierInfo(info), info.notify);
-                            ContextCompat.startForegroundService(this, aIntent);
+                            startProfileApplier(info);
                         })
                         .setNegativeButton(R.string.cancel, null)
                         .setOnDismissListener(dialog -> next())
@@ -217,11 +216,55 @@ public class ProfileApplierActivity extends BaseActivity {
         }
     }
 
+    private void maybeWarnThenApplySimpleProfile(@NonNull ProfileApplierInfo info) {
+        List<Integer> unsupportedOperations = getUnsupportedOperations(info);
+        if (unsupportedOperations.isEmpty()) {
+            startProfileApplier(info);
+            next();
+            return;
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.profile_apply_privilege_warning_title)
+                .setMessage(getString(R.string.profile_apply_privilege_warning_message,
+                        formatProfileOperations(this, unsupportedOperations)))
+                .setPositiveButton(R.string.profile_apply_supported_ops, (dialog, which) -> {
+                    startProfileApplier(info);
+                    next();
+                })
+                .setNegativeButton(R.string.cancel, (dialog, which) -> next())
+                .setOnCancelListener(dialog -> next())
+                .show();
+    }
+
+    private void startProfileApplier(@NonNull ProfileApplierInfo info) {
+        Intent intent = ProfileApplierService.getIntent(this,
+                ProfileQueueItem.fromProfiledApplierInfo(info), info.notify);
+        ContextCompat.startForegroundService(this, intent);
+    }
+
     @NonNull
-    private View createApplyReviewView(@NonNull ProfileApplierInfo info) {
+    private static List<Integer> getUnsupportedOperations(@NonNull ProfileApplierInfo info) {
+        if (info.profile instanceof AppsBaseProfile) {
+            return ((AppsBaseProfile) info.profile).getUnsupportedOperations(
+                    AppsBaseProfile.PrivilegeCapabilities.fromCurrentMode());
+        }
+        return new ArrayList<>();
+    }
+
+    @NonNull
+    private View createApplyReviewView(@NonNull ProfileApplierInfo info,
+                                       @NonNull List<Integer> unsupportedOperations) {
         View view = LayoutInflater.from(this).inflate(R.layout.view_profile_apply_review, null, false);
         ((TextView) view.findViewById(R.id.profile_apply_review_summary))
                 .setText(getProfileApplyReviewSummary(info.profile.type));
+        TextView warning = view.findViewById(R.id.profile_apply_review_warning);
+        if (unsupportedOperations.isEmpty()) {
+            warning.setVisibility(View.GONE);
+        } else {
+            warning.setText(getString(R.string.profile_apply_privilege_warning_message,
+                    formatProfileOperations(this, unsupportedOperations)));
+            warning.setVisibility(View.VISIBLE);
+        }
         ((TextView) view.findViewById(R.id.profile_apply_review_meta)).setText(getString(
                 R.string.profile_apply_review_meta,
                 getProfileTypeLabel(info.profile.type),
@@ -252,6 +295,43 @@ public class ProfileApplierActivity extends BaseActivity {
             return getString(R.string.off);
         }
         return getString(R.string.on);
+    }
+
+    @NonNull
+    public static String formatProfileOperations(@NonNull Context context,
+                                                 @NonNull Iterable<Integer> operations) {
+        List<String> labels = new ArrayList<>();
+        for (Integer operation : operations) {
+            if (operation != null) {
+                labels.add(getProfileOperationLabel(context, operation));
+            }
+        }
+        return android.text.TextUtils.join(", ", labels);
+    }
+
+    @NonNull
+    public static String getProfileOperationLabel(@NonNull Context context,
+                                                  @AppsBaseProfile.ProfileOperation int operation) {
+        switch (operation) {
+            case AppsBaseProfile.PROFILE_OP_COMPONENTS:
+                return context.getString(R.string.components);
+            case AppsBaseProfile.PROFILE_OP_APP_OPS:
+                return context.getString(R.string.app_ops);
+            case AppsBaseProfile.PROFILE_OP_PERMISSIONS:
+                return context.getString(R.string.permissions);
+            case AppsBaseProfile.PROFILE_OP_FREEZE:
+                return context.getString(R.string.freeze);
+            case AppsBaseProfile.PROFILE_OP_FORCE_STOP:
+                return context.getString(R.string.force_stop);
+            case AppsBaseProfile.PROFILE_OP_CLEAR_CACHE:
+                return context.getString(R.string.clear_cache);
+            case AppsBaseProfile.PROFILE_OP_CLEAR_DATA:
+                return context.getString(R.string.clear_data);
+            case AppsBaseProfile.PROFILE_OP_TRACKERS:
+                return context.getString(R.string.trackers);
+            default:
+                throw new IllegalArgumentException("Unknown profile operation " + operation);
+        }
     }
 
     public static class ProfileApplierViewModel extends AndroidViewModel {
