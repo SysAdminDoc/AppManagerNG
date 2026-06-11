@@ -31,4 +31,12 @@ public class OnboardingFragmentTest {
         assertTrue(OnboardingFragment.shouldRunCapabilityProbe(true, cachedSnapshot));
         assertFalse(OnboardingFragment.shouldRunCapabilityProbe(false, cachedSnapshot));
     }
+
+    @Test
+    public void notificationPermissionPromptIsAndroid13OnlyAndOneShot() {
+        assertTrue(OnboardingFragment.shouldPromptForNotificationPermission(33, false, false));
+        assertFalse(OnboardingFragment.shouldPromptForNotificationPermission(32, false, false));
+        assertFalse(OnboardingFragment.shouldPromptForNotificationPermission(33, true, false));
+        assertFalse(OnboardingFragment.shouldPromptForNotificationPermission(33, false, true));
+    }
 }
