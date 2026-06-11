@@ -25,6 +25,7 @@ import android.os.RemoteException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
 import androidx.core.content.pm.PermissionInfoCompat;
@@ -87,6 +88,14 @@ import io.github.muntashirakon.io.Paths;
 @WorkerThread
 class BackupOp implements Closeable {
     static final String TAG = BackupOp.class.getSimpleName();
+
+    @VisibleForTesting
+    interface PostWriteBackupHook {
+        void onBackupWritten(@NonNull BackupItems.BackupItem backupItem) throws BackupException, IOException;
+    }
+
+    @Nullable
+    private static PostWriteBackupHook sPostWriteBackupHook;
 
     @NonNull
     private final String mPackageName;
@@ -155,6 +164,11 @@ class BackupOp implements Closeable {
         mBackupItem.cleanup();
     }
 
+    @VisibleForTesting
+    static void setPostWriteBackupHook(@Nullable PostWriteBackupHook hook) {
+        sPostWriteBackupHook = hook;
+    }
+
     @NonNull
     public BackupMetadataV5 getMetadata() {
         return mMetadata;
@@ -194,6 +208,7 @@ class BackupOp implements Closeable {
                 incrementProgress(progressHandler);
             }
             // Write modified metadata
+            mMetadata.metadata.markVerified(System.currentTimeMillis());
             try {
                 Map<String, String> filenameChecksumMap = MetadataManager.writeMetadata(mMetadata, mBackupItem);
                 for (Map.Entry<String, String> entry : filenameChecksumMap.entrySet()) {
@@ -209,6 +224,8 @@ class BackupOp implements Closeable {
             } catch (IOException e) {
                 throw new BackupException("Failed to write checksums.txt", e);
             }
+            runPostWriteBackupHook();
+            verifyStagedBackup();
             // Replace current backup
             try {
                 mBackupItem.commit();
@@ -219,6 +236,26 @@ class BackupOp implements Closeable {
             throw e;
         } catch (Throwable th) {
             throw new BackupException("Unknown error occurred.", th);
+        }
+    }
+
+    private void runPostWriteBackupHook() throws BackupException {
+        PostWriteBackupHook hook = sPostWriteBackupHook;
+        if (hook == null) {
+            return;
+        }
+        try {
+            hook.onBackupWritten(mBackupItem.getReadOnlyVerificationView());
+        } catch (IOException e) {
+            throw new BackupException("Post-write backup hook failed.", e);
+        }
+    }
+
+    private void verifyStagedBackup() throws BackupException {
+        try (VerifyOp verifyOp = new VerifyOp(mBackupItem.getReadOnlyVerificationView())) {
+            verifyOp.verify();
+        } catch (BackupException e) {
+            throw new BackupException("Backup verification failed before publishing.", e);
         }
     }
 
