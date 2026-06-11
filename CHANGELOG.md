@@ -101,6 +101,9 @@ Reliability & data safety
   notification replacement if manual and periodic workers ever overlap.
 - Scheduled backup status now includes the next configured run time directly in
   the preference summary.
+- Release builds now run R8 minification and resource shrinking; invalid
+  baseline-profile class flags were corrected so optimized release APKs build
+  successfully.
 - The batch-results screen no longer deletes the shared batch-ops log while a
   retried or queued operation is still writing it.
 - Running Apps surfaces an empty state instead of an indefinitely spinning

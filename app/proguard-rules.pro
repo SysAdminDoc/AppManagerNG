@@ -27,10 +27,14 @@
 }
 # Keep preference fragments
 -keep public class * extends androidx.preference.PreferenceFragmentCompat {}
-# Keep XmlPullParsers FIXME: Otherwise abstract method exception would occur
+# Keep XML parser implementations intact. These classes are selected through
+# framework XML factories and can fail late with AbstractMethodError if R8 trims
+# interface bridge methods aggressively.
 -keep public class * extends org.xmlpull.v1.XmlPullParser { *; }
 -keep public class * extends org.xmlpull.v1.XmlSerializer { *; }
-# Don't minify server-related classes FIXME
+# Keep privileged server and binder surfaces stable across the app/server
+# boundary. The app copies and loads server artifacts out-of-process, so these
+# entry points are not all visible to whole-program analysis.
 -keep public class io.github.muntashirakon.AppManager.servermanager.** { *; }
 -keep public class io.github.muntashirakon.AppManager.server.** { *; }
 -keep public class io.github.muntashirakon.AppManager.ipc.** { *; }
