@@ -50,6 +50,23 @@ public class IconPickerDialogFragment extends DialogFragment {
         mListener = listener;
     }
 
+    /**
+     * Resolves the listener, preferring the parent fragment if it implements
+     * {@link IconPickerListener}. The transient {@link #mListener} set via
+     * {@link #attachIconPickerListener} does not survive a configuration change; hosting the
+     * picker as a child fragment of an {@code IconPickerListener} parent makes the callback robust.
+     */
+    @Nullable
+    private IconPickerListener resolveListener() {
+        if (getParentFragment() instanceof IconPickerListener) {
+            return (IconPickerListener) getParentFragment();
+        }
+        if (getActivity() instanceof IconPickerListener) {
+            return (IconPickerListener) getActivity();
+        }
+        return mListener;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,10 +85,13 @@ public class IconPickerDialogFragment extends DialogFragment {
         GridView grid = (GridView) View.inflate(requireActivity(), R.layout.dialog_icon_picker, null);
         grid.setAdapter(mAdapter);
         grid.setOnItemClickListener((view, item, index, id) -> {
-            if (mListener != null) {
-                mListener.iconPicked((IconItemInfo) view.getAdapter().getItem(index));
-                if (getDialog() != null) getDialog().dismiss();
+            IconPickerListener listener = resolveListener();
+            if (listener != null) {
+                listener.iconPicked((IconItemInfo) view.getAdapter().getItem(index));
             }
+            // Always dismiss on tap, even if the transient listener was lost to a config change,
+            // so the dialog never becomes an unresponsive grid the user can only cancel out of.
+            if (getDialog() != null) getDialog().dismiss();
         });
         mModel.resolveIcons();
         return new MaterialAlertDialogBuilder(requireActivity())

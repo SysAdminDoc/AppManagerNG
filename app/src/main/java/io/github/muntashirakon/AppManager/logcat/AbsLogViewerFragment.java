@@ -127,7 +127,13 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
         // Check for query string
         mSearchCriteria = mActivity.getSearchQuery();
         if (mSearchCriteria != null) {
-            mRecyclerView.postDelayed(() -> mActivity.search(mSearchCriteria), 1000);
+            // Guard the delayed search: a rotation within 1s would otherwise fire it against the
+            // destroyed activity. isAdded() ensures we run against the live fragment/activity.
+            mRecyclerView.postDelayed(() -> {
+                if (isAdded() && mSearchCriteria != null) {
+                    mActivity.search(mSearchCriteria);
+                }
+            }, 1000);
         }
         mLogListAdapter = new LogViewerRecyclerAdapter();
         mLogListAdapter.setClickListener(mActivity);

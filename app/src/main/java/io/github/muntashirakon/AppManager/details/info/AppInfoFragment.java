@@ -1199,7 +1199,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         try {
             ActivityCompat.startForegroundService(mActivity, intent);
         } catch (Exception e) {
-            UIUtils.displayLongToast("Error: " + e.getMessage());
+            Log.w(TAG, "Could not start Termux command", e);
+            UIUtils.displayLongToast(R.string.termux_run_command_failed);
         }
     }
 
@@ -1209,13 +1210,14 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         try {
             startActivity(PackageInstallerActivity.getLaunchableInstance(requireContext(), apkSource));
         } catch (Exception e) {
-            UIUtils.displayLongToast("Error: " + e.getMessage());
+            Log.w(TAG, "Could not launch installer", e);
+            UIUtils.displayLongToast(R.string.installer_launch_failed);
         }
     }
 
     @UiThread
     private void refreshDetails() {
-        if (mMainModel == null || isDetached()) return;
+        if (mMainModel == null || !isAdded()) return;
         showProgressIndicator(true);
         mMainModel.triggerPackageChange();
     }
@@ -1228,14 +1230,14 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mTagCloudFuture = ThreadUtils.postOnBackgroundThread(() -> {
             List<TagItem> tagItems = getTagCloudItems(tagCloud);
             ThreadUtils.postOnMainThread(() -> {
-                if (isDetached()) return;
+                if (!isAdded()) return;
                 ++mLoadedItemCount;
                 if (mLoadedItemCount >= 4) {
                     showProgressIndicator(false);
                 }
                 mTagCloud.removeAllViews();
                 for (TagItem tagItem : tagItems) {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     mTagCloud.addView(tagItem.toChip(mTagCloud.getContext(), mTagCloud));
                 }
             });
@@ -1285,7 +1287,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mTrackerCtaAction.setText(R.string.block);
         }
         View.OnClickListener clickHandler = v -> {
-            if (mMainModel == null || isDetached()) return;
+            if (mMainModel == null || !isAdded()) return;
             showProgressIndicator(true);
             ThreadUtils.postOnBackgroundThread(() -> {
                 if (allBlocked) {
@@ -1294,7 +1296,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     mMainModel.addRules(tagCloud.trackerComponents, true);
                 }
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     showProgressIndicator(false);
                     displayShortToast(R.string.done);
                     refreshDetails();
@@ -1342,13 +1344,13 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mPermsCtaAction.setText(R.string.revoke);
             mPermsCtaAction.setEnabled(true);
             View.OnClickListener handler = v -> {
-                if (mMainModel == null || isDetached()) return;
+                if (mMainModel == null || !isAdded()) return;
                 showProgressIndicator(true);
                 mPermsCtaAction.setEnabled(false);
                 ThreadUtils.postOnBackgroundThread(() -> {
                     boolean ok = mMainModel.revokeDangerousPermissions();
                     ThreadUtils.postOnMainThread(() -> {
-                        if (isDetached()) return;
+                        if (!isAdded()) return;
                         showProgressIndicator(false);
                         displayShortToast(ok
                                 ? R.string.done
@@ -1472,7 +1474,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                         ThreadUtils.postOnBackgroundThread(() -> {
                                             mMainModel.addRules(selectedItems, true);
                                             ThreadUtils.postOnMainThread(() -> {
-                                                if (!isDetached()) {
+                                                if (isAdded()) {
                                                     showProgressIndicator(false);
                                                 }
                                                 displayShortToast(R.string.done);
@@ -1484,7 +1486,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                         ThreadUtils.postOnBackgroundThread(() -> {
                                             mMainModel.removeRules(selectedItems, true);
                                             ThreadUtils.postOnMainThread(() -> {
-                                                if (!isDetached()) {
+                                                if (isAdded()) {
                                                     showProgressIndicator(false);
                                                 }
                                                 displayShortToast(R.string.done);
@@ -2510,7 +2512,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 titleBuilder.setSubtitle(R.string.running_services_logcat_hint);
             }
             ThreadUtils.postOnMainThread(() -> {
-                if (isDetached()) return;
+                if (!isAdded()) return;
                 showProgressIndicator(false);
                 SearchableItemsDialogBuilder<CharSequence> builder = new SearchableItemsDialogBuilder<>(mActivity, runningServiceNames)
                         .setTitle(titleBuilder.build());
@@ -2533,7 +2535,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }));
                 }
                 builder.setNegativeButton(R.string.close, null);
-                if (isDetached()) return;
+                if (!isAdded()) return;
                 builder.show();
             });
         });
@@ -2625,17 +2627,17 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mActionsFuture = ThreadUtils.postOnBackgroundThread(() -> {
             List<ActionItem> actionItems = getHorizontalActions();
             ThreadUtils.postOnMainThread(() -> {
-                if (isDetached()) return;
+                if (!isAdded()) return;
                 ++mLoadedItemCount;
                 if (mLoadedItemCount >= 4) {
                     showProgressIndicator(false);
                 }
                 mHorizontalLayout.removeAllViews();
                 for (ActionItem actionItem : actionItems) {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     mHorizontalLayout.addView(actionItem.toActionButton(mHorizontalLayout.getContext(), mHorizontalLayout));
                 }
-                if (isDetached()) return;
+                if (!isAdded()) return;
                 View v = mHorizontalLayout.getChildAt(0);
                 if (v != null) v.requestFocus();
             });
@@ -3040,7 +3042,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             Runner.runCommand(new String[]{"sqlite3", databases.get(which).getFilePath(), "vacuum"});
                             ThreadUtils.postOnMainThread(() -> {
                                 OpenWithDialogFragment fragment = OpenWithDialogFragment.getInstance(databases.get(which), "application/vnd.sqlite3");
-                                if (isDetached()) return;
+                                if (!isAdded()) return;
                                 fragment.show(getChildFragmentManager(), OpenWithDialogFragment.TAG);
                             });
                         }))
@@ -3140,7 +3142,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void showShizukuPermissionRevokedDialog() {
-        if (isDetached()) {
+        if (!isAdded()) {
             return;
         }
         new MaterialAlertDialogBuilder(mActivity)
@@ -3171,7 +3173,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             intent.setDataAndType(Uri.fromFile(file), MimeTypeMap.getSingleton()
                                     .getMimeTypeFromExtension("apk"));
                             ThreadUtils.postOnMainThread(() -> {
-                                if (isDetached()) return;
+                                if (!isAdded()) return;
                                 startActivity(intent);
                             });
                         } catch (IOException e) {
@@ -3574,7 +3576,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return;
         }
         synchronized (mListItems) {
-            if (isDetached()) return;
+            if (!isAdded()) return;
             mListItems.add(ListItem.newGroupStart(getString(R.string.data_usage_msg)));
             mListItems.add(ListItem.newInlineItem(getString(R.string.data_transmitted), getReadableSize(dataUsage.getTx())));
             mListItems.add(ListItem.newInlineItem(getString(R.string.data_received), getReadableSize(dataUsage.getRx())));
@@ -3599,12 +3601,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
                 setMoreInfo(appInfo);
                 ThreadUtils.postOnMainThread(() -> {
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     ++mLoadedItemCount;
                     if (mLoadedItemCount >= 4) {
                         showProgressIndicator(false);
                     }
-                    if (isDetached()) return;
+                    if (!isAdded()) return;
                     mAdapter.setAdapterList(mListItems);
                 });
             }

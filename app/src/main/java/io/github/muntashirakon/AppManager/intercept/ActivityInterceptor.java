@@ -312,6 +312,7 @@ public class ActivityInterceptor extends BaseActivity {
     private final LruCache<String, CharSequence> mPackageLabelMap = new LruCache<>(16);
 
     private volatile boolean mAreTextWatchersActive;
+    private boolean mTextWatchersInstalled;
 
     private final ActivityResultLauncher<Intent> mIntentLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -758,6 +759,14 @@ public class ActivityInterceptor extends BaseActivity {
     }
 
     private void setupTextWatchers() {
+        if (mTextWatchersInstalled) {
+            // Install exactly once. showInitialIntent() runs again on every Reset; without this
+            // guard each Reset stacked another full set of watchers on the same views, so every
+            // later keystroke re-ran onUpdateIntent (and a privileged queryIntentActivities) N
+            // times. The watchers read the mMutableIntent field live, so they survive a reset.
+            return;
+        }
+        mTextWatchersInstalled = true;
         mActionView.addTextChangedListener(new IntentUpdateTextWatcher(mActionView) {
             @Override
             protected void onUpdateIntent(String modifiedContent) {
