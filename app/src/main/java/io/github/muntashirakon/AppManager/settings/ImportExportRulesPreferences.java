@@ -124,8 +124,12 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
                     new MaterialAlertDialogBuilder(requireActivity())
                             .setTitle(R.string.pref_import_existing)
                             .setMessage(R.string.apply_to_system_apps_question)
-                            .setPositiveButton(R.string.no, (dialog, which) -> importExistingRules(false))
-                            .setNegativeButton(R.string.yes, ((dialog, which) -> importExistingRules(true)))
+                            // "Apply to system apps?" Yes = include system apps, No = user apps only.
+                            // The buttons were previously inverted (positive said "No" but both
+                            // started the scan with no way to cancel).
+                            .setPositiveButton(R.string.yes, (dialog, which) -> importExistingRules(true))
+                            .setNegativeButton(R.string.no, (dialog, which) -> importExistingRules(false))
+                            .setNeutralButton(R.string.cancel, null)
                             .show();
                     return true;
                 });
