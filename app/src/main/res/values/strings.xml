@@ -2491,6 +2491,7 @@
     <string name="backup_empty_without_backups_summary">No first-time backup candidates were found.</string>
     <string name="backup_empty_failed_verification_title">No failed backups found</string>
     <string name="backup_empty_failed_verification_summary">All checked backups passed integrity verification.</string>
+    <string name="backup_verification_failed_action">Integrity check failed. Select this app to create a fresh backup.</string>
     <string name="backup_empty_changed_apps_title">No changed apps found</string>
     <string name="backup_empty_changed_apps_summary">No installed apps need a fresh backup right now.</string>
     <string name="restore_empty_all_apps_title">No backups to restore</string>
