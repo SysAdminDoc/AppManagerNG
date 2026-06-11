@@ -42,7 +42,6 @@ import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStore;
 import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
-import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -299,34 +298,6 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     .show();
             return true;
         });
-        // Set export rules
-        Preference exportRulesPref = Objects.requireNonNull(findPreference("export_rules"));
-        int rulesCount = RulesTypeSelectionDialogFragment.RULE_TYPES.length;
-        List<Integer> checkedItems = new ArrayList<>(rulesCount);
-        List<Integer> selectedRules = updateExportRulesPref(exportRulesPref);
-        for (int i = 0; i < rulesCount; ++i) checkedItems.add(1 << i);
-        exportRulesPref.setOnPreferenceClickListener(preference -> {
-            new SearchableMultiChoiceDialogBuilder<>(mActivity, checkedItems, R.array.rule_types)
-                    .setTitle(R.string.options)
-                    .hideSearchBar(true)
-                    .addSelections(selectedRules)
-                    .setPositiveButton(R.string.ok, (dialog, which, selectedItems) -> {
-                        int value = 0;
-                        for (int item : selectedItems) value |= item;
-                        if (value != 0) {
-                            mModel.setExportRules(value);
-                        } else mModel.setExportRules(null);
-                        selectedRules.clear();
-                        selectedRules.addAll(updateExportRulesPref(exportRulesPref));
-                    })
-                    .setNegativeButton(R.string.disable, (dialog, which, selectedItems) -> {
-                        mModel.setExportRules(null);
-                        selectedRules.clear();
-                        selectedRules.addAll(updateExportRulesPref(exportRulesPref));
-                    })
-                    .show();
-            return true;
-        });
         // Set others
         ((SwitchPreferenceCompat) Objects.requireNonNull(findPreference("freeze")))
                 .setChecked(mModel.getBoolean("freeze", false));
@@ -342,28 +313,6 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                 .setChecked(mModel.getBoolean("save_apk", false));
         ((SwitchPreferenceCompat) Objects.requireNonNull(findPreference("allow_routine")))
                 .setChecked(mModel.getBoolean("allow_routine", false));
-    }
-
-    @NonNull
-    private List<Integer> updateExportRulesPref(Preference pref) {
-        Integer rules = mModel.getExportRules();
-        List<Integer> selectedRules = new ArrayList<>();
-        if (rules == null || rules == 0) pref.setSummary(R.string.disabled_app);
-        else {
-            List<String> selectedRulesStr = new ArrayList<>();
-            int i = 0;
-            while (rules != 0) {
-                int flag = (rules & (~(1 << i)));
-                if (flag != rules) {
-                    selectedRulesStr.add(RulesTypeSelectionDialogFragment.RULE_TYPES[i].toString());
-                    rules = flag;
-                    selectedRules.add(1 << i);
-                }
-                ++i;
-            }
-            pref.setSummary(TextUtils.join(", ", selectedRulesStr));
-        }
-        return selectedRules;
     }
 
     private void updateComponentsPref(Preference pref) {
