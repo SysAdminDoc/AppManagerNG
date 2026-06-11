@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchDexOptOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchNetPolicyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchPermissionOptions;
+import io.github.muntashirakon.AppManager.batchops.struct.BatchSafetyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
@@ -72,6 +73,8 @@ import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.compontents.ExternalComponentsImporter;
+import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
+import io.github.muntashirakon.AppManager.safety.SystemAppRescueArtifacts;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -291,6 +294,14 @@ public class BatchOpsManager {
     @CheckResult
     @NonNull
     private Result performOp(@NonNull BatchOpsInfo info) {
+        Result criticalPackageResult = maybeBlockCriticalPackages(info);
+        if (criticalPackageResult != null) {
+            return criticalPackageResult;
+        }
+        Result rescueArtifactResult = maybeWriteSystemAppRescueArtifacts(info);
+        if (rescueArtifactResult != null) {
+            return rescueArtifactResult;
+        }
         switch (info.op) {
             case OP_ADVANCED_FREEZE:
                 return opFreeze(info);
@@ -351,6 +362,87 @@ public class BatchOpsManager {
                 break;
         }
         return new Result(info.getPairList());
+    }
+
+    @Nullable
+    private Result maybeBlockCriticalPackages(@NonNull BatchOpsInfo info) {
+        if (!shouldGuardCriticalPackages(info.op) || allowsCriticalPackages(info.options)) {
+            return null;
+        }
+        List<UserPackagePair> blockedPairs = new ArrayList<>();
+        List<String> allowedPackages = new ArrayList<>();
+        List<Integer> allowedUsers = new ArrayList<>();
+        for (int i = 0; i < info.size(); ++i) {
+            UserPackagePair pair = info.getPair(i);
+            if (CriticalPackageGuard.isCriticalPackage(pair.getPackageName())) {
+                blockedPairs.add(pair);
+            } else {
+                allowedPackages.add(pair.getPackageName());
+                allowedUsers.add(pair.getUserId());
+            }
+        }
+        if (blockedPairs.isEmpty()) {
+            return null;
+        }
+        for (UserPackagePair pair : blockedPairs) {
+            log("====> op=CRITICAL_PACKAGE_GUARD, blocked-op=" + info.op + ", pkg=" + pair);
+            recordTargetFinished(pair, true);
+        }
+        if (allowedPackages.isEmpty()) {
+            return new Result(blockedPairs, false);
+        }
+        Result allowedResult = performOp(BatchOpsInfo.getInstance(info.op, allowedPackages, allowedUsers, info.options));
+        ArrayList<UserPackagePair> failedPairs = new ArrayList<>(blockedPairs);
+        failedPairs.addAll(allowedResult.getFailedUserPackagePairs());
+        Result result = new Result(failedPairs, false);
+        result.setRequiresRestart(allowedResult.requiresRestart());
+        result.addPendingDefaultRoleRebindRequests(allowedResult.getPendingDefaultRoleRebindRequests());
+        result.addWarnings(allowedResult.getWarnings());
+        return result;
+    }
+
+    private static boolean shouldGuardCriticalPackages(@OpType int op) {
+        switch (op) {
+            case OP_ADVANCED_FREEZE:
+            case OP_CLEAR_DATA:
+            case OP_DISABLE_BACKGROUND:
+            case OP_FREEZE:
+            case OP_UNINSTALL:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static boolean allowsCriticalPackages(@Nullable IBatchOpOptions options) {
+        if (options instanceof BatchSafetyOptions) {
+            return ((BatchSafetyOptions) options).isAllowCriticalPackages();
+        }
+        if (options instanceof BatchFreezeOptions) {
+            return ((BatchFreezeOptions) options).isAllowCriticalPackages();
+        }
+        return false;
+    }
+
+    @Nullable
+    private Result maybeWriteSystemAppRescueArtifacts(@NonNull BatchOpsInfo info) {
+        if (!shouldGuardCriticalPackages(info.op)) {
+            return null;
+        }
+        List<UserPackagePair> systemTargets = SystemAppRescueArtifacts.findSystemAppTargets(info.getPairList());
+        if (systemTargets.isEmpty()) {
+            return null;
+        }
+        try {
+            SystemAppRescueArtifacts.Result result = SystemAppRescueArtifacts.writePreOperationArtifacts(
+                    ContextUtils.getContext(), systemTargets);
+            log("====> op=SYSTEM_APP_RESCUE_ARTIFACTS, snapshot=" + result.getSnapshotPath()
+                    + ", script=" + result.getScriptPath());
+            return null;
+        } catch (Throwable th) {
+            log("====> op=SYSTEM_APP_RESCUE_ARTIFACTS, failed to write pre-operation rescue artifacts", th);
+            return new Result(info.getPairList(), false);
+        }
     }
 
     @NonNull

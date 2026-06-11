@@ -18,10 +18,17 @@ public class BatchFreezeOptions implements IBatchOpOptions {
     @FreezeUtils.FreezeMethod
     private int mType;
     private boolean mPreferCustom;
+    private boolean mAllowCriticalPackages;
 
     public BatchFreezeOptions(@FreezeUtils.FreezeMethod int type, boolean preferCustom) {
+        this(type, preferCustom, false);
+    }
+
+    public BatchFreezeOptions(@FreezeUtils.FreezeMethod int type, boolean preferCustom,
+                              boolean allowCriticalPackages) {
         mType = requireValidType(type);
         mPreferCustom = preferCustom;
+        mAllowCriticalPackages = allowCriticalPackages;
     }
 
     public int getType() {
@@ -30,6 +37,10 @@ public class BatchFreezeOptions implements IBatchOpOptions {
 
     public boolean isPreferCustom() {
         return mPreferCustom;
+    }
+
+    public boolean isAllowCriticalPackages() {
+        return mAllowCriticalPackages;
     }
 
     @Override
@@ -42,6 +53,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
         try {
             mType = requireValidType(jsonObject.getInt("type"));
             mPreferCustom = jsonObject.getBoolean("prefer_custom");
+            mAllowCriticalPackages = jsonObject.optBoolean("allow_critical_packages", false);
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -54,6 +66,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
     protected BatchFreezeOptions(@NonNull Parcel in) {
         mType = requireValidType(in.readInt());
         mPreferCustom = in.readByte() != 0;
+        mAllowCriticalPackages = in.dataAvail() > 0 && in.readByte() != 0;
     }
 
     public static final Creator<BatchFreezeOptions> CREATOR = new Creator<BatchFreezeOptions>() {
@@ -74,6 +87,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(mType);
         dest.writeByte((byte) (mPreferCustom ? 1 : 0));
+        dest.writeByte((byte) (mAllowCriticalPackages ? 1 : 0));
     }
 
     @NonNull
@@ -83,6 +97,7 @@ public class BatchFreezeOptions implements IBatchOpOptions {
         jsonObject.put("tag", TAG);
         jsonObject.put("type", mType);
         jsonObject.put("prefer_custom", mPreferCustom);
+        jsonObject.put("allow_critical_packages", mAllowCriticalPackages);
         return jsonObject;
     }
 
