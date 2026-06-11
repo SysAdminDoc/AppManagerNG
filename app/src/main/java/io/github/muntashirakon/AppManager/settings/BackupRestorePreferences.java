@@ -589,6 +589,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 ? R.string.pref_backup_schedule_charging_required
                 : R.string.pref_backup_schedule_charging_not_required);
         String battery = getScheduledBackupBatteryOptimizationLabel();
+        String nextRun = getScheduledBackupNextRunSummary();
         scheduleTime.setSummary(time);
         scheduleNetwork.setSummary(network);
         scheduleMinimumAge.setSummary(minimumAge);
@@ -607,7 +608,22 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
                         ? R.string.pref_backup_schedule_state_enabled
                         : R.string.pref_backup_schedule_state_disabled),
-                time, charging, network, minimumAge, battery, getScheduledBackupDiagnosticsSummary(), lastRunSummary));
+                time, charging, network, minimumAge, battery, nextRun,
+                getScheduledBackupDiagnosticsSummary(), lastRunSummary));
+    }
+
+    @NonNull
+    private String getScheduledBackupNextRunSummary() {
+        if (!Prefs.BackupRestore.isScheduledAutoBackupEnabled()) {
+            return getString(R.string.pref_backup_schedule_next_run_disabled);
+        }
+        long nextRunMillis = AutoBackupScheduler.computeNextRunTimeMillis(
+                Prefs.BackupRestore.getScheduledBackupHour(),
+                Prefs.BackupRestore.getScheduledBackupMinute(),
+                System.currentTimeMillis());
+        return getString(R.string.pref_backup_schedule_next_run,
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                        .format(new java.util.Date(nextRunMillis)));
     }
 
     @NonNull
