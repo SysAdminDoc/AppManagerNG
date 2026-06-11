@@ -496,7 +496,7 @@ public class AppPref {
             case PREF_ENABLED_FEATURES_INT:
                 return 0xffff_ffff;  /* All features enabled */
             case PREF_APP_THEME_INT:
-                return AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+                return AppCompatDelegate.MODE_NIGHT_YES;
             case PREF_MAIN_WINDOW_FILTER_FLAGS_INT:
                 return MainListOptions.FILTER_NO_FILTER;
             case PREF_MAIN_WINDOW_SORT_ORDER_INT:
