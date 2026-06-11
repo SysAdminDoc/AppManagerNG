@@ -11,13 +11,6 @@ into it — existing items take precedence over duplicates.
 
 ### P0
 
-- [ ] P0 — Audit bundled jadx 1.4.7 line for CVE-2024-32653 and remediate
-  Why: CVSS-9 command-injection fixed in upstream jadx 1.5.0; NG feeds untrusted APKs into the bundled MuntashirAkon/jadx-android 1.4.7 decompiler; applicability to the Android fork's code path is unverified either way.
-  Evidence: https://www.tenable.com/cve/CVE-2024-32653 ; versions.gradle:35 ; dex/DexClasses.java, scanner/
-  Touches: versions.gradle, app/src/main/java/io/github/muntashirakon/AppManager/dex/, docs/audits/ (new dated audit doc per doctrine)
-  Acceptance: dated audit doc with verdict (clean/remediated/deferred); if affected, jadx-android bumped or patched and a hostile-package-name APK decompiles without command execution.
-  Complexity: S (audit) → M (if remediation needed)
-
 - [ ] P0 — Developer Verification install-failure handling + ADB escape-hatch UX
   Why: Enforcement starts 2026-09-30 (BR/ID/SG/TH); the platform verifier intercedes in PackageInstallerSession.handleInstall() and NG's session installs will surface new failure statuses; ADB installs are exempt, and NG uniquely owns a wireless-ADB mode it can offer as the documented fallback.
   Evidence: https://developer.android.com/developer-verification/guides/faq ; https://developer.android.com/about/versions/16/qpr2/release-notes ; agnostic-apollo gist (RESEARCH.md Sources); docs/sideload-verification.md (predates QPR2 APIs)
