@@ -8,11 +8,11 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.Objects;
-
 import io.github.muntashirakon.AppManager.BaseActivity;
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierReceiver;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class AuthFeatureDemultiplexer extends BaseActivity {
     public static final String EXTRA_FEATURE = "feature";
@@ -41,18 +41,19 @@ public class AuthFeatureDemultiplexer extends BaseActivity {
         intent.removeExtra(EXTRA_FEATURE);
 
         if (!AuthManager.getKey().equals(auth)) {
-            // Invalid authorization key
-            // TODO: 16/3/22 Display a nice error message
+            UIUtils.displayLongToast(R.string.auth_feature_request_rejected);
             finishAndRemoveTask();
             return;
         }
 
-        switch (Objects.requireNonNull(feature)) {
+        switch (String.valueOf(feature)) {
             case "profile":
                 launchProfile(intent);
                 break;
             default:
-                throw new RuntimeException("Invalid feature: " + feature);
+                UIUtils.displayLongToast(R.string.auth_feature_not_supported);
+                finishAndRemoveTask();
+                return;
         }
         finish();
     }
