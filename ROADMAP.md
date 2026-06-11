@@ -113,11 +113,11 @@ into it — existing items take precedence over duplicates.
   Acceptance: dated audit doc records the service status check; integration removed (with cert pins) or kept with a recorded working-endpoint verdict.
   Complexity: S
 
-- [ ] P2 — MDC 1.14 / minSdk-23 one-way-door decision
-  Why: material-components-android entered maintenance mode (1.14.0 final feature release, requires minSdk 23; Views get critical fixes only) — NG must decide between minSdk 21 on a frozen 1.13 forever vs taking the terminal 1.14 (M3 Expressive) with a minSdk bump; the gating policy doc is referenced everywhere but absent on disk.
-  Evidence: https://github.com/material-components/material-components-android/releases/tag/1.14.0 ; Compose-first blog (RESEARCH.md Sources); versions.gradle:39
-  Touches: docs/policy/minsdk-21-ceiling.md (restore/extend on the machine holding it), versions.gradle (ledger comments)
-  Acceptance: a dated decision section in the policy doc with the chosen path and the dependency-ledger consequences (activity/biometric/room/webkit lines move or stay in lockstep).
+- [ ] P2 — Restore the missing minSdk-21 ceiling ledger (decision itself is already made)
+  Why: The minSdk-23 decision EXISTS on disk (docs/policy/2026-05-26-minsdk-23-decision.md: hold 21 through v0.6.x, four forced-decision triggers) — but the dependency ledger it depends on, docs/policy/minsdk-21-ceiling.md, is absent while being linked from versions.gradle:39, the decision memo, and docs/architecture/README.md; without it the trigger watch has no bookkeeping.
+  Evidence: docs/policy/2026-05-26-minsdk-23-decision.md (verified on disk, 2026-06-10); https://github.com/material-components/material-components-android/releases/tag/1.14.0 (minSdk 23 confirmed); versions.gradle:39
+  Touches: docs/policy/minsdk-21-ceiling.md (recreate the ledger: material/activity/biometric/room/webkit/sora-editor pinned-cluster table + trigger status), versions.gradle (ledger comments)
+  Acceptance: the ledger file exists with the current pinned-cluster table and a dated trigger-status section; all three inbound references resolve.
   Complexity: S
 
 - [ ] P2 — App Change Auditor: component/tracker diffs + unified change feed
@@ -283,7 +283,7 @@ into it — existing items take precedence over duplicates.
   Complexity: M
 
 - [ ] P2 — sora-editor bump 0.22.2 → 0.24.6 (last minSdk-21 release — time-boxed)
-  Why: The pinned fork build 0.22.2 misses upstream 0.24.4–0.24.6 fixes for IME composing-text corruption, completion-list scroll ANR, IndexOutOfBounds on completion, and emoji deletion; 0.24.6 (2026-06-10) is the final release supporting minSdk 21, so deferring past the minSdk decision forfeits the window.
+  Why: The pinned fork build 0.22.2 misses upstream 0.24.4–0.24.6 fixes for IME composing-text corruption, completion-list scroll ANR, IndexOutOfBounds on completion, and emoji deletion; 0.24.6 (2026-06-10) is the final release supporting minSdk 21 (verified in release notes), and the minSdk decision is already settled at "hold 21" (docs/policy/2026-05-26-minsdk-23-decision.md) — so 0.24.6 is the terminal version NG can take; bump now or carry the bugs indefinitely.
   Evidence: https://github.com/Rosemoe/sora-editor/releases (0.24.4/0.24.5/0.24.6 notes); versions.gradle:45 (fork pin, verified)
   Touches: versions.gradle, editor/ (API drift), possibly the MuntashirAkon/sora-editor fork (rebase) or a switch to upstream artifacts
   Acceptance: editor opens/edits/saves java+xml+smali fixtures with completion and wordwrap working; the IME composing regression (type-with-gboard scenario) verified on device or emulator; pin decision recorded in the dependency ledger.

@@ -2,7 +2,13 @@
 # Research — AppManagerNG
 
 Research pass date: 2026-06-10 (pass 2; supersedes pass 1 of the same date).
-Repo state: main @ cfc6e24e (v0.5.0 shipped 2026-05-25).
+Verification pass 2026-06-10 (late): all upstream/issue/dependency claims re-checked
+against live sources (#1982/#1967/#1973 open as stated; v4.1.0 milestone 41 closed /
+2 open — #1733 + #1982 — due 2026-06-21; sora-editor 0.24.6 confirmed last
+minSdk-21 release; Magisk v30.7 caps-preserved confirmed; MDC 1.14.0 minSdk-23
+confirmed). Two corrections applied: the minSdk decision memo exists on disk
+(see §Architecture), and Pithus responded operational (see §Open Questions).
+Repo state: main @ d692a5a0 (v0.5.0 shipped 2026-05-25).
 Evidence labels: Verified / Likely / Assumption / Needs live validation.
 
 ## Executive Summary
@@ -46,9 +52,10 @@ Carried forward from pass 1 (already itemized in ROADMAP, still valid): jadx CVE
 - **Already shipped, under-marketed**: API-35 app archiving (AppArchiveManager + batch ops + App Info + main list) — no mainstream OSS manager ships this; it belongs in README/feature marketing, not the roadmap.
 - **Refactor candidates**: AppDetailsPermissionsFragment → ViewModel (5 TODOs, privileged ops on the fragment thread, blocks error handling); settings/Ops.java:1030 duplicate revocation paths; terminal/TermActivity mock (4 TODOs) — finish or formally defer with a decision record; PackageInstallerCompat.java:685 task-wait race + :1198 HyperOS handling.
 - **Test map**: ~303 unit-test classes concentrated in I/O/parsing; zero coverage in libserver/, server/, hiddenapi/, backup core, batchops/; androidTest has 3 classes (smoke/Room-migration/a11y). CI: tests, A17 emulator, dependency-scan, CodeQL, lint, release, two watch workflows, docs-link-check. Backup round-trip integration tests remain itemized in ROADMAP.
-- **Dependency time-pressure**: sora-editor pinned at fork 0.22.2; Rosemoe 0.24.4–0.24.6 fix IME composing-text corruption, completion-list ANR, IOOB, emoji deletion; **0.24.6 (2026-06-10) is the last minSdk-21 release** — evaluate the bump now, alongside (not after) the MDC-1.14/minSdk-23 decision already itemized. libadb-android: no 2026 commits (current); ARSCLib pin predates the 2026-05 sparse-resource and DEX-validation fixes on master (no tagged release — watch, don't chase).
+- **Dependency time-pressure**: sora-editor pinned at fork 0.22.2; Rosemoe 0.24.4–0.24.6 fix IME composing-text corruption, completion-list ANR, IOOB, emoji deletion; **0.24.6 (2026-06-10) is the last minSdk-21 release** (Verified: release notes state next release raises minSdk to 23). Since the floor decision is now "hold 21" (below), 0.24.6 is the terminal upstream version NG can take — bump now, don't wait. libadb-android: no 2026 commits (current); ARSCLib pin predates the 2026-05 sparse-resource and DEX-validation fixes on master (no tagged release — watch, don't chase).
+- **minSdk decision: MADE, not blocked** (correction to pass-1/2 text). `docs/policy/2026-05-26-minsdk-23-decision.md` exists on disk (Verified) and recommends **holding minSdk 21 through at least v0.6.x**, with four forced-decision triggers (unbackportable CVE in a pinned-cluster dep, hard 1.14-component dependency, API-21/22 untestable in CI, external automation-API integrator need) and a five-step flip plan. What is actually missing is the *ledger* it references: `docs/policy/minsdk-21-ceiling.md` is absent while being linked from versions.gradle:39, the decision memo itself, and docs/architecture/README.md.
 - **i18n**: 44 locales, no pipeline (Weblate item already in ROADMAP); ~48 "App Manager" references remain in default-locale strings.xml.
-- **Docs**: docs/policy/minsdk-21-ceiling.md still absent on disk (referenced from versions.gradle and architecture README) — restoring it is a precondition for both one-way-door decisions.
+- **Docs drift**: CLAUDE.md's canonical-context pointer `PROJECT_CONTEXT.md` does not exist on disk (Verified) — per repo doc-hygiene policy it should not be recreated; the dangling references in CLAUDE.md should be repointed at ROADMAP/CHANGELOG/docs/architecture instead.
 
 ## Rejected Ideas
 
@@ -109,8 +116,8 @@ Competitors / community:
 
 ## Open Questions
 
-- Pithus service status (pithus.org accepting submissions?) — still needs live validation; decides the existing keep-vs-remove item.
+- Pithus: beta.pithus.org responded operational with an upload form on 2026-06-10 (Likely alive; one HTTP check, not a full submission round-trip). The keep-vs-remove item shifts toward "keep" — but NG's scanner/Pithus.java endpoint + network_security_config.xml cert pins must be validated against the current host, and upstream's removal rationale (commits 0e187e8/2c00f69) should be read before deciding.
 - Per-ABI release APK sizes vs IzzyOnDroid's ~30 MB reservation — needs a local release build.
-- minSdk-23 decision: now THREE dependencies hinge on it (MDC 1.14, sora-editor 0.24.7+, AndroidX activity/room/work next majors) — policy doc restoration is the blocker; the decision itself cannot be made from public data (no telemetry by design).
+- minSdk-23: decision is MADE (hold 21 through v0.6.x, docs/policy/2026-05-26-minsdk-23-decision.md) — the remaining open question is only whether any forced-decision trigger has fired since 2026-05-26 (none observed in this pass: no unbackportable CVE in the pinned cluster, API-21 emulator images still published). The missing ceiling-ledger doc still needs restoring.
 - Does `pm archive` via the privileged shell path work for apps NG did not install (installer-of-record routing on unarchive)? AppArchiveManager ships; the multi-installer unarchive matrix needs device validation.
 - Whether the planned v0.5.x "background-run rule persistence" surface covers standby-bucket policy — decides the scope of the new standby-bucket item (kept narrow deliberately).
