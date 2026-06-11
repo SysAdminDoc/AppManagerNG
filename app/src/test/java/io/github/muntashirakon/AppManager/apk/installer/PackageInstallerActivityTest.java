@@ -8,6 +8,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 
 import org.junit.Test;
@@ -91,5 +92,27 @@ public class PackageInstallerActivityTest {
                 "Developer verification: developer identity blocked or unverified (DEVELOPER_BLOCKED)",
                 installExistingItem,
                 true));
+    }
+
+    @Test
+    public void isDowngradeDetectsLowerQueuedVersion() {
+        PackageInfo installed = packageInfo(12);
+        PackageInfo queued = packageInfo(7);
+
+        assertTrue(PackageInstallerActivity.isDowngrade(installed, queued));
+    }
+
+    @Test
+    public void isDowngradeRejectsSameOrNewerQueuedVersion() {
+        assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), packageInfo(12)));
+        assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), packageInfo(13)));
+        assertEquals(false, PackageInstallerActivity.isDowngrade(null, packageInfo(7)));
+        assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), null));
+    }
+
+    private static PackageInfo packageInfo(int versionCode) {
+        PackageInfo packageInfo = new PackageInfo();
+        packageInfo.versionCode = versionCode;
+        return packageInfo;
     }
 }
