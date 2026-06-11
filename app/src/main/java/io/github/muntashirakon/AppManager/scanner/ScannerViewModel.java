@@ -250,6 +250,11 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         report.put("device", buildDeviceJson());
         report.put("apk", buildApkJson());
         report.put("checksums", checksumsToJson(mApkChecksumsLiveData.getValue()));
+        report.put("tracker_database", buildTrackerDatabaseJson(
+                StaticDataset.getTrackerDatabaseVersion(),
+                StaticDataset.getTrackerDatabaseSignatureCount(),
+                io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getLatestTrackerDatabaseVersion(),
+                io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getLastTrackerDatabaseCheckTime()));
         report.put("tracker_matches", signatureMatchesToJson(mTrackerClassesLiveData.getValue()));
         report.put("tracker_classes", stringCollectionToJson(mTrackerClasses));
         report.put("library_matches", signatureMatchesToJson(mLibraryClassesLiveData.getValue()));
@@ -284,6 +289,20 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             items.put(item);
         }
         return items;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static JSONObject buildTrackerDatabaseJson(@NonNull String bundledVersion, int signatureCount,
+                                               @Nullable String latestVersion, long lastCheckTime)
+            throws JSONException {
+        JSONObject database = new JSONObject();
+        database.put("bundled_version", bundledVersion);
+        database.put("signature_count", signatureCount);
+        putNullable(database, "latest_checked_version",
+                latestVersion != null && !latestVersion.isEmpty() ? latestVersion : null);
+        database.put("last_check_time", lastCheckTime > 0 ? lastCheckTime : JSONObject.NULL);
+        return database;
     }
 
     @NonNull

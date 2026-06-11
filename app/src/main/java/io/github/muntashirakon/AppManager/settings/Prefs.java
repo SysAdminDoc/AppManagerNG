@@ -989,6 +989,31 @@ public final class Prefs {
         public static void setDebloatDefinitionsSha256(@NonNull String sha256) {
             AppPref.set(AppPref.PrefKey.PREF_DEBLOAT_DEFINITIONS_SHA256_STR, sha256);
         }
+
+        public static boolean checkTrackerDatabaseFreshness() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_TRACKER_DATABASE_FRESHNESS_CHECK_BOOL);
+        }
+
+        public static void setCheckTrackerDatabaseFreshness(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_TRACKER_DATABASE_FRESHNESS_CHECK_BOOL, enabled);
+        }
+
+        public static long getLastTrackerDatabaseCheckTime() {
+            return AppPref.getLong(AppPref.PrefKey.PREF_TRACKER_DATABASE_LAST_CHECK_LONG);
+        }
+
+        public static void setLastTrackerDatabaseCheckTime(long lastCheckTime) {
+            AppPref.set(AppPref.PrefKey.PREF_TRACKER_DATABASE_LAST_CHECK_LONG, lastCheckTime);
+        }
+
+        @NonNull
+        public static String getLatestTrackerDatabaseVersion() {
+            return AppPref.getString(AppPref.PrefKey.PREF_TRACKER_DATABASE_LATEST_VERSION_STR);
+        }
+
+        public static void setLatestTrackerDatabaseVersion(@NonNull String version) {
+            AppPref.set(AppPref.PrefKey.PREF_TRACKER_DATABASE_LATEST_VERSION_STR, version);
+        }
     }
 
     public static final class Profiles {
