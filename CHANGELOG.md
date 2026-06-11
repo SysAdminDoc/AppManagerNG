@@ -79,6 +79,9 @@ Reliability & data safety
   component/tracker deltas.
 - File-manager batch paste and delete progress no longer pause for a fixed two
   seconds per file before doing the actual I/O.
+- Blocking-rule import now supports legacy MyAndroidTools text backups and
+  `.ifw` archives, including provider entries from the text format and
+  same-file conflict detection.
 - File properties now exposes the existing "Open with" chooser for readable
   files instead of showing a hidden no-op field.
 - The code editor now remembers the word-wrap toggle across sessions and maps
