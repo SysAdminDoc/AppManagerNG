@@ -199,16 +199,24 @@ public class BackupManager {
             }
         }
         for (BackupItems.BackupItem backupItem : backupItemList) {
-            BackupMetadataV5 metadata;
-            try {
-                metadata = backupItem.getMetadata();
-            } catch (IOException e) {
-                throw new BackupException("Could not retrieve metadata from backup.", e);
+            // try-with-resources releases the temp metadata copy + key material getMetadata() opens.
+            try (BackupItems.BackupItem item = backupItem) {
+                BackupMetadataV5 metadata;
+                try {
+                    metadata = item.getMetadata();
+                } catch (IOException e) {
+                    throw new BackupException("Could not retrieve metadata from backup.", e);
+                }
+                if (item.isFrozen()) {
+                    // A frozen backup is user-protected: leave its files AND its DB row intact.
+                    // Removing only the DB row (the previous behaviour) orphaned the on-disk backup.
+                    continue;
+                }
+                if (!item.delete()) {
+                    throw new BackupException("Could not delete the selected backups");
+                }
+                BackupUtils.deleteBackupToDbAndBroadcast(ContextUtils.getContext(), metadata);
             }
-            if (!backupItem.isFrozen() && !backupItem.delete()) {
-                throw new BackupException("Could not delete the selected backups");
-            }
-            BackupUtils.deleteBackupToDbAndBroadcast(ContextUtils.getContext(), metadata);
         }
     }
 
