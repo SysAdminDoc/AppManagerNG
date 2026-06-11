@@ -51,6 +51,9 @@ Reliability & data safety
   can check the tracked upstream resource version on launch.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
+- The code editor now uses Sora editor 0.24.6, the final API 21-compatible
+  release line, with search/replace and TextMate language loading migrated to
+  the new upstream APIs.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so

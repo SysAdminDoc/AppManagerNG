@@ -365,7 +365,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             Menu menu = popupMenu.getMenu();
             menu.add(R.string.search_option_match_case)
                     .setCheckable(true)
-                    .setChecked(!mSearchOptions.ignoreCase)
+                    .setChecked(!mSearchOptions.caseInsensitive)
                     .setOnMenuItemClickListener(item -> {
                         boolean ignoreCase = item.isChecked();
                         item.setChecked(ignoreCase);
@@ -380,7 +380,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                         boolean regex = !item.isChecked();
                         item.setChecked(regex);
                         int type = regex ? SearchOptions.TYPE_REGULAR_EXPRESSION : SearchOptions.TYPE_NORMAL;
-                        mSearchOptions = new SearchOptions(type, mSearchOptions.ignoreCase);
+                        mSearchOptions = new SearchOptions(type, mSearchOptions.caseInsensitive);
                         search(mSearchView.getText());
                         return true;
                     });
@@ -391,7 +391,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                         boolean wholeWord = !item.isChecked();
                         item.setChecked(wholeWord);
                         int type = wholeWord ? SearchOptions.TYPE_WHOLE_WORD : SearchOptions.TYPE_NORMAL;
-                        mSearchOptions = new SearchOptions(type, mSearchOptions.ignoreCase);
+                        mSearchOptions = new SearchOptions(type, mSearchOptions.caseInsensitive);
                         search(mSearchView.getText());
                         return true;
                     });
@@ -421,7 +421,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
             CharSequence query = mReplaceView.getText();
             if (!TextUtils.isEmpty(query)) {
-                mEditor.getSearcher().replaceThis(query.toString());
+                mEditor.getSearcher().replaceCurrentMatch(query.toString());
             }
         });
         mReplaceAllButton.setOnClickListener(v -> {
