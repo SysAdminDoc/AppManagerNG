@@ -126,8 +126,8 @@
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:layout_width="42dp"
-                            android:layout_height="42dp"
+                            android:layout_width="@dimen/premium_icon_48"
+                            android:layout_height="@dimen/premium_icon_48"
                             android:layout_marginEnd="@dimen/padding_small"
                             android:background="@drawable/main_empty_icon_background"
                             android:contentDescription="@null"
@@ -152,7 +152,7 @@
                                 android:id="@+id/tracker_cta_subtitle"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
+                                android:layout_marginTop="@dimen/premium_space_4"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 tools:text="Block ad, analytics and crash reporting SDKs" />
@@ -168,7 +168,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="end"
                         android:layout_marginTop="@dimen/padding_small"
-                        android:minHeight="40dp"
+                        android:minHeight="@dimen/premium_button_min_height"
                         tools:text="@string/block" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -201,8 +201,8 @@
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:layout_width="42dp"
-                            android:layout_height="42dp"
+                            android:layout_width="@dimen/premium_icon_48"
+                            android:layout_height="@dimen/premium_icon_48"
                             android:layout_marginEnd="@dimen/padding_small"
                             android:background="@drawable/main_empty_icon_background"
                             android:contentDescription="@null"
@@ -227,7 +227,7 @@
                                 android:id="@+id/perms_cta_subtitle"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
+                                android:layout_marginTop="@dimen/premium_space_4"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 tools:text="Tap to revoke all granted dangerous permissions." />
@@ -243,7 +243,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="end"
                         android:layout_marginTop="@dimen/padding_small"
-                        android:minHeight="40dp"
+                        android:minHeight="@dimen/premium_button_min_height"
                         tools:text="Revoke" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
