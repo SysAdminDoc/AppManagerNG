@@ -20,6 +20,7 @@ import static io.github.muntashirakon.AppManager.history.ops.OpHistoryManager.HI
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInstaller;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.UserHandleHidden;
@@ -35,6 +36,7 @@ import androidx.core.app.ServiceCompat;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -65,6 +67,7 @@ public class PackageInstallerService extends ForegroundService {
 
     public static final String EXTRA_QUEUE_ITEM = "queue_item";
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.INSTALL";
+    private static final long STALE_INSTALL_SESSION_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(30);
 
     public interface OnInstallFinished {
         @UiThread
@@ -87,6 +90,52 @@ public class PackageInstallerService extends ForegroundService {
         super.onCreate();
         mWakeLock = CpuUtils.getPartialWakeLock("installer");
         CpuUtils.acquireWakeLock(mWakeLock);
+    }
+
+    public static int cleanupStaleInstallSessions(@NonNull Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return 0;
+        }
+        PackageInstaller packageInstaller = context.getPackageManager().getPackageInstaller();
+        int cleaned = 0;
+        List<PackageInstaller.SessionInfo> sessions;
+        try {
+            sessions = packageInstaller.getMySessions();
+        } catch (Throwable e) {
+            Log.w(TAG, "Could not enumerate stale installer sessions.", e);
+            return 0;
+        }
+        long nowMillis = System.currentTimeMillis();
+        for (PackageInstaller.SessionInfo sessionInfo : sessions) {
+            if (!shouldAbandonInstallSession(sessionInfo, nowMillis, STALE_INSTALL_SESSION_TIMEOUT_MILLIS)) {
+                continue;
+            }
+            try {
+                packageInstaller.abandonSession(sessionInfo.getSessionId());
+                ++cleaned;
+            } catch (Throwable e) {
+                Log.w(TAG, "Could not abandon stale installer session " + sessionInfo.getSessionId(), e);
+            }
+        }
+        if (cleaned > 0) {
+            Log.i(TAG, "Cleaned %d stale installer session(s).", cleaned);
+        }
+        return cleaned;
+    }
+
+    @VisibleForTesting
+    static boolean shouldAbandonInstallSession(@NonNull PackageInstaller.SessionInfo sessionInfo,
+                                               long nowMillis,
+                                               long staleAfterMillis) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || sessionInfo.isActive() || sessionInfo.isCommitted()) {
+            return false;
+        }
+        return isStaleInstallSession(sessionInfo.getUpdatedMillis(), nowMillis, staleAfterMillis);
+    }
+
+    @VisibleForTesting
+    static boolean isStaleInstallSession(long updatedMillis, long nowMillis, long staleAfterMillis) {
+        return updatedMillis > 0 && nowMillis >= updatedMillis && nowMillis - updatedMillis >= staleAfterMillis;
     }
 
     @Override

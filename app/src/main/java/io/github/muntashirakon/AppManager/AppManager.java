@@ -18,11 +18,13 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass;
 import java.security.Security;
 
 import dalvik.system.ZipPathValidator;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
@@ -52,6 +54,7 @@ public class AppManager extends Application {
         DebloatDefinitionsUpdater.scheduleUpdateIfAllowed(this);
         TrackerDatabaseFreshnessChecker.scheduleCheckIfAllowed(this);
         OpHistoryPruneScheduler.scheduleOrCancel(this);
+        ThreadUtils.postOnBackgroundThread(() -> PackageInstallerService.cleanupStaleInstallSessions(this));
     }
 
     private void configureActivityEmbeddingSplits() {
