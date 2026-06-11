@@ -21,9 +21,9 @@
     <dimen name="premium_radius_none">0dp</dimen>
     <dimen name="premium_radius_compact">4dp</dimen>
     <dimen name="premium_radius_default">8dp</dimen>
-    <dimen name="premium_radius_card">10dp</dimen>
-    <dimen name="premium_radius_sheet">12dp</dimen>
-    <dimen name="premium_radius_modal">12dp</dimen>
+    <dimen name="premium_radius_card">8dp</dimen>
+    <dimen name="premium_radius_sheet">10dp</dimen>
+    <dimen name="premium_radius_modal">10dp</dimen>
     <dimen name="premium_radius_control">8dp</dimen>
 
     <!-- Elevation and strokes -->
@@ -62,17 +62,17 @@
     <dimen name="premium_type_label_small">11sp</dimen>
 
     <!-- MainActivity shell -->
-    <dimen name="premium_app_bar_height">64dp</dimen>
+    <dimen name="premium_app_bar_height">68dp</dimen>
     <dimen name="premium_search_height">48dp</dimen>
-    <dimen name="premium_main_status_min_height">44dp</dimen>
-    <dimen name="premium_main_list_top_padding">8dp</dimen>
+    <dimen name="premium_main_status_min_height">52dp</dimen>
+    <dimen name="premium_main_list_top_padding">10dp</dimen>
     <dimen name="premium_main_list_bottom_padding">32dp</dimen>
 
     <!-- Main row -->
-    <dimen name="premium_main_list_margin_vertical">3dp</dimen>
-    <dimen name="premium_main_list_padding_horizontal">16dp</dimen>
-    <dimen name="premium_main_list_padding_vertical">12dp</dimen>
-    <dimen name="premium_main_icon_frame">54dp</dimen>
+    <dimen name="premium_main_list_margin_vertical">4dp</dimen>
+    <dimen name="premium_main_list_padding_horizontal">18dp</dimen>
+    <dimen name="premium_main_list_padding_vertical">14dp</dimen>
+    <dimen name="premium_main_icon_frame">56dp</dimen>
     <dimen name="premium_badge_min_height">24dp</dimen>
     <dimen name="premium_badge_min_width">24dp</dimen>
     <dimen name="premium_badge_max_width">84dp</dimen>
@@ -81,7 +81,7 @@
     <dimen name="premium_favorite_hit_size">32dp</dimen>
 
     <!-- Controls -->
-    <dimen name="premium_chip_min_height">36dp</dimen>
+    <dimen name="premium_chip_min_height">38dp</dimen>
     <dimen name="premium_chip_touch_target">48dp</dimen>
     <dimen name="premium_button_min_height">48dp</dimen>
     <dimen name="premium_dialog_action_bar_height">64dp</dimen>

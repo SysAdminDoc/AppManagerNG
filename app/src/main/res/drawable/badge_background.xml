@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="?attr/colorSurface" />
+    <solid android:color="?attr/colorSurfaceContainerHigh" />
     <stroke
         android:width="@dimen/main_list_badge_stroke_width"
         android:color="?attr/colorOutlineVariant" />
