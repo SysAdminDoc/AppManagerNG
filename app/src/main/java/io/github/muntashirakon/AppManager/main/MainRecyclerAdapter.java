@@ -30,6 +30,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
@@ -414,7 +415,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                             R.plurals.main_list_tracker_count_badge_a11y, item.trackerCount, item.trackerCount);
                 }
                 holder.trackerIndicator.setText(label);
-                applyBadgeStyle(holder.trackerIndicator, trackerColor);
+                applyBadgeStyle(holder.trackerIndicator, trackerColor,
+                        getTrackerBadgeTextColor(context, allBlocked, item.trackerCount));
                 holder.trackerIndicator.setContentDescription(contentDesc);
                 if (item.isInstalled) {
                     holder.trackerIndicator.setClickable(true);
@@ -450,7 +452,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.permIndicator.setText(context.getString(
                         R.string.main_list_perm_badge_label, permGranted, permTotal));
                 int permColor = ColorCodes.getPermissionRiskIndicatorColor(context, permGranted, permTotal);
-                applyBadgeStyle(holder.permIndicator, permColor);
+                applyBadgeStyle(holder.permIndicator, permColor,
+                        getPermissionBadgeTextColor(context, permGranted, permTotal));
                 holder.permIndicator.setContentDescription(context.getString(
                         R.string.main_list_perm_count_a11y, permGranted, permTotal));
                 if (item.isInstalled) {
@@ -514,7 +517,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 // App not installed
                 indicatorColor = ColorCodes.getBackupUninstalledIndicatorColor(context);
             }
-            applyBadgeStyle(holder.backupIndicator, indicatorColor);
+            applyBadgeStyle(holder.backupIndicator, indicatorColor,
+                    getBackupBadgeTextColor(context, item.isInstalled, item.backup.versionCode >= item.versionCode));
             Backup backup = item.backup;
             long days = item.lastBackupDays;
             holder.backupInfo.setText(String.format("%s: %s, %s %s",
@@ -627,7 +631,64 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         return ColorUtils.setAlphaComponent(color, STATE_STROKE_ALPHA);
     }
 
+    @ColorInt
+    @VisibleForTesting
+    static int getTrackerBadgeTextColor(@NonNull Context context, boolean allBlocked, int trackerCount) {
+        if (allBlocked || trackerCount < 5) {
+            return getBadgeSuccessContentColor(context);
+        }
+        if (trackerCount >= 20) {
+            return getBadgeDangerContentColor(context);
+        }
+        return getBadgeWarningContentColor(context);
+    }
+
+    @ColorInt
+    @VisibleForTesting
+    static int getPermissionBadgeTextColor(@NonNull Context context, int granted, int total) {
+        if (granted <= 0 || total <= 0) {
+            return getBadgeSuccessContentColor(context);
+        }
+        float grantRatio = granted / (float) total;
+        if (grantRatio >= 0.5f || granted >= 5) {
+            return getBadgeDangerContentColor(context);
+        }
+        if (grantRatio >= 0.25f || granted >= 2) {
+            return getBadgeWarningContentColor(context);
+        }
+        return getBadgeSuccessContentColor(context);
+    }
+
+    @ColorInt
+    @VisibleForTesting
+    static int getBackupBadgeTextColor(@NonNull Context context, boolean installed, boolean latestBackup) {
+        if (!installed) {
+            return getBadgeDangerContentColor(context);
+        }
+        return latestBackup ? getBadgeSuccessContentColor(context) : getBadgeWarningContentColor(context);
+    }
+
+    @ColorInt
+    private static int getBadgeSuccessContentColor(@NonNull Context context) {
+        return ContextCompat.getColor(context, R.color.premium_success_content);
+    }
+
+    @ColorInt
+    private static int getBadgeWarningContentColor(@NonNull Context context) {
+        return ContextCompat.getColor(context, R.color.premium_warning_content);
+    }
+
+    @ColorInt
+    private static int getBadgeDangerContentColor(@NonNull Context context) {
+        return ContextCompat.getColor(context, R.color.premium_danger_content);
+    }
+
     private static void applyBadgeStyle(@NonNull TextView badge, @ColorInt int contentColor) {
+        applyBadgeStyle(badge, contentColor, ColorUtils.setAlphaComponent(contentColor, 0xFF));
+    }
+
+    private static void applyBadgeStyle(@NonNull TextView badge, @ColorInt int contentColor,
+                                        @ColorInt int textColor) {
         int opaqueContentColor = ColorUtils.setAlphaComponent(contentColor, 0xFF);
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
@@ -638,7 +699,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         background.setCornerRadius(
                 badge.getResources().getDimensionPixelSize(R.dimen.main_list_badge_corner_radius));
         badge.setBackground(background);
-        badge.setTextColor(opaqueContentColor);
+        badge.setTextColor(textColor);
     }
 
     /**
