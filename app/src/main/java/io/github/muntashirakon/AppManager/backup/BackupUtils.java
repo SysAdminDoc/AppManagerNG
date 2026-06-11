@@ -193,10 +193,14 @@ public final class BackupUtils {
     }
 
     public static void deleteBackupToDbAndBroadcast(@NonNull Context context, @NonNull BackupMetadataV5 metadata) {
+        deleteBackupToDbAndBroadcast(context, Backup.fromBackupMetadataV5(metadata));
+    }
+
+    public static void deleteBackupToDbAndBroadcast(@NonNull Context context, @NonNull Backup backup) {
         AppDb appDb = new AppDb();
-        appDb.deleteBackup(Backup.fromBackupMetadataV5(metadata));
-        appDb.updateApplication(context, metadata.metadata.packageName);
-        BroadcastUtils.sendDbPackageAltered(context, new String[]{metadata.metadata.packageName});
+        appDb.deleteBackup(backup);
+        appDb.updateApplication(context, backup.packageName);
+        BroadcastUtils.sendDbPackageAltered(context, new String[]{backup.packageName});
     }
 
     @WorkerThread
