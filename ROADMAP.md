@@ -210,13 +210,6 @@ into it — existing items take precedence over duplicates.
 
 ### P1
 
-- [ ] P1 — Fix main-list infinite-load on Android 16 private space (upstream #1982, fork-first)
-  Why: Private-space profiles throw SecurityException (INTERACT_ACROSS_USERS) inside UsageStatsManagerCompat.isAppInactive during ApplicationItem.generateOtherInfo; the exception is swallowed in the main-list load path and the list never renders — accepted P1/S0 upstream with no upstream fix committed yet.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1982 (exact repro + stack); main/ApplicationItem.java calls isAppInactive (verified in tree)
-  Touches: main/ApplicationItem.java, main/MainViewModel.java (stop swallowing Throwable in loadApplicationItems), compat/UsageStatsManagerCompat.java (per-user guard)
-  Acceptance: with a private-space profile present on an A16 emulator the main list renders (private-space rows degrade gracefully); load-path exceptions are logged with package context, never silently swallowed.
-  Complexity: S
-
 - [ ] P1 — Port upstream post-pin crash/correctness batch (2026-05-26 → 06-02)
   Why: Eight uncatalogued upstream fixes land cleanly on a 3d11bcb-pinned tree and close silent-corruption/crash classes: APKS compile regression, profile custom-expression filters matching wrong app sets, am-start link resolution, two NPEs, Debloater missing uninstalled system apps, broken Finder/Debloater nav, editor symbol cropping at large font scale.
   Evidence: upstream commits 706c36fb, daa54ac0 (closes #1718), 4a25c3f0, 3bf97856, 184df334, 329b8dc1, 4d3da96b, 0d1be565 — https://github.com/MuntashirAkon/AppManager/commits/master
