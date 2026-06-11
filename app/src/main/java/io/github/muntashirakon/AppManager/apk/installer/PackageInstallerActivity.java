@@ -181,6 +181,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private List<InstallDependencyChecker.Issue> mPendingDependencyIssues = Collections.emptyList();
     private boolean mDeveloperVerificationWarningShown;
     private boolean mInstallActionAuthenticated;
+    private boolean mBatchDowngradeWarningShown;
     private boolean mSplitCertMismatchDialogShown;
     private boolean mSplitCertMismatchCheckInProgress;
     private final View.OnClickListener mAppInfoClickListener = v -> {
@@ -529,6 +530,15 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         return out.toString();
     }
 
+    @VisibleForTesting
+    static boolean isDowngrade(@Nullable PackageInfo installedPackageInfo,
+                               @Nullable PackageInfo newPackageInfo) {
+        return installedPackageInfo != null
+                && newPackageInfo != null
+                && PackageInfoCompat.getLongVersionCode(installedPackageInfo)
+                > PackageInfoCompat.getLongVersionCode(newPackageInfo);
+    }
+
     @UiThread
     private boolean maybeShowSplitCertMismatchDialog() {
         if (mSplitCertMismatchDialogShown
@@ -751,6 +761,26 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private void triggerBatchInstall() {
         try {
             mModel.selectDefaultSplitsForInstallation();
+            if (!mBatchDowngradeWarningShown
+                    && isDowngrade(mModel.getInstalledPackageInfo(), mModel.getNewPackageInfo())) {
+                InstallerPrivilegeCascade.Plan privilegePlan = InstallerPrivilegeCascade.getPreviewPlan(this);
+                CharSequence callout = composeInstallCallout(mModel.getTrackerCount(),
+                        mPendingDependencyIssues, privilegePlan);
+                mDialogHelper.showInstallConfirmationDialog(R.string.downgrade, R.string.skip,
+                        new InstallerDialogHelper.OnClickButtonsListener() {
+                            @Override
+                            public void triggerInstall() {
+                                mBatchDowngradeWarningShown = true;
+                                PackageInstallerActivity.this.triggerInstall();
+                            }
+
+                            @Override
+                            public void triggerCancel() {
+                                PackageInstallerActivity.this.triggerCancel();
+                            }
+                        }, mAppInfoClickListener, callout, privilegePlan.getChipLabels(this));
+                return;
+            }
             mDeveloperVerificationWarningShown = true;
             triggerInstall();
         } catch (RuntimeException e) {
@@ -787,6 +817,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (hasNext()) {
             mIsDealingWithApk = true;
             mDeveloperVerificationWarningShown = false;
+            mBatchDowngradeWarningShown = false;
             mSplitCertMismatchDialogShown = false;
             mSplitCertMismatchCheckInProgress = false;
             mDialogHelper.initProgress(v -> goToNext());
