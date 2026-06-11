@@ -162,71 +162,90 @@ final class AndroidBackupHeader {
                                              @NonNull OutputStream ofstream) throws Exception {
         // User key will be used to encrypt the encryption key.
         byte[] newUserSalt = randomBytes(PBKDF2_SALT_SIZE);
-        SecretKey userKey = buildCharArrayKey(PBKDF_CURRENT, mPassword, newUserSalt, PBKDF2_HASH_ROUNDS);
-
-        // the encryption key is random for each backup
         byte[] encryptionKey = new byte[256 / 8];
-        mRng.nextBytes(encryptionKey);
         byte[] checksumSalt = randomBytes(PBKDF2_SALT_SIZE);
+        byte[] userIv = null;
+        byte[] encryptionIv = null;
+        byte[] encryptionKeyBytes = null;
+        byte[] checksum = null;
+        byte[] blobBytes = null;
+        byte[] encryptedKeyBlob = null;
+        try {
+            SecretKey userKey = buildCharArrayKey(PBKDF_CURRENT, mPassword, newUserSalt, PBKDF2_HASH_ROUNDS);
 
-        // primary encryption of the datastream with the encryption key
-        Cipher c = Cipher.getInstance(TRANSFORMATION);
-        SecretKeySpec encryptionKeySpec = new SecretKeySpec(encryptionKey, "AES");
-        c.init(Cipher.ENCRYPT_MODE, encryptionKeySpec);
-        OutputStream finalOutput = new CipherOutputStream(ofstream, c);
+            // the encryption key is random for each backup
+            mRng.nextBytes(encryptionKey);
 
-        // line 4: name of encryption algorithm
-        headerbuf.append(ENCRYPTION_ALGORITHM_NAME);
-        headerbuf.append('\n');
-        // line 5: user password salt [hex]
-        headerbuf.append(byteArrayToHex(newUserSalt));
-        headerbuf.append('\n');
-        // line 6: encryption key checksum salt [hex]
-        headerbuf.append(byteArrayToHex(checksumSalt));
-        headerbuf.append('\n');
-        // line 7: number of PBKDF2 rounds used [decimal]
-        headerbuf.append(PBKDF2_HASH_ROUNDS);
-        headerbuf.append('\n');
+            // primary encryption of the datastream with the encryption key
+            Cipher c = Cipher.getInstance(TRANSFORMATION);
+            SecretKeySpec encryptionKeySpec = new SecretKeySpec(encryptionKey, "AES");
+            c.init(Cipher.ENCRYPT_MODE, encryptionKeySpec);
+            OutputStream finalOutput = new CipherOutputStream(ofstream, c);
 
-        // line 8: IV of the user key [hex]
-        Cipher mkC = Cipher.getInstance(TRANSFORMATION);
-        mkC.init(Cipher.ENCRYPT_MODE, userKey);
+            // line 4: name of encryption algorithm
+            headerbuf.append(ENCRYPTION_ALGORITHM_NAME);
+            headerbuf.append('\n');
+            // line 5: user password salt [hex]
+            headerbuf.append(byteArrayToHex(newUserSalt));
+            headerbuf.append('\n');
+            // line 6: encryption key checksum salt [hex]
+            headerbuf.append(byteArrayToHex(checksumSalt));
+            headerbuf.append('\n');
+            // line 7: number of PBKDF2 rounds used [decimal]
+            headerbuf.append(PBKDF2_HASH_ROUNDS);
+            headerbuf.append('\n');
 
-        byte[] IV = mkC.getIV();
-        headerbuf.append(byteArrayToHex(IV));
-        headerbuf.append('\n');
+            // line 8: IV of the user key [hex]
+            Cipher mkC = Cipher.getInstance(TRANSFORMATION);
+            mkC.init(Cipher.ENCRYPT_MODE, userKey);
 
-        // line 9: encryption IV + key blob, encrypted by the user key [hex].  Blob format:
-        //    [byte] IV length = Niv
-        //    [array of Niv bytes] IV itself
-        //    [byte] encryption key length = Nek
-        //    [array of Nek bytes] encryption key itself
-        //    [byte] encryption key checksum hash length = Nck
-        //    [array of Nck bytes] encryption key checksum hash
-        //
-        // The checksum is the (encryption key + checksum salt), run through the
-        // stated number of PBKDF2 rounds
-        IV = c.getIV();
-        byte[] mk = encryptionKeySpec.getEncoded();
-        byte[] checksum = makeKeyChecksum(PBKDF_CURRENT,
-                encryptionKeySpec.getEncoded(),
-                checksumSalt, PBKDF2_HASH_ROUNDS);
+            userIv = mkC.getIV();
+            headerbuf.append(byteArrayToHex(userIv));
+            headerbuf.append('\n');
 
-        ByteArrayOutputStream blob = new ByteArrayOutputStream(IV.length + mk.length
-                + checksum.length + 3);
-        DataOutputStream mkOut = new DataOutputStream(blob);
-        mkOut.writeByte(IV.length);
-        mkOut.write(IV);
-        mkOut.writeByte(mk.length);
-        mkOut.write(mk);
-        mkOut.writeByte(checksum.length);
-        mkOut.write(checksum);
-        mkOut.flush();
-        byte[] encryptedMk = mkC.doFinal(blob.toByteArray());
-        headerbuf.append(byteArrayToHex(encryptedMk));
-        headerbuf.append('\n');
+            // line 9: encryption IV + key blob, encrypted by the user key [hex].  Blob format:
+            //    [byte] IV length = Niv
+            //    [array of Niv bytes] IV itself
+            //    [byte] encryption key length = Nek
+            //    [array of Nek bytes] encryption key itself
+            //    [byte] encryption key checksum hash length = Nck
+            //    [array of Nck bytes] encryption key checksum hash
+            //
+            // The checksum is the (encryption key + checksum salt), run through the
+            // stated number of PBKDF2 rounds
+            encryptionIv = c.getIV();
+            encryptionKeyBytes = encryptionKeySpec.getEncoded();
+            checksum = makeKeyChecksum(PBKDF_CURRENT,
+                    encryptionKeyBytes,
+                    checksumSalt, PBKDF2_HASH_ROUNDS);
 
-        return finalOutput;
+            ByteArrayOutputStream blob = new ByteArrayOutputStream(encryptionIv.length + encryptionKeyBytes.length
+                    + checksum.length + 3);
+            DataOutputStream mkOut = new DataOutputStream(blob);
+            mkOut.writeByte(encryptionIv.length);
+            mkOut.write(encryptionIv);
+            mkOut.writeByte(encryptionKeyBytes.length);
+            mkOut.write(encryptionKeyBytes);
+            mkOut.writeByte(checksum.length);
+            mkOut.write(checksum);
+            mkOut.flush();
+            blobBytes = blob.toByteArray();
+            encryptedKeyBlob = mkC.doFinal(blobBytes);
+            headerbuf.append(byteArrayToHex(encryptedKeyBlob));
+            headerbuf.append('\n');
+
+            return finalOutput;
+        } finally {
+            clearBytes(newUserSalt);
+            clearBytes(encryptionKey);
+            clearBytes(checksumSalt);
+            clearBytes(userIv);
+            clearBytes(encryptionIv);
+            clearBytes(encryptionKeyBytes);
+            clearBytes(checksum);
+            clearBytes(blobBytes);
+            clearBytes(encryptedKeyBlob);
+        }
     }
 
     @NonNull
@@ -251,14 +270,19 @@ final class AndroidBackupHeader {
 
         // decrypt the encryption key blob
         try {
-            return attemptEncryptionKeyDecryption(decryptPassword, PBKDF_CURRENT, userSalt,
-                    ckSalt, rounds, userIvHex, encryptionKeyBlobHex, rawInStream);
-        } catch (Exception e) {
-            if (pbkdf2Fallback) {
-                return attemptEncryptionKeyDecryption(decryptPassword, PBKDF_FALLBACK, userSalt,
+            try {
+                return attemptEncryptionKeyDecryption(decryptPassword, PBKDF_CURRENT, userSalt,
                         ckSalt, rounds, userIvHex, encryptionKeyBlobHex, rawInStream);
+            } catch (Exception e) {
+                if (pbkdf2Fallback) {
+                    return attemptEncryptionKeyDecryption(decryptPassword, PBKDF_FALLBACK, userSalt,
+                            ckSalt, rounds, userIvHex, encryptionKeyBlobHex, rawInStream);
+                }
+                throw e;
             }
-            throw e;
+        } finally {
+            clearBytes(userSalt);
+            clearBytes(ckSalt);
         }
     }
 
@@ -267,41 +291,59 @@ final class AndroidBackupHeader {
                                                               byte[] ckSalt, int rounds, String userIvHex,
                                                               String encryptionKeyBlobHex, InputStream rawInStream)
             throws Exception {
-        InputStream result;
-        Cipher c = Cipher.getInstance(TRANSFORMATION);
-        SecretKey userKey = buildCharArrayKey(algorithm, decryptPassword, userSalt,
-                rounds);
-        byte[] IV = hexToByteArray(userIvHex);
-        IvParameterSpec ivSpec = new IvParameterSpec(IV);
-        c.init(Cipher.DECRYPT_MODE,
-                new SecretKeySpec(userKey.getEncoded(), "AES"),
-                ivSpec);
-        byte[] mkCipher = hexToByteArray(encryptionKeyBlobHex);
-        byte[] mkBlob = c.doFinal(mkCipher);
-
-        // first, the encryption key IV
-        int[] offset = new int[]{0};
-        IV = readKeyBlobSegment(mkBlob, offset, "encryption IV");
-        // then the encryption key itself
-        byte[] encryptionKey = readKeyBlobSegment(mkBlob, offset, "encryption key");
-        // and finally the encryption key checksum hash
-        byte[] mkChecksum = readKeyBlobSegment(mkBlob, offset, "encryption key checksum");
-
-        // now validate the decrypted encryption key against the checksum
-        byte[] calculatedCk = makeKeyChecksum(algorithm, encryptionKey, ckSalt,
-                rounds);
-        if (MessageDigest.isEqual(calculatedCk, mkChecksum)) {
-            ivSpec = new IvParameterSpec(IV);
+        byte[] userKeyIv = null;
+        byte[] userKeyBytes = null;
+        byte[] encryptedKeyBlob = null;
+        byte[] decryptedKeyBlob = null;
+        byte[] encryptionIv = null;
+        byte[] encryptionKey = null;
+        byte[] storedChecksum = null;
+        byte[] calculatedChecksum = null;
+        try {
+            InputStream result;
+            Cipher c = Cipher.getInstance(TRANSFORMATION);
+            SecretKey userKey = buildCharArrayKey(algorithm, decryptPassword, userSalt, rounds);
+            userKeyIv = hexToByteArray(userIvHex);
+            IvParameterSpec ivSpec = new IvParameterSpec(userKeyIv);
+            userKeyBytes = userKey.getEncoded();
             c.init(Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(encryptionKey, "AES"),
+                    new SecretKeySpec(userKeyBytes, "AES"),
                     ivSpec);
-            // Only if all of the above worked properly will 'result' be assigned
-            result = new CipherInputStream(rawInStream, c);
-        } else {
-            throw new IOException("Incorrect password");
-        }
+            encryptedKeyBlob = hexToByteArray(encryptionKeyBlobHex);
+            decryptedKeyBlob = c.doFinal(encryptedKeyBlob);
 
-        return result;
+            // first, the encryption key IV
+            int[] offset = new int[]{0};
+            encryptionIv = readKeyBlobSegment(decryptedKeyBlob, offset, "encryption IV");
+            // then the encryption key itself
+            encryptionKey = readKeyBlobSegment(decryptedKeyBlob, offset, "encryption key");
+            // and finally the encryption key checksum hash
+            storedChecksum = readKeyBlobSegment(decryptedKeyBlob, offset, "encryption key checksum");
+
+            // now validate the decrypted encryption key against the checksum
+            calculatedChecksum = makeKeyChecksum(algorithm, encryptionKey, ckSalt, rounds);
+            if (MessageDigest.isEqual(calculatedChecksum, storedChecksum)) {
+                ivSpec = new IvParameterSpec(encryptionIv);
+                c.init(Cipher.DECRYPT_MODE,
+                        new SecretKeySpec(encryptionKey, "AES"),
+                        ivSpec);
+                // Only if all of the above worked properly will 'result' be assigned
+                result = new CipherInputStream(rawInStream, c);
+            } else {
+                throw new IOException("Incorrect password");
+            }
+
+            return result;
+        } finally {
+            clearBytes(userKeyIv);
+            clearBytes(userKeyBytes);
+            clearBytes(encryptedKeyBlob);
+            clearBytes(decryptedKeyBlob);
+            clearBytes(encryptionIv);
+            clearBytes(encryptionKey);
+            clearBytes(storedChecksum);
+            clearBytes(calculatedChecksum);
+        }
     }
 
     /**
@@ -352,12 +394,16 @@ final class AndroidBackupHeader {
     public static byte[] makeKeyChecksum(String algorithm, byte[] pwBytes, byte[] salt, int rounds)
             throws Exception {
         char[] mkAsChar = new char[pwBytes.length];
-        for (int i = 0; i < pwBytes.length; i++) {
-            mkAsChar[i] = (char) pwBytes[i];
-        }
+        try {
+            for (int i = 0; i < pwBytes.length; i++) {
+                mkAsChar[i] = (char) pwBytes[i];
+            }
 
-        Key checksum = buildCharArrayKey(algorithm, mkAsChar, salt, rounds);
-        return checksum.getEncoded();
+            Key checksum = buildCharArrayKey(algorithm, mkAsChar, salt, rounds);
+            return checksum.getEncoded();
+        } finally {
+            Arrays.fill(mkAsChar, '\u0000');
+        }
     }
 
     /**
@@ -444,5 +490,11 @@ final class AndroidBackupHeader {
             }
         }
         return result;
+    }
+
+    private static void clearBytes(@Nullable byte[] bytes) {
+        if (bytes != null) {
+            Arrays.fill(bytes, (byte) 0);
+        }
     }
 }
