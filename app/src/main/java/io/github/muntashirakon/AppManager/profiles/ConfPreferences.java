@@ -3,9 +3,13 @@
 package io.github.muntashirakon.AppManager.profiles;
 
 import android.app.TimePickerDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -39,11 +43,13 @@ import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStore;
 import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
+import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
@@ -458,14 +464,18 @@ public class ConfPreferences extends PreferenceFragmentCompat {
     }
 
     private void showRoutineTriggerActions(@NonNull ProfileTrigger trigger) {
-        new MaterialAlertDialogBuilder(mActivity)
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(RoutineScheduler.formatTriggerTitle(mActivity, trigger))
                 .setMessage(RoutineScheduler.formatTriggerSummary(mActivity, trigger))
                 .setPositiveButton(trigger.enabled ? R.string.disable : R.string.enable, (dialog, which) -> {
+                    boolean enabling = !trigger.enabled;
                     ProfileTrigger updated = mTriggerStore.setEnabled(trigger.id, !trigger.enabled);
                     if (updated != null) {
                         RoutineScheduler.scheduleOrCancel(mActivity, updated);
                         refreshRoutineTriggerDiagnostics();
+                        if (enabling) {
+                            ensureRoutineTriggerBatteryExemption();
+                        }
                     }
                     updateRoutineTriggersPref();
                 })
@@ -474,9 +484,14 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     mTriggerStore.remove(trigger.id);
                     RoutineScheduler.clearStoredState(mActivity, trigger.id);
                     updateRoutineTriggersPref();
-                })
-                .setNeutralButton(R.string.close, null)
-                .show();
+                });
+        if (shouldOfferRoutineTriggerBatteryOptimization()) {
+            builder.setNeutralButton(R.string.profile_trigger_battery_optimization_fix,
+                    (dialog, which) -> ensureRoutineTriggerBatteryExemption());
+        } else {
+            builder.setNeutralButton(R.string.close, null);
+        }
+        builder.show();
     }
 
     private void showAddRoutineTriggerDialog(@NonNull String profileId) {
@@ -525,6 +540,61 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         RoutineScheduler.scheduleOrCancel(mActivity, trigger);
         updateRoutineTriggersPref();
         refreshRoutineTriggerDiagnostics();
+        if (trigger.enabled) {
+            ensureRoutineTriggerBatteryExemption();
+        }
+    }
+
+    private boolean shouldOfferRoutineTriggerBatteryOptimization() {
+        return mActivity != null
+                && SelfBatteryOptimization.isSupported()
+                && !SelfBatteryOptimization.isExempt(mActivity);
+    }
+
+    private void ensureRoutineTriggerBatteryExemption() {
+        if (!shouldOfferRoutineTriggerBatteryOptimization()) {
+            return;
+        }
+        if (SelfBatteryOptimization.canAutoFix()) {
+            Context appContext = mActivity.getApplicationContext();
+            ThreadUtils.postOnBackgroundThread(() -> {
+                @SelfBatteryOptimization.AutoFixResult int result =
+                        SelfBatteryOptimization.autoFixIfPossible(appContext);
+                ThreadUtils.postOnMainThread(() -> {
+                    if (!isAdded() || mActivity == null) return;
+                    if (result == SelfBatteryOptimization.RESULT_FIXED
+                            || result == SelfBatteryOptimization.RESULT_ALREADY_EXEMPT) {
+                        UIUtils.displayShortToast(R.string.profile_trigger_battery_auto_fixed);
+                        refreshRoutineTriggerDiagnostics();
+                    } else {
+                        showRoutineTriggerBatteryOptimizationPrompt(mActivity);
+                    }
+                });
+            });
+            return;
+        }
+        showRoutineTriggerBatteryOptimizationPrompt(mActivity);
+    }
+
+    private void showRoutineTriggerBatteryOptimizationPrompt(@NonNull Context context) {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.profile_trigger_battery_optimization_title)
+                .setMessage(R.string.profile_trigger_battery_optimization_msg)
+                .setPositiveButton(R.string.pref_backup_schedule_battery_optimization_open,
+                        (dialog, which) -> launchRoutineTriggerBatteryOptimizationSystemFlow(context))
+                .setNegativeButton(R.string.not_now, null)
+                .show();
+    }
+
+    private void launchRoutineTriggerBatteryOptimizationSystemFlow(@NonNull Context context) {
+        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+        intent.setData(Uri.parse("package:" + context.getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayLongToast(getString(R.string.pref_battery_optimization_unsupported));
+        }
     }
 
     private List<Integer> mSelectedUsers;
