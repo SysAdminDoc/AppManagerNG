@@ -42,6 +42,10 @@ interface that doesn't punish casual users for opening it.
 
 A new main-menu entry that flips the standard "app -> permissions" view on its head. Pick a permission group (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) and see every installed app that holds it, with a one-tap toggle per app and a master **Revoke for all apps** action in the toolbar. Changes persist through the same rule store the per-app permissions tab uses, so they survive reinstalls.
 
+### App Archiving (Android 15+)
+
+Reclaim storage without losing anything: archiving removes an app's APK and cache but keeps its data and launcher icon, so unarchiving picks up exactly where you left off. AppManagerNG drives the native Android 15 archiving API — archive or unarchive a single app from its App Info page, or select multiple apps and do it as a batch operation. Archived apps are detected and shown as such in the app list. Works on user apps without root (the system asks you to confirm each request). No other open-source package manager ships this yet.
+
 ## Features (inherited from upstream baseline)
 
 ### General
