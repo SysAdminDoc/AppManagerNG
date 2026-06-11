@@ -291,20 +291,21 @@ public class PackageInstallerService extends ForegroundService {
         PendingIntent defaultAction = intent != null ? PendingIntentCompat.getActivity(this, 0, intent,
                 PendingIntent.FLAG_ONE_SHOT, false) : null;
         String subject = getStringFromStatus(this, status, appLabel, blockingPackage);
+        String recoveryHint = status != STATUS_SUCCESS ? getRecoveryHintFromStatus(this, status) : null;
         CharSequence title = appLabel != null ? appLabel : packageName;
+        NotificationCompat.Style finalStyle = createFinalNotificationStyle(subject, statusMessage, recoveryHint);
         NotificationInfo notificationInfo = new NotificationInfo()
                 .setAutoCancel(true)
                 .setTime(System.currentTimeMillis())
                 .setOperationName(getText(R.string.package_installer))
                 .setTitle(title)
                 .setBody(subject)
-                .setStyle(createFinalNotificationStyle(subject, statusMessage))
+                .setStyle(finalStyle)
                 .setDefaultAction(defaultAction);
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
                 OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
-        prepareFinalProgressNotification(mProgressHandler, title, subject,
-                createFinalNotificationStyle(subject, statusMessage));
+        prepareFinalProgressNotification(mProgressHandler, title, subject, finalStyle);
         ThreadUtils.postOnMainThread(() -> mProgressHandler.onResult(notificationInfo));
     }
 
@@ -325,9 +326,19 @@ public class PackageInstallerService extends ForegroundService {
 
     @Nullable
     private static NotificationCompat.Style createFinalNotificationStyle(@NonNull CharSequence subject,
-                                                                         @Nullable String statusMessage) {
-        return statusMessage != null ? new NotificationCompat.BigTextStyle()
-                .bigText(subject + "\n\n" + statusMessage) : null;
+                                                                         @Nullable String statusMessage,
+                                                                         @Nullable String recoveryHint) {
+        if (statusMessage == null && recoveryHint == null) {
+            return null;
+        }
+        StringBuilder details = new StringBuilder(subject);
+        if (recoveryHint != null) {
+            details.append("\n\n").append(recoveryHint);
+        }
+        if (statusMessage != null) {
+            details.append("\n\n").append(statusMessage);
+        }
+        return new NotificationCompat.BigTextStyle().bigText(details);
     }
 
     @NonNull
@@ -368,5 +379,38 @@ public class PackageInstallerService extends ForegroundService {
                 return context.getString(R.string.installer_error_lidl_rom);
         }
         return context.getString(R.string.installer_error_generic);
+    }
+
+    @NonNull
+    public static String getRecoveryHintFromStatus(@NonNull Context context,
+                                                   @PackageInstallerCompat.Status int status) {
+        switch (status) {
+            case STATUS_FAILURE_ABORTED:
+                return context.getString(R.string.installer_recovery_aborted);
+            case STATUS_FAILURE_BLOCKED:
+                return context.getString(R.string.installer_recovery_blocked);
+            case STATUS_FAILURE_CONFLICT:
+                return context.getString(R.string.installer_recovery_conflict);
+            case STATUS_FAILURE_INCOMPATIBLE:
+                return context.getString(R.string.installer_recovery_incompatible);
+            case STATUS_FAILURE_INVALID:
+                return context.getString(R.string.installer_recovery_invalid);
+            case STATUS_FAILURE_STORAGE:
+                return context.getString(R.string.installer_recovery_storage);
+            case STATUS_FAILURE_SECURITY:
+                return context.getString(R.string.installer_recovery_security);
+            case STATUS_FAILURE_SESSION_CREATE:
+                return context.getString(R.string.installer_recovery_session_create);
+            case STATUS_FAILURE_SESSION_WRITE:
+                return context.getString(R.string.installer_recovery_session_write);
+            case STATUS_FAILURE_SESSION_COMMIT:
+                return context.getString(R.string.installer_recovery_session_commit);
+            case STATUS_FAILURE_SESSION_ABANDON:
+                return context.getString(R.string.installer_recovery_session_abandon);
+            case STATUS_FAILURE_INCOMPATIBLE_ROM:
+                return context.getString(R.string.installer_recovery_incompatible_rom);
+            default:
+                return context.getString(R.string.installer_recovery_generic);
+        }
     }
 }
