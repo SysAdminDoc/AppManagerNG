@@ -3568,6 +3568,8 @@
     <string name="cert_fingerprint_dialog_sha256_header">SHA-256 fingerprint</string>
     <string name="cert_fingerprint_dialog_subject_header">Subject</string>
     <string name="cert_fingerprint_dialog_issuer_header">Issuer</string>
+    <string name="cert_fingerprint_share_subject">Verification info for %1$s</string>
+    <string name="cert_fingerprint_share_chooser_title">Share verification info</string>
     <!-- App Details: window soft-input flags (Utils.getSoftInputString) -->
     <string name="soft_input_flag_adjust_nothing">Adjust nothing</string>
     <string name="soft_input_flag_adjust_pan">Adjust pan</string>
