@@ -10,6 +10,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -22,6 +24,9 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -31,6 +36,7 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.IoUtils;
 
@@ -46,7 +52,16 @@ public class ScannerActivity extends BaseActivity {
     private ParcelFileDescriptor mFd;
     @Nullable
     private Uri mApkUri;
+    @Nullable
+    private ScannerViewModel mModel;
     private boolean mIsExternalApk;
+
+    private final ActivityResultLauncher<String> mExportScanReport = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("application/json"), uri -> {
+                if (uri != null) {
+                    exportScanReport(uri);
+                }
+            });
 
     @Override
     protected void onDestroy() {
@@ -60,6 +75,7 @@ public class ScannerActivity extends BaseActivity {
         setContentView(R.layout.activity_fm);
         setSupportActionBar(findViewById(R.id.toolbar));
         ScannerViewModel model = new ViewModelProvider(this).get(ScannerViewModel.class);
+        mModel = model;
         mActionBar = getSupportActionBar();
         Intent intent = getIntent();
         mIsExternalApk = intent.getBooleanExtra(EXTRA_IS_EXTERNAL, true);
@@ -117,6 +133,12 @@ public class ScannerActivity extends BaseActivity {
         if (id == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();
             return true;
+        } else if (id == R.id.action_export_report) {
+            ScannerViewModel model = mModel;
+            if (model != null) {
+                mExportScanReport.launch(model.getDefaultReportFileName());
+                return true;
+            }
         } else if (id == R.id.action_install) {
             if (mApkUri != null) {
                 startActivity(PackageInstallerActivity.getLaunchableInstance(getApplicationContext(), mApkUri));
@@ -124,6 +146,26 @@ public class ScannerActivity extends BaseActivity {
             }
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void exportScanReport(@NonNull Uri uri) {
+        ScannerViewModel model = mModel;
+        if (model == null) {
+            UIUtils.displayShortToast(R.string.export_failed);
+            return;
+        }
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) {
+                    throw new IOException("Cannot open export target.");
+                }
+                os.write(model.buildScanReportJson().getBytes(StandardCharsets.UTF_8));
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.scanner_export_success));
+            } catch (Exception e) {
+                e.printStackTrace();
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.export_failed));
+            }
+        });
     }
 
     public void setSubtitle(CharSequence subtitle) {
