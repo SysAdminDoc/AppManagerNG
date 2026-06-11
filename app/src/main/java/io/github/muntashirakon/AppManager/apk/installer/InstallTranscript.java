@@ -43,6 +43,10 @@ public final class InstallTranscript {
     public final int statusCode;
     public final String statusName;
     @Nullable
+    public final String statusExplanation;
+    @Nullable
+    public final String recoveryHint;
+    @Nullable
     public final String statusMessage;
     @Nullable
     public final String sourceUri;
@@ -62,6 +66,26 @@ public final class InstallTranscript {
                              @Nullable String statusMessage,
                              @Nullable String sourceUri,
                              boolean redactSource) {
+        this(timestampUtc, appVersion, deviceModel, androidRelease, apiLevel, securityPatch, abi, activeMode,
+                packageName, statusCode, statusName, null, null, statusMessage, sourceUri, redactSource);
+    }
+
+    public InstallTranscript(@NonNull String timestampUtc,
+                             @NonNull String appVersion,
+                             @NonNull String deviceModel,
+                             @NonNull String androidRelease,
+                             int apiLevel,
+                             @NonNull String securityPatch,
+                             @NonNull String abi,
+                             @NonNull String activeMode,
+                             @NonNull String packageName,
+                             int statusCode,
+                             @NonNull String statusName,
+                             @Nullable String statusExplanation,
+                             @Nullable String recoveryHint,
+                             @Nullable String statusMessage,
+                             @Nullable String sourceUri,
+                             boolean redactSource) {
         this.timestampUtc = timestampUtc;
         this.appVersion = appVersion;
         this.deviceModel = deviceModel;
@@ -73,6 +97,8 @@ public final class InstallTranscript {
         this.packageName = packageName;
         this.statusCode = statusCode;
         this.statusName = statusName;
+        this.statusExplanation = statusExplanation;
+        this.recoveryHint = recoveryHint;
         this.statusMessage = statusMessage;
         this.sourceUri = sourceUri;
         this.redactSource = redactSource;
@@ -98,6 +124,16 @@ public final class InstallTranscript {
         sb.append("Active mode: ").append(orUnknown(activeMode)).append('\n');
         sb.append("Package: ").append(orUnknown(packageName)).append('\n');
         sb.append(String.format(Locale.ROOT, "Status: %s (%d)%n", orUnknown(statusName), statusCode));
+        if (statusExplanation != null && !statusExplanation.isEmpty()) {
+            sb.append("Status explanation: ")
+                    .append(SupportInfoBundle.scrubForPublicIssue(statusExplanation))
+                    .append('\n');
+        }
+        if (recoveryHint != null && !recoveryHint.isEmpty()) {
+            sb.append("Recovery hint: ")
+                    .append(SupportInfoBundle.scrubForPublicIssue(recoveryHint))
+                    .append('\n');
+        }
         if (statusMessage != null && !statusMessage.isEmpty()) {
             sb.append("Status message: ")
                     .append(SupportInfoBundle.scrubForPublicIssue(statusMessage))
