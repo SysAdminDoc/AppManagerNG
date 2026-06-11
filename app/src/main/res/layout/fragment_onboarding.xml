@@ -88,7 +88,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_auto_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -151,7 +151,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_root_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -162,9 +162,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
                         android:background="@drawable/onboarding_status_background"
-                        android:minHeight="26dp"
+                        android:includeFontPadding="false"
+                        android:minHeight="@dimen/premium_chip_min_height"
                         android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="3dp"
+                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Root detected" />
 
@@ -226,7 +227,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_shizuku_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -237,9 +238,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
                         android:background="@drawable/onboarding_status_background"
-                        android:minHeight="26dp"
+                        android:includeFontPadding="false"
+                        android:minHeight="@dimen/premium_chip_min_height"
                         android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="3dp"
+                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Shizuku is running and authorized" />
 
@@ -268,9 +270,9 @@
                         android:id="@+id/action_shizuku_autostart"
                         style="@style/Widget.AppTheme.Button.TextButton.Icon"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:minHeight="40dp"
+                        android:minHeight="@dimen/premium_button_min_height"
                         android:text="@string/shizuku_autostart_configure"
                         android:visibility="gone"
                         app:icon="@drawable/ic_settings"
@@ -351,7 +353,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_adb_wifi_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -362,9 +364,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
                         android:background="@drawable/onboarding_status_background"
-                        android:minHeight="26dp"
+                        android:includeFontPadding="false"
+                        android:minHeight="@dimen/premium_chip_min_height"
                         android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="3dp"
+                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Wireless debugging active" />
 
@@ -372,9 +375,9 @@
                         android:id="@+id/action_setup_adb_wifi"
                         style="@style/Widget.AppTheme.Button.TextButton.Icon"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:minHeight="40dp"
+                        android:minHeight="@dimen/premium_button_min_height"
                         android:text="@string/onboarding_mode_adb_wifi_setup"
                         app:icon="@drawable/ic_settings" />
 
@@ -436,7 +439,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_adb_tcp_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -447,9 +450,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
                         android:background="@drawable/onboarding_status_background"
-                        android:minHeight="26dp"
+                        android:includeFontPadding="false"
+                        android:minHeight="@dimen/premium_chip_min_height"
                         android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="3dp"
+                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="USB debugging enabled" />
 
@@ -457,9 +461,9 @@
                         android:id="@+id/action_use_adb_tcpip"
                         style="@style/Widget.AppTheme.Button.TextButton.Icon"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:minHeight="40dp"
+                        android:minHeight="@dimen/premium_button_min_height"
                         android:text="@string/onboarding_adb_tcpip_use_existing"
                         android:visibility="gone"
                         app:icon="@drawable/ic_link"
@@ -523,7 +527,7 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:text="@string/onboarding_mode_no_root_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
