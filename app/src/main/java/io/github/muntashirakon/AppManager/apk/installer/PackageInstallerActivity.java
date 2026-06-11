@@ -42,6 +42,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
@@ -62,6 +63,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
+import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
@@ -778,6 +780,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
      * Closes the current APK and start the next
      */
     private void goToNext() {
+        mInstallerOptions.setForceAdbInstall(false);
         mCurrentItem = null;
         mMultiplexer.enableInstall(false);
         mMultiplexer.enableUninstall(false);
@@ -847,15 +850,20 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             };
             neutralLabelRes = R.string.app_info;
         } else if (isFailure) {
-            // Failure: surface a copyable install transcript so users can paste the relevant
-            // diagnostic context into a support request without re-typing the install path.
-            InstallTranscript transcript = buildInstallTranscript(packageName, statusCode, statusMessage);
-            neutralListener = v -> {
-                ClipboardUtils.copyToClipboard(this, getString(R.string.installer_copy_diagnostic_info),
-                        transcript.toShareableText());
-                UIUtils.displayShortToast(R.string.installer_diagnostic_info_copied);
-            };
-            neutralLabelRes = R.string.installer_copy_diagnostic_info;
+            if (canRetryDeveloperVerificationFailureViaAdb(statusMessage)) {
+                neutralListener = v -> retryCurrentInstallViaAdb();
+                neutralLabelRes = R.string.installer_retry_with_adb;
+            } else {
+                // Failure: surface a copyable install transcript so users can paste the relevant
+                // diagnostic context into a support request without re-typing the install path.
+                InstallTranscript transcript = buildInstallTranscript(packageName, statusCode, statusMessage);
+                neutralListener = v -> {
+                    ClipboardUtils.copyToClipboard(this, getString(R.string.installer_copy_diagnostic_info),
+                            transcript.toShareableText());
+                    UIUtils.displayShortToast(R.string.installer_diagnostic_info_copied);
+                };
+                neutralLabelRes = R.string.installer_copy_diagnostic_info;
+            }
         } else {
             neutralListener = null;
             neutralLabelRes = 0;
@@ -870,6 +878,29 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                         goToNext();
                     }
                 } : null, neutralListener, neutralLabelRes);
+    }
+
+    private boolean canRetryDeveloperVerificationFailureViaAdb(@Nullable String statusMessage) {
+        return canRetryDeveloperVerificationFailureViaAdb(statusMessage, mCurrentItem,
+                SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET) && AdbUtils.isAdbdRunning());
+    }
+
+    @VisibleForTesting
+    static boolean canRetryDeveloperVerificationFailureViaAdb(@Nullable String statusMessage,
+                                                              @Nullable ApkQueueItem currentItem,
+                                                              boolean adbAvailable) {
+        return adbAvailable
+                && statusMessage != null
+                && statusMessage.contains("Developer verification:")
+                && currentItem != null
+                && !currentItem.isInstallExisting()
+                && currentItem.getApkSource() != null;
+    }
+
+    private void retryCurrentInstallViaAdb() {
+        mDeveloperVerificationWarningShown = true;
+        mInstallerOptions.setForceAdbInstall(true);
+        launchInstallerService();
     }
 
     @NonNull
