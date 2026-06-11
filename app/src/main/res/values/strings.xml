@@ -3382,6 +3382,14 @@
     <string name="pref_permission_change_monitor_msg">Notify when an updated app gains a new dangerous permission compared to the previously installed version. Opt-in; runs locally with no network use.</string>
     <string name="permission_change_monitor_title">%1$s requests new permissions</string>
     <string name="permission_change_monitor_body">%1$d new dangerous permission(s): %2$s</string>
+    <string name="app_change_feed_title">App change feed</string>
+    <string name="app_change_feed_summary">Review local app update audit events from permission, signing-key, component, and tracker monitors.</string>
+    <string name="app_change_feed_empty">No app change events recorded yet.</string>
+    <string name="app_change_feed_more">%1$d more event(s) hidden.</string>
+    <string name="pref_app_change_auditor">Component and tracker change auditor</string>
+    <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>
+    <string name="app_change_auditor_title">%1$s changed components</string>
+    <string name="app_change_auditor_body">Components: +%1$d/-%2$d. Trackers: +%3$d/-%4$d. %5$s</string>
     <!-- Install Source Attribution Detail (T9/shipped iter-77) -->
     <string name="install_source_initiator_cert_sha256">Cert SHA-256 · %1$s</string>
     <!-- App Signing Key Change Alert (T9/Next, iter-78) -->

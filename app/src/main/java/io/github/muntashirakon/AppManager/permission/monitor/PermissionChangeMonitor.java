@@ -100,8 +100,13 @@ public final class PermissionChangeMonitor {
         // dropped exactly that escalation while still caching the escalated
         // set (so it never re-surfaced), defeating the monitor.
         if (diff.isInteresting()) {
+            String label = resolveLabel(appContext, packageName);
+            String title = appContext.getString(R.string.permission_change_monitor_title, label);
+            String body = appContext.getString(R.string.permission_change_monitor_body,
+                    diff.added.size(), shortJoin(diff.added));
+            new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("permissions", packageName, title, body));
             try {
-                postNotification(appContext, packageName, diff);
+                postNotification(appContext, packageName, title, body);
             } catch (Throwable t) {
                 Log.w(TAG, "Could not post permission-change notification for " + packageName, t);
             }
@@ -169,11 +174,8 @@ public final class PermissionChangeMonitor {
     @WorkerThread
     private static void postNotification(@NonNull Context appContext,
                                          @NonNull String packageName,
-                                         @NonNull PermissionChangeDiff.Result diff) {
-        String label = resolveLabel(appContext, packageName);
-        String title = appContext.getString(R.string.permission_change_monitor_title, label);
-        String body = appContext.getString(R.string.permission_change_monitor_body,
-                diff.added.size(), shortJoin(diff.added));
+                                         @NonNull String title,
+                                         @NonNull String body) {
         Intent contentIntent = AppDetailsActivity.getIntent(appContext, packageName, 0, true);
         // A unique request code per notification: AppDetailsActivity.getIntent
         // produces intents that differ only in their extras, and PendingIntent
