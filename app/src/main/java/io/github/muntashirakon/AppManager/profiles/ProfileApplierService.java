@@ -107,7 +107,7 @@ public class ProfileApplierService extends ForegroundService {
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, success,
                     OperationJournalMetadata.forProfile(this, item, success, requiresRestart, null));
             sendNotification(item.getProfileName(), success ? Activity.RESULT_OK : Activity.RESULT_CANCELED,
-                    notify, requiresRestart);
+                    notify, requiresRestart, result);
         } catch (Throwable e) {
             // Catch Throwable, not just IOException: applyProfile -> BatchOpsManager can throw
             // RuntimeException (e.g. a profile op whose options failed to deserialize). Letting
@@ -115,7 +115,7 @@ public class ProfileApplierService extends ForegroundService {
             Log.w(TAG, "Failed to apply profile " + item.getProfileId(), e);
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, false,
                     OperationJournalMetadata.forProfile(this, item, false, false, e));
-            sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false);
+            sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false, null);
         } finally {
             if (profileManager != null) {
                 // Always close the profile log writer.
@@ -175,7 +175,7 @@ public class ProfileApplierService extends ForegroundService {
     }
 
     private void sendNotification(@NonNull String profileName, int result, boolean notify,
-                                  boolean requiresRestart) {
+                                  boolean requiresRestart, @Nullable ProfileApplierResult profileApplierResult) {
         NotificationProgressHandler.NotificationInfo notificationInfo = new NotificationProgressHandler
                 .NotificationInfo()
                 .setAutoCancel(true)
@@ -184,7 +184,13 @@ public class ProfileApplierService extends ForegroundService {
                 .setTitle(profileName);
         switch (result) {
             case Activity.RESULT_CANCELED:  // Failure
-                notificationInfo.setBody(getString(R.string.error));
+                if (profileApplierResult != null && profileApplierResult.hasSkippedOperations()) {
+                    notificationInfo.setBody(getString(R.string.profile_apply_skipped_privileged_ops,
+                            ProfileApplierActivity.formatProfileOperations(this,
+                                    profileApplierResult.getSkippedOperations())));
+                } else {
+                    notificationInfo.setBody(getString(R.string.error));
+                }
                 break;
             case Activity.RESULT_OK:  // Successful
                 notificationInfo.setBody(getString(R.string.the_operation_was_successful));

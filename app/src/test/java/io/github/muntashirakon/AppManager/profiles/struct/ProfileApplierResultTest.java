@@ -61,6 +61,21 @@ public class ProfileApplierResultTest {
     }
 
     @Test
+    public void skippedOperationsMarkPartialFailureAndAreDeduped() {
+        ProfileApplierResult result = new ProfileApplierResult();
+        result.recordSkippedOperations(Arrays.asList(
+                AppsBaseProfile.PROFILE_OP_FREEZE,
+                AppsBaseProfile.PROFILE_OP_FREEZE,
+                AppsBaseProfile.PROFILE_OP_PERMISSIONS));
+
+        assertFalse(result.isSuccessful());
+        assertTrue(result.hasSkippedOperations());
+        assertEquals(2, result.getSkippedOperations().size());
+        assertTrue(result.getSkippedOperations().contains(AppsBaseProfile.PROFILE_OP_FREEZE));
+        assertTrue(result.getSkippedOperations().contains(AppsBaseProfile.PROFILE_OP_PERMISSIONS));
+    }
+
+    @Test
     public void requiresRestartIsIndependentOfFailureState() {
         ProfileApplierResult result = new ProfileApplierResult();
         result.setRequiresRestart(true);
