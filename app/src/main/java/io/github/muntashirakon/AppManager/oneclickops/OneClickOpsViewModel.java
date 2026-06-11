@@ -19,6 +19,7 @@ import android.util.Log;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -79,9 +80,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @Override
     protected void onCleared() {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
+        cancelCurrentTask();
         super.onCleared();
     }
 
@@ -141,10 +140,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
      */
     @AnyThread
     public void scanApkDuplicates(@NonNull ApkDuplicateSelector.KeepStrategy strategy) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             List<File> apkFiles = ApkDuplicateScanRoots.scanDefaultRoots(null);
             List<ApkDuplicateSelector.Candidate> candidates = new ArrayList<>(apkFiles.size());
             for (File apk : apkFiles) {
@@ -168,10 +164,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
      */
     @AnyThread
     public void deleteApkDuplicates(@NonNull List<ApkDuplicateSelector.Candidate> dropFiles) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             Pair<Integer, Long> result = ApkDuplicateOperations.deleteCandidates(dropFiles);
             int deleted = result.first != null ? result.first : 0;
             long reclaimed = result.second != null ? result.second : 0L;
@@ -245,10 +238,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @AnyThread
     public void scanDuplicateBackups(@NonNull BackupRetentionPolicy.DuplicateKeepStrategy strategy) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             BackupRetentionPolicy.BackupSizeResolver sizeResolver = BackupRetentionPolicy.backupItemSizeResolver();
             try {
                 List<Backup> all = AppsDb.getInstance().backupDao().getAll();
@@ -277,10 +267,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @AnyThread
     public void deleteDuplicateBackups(@NonNull DuplicateBackupPlan plan) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             int deleted = 0;
             int failed = 0;
             long reclaimed = 0L;
@@ -321,10 +308,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
      */
     @AnyThread
     public void scanLeftovers() {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             HashSet<String> installed = new HashSet<>();
             for (ApplicationInfo applicationInfo : PackageUtils.getAllApplications(0)) {
                 if (applicationInfo != null && applicationInfo.packageName != null) {
@@ -362,10 +346,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
      */
     @AnyThread
     public void deleteLeftovers(@NonNull List<LeftoverEntry> entries) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             int deleted = 0;
             int failed = 0;
             long reclaimed = 0L;
@@ -426,10 +407,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @AnyThread
     public void blockTrackers(boolean systemApps) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             int flags = PackageManager.GET_ACTIVITIES | PackageManager.GET_RECEIVERS | PackageManager.GET_PROVIDERS
                     | PackageManager.GET_SERVICES | MATCH_DISABLED_COMPONENTS | MATCH_UNINSTALLED_PACKAGES
                     | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
@@ -481,10 +459,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     @AnyThread
     public void blockComponents(boolean systemApps, @NonNull String[] signatures) {
         if (signatures.length == 0) return;
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             boolean canChangeComponentState = SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
             if (!canChangeComponentState) {
                 // Since there's no permission, it can only change its own component states
@@ -532,10 +507,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @AnyThread
     public void setAppOps(int[] appOpList, int mode, boolean systemApps) {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             Pair<int[], Integer> appOpsModePair = new Pair<>(appOpList, mode);
             List<AppOpCount> appOpCounts = new ArrayList<>();
             HashSet<String> packageNames = new HashSet<>();
@@ -561,10 +533,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     }
 
     public void clearData() {
-        if (mFutureResult != null) {
-            mFutureResult.cancel(true);
-        }
-        mFutureResult = ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             HashSet<String> packageNames = new HashSet<>();
             for (ApplicationInfo applicationInfo : PackageUtils.getAllApplications(MATCH_UNINSTALLED_PACKAGES
                     | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES)) {
@@ -584,11 +553,14 @@ public class OneClickOpsViewModel extends AndroidViewModel {
 
     @AnyThread
     public void trimCaches() {
-        ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             long size = 1024L * 1024L * 1024L * 1024L;  // 1 TB
             boolean success = true;
             for (String volumeUuid : StorageUtils.getTrimCacheVolumeUuids(
                     StorageUtils.getWritableStorageVolumeUuids(getApplication(), UserHandleHidden.myUserId()))) {
+                if (ThreadUtils.isInterrupted()) {
+                    return;
+                }
                 try {
                     PackageManagerCompat.freeStorageAndNotify(volumeUuid, size,
                             StorageManagerCompat.FLAG_ALLOCATE_DEFY_ALL_RESERVED);
@@ -602,7 +574,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
     }
 
     public void listAppsInstalledByAmForDexOpt() {
-        ThreadUtils.postOnBackgroundThread(() -> {
+        postCancellableTask(() -> {
             HashSet<String> packageNames = new HashSet<>();
             for (ApplicationInfo applicationInfo : PackageUtils.getAllApplications(0)) {
                 if (packageNames.contains(applicationInfo.packageName)) {
@@ -615,6 +587,30 @@ public class OneClickOpsViewModel extends AndroidViewModel {
             }
             mAppsInstalledByAmForDexOpt.postValue(packageNames.toArray(new String[0]));
         });
+    }
+
+    @AnyThread
+    void cancelCurrentTask() {
+        setCurrentTask(null);
+    }
+
+    @AnyThread
+    private void postCancellableTask(@NonNull Runnable runnable) {
+        setCurrentTask(ThreadUtils.postOnBackgroundThread(runnable));
+    }
+
+    @AnyThread
+    @VisibleForTesting
+    void setCurrentTask(@Nullable Future<?> future) {
+        if (mFutureResult != null) {
+            mFutureResult.cancel(true);
+        }
+        mFutureResult = future;
+    }
+
+    @VisibleForTesting
+    boolean hasCurrentTask() {
+        return mFutureResult != null;
     }
 
     @NonNull
