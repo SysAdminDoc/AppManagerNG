@@ -84,6 +84,8 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class MainViewModel extends AndroidViewModel implements ListOptions.ListOptionActions {
+    private static final String TAG = MainViewModel.class.getSimpleName();
+
     private final PackageManager mPackageManager;
     private final PackageIntentReceiver mPackageObserver;
     @MainListOptions.SortOrder
@@ -571,22 +573,29 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     public void loadApplicationItems() {
         cancelIfRunning();
         mFilterResult = executor.submit(() -> {
-            List<ApplicationItem> updatedApplicationItems = PackageUtils
-                    .getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
-            attachUserTags(updatedApplicationItems);
-            synchronized (mApplicationItems) {
-                mApplicationItems.clear();
-                mApplicationItems.addAll(updatedApplicationItems);
-                // Re-select apps again. select() structurally modifies the selection
-                // map, so iterate over a snapshot to avoid a ConcurrentModificationException
-                // when two or more apps are selected during a list reload.
-                for (ApplicationItem item : new ArrayList<>(getSelectedApplicationItems())) {
-                    select(item);
+            try {
+                List<ApplicationItem> updatedApplicationItems = PackageUtils
+                        .getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
+                attachUserTags(updatedApplicationItems);
+                synchronized (mApplicationItems) {
+                    mApplicationItems.clear();
+                    mApplicationItems.addAll(updatedApplicationItems);
+                    // Re-select apps again. select() structurally modifies the selection
+                    // map, so iterate over a snapshot to avoid a ConcurrentModificationException
+                    // when two or more apps are selected during a list reload.
+                    for (ApplicationItem item : new ArrayList<>(getSelectedApplicationItems())) {
+                        select(item);
+                    }
+                    sortApplicationList(mSortBy, mReverseSort);
+                    filterItemsByFlags();
                 }
-                sortApplicationList(mSortBy, mReverseSort);
-                filterItemsByFlags();
+                AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
+            } catch (Throwable th) {
+                Log.e(TAG, "Could not load application list.", th);
+                synchronized (mApplicationItems) {
+                    mApplicationItemsLiveData.postValue(new ArrayList<>(mApplicationItems));
+                }
             }
-            AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
         });
     }
 
