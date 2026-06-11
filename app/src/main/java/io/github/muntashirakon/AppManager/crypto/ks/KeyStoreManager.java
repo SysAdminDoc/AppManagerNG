@@ -98,6 +98,10 @@ public class KeyStoreManager {
         sInstance = new KeyStoreManager();
     }
 
+    public static synchronized void clearCachedKeyStore() {
+        sInstance = null;
+    }
+
     @NonNull
     public static AlertDialog generateAndDisplayKeyStorePassword(@NonNull FragmentActivity activity,
                                                                  @Nullable Runnable dismissListener) {
@@ -410,11 +414,21 @@ public class KeyStoreManager {
     @CheckResult
     @Nullable
     private static char[] getDecryptedPassword(@NonNull Context context, @NonNull String encryptedPass) {
+        byte[] encryptedBytes = null;
+        byte[] decryptedBytes = null;
         try {
-            byte[] encryptedBytes = Base64.decode(encryptedPass, Base64.NO_WRAP);
-            return Utils.bytesToChars(CompatUtil.decryptData(context, encryptedBytes));
+            encryptedBytes = Base64.decode(encryptedPass, Base64.NO_WRAP);
+            decryptedBytes = CompatUtil.decryptData(context, encryptedBytes);
+            return Utils.bytesToChars(decryptedBytes);
         } catch (Exception e) {
             Log.e("KS", "Could not get decrypted password for %s", e, encryptedPass);
+        } finally {
+            if (encryptedBytes != null) {
+                Utils.clearBytes(encryptedBytes);
+            }
+            if (decryptedBytes != null) {
+                Utils.clearBytes(decryptedBytes);
+            }
         }
         return null;
     }
@@ -427,14 +441,25 @@ public class KeyStoreManager {
      */
     @Nullable
     private static String getEncryptedPassword(@NonNull Context context, @NonNull char[] realPass) {
+        byte[] realPassBytes = null;
+        byte[] encodedBytes = null;
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            AesEncryptedData encryptedData = CompatUtil.getEncryptedData(Utils.charsToBytes(realPass), context);
+            realPassBytes = Utils.charsToBytes(realPass);
+            AesEncryptedData encryptedData = CompatUtil.getEncryptedData(realPassBytes, context);
             bos.write((byte) encryptedData.getIv().length);
             bos.write(encryptedData.getIv());
             bos.write(encryptedData.getEncryptedData());
-            return Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP);
+            encodedBytes = bos.toByteArray();
+            return Base64.encodeToString(encodedBytes, Base64.NO_WRAP);
         } catch (Exception e) {
             Log.e("KS", "Could not get encrypted password", e);
+        } finally {
+            if (realPassBytes != null) {
+                Utils.clearBytes(realPassBytes);
+            }
+            if (encodedBytes != null) {
+                Utils.clearBytes(encodedBytes);
+            }
         }
         return null;
     }

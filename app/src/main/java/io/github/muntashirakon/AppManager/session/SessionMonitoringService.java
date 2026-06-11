@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.DummyActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.misc.ScreenLockChecker;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
@@ -134,8 +135,7 @@ public class SessionMonitoringService extends Service {
     }
 
     public void lockScreen() {
-        // Simply stopping the service is enough
-        // TODO: 16/7/23 Wipe memory? Ref: https://github.com/mollyim/mollyim-android/blob/2f8fe769628f7daddc87e8acfab1c4b5d301f728/app/src/main/java/org/thoughtcrime/securesms/service/WipeMemoryService.java#L102
+        KeyStoreManager.clearCachedKeyStore();
         stopSelf();
         Process.killProcess(Process.myPid());
     }
