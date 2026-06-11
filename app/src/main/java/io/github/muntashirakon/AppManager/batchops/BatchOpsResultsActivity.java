@@ -258,7 +258,12 @@ public class BatchOpsResultsActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        BatchOpsLogger.clearLogs();
+        // Don't delete the shared log file while a batch op is still writing it — e.g. after
+        // "Retry failed apps" leaves a service running, or another queued op is in flight.
+        // Deleting it mid-write loses the per-package diagnostics the next results screen needs.
+        if (!mRetryStarted && !BatchOpsService.isServiceWorking()) {
+            BatchOpsLogger.clearLogs();
+        }
         super.onDestroy();
     }
 

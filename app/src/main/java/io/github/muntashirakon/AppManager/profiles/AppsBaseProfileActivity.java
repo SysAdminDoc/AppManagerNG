@@ -152,6 +152,8 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
             setTitle(profileName);
             progressIndicator.hide();
         });
+        model.observeApplyAfterSave().observe(this, profileName ->
+                startActivity(ProfileApplierActivity.getApplierIntent(this, profileName)));
     }
 
     @Override
@@ -166,8 +168,22 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
         if (id == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();
         } else if (id == R.id.action_apply) {
-            Intent intent = ProfileApplierActivity.getApplierIntent(this, model.getProfileName());
-            startActivity(intent);
+            if (model.isModified()) {
+                // The applier reloads the profile from disk, so applying with unsaved edits would
+                // silently run the stale saved version. Make the choice explicit.
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.profile_apply_unsaved_title)
+                        .setMessage(R.string.profile_apply_unsaved_message)
+                        .setPositiveButton(R.string.profile_apply_save_and_apply, (dialog, which) ->
+                                // Launches the applier only after the write lands (see saveAndApply).
+                                model.saveAndApply())
+                        .setNeutralButton(R.string.profile_apply_saved_version, (dialog, which) ->
+                                startActivity(ProfileApplierActivity.getApplierIntent(this, model.getProfileName())))
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
+            } else {
+                startActivity(ProfileApplierActivity.getApplierIntent(this, model.getProfileName()));
+            }
         } else if (id == R.id.action_save) {
             model.save(false);
         } else if (id == R.id.action_discard) {
@@ -186,7 +202,7 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
                     .setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.go, (dialog, which, profName, isChecked) -> {
                         if (TextUtils.isEmpty(profName)) {
-                            UIUtils.displayShortToast(R.string.failed_to_duplicate_profile);
+                            UIUtils.displayShortToast(R.string.profile_name_required);
                             return;
                         }
                         progressIndicator.show();

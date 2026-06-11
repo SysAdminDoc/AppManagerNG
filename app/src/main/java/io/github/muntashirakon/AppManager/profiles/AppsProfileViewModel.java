@@ -67,6 +67,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
     private final MutableLiveData<ArrayList<SelectablePackageItem>> mInstalledApps = new MutableLiveData<>();
     private final MutableLiveData<String> mProfileLoaded = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mProfileModifiedLiveData = new MutableLiveData<>();
+    private final MutableLiveData<String> mApplyAfterSave = new MutableLiveData<>();
     private final MutableLiveData<String> mLogs = new MutableLiveData<>();
 
     private MutableLiveData<ArrayList<AppsFragment.AppsFragmentItem>> packagesLiveData;
@@ -367,6 +368,35 @@ public class AppsProfileViewModel extends AndroidViewModel {
                         mToast.postValue(new Pair<>(R.string.saved_successfully, exitOnSave));
                         setModified(false);
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mToast.postValue(new Pair<>(R.string.saving_failed, false));
+                }
+            }
+        });
+    }
+
+    public LiveData<String> observeApplyAfterSave() {
+        return mApplyAfterSave;
+    }
+
+    /**
+     * Writes the profile to disk, then signals {@link #observeApplyAfterSave()} so the caller can
+     * launch the applier only once the new version is actually on disk. The applier reloads from
+     * disk, so a plain async {@link #save} followed by an immediate launch would race and apply
+     * the stale saved version.
+     */
+    public void saveAndApply() {
+        if (mProfile == null) return;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            synchronized (mProfileLock) {
+                try {
+                    Path profilePath = ProfileManager.requireProfilePathById(mProfile.profileId);
+                    try (OutputStream os = profilePath.openOutputStream()) {
+                        mProfile.write(os);
+                        setModified(false);
+                    }
+                    mApplyAfterSave.postValue(mProfile.name);
                 } catch (IOException e) {
                     e.printStackTrace();
                     mToast.postValue(new Pair<>(R.string.saving_failed, false));

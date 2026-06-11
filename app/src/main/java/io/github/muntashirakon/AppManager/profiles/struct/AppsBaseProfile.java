@@ -133,9 +133,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             }
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(op, packageList, assocUsers, options);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped components.");
         // Apply app ops blocking
         int[] appOps = this.appOps;
@@ -154,9 +152,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_SET_APP_OPS, packageList,
                     assocUsers, options);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped app ops.");
         // Apply permissions
         String[] permissions = this.permissions;
@@ -176,9 +172,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             BatchPermissionOptions options = new BatchPermissionOptions(permissions);
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(op, packageList, assocUsers, options);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped permissions.");
         // Backup rules
         Integer rulesFlag = this.exportRules;
@@ -202,36 +196,28 @@ public abstract class AppsBaseProfile extends BaseProfile {
             }
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(op, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped disable/enable.");
         // Force-stop
         if (this.forceStop) {
             log(logger, "====> Started force-stop.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_FORCE_STOP, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped force stop.");
         // Clear cache
         if (this.clearCache) {
             log(logger, "====> Started clear cache.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_CLEAR_CACHE, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped clear cache.");
         // Clear data
         if (this.clearData) {
             log(logger, "====> Started clear data.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_CLEAR_DATA, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped clear data.");
         // Block trackers
         if (this.blockTrackers) {
@@ -249,18 +235,14 @@ public abstract class AppsBaseProfile extends BaseProfile {
             }
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(op, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped block trackers.");
         // Backup apk
         if (this.saveApk) {
             log(logger, "====> Started backup apk.");
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(BatchOpsManager.OP_BACKUP_APK, packageList, assocUsers, null);
             result = batchOpsManager.performOp(info, progressHandler);
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped backup apk.");
         // Backup/restore data
         AppsBaseProfile.BackupInfo backupInfo = this.backupData;
@@ -289,12 +271,18 @@ public abstract class AppsBaseProfile extends BaseProfile {
             BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(op, packageList, assocUsers, options);
             result = batchOpsManager.performOp(info, progressHandler);
             profileApplierResult.setRequiresRestart(profileApplierResult.requiresRestart() | result.requiresRestart());
-            if (!result.isSuccessful()) {
-                Log.d(TAG, "Failed packages: %s", result);
-            }
+            recordResult(profileApplierResult, result);
         } else Log.d(TAG, "Skipped backup/restore.");
         batchOpsManager.conclude();
         return profileApplierResult;
+    }
+
+    private static void recordResult(@NonNull ProfileApplierResult aggregate,
+                                     @NonNull BatchOpsManager.Result result) {
+        if (!result.isSuccessful()) {
+            Log.d(TAG, "Failed packages: %s", result);
+            aggregate.recordFailedPackages(result.getFailedPackages());
+        }
     }
 
     private int calculateMaxProgress(@NonNull List<String> userPackagePairs) {

@@ -16,6 +16,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierService;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
+import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.io.Path;
 
@@ -72,6 +73,13 @@ public class RoutineWorker extends Worker {
                 return Result.success();
             }
             BaseProfile profile = BaseProfile.fromPath(profilePath);
+            if (profile instanceof AppsBaseProfile && !((AppsBaseProfile) profile).allowRoutine) {
+                // The profile opted out of routine operations ("Allow routine ops" off). Honour it
+                // instead of applying anyway — the flag was previously enforced nowhere.
+                RoutineScheduler.recordRunResult(context, trigger.id,
+                        context.getString(R.string.profile_trigger_result_routine_not_allowed));
+                return Result.success();
+            }
             starter.start(profile);
             RoutineScheduler.recordRunResult(context, trigger.id,
                     context.getString(R.string.profile_trigger_result_started, profile.name));
