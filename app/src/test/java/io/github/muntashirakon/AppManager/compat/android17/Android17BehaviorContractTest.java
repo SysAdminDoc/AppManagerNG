@@ -47,6 +47,19 @@ public class Android17BehaviorContractTest {
     }
 
     @Test
+    public void localNetworkPermissionRecoveryRequestsRuntimePermissionDirectly() throws Exception {
+        Path source = findProjectRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
+        String contents = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue("Android 17 local-network recovery should open the runtime permission sheet",
+                contents.contains("ActivityCompat.requestPermissions(activity")
+                        && contents.contains("ManifestCompat.permission.ACCESS_LOCAL_NETWORK"));
+        assertTrue("Keep app-settings fallback for ROMs that reject the permission request API",
+                contents.contains("Settings.ACTION_APPLICATION_DETAILS_SETTINGS"));
+    }
+
+    @Test
     public void networkSecurityConfigScopesCleartextToLoopbackOnly() throws Exception {
         Document manifest = parse(findAppProjectDir().resolve("src/main/AndroidManifest.xml"));
         Element application = (Element) manifest.getElementsByTagName("application").item(0);
