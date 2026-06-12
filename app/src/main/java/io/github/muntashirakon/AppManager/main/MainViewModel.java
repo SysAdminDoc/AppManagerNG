@@ -66,6 +66,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisher;
+import io.github.muntashirakon.AppManager.tags.AppNoteStore;
 import io.github.muntashirakon.AppManager.tags.AppTagStore;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -596,6 +597,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 List<ApplicationItem> updatedApplicationItems = PackageUtils
                         .getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
                 attachUserTags(updatedApplicationItems);
+                attachUserNotes(updatedApplicationItems);
                 synchronized (mApplicationItems) {
                     mApplicationItems.clear();
                     mApplicationItems.addAll(updatedApplicationItems);
@@ -626,6 +628,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
     }
 
+    @WorkerThread
+    private void attachUserNotes(@NonNull List<ApplicationItem> items) {
+        Map<String, String> notesByPackage = new AppNoteStore(getApplication()).snapshot();
+        for (ApplicationItem item : items) {
+            item.setUserNote(notesByPackage.get(item.packageName));
+        }
+    }
+
     private void cancelIfRunning() {
         if (mFilterResult != null) {
             mFilterResult.cancel(true);
@@ -640,6 +650,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     (AdvancedSearchView.ChoicesGenerator<ApplicationItem>) item -> new ArrayList<String>() {{
                         add(item.packageName);
                         add(item.label);
+                        if (!TextUtils.isEmpty(item.userNote)) {
+                            add(item.userNote);
+                        }
                     }}, AdvancedSearchView.SEARCH_TYPE_REGEX);
             mApplicationItemsLiveData.postValue(filteredApplicationItems);
             return;
@@ -650,13 +663,17 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             if (ThreadUtils.isInterrupted()) {
                 return;
             }
-            if (AdvancedSearchView.matches(mSearchQuery, item.packageName.toLowerCase(Locale.ROOT), mSearchType)) {
-                filteredApplicationItems.add(item);
-            } else if (mSearchType == AdvancedSearchView.SEARCH_TYPE_CONTAINS) {
-                if (Utils.containsOrHasInitials(mSearchQuery, item.label)) {
-                    filteredApplicationItems.add(item);
-                }
-            } else if (AdvancedSearchView.matches(mSearchQuery, item.label.toLowerCase(Locale.ROOT), mSearchType)) {
+            boolean matches = AdvancedSearchView.matches(mSearchQuery,
+                    item.packageName.toLowerCase(Locale.ROOT), mSearchType);
+            if (!matches && mSearchType == AdvancedSearchView.SEARCH_TYPE_CONTAINS) {
+                matches = Utils.containsOrHasInitials(mSearchQuery, item.label);
+            } else if (!matches) {
+                matches = AdvancedSearchView.matches(mSearchQuery, item.label.toLowerCase(Locale.ROOT), mSearchType);
+            }
+            if (!matches && !TextUtils.isEmpty(item.userNote)) {
+                matches = AdvancedSearchView.matches(mSearchQuery, item.userNote.toLowerCase(Locale.ROOT), mSearchType);
+            }
+            if (matches) {
                 filteredApplicationItems.add(item);
             }
         }
@@ -1103,6 +1120,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             return null;
         }
         item.setUserTags(new AppTagStore(getApplication()).getTags(item.packageName));
+        item.setUserNote(new AppNoteStore(getApplication()).getNote(item.packageName));
         return item;
     }
 

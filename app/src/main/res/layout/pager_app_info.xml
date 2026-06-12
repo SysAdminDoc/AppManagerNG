@@ -250,6 +250,83 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/app_note_card"
+                style="@style/Widget.AppTheme.CardView.TrustCta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/padding_small"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="104dp"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/padding_medium"
+                    android:paddingVertical="@dimen/padding_medium">
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:layout_width="@dimen/premium_icon_48"
+                            android:layout_height="@dimen/premium_icon_48"
+                            android:layout_marginEnd="@dimen/padding_small"
+                            android:background="@drawable/main_empty_icon_background"
+                            android:contentDescription="@null"
+                            android:padding="@dimen/padding_small"
+                            app:srcCompat="@drawable/ic_edit"
+                            app:tint="?attr/colorOnSecondaryContainer" />
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <androidx.appcompat.widget.AppCompatTextView
+                                android:id="@+id/app_note_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/app_note_title"
+                                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                            <androidx.appcompat.widget.AppCompatTextView
+                                android:id="@+id/app_note_body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:ellipsize="end"
+                                android:maxLines="4"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="@string/app_note_empty" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/app_note_action"
+                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:minHeight="@dimen/premium_button_min_height"
+                        tools:text="@string/edit" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <io.github.muntashirakon.widget.NestedScrollableHost
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">

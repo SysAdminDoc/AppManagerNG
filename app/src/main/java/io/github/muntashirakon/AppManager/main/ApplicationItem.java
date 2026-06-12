@@ -177,6 +177,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     public Long lastUsageTime = 0L;
     @NonNull
     public List<String> userTags = Collections.emptyList();
+    @Nullable
+    public String userNote;
     /**
      * Whether the item is a user app (or system app)
      */
@@ -443,6 +445,10 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             return;
         }
         userTags = Collections.unmodifiableList(new ArrayList<>(tags));
+    }
+
+    public void setUserNote(@Nullable String note) {
+        userNote = note;
     }
 
     private void fetchPackageInfo() {
