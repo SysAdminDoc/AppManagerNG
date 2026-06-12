@@ -176,6 +176,18 @@ public final class AdapterUtils {
         }
     }
 
+    public static boolean isStartingSearch(@Nullable String oldSearchQuery, @Nullable String newSearchQuery) {
+        return isEmpty(oldSearchQuery) && !isEmpty(newSearchQuery);
+    }
+
+    public static boolean isClearingSearch(@Nullable String oldSearchQuery, @Nullable String newSearchQuery) {
+        return !isEmpty(oldSearchQuery) && isEmpty(newSearchQuery);
+    }
+
+    private static boolean isEmpty(@Nullable String value) {
+        return value == null || value.isEmpty();
+    }
+
     public static void setVisible(@NonNull View v, boolean visible) {
         if (visible && v.getVisibility() != View.VISIBLE) {
             v.setVisibility(View.VISIBLE);

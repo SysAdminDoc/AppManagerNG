@@ -3,11 +3,14 @@
 package io.github.muntashirakon.AppManager.main;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.util.AdapterUtils;
 
 /**
  * Contract for {@link MainViewModel#normalizeSearchQuery}, which backs the search-debounce
@@ -45,5 +48,21 @@ public class MainViewModelSearchNormalizeTest {
     @Test
     public void emptyQueryNormalizesToEmpty() {
         assertEquals("", MainViewModel.normalizeSearchQuery("", AdvancedSearchView.SEARCH_TYPE_CONTAINS));
+    }
+
+    @Test
+    public void searchTransitionDetectsStartingSearch() {
+        assertTrue(AdapterUtils.isStartingSearch("", "maps"));
+        assertTrue(AdapterUtils.isStartingSearch(null, "maps"));
+        assertFalse(AdapterUtils.isStartingSearch("mail", "maps"));
+        assertFalse(AdapterUtils.isStartingSearch("mail", ""));
+    }
+
+    @Test
+    public void searchTransitionDetectsClearingSearch() {
+        assertTrue(AdapterUtils.isClearingSearch("maps", ""));
+        assertTrue(AdapterUtils.isClearingSearch("maps", null));
+        assertFalse(AdapterUtils.isClearingSearch("", "maps"));
+        assertFalse(AdapterUtils.isClearingSearch("mail", "maps"));
     }
 }
