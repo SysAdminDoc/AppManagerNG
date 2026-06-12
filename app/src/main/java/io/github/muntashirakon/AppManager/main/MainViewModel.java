@@ -17,6 +17,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.apk.list.ListImporter;
@@ -86,6 +88,8 @@ import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class MainViewModel extends AndroidViewModel implements ListOptions.ListOptionActions {
     private static final String TAG = MainViewModel.class.getSimpleName();
+    @VisibleForTesting
+    static final long APPLICATION_LIST_LOAD_TIMEOUT_MS = 30_000L;
 
     private final PackageManager mPackageManager;
     private final PackageIntentReceiver mPackageObserver;
@@ -129,6 +133,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     private final MutableLiveData<AppListImportStatus> mAppListImportStatus = new SingleLiveEvent<>();
     @NonNull
     private final MutableLiveData<List<ApplicationItem>> mApplicationItemsLiveData = new MutableLiveData<>();
+    @NonNull
+    private final MutableLiveData<AppListLoadStatus> mApplicationListLoadStatusLiveData = new MutableLiveData<>();
+    @NonNull
+    private final Object mApplicationListLoadStatusLock = new Object();
+    @NonNull
+    private AppListLoadStatus mApplicationListLoadStatus = AppListLoadStatus.loaded(0);
+    private long mApplicationListLoadGeneration;
     private final List<ApplicationItem> mApplicationItems = new ArrayList<>();
 
     public int getApplicationItemCount() {
@@ -185,6 +196,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             loadApplicationItems();
         }
         return mApplicationItemsLiveData;
+    }
+
+    @NonNull
+    public LiveData<AppListLoadStatus> getApplicationListLoadStatus() {
+        return mApplicationListLoadStatusLiveData;
     }
 
     public LiveData<Boolean> getOperationStatus() {
@@ -592,10 +608,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     @GuardedBy("applicationItems")
     public void loadApplicationItems() {
         cancelIfRunning();
+        long loadGeneration = beginApplicationListLoad();
         mFilterResult = executor.submit(() -> {
             try {
-                List<ApplicationItem> updatedApplicationItems = PackageUtils
-                        .getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
+                List<ApplicationItem> updatedApplicationItems = loadInstalledOrBackedUpApplications();
                 attachUserTags(updatedApplicationItems);
                 attachUserNotes(updatedApplicationItems);
                 synchronized (mApplicationItems) {
@@ -610,14 +626,85 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     sortApplicationList(mSortBy, mReverseSort);
                     filterItemsByFlags();
                 }
-                AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
+                if (updateApplicationListLoadStatus(loadGeneration,
+                        AppListLoadStatus.loaded(updatedApplicationItems.size()))) {
+                    publishDynamicShortcuts(updatedApplicationItems);
+                }
             } catch (Throwable th) {
                 Log.e(TAG, "Could not load application list.", th);
+                int staleItemCount;
                 synchronized (mApplicationItems) {
                     mApplicationItemsLiveData.postValue(new ArrayList<>(mApplicationItems));
+                    staleItemCount = mApplicationItems.size();
                 }
+                updateApplicationListLoadStatus(loadGeneration, AppListLoadStatus.failed(th, staleItemCount));
             }
         });
+    }
+
+    @NonNull
+    @WorkerThread
+    protected List<ApplicationItem> loadInstalledOrBackedUpApplications() {
+        return PackageUtils.getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
+    }
+
+    @WorkerThread
+    protected void publishDynamicShortcuts(@NonNull List<ApplicationItem> updatedApplicationItems) {
+        AppActionShortcutPublisher.publishDynamicShortcuts(getApplication(), updatedApplicationItems);
+    }
+
+    private long beginApplicationListLoad() {
+        int staleItemCount;
+        synchronized (mApplicationItems) {
+            staleItemCount = mApplicationItems.size();
+        }
+        AppListLoadStatus status = AppListLoadStatus.loading(staleItemCount);
+        long loadGeneration;
+        synchronized (mApplicationListLoadStatusLock) {
+            loadGeneration = ++mApplicationListLoadGeneration;
+            mApplicationListLoadStatus = status;
+        }
+        dispatchApplicationListLoadStatus(status);
+        final long expectedGeneration = loadGeneration;
+        ThreadUtils.postOnMainThreadDelayed(() -> markApplicationListLoadTimedOut(expectedGeneration),
+                APPLICATION_LIST_LOAD_TIMEOUT_MS);
+        return loadGeneration;
+    }
+
+    private void markApplicationListLoadTimedOut(long loadGeneration) {
+        synchronized (mApplicationListLoadStatusLock) {
+            if (loadGeneration != mApplicationListLoadGeneration
+                    || mApplicationListLoadStatus.state != AppListLoadState.LOADING) {
+                return;
+            }
+        }
+        int staleItemCount;
+        synchronized (mApplicationItems) {
+            mApplicationItemsLiveData.setValue(new ArrayList<>(mApplicationItems));
+            staleItemCount = mApplicationItems.size();
+        }
+        TimeoutException timeout = new TimeoutException("Application list load exceeded "
+                + (APPLICATION_LIST_LOAD_TIMEOUT_MS / 1000L) + " seconds");
+        updateApplicationListLoadStatus(loadGeneration, AppListLoadStatus.failed(timeout, staleItemCount));
+    }
+
+    private boolean updateApplicationListLoadStatus(long loadGeneration, @NonNull AppListLoadStatus status) {
+        synchronized (mApplicationListLoadStatusLock) {
+            if (loadGeneration != mApplicationListLoadGeneration) {
+                return false;
+            }
+            mApplicationListLoadStatus = status;
+        }
+        dispatchApplicationListLoadStatus(status);
+        return true;
+    }
+
+    private void dispatchApplicationListLoadStatus(@NonNull AppListLoadStatus status) {
+        if (ThreadUtils.isMainThread()) {
+            mApplicationListLoadStatusLiveData.setValue(status);
+        } else {
+            mApplicationListLoadStatusLiveData.postValue(status);
+        }
     }
 
     @WorkerThread
@@ -1143,6 +1230,12 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         super.onCleared();
     }
 
+    @Nullable
+    @VisibleForTesting
+    Future<?> getActiveTaskForTesting() {
+        return mFilterResult;
+    }
+
     public static final class AppListImportStatus {
         public final boolean success;
         public final int selectedCount;
@@ -1160,6 +1253,69 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         @NonNull
         public static AppListImportStatus failure() {
             return new AppListImportStatus(false, 0);
+        }
+    }
+
+    public enum AppListLoadState {
+        LOADING,
+        LOADED,
+        FAILED
+    }
+
+    public static final class AppListLoadStatus {
+        @NonNull
+        public final AppListLoadState state;
+        public final int staleItemCount;
+        @Nullable
+        public final String errorClass;
+        @Nullable
+        public final String errorMessage;
+
+        private AppListLoadStatus(@NonNull AppListLoadState state, int staleItemCount,
+                                  @Nullable String errorClass, @Nullable String errorMessage) {
+            this.state = state;
+            this.staleItemCount = Math.max(0, staleItemCount);
+            this.errorClass = errorClass;
+            this.errorMessage = errorMessage;
+        }
+
+        @NonNull
+        public static AppListLoadStatus loading(int staleItemCount) {
+            return new AppListLoadStatus(AppListLoadState.LOADING, staleItemCount, null, null);
+        }
+
+        @NonNull
+        public static AppListLoadStatus loaded(int itemCount) {
+            return new AppListLoadStatus(AppListLoadState.LOADED, itemCount, null, null);
+        }
+
+        @NonNull
+        public static AppListLoadStatus failed(@NonNull Throwable throwable, int staleItemCount) {
+            String errorClass = throwable.getClass().getSimpleName();
+            if (TextUtils.isEmpty(errorClass)) {
+                errorClass = throwable.getClass().getName();
+            }
+            return new AppListLoadStatus(AppListLoadState.FAILED, staleItemCount,
+                    errorClass, throwable.getMessage());
+        }
+
+        public boolean isFailed() {
+            return state == AppListLoadState.FAILED;
+        }
+
+        public boolean hasStaleItems() {
+            return staleItemCount > 0;
+        }
+
+        @NonNull
+        public String getErrorSummary() {
+            if (TextUtils.isEmpty(errorClass)) {
+                return "Unknown error";
+            }
+            if (TextUtils.isEmpty(errorMessage)) {
+                return errorClass;
+            }
+            return errorClass + ": " + errorMessage;
         }
     }
 
