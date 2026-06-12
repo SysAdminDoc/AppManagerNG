@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.main;
 import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
+import android.graphics.Rect;
 
 import androidx.core.content.ContextCompat;
 
@@ -55,6 +56,24 @@ public class MainRecyclerAdapterBadgeStyleTest {
                 MainRecyclerAdapter.getBackupBadgeTextColor(context, true, false));
         assertEquals(color(context, R.color.premium_danger_content),
                 MainRecyclerAdapter.getBackupBadgeTextColor(context, false, false));
+    }
+
+    @Test
+    public void expandTouchRectToMinimumGrowsSmallBadgeSymmetrically() {
+        Rect rect = new Rect(10, 20, 34, 44);
+
+        MainRecyclerAdapter.expandTouchRectToMinimum(rect, 48);
+
+        assertEquals(new Rect(-2, 8, 46, 56), rect);
+    }
+
+    @Test
+    public void expandTouchRectToMinimumLeavesLargeRectUnchanged() {
+        Rect rect = new Rect(10, 20, 80, 90);
+
+        MainRecyclerAdapter.expandTouchRectToMinimum(rect, 48);
+
+        assertEquals(new Rect(10, 20, 80, 90), rect);
     }
 
     private static int color(Context context, int colorRes) {
