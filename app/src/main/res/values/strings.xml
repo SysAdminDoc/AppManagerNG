@@ -534,6 +534,9 @@
     <string name="scanner_export_report">Export scan report</string>
     <string name="scanner_export_success">Scan report exported.</string>
     <string name="scanner_export_filename" translatable="false">appmanagerng-scan-report-%1$s.json</string>
+    <string name="scanner_offline_banner_title">Offline scan</string>
+    <string name="scanner_offline_banner_summary">Showing local APK checks only. Online reports require network access.</string>
+    <string name="scanner_requires_network">Requires network access</string>
     <string name="scanner_tracker_database_summary">Database: %1$s (%2$d signatures)</string>
     <string name="scanner_tracker_database_latest">Latest available: %1$s</string>
     <string name="scanner_tracker_database_last_checked">Last checked: %1$s</string>

@@ -2,14 +2,21 @@
 
 package io.github.muntashirakon.AppManager.scanner;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import android.util.Pair;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
 import java.util.Collections;
 
+@RunWith(RobolectricTestRunner.class)
 public class ScannerViewModelTest {
     @Test
     public void sanitizeReportFilePartKeepsPortableCharacters() {
@@ -52,5 +59,21 @@ public class ScannerViewModelTest {
 
         assertEquals(JSONObject.NULL, database.get("latest_checked_version"));
         assertEquals(JSONObject.NULL, database.get("last_check_time"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void onlineReportFetchPolicyRequiresNetworkAndDigests() {
+        Pair<String, String>[] digests = new Pair[]{
+                new Pair<>("MD5", "md5"),
+                new Pair<>("SHA-1", "sha1"),
+                new Pair<>("SHA-256", "sha256")
+        };
+
+        assertFalse(ScannerViewModel.shouldFetchPithusReport(digests, false));
+        assertFalse(ScannerViewModel.shouldFetchPithusReport(null, true));
+        assertTrue(ScannerViewModel.shouldFetchPithusReport(digests, true));
+        assertFalse(ScannerViewModel.shouldFetchVirusTotalReport(null, digests, true, true));
+        assertFalse(ScannerViewModel.shouldFetchVirusTotalReport(null, digests, false, true));
     }
 }
