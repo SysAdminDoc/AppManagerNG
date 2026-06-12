@@ -343,7 +343,11 @@ public class BatchOpsService extends ForegroundService {
             notificationInfo.addAction(0, getString(R.string.restore_default_apps_review), pendingIntent);
         }
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
-                OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
+                OpHistoryManager.getHistoryActivityIntent(this, OpHistoryManager.HISTORY_TYPE_BATCH_OPS,
+                        result == Activity.RESULT_OK
+                                ? OpHistoryManager.STATUS_SUCCESS
+                                : OpHistoryManager.STATUS_FAILURE),
+                PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         mProgressHandler.onResult(notificationInfo);
     }
