@@ -23,16 +23,21 @@ public class BackupOperationOptionsTest {
     public void backupOptionsNormalizeConstructorJsonAndParcelValues() throws Exception {
         BackupOpOptions options = new BackupOpOptions(" dnsfilter.android ", 0,
                 BackupFlags.BACKUP_INT_DATA, " nightly ", true,
-                new String[]{" /cache//tmp ", " #comment ", null});
+                new String[]{" /cache//tmp ", " #comment ", null}, true,
+                "  Before upgrade\r\nKeep  ");
 
         assertEquals("dnsfilter.android", options.packageName);
         assertEquals("nightly", options.backupName);
         assertArrayEquals(new String[]{"cache/tmp"}, options.exclusionGlobs);
+        assertTrue(options.protectFromPrune);
+        assertEquals("Before upgrade\nKeep", options.backupNote);
 
         BackupOpOptions jsonRestored = new BackupOpOptions(new JSONObject(options.serializeToJson().toString()));
         assertEquals("dnsfilter.android", jsonRestored.packageName);
         assertEquals("nightly", jsonRestored.backupName);
         assertArrayEquals(new String[]{"cache/tmp"}, jsonRestored.exclusionGlobs);
+        assertTrue(jsonRestored.protectFromPrune);
+        assertEquals("Before upgrade\nKeep", jsonRestored.backupNote);
 
         Parcel parcel = Parcel.obtain();
         try {
@@ -42,6 +47,8 @@ public class BackupOperationOptionsTest {
             assertEquals("dnsfilter.android", parcelRestored.packageName);
             assertEquals("nightly", parcelRestored.backupName);
             assertArrayEquals(new String[]{"cache/tmp"}, parcelRestored.exclusionGlobs);
+            assertTrue(parcelRestored.protectFromPrune);
+            assertEquals("Before upgrade\nKeep", parcelRestored.backupNote);
         } finally {
             parcel.recycle();
         }
@@ -201,6 +208,8 @@ public class BackupOperationOptionsTest {
         parcel.writeString(backupName);
         ParcelCompat.writeBoolean(parcel, override);
         parcel.writeStringArray(exclusionGlobs);
+        ParcelCompat.writeBoolean(parcel, false);
+        parcel.writeString(null);
         parcel.setDataPosition(0);
         return parcel;
     }
