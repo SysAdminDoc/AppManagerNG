@@ -27,20 +27,21 @@ final class BatchOpsResultGuidance {
                 return R.string.batch_results_guidance_backup_restore;
             case BatchOpsManager.OP_ADVANCED_FREEZE:
             case BatchOpsManager.OP_ARCHIVE:
+            case BatchOpsManager.OP_DISABLE_BACKGROUND:
+            case BatchOpsManager.OP_FREEZE:
+            case BatchOpsManager.OP_INSTALL_EXISTING:
+            case BatchOpsManager.OP_UNARCHIVE:
+            case BatchOpsManager.OP_UNFREEZE:
+                return R.string.batch_results_guidance_package_state;
             case BatchOpsManager.OP_BLOCK_COMPONENTS:
             case BatchOpsManager.OP_BLOCK_TRACKERS:
-            case BatchOpsManager.OP_DISABLE_BACKGROUND:
             case BatchOpsManager.OP_FORCE_STOP:
-            case BatchOpsManager.OP_FREEZE:
             case BatchOpsManager.OP_GRANT_PERMISSIONS:
-            case BatchOpsManager.OP_INSTALL_EXISTING:
             case BatchOpsManager.OP_NET_POLICY:
             case BatchOpsManager.OP_REVOKE_PERMISSIONS:
             case BatchOpsManager.OP_SET_APP_OPS:
-            case BatchOpsManager.OP_UNARCHIVE:
             case BatchOpsManager.OP_UNBLOCK_COMPONENTS:
             case BatchOpsManager.OP_UNBLOCK_TRACKERS:
-            case BatchOpsManager.OP_UNFREEZE:
                 return R.string.batch_results_guidance_privileged_state;
             case BatchOpsManager.OP_CLEAR_CACHE:
             case BatchOpsManager.OP_DEXOPT:
