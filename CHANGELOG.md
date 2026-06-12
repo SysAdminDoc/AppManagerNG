@@ -86,6 +86,9 @@ Reliability & data safety
 - Running Apps now has a manual Refresh action and a refresh-rate menu
   (manual, 5 seconds, 10 seconds, or 30 seconds); invalid stored intervals fall
   back to the 10-second default.
+- Profile export, upstream-compatible export, and quick share now serialize and
+  write profiles off the UI thread so large profiles do not freeze the Profiles
+  screen.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
