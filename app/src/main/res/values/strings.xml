@@ -1099,6 +1099,7 @@
     <string name="batch_results_guidance_title">Recommended next step</string>
     <string name="batch_results_guidance_destructive">Completed apps may already have changed. Confirm you have a backup or rollback path before retrying the failed apps.</string>
     <string name="batch_results_guidance_backup_restore">Review the log and operation history before retrying. Confirm the backup set is available and readable.</string>
+    <string name="batch_results_guidance_package_state">AppManagerNG re-checked Android package state after the command. Review PACKAGE_STATE_VERIFY log lines, confirm the active privilege mode, refresh the app list, then retry only failed apps.</string>
     <string name="batch_results_guidance_privileged_state">Review operation history to see what changed. If failures repeat, check the active privilege mode before retrying.</string>
     <string name="batch_results_guidance_no_failed_apps">No failed app list was reported. Review the log and operation history before starting the operation again.</string>
     <string name="batch_results_guidance_generic">Review the log and operation history before retrying. Retry from this screen only queues the failed apps.</string>
@@ -3440,6 +3441,8 @@
     <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>
     <string name="app_change_auditor_title">%1$s changed components</string>
     <string name="app_change_auditor_body">Components: +%1$d/-%2$d. Trackers: +%3$d/-%4$d. %5$s</string>
+    <string name="app_change_reappearance_title">%1$s reappeared</string>
+    <string name="app_change_reappearance_body">%1$s was installed again after a successful AppManagerNG uninstall. Review operation history before disabling or uninstalling it again.</string>
     <!-- Install Source Attribution Detail (T9/shipped iter-77) -->
     <string name="install_source_initiator_cert_sha256">Cert SHA-256 · %1$s</string>
     <!-- App Signing Key Change Alert (T9/Next, iter-78) -->
