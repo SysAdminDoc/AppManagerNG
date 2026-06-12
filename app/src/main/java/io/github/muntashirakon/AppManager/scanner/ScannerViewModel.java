@@ -305,6 +305,21 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         return database;
     }
 
+    @VisibleForTesting
+    static boolean shouldFetchPithusReport(@Nullable Pair<String, String>[] digests, boolean internetEnabled) {
+        return internetEnabled && digests != null && digests.length > 2 && digests[2] != null
+                && digests[2].second != null;
+    }
+
+    @VisibleForTesting
+    static boolean shouldFetchVirusTotalReport(@Nullable VirusTotal virusTotal,
+                                               @Nullable Pair<String, String>[] digests,
+                                               boolean internetEnabled,
+                                               boolean virusTotalEnabled) {
+        return internetEnabled && virusTotalEnabled && virusTotal != null && digests != null
+                && digests.length > 0 && digests[0] != null && digests[0].second != null;
+    }
+
     @NonNull
     private JSONObject buildDeviceJson() throws JSONException {
         JSONObject device = new JSONObject();
@@ -412,12 +427,13 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         String pithusReportUrl = null;
         Pair<String, String>[] digests = ExUtils.exceptionAsNull(() -> DigestUtils.getDigests(file));
         mApkChecksumsLiveData.postValue(digests);
-        if (digests != null && FeatureController.isInternetEnabled()) {
+        boolean internetEnabled = FeatureController.isInternetEnabled();
+        if (shouldFetchPithusReport(digests, internetEnabled)) {
             String sha256 = digests[2].second;
             pithusReportUrl = ExUtils.exceptionAsNull(() -> Pithus.resolveReport(sha256));
         }
         mPithusReportLiveData.postValue(pithusReportUrl);
-        if (mVt != null && digests != null && FeatureController.isVirusTotalEnabled()) {
+        if (shouldFetchVirusTotalReport(mVt, digests, internetEnabled, FeatureController.isVirusTotalEnabled())) {
             String md5 = digests[0].second;
             try {
                 mVt.fetchFileReportOrScan(file, md5, this);
