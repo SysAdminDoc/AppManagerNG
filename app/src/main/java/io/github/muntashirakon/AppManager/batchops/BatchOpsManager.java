@@ -852,6 +852,10 @@ public class BatchOpsManager {
                 log("====> op=ADVANCED_FREEZE, pkg=" + pair + ", type = " + type, e);
                 failedPackages.add(pair);
             }
+            if (!failed && !verifyPackageState(OP_ADVANCED_FREEZE, pair)) {
+                failed = true;
+                failedPackages.add(pair);
+            }
             recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
@@ -876,6 +880,10 @@ public class BatchOpsManager {
             } catch (Throwable e) {
                 failed = true;
                 log("====> op=APP_FREEZE, pkg=" + pair + ", freeze = " + freeze, e);
+                failedPackages.add(pair);
+            }
+            if (!failed && !verifyPackageState(freeze ? OP_FREEZE : OP_UNFREEZE, pair)) {
+                failed = true;
                 failedPackages.add(pair);
             }
             recordTargetFinished(pair, failed);
@@ -1158,7 +1166,12 @@ public class BatchOpsManager {
                     log("====> op=UNINSTALL, pkg=" + pair);
                     failedPackages.add(pair);
                 }
-                recordTargetFinished(pair, !uninstalled);
+                boolean failed = !uninstalled;
+                if (!failed && !verifyPackageState(OP_UNINSTALL, pair)) {
+                    failed = true;
+                    failedPackages.add(pair);
+                }
+                recordTargetFinished(pair, failed);
             }
         } finally {
             // Always disable accessibility uninstall interception, even if the loop throws —
@@ -1188,7 +1201,12 @@ public class BatchOpsManager {
                 log("====> op=INSTALL_EXISTING, pkg=" + pair);
                 failedPackages.add(pair);
             }
-            recordTargetFinished(pair, !installed);
+            boolean failed = !installed;
+            if (!failed && !verifyPackageState(OP_INSTALL_EXISTING, pair)) {
+                failed = true;
+                failedPackages.add(pair);
+            }
+            recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
     }
@@ -1319,6 +1337,18 @@ public class BatchOpsManager {
         if (mLogger != null) {
             mLogger.println(message);
         }
+    }
+
+    private boolean verifyPackageState(@OpType int op, @NonNull UserPackagePair pair) {
+        if (!PackageStateVerifier.shouldVerify(op)) {
+            return true;
+        }
+        boolean verified = PackageStateVerifier.matchesExpectedAndroidState(op, pair);
+        if (!verified) {
+            log("====> op=PACKAGE_STATE_VERIFY, pkg=" + pair
+                    + ", expected=" + PackageStateVerifier.getExpectedStateLabel(op));
+        }
+        return verified;
     }
 
     private void recordTargetFinished(@NonNull UserPackagePair pair, boolean failed) {
