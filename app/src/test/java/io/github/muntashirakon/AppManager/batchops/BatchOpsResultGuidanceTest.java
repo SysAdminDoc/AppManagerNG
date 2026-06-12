@@ -39,11 +39,19 @@ public class BatchOpsResultGuidanceTest {
     @Test
     public void privilegedStateOperationsPointToPrivilegeMode() {
         assertEquals(R.string.batch_results_guidance_privileged_state,
-                BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_FREEZE, 1));
-        assertEquals(R.string.batch_results_guidance_privileged_state,
                 BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_SET_APP_OPS, 1));
         assertEquals(R.string.batch_results_guidance_privileged_state,
                 BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_FORCE_STOP, 1));
+    }
+
+    @Test
+    public void packageStateOperationsPointToVerificationLogs() {
+        assertEquals(R.string.batch_results_guidance_package_state,
+                BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_FREEZE, 1));
+        assertEquals(R.string.batch_results_guidance_package_state,
+                BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_DISABLE_BACKGROUND, 1));
+        assertEquals(R.string.batch_results_guidance_package_state,
+                BatchOpsResultGuidance.getMessageRes(BatchOpsManager.OP_INSTALL_EXISTING, 1));
     }
 
     @Test
