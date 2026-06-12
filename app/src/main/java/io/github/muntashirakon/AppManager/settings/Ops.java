@@ -22,6 +22,7 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
@@ -72,6 +73,7 @@ import rikka.shizuku.Shizuku;
  */
 public class Ops {
     public static final String TAG = Ops.class.getSimpleName();
+    private static final int REQUEST_LOCAL_NETWORK_PERMISSION = 0x4c4e;
 
     @StringDef({MODE_AUTO, MODE_ROOT, MODE_SHIZUKU, MODE_ADB_OVER_TCP, MODE_ADB_WIFI, MODE_NO_ROOT})
     @Retention(RetentionPolicy.SOURCE)
@@ -1013,12 +1015,19 @@ public class Ops {
                 .setTitle(R.string.local_network_permission_required)
                 .setMessage(R.string.local_network_permission_required_message)
                 .setNegativeButton(R.string.close, (dialog, which) -> callback.onStatusReceived(STATUS_FAILURE))
-                .setPositiveButton(R.string.open, (dialog, which) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            .setData(Uri.parse("package:" + activity.getPackageName()));
+                .setPositiveButton(R.string.local_network_permission_allow, (dialog, which) -> {
                     try {
-                        activity.startActivity(intent);
-                    } catch (Throwable ignore) {
+                        ActivityCompat.requestPermissions(activity,
+                                new String[]{ManifestCompat.permission.ACCESS_LOCAL_NETWORK},
+                                REQUEST_LOCAL_NETWORK_PERMISSION);
+                    } catch (Throwable e) {
+                        Log.w(TAG, "Could not request local network permission directly.", e);
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                .setData(Uri.parse("package:" + activity.getPackageName()));
+                        try {
+                            activity.startActivity(intent);
+                        } catch (Throwable ignore) {
+                        }
                     }
                     callback.onStatusReceived(STATUS_FAILURE);
                 })

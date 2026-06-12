@@ -2816,7 +2816,8 @@
     <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
     <string name="adb_incomplete_usb_debugging_message">It looks like USB debugging is not configured properly. Please read <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">the documentation</a> for additional steps. If you already know the steps, please click “Open” to open the developer options, or click “Close” to continue to use no-root mode.</string>
     <string name="local_network_permission_required">Local network permission required</string>
-    <string name="local_network_permission_required_message">Android 17 requires the Local network permission before AppManagerNG can discover Wireless ADB pairing and connection services. Open app settings, allow Local network access, then start Wireless debugging again.</string>
+    <string name="local_network_permission_required_message">Android 17 requires the Local network permission before AppManagerNG can discover Wireless ADB pairing and connection services. Allow Local network access, then start Wireless debugging again.</string>
+    <string name="local_network_permission_allow">Allow local network</string>
     <string name="sort_by_data_usage">Data usage</string>
     <string name="filter_apps_with_keystore">With KeyStore</string>
     <string name="filter_apps_with_saf">With SAF</string>

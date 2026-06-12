@@ -72,6 +72,9 @@ Reliability & data safety
 - Backups can now be marked protected from cleanup and given per-backup notes;
   retention pruning and bulk deletion skip protected backups while backup lists
   surface the saved notes.
+- Android 17 wireless ADB recovery now requests the Local network runtime
+  permission directly, with app settings kept as a fallback for ROMs that reject
+  the request path.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
