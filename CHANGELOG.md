@@ -82,6 +82,9 @@ Reliability & data safety
 - Blocking-rule import now supports legacy MyAndroidTools text backups and
   `.ifw` archives, including provider entries from the text format and
   same-file conflict detection.
+- Scanner runs now make offline mode explicit: local findings remain visible,
+  online report cards stay disabled with a network-required label, and Pithus
+  or VirusTotal fetches are skipped when Internet is disabled.
 - File properties now exposes the existing "Open with" chooser for readable
   files instead of showing a hidden no-op field.
 - The code editor now remembers the word-wrap toggle across sessions and maps

@@ -18,6 +18,37 @@
             android:orientation="vertical">
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/scanner_offline_banner"
+                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:cardElevation="0dp"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_medium">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/scanner_offline_banner_title"
+                        android:textAppearance="?android:attr/textAppearanceListItem" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/scanner_offline_banner_summary"
+                        android:textColor="?android:attr/textColorSecondary" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.AppTheme.CardView.ListItem.Padded"
                 android:id="@+id/classes"
                 android:layout_width="match_parent"
@@ -130,6 +161,7 @@
                     android:orientation="vertical">
 
                     <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/pithus_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/scan_report_from_pithus"
