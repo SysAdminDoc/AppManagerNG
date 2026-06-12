@@ -145,4 +145,17 @@ public class OpenPgpKeySelectionDialogFragment extends DialogFragment {
             }
         });
     }
+
+    @Override
+    public void onDestroy() {
+        if (mServiceConnection != null) {
+            try {
+                mServiceConnection.unbindFromService();
+            } catch (IllegalArgumentException ignore) {
+            }
+            mServiceConnection = null;
+        }
+        mExecutor.shutdownNow();
+        super.onDestroy();
+    }
 }

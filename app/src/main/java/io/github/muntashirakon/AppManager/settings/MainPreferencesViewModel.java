@@ -289,4 +289,10 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     public void onStatusReceived(int status) {
         mModeOfOpsStatus.postValue(status);
     }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        mExecutor.shutdownNow();
+    }
 }

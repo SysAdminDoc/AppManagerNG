@@ -125,10 +125,21 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         if (mWakeLock != null && !mWakeLock.isHeld()) {
             mWakeLock.acquire();
         }
+        if (mediaPlayerInitialized() && mMediaPlayer.isPlaying()) {
+            startProgressUpdates();
+        }
+    }
+
+    @Override
+    public void onStop() {
+        stopProgressUpdates();
+        CpuUtils.releaseWakeLock(mWakeLock);
+        super.onStop();
     }
 
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
+        stopProgressUpdates();
         if (mediaPlayerInitialized()) {
             mMediaPlayer.stop();
             mMediaPlayer.release();
@@ -364,9 +375,23 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
 
         mMediaPlayer.seekTo(0);
         resumeMediaPlayer();
-        mUpdateHandler.postDelayed(mUpdateRunnable, 0);
+        startProgressUpdates();
 
         setPlayPauseButtonState(R.drawable.ic_pause, R.string.audio_player_pause);
+    }
+
+    private void startProgressUpdates() {
+        if (mUpdateHandler == null || mUpdateRunnable == null) {
+            return;
+        }
+        mUpdateHandler.removeCallbacks(mUpdateRunnable);
+        mUpdateHandler.postDelayed(mUpdateRunnable, 0);
+    }
+
+    private void stopProgressUpdates() {
+        if (mUpdateHandler != null && mUpdateRunnable != null) {
+            mUpdateHandler.removeCallbacks(mUpdateRunnable);
+        }
     }
 
     private void updateStaticControlLabels() {
