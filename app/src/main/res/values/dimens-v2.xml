@@ -11,18 +11,9 @@
     <dimen name="premium_space_20">20dp</dimen>
     <dimen name="premium_space_24">24dp</dimen>
     <dimen name="premium_space_32">32dp</dimen>
-    <dimen name="premium_space_40">40dp</dimen>
-    <dimen name="premium_space_48">48dp</dimen>
-    <dimen name="premium_space_64">64dp</dimen>
-    <dimen name="premium_space_80">80dp</dimen>
-    <dimen name="premium_space_96">96dp</dimen>
 
     <!-- Radius scale -->
-    <dimen name="premium_radius_none">0dp</dimen>
-    <dimen name="premium_radius_compact">4dp</dimen>
-    <dimen name="premium_radius_default">8dp</dimen>
     <dimen name="premium_radius_card">8dp</dimen>
-    <dimen name="premium_radius_sheet">10dp</dimen>
     <dimen name="premium_radius_modal">10dp</dimen>
     <dimen name="premium_radius_control">8dp</dimen>
 
@@ -31,39 +22,27 @@
     <dimen name="premium_elevation_1">1dp</dimen>
     <dimen name="premium_elevation_2">3dp</dimen>
     <dimen name="premium_elevation_3">6dp</dimen>
-    <dimen name="premium_elevation_4">8dp</dimen>
-    <dimen name="premium_elevation_5">12dp</dimen>
     <dimen name="premium_stroke_none">0dp</dimen>
     <dimen name="premium_stroke_hairline">1dp</dimen>
     <dimen name="premium_stroke_focus">2dp</dimen>
 
     <!-- Icon scale -->
-    <dimen name="premium_icon_16">16dp</dimen>
     <dimen name="premium_icon_20">20dp</dimen>
     <dimen name="premium_icon_24">24dp</dimen>
-    <dimen name="premium_icon_32">32dp</dimen>
     <dimen name="premium_icon_40">40dp</dimen>
     <dimen name="premium_icon_48">48dp</dimen>
-    <dimen name="premium_icon_64">64dp</dimen>
 
     <!-- Type scale -->
-    <dimen name="premium_type_display_large">32sp</dimen>
-    <dimen name="premium_type_headline_large">28sp</dimen>
-    <dimen name="premium_type_headline_medium">24sp</dimen>
-    <dimen name="premium_type_headline_small">22sp</dimen>
     <dimen name="premium_type_title_large">20sp</dimen>
     <dimen name="premium_type_title_medium">16sp</dimen>
-    <dimen name="premium_type_title_small">16sp</dimen>
     <dimen name="premium_type_body_large">16sp</dimen>
     <dimen name="premium_type_body_medium">14sp</dimen>
     <dimen name="premium_type_body_small">12sp</dimen>
-    <dimen name="premium_type_label_large">14sp</dimen>
     <dimen name="premium_type_label_medium">12sp</dimen>
     <dimen name="premium_type_label_small">11sp</dimen>
 
     <!-- MainActivity shell -->
     <dimen name="premium_app_bar_height">68dp</dimen>
-    <dimen name="premium_search_height">48dp</dimen>
     <dimen name="premium_main_status_min_height">52dp</dimen>
     <dimen name="premium_main_list_top_padding">10dp</dimen>
     <dimen name="premium_main_list_bottom_padding">32dp</dimen>
@@ -84,5 +63,4 @@
     <dimen name="premium_chip_min_height">38dp</dimen>
     <dimen name="premium_chip_touch_target">48dp</dimen>
     <dimen name="premium_button_min_height">48dp</dimen>
-    <dimen name="premium_dialog_action_bar_height">64dp</dimen>
 </resources>

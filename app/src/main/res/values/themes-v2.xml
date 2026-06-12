@@ -46,7 +46,6 @@
         <item name="listItemPaddingVertical">@dimen/premium_main_list_padding_vertical</item>
         <item name="listItemPaddingHorizontal">@dimen/premium_main_list_padding_horizontal</item>
         <item name="listItemCornerRadius">@dimen/premium_radius_card</item>
-        <item name="listItemIndicatorWidth">@dimen/premium_space_8</item>
         <!-- Night-aware aliases: light in values/, dark in values-night/. Correct for the
              normal theme in both light and dark; AMOLED/Dark override below. -->
         <item name="premiumWarningBg">@color/premium_warning_bg</item>
@@ -132,12 +131,6 @@
         <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
     </style>
 
-    <style name="Widget.AppTheme.V2.SearchBarCard" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">@dimen/premium_radius_control</item>
-        <item name="cardElevation">@dimen/premium_elevation_1</item>
-        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
-    </style>
-
     <style name="Widget.AppTheme.V2.ChipGroup" parent="Widget.Material3.ChipGroup" />
 
     <style name="Widget.AppTheme.V2.ChipGroup.Filter" parent="Widget.Material3.ChipGroup">
@@ -194,35 +187,8 @@
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.CircleComponent</item>
     </style>
 
-    <style name="Widget.AppTheme.V2.Button.EFAB" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
-        <item name="elevation">@dimen/premium_elevation_3</item>
-        <item name="android:minHeight">@dimen/premium_button_min_height</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
-    </style>
-
-    <style name="Widget.AppTheme.V2.BottomSheet.Content" parent="android:Widget">
-        <item name="android:background">?attr/colorSurfaceContainerHighest</item>
-    </style>
-
-    <style name="Widget.AppTheme.V2.Dialog.Content" parent="android:Widget">
-        <item name="android:background">?attr/colorSurfaceContainerHighest</item>
-    </style>
-
-    <style name="Widget.AppTheme.V2.EmptyState" parent="android:Widget">
-        <item name="android:background">?attr/colorSurface</item>
-    </style>
-
-    <style name="Widget.AppTheme.V2.Skeleton" parent="android:Widget">
-        <item name="android:background">?attr/colorSurfaceContainer</item>
-    </style>
-
     <style name="ShapeAppearance.AppTheme.V2.Control" parent="">
         <item name="cornerSize">@dimen/premium_radius_control</item>
-        <item name="cornerFamily">rounded</item>
-    </style>
-
-    <style name="ShapeAppearance.AppTheme.V2.Card" parent="">
-        <item name="cornerSize">@dimen/premium_radius_card</item>
         <item name="cornerFamily">rounded</item>
     </style>
 
