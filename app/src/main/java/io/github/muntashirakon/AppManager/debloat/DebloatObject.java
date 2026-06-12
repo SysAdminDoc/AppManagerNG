@@ -241,10 +241,7 @@ public class DebloatObject {
         mFrozen = null;
         List<App> apps = appDb.getAllApplications(packageName);
         for (App app : apps) {
-            if (!app.isInstalled) {
-                continue;
-            }
-            mInstalled = true;
+            mInstalled |= app.isInstalled;
             addUser(app.userId);
             mUpdatedSystemApp = (app.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
             mSystemApp = app.isSystemApp() || mUpdatedSystemApp;
