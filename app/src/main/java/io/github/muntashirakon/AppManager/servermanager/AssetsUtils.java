@@ -17,7 +17,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.server.common.ConfigParams;
@@ -33,14 +36,11 @@ class AssetsUtils {
         try (AssetFileDescriptor openFd = context.getAssets().openFd(fileName)) {
             if (force) {
                 destFile.delete();
-            } else {
-                if (destFile.exists()) {
-                    if (destFile.length() != openFd.getLength()) {
-                        destFile.delete();
-                    } else {
-                        return;
-                    }
+            } else if (destFile.exists()) {
+                if (hasSameAssetContent(context, fileName, destFile, openFd.getLength())) {
+                    return;
                 }
+                destFile.delete();
             }
 
             try (FileInputStream open = openFd.createInputStream();
@@ -53,6 +53,33 @@ class AssetsUtils {
                 fos.flush();
                 fos.getFD().sync();
             }
+        }
+    }
+
+    private static boolean hasSameAssetContent(@NonNull Context context, @NonNull String fileName,
+                                               @NonNull File destFile, long assetLength)
+            throws IOException {
+        if (assetLength >= 0 && destFile.length() != assetLength) {
+            return false;
+        }
+        try (AssetFileDescriptor openFd = context.getAssets().openFd(fileName);
+             FileInputStream assetStream = openFd.createInputStream();
+             FileInputStream destStream = new FileInputStream(destFile)) {
+            return MessageDigest.isEqual(getSha256(assetStream), getSha256(destStream));
+        }
+    }
+
+    private static byte[] getSha256(@NonNull InputStream inputStream) throws IOException {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+            int len;
+            while ((len = inputStream.read(buffer)) != -1) {
+                messageDigest.update(buffer, 0, len);
+            }
+            return messageDigest.digest();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
         }
     }
 
