@@ -1520,6 +1520,8 @@
     <string name="keep_data_and_app_signing_signatures">Keep data and signatures</string>
     <string name="pref_backup_android_keystore">Back up apps with Android KeyStore</string>
     <string name="pref_backup_android_keystore_msg">Not all apps will work after being restored. Restoring KeyStore doesn\'t work on most devices.</string>
+    <string name="pref_backup_pause_apps">Pause apps during data backup</string>
+    <string name="pref_backup_pause_apps_msg">In privileged modes, suspend or stop the target app while its data is copied, then resume it even if backup fails.</string>
     <string name="magisk_hide_enabled">MagiskHide</string>
     <string name="set_app_op_mode">Set app op mode</string>
     <string name="filter_apps_with_splits">With splits</string>
