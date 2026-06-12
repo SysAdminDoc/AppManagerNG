@@ -177,16 +177,14 @@ public class AppDetailsViewModel extends AndroidViewModel {
     public void onCleared() {
         Log.d(TAG, "On Clear called for %s", mPackageName);
         super.onCleared();
-        mExecutor.submit(() -> {
-            synchronized (mBlockerLocker) {
-                if (mBlocker != null) {
-                    // To prevent commit if a mutable instance was created in the middle,
-                    // set the instance read only again
-                    mBlocker.setReadOnly();
-                    mBlocker.close();
-                }
+        synchronized (mBlockerLocker) {
+            if (mBlocker != null) {
+                // To prevent commit if a mutable instance was created in the middle,
+                // set the instance read only again
+                mBlocker.setReadOnly();
+                mBlocker.close();
             }
-        });
+        }
         if (mReceiver != null) {
             getApplication().unregisterReceiver(mReceiver);
         }

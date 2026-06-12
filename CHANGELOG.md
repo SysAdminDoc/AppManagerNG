@@ -35,6 +35,9 @@ Reliability & data safety
 - Keystore import now creates and verifies a temporary backup before replacing
   the live keystore, then restores the original file if the import or password
   validation fails.
+- Audio playback, OpenPGP key selection, App Details, App Info, and main
+  preferences now clean up handlers, wake locks, service bindings, and
+  executors when their UI lifecycle ends.
 - Deleting a frozen (user-protected) backup no longer removes its database row
   while leaving the files on disk — it now leaves both intact, so the backup
   can't silently disappear from the UI while still consuming storage.

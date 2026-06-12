@@ -83,6 +83,11 @@ public class ActionLabelAccessibilityContractTest {
                 source.contains("setRepeatButtonState"));
         assertTrue("Audio player should not refresh progress at a 10 ms cadence",
                 source.contains("PROGRESS_UPDATE_INTERVAL_MS = 250L"));
+        assertTrue("Audio player should remove progress callbacks when stopped or dismissed",
+                source.contains("removeCallbacks(mUpdateRunnable)"));
+        assertTrue("Audio player should release its wake lock outside final destruction",
+                source.contains("public void onStop()")
+                        && source.contains("CpuUtils.releaseWakeLock(mWakeLock);"));
     }
 
     private static void assertControlContentDescription(String layout,
