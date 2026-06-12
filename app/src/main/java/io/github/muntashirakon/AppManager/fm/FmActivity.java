@@ -280,11 +280,20 @@ public class FmActivity extends BaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            mDrawerLayout.open();
+        if (isDrawerShortcutAction(item.getItemId())) {
+            openDrawer();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    void openDrawer() {
+        mDrawerLayout.open();
+    }
+
+    @VisibleForTesting
+    static boolean isDrawerShortcutAction(int itemId) {
+        return itemId == android.R.id.home || itemId == R.id.action_bookmarks;
     }
 
     private void loadFragment(@NonNull Options options, @Nullable Integer position) {
