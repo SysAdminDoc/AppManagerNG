@@ -78,6 +78,8 @@ Reliability & data safety
 - ADB-mode privileged server startup no longer stages runner artifacts on
   shared external storage, and asset refresh now verifies SHA-256 content
   instead of trusting matching file sizes.
+- Privileged data backups can now pause the target app while data is copied and
+  resume it on success or failure, reducing live-write backup inconsistencies.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible

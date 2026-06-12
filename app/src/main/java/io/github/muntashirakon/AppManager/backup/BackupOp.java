@@ -202,10 +202,12 @@ class BackupOp implements Closeable {
             }
             // Backup data
             if (mBackupFlags.backupData()) {
-                backupData();
-                // Backup KeyStore
-                if (mMetadata.metadata.keyStore) {
-                    backupKeyStore();
+                try (BackupAppPauser ignored = BackupAppPauser.pauseForBackup(mPackageName, mUserId, mBackupFlags)) {
+                    backupData();
+                    // Backup KeyStore
+                    if (mMetadata.metadata.keyStore) {
+                        backupKeyStore();
+                    }
                 }
                 incrementProgress(progressHandler);
             }
