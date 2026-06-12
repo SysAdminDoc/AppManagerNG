@@ -704,70 +704,82 @@ public final class IntentCompat {
         String[] lines = intentString.split("\n", -1);
         Uri data = null;
         String type = null;
-        for (String line : lines) {
-            if (TextUtils.isEmpty(line)) continue;
-            String[] lineParts = line.split("\t", 2);
-            if (lineParts.length < 2) {
-                // Invalid line
-                return null;
-            }
-            switch (lineParts[0]) {
-                case "VERSION": {
-                    int version = IntegerCompat.decode(lineParts[1]);
-                    if (version != 1) {
-                        // Unsupported version
-                        return null;
-                    }
-                    break;
+        try {
+            for (String line : lines) {
+                if (TextUtils.isEmpty(line)) continue;
+                String[] lineParts = line.split("\t", 2);
+                if (lineParts.length < 2) {
+                    // Invalid line
+                    return null;
                 }
-                case "ACTION":
-                    intent.setAction(lineParts[1]);
-                    break;
-                case "DATA":
-                    data = Uri.parse(lineParts[1]);
-                    break;
-                case "TYPE":
-                    type = lineParts[1];
-                    break;
-                case "IDENTIFIER":
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        intent.setIdentifier(lineParts[1]);
-                    }
-                    break;
-                case "CATEGORY":
-                    intent.addCategory(lineParts[1]);
-                    break;
-                case "COMPONENT":
-                    intent.setComponent(ComponentName.unflattenFromString(lineParts[1]));
-                    break;
-                case "PACKAGE":
-                    intent.setPackage(lineParts[1]);
-                    break;
-                case "FLAGS":
-                    intent.setFlags(IntegerCompat.decode(lineParts[1]));
-                    break;
-                case "EXTRA": {
-                    String[] extraParts = lineParts[1].split("\t", 3);
-                    if (extraParts.length < 2) {
-                        return null;
-                    }
-                    ExtraItem item = new ExtraItem();
-                    item.keyName = extraParts[0];
-                    item.type = IntegerCompat.decode(extraParts[1]);
-                    if (item.type != TYPE_NULL) {
-                        if (extraParts.length < 3) {
+                switch (lineParts[0]) {
+                    case "VERSION": {
+                        int version = IntegerCompat.decode(lineParts[1]);
+                        if (version != 1) {
+                            // Unsupported version
                             return null;
                         }
-                        item.keyValue = parseExtraValue(item.type, extraParts[2]);
+                        break;
                     }
-                    addToIntent(intent, item);
+                    case "ACTION":
+                        intent.setAction(lineParts[1]);
+                        break;
+                    case "DATA":
+                        data = Uri.parse(lineParts[1]);
+                        break;
+                    case "TYPE":
+                        type = lineParts[1];
+                        break;
+                    case "IDENTIFIER":
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            intent.setIdentifier(lineParts[1]);
+                        }
+                        break;
+                    case "CATEGORY":
+                        intent.addCategory(lineParts[1]);
+                        break;
+                    case "COMPONENT":
+                        intent.setComponent(ComponentName.unflattenFromString(lineParts[1]));
+                        break;
+                    case "PACKAGE":
+                        intent.setPackage(lineParts[1]);
+                        break;
+                    case "FLAGS":
+                        intent.setFlags(IntegerCompat.decode(lineParts[1]));
+                        break;
+                    case "EXTRA": {
+                        String[] extraParts = lineParts[1].split("\t", 3);
+                        if (extraParts.length < 2) {
+                            return null;
+                        }
+                        ExtraItem item = new ExtraItem();
+                        item.keyName = extraParts[0];
+                        item.type = IntegerCompat.decode(extraParts[1]);
+                        if (item.type != TYPE_NULL) {
+                            if (extraParts.length < 3) {
+                                return null;
+                            }
+                            item.keyValue = parseExtraValue(item.type, extraParts[2]);
+                        }
+                        addToIntent(intent, item);
+                    }
                 }
             }
+        } catch (IllegalArgumentException e) {
+            return null;
         }
         if (data != null) {
-            intent.setDataAndType(data, type);
+            try {
+                intent.setDataAndType(data, type);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         } else if (type != null) {
-            intent.setType(type);
+            try {
+                intent.setType(type);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         }
         return intent;
     }
