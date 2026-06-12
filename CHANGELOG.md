@@ -92,6 +92,9 @@ Reliability & data safety
   pre-search scroll position when a filter is cleared, and preserves IME focus
   across activity pauses without using restricted AppCompat internals. The
   remaining full ListAdapter migration stays tracked as `INIT-D1`.
+- Batch uninstall, install-existing, freeze/unfreeze, and archive result paths
+  now re-query package state before reporting success, so commands that return
+  without error but leave the app unchanged are downgraded to failures.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
