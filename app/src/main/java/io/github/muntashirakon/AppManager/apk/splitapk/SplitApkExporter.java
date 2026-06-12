@@ -61,6 +61,7 @@ public final class SplitApkExporter {
 
         // Metadata
         ApksMetadata apksMetadata = new ApksMetadata(packageInfo);
+        apksMetadata.setIncludedApkFiles(apkFiles);
         apksMetadata.writeMetadata(zipOutputStream);
         
         // Add icon
@@ -138,6 +139,24 @@ public final class SplitApkExporter {
             }
         }
         return apkFiles;
+    }
+
+    @NonNull
+    public static List<String> getDeviceSpecificSplitApkNames(@NonNull ApplicationInfo applicationInfo) {
+        List<Path> apkFiles = getAllApkFiles(applicationInfo);
+        Collections.sort(apkFiles);
+        List<String> splitNames = new ArrayList<>();
+        for (Path apkFile : apkFiles) {
+            String name = apkFile.getName();
+            if (isDeviceSpecificSplitApkName(name)) {
+                splitNames.add(name);
+            }
+        }
+        return splitNames;
+    }
+
+    static boolean isDeviceSpecificSplitApkName(@NonNull String name) {
+        return name.startsWith("split_config.") && name.endsWith(".apk");
     }
 
     private static void addApkFile(@NonNull List<Path> apkFiles, @NonNull Set<String> seenApkPaths,
