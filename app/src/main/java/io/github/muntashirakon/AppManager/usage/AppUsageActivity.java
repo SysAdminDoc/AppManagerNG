@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Menu;
@@ -15,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
@@ -25,6 +27,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
@@ -32,6 +37,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.utils.BetterActivityResult;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.adapters.SelectedArrayAdapter;
 import io.github.muntashirakon.util.AccessibilityUtils;
@@ -63,6 +69,12 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     private boolean mWaitingForUsageAccess;
     private final BetterActivityResult<String, Boolean> mRequestPerm = BetterActivityResult
             .registerForActivityResult(this, new ActivityResultContracts.RequestPermission());
+    private final ActivityResultLauncher<String> mExportUsageCsv = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("text/csv"), uri -> {
+                if (uri != null) {
+                    exportUsageCsv(uri);
+                }
+            });
 
     @SuppressLint("WrongConstant")
     @Override
@@ -190,6 +202,7 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     public boolean onPrepareOptionsMenu(Menu menu) {
         if (viewModel != null) {
             menu.findItem(sSortMenuItemIdsMap[viewModel.getSortOrder()]).setChecked(true);
+            menu.findItem(R.id.action_compare_previous_period).setChecked(viewModel.isCompareWithPrevious());
         }
         return super.onPrepareOptionsMenu(menu);
     }
@@ -220,6 +233,12 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         } else if (id == R.id.action_sort_by_wifi_data) {
             setSortBy(SortOrder.SORT_BY_WIFI_DATA);
             item.setChecked(true);
+        } else if (id == R.id.action_compare_previous_period) {
+            item.setChecked(!item.isChecked());
+            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            viewModel.setCompareWithPrevious(item.isChecked());
+        } else if (id == R.id.action_export_usage_csv) {
+            mExportUsageCsv.launch(viewModel.getDefaultCsvFileName());
         } else return super.onOptionsItemSelected(item);
         return true;
     }
@@ -291,5 +310,24 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
                     finish();
                 })
                 .show();
+    }
+
+    private void exportUsageCsv(@NonNull Uri uri) {
+        if (viewModel == null) {
+            UIUtils.displayShortToast(R.string.export_failed);
+            return;
+        }
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) {
+                    throw new IOException("Cannot open export target.");
+                }
+                os.write(viewModel.buildUsageCsv().getBytes(StandardCharsets.UTF_8));
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.app_usage_export_success));
+            } catch (Exception e) {
+                e.printStackTrace();
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.export_failed));
+            }
+        });
     }
 }

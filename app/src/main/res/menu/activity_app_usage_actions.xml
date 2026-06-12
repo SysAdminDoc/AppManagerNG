@@ -4,6 +4,18 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/action_compare_previous_period"
+        android:checkable="true"
+        android:title="@string/app_usage_compare_previous_period"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_export_usage_csv"
+        android:icon="@drawable/ic_file_export"
+        android:title="@string/app_usage_export_csv"
+        app:showAsAction="never" />
+
+    <item
         android:icon="@drawable/ic_sort"
         android:title="@string/sort"
         app:showAsAction="ifRoom">
