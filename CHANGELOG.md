@@ -88,6 +88,10 @@ Reliability & data safety
   navigation works, and the code-editor symbol row no longer clips at large
   font scales. The upstream daa54ac0 profile-filter fix was already covered by
   NG's `ProfileMembershipFilter` path.
+- Main-list search now keeps the upstream debounce behavior, restores the
+  pre-search scroll position when a filter is cleared, and preserves IME focus
+  across activity pauses without using restricted AppCompat internals. The
+  remaining full ListAdapter migration stays tracked as `INIT-D1`.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible

@@ -14,6 +14,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Parcelable;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.text.Spannable;
@@ -37,6 +38,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
@@ -85,6 +87,10 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
 
     private final MainActivity mActivity;
     private String mSearchQuery;
+    @Nullable
+    private RecyclerView mRecyclerView;
+    @Nullable
+    private Parcelable mPreFilterScrollState;
     @GuardedBy("mAdapterList")
     private final List<ApplicationItem> mAdapterList = new ArrayList<>();
 
@@ -123,11 +129,32 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     @UiThread
     void setDefaultList(List<ApplicationItem> list) {
         if (mActivity.viewModel == null) return;
+        String oldSearchQuery = mSearchQuery;
+        mSearchQuery = mActivity.viewModel.getSearchQuery();
+        RecyclerView.LayoutManager layoutManager = mRecyclerView != null ? mRecyclerView.getLayoutManager() : null;
+        boolean saveState = AdapterUtils.isStartingSearch(oldSearchQuery, mSearchQuery);
+        boolean restoreState = AdapterUtils.isClearingSearch(oldSearchQuery, mSearchQuery);
+        if (saveState && layoutManager != null) {
+            mPreFilterScrollState = layoutManager.onSaveInstanceState();
+        }
+        boolean wasAtTop = isAtTop(layoutManager);
         synchronized (mAdapterList) {
-            mSearchQuery = mActivity.viewModel.getSearchQuery();
             AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
             notifySelectionChange();
         }
+        restoreScrollAfterFilter(layoutManager, wasAtTop, restoreState);
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        mRecyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        mRecyclerView = null;
     }
 
     @GuardedBy("mAdapterList")
@@ -583,6 +610,42 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             }
             return mAdapterList.get(position);
         }
+    }
+
+    private static boolean isAtTop(@Nullable RecyclerView.LayoutManager layoutManager) {
+        if (!(layoutManager instanceof LinearLayoutManager)) {
+            return false;
+        }
+        LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+        int firstVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
+        if (firstVisibleItem == RecyclerView.NO_POSITION) {
+            return false;
+        }
+        View topView = layoutManager.findViewByPosition(firstVisibleItem);
+        int topOffset = topView != null ? topView.getTop() : 0;
+        return firstVisibleItem == 0 && topOffset >= 0;
+    }
+
+    private void restoreScrollAfterFilter(@Nullable RecyclerView.LayoutManager layoutManager,
+                                          boolean wasAtTop,
+                                          boolean restoreState) {
+        if (mRecyclerView == null || layoutManager == null) {
+            return;
+        }
+        mRecyclerView.post(() -> {
+            if (mRecyclerView == null || mRecyclerView.getLayoutManager() != layoutManager) {
+                return;
+            }
+            if (wasAtTop) {
+                layoutManager.scrollToPosition(0);
+                if (restoreState) {
+                    mPreFilterScrollState = null;
+                }
+            } else if (restoreState && mPreFilterScrollState != null) {
+                layoutManager.onRestoreInstanceState(mPreFilterScrollState);
+                mPreFilterScrollState = null;
+            }
+        });
     }
 
     @GuardedBy("mAdapterList")
