@@ -125,6 +125,10 @@ Reliability & data safety
   existing bookmarks drawer without relying on breadcrumb long-press discovery.
 - Main-list tracker and dangerous-permission badges now use expanded row-level
   touch targets while keeping their compact visual size.
+- Secondary list rows, scanner cards, profile-review warnings, empty states, and
+  failure rows now share the V2 premium card, spacing, type, and callout
+  treatment; compact app-type flags now use a visible separator instead of
+  visually merging into `System0`.
 - Profile export, upstream-compatible export, and quick share now serialize and
   write profiles off the UI thread so large profiles do not freeze the Profiles
   screen.

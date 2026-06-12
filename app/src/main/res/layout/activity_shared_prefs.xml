@@ -10,13 +10,16 @@
         android:id="@+id/appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
         android:fitsSystemWindows="true"
         app:liftOnScroll="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.AppTheme.V2.Toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="@dimen/premium_app_bar_height"
+            android:minHeight="@dimen/premium_app_bar_height"
             tools:menu="@menu/activity_shared_prefs_actions" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator

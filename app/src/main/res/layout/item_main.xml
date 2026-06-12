@@ -2,7 +2,7 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
+    style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
@@ -73,7 +73,7 @@
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:paddingEnd="@dimen/main_list_title_badge_padding_end"
-                    android:textAppearance="?android:attr/textAppearanceListItem"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
                     tools:ignore="RtlSymmetry"
                     tools:text="@string/app_name" />
 

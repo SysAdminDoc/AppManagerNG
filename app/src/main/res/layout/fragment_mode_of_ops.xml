@@ -15,7 +15,7 @@
         android:paddingHorizontal="@dimen/padding_medium">
 
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.AppTheme.CardView.ListItem"
+            style="@style/Widget.AppTheme.V2.Card.Header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardBackgroundColor="?attr/colorPrimaryContainer">
@@ -86,7 +86,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="?attr/listItemMarginVertical">
