@@ -32,6 +32,7 @@ import java.util.zip.ZipInputStream;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.tags.AppNoteStore;
 
 @RunWith(RobolectricTestRunner.class)
 public class SnapshotBundleTest {
@@ -194,6 +195,11 @@ public class SnapshotBundleTest {
         assertTrue(
                 "keystore must remain on the excluded list - it ties to local Keystore-derived material",
                 SnapshotBundle.EXCLUDED_PREF_NAMES.contains("keystore"));
+    }
+
+    @Test
+    public void appNotesPrefsAreIncludedInSnapshots() {
+        assertFalse(SnapshotBundle.EXCLUDED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
     }
 
     // -----------------------------------------------------------------------
