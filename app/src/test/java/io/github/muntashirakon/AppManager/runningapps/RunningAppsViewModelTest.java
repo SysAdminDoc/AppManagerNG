@@ -191,4 +191,16 @@ public class RunningAppsViewModelTest {
     public void requiresCriticalForceStopConfirmationReturnsFalseForNormalApps() {
         assertFalse(RunningAppsActivity.requiresCriticalForceStopConfirmation("com.example.notes"));
     }
+
+    @Test
+    public void normalizeRefreshIntervalAcceptsSupportedIntervalsOnly() {
+        assertEquals(RunningAppsActivity.REFRESH_INTERVAL_MANUAL,
+                RunningAppsActivity.normalizeRefreshIntervalSeconds(RunningAppsActivity.REFRESH_INTERVAL_MANUAL));
+        assertEquals(RunningAppsActivity.REFRESH_INTERVAL_5_SECONDS,
+                RunningAppsActivity.normalizeRefreshIntervalSeconds(RunningAppsActivity.REFRESH_INTERVAL_5_SECONDS));
+        assertEquals(RunningAppsActivity.REFRESH_INTERVAL_10_SECONDS,
+                RunningAppsActivity.normalizeRefreshIntervalSeconds(-1));
+        assertEquals(RunningAppsActivity.REFRESH_INTERVAL_10_SECONDS,
+                RunningAppsActivity.normalizeRefreshIntervalSeconds(60));
+    }
 }
