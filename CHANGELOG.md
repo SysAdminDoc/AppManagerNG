@@ -78,6 +78,8 @@ Reliability & data safety
 - Batch operation result screens now link directly to operation history, making
   the recovery trail reachable from the failure review screen as well as from
   notifications.
+- Operation history can now open with type/status filters pre-applied; batch
+  failure results use this to show failed batch entries immediately.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so

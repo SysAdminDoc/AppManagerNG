@@ -63,7 +63,8 @@ public class BatchOpsResultGuidanceTest {
                 layout.contains("android:id=\"@+id/action_view_history\"")
                         && layout.contains("android:text=\"@string/op_history\""));
         assertTrue("Batch result activity should open operation history from the results screen",
-                source.contains("OpHistoryManager.getHistoryActivityIntent(this)"));
+                source.contains("OpHistoryManager.HISTORY_TYPE_BATCH_OPS")
+                        && source.contains("OpHistoryManager.STATUS_FAILURE"));
     }
 
     private static String read(Path path) throws IOException {

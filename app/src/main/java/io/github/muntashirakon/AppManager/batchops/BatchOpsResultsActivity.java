@@ -96,7 +96,8 @@ public class BatchOpsResultsActivity extends BaseActivity {
         mRetryButton = findViewById(R.id.action_retry_failed);
         mRetryButton.setOnClickListener(v -> confirmRetry());
         mHistoryButton = findViewById(R.id.action_view_history);
-        mHistoryButton.setOnClickListener(v -> startActivity(OpHistoryManager.getHistoryActivityIntent(this)));
+        mHistoryButton.setOnClickListener(v -> startActivity(OpHistoryManager.getHistoryActivityIntent(this,
+                OpHistoryManager.HISTORY_TYPE_BATCH_OPS, OpHistoryManager.STATUS_FAILURE)));
         mLogToggler = findViewById(R.id.action_view_logs);
         mLogsTitle = findViewById(R.id.batch_result_logs_title);
         mLogsSummary = findViewById(R.id.batch_result_logs_summary);
