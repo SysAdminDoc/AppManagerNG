@@ -125,6 +125,13 @@
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
     </style>
 
+    <style name="Widget.AppTheme.V2.Card.ListRow.Padded" parent="Widget.AppTheme.V2.Card.ListRow">
+        <item name="android:layout_marginTop">?attr/listItemMarginVertical</item>
+        <item name="android:layout_marginBottom">?attr/listItemMarginVertical</item>
+        <item name="android:layout_marginStart">?attr/listItemMarginHorizontal</item>
+        <item name="android:layout_marginEnd">?attr/listItemMarginHorizontal</item>
+    </style>
+
     <style name="Widget.AppTheme.V2.Card.Header" parent="Widget.Material3.CardView.Filled">
         <item name="cardCornerRadius">@dimen/premium_radius_modal</item>
         <item name="cardElevation">@dimen/premium_elevation_2</item>

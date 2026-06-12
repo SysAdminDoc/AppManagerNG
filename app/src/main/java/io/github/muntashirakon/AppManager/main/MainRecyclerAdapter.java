@@ -516,7 +516,10 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         // Set app type: system or user app (along with large heap, suspended, multi-arch,
         // has code, vm safe mode)
         if (item.isInstalled) {
-            String isSystemApp = context.getString(item.isSystem ? R.string.system : R.string.user) + item.appTypePostfix;
+            String appType = context.getString(item.isSystem ? R.string.system : R.string.user);
+            String isSystemApp = TextUtils.isEmpty(item.appTypePostfix)
+                    ? appType
+                    : appType + " \u00b7 " + item.appTypePostfix;
             holder.isSystemApp.setText(isSystemApp);
         } else {
             holder.isSystemApp.setText("-");

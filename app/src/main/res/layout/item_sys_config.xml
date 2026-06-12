@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.AppTheme.CardView.ListItem"
+    style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minHeight="?android:attr/listPreferredItemHeightSmall"
@@ -46,7 +46,7 @@
                     android:gravity="center"
                     android:singleLine="true"
                     android:textIsSelectable="true"
-                    android:textAppearance="?android:attr/textAppearanceListItem"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
                     tools:text="@tools:sample/lorem" />
 
             </HorizontalScrollView>
