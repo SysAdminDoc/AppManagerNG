@@ -4,11 +4,15 @@ package io.github.muntashirakon.AppManager.apk.whatsnew;
 
 import static org.junit.Assert.assertEquals;
 
+import android.content.pm.ApplicationInfo;
+
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import io.github.muntashirakon.AppManager.utils.LangUtils;
 
 public class ApkWhatsNewFinderTest {
     @Test
@@ -31,6 +35,24 @@ public class ApkWhatsNewFinderTest {
         assertEquals(2, changes.size());
         assertChange(changes, ApkWhatsNewFinder.CHANGE_ADD, "added");
         assertChange(changes, ApkWhatsNewFinder.CHANGE_REMOVED, "removed");
+    }
+
+    @Test
+    public void buildSdkInfoIncludesTargetAndMinSdk() {
+        ApplicationInfo applicationInfo = new ApplicationInfo();
+        applicationInfo.targetSdkVersion = 35;
+        applicationInfo.minSdkVersion = 23;
+
+        assertEquals("Target" + LangUtils.getSeparatorString() + "35, Min"
+                        + LangUtils.getSeparatorString() + "23",
+                ApkWhatsNewFinder.buildSdkInfo("Target", "Min", true, applicationInfo));
+    }
+
+    @Test
+    public void buildSdkInfoUsesUnknownForMissingApplicationInfo() {
+        assertEquals("Target" + LangUtils.getSeparatorString() + "?, Min"
+                        + LangUtils.getSeparatorString() + "?",
+                ApkWhatsNewFinder.buildSdkInfo("Target", "Min", true, null));
     }
 
     private static void assertChange(List<ApkWhatsNewFinder.Change> changes, int type, String value) {
