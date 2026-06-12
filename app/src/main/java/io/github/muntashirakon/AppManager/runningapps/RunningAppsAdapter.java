@@ -311,9 +311,9 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             forceStopItem.setVisible(canForceStop);
             if (canForceStop) {
                 forceStopItem.setOnMenuItemClickListener(item -> {
-                            mModel.forceStop(applicationInfo);
-                            return true;
-                        });
+                    mActivity.requestForceStop(applicationInfo);
+                    return true;
+                });
             }
             MenuItem bgItem = menu.findItem(R.id.action_disable_background);
             boolean canPreventBackground = applicationInfo != null
