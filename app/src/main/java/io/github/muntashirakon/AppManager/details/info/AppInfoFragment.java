@@ -45,6 +45,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.Formatter;
+import android.text.InputType;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -170,6 +171,7 @@ import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.scanner.ScannerActivity;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.tags.AppNoteStore;
 import io.github.muntashirakon.AppManager.tags.AppTagStore;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -256,6 +258,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private TextView mPermsCtaTitle;
     private TextView mPermsCtaSubtitle;
     private MaterialButton mPermsCtaAction;
+    private MaterialCardView mNoteCard;
+    private TextView mNoteBody;
+    private MaterialButton mNoteAction;
     private List<MagiskProcess> mMagiskHiddenProcesses;
     private List<MagiskProcess> mMagiskDeniedProcesses;
     private Future<?> mTagCloudFuture;
@@ -321,6 +326,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mPermsCtaTitle = view.findViewById(R.id.perms_cta_title);
         mPermsCtaSubtitle = view.findViewById(R.id.perms_cta_subtitle);
         mPermsCtaAction = view.findViewById(R.id.perms_cta_action);
+        mNoteCard = view.findViewById(R.id.app_note_card);
+        mNoteBody = view.findViewById(R.id.app_note_body);
+        mNoteAction = view.findViewById(R.id.app_note_action);
         mAdapter = new AppInfoRecyclerAdapter(requireContext());
         recyclerView.setAdapter(mAdapter);
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
@@ -352,6 +360,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             // Set App Version
             CharSequence version = getString(R.string.version_name_with_code, mPackageInfo.versionName, PackageInfoCompat.getLongVersionCode(mPackageInfo));
             mVersionView.setText(version);
+            setupNoteCard();
             // Load app label
             mAppInfoModel.loadAppLabel(mApplicationInfo);
             // Load tag cloud
@@ -414,6 +423,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mMainModel.getTagsAlteredLiveData().observe(getViewLifecycleOwner(), altered -> {
             // Reload tag cloud
             mAppInfoModel.loadTagCloud(mPackageInfo, mIsExternalApk);
+            setupNoteCard();
         });
     }
 
@@ -828,6 +838,46 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     Prefs.AppDetailsPage.setActionRailPriorityIds(Collections.emptyList());
                     setupHorizontalActions();
                     displayShortToast(R.string.done);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void setupNoteCard() {
+        if (mNoteCard == null || mPackageName == null || !isAdded()) {
+            return;
+        }
+        AppNoteStore store = new AppNoteStore(requireContext());
+        String note = store.getNote(mPackageName);
+        boolean hasNote = !TextUtils.isEmpty(note);
+        mNoteCard.setVisibility(View.VISIBLE);
+        mNoteBody.setText(hasNote ? note : getString(R.string.app_note_empty));
+        mNoteAction.setText(hasNote ? R.string.edit : R.string.add);
+        View.OnClickListener listener = v -> showEditNoteDialog(store, note);
+        mNoteCard.setOnClickListener(listener);
+        mNoteAction.setOnClickListener(listener);
+    }
+
+    private void showEditNoteDialog(@NonNull AppNoteStore store, @Nullable String currentNote) {
+        new TextInputDialogBuilder(requireActivity(), R.string.app_note_input_hint)
+                .setTitle(R.string.app_note_title)
+                .setInputText(currentNote != null ? currentNote : "")
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                        | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
+                .setHelperText(R.string.app_note_helper)
+                .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) -> {
+                    store.setNote(mPackageName, inputText);
+                    setupNoteCard();
+                    if (mMainModel != null) {
+                        mMainModel.getTagsAlteredLiveData().setValue(true);
+                    }
+                })
+                .setNeutralButton(R.string.clear, (dialog, which, inputText, isChecked) -> {
+                    store.clear(mPackageName);
+                    setupNoteCard();
+                    if (mMainModel != null) {
+                        mMainModel.getTagsAlteredLiveData().setValue(true);
+                    }
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
