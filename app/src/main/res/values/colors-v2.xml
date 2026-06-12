@@ -2,16 +2,10 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <!-- Brand tonal system -->
-    <color name="premium_brand_25">#F2FCFA</color>
-    <color name="premium_brand_50">#E6F8F5</color>
     <color name="premium_brand_100">#C8EEE8</color>
     <color name="premium_brand_200">#96DED4</color>
     <color name="premium_brand_300">#5FCABD</color>
-    <color name="premium_brand_400">#2FB5A7</color>
-    <color name="premium_brand_500">#149C91</color>
     <color name="premium_brand_600">#0E7B73</color>
-    <color name="premium_brand_700">#0B625D</color>
-    <color name="premium_brand_800">#104C49</color>
     <color name="premium_brand_900">#133C3B</color>
     <color name="premium_brand_950">#082827</color>
 
@@ -100,18 +94,4 @@
     <color name="premium_danger_content">@color/premium_danger_content_light</color>
     <color name="premium_info_bg">@color/premium_info_bg_light</color>
     <color name="premium_info_content">@color/premium_info_content_light</color>
-
-    <!-- Dark elevation overlays precomputed from brand tint over surface-0. -->
-    <color name="premium_elevated_1_dark">#0D1416</color>
-    <color name="premium_elevated_2_dark">#101A1C</color>
-    <color name="premium_elevated_3_dark">#142124</color>
-    <color name="premium_elevated_4_dark">#18282B</color>
-    <color name="premium_elevated_5_dark">#1D3033</color>
-
-    <!-- AMOLED elevation overlays keep surface-0 pure black. -->
-    <color name="premium_elevated_1_amoled">#010707</color>
-    <color name="premium_elevated_2_amoled">#020B0B</color>
-    <color name="premium_elevated_3_amoled">#02100F</color>
-    <color name="premium_elevated_4_amoled">#031313</color>
-    <color name="premium_elevated_5_amoled">#031616</color>
 </resources>

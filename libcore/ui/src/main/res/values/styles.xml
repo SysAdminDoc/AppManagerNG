@@ -66,7 +66,6 @@
         <item name="listItemPaddingVertical">12dp</item>
         <item name="listItemPaddingHorizontal">?android:attr/listPreferredItemPaddingStart</item>
         <item name="listItemCornerRadius">10dp</item>
-        <item name="listItemIndicatorWidth">9dp</item>
 
         <!-- Dialog -->
         <item name="materialAlertDialogListItemTextStyle">@style/MaterialAlertDialog.Material3.Body.Text.Large</item>
@@ -587,8 +586,6 @@
     </style>
 
     <style name="Widget.AppTheme.Button.FAB" parent="Widget.Material3.FloatingActionButton.Primary" />
-
-    <style name="Widget.AppTheme.Button.EFAB" parent="Widget.Material3.ExtendedFloatingActionButton.Primary" />
 
     <!-- ShapeAppearance attributes -->
     <style name="ShapeAppearance.AppTheme.None" parent="ShapeAppearance.Material3.SmallComponent">
