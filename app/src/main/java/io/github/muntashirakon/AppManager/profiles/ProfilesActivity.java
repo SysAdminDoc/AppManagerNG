@@ -7,6 +7,7 @@ import static io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity
 
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -37,6 +38,7 @@ import org.json.JSONException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,6 +50,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporter;
+import io.github.muntashirakon.AppManager.profiles.importers.UpstreamCompatProfileExporter;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
@@ -81,21 +84,8 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     // Back button pressed.
                     return;
                 }
-                if (mProfileId != null) {
-                    // Export profile
-                    try (OutputStream os = getContentResolver().openOutputStream(uri)) {
-                        if (os == null) {
-                            return;
-                        }
-                        Path profilePath = ProfileManager.findProfilePathById(mProfileId);
-                        BaseProfile profile = BaseProfile.fromPath(profilePath);
-                        profile.write(os);
-                        UIUtils.displayShortToast(R.string.the_export_was_successful);
-                    } catch (IOException | JSONException e) {
-                        Log.e(TAG, "Error: ", e);
-                        UIUtils.displayShortToast(R.string.export_failed);
-                    }
-                }
+                String profileId = mProfileId;
+                if (profileId != null) exportProfileAsync(uri, profileId, false);
             });
     /**
      * Compat-export of a profile in the upstream-AppManager JSON shape. NG-only
@@ -107,24 +97,8 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     private final ActivityResultLauncher<String> mExportUpstreamCompat = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
             uri -> {
-                if (uri == null || mProfileId == null) return;
-                try (OutputStream os = getContentResolver().openOutputStream(uri)) {
-                    if (os == null) return;
-                    Path profilePath = ProfileManager.findProfilePathById(mProfileId);
-                    BaseProfile profile = BaseProfile.fromPath(profilePath);
-                    String compatJson = io.github.muntashirakon.AppManager.profiles.importers
-                            .UpstreamCompatProfileExporter.toJsonString(profile);
-                    os.write(compatJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    UIUtils.displayShortToast(R.string.profile_export_upstream_compat_done);
-                } catch (io.github.muntashirakon.AppManager.profiles.importers
-                        .UpstreamCompatProfileExporter.UpstreamCompatExportException e) {
-                    // User-facing case: NG-only profile type. Show a long toast with the
-                    // reason instead of the generic "export failed" toast.
-                    UIUtils.displayLongToast(e.getMessage());
-                } catch (IOException | JSONException e) {
-                    Log.e(TAG, "Upstream-compat export failed", e);
-                    UIUtils.displayShortToast(R.string.export_failed);
-                }
+                String profileId = mProfileId;
+                if (uri != null && profileId != null) exportProfileAsync(uri, profileId, true);
             });
     private final ActivityResultLauncher<String> mImportProfile = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -264,22 +238,76 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
      * Import action; share targets that need a file should use Export instead.
      */
     private void shareProfileAsJson(@NonNull BaseProfile profile) {
-        try {
-            Path profilePath = ProfileManager.findProfilePathById(profile.profileId);
-            BaseProfile loaded = BaseProfile.fromPath(profilePath);
-            String json = loaded.serializeToJson().toString(2);
-            String profileLabel = formatProfileMetadataLabel(profile.name);
-            String subject = getString(R.string.share_profile_subject, profileLabel);
-            Intent send = new Intent(Intent.ACTION_SEND)
-                    .setType("application/json")
-                    .putExtra(Intent.EXTRA_SUBJECT, subject)
-                    .putExtra(Intent.EXTRA_TITLE, buildProfileShareFilename(profile.name,
-                            ProfileManager.PROFILE_EXT))
-                    .putExtra(Intent.EXTRA_TEXT, json);
-            startActivity(Intent.createChooser(send, getString(R.string.share_profile_chooser_title)));
-        } catch (IOException | JSONException | RuntimeException e) {
-            Log.e(TAG, "Share failed: ", e);
-            UIUtils.displayShortToast(R.string.share_failed);
+        String profileId = profile.profileId;
+        String profileName = profile.name;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            String json;
+            try {
+                Path profilePath = ProfileManager.findProfilePathById(profileId);
+                BaseProfile loaded = BaseProfile.fromPath(profilePath);
+                json = loaded.serializeToJson().toString(2);
+            } catch (IOException | JSONException | RuntimeException e) {
+                Log.e(TAG, "Share failed: ", e);
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.share_failed));
+                return;
+            }
+            ThreadUtils.postOnMainThread(() -> {
+                String profileLabel = formatProfileMetadataLabel(profileName);
+                String subject = getString(R.string.share_profile_subject, profileLabel);
+                Intent send = new Intent(Intent.ACTION_SEND)
+                        .setType("application/json")
+                        .putExtra(Intent.EXTRA_SUBJECT, subject)
+                        .putExtra(Intent.EXTRA_TITLE, buildProfileShareFilename(profileName,
+                                ProfileManager.PROFILE_EXT))
+                        .putExtra(Intent.EXTRA_TEXT, json);
+                startActivity(Intent.createChooser(send, getString(R.string.share_profile_chooser_title)));
+            });
+        });
+    }
+
+    private void exportProfileAsync(@NonNull Uri uri, @NonNull String profileId, boolean upstreamCompatible) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Exception failure = null;
+            String userFailure = null;
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) {
+                    throw new IOException("No output stream for " + uri);
+                }
+                Path profilePath = ProfileManager.findProfilePathById(profileId);
+                BaseProfile profile = BaseProfile.fromPath(profilePath);
+                writeProfileExport(os, profile, upstreamCompatible);
+            } catch (UpstreamCompatProfileExporter.UpstreamCompatExportException e) {
+                userFailure = e.getMessage();
+            } catch (IOException | JSONException | RuntimeException e) {
+                failure = e;
+            }
+            Exception finalFailure = failure;
+            String finalUserFailure = userFailure;
+            ThreadUtils.postOnMainThread(() -> {
+                if (finalUserFailure != null) {
+                    UIUtils.displayLongToast(finalUserFailure);
+                } else if (finalFailure != null) {
+                    Log.e(TAG, upstreamCompatible ? "Upstream-compat export failed" : "Export failed",
+                            finalFailure);
+                    UIUtils.displayShortToast(R.string.export_failed);
+                } else {
+                    UIUtils.displayShortToast(upstreamCompatible
+                            ? R.string.profile_export_upstream_compat_done
+                            : R.string.the_export_was_successful);
+                }
+            });
+        });
+    }
+
+    @VisibleForTesting
+    static void writeProfileExport(@NonNull OutputStream os, @NonNull BaseProfile profile,
+                                   boolean upstreamCompatible)
+            throws IOException, JSONException, UpstreamCompatProfileExporter.UpstreamCompatExportException {
+        if (upstreamCompatible) {
+            String compatJson = UpstreamCompatProfileExporter.toJsonString(profile);
+            os.write(compatJson.getBytes(StandardCharsets.UTF_8));
+        } else {
+            profile.write(os);
         }
     }
 
