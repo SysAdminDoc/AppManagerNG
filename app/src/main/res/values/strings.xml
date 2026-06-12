@@ -322,12 +322,17 @@
     <string name="usage_less_than_a_minute">Less than a minute</string>
     <string name="go_back">Go back</string>
     <string name="go">Go</string>
+    <string name="edit">Edit</string>
     <string name="grant_usage_access">Grant usage access</string>
     <string name="grant_usage_acess_message">Allow AppManagerNG in Android settings to show screen time, launch counts, and network usage by app.</string>
     <string name="app_usage_permission_empty_message">Usage access is off. Allow AppManagerNG in Android settings, then return here to load the report.</string>
     <string name="app_usage_open_usage_settings">Open usage access</string>
     <string name="share_apk">Share APK</string>
     <string name="share_apk_device_specific_warning">This export includes device-selected split APKs: %1$s.\n\nIt was built from this device (%2$s, %3$d dpi) and may not install correctly on devices with different ABI, density, or locale requirements. The exported .apks bundle records these details in info.json.</string>
+    <string name="app_note_title">Notes</string>
+    <string name="app_note_empty">No note saved for this app.</string>
+    <string name="app_note_input_hint">Note</string>
+    <string name="app_note_helper">Saved locally with AppManagerNG snapshots. Leave blank to clear.</string>
     <string name="failed_to_extract_apk_file">Could not extract APK file</string>
     <string name="menu_remove_rules">Turn off saved rules</string>
     <string name="menu_apply_rules">Apply saved rules</string>

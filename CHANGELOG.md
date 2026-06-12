@@ -66,6 +66,9 @@ Reliability & data safety
 - Split APK exports now label included splits in `info.json`, flag
   device-selected config splits, and record the source device ABI/density so
   archived bundles are easier to judge before installing elsewhere.
+- App Details now supports per-app notes backed by local preferences, surfaced
+  in the app info header, included in AppManagerNG snapshots, and searchable
+  from the main app list.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
