@@ -43,6 +43,7 @@ public class BatchOpsResultsActivity extends BaseActivity {
     private AppCompatEditText mLogViewer;
     private MaterialTextView mStatusSummary;
     private MaterialTextView mStatusMeta;
+    private MaterialTextView mGuidanceMessage;
     private MaterialTextView mFailedAppsTitle;
     private MaterialTextView mFailedAppsSummaryView;
     private MaterialTextView mLogsTitle;
@@ -78,6 +79,7 @@ public class BatchOpsResultsActivity extends BaseActivity {
         findViewById(R.id.progress_linear).setVisibility(View.GONE);
         mStatusSummary = findViewById(R.id.batch_result_status_summary);
         mStatusMeta = findViewById(R.id.batch_result_status_meta);
+        mGuidanceMessage = findViewById(R.id.batch_result_guidance_message);
         mFailedAppsTitle = findViewById(R.id.batch_result_failed_apps_title);
         mFailedAppsSummaryView = findViewById(R.id.batch_result_failed_apps_summary);
         mEmptyState = findViewById(android.R.id.empty);
@@ -143,6 +145,8 @@ public class BatchOpsResultsActivity extends BaseActivity {
             mQueueTitle = getString(R.string.batch_ops);
         }
         mStatusMeta.setText(getString(R.string.batch_results_meta, mFailedAppsSummary, mQueueTitle));
+        int op = mBatchQueueItem != null ? mBatchQueueItem.getOp() : BatchOpsManager.OP_NONE;
+        mGuidanceMessage.setText(BatchOpsResultGuidance.getMessageRes(op, failedAppCount));
         mFailedAppsTitle.setText(mFailedAppsSummary);
         mFailedAppsTitle.setVisibility(failedAppCount > 0 ? View.VISIBLE : View.GONE);
         mFailedAppsSummaryView.setVisibility(failedAppCount > 0 ? View.VISIBLE : View.GONE);

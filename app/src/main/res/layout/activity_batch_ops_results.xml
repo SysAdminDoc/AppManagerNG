@@ -95,6 +95,24 @@
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="3 failed apps · Batch operations" />
 
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/batch_result_guidance_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_12"
+                        android:text="@string/batch_results_guidance_title"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/batch_result_guidance_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="@string/batch_results_guidance_destructive" />
+
                     <androidx.appcompat.widget.LinearLayoutCompat
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
