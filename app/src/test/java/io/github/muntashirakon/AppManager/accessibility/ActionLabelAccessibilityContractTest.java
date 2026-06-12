@@ -63,6 +63,28 @@ public class ActionLabelAccessibilityContractTest {
                 source.contains("R.string.open_in_app_store"));
     }
 
+    @Test
+    public void audioPlayerControlsExposeLabelsTouchTargetsAndDynamicStateLabels() throws IOException {
+        String layout = read(findAppProjectDir().resolve("src/main/res/layout/dialog_audio_player.xml"));
+        String source = read(findRepoRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/viewer/audio/AudioPlayerDialogFragment.java"));
+
+        assertControlContentDescription(layout, "action_rewind", "@string/audio_player_rewind_10");
+        assertControlContentDescription(layout, "action_play_pause", "@string/audio_player_play");
+        assertControlContentDescription(layout, "action_forward", "@string/audio_player_forward_10");
+        assertControlContentDescription(layout, "action_repeat", "@string/audio_player_repeat_off");
+        assertImageButtonTouchTarget(layout, "action_rewind");
+        assertImageButtonTouchTarget(layout, "action_play_pause");
+        assertImageButtonTouchTarget(layout, "action_forward");
+        assertImageButtonTouchTarget(layout, "action_repeat");
+        assertTrue("Audio player should update play/pause/replay labels with icon state",
+                source.contains("setPlayPauseButtonState"));
+        assertTrue("Audio player should update repeat labels with repeat mode",
+                source.contains("setRepeatButtonState"));
+        assertTrue("Audio player should not refresh progress at a 10 ms cadence",
+                source.contains("PROGRESS_UPDATE_INTERVAL_MS = 250L"));
+    }
+
     private static void assertControlContentDescription(String layout,
                                                         String viewId,
                                                         String expectedDescription) {
@@ -74,6 +96,11 @@ public class ActionLabelAccessibilityContractTest {
         assertControlAttribute(layout, viewId, "android:layout_width=\"48dp\"");
         assertControlAttribute(layout, viewId, "android:layout_height=\"48dp\"");
         assertControlAttribute(layout, viewId, "app:iconSize=\"24dp\"");
+    }
+
+    private static void assertImageButtonTouchTarget(String layout, String viewId) {
+        assertControlAttribute(layout, viewId, "android:layout_width=\"48dp\"");
+        assertControlAttribute(layout, viewId, "android:layout_height=\"48dp\"");
     }
 
     private static void assertControlAttribute(String layout,
