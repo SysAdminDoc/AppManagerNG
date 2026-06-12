@@ -32,6 +32,9 @@ Reliability & data safety
   `BackupItem` (made `Closeable`): every encrypted backup they enumerated was
   leaking a decrypted plaintext temp copy of its metadata and leaving derived
   key material un-wiped for the process lifetime.
+- Keystore import now creates and verifies a temporary backup before replacing
+  the live keystore, then restores the original file if the import or password
+  validation fails.
 - Deleting a frozen (user-protected) backup no longer removes its database row
   while leaving the files on disk — it now leaves both intact, so the backup
   can't silently disappear from the UI while still consuming storage.
