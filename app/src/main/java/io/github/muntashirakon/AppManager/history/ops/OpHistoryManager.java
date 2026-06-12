@@ -39,6 +39,9 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 public final class OpHistoryManager {
     public static final String TAG = OpHistoryManager.class.getSimpleName();
 
+    public static final String EXTRA_FILTER_TYPE = BuildConfig.APPLICATION_ID + ".extra.FILTER_TYPE";
+    public static final String EXTRA_FILTER_STATUS = BuildConfig.APPLICATION_ID + ".extra.FILTER_STATUS";
+
     public static final String HISTORY_TYPE_BATCH_OPS = "batch_ops";
     public static final String HISTORY_TYPE_INSTALLER = "installer";
     public static final String HISTORY_TYPE_PROFILE = "profile";
@@ -114,6 +117,20 @@ public final class OpHistoryManager {
     public static Intent getHistoryActivityIntent(@NonNull Context context) {
         return new Intent(context, OpHistoryActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    @NonNull
+    public static Intent getHistoryActivityIntent(@NonNull Context context,
+                                                  @Nullable String historyType,
+                                                  @Nullable String status) {
+        Intent intent = getHistoryActivityIntent(context);
+        if (historyType != null) {
+            intent.putExtra(EXTRA_FILTER_TYPE, normalizeHistoryType(historyType));
+        }
+        if (status != null) {
+            intent.putExtra(EXTRA_FILTER_STATUS, normalizeStatus(status));
+        }
+        return intent;
     }
 
     @WorkerThread
