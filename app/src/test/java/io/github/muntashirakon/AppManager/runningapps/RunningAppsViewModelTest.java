@@ -180,4 +180,15 @@ public class RunningAppsViewModelTest {
                 temporaryFolder.getRoot().toPath().resolve("missing.bin").toString(),
         }));
     }
+
+    @Test
+    public void requiresCriticalForceStopConfirmationReturnsTrueForCorePackages() {
+        assertTrue(RunningAppsActivity.requiresCriticalForceStopConfirmation("android"));
+        assertTrue(RunningAppsActivity.requiresCriticalForceStopConfirmation("com.android.systemui"));
+    }
+
+    @Test
+    public void requiresCriticalForceStopConfirmationReturnsFalseForNormalApps() {
+        assertFalse(RunningAppsActivity.requiresCriticalForceStopConfirmation("com.example.notes"));
+    }
 }

@@ -1489,6 +1489,8 @@
     <string name="batch_disable_background_dialog_message">Apply background limits to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> by setting RUN_IN_BACKGROUND and RUN_ANY_IN_BACKGROUND to Ignore. Apps may stop syncing or sending notifications until you change this back.</string>
     <string name="batch_force_stop_dialog_title">Force stop selected apps?</string>
     <string name="batch_force_stop_dialog_message">Stop running processes for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> now. Apps can restart later from system events, notifications, or when you open them again.</string>
+    <string name="running_apps_critical_force_stop_title">Force stop critical system app?</string>
+    <string name="running_apps_critical_force_stop_message"><xliff:g id="app_label" example="Android System">%1$s</xliff:g> (<xliff:g id="package_name" example="android">%2$s</xliff:g>) is required for core device services. Force-stopping it can interrupt phone, system UI, networking, or background services until Android restarts them.</string>
     <string name="batch_uninstall_dialog_title">Uninstall selected apps?</string>
     <string name="batch_uninstall_dialog_message">This will uninstall or remove leftover data entries for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. App data may be removed by Android and cannot be restored from AppManagerNG unless you have a backup.</string>
     <string name="keep_data_and_app_signing_signatures">Keep data and signatures</string>

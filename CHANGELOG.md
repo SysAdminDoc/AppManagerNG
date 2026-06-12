@@ -87,6 +87,8 @@ Reliability & data safety
   or VirusTotal fetches are skipped when Internet is disabled.
 - App Usage now has a previous-period comparison toggle with per-app screen
   time/open-count deltas and a CSV export action for external analysis.
+- Running Apps force-stop now protects known critical OS packages from both
+  batch and per-row actions instead of silently stopping core system services.
 - File properties now exposes the existing "Open with" chooser for readable
   files instead of showing a hidden no-op field.
 - The code editor now remembers the word-wrap toggle across sessions and maps

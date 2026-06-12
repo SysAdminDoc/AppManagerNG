@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.runningapps;
 
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
@@ -16,6 +17,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -41,6 +43,7 @@ import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
+import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -485,6 +488,31 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mProgressIndicator.show();
         model.loadProcesses();
         model.loadMemoryInfo();
+    }
+
+    void requestForceStop(@NonNull ApplicationInfo applicationInfo) {
+        if (model == null) return;
+        if (!requiresCriticalForceStopConfirmation(applicationInfo.packageName)) {
+            model.forceStop(applicationInfo);
+            return;
+        }
+        CharSequence appLabel = applicationInfo.loadLabel(getPackageManager());
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.running_apps_critical_force_stop_title)
+                .setMessage(getString(R.string.running_apps_critical_force_stop_message,
+                        appLabel, applicationInfo.packageName))
+                .setPositiveButton(R.string.force_stop, (dialog, which) -> {
+                    if (model != null) {
+                        model.forceStop(applicationInfo);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @VisibleForTesting
+    static boolean requiresCriticalForceStopConfirmation(@NonNull String packageName) {
+        return CriticalPackageGuard.isCriticalPackage(packageName);
     }
 
     void clearSearchAndFilters() {

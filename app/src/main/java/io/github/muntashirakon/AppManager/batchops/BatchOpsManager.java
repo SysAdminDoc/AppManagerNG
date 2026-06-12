@@ -406,6 +406,7 @@ public class BatchOpsManager {
             case OP_ADVANCED_FREEZE:
             case OP_CLEAR_DATA:
             case OP_DISABLE_BACKGROUND:
+            case OP_FORCE_STOP:
             case OP_FREEZE:
             case OP_UNINSTALL:
                 return true;
