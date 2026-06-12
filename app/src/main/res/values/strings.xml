@@ -327,6 +327,7 @@
     <string name="app_usage_permission_empty_message">Usage access is off. Allow AppManagerNG in Android settings, then return here to load the report.</string>
     <string name="app_usage_open_usage_settings">Open usage access</string>
     <string name="share_apk">Share APK</string>
+    <string name="share_apk_device_specific_warning">This export includes device-selected split APKs: %1$s.\n\nIt was built from this device (%2$s, %3$d dpi) and may not install correctly on devices with different ABI, density, or locale requirements. The exported .apks bundle records these details in info.json.</string>
     <string name="failed_to_extract_apk_file">Could not extract APK file</string>
     <string name="menu_remove_rules">Turn off saved rules</string>
     <string name="menu_apply_rules">Apply saved rules</string>
