@@ -83,6 +83,9 @@ Reliability & data safety
 - Batch, profile, and installer completion notifications now open operation
   history with the matching operation type and success/failure status already
   selected.
+- Running Apps now has a manual Refresh action and a refresh-rate menu
+  (manual, 5 seconds, 10 seconds, or 30 seconds); invalid stored intervals fall
+  back to the 10-second default.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
