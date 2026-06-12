@@ -535,6 +535,9 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         if (id == R.id.action_refresh) {
             mModel.reload();
             return true;
+        } else if (id == R.id.action_bookmarks) {
+            mActivity.openDrawer();
+            return true;
         } else if (id == R.id.action_shortcut) {
             Uri uri = mPathListAdapter.getCurrentUri();
             if (uri != null) {
