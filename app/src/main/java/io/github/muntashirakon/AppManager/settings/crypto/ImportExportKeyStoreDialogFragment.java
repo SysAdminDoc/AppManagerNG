@@ -12,6 +12,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
@@ -71,15 +72,14 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
                         .setTitle(R.string.import_keystore)
                         .setMessage(R.string.confirm_import_keystore)
                         .setPositiveButton(R.string.yes, (dialog, which) -> ThreadUtils.postOnBackgroundThread(() -> {
-                            // Rename old file that will be restored in case of error
-                            File tmpFile = new File(AM_KEYSTORE_FILE.getAbsolutePath() + ".tmp");
-                            if (AM_KEYSTORE_FILE.exists()) {
-                                AM_KEYSTORE_FILE.renameTo(tmpFile);
-                            }
-                            try (InputStream is = mActivity.getContentResolver().openInputStream(uri);
-                                 OutputStream os = new FileOutputStream(AM_KEYSTORE_FILE)) {
+                            File backupFile = null;
+                            boolean importSucceeded = false;
+                            try (InputStream is = mActivity.getContentResolver().openInputStream(uri)) {
                                 if (is == null) throw new IOException("Unable to open URI");
-                                IoUtils.copy(is, os);
+                                backupFile = backupExistingKeyStore(AM_KEYSTORE_FILE);
+                                try (OutputStream os = new FileOutputStream(AM_KEYSTORE_FILE)) {
+                                    IoUtils.copy(is, os);
+                                }
                                 if (KeyStoreManager.hasKeyStorePassword()) {
                                     CountDownLatch waitForKs = new CountDownLatch(1);
                                     KeyStoreManager.inputKeyStorePassword(mActivity, waitForKs::countDown);
@@ -89,24 +89,30 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
                                     }
                                 }
                                 KeyStoreManager.reloadKeyStore();
+                                importSucceeded = true;
                                 // TODO: 21/4/21 Only import the keys that we use instead of replacing the entire keystore
                                 ThreadUtils.postOnMainThread(() -> {
                                     UIUtils.displayShortToast(R.string.done);
                                     ExUtils.exceptionAsIgnored(this::dismiss);
                                 });
                             } catch (Exception e) {
-                                if (tmpFile.exists()) {
-                                    AM_KEYSTORE_FILE.delete();
-                                    tmpFile.renameTo(AM_KEYSTORE_FILE);
+                                try {
+                                    restoreKeyStoreBackup(AM_KEYSTORE_FILE, backupFile);
                                     try {
                                         KeyStoreManager.reloadKeyStore();
                                     } catch (Exception ignore) {
                                     }
+                                } catch (IOException restoreException) {
+                                    e.addSuppressed(restoreException);
                                 }
                                 ThreadUtils.postOnMainThread(() -> {
                                     UIUtils.displayShortToast(R.string.failed);
                                     ExUtils.exceptionAsIgnored(this::dismiss);
                                 });
+                            } finally {
+                                if (importSucceeded) {
+                                    deleteBackup(backupFile);
+                                }
                             }
                         }))
                         .setNegativeButton(R.string.close, (dialog, which) -> dismiss())
@@ -135,5 +141,39 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
             importButton.setOnClickListener(v -> mImportKeyStore.launch("application/*"));
         });
         return alertDialog;
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static File backupExistingKeyStore(@NonNull File keyStoreFile) throws IOException {
+        if (!keyStoreFile.exists()) {
+            return null;
+        }
+        File parent = keyStoreFile.getAbsoluteFile().getParentFile();
+        File backupFile = File.createTempFile(keyStoreFile.getName(), ".bak", parent);
+        if (!backupFile.delete()) {
+            throw new IOException("Unable to prepare keystore backup.");
+        }
+        if (!keyStoreFile.renameTo(backupFile)) {
+            throw new IOException("Unable to back up existing keystore.");
+        }
+        return backupFile;
+    }
+
+    @VisibleForTesting
+    static void restoreKeyStoreBackup(@NonNull File keyStoreFile, @Nullable File backupFile) throws IOException {
+        if (keyStoreFile.exists() && !keyStoreFile.delete()) {
+            throw new IOException("Unable to remove failed keystore import.");
+        }
+        if (backupFile != null && backupFile.exists() && !backupFile.renameTo(keyStoreFile)) {
+            throw new IOException("Unable to restore previous keystore.");
+        }
+    }
+
+    private static void deleteBackup(@Nullable File backupFile) {
+        if (backupFile != null && backupFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            backupFile.delete();
+        }
     }
 }
