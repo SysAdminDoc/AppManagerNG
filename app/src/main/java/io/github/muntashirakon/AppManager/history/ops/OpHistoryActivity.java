@@ -129,6 +129,7 @@ public class OpHistoryActivity extends BaseActivity {
         setupEmptyState(emptyView);
         listView.setEmptyView(emptyView);
         setupHistoryFilters();
+        applyIntentFilters(getIntent());
         UiUtils.applyWindowInsetsAsPaddingNoTop(listView);
         mAdapter = new OpHistoryAdapter(this);
         listView.setAdapter(mAdapter);
@@ -180,6 +181,13 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mProgressIndicator.show();
         mViewModel.loadOpHistories();
+    }
+
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        applyIntentFilters(intent);
     }
 
     private void setupEmptyState(@NonNull View emptyView) {
@@ -247,6 +255,39 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mChipClearFilters = findViewById(R.id.chip_history_clear_filters);
         mChipClearFilters.setOnClickListener(v -> clearFilters());
+    }
+
+    private void applyIntentFilters(@Nullable Intent intent) {
+        if (intent == null || (!intent.hasExtra(OpHistoryManager.EXTRA_FILTER_TYPE)
+                && !intent.hasExtra(OpHistoryManager.EXTRA_FILTER_STATUS))) {
+            return;
+        }
+        clearFilters();
+        if (intent.hasExtra(OpHistoryManager.EXTRA_FILTER_STATUS)) {
+            String status = OpHistoryManager.normalizeStatus(intent.getStringExtra(OpHistoryManager.EXTRA_FILTER_STATUS));
+            mChipSucceeded.setChecked(OpHistoryManager.STATUS_SUCCESS.equals(status));
+            mChipFailed.setChecked(OpHistoryManager.STATUS_FAILURE.equals(status));
+        }
+        if (intent.hasExtra(OpHistoryManager.EXTRA_FILTER_TYPE)) {
+            switch (OpHistoryManager.normalizeHistoryType(intent.getStringExtra(OpHistoryManager.EXTRA_FILTER_TYPE))) {
+                case OpHistoryManager.HISTORY_TYPE_BATCH_OPS:
+                    mChipBatch.setChecked(true);
+                    break;
+                case OpHistoryManager.HISTORY_TYPE_INSTALLER:
+                    mChipInstaller.setChecked(true);
+                    break;
+                case OpHistoryManager.HISTORY_TYPE_PROFILE:
+                    mChipProfiles.setChecked(true);
+                    break;
+                case OpHistoryManager.HISTORY_TYPE_CLEANUP:
+                    mChipCleanup.setChecked(true);
+                    break;
+                case OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION:
+                    mChipSingleAppAction.setChecked(true);
+                    break;
+            }
+        }
+        applyFilters();
     }
 
     @NonNull
