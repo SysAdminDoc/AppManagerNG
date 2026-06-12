@@ -62,6 +62,15 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void unflattenFromString_rejectsMalformedNumericFields() {
+        assertNull(IntentCompat.unflattenFromString("VERSION\tnot-a-version\n"));
+        assertNull(IntentCompat.unflattenFromString("VERSION\t1\nFLAGS\tnot-flags\n"));
+        assertNull(IntentCompat.unflattenFromString("VERSION\t1\nEXTRA\tanswer\tnot-a-type\t42\n"));
+        assertNull(IntentCompat.unflattenFromString("VERSION\t1\nEXTRA\tanswer\t"
+                + AddIntentExtraFragment.TYPE_INTEGER + "\tnot-an-int\n"));
+    }
+
+    @Test
     public void flattenToString_roundTripsStringArrayValuesContainingCommas() {
         Intent input = new Intent(Intent.ACTION_VIEW);
         input.putExtra("labels", new String[]{"alpha,beta", "gamma"});
