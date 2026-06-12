@@ -28,6 +28,9 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
     public final boolean override;
     @Nullable
     public final String[] exclusionGlobs;
+    public final boolean protectFromPrune;
+    @Nullable
+    public final String backupNote;
 
     public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName, boolean override) {
         this(packageName, userId, flags, backupName, override, null);
@@ -35,12 +38,20 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
 
     public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName,
                            boolean override, @Nullable String[] exclusionGlobs) {
+        this(packageName, userId, flags, backupName, override, exclusionGlobs, false, null);
+    }
+
+    public BackupOpOptions(@NonNull String packageName, int userId, int flags, @Nullable String backupName,
+                           boolean override, @Nullable String[] exclusionGlobs,
+                           boolean protectFromPrune, @Nullable String backupNote) {
         this.packageName = BackupOperationOptionValidator.requirePackageName(packageName);
         this.userId = BackupOperationOptionValidator.requireUserId(userId);
         this.flags = BackupOperationOptionValidator.requireBackupFlags(flags);
         this.backupName = BackupOperationOptionValidator.sanitizeBackupName(backupName);
         this.override = override;
         this.exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs);
+        this.protectFromPrune = protectFromPrune;
+        this.backupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
     }
 
     protected BackupOpOptions(@NonNull Parcel in) {
@@ -50,6 +61,8 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         backupName = BackupOperationOptionValidator.sanitizeBackupName(in.readString());
         override = ParcelCompat.readBoolean(in);
         exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(in.createStringArray());
+        protectFromPrune = ParcelCompat.readBoolean(in);
+        backupNote = BackupMetadataV5.Metadata.normalizeNote(in.readString());
     }
 
     public static final Creator<BackupOpOptions> CREATOR = new Creator<BackupOpOptions>() {
@@ -79,6 +92,8 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         dest.writeString(BackupOperationOptionValidator.sanitizeBackupName(backupName));
         ParcelCompat.writeBoolean(dest, override);
         dest.writeStringArray(BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs));
+        ParcelCompat.writeBoolean(dest, protectFromPrune);
+        dest.writeString(BackupMetadataV5.Metadata.normalizeNote(backupNote));
     }
 
     public BackupOpOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -91,6 +106,8 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
             exclusionGlobs = BackupOperationOptionValidator.sanitizeExclusionGlobs(
                     BackupOperationOptionValidator.readStringArray(jsonObject, "exclusion_globs",
                             false, "exclusion glob"));
+            protectFromPrune = jsonObject.optBoolean("protect_from_prune", false);
+            backupNote = BackupMetadataV5.Metadata.normalizeNote(JSONUtils.optString(jsonObject, "backup_note"));
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -107,6 +124,8 @@ public class BackupOpOptions implements Parcelable, IJsonSerializer {
         jsonObject.put("override", override);
         jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(
                 BackupOperationOptionValidator.sanitizeExclusionGlobs(exclusionGlobs)));
+        jsonObject.put("protect_from_prune", protectFromPrune);
+        jsonObject.put("backup_note", BackupMetadataV5.Metadata.normalizeNote(backupNote));
         return jsonObject;
     }
 }

@@ -6,6 +6,8 @@ import static org.junit.Assert.*;
 
 import android.os.Parcel;
 
+import androidx.core.os.ParcelCompat;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +36,18 @@ public class BatchBackupOptionsTest {
     }
 
     @Test
+    public void backupOpOptionsCarryProtectionAndNote() {
+        BatchBackupOptions options = new BatchBackupOptions(
+                BackupFlags.BACKUP_INT_DATA | BackupFlags.BACKUP_MULTIPLE,
+                new String[]{"nightly"}, null, null, true, "  Before upgrade\r\nKeep  ");
+
+        BackupOpOptions opOptions = options.getBackupOpOptions("example.pkg", 10);
+
+        assertTrue(opOptions.protectFromPrune);
+        assertEquals("Before upgrade\nKeep", opOptions.backupNote);
+    }
+
+    @Test
     public void parcelRetainsExclusionGlobs() {
         String[] globs = {"**/cache/**"};
         BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
@@ -48,6 +62,25 @@ public class BatchBackupOptionsTest {
     }
 
     @Test
+    public void parcelRetainsProtectionAndNote() {
+        BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, null, null, true, "  Critical state  ");
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+
+            BackupOpOptions restored = BatchBackupOptions.CREATOR.createFromParcel(parcel)
+                    .getBackupOpOptions("example.pkg", 0);
+
+            assertTrue(restored.protectFromPrune);
+            assertEquals("Critical state", restored.backupNote);
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    @Test
     public void jsonRetainsExclusionGlobs() throws Exception {
         String[] globs = {"**/cache/**"};
         BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
@@ -56,6 +89,18 @@ public class BatchBackupOptionsTest {
         BatchBackupOptions restored = new BatchBackupOptions(new JSONObject(options.serializeToJson().toString()));
 
         assertArrayEquals(globs, restored.getBackupOpOptions("example.pkg", 0).exclusionGlobs);
+    }
+
+    @Test
+    public void jsonRetainsProtectionAndNote() throws Exception {
+        BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, null, null, true, "  Critical state  ");
+
+        BatchBackupOptions restored = new BatchBackupOptions(new JSONObject(options.serializeToJson().toString()));
+        BackupOpOptions restoredOpOptions = restored.getBackupOpOptions("example.pkg", 0);
+
+        assertTrue(restoredOpOptions.protectFromPrune);
+        assertEquals("Critical state", restoredOpOptions.backupNote);
     }
 
     @Test
@@ -178,6 +223,8 @@ public class BatchBackupOptionsTest {
             parcel.writeStringArray(null);
             parcel.writeStringArray(null);
             parcel.writeStringArray(null);
+            ParcelCompat.writeBoolean(parcel, false);
+            parcel.writeString(null);
             parcel.setDataPosition(0);
 
             assertThrows(IllegalArgumentException.class, () -> BatchBackupOptions.CREATOR.createFromParcel(parcel));
@@ -220,6 +267,8 @@ public class BatchBackupOptionsTest {
         parcel.writeStringArray(backupNames);
         parcel.writeStringArray(relativeDirs);
         parcel.writeStringArray(exclusionGlobs);
+        ParcelCompat.writeBoolean(parcel, false);
+        parcel.writeString(null);
         parcel.setDataPosition(0);
         return parcel;
     }

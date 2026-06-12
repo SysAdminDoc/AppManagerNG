@@ -1318,6 +1318,12 @@
     <string name="backup_exclusion_patterns_button">Edit exclusions</string>
     <string name="backup_exclusion_patterns_profile_helper">Extra profile globs, one per line. Global backup exclusions and default temporary folders still apply.</string>
     <string name="backup_exclusion_patterns_operation_helper">Extra globs for this backup, one per line. Global backup exclusions and default temporary folders still apply.</string>
+    <string name="backup_note">Backup note</string>
+    <string name="backup_note_button">Edit note</string>
+    <string name="backup_note_helper">Optional. Saved into this backup metadata and shown in the backup list.</string>
+    <string name="backup_protect_from_cleanup">Protect from cleanup</string>
+    <string name="backup_protect_from_cleanup_summary">Keep this backup out of retention pruning and bulk delete cleanup.</string>
+    <string name="backup_protected_from_cleanup">Protected</string>
     <string name="confirm_installation">Confirm installation</string>
     <string name="allow_open_pgp_operation">Tap to allow App Manager to use OpenPGP</string>
     <string name="uninstall_updates">Uninstall updates</string>

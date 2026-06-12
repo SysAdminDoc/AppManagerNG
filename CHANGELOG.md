@@ -69,6 +69,9 @@ Reliability & data safety
 - App Details now supports per-app notes backed by local preferences, surfaced
   in the app info header, included in AppManagerNG snapshots, and searchable
   from the main app list.
+- Backups can now be marked protected from cleanup and given per-backup notes;
+  retention pruning and bulk deletion skip protected backups while backup lists
+  surface the saved notes.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
