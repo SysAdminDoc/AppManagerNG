@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.content.ContextCompat;
+import androidx.core.os.BundleCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -166,7 +167,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         mViewModel = new ViewModelProvider(this).get(BackupRestoreDialogViewModel.class);
         mActivity = requireActivity();
         Bundle args = requireArguments();
-        List<UserPackagePair> targetPackages = args.getParcelableArrayList(ARG_PACKAGE_PAIRS);
+        List<UserPackagePair> targetPackages = BundleCompat.getParcelableArrayList(args, ARG_PACKAGE_PAIRS,
+                UserPackagePair.class);
         mCustomModes = args.getInt(ARG_CUSTOM_MODE, MODE_BACKUP | MODE_RESTORE | MODE_DELETE);
         int preferredUserForRestore = args.getInt(ARG_PREFERRED_USER_FOR_RESTORE, -1);
         if (preferredUserForRestore >= 0) {

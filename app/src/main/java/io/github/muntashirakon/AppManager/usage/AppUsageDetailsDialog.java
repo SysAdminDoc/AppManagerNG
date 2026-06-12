@@ -36,6 +36,11 @@ public class AppUsageDetailsDialog extends CapsuleBottomSheetDialogFragment {
     private static final String ARG_PACKAGE_USAGE_INFO = "pkg_usg_info";
     private static final String ARG_INTERVAL_TYPE = "interval";
     private static final String ARG_DATE = "date";
+    private final Runnable mFinishLoadingRunnable = () -> {
+        if (getView() != null) {
+            finishLoading();
+        }
+    };
 
     @NonNull
     public static AppUsageDetailsDialog getInstance(@Nullable PackageUsageInfo usageInfo,
@@ -143,6 +148,15 @@ public class AppUsageDetailsDialog extends CapsuleBottomSheetDialogFragment {
         }
 
         // Load the body
-        requireView().postDelayed(this::finishLoading, 300);
+        view.postDelayed(mFinishLoadingRunnable, 300);
+    }
+
+    @Override
+    public void onDestroyView() {
+        View view = getView();
+        if (view != null) {
+            view.removeCallbacks(mFinishLoadingRunnable);
+        }
+        super.onDestroyView();
     }
 }
