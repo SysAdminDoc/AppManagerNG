@@ -23,6 +23,7 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -134,6 +135,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private TextView mListStatusView;
     @Nullable
     private String mListStatusActionHint;
+    @Nullable
+    private MainViewModel.AppListLoadStatus mLastApplicationListLoadStatus;
     MainBatchOpsHandler mBatchOpsHandler;
     private boolean mBatchOpsRecoveryShown;
     private boolean mExportVisibleAppList;
@@ -373,9 +376,23 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 if (item.dangerousPermGranted != null) permGrantedSum += item.dangerousPermGranted;
             }
             updateMainListState(applicationItems.size(), trackerSum, permGrantedSum);
+            if (mLastApplicationListLoadStatus != null && mLastApplicationListLoadStatus.isFailed()) {
+                showApplicationListLoadFailure(mLastApplicationListLoadStatus);
+            }
             refreshSortChipLabel();
             refreshQuickFilterChips();
             scheduleAggregateCategoryBreakdown(applicationItems, trackerSum);
+        });
+        viewModel.getApplicationListLoadStatus().observe(this, status -> {
+            mLastApplicationListLoadStatus = status;
+            if (status == null) {
+                return;
+            }
+            if (status.state == MainViewModel.AppListLoadState.LOADING) {
+                showProgressIndicator(true);
+            } else if (status.isFailed()) {
+                showApplicationListLoadFailure(status);
+            }
         });
         viewModel.getOperationStatus().observe(this, status -> {
             mProgressIndicator.hide();
@@ -812,6 +829,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mCategoryBreakdownFuture.cancel(true);
             mCategoryBreakdownFuture = null;
         }
+        if (isApplicationListLoadFailed()) return;
         if (trackerSum == 0 || items.isEmpty()) return;
         // Snapshot the list for the worker thread.
         java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> snapshot =
@@ -856,6 +874,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             String breakdown = sb.length() == 0 ? null : sb.toString();
             io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() -> {
                 if (mListStatusView == null || isDestroyed()) return;
+                if (isApplicationListLoadFailed()) return;
                 if (breakdown == null) {
                     // Only OTHER: clear the placeholder and leave the base line.
                     clearBreakdownProgress();
@@ -1470,11 +1489,54 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         }
     }
 
+    private void showApplicationListLoadFailure(@NonNull MainViewModel.AppListLoadStatus status) {
+        showProgressIndicator(false);
+        if (mCategoryBreakdownFuture != null) {
+            mCategoryBreakdownFuture.cancel(true);
+            mCategoryBreakdownFuture = null;
+        }
+        if (mSwipeRefresh != null) {
+            mSwipeRefresh.setRefreshing(false);
+        }
+        boolean hasStaleItems = status.hasStaleItems();
+        if (mListStatusView != null) {
+            mListStatusView.setVisibility(View.VISIBLE);
+            String statusText = hasStaleItems
+                    ? getResources().getQuantityString(R.plurals.main_status_load_failed_stale,
+                    status.staleItemCount, status.staleItemCount)
+                    : getString(R.string.main_status_load_failed_empty);
+            mListStatusView.setText(statusText);
+            mListStatusView.setClickable(true);
+            mListStatusView.setFocusable(true);
+            mListStatusActionHint = getString(R.string.main_status_retry_a11y);
+            setListStatusActionable(true, R.drawable.ic_refresh);
+            setListStatusContentDescription(statusText);
+            mListStatusView.setOnClickListener(v -> retryApplicationListLoad());
+        }
+        int displayedCount = mAdapter != null ? mAdapter.getItemCount() : 0;
+        if (displayedCount == 0 && mEmptyState != null) {
+            mEmptyStateTitle.setText(R.string.main_empty_title_load_failed);
+            mEmptyStateSummary.setText(getString(R.string.main_empty_message_load_failed,
+                    status.getErrorSummary()));
+            mEmptyStateAction.setText(R.string.main_empty_action_retry);
+            mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+            mEmptyState.setVisibility(View.VISIBLE);
+        } else if (hasStaleItems && mEmptyState != null) {
+            mEmptyState.setVisibility(View.GONE);
+        }
+    }
+
+    private boolean isApplicationListLoadFailed() {
+        return mLastApplicationListLoadStatus != null && mLastApplicationListLoadStatus.isFailed();
+    }
+
     private void handleEmptyStateAction() {
         if (viewModel == null) {
             return;
         }
-        if (!TextUtils.isEmpty(viewModel.getSearchQuery())) {
+        if (isApplicationListLoadFailed()) {
+            retryApplicationListLoad();
+        } else if (!TextUtils.isEmpty(viewModel.getSearchQuery())) {
             if (mSearchView != null) {
                 mSearchView.setQuery("", true);
             } else {
@@ -1485,17 +1547,28 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             viewModel.clearFilters();
             refreshQuickFilterChips();
         } else {
-            showProgressIndicator(true);
-            viewModel.loadApplicationItems();
+            retryApplicationListLoad();
         }
     }
 
+    private void retryApplicationListLoad() {
+        if (viewModel == null) {
+            return;
+        }
+        showProgressIndicator(true);
+        viewModel.loadApplicationItems();
+    }
+
     private void setListStatusActionable(boolean actionable) {
+        setListStatusActionable(actionable, R.drawable.ic_filter_list);
+    }
+
+    private void setListStatusActionable(boolean actionable, @DrawableRes int iconRes) {
         if (mListStatusView == null) {
             return;
         }
         mListStatusView.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                actionable ? R.drawable.ic_filter_list : 0, 0, 0, 0);
+                actionable ? iconRes : 0, 0, 0, 0);
     }
 
     private void setListStatusContentDescription(@NonNull String statusText) {
