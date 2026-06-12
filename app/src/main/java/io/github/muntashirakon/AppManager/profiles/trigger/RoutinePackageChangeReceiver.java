@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.permission.monitor.PackageReappearanceMonitor;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class RoutinePackageChangeReceiver extends BroadcastReceiver {
@@ -28,12 +29,22 @@ public class RoutinePackageChangeReceiver extends BroadcastReceiver {
             return;
         }
         Context appContext = context.getApplicationContext();
+        boolean isFreshInstall = Intent.ACTION_PACKAGE_ADDED.equals(intent.getAction())
+                && !intent.getBooleanExtra(Intent.EXTRA_REPLACING, false);
+        String finalPackageName = packageName;
         PendingResult pending = goAsync();
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
+                if (isFreshInstall) {
+                    try {
+                        PackageReappearanceMonitor.onPackageAdded(appContext, finalPackageName);
+                    } catch (Throwable th) {
+                        Log.w(TAG, "Could not check package reappearance for " + finalPackageName, th);
+                    }
+                }
                 RoutineScheduler.enqueuePackageEventTriggers(appContext, triggerType);
             } catch (Throwable th) {
-                Log.w(TAG, "Could not dispatch package routine trigger for " + packageName, th);
+                Log.w(TAG, "Could not dispatch package routine trigger for " + finalPackageName, th);
             } finally {
                 pending.finish();
             }

@@ -95,6 +95,9 @@ Reliability & data safety
 - Batch uninstall, install-existing, freeze/unfreeze, and archive result paths
   now re-query package state before reporting success, so commands that return
   without error but leave the app unchanged are downgraded to failures.
+- Batch state-change failures now point users to PACKAGE_STATE_VERIFY logs, and
+  packages that reappear after a successful AppManagerNG uninstall create an
+  app-change warning for follow-up.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible

@@ -903,6 +903,7 @@ public class BatchOpsManager {
             pair = info.getPair(i);
             int uid = PackageUtils.getAppUid(pair);
             if (uid == -1) {
+                log("====> op=DISABLE_BACKGROUND, pkg=" + pair + ", uid = -1");
                 failedPackages.add(pair);
                 recordTargetFinished(pair, true);
                 continue;
@@ -928,6 +929,10 @@ public class BatchOpsManager {
             } catch (Throwable e) {
                 failed = true;
                 log("====> op=DISABLE_BACKGROUND, pkg=" + pair, e);
+                failedPackages.add(pair);
+            }
+            if (!failed && !verifyPackageState(OP_DISABLE_BACKGROUND, pair)) {
+                failed = true;
                 failedPackages.add(pair);
             }
             recordTargetFinished(pair, failed);

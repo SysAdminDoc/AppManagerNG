@@ -65,6 +65,16 @@ public class PackageStateVerifierTest {
     }
 
     @Test
+    public void disableBackgroundRequiresBackgroundRunToReadBackDisabled() {
+        assertTrue(PackageStateVerifier.matchesExpectedState(
+                BatchOpsManager.OP_DISABLE_BACKGROUND, PAIR,
+                new FakeStateReader(true, false, false, true)));
+        assertFalse(PackageStateVerifier.matchesExpectedState(
+                BatchOpsManager.OP_DISABLE_BACKGROUND, PAIR,
+                new FakeStateReader(true, false, false, false)));
+    }
+
+    @Test
     public void queryFailureFailsVerification() {
         assertFalse(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_INSTALL_EXISTING, PAIR, new ThrowingStateReader()));
@@ -74,11 +84,17 @@ public class PackageStateVerifierTest {
         private final boolean mInstalled;
         private final boolean mFrozen;
         private final boolean mArchived;
+        private final boolean mBackgroundRunDisabled;
 
         private FakeStateReader(boolean installed, boolean frozen, boolean archived) {
+            this(installed, frozen, archived, false);
+        }
+
+        private FakeStateReader(boolean installed, boolean frozen, boolean archived, boolean backgroundRunDisabled) {
             mInstalled = installed;
             mFrozen = frozen;
             mArchived = archived;
+            mBackgroundRunDisabled = backgroundRunDisabled;
         }
 
         @Override
@@ -95,6 +111,11 @@ public class PackageStateVerifierTest {
         public boolean isArchived(@NonNull UserPackagePair pair) {
             return mArchived;
         }
+
+        @Override
+        public boolean isBackgroundRunDisabled(@NonNull UserPackagePair pair) {
+            return mBackgroundRunDisabled;
+        }
     }
 
     private static final class ThrowingStateReader implements PackageStateVerifier.StateReader {
@@ -110,6 +131,11 @@ public class PackageStateVerifierTest {
 
         @Override
         public boolean isArchived(@NonNull UserPackagePair pair) throws Throwable {
+            throw new IllegalStateException("query failed");
+        }
+
+        @Override
+        public boolean isBackgroundRunDisabled(@NonNull UserPackagePair pair) throws Throwable {
             throw new IllegalStateException("query failed");
         }
     }
