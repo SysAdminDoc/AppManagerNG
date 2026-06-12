@@ -893,6 +893,16 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_RUNNING_APPS_FILTER_FLAGS_INT, filters);
         }
 
+        public static int getRefreshIntervalSeconds() {
+            return RunningAppsActivity.normalizeRefreshIntervalSeconds(
+                    AppPref.getInt(AppPref.PrefKey.PREF_RUNNING_APPS_REFRESH_INTERVAL_SECONDS_INT));
+        }
+
+        public static void setRefreshIntervalSeconds(int intervalSeconds) {
+            AppPref.set(AppPref.PrefKey.PREF_RUNNING_APPS_REFRESH_INTERVAL_SECONDS_INT,
+                    RunningAppsActivity.normalizeRefreshIntervalSeconds(intervalSeconds));
+        }
+
         public static boolean enableKillForSystemApps() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_KILL_FOR_SYSTEM_BOOL);
         }

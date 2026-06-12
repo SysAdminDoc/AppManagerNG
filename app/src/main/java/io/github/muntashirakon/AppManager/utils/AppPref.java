@@ -179,6 +179,7 @@ public class AppPref {
         PREF_OVERLAYS_SORT_ORDER_INT,
 
         PREF_RUNNING_APPS_FILTER_FLAGS_INT,
+        PREF_RUNNING_APPS_REFRESH_INTERVAL_SECONDS_INT,
         PREF_RUNNING_APPS_SORT_ORDER_INT,
 
         PREF_QUICK_FREEZE_PROFILE_ID_STR,
@@ -522,6 +523,8 @@ public class AppPref {
                 return RunningAppsActivity.SORT_BY_PID;
             case PREF_RUNNING_APPS_FILTER_FLAGS_INT:
                 return RunningAppsActivity.FILTER_NONE;
+            case PREF_RUNNING_APPS_REFRESH_INTERVAL_SECONDS_INT:
+                return RunningAppsActivity.REFRESH_INTERVAL_10_SECONDS;
             case PREF_ENCRYPTION_STR:
                 return CryptoUtils.MODE_NO_ENCRYPTION;
             case PREF_OPEN_PGP_PACKAGE_STR:

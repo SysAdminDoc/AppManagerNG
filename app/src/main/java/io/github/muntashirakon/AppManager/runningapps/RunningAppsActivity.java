@@ -88,12 +88,23 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     public static final int FILTER_APPS = 1;
     public static final int FILTER_USER_APPS = 1 << 1;
 
+    public static final int REFRESH_INTERVAL_MANUAL = 0;
+    public static final int REFRESH_INTERVAL_5_SECONDS = 5;
+    public static final int REFRESH_INTERVAL_10_SECONDS = 10;
+    public static final int REFRESH_INTERVAL_30_SECONDS = 30;
+
     private static final int[] SORT_ORDER_IDS = new int[]{
             R.id.action_sort_by_pid,
             R.id.action_sort_by_process_name,
             R.id.action_sort_by_apps_first,
             R.id.action_sort_by_memory_usage,
             R.id.action_sort_by_cpu_time,
+    };
+    private static final int[] REFRESH_INTERVAL_IDS = new int[]{
+            R.id.action_refresh_manual,
+            R.id.action_refresh_5_seconds,
+            R.id.action_refresh_10_seconds,
+            R.id.action_refresh_30_seconds,
     };
 
     @Nullable
@@ -270,6 +281,8 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         if (model == null) return super.onPrepareOptionsMenu(menu);
 
         menu.findItem(SORT_ORDER_IDS[model.getSortOrder()]).setChecked(true);
+        int refreshInterval = Prefs.RunningApps.getRefreshIntervalSeconds();
+        menu.findItem(getRefreshIntervalMenuId(refreshInterval)).setChecked(true);
         menu.findItem(R.id.action_toggle_kill).setTitle(mEnableKillForSystem
                 ? R.string.running_apps_disable_system_kill
                 : R.string.running_apps_enable_system_kill);
@@ -291,7 +304,17 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
             return true;
         }
         if (model == null) return true;
-        if (id == R.id.action_toggle_kill) {
+        if (id == R.id.action_refresh) {
+            refresh();
+        } else if (isRefreshIntervalMenuId(id)) {
+            int intervalSeconds = getRefreshIntervalFromMenuId(id);
+            Prefs.RunningApps.setRefreshIntervalSeconds(intervalSeconds);
+            item.setChecked(true);
+            restartAutoRefresh();
+            UIUtils.displayShortToast(intervalSeconds == REFRESH_INTERVAL_MANUAL
+                    ? R.string.running_apps_refresh_rate_manual_selected
+                    : R.string.running_apps_refresh_rate_selected);
+        } else if (id == R.id.action_toggle_kill) {
             mEnableKillForSystem = !mEnableKillForSystem;
             Prefs.RunningApps.setEnableKillForSystemApps(mEnableKillForSystem);
             UIUtils.displayShortToast(mEnableKillForSystem
@@ -330,6 +353,22 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @Override
     protected void onResume() {
         super.onResume();
+        restartAutoRefresh();
+    }
+
+    @Override
+    protected void onPause() {
+        stopAutoRefresh();
+        super.onPause();
+    }
+
+    private void restartAutoRefresh() {
+        stopAutoRefresh();
+        int intervalSeconds = normalizeRefreshIntervalSeconds(Prefs.RunningApps.getRefreshIntervalSeconds());
+        if (intervalSeconds == REFRESH_INTERVAL_MANUAL) {
+            refresh();
+            return;
+        }
         mTimer = new Timer("running_apps");
         mTimer.schedule(new TimerTask() {
             @Override
@@ -341,17 +380,15 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
                     }
                 });
             }
-        }, 0, 10_000);
+        }, 0, intervalSeconds * 1000L);
     }
 
-    @Override
-    protected void onPause() {
+    private void stopAutoRefresh() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer.purge();
             mTimer = null;
         }
-        super.onPause();
     }
 
     @Override
@@ -513,6 +550,53 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @VisibleForTesting
     static boolean requiresCriticalForceStopConfirmation(@NonNull String packageName) {
         return CriticalPackageGuard.isCriticalPackage(packageName);
+    }
+
+    @VisibleForTesting
+    public static int normalizeRefreshIntervalSeconds(int intervalSeconds) {
+        switch (intervalSeconds) {
+            case REFRESH_INTERVAL_MANUAL:
+            case REFRESH_INTERVAL_5_SECONDS:
+            case REFRESH_INTERVAL_10_SECONDS:
+            case REFRESH_INTERVAL_30_SECONDS:
+                return intervalSeconds;
+            default:
+                return REFRESH_INTERVAL_10_SECONDS;
+        }
+    }
+
+    private static boolean isRefreshIntervalMenuId(int id) {
+        for (int refreshIntervalId : REFRESH_INTERVAL_IDS) {
+            if (refreshIntervalId == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int getRefreshIntervalFromMenuId(int id) {
+        if (id == R.id.action_refresh_manual) {
+            return REFRESH_INTERVAL_MANUAL;
+        } else if (id == R.id.action_refresh_5_seconds) {
+            return REFRESH_INTERVAL_5_SECONDS;
+        } else if (id == R.id.action_refresh_30_seconds) {
+            return REFRESH_INTERVAL_30_SECONDS;
+        }
+        return REFRESH_INTERVAL_10_SECONDS;
+    }
+
+    private static int getRefreshIntervalMenuId(int intervalSeconds) {
+        switch (normalizeRefreshIntervalSeconds(intervalSeconds)) {
+            case REFRESH_INTERVAL_MANUAL:
+                return R.id.action_refresh_manual;
+            case REFRESH_INTERVAL_5_SECONDS:
+                return R.id.action_refresh_5_seconds;
+            case REFRESH_INTERVAL_30_SECONDS:
+                return R.id.action_refresh_30_seconds;
+            case REFRESH_INTERVAL_10_SECONDS:
+            default:
+                return R.id.action_refresh_10_seconds;
+        }
     }
 
     void clearSearchAndFilters() {

@@ -469,6 +469,12 @@
     <string name="running_apps_empty_clear_filters">Clear filters</string>
     <string name="running_apps_empty_clear_search">Clear search</string>
     <string name="running_apps_empty_clear_search_and_filters">Clear search and filters</string>
+    <string name="running_apps_refresh_manual">Manual only</string>
+    <string name="running_apps_refresh_5_seconds">Every 5 seconds</string>
+    <string name="running_apps_refresh_10_seconds">Every 10 seconds</string>
+    <string name="running_apps_refresh_30_seconds">Every 30 seconds</string>
+    <string name="running_apps_refresh_rate_selected">Running-apps refresh rate updated.</string>
+    <string name="running_apps_refresh_rate_manual_selected">Automatic running-apps refresh paused. Use Refresh for a new snapshot.</string>
     <string name="running_apps_system_process">System process</string>
     <string name="running_apps_app_process">App process</string>
     <string name="running_apps_system_process_summary">System or native process</string>
