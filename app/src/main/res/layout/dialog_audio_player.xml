@@ -126,6 +126,8 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
                 android:gravity="center_vertical"
                 android:padding="4dp"
                 android:text="1x"
@@ -136,18 +138,20 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
 
-            <androidx.appcompat.widget.AppCompatImageView
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/action_rewind"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_weight="0"
                 android:layout_margin="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="4dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/ic_fast_rewind" />
+                android:contentDescription="@string/audio_player_rewind_10"
+                android:padding="12dp"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_fast_rewind"
+                app:tint="?attr/colorControlNormal" />
 
-            <androidx.appcompat.widget.AppCompatImageView
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/action_play_pause"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -156,40 +160,46 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginBottom="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="4dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/ic_play_arrow" />
+                android:contentDescription="@string/audio_player_play"
+                android:padding="12dp"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_play_arrow"
+                app:tint="?attr/colorControlNormal" />
 
-            <androidx.appcompat.widget.AppCompatImageView
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/action_forward"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_weight="0"
                 android:layout_margin="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="4dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/ic_fast_forward" />
+                android:contentDescription="@string/audio_player_forward_10"
+                android:padding="12dp"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_fast_forward"
+                app:tint="?attr/colorControlNormal" />
 
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
 
-            <androidx.appcompat.widget.AppCompatImageView
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/action_repeat"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="2dp"
                 android:layout_marginEnd="4dp"
                 android:layout_marginBottom="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
+                android:contentDescription="@string/audio_player_repeat_off"
                 android:focusable="true"
-                android:padding="4dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/ic_repeat_off" />
+                android:padding="12dp"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_repeat_off"
+                app:tint="?attr/colorControlNormal" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

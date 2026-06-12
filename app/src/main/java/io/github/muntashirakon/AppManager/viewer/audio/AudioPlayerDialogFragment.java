@@ -16,8 +16,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.slider.Slider;
@@ -34,6 +36,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
     public static final String TAG = AudioPlayerDialogFragment.class.getSimpleName();
     private static final String ARG_URI_LIST = "uris";
     private static final String ARG_CLOSE_ACTIVITY = "close";
+    private static final long PROGRESS_UPDATE_INTERVAL_MS = 250L;
 
     @NonNull
     public static AudioPlayerDialogFragment getInstance(@NonNull Uri[] uriList, boolean closeActivity) {
@@ -96,6 +99,10 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         // Set tags
         mPlaybackSpeedView.setTag(1.0f);
         mRepeatButton.setTag(RepeatMode.NO_REPEAT);
+        updateStaticControlLabels();
+        updatePlaybackSpeedLabel();
+        setRepeatButtonState(RepeatMode.NO_REPEAT);
+        setPlayPauseButtonState(R.drawable.ic_play_arrow, R.string.audio_player_play);
         // Listeners
         mMediaPlayer = new MediaPlayer();
         setListeners();
@@ -148,7 +155,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
 
                 if (!mMediaPlayer.isPlaying()) {
                     if (value != mMediaPlayer.getDuration()) {
-                        mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow);
+                        setPlayPauseButtonState(R.drawable.ic_play_arrow, R.string.audio_player_play);
                     } else resetMediaPlayer();
                 }
             }
@@ -166,7 +173,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
                     }
 
                     mProgressView.setText(getFormattedTime(currentPosition, mIsTimeReversed));
-                    mUpdateHandler.postDelayed(this, 10);
+                    mUpdateHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
                 }
             }
         };
@@ -212,6 +219,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
                 mPlaybackSpeedView.setText("0.5x");
                 mPlaybackSpeedView.setTag(0.5F);
             }
+            updatePlaybackSpeedLabel();
             updatePlaybackSpeed();
         });
 
@@ -220,16 +228,13 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
             int state = (int) mRepeatButton.getTag();
             switch (state) {
                 case RepeatMode.NO_REPEAT:
-                    mRepeatButton.setImageResource(R.drawable.ic_repeat);
-                    mRepeatButton.setTag(RepeatMode.REPEAT_INDEFINITELY);
+                    setRepeatButtonState(RepeatMode.REPEAT_INDEFINITELY);
                     break;
                 case RepeatMode.REPEAT_INDEFINITELY:
-                    mRepeatButton.setImageResource(R.drawable.ic_repeat_one);
-                    mRepeatButton.setTag(RepeatMode.REPEAT_SINGLE_INDEFINITELY);
+                    setRepeatButtonState(RepeatMode.REPEAT_SINGLE_INDEFINITELY);
                     break;
                 case RepeatMode.REPEAT_SINGLE_INDEFINITELY:
-                    mRepeatButton.setImageResource(R.drawable.ic_repeat_off);
-                    mRepeatButton.setTag(RepeatMode.NO_REPEAT);
+                    setRepeatButtonState(RepeatMode.NO_REPEAT);
                     break;
             }
         });
@@ -288,19 +293,19 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
     private void pauseMediaPlayer() {
         if (mediaPlayerInitialized()) {
             mMediaPlayer.pause();
-            mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow);
+            setPlayPauseButtonState(R.drawable.ic_play_arrow, R.string.audio_player_play);
         }
     }
 
     private void resumeMediaPlayer() {
         if (mediaPlayerInitialized()) {
             mMediaPlayer.start();
-            mPlayPauseButton.setImageResource(R.drawable.ic_pause);
+            setPlayPauseButtonState(R.drawable.ic_pause, R.string.audio_player_pause);
         }
     }
 
     private void resetMediaPlayer() {
-        mPlayPauseButton.setImageResource(R.drawable.ic_replay);
+        setPlayPauseButtonState(R.drawable.ic_replay, R.string.audio_player_replay);
     }
 
     private String getFormattedTime(long millis, boolean isTimeReversed) {
@@ -361,6 +366,52 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         resumeMediaPlayer();
         mUpdateHandler.postDelayed(mUpdateRunnable, 0);
 
-        mPlayPauseButton.setImageResource(R.drawable.ic_pause);
+        setPlayPauseButtonState(R.drawable.ic_pause, R.string.audio_player_pause);
+    }
+
+    private void updateStaticControlLabels() {
+        setControlLabel(mRewindButton, R.string.audio_player_rewind_10);
+        setControlLabel(mForwardButton, R.string.audio_player_forward_10);
+    }
+
+    private void updatePlaybackSpeedLabel() {
+        String label = getString(R.string.audio_player_playback_speed_a11y, mPlaybackSpeedView.getText());
+        mPlaybackSpeedView.setContentDescription(label);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mPlaybackSpeedView.setTooltipText(label);
+        }
+    }
+
+    private void setRepeatButtonState(@RepeatMode int repeatMode) {
+        mRepeatButton.setTag(repeatMode);
+        switch (repeatMode) {
+            case RepeatMode.REPEAT_INDEFINITELY:
+                setButtonState(mRepeatButton, R.drawable.ic_repeat, R.string.audio_player_repeat_all);
+                break;
+            case RepeatMode.REPEAT_SINGLE_INDEFINITELY:
+                setButtonState(mRepeatButton, R.drawable.ic_repeat_one, R.string.audio_player_repeat_one);
+                break;
+            case RepeatMode.NO_REPEAT:
+            default:
+                setButtonState(mRepeatButton, R.drawable.ic_repeat_off, R.string.audio_player_repeat_off);
+                break;
+        }
+    }
+
+    private void setPlayPauseButtonState(@DrawableRes int iconRes, @StringRes int labelRes) {
+        setButtonState(mPlayPauseButton, iconRes, labelRes);
+    }
+
+    private void setButtonState(@NonNull ImageView button, @DrawableRes int iconRes, @StringRes int labelRes) {
+        button.setImageResource(iconRes);
+        setControlLabel(button, labelRes);
+    }
+
+    private void setControlLabel(@NonNull View control, @StringRes int labelRes) {
+        String label = getString(labelRes);
+        control.setContentDescription(label);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            control.setTooltipText(label);
+        }
     }
 }
