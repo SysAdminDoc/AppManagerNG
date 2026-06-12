@@ -42,6 +42,24 @@ public class LifecycleCleanupContractTest {
                 "mExecutor.shutdownNow();");
     }
 
+    @Test
+    public void delayedUsageDetailsLoaderIsRemovedWithView() throws IOException {
+        assertContains("app/src/main/java/io/github/muntashirakon/AppManager/usage/AppUsageDetailsDialog.java",
+                "view.postDelayed(mFinishLoadingRunnable, 300);",
+                "public void onDestroyView()",
+                "view.removeCallbacks(mFinishLoadingRunnable);");
+    }
+
+    @Test
+    public void restoredParcelableStateUsesCompatAccessors() throws IOException {
+        assertContains("app/src/main/java/io/github/muntashirakon/AppManager/main/MainActivity.java",
+                "BundleCompat.getParcelable(savedInstanceState, STATE_LIST_LAYOUT,",
+                "android.os.Parcelable.class");
+        assertContains("app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupRestoreDialogFragment.java",
+                "BundleCompat.getParcelableArrayList(args, ARG_PACKAGE_PAIRS,",
+                "UserPackagePair.class");
+    }
+
     private static void assertContains(String relativePath, String... snippets) throws IOException {
         String source = readRepoFile(relativePath);
         for (String snippet : snippets) {

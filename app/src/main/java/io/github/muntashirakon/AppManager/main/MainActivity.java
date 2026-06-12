@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
+import androidx.core.os.BundleCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
@@ -256,7 +257,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         setContentView(R.layout.activity_main_v2);
         if (savedInstanceState != null) {
             // Restored after the async list re-populates (see the applicationItems observer).
-            mPendingListState = savedInstanceState.getParcelable(STATE_LIST_LAYOUT);
+            mPendingListState = BundleCompat.getParcelable(savedInstanceState, STATE_LIST_LAYOUT,
+                    android.os.Parcelable.class);
         }
         setSupportActionBar(findViewById(R.id.toolbar));
         getOnBackPressedDispatcher().addCallback(this, mOnBackPressedCallback);
