@@ -12,6 +12,7 @@ import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
@@ -178,24 +179,33 @@ public class ApkWhatsNewFinder {
             return changes;
         }
         // SDK
-        final StringBuilder newSdk = new StringBuilder(context.getString(R.string.sdk_max))
-                .append(LangUtils.getSeparatorString()).append(newAppInfo.targetSdkVersion);
-        final StringBuilder oldSdk = new StringBuilder(context.getString(R.string.sdk_max))
-                .append(LangUtils.getSeparatorString()).append(oldAppInfo.targetSdkVersion);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            newSdk.append(", ").append(context.getString(R.string.sdk_min))
-                    .append(LangUtils.getSeparatorString()).append(newAppInfo.minSdkVersion);
-            oldSdk.append(", ").append(context.getString(R.string.sdk_min))
-                    .append(LangUtils.getSeparatorString()).append(oldAppInfo.minSdkVersion);
-        }
-        if (!newSdk.toString().equals(oldSdk.toString())) {
+        final String newSdk = buildSdkInfo(context.getString(R.string.sdk_max), context.getString(R.string.sdk_min),
+                Build.VERSION.SDK_INT > Build.VERSION_CODES.M, newAppInfo);
+        final String oldSdk = buildSdkInfo(context.getString(R.string.sdk_max), context.getString(R.string.sdk_min),
+                Build.VERSION.SDK_INT > Build.VERSION_CODES.M, oldAppInfo);
+        if (!newSdk.equals(oldSdk)) {
             changes[SDK_INFO] = new Change[]{
                     new Change(CHANGE_INFO, componentInfo[SDK_INFO]),
-                    new Change(CHANGE_ADD, newSdk.toString()),
-                    new Change(CHANGE_REMOVED, oldSdk.toString())
+                    new Change(CHANGE_ADD, newSdk),
+                    new Change(CHANGE_REMOVED, oldSdk)
             };
         } else changes[SDK_INFO] = ArrayUtils.emptyArray(Change.class);
         return changes;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String buildSdkInfo(@NonNull String targetSdkLabel, @NonNull String minSdkLabel,
+                               boolean includeMinSdk, @Nullable ApplicationInfo appInfo) {
+        StringBuilder sdk = new StringBuilder(targetSdkLabel)
+                .append(LangUtils.getSeparatorString())
+                .append(appInfo != null ? appInfo.targetSdkVersion : "?");
+        if (includeMinSdk) {
+            sdk.append(", ").append(minSdkLabel)
+                    .append(LangUtils.getSeparatorString())
+                    .append(appInfo != null ? appInfo.minSdkVersion : "?");
+        }
+        return sdk.toString();
     }
 
     @VisibleForTesting
