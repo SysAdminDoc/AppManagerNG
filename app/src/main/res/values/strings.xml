@@ -1881,6 +1881,15 @@
     <string name="expand_all">Expand all</string>
     <string name="collapse_all">Collapse all</string>
     <string name="pause_unpause">Play/pause</string>
+    <string name="audio_player_play">Play</string>
+    <string name="audio_player_pause">Pause</string>
+    <string name="audio_player_replay">Replay</string>
+    <string name="audio_player_rewind_10">Rewind 10 seconds</string>
+    <string name="audio_player_forward_10">Forward 10 seconds</string>
+    <string name="audio_player_repeat_off">Repeat off</string>
+    <string name="audio_player_repeat_all">Repeat playlist</string>
+    <string name="audio_player_repeat_one">Repeat current track</string>
+    <string name="audio_player_playback_speed_a11y">Playback speed: %1$s</string>
     <string name="undo">Undo</string>
     <string name="omit_sensitive_info">Omit sensitive info</string>
     <string name="omit_sensitive_info_summary">Omit sensitive info like web urls, phone numbers or emails.</string>

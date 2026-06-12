@@ -92,6 +92,9 @@ Reliability & data safety
   time/open-count deltas and a CSV export action for external analysis.
 - Running Apps force-stop now protects known critical OS packages from both
   batch and per-row actions instead of silently stopping core system services.
+- The audio player now exposes labeled 48dp playback controls, keeps play and
+  repeat accessibility labels in sync with state, and updates progress at a
+  bounded UI cadence instead of every 10 ms.
 - File properties now exposes the existing "Open with" chooser for readable
   files instead of showing a hidden no-op field.
 - The code editor now remembers the word-wrap toggle across sessions and maps
