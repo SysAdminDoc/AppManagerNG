@@ -23,7 +23,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
-                app:cardElevation="0dp"
                 tools:visibility="visible">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -53,7 +52,6 @@
                 android:id="@+id/classes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -85,7 +83,6 @@
                 android:id="@+id/tracker"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -117,7 +114,6 @@
                 android:id="@+id/vt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -151,7 +147,6 @@
                 android:id="@+id/pithus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -185,7 +180,6 @@
                 android:id="@+id/libs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -217,7 +211,6 @@
                 android:id="@+id/apk"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -250,7 +243,6 @@
                 android:id="@+id/signatures"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:focusable="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
@@ -283,7 +275,6 @@
                 android:id="@+id/missing_libs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="0dp"
                 android:visibility="gone"
                 tools:visibility="visible">
 
