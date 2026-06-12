@@ -7,7 +7,7 @@
     android:layout_height="wrap_content"
     android:gravity="end"
     android:textAlignment="viewEnd"
-    android:textColor="?android:attr/textColorSecondary"
-    android:textAppearance="?android:attr/textAppearanceListItemSecondary"
+    android:textAppearance="?attr/textAppearanceBodySmall"
+    android:textColor="?attr/colorOnSurfaceVariant"
     android:textIsSelectable="true"
     tools:text="@tools:sample/lorem[5]" />

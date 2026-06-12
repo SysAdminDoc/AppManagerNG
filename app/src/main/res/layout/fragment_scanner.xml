@@ -19,7 +19,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/scanner_offline_banner"
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
@@ -29,26 +29,32 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="@dimen/padding_medium">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/scanner_offline_banner_title"
-                        android:textAppearance="?android:attr/textAppearanceListItem" />
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_wifi"
+                        app:drawableTint="?attr/colorPrimary" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/scanner_offline_banner_summary"
-                        android:textColor="?android:attr/textColorSecondary" />
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/classes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -57,21 +63,28 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/classes_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_code"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="1234 classes" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/classes_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/tap_to_see_details" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -79,7 +92,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/tracker"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -88,21 +101,28 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/tracker_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_security_network"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="8 trackers with 593 classes" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/tracker_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="Moat, Facebook login, Adjust, Facebook Analytics, Crashlytics" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -110,7 +130,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/vt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -119,23 +139,30 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/vt_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/vt_checking"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_vt"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="VirusTotal: 4/57" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/vt_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:autoLink="web"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/vt_slowness_warning" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -143,7 +170,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/pithus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -152,23 +179,30 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/pithus_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/scan_report_from_pithus"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_security"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="VirusTotal: 4/57" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/pithus_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/premium_space_4"
                         android:autoLink="web"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/action_checking" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -176,7 +210,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/libs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -185,21 +219,28 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/libs_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_database"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="128 libraries" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/libs_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="AppCompat, Room, Moat, Facebook login, Adjust, Facebook Analytics, Crashlytics" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
@@ -207,7 +248,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/apk"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -216,21 +257,28 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/apk_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_file_document"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="Apk Checksums" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/apk_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textIsSelectable="true"
                         tools:text="@tools:sample/lorem[20]" />
 
@@ -239,7 +287,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/signatures"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -248,21 +296,28 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/checksum_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_shield_key"
+                        app:drawableTint="?attr/colorPrimary"
                         android:text="@string/app_signing_signature" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/checksum_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textIsSelectable="true"
                         tools:text="@tools:sample/lorem[20]" />
 
@@ -271,7 +326,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.AppTheme.CardView.ListItem.Padded"
+                style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/missing_libs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -281,34 +336,46 @@
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_medium"
-                    android:orientation="vertical">
+                    android:minHeight="@dimen/premium_scanner_card_min_height"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/premium_space_16"
+                    android:paddingVertical="@dimen/premium_space_12">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/missing_libs_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceListItem"
+                        android:drawablePadding="@dimen/premium_space_8"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        app:drawableStartCompat="@drawable/ic_sync"
+                        app:drawableTint="?attr/colorPrimary"
                         tools:text="123 signatures missing" />
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/missing_libs_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="@dimen/subtitle_font"
-                        android:text="@string/view_missing_signatures" />
+                        android:layout_marginTop="@dimen/premium_space_4"
+                        android:text="@string/view_missing_signatures"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
             </com.google.android.material.card.MaterialCardView>
 
-            <androidx.appcompat.widget.AppCompatTextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/vt_disclaimer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small"
-                android:textSize="10sp"
-                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginHorizontal="@dimen/premium_space_12"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:layout_marginBottom="@dimen/premium_space_16"
+                android:background="@drawable/main_status_background"
+                android:paddingHorizontal="@dimen/premium_space_12"
+                android:paddingVertical="@dimen/premium_space_8"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:text="@string/vt_disclaimer"
                 tools:ignore="SmallSp" />
 

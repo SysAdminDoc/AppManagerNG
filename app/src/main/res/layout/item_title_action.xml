@@ -2,7 +2,7 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.AppTheme.CardView.ListItem"
+    style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minHeight="?android:attr/listPreferredItemHeightSmall"
@@ -25,7 +25,8 @@
             android:layout_marginEnd="@dimen/padding_very_small"
             android:layout_weight="1"
             android:paddingVertical="@dimen/padding_small"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@tools:sample/lorem[15]" />
 
         <com.google.android.material.button.MaterialButton

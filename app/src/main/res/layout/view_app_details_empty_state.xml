@@ -49,9 +49,12 @@
         android:id="@+id/empty_state_action"
         style="@style/Widget.AppTheme.Button.FilledTonalButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/premium_button_min_height"
         android:layout_marginTop="@dimen/premium_space_20"
+        android:minWidth="144dp"
         android:text="@string/refresh"
-        app:icon="@drawable/ic_refresh" />
+        app:icon="@drawable/ic_refresh"
+        app:iconGravity="textStart"
+        app:iconPadding="@dimen/premium_space_8" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

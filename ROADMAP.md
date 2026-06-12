@@ -465,6 +465,10 @@ regression risk to need their own change.
   Why: ~15 list-row layouts (e.g. item_debloater.xml) still use the classic `Widget.AppTheme.CardView.ListItem.Outlined` (bg `?colorSurface`, elevation 0) while the main list uses `Widget.AppTheme.V2.Card.ListRow` (bg `?colorSurfaceContainerLow`, 1dp elevation, hairline stroke), so adjacent NG screens render visibly different card surfaces.
   Evidence: layout/item_debloater.xml:4 (+ ~14 sibling row layouts); themes-v2.xml V2.Card.ListRow
   Touches: app/src/main/res/layout/item_*.xml
+  Progress 2026-06-12: migrated the shared sibling list rows, scanner cards,
+  profile-review warnings, empty states, batch failure rows, and secondary
+  toolbars onto V2 premium tokens; dark-mode emulator screenshots pass for the
+  mode sheet, onboarding guides, and populated main list.
   Acceptance: NG list rows share the V2 card treatment; spot-checked across debloater / permission / one-click lists in light, dark and AMOLED. (Visual — needs on-device verification.)
   Complexity: S
 
