@@ -80,6 +80,9 @@ Reliability & data safety
   notifications.
 - Operation history can now open with type/status filters pre-applied; batch
   failure results use this to show failed batch entries immediately.
+- Batch, profile, and installer completion notifications now open operation
+  history with the matching operation type and success/failure status already
+  selected.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
