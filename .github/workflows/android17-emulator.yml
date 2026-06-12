@@ -95,8 +95,7 @@ jobs:
           disable-animations: true
           script: |
             adb logcat -c || true
-            ./gradlew :app:connectedFlossDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest
+            ./gradlew :app:connectedFlossDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest
             adb logcat -d > "${GITHUB_WORKSPACE}/android-platform-emulator-logcat.txt" || true
 
       - name: Upload instrumented test reports
