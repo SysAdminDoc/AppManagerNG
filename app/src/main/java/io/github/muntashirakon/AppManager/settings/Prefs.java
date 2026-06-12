@@ -279,6 +279,10 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_FLAGS_INT, flags);
         }
 
+        public static boolean pauseAppsDuringBackup() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_BACKUP_PAUSE_APPS_BOOL);
+        }
+
         @NonNull
         public static String[] getBackupExclusionPatterns() {
             return BackupPathExclusionPatterns.parse(
