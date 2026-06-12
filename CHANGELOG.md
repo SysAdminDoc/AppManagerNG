@@ -86,6 +86,8 @@ Reliability & data safety
 - Running Apps now has a manual Refresh action and a refresh-rate menu
   (manual, 5 seconds, 10 seconds, or 30 seconds); invalid stored intervals fall
   back to the 10-second default.
+- File Manager now exposes Favorites directly from the toolbar, opening the
+  existing bookmarks drawer without relying on breadcrumb long-press discovery.
 - Profile export, upstream-compatible export, and quick share now serialize and
   write profiles off the UI thread so large profiles do not freeze the Profiles
   screen.

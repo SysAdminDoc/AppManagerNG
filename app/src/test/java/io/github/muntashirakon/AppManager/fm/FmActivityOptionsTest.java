@@ -66,4 +66,11 @@ public class FmActivityOptionsTest {
         assertEquals("' =payload folder", FmActivity.DrawerRecyclerViewAdapter.getDrawerDisplayName(formulaName));
         assertEquals("/sdcard/fallback", FmActivity.DrawerRecyclerViewAdapter.getDrawerDisplayName(blankName));
     }
+
+    @Test
+    public void drawerShortcutActionAcceptsHomeAndBookmarksOnly() {
+        assertTrue(FmActivity.isDrawerShortcutAction(android.R.id.home));
+        assertTrue(FmActivity.isDrawerShortcutAction(io.github.muntashirakon.AppManager.R.id.action_bookmarks));
+        assertFalse(FmActivity.isDrawerShortcutAction(io.github.muntashirakon.AppManager.R.id.action_refresh));
+    }
 }
