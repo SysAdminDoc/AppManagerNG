@@ -27,4 +27,20 @@ public class BatchOpsCriticalPackageGuardTest {
         assertEquals(Collections.singletonList("android"), result.getFailedPackages());
         assertEquals(Collections.singletonList(0), result.getAssociatedUsers());
     }
+
+    @Test
+    public void forceStopBlocksCriticalPackageBeforeSystemOperation() {
+        BatchOpsManager manager = new BatchOpsManager(null);
+        BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(
+                BatchOpsManager.OP_FORCE_STOP,
+                Collections.singletonList("android"),
+                Collections.singletonList(0),
+                null);
+
+        BatchOpsManager.Result result = manager.performOp(info, null);
+
+        assertFalse(result.isSuccessful());
+        assertEquals(Collections.singletonList("android"), result.getFailedPackages());
+        assertEquals(Collections.singletonList(0), result.getAssociatedUsers());
+    }
 }
