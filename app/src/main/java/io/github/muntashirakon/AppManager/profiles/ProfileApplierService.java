@@ -203,7 +203,11 @@ public class ProfileApplierService extends ForegroundService {
             notificationInfo.addAction(0, getString(R.string.restart_device), pendingIntent);
         }
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
-                OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
+                OpHistoryManager.getHistoryActivityIntent(this, OpHistoryManager.HISTORY_TYPE_PROFILE,
+                        result == Activity.RESULT_OK
+                                ? OpHistoryManager.STATUS_SUCCESS
+                                : OpHistoryManager.STATUS_FAILURE),
+                PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         mProgressHandler.onResult(notify ? notificationInfo : null);
     }

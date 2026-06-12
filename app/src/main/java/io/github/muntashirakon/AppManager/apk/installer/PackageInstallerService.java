@@ -352,7 +352,11 @@ public class PackageInstallerService extends ForegroundService {
                 .setStyle(finalStyle)
                 .setDefaultAction(defaultAction);
         PendingIntent historyPendingIntent = PendingIntentCompat.getActivity(this, 1,
-                OpHistoryManager.getHistoryActivityIntent(this), PendingIntent.FLAG_UPDATE_CURRENT, false);
+                OpHistoryManager.getHistoryActivityIntent(this, OpHistoryManager.HISTORY_TYPE_INSTALLER,
+                        status == STATUS_SUCCESS
+                                ? OpHistoryManager.STATUS_SUCCESS
+                                : OpHistoryManager.STATUS_FAILURE),
+                PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         prepareFinalProgressNotification(mProgressHandler, title, subject, finalStyle);
         ThreadUtils.postOnMainThread(() -> mProgressHandler.onResult(notificationInfo));
