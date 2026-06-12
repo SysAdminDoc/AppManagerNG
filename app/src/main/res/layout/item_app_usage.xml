@@ -164,6 +164,18 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/comparison"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_very_small"
+                android:singleLine="true"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorPrimary"
+                android:visibility="gone"
+                tools:text="vs previous: + 12 mins, +2 opens"
+                tools:visibility="visible" />
+
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progress_linear"
                 style="@style/Widget.AppTheme.LinearProgressIndicator"

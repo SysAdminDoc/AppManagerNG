@@ -85,6 +85,8 @@ Reliability & data safety
 - Scanner runs now make offline mode explicit: local findings remain visible,
   online report cards stay disabled with a network-required label, and Pithus
   or VirusTotal fetches are skipped when Internet is disabled.
+- App Usage now has a previous-period comparison toggle with per-app screen
+  time/open-count deltas and a CSV export action for external analysis.
 - File properties now exposes the existing "Open with" chooser for readable
   files instead of showing a hidden no-op field.
 - The code editor now remembers the word-wrap toggle across sessions and maps

@@ -42,6 +42,7 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static class ListHeaderViewHolder extends RecyclerView.ViewHolder {
         final MaterialTextView screenTimeView;
         final MaterialTextView usageIntervalView;
+        final MaterialTextView comparisonSummaryView;
         final MaterialButton previousButton;
         final MaterialButton nextButton;
         final BarChartView barChartView;
@@ -50,6 +51,7 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             super(itemView);
             screenTimeView = itemView.findViewById(R.id.screen_time);
             usageIntervalView = itemView.findViewById(R.id.time);
+            comparisonSummaryView = itemView.findViewById(R.id.comparison_summary);
             previousButton = itemView.findViewById(R.id.action_previous);
             nextButton = itemView.findViewById(R.id.action_next);
             barChartView = itemView.findViewById(R.id.bar_chart);
@@ -65,6 +67,7 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         MaterialTextView mobileDataUsage;
         MaterialTextView wifiDataUsage;
         MaterialTextView screenTime;
+        MaterialTextView comparison;
         MaterialTextView percentUsage;
         LinearProgressIndicator usageIndicator;
 
@@ -81,6 +84,7 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             mobileDataUsage = itemView.findViewById(R.id.data_usage);
             wifiDataUsage = itemView.findViewById(R.id.wifi_usage);
             screenTime = itemView.findViewById(R.id.screen_time);
+            comparison = itemView.findViewById(R.id.comparison);
             percentUsage = itemView.findViewById(R.id.percent_usage);
             usageIndicator = itemView.findViewById(R.id.progress_linear);
         }
@@ -165,6 +169,14 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.itemView.setContentDescription(contentDescription);
         holder.screenTimeView.setText(formattedDuration);
         holder.usageIntervalView.setText(intervalDescription);
+        if (mActivity.viewModel.isCompareWithPrevious()) {
+            holder.comparisonSummaryView.setVisibility(View.VISIBLE);
+            holder.comparisonSummaryView.setText(mActivity.getString(R.string.app_usage_comparison_total,
+                    getSignedDurationText(mActivity.viewModel.getTotalScreenTime()
+                            - mActivity.viewModel.getPreviousTotalScreenTime())));
+        } else {
+            holder.comparisonSummaryView.setVisibility(View.GONE);
+        }
         holder.nextButton.setVisibility(UsageUtils.hasNextDay(date) ? View.VISIBLE : View.INVISIBLE);
         holder.nextButton.setOnClickListener(v -> mActivity.viewModel.loadNext());
         holder.previousButton.setOnClickListener(v -> mActivity.viewModel.loadPrevious());
@@ -214,6 +226,18 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // Set screen time
         screenTimesWithTimesOpened += ", " + DateUtils.getFormattedDuration(mActivity, usageInfo.screenTime);
         holder.screenTime.setText(screenTimesWithTimesOpened);
+        AppUsageViewModel.UsageComparison usageComparison = mActivity.viewModel.getUsageComparison(usageInfo);
+        String comparisonDescription = null;
+        if (mActivity.viewModel.isCompareWithPrevious() && usageComparison != null) {
+            comparisonDescription = mActivity.getString(R.string.app_usage_comparison_row,
+                    getSignedDurationText(usageComparison.screenTimeDelta),
+                    String.format(Locale.getDefault(), "%+d", usageComparison.timesOpenedDelta));
+            holder.comparison.setVisibility(View.VISIBLE);
+            holder.comparison.setText(comparisonDescription);
+        } else {
+            holder.comparison.setVisibility(View.GONE);
+            holder.comparison.setText(null);
+        }
         // Set data usage
         AppUsageStatsManager.DataUsage mobileData = usageInfo.mobileData;
         String mobileDataDescription;
@@ -245,9 +269,13 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.percentUsage.setText(String.format(Locale.getDefault(), "%d%%", percentUsage));
         holder.usageIndicator.show();
         holder.usageIndicator.setProgress(percentUsage);
-        holder.itemView.setContentDescription(mActivity.getString(R.string.app_usage_item_content_description,
+        String contentDescription = mActivity.getString(R.string.app_usage_item_content_description,
                 usageInfo.appLabel, usageInfo.packageName, lastUsedText, screenTimesWithTimesOpened,
-                mobileDataDescription, wifiDataDescription, percentUsage));
+                mobileDataDescription, wifiDataDescription, percentUsage);
+        if (comparisonDescription != null) {
+            contentDescription += ". " + comparisonDescription;
+        }
+        holder.itemView.setContentDescription(contentDescription);
         // On Click Listener
         holder.itemView.setOnClickListener(v -> mActivity.viewModel.loadPackageUsageInfo(usageInfo));
     }
@@ -257,5 +285,13 @@ class AppUsageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return 0;
         }
         return (int) (screenTime * 100. / mActivity.viewModel.getTotalScreenTime());
+    }
+
+    @NonNull
+    private String getSignedDurationText(long duration) {
+        if (duration > 0) {
+            return "+ " + DateUtils.getFormattedDuration(mActivity, duration);
+        }
+        return DateUtils.getFormattedDuration(mActivity, duration, true);
     }
 }
