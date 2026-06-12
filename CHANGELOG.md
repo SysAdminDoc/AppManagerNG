@@ -75,6 +75,9 @@ Reliability & data safety
 - Batch operation result screens now show operation-specific recovery guidance,
   so destructive, backup/restore, and privileged-state failures explain the
   safest next step before retrying failed apps.
+- Batch operation result screens now link directly to operation history, making
+  the recovery trail reachable from the failure review screen as well as from
+  notifications.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so

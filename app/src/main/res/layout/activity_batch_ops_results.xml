@@ -142,6 +142,16 @@
 
                     </androidx.appcompat.widget.LinearLayoutCompat>
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/action_view_history"
+                        style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="@string/op_history"
+                        app:icon="@drawable/ic_history"
+                        app:iconGravity="textStart" />
+
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
             </com.google.android.material.card.MaterialCardView>
