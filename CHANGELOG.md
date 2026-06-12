@@ -80,6 +80,14 @@ Reliability & data safety
   instead of trusting matching file sizes.
 - Privileged data backups can now pause the target app while data is copied and
   resume it on success or failure, reducing live-write backup inconsistencies.
+- Ported upstream correctness fixes 706c36fb, 4a25c3f0, 3bf97856, 184df334,
+  329b8dc1, 4d3da96b, and 0d1be565: APKS split naming now matches bundletool
+  Hindi output, `am start -d` links resolve through the interceptor, invalid
+  virtual paths fail cleanly, null usage rows no longer crash app refresh,
+  Debloater includes uninstalled system apps, Finder/Debloater toolbar
+  navigation works, and the code-editor symbol row no longer clips at large
+  font scales. The upstream daa54ac0 profile-filter fix was already covered by
+  NG's `ProfileMembershipFilter` path.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
