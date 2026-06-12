@@ -86,11 +86,10 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.Material3.CardView.Outlined"
+            style="@style/Widget.AppTheme.CardView.ListItem.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_small"
-            app:cardCornerRadius="12dp">
+            android:layout_marginTop="?attr/listItemMarginVertical">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -135,9 +134,9 @@
                     android:id="@+id/action_shizuku_autostart"
                     style="@style/Widget.AppTheme.Button.TextButton.Icon"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="@dimen/premium_button_min_height"
                     android:layout_marginTop="@dimen/padding_very_small"
-                    android:minHeight="40dp"
+                    android:minHeight="@dimen/premium_button_min_height"
                     android:text="@string/shizuku_autostart_configure"
                     android:visibility="gone"
                     app:icon="@drawable/ic_settings"
