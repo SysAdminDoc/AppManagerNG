@@ -63,6 +63,9 @@ Reliability & data safety
 - Scanner results now show the bundled tracker database date/signature count,
   scan-report exports include the database metadata, and network-enabled builds
   can check the tracked upstream resource version on launch.
+- Split APK exports now label included splits in `info.json`, flag
+  device-selected config splits, and record the source device ABI/density so
+  archived bundles are easier to judge before installing elsewhere.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible

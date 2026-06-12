@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipOutputStream;
 
@@ -99,6 +100,11 @@ public class ApksMetadata {
     public long targetSdk;
     public BuildInfo buildInfo;
     public final List<Dependency> dependencies = new ArrayList<>();
+    public final List<String> splitApkNames = new ArrayList<>();
+    public final List<String> deviceSpecificSplitApkNames = new ArrayList<>();
+    public final List<String> sourceDeviceAbis = new ArrayList<>();
+    public int sourceDeviceDensityDpi;
+    public boolean deviceSpecificExport;
 
     private final PackageInfo mPackageInfo;
 
@@ -119,6 +125,32 @@ public class ApksMetadata {
         versionCode = jsonObject.getLong("version_code");
         minSdk = jsonObject.optLong("min_sdk", 0);
         targetSdk = jsonObject.getLong("target_sdk");
+        splitApkNames.clear();
+        JSONArray splitApkArray = jsonObject.optJSONArray("split_apks");
+        if (splitApkArray != null) {
+            for (int i = 0; i < splitApkArray.length(); ++i) {
+                splitApkNames.add(splitApkArray.getString(i));
+            }
+        }
+        JSONObject deviceSpecificObject = jsonObject.optJSONObject("device_specific_export");
+        if (deviceSpecificObject != null) {
+            deviceSpecificExport = deviceSpecificObject.optBoolean("device_specific", false);
+            sourceDeviceDensityDpi = deviceSpecificObject.optInt("source_device_density_dpi", 0);
+            sourceDeviceAbis.clear();
+            JSONArray sourceAbisArray = deviceSpecificObject.optJSONArray("source_device_abis");
+            if (sourceAbisArray != null) {
+                for (int i = 0; i < sourceAbisArray.length(); ++i) {
+                    sourceDeviceAbis.add(sourceAbisArray.getString(i));
+                }
+            }
+            deviceSpecificSplitApkNames.clear();
+            JSONArray deviceSpecificSplitsArray = deviceSpecificObject.optJSONArray("device_specific_splits");
+            if (deviceSpecificSplitsArray != null) {
+                for (int i = 0; i < deviceSpecificSplitsArray.length(); ++i) {
+                    deviceSpecificSplitApkNames.add(deviceSpecificSplitsArray.getString(i));
+                }
+            }
+        }
         // Build info
         JSONObject buildInfoObject = jsonObject.optJSONObject("build_info");
         if (buildInfoObject != null) {
@@ -163,6 +195,9 @@ public class ApksMetadata {
             minSdk = applicationInfo.minSdkVersion;
         }
         targetSdk = applicationInfo.targetSdkVersion;
+        sourceDeviceAbis.clear();
+        sourceDeviceAbis.addAll(Arrays.asList(Build.SUPPORTED_ABIS));
+        sourceDeviceDensityDpi = ContextUtils.getContext().getResources().getDisplayMetrics().densityDpi;
         String[] sharedLibraries = applicationInfo.sharedLibraryFiles;
         if (sharedLibraries != null) {
             for (String file : sharedLibraries) {
@@ -208,6 +243,22 @@ public class ApksMetadata {
         SplitApkExporter.addBytes(zipOutputStream, meta, ApksMetadata.META_FILE, exportTimestamp);
     }
 
+    void setIncludedApkFiles(@NonNull List<Path> apkFiles) {
+        splitApkNames.clear();
+        deviceSpecificSplitApkNames.clear();
+        for (Path apkFile : apkFiles) {
+            String name = apkFile.getName();
+            if ("base.apk".equals(name)) {
+                continue;
+            }
+            splitApkNames.add(name);
+            if (SplitApkExporter.isDeviceSpecificSplitApkName(name)) {
+                deviceSpecificSplitApkNames.add(name);
+            }
+        }
+        deviceSpecificExport = !deviceSpecificSplitApkNames.isEmpty();
+    }
+
     @NonNull
     public String getMetadataAsJson() {
         JSONObject jsonObject = new JSONObject();
@@ -219,6 +270,19 @@ public class ApksMetadata {
             jsonObject.put("version_code", versionCode);
             jsonObject.put("min_sdk", minSdk);
             jsonObject.put("target_sdk", targetSdk);
+            if (!splitApkNames.isEmpty()) {
+                jsonObject.put("split_apks", JSONUtils.getJSONArray(splitApkNames));
+            }
+            JSONObject deviceSpecificObject = new JSONObject();
+            deviceSpecificObject.put("device_specific", deviceSpecificExport);
+            deviceSpecificObject.put("source_device_abis", JSONUtils.getJSONArray(sourceDeviceAbis));
+            deviceSpecificObject.put("source_device_density_dpi", sourceDeviceDensityDpi);
+            deviceSpecificObject.put("device_specific_splits", JSONUtils.getJSONArray(deviceSpecificSplitApkNames));
+            if (deviceSpecificExport) {
+                deviceSpecificObject.put("warning",
+                        "This export includes device-selected split APKs and may not install correctly on devices with different ABI, density, or locale requirements.");
+            }
+            jsonObject.put("device_specific_export", deviceSpecificObject);
             // Skip build info for privacy
             // Put dependencies
             JSONArray dependenciesArray = new JSONArray();
@@ -246,4 +310,5 @@ public class ApksMetadata {
         }
         return jsonObject.toString();
     }
+
 }

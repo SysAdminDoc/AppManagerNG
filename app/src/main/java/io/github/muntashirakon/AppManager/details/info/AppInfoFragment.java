@@ -43,6 +43,7 @@ import android.os.UserHandleHidden;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -115,6 +116,7 @@ import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreezeShortcutInf
 import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
+import io.github.muntashirakon.AppManager.apk.splitapk.SplitApkExporter;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.apk.whatsnew.WhatsNewDialogFragment;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
@@ -487,22 +489,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } else if (itemId == R.id.action_customize_action_rail) {
             showActionRailPreferenceDialog();
         } else if (itemId == R.id.action_share_apk) {
-            showProgressIndicator(true);
-            ThreadUtils.postOnBackgroundThread(() -> {
-                try {
-                    Path tmpApkSource = ApkUtils.getSharableApkFile(requireContext(), mPackageInfo);
-                    ThreadUtils.postOnMainThread(() -> {
-                        showProgressIndicator(false);
-                        Context ctx = ContextUtils.getContext();
-                        Intent intent = buildApkShareIntent(tmpApkSource);
-                        ctx.startActivity(Intent.createChooser(intent, ctx.getString(R.string.share_apk))
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, e);
-                    displayLongToast(R.string.failed_to_extract_apk_file);
-                }
-            });
+            shareApkWithDeviceSpecificWarning();
         } else if (itemId == R.id.action_backup) {
             if (mMainModel == null) return true;
             BackupRestoreDialogFragment fragment = BackupRestoreDialogFragment.getInstanceWithPref(
@@ -730,6 +717,46 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         // for SEND/SEND_MULTIPLE/IMAGE_CAPTURE).
         intent.setClipData(ClipData.newRawUri("", apkUri));
         return intent;
+    }
+
+    private void shareApkWithDeviceSpecificWarning() {
+        List<String> deviceSpecificSplits = SplitApkExporter.getDeviceSpecificSplitApkNames(mPackageInfo.applicationInfo);
+        if (deviceSpecificSplits.isEmpty()) {
+            shareApk();
+            return;
+        }
+        String abiSummary = TextUtils.join(", ", Build.SUPPORTED_ABIS);
+        int densityDpi = getResources().getDisplayMetrics().densityDpi;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.share_apk)
+                .setMessage(getString(R.string.share_apk_device_specific_warning,
+                        TextUtils.join(", ", deviceSpecificSplits), abiSummary, densityDpi))
+                .setPositiveButton(R.string.share, (dialog, which) -> shareApk())
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void shareApk() {
+        Context context = requireContext().getApplicationContext();
+        showProgressIndicator(true);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                Path tmpApkSource = ApkUtils.getSharableApkFile(context, mPackageInfo);
+                ThreadUtils.postOnMainThread(() -> {
+                    showProgressIndicator(false);
+                    Context ctx = ContextUtils.getContext();
+                    Intent intent = buildApkShareIntent(tmpApkSource);
+                    ctx.startActivity(Intent.createChooser(intent, ctx.getString(R.string.share_apk))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                });
+            } catch (Exception e) {
+                Log.e(TAG, e);
+                ThreadUtils.postOnMainThread(() -> {
+                    showProgressIndicator(false);
+                    displayLongToast(R.string.failed_to_extract_apk_file);
+                });
+            }
+        });
     }
 
     // NF-08: manage user-authored tags (AppTagStore) for this package. These
