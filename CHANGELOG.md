@@ -42,6 +42,7 @@ Reliability & data safety
   view is destroyed, and restored parcelable state uses API-safe compat readers.
 - Intent text imports now reject malformed numeric fields as invalid input
   instead of throwing through the interceptor UI.
+- Intent-extra editing now uses API-safe typed Serializable argument reads.
 - Deleting a frozen (user-protected) backup no longer removes its database row
   while leaving the files on disk — it now leaves both intact, so the backup
   can't silently disappear from the UI while still consuming storage.

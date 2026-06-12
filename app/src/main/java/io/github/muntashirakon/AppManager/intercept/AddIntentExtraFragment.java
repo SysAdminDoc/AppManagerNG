@@ -16,6 +16,7 @@ import android.widget.TextView;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.os.BundleCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
 
@@ -136,7 +137,7 @@ public class AddIntentExtraFragment extends DialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         FragmentActivity activity = requireActivity();
         Bundle args = requireArguments();
-        ExtraItem extraItem = (ExtraItem) args.getSerializable(ARG_PREF_ITEM);
+        ExtraItem extraItem = BundleCompat.getSerializable(args, ARG_PREF_ITEM, ExtraItem.class);
         @Mode int mode = args.getInt(ARG_MODE, MODE_CREATE);
         View view = View.inflate(activity, R.layout.dialog_edit_pref_item, null);
         MaterialSpinner spinner = view.findViewById(R.id.type_selector_spinner);
