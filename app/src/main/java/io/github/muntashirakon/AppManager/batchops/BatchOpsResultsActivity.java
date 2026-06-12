@@ -32,6 +32,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.RestartUtils;
@@ -51,6 +52,7 @@ public class BatchOpsResultsActivity extends BaseActivity {
     private View mEmptyState;
     private MaterialButton mLogToggler;
     private MaterialButton mRetryButton;
+    private MaterialButton mHistoryButton;
     @Nullable
     private MenuItem mRetryMenu;
     private int mFailedAppCount;
@@ -93,6 +95,8 @@ public class BatchOpsResultsActivity extends BaseActivity {
         mRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         mRetryButton = findViewById(R.id.action_retry_failed);
         mRetryButton.setOnClickListener(v -> confirmRetry());
+        mHistoryButton = findViewById(R.id.action_view_history);
+        mHistoryButton.setOnClickListener(v -> startActivity(OpHistoryManager.getHistoryActivityIntent(this)));
         mLogToggler = findViewById(R.id.action_view_logs);
         mLogsTitle = findViewById(R.id.batch_result_logs_title);
         mLogsSummary = findViewById(R.id.batch_result_logs_summary);
