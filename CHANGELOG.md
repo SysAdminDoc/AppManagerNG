@@ -88,6 +88,8 @@ Reliability & data safety
   back to the 10-second default.
 - File Manager now exposes Favorites directly from the toolbar, opening the
   existing bookmarks drawer without relying on breadcrumb long-press discovery.
+- Main-list tracker and dangerous-permission badges now use expanded row-level
+  touch targets while keeping their compact visual size.
 - Profile export, upstream-compatible export, and quick share now serialize and
   write profiles off the UI thread so large profiles do not freeze the Profiles
   screen.

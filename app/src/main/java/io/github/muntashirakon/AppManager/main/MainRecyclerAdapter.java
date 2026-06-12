@@ -12,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
@@ -20,6 +21,8 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.RelativeSizeSpan;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SectionIndexer;
@@ -477,6 +480,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.permIndicator.setClickable(false);
             }
         }
+        installBadgeTouchDelegate(holder);
         bindTagIndicator(context, holder, item);
         // Set version (along with HW accelerated, debug and test only flags)
         holder.version.setText(item.versionTag);
@@ -994,6 +998,65 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         }
         holder.attentionBadge.setContentDescription(ctx.getString(R.string.attention_badge_content_description,
                 AttentionBadgeCalculator.formatCount(badge.count), ctx.getString(reasonRes)));
+    }
+
+    private static void installBadgeTouchDelegate(@NonNull ViewHolder holder) {
+        holder.itemView.post(() -> {
+            int minTouchSize = holder.itemView.getResources()
+                    .getDimensionPixelSize(R.dimen.premium_chip_touch_target);
+            List<TouchDelegate> delegates = new ArrayList<>(2);
+            addBadgeTouchDelegate(holder.itemView, delegates, holder.trackerIndicator, minTouchSize);
+            addBadgeTouchDelegate(holder.itemView, delegates, holder.permIndicator, minTouchSize);
+            holder.itemView.setTouchDelegate(delegates.isEmpty()
+                    ? null
+                    : new CompositeTouchDelegate(holder.itemView, delegates));
+        });
+    }
+
+    private static void addBadgeTouchDelegate(@NonNull ViewGroup delegateParent,
+                                              @NonNull List<TouchDelegate> delegates,
+                                              @Nullable View target,
+                                              int minTouchSize) {
+        if (target == null || target.getVisibility() != View.VISIBLE || !target.isClickable()) {
+            return;
+        }
+        Rect bounds = new Rect();
+        target.getHitRect(bounds);
+        delegateParent.offsetDescendantRectToMyCoords(target, bounds);
+        expandTouchRectToMinimum(bounds, minTouchSize);
+        delegates.add(new TouchDelegate(bounds, target));
+    }
+
+    @VisibleForTesting
+    static void expandTouchRectToMinimum(@NonNull Rect bounds, int minSize) {
+        int missingWidth = Math.max(0, minSize - bounds.width());
+        int missingHeight = Math.max(0, minSize - bounds.height());
+        int left = missingWidth / 2;
+        int top = missingHeight / 2;
+        bounds.left -= left;
+        bounds.right += missingWidth - left;
+        bounds.top -= top;
+        bounds.bottom += missingHeight - top;
+    }
+
+    private static final class CompositeTouchDelegate extends TouchDelegate {
+        @NonNull
+        private final List<TouchDelegate> mDelegates;
+
+        CompositeTouchDelegate(@NonNull View delegateParent, @NonNull List<TouchDelegate> delegates) {
+            super(new Rect(), delegateParent);
+            mDelegates = delegates;
+        }
+
+        @Override
+        public boolean onTouchEvent(@NonNull MotionEvent event) {
+            for (TouchDelegate delegate : mDelegates) {
+                if (delegate.onTouchEvent(event)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public static class ViewHolder extends MultiSelectionView.ViewHolder {
