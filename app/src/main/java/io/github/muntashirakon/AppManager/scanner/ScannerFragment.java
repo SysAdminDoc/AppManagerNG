@@ -30,6 +30,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
@@ -87,7 +88,9 @@ public class ScannerFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         mViewModel = new ViewModelProvider(requireActivity()).get(ScannerViewModel.class);
         mActivity = (ScannerActivity) requireActivity();
-        int cardColor = ColorCodes.getListItemColor1(mActivity);
+        int cardColor = MaterialColors.getColor(mActivity,
+                com.google.android.material.R.attr.colorSurfaceContainerLow,
+                ScannerFragment.class.getCanonicalName());
         MaterialCardView classesView = view.findViewById(R.id.classes);
         classesView.setCardBackgroundColor(cardColor);
         MaterialCardView trackersView = view.findViewById(R.id.tracker);

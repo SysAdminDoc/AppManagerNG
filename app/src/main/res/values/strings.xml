@@ -102,7 +102,7 @@
     <string name="main_empty_title_no_apps">No apps to show</string>
     <string name="main_empty_message_no_apps">No apps are available for this user or profile. Refresh, unlock the profile, or review Private Space/profile visibility if apps should appear here.</string>
     <string name="main_empty_title_no_matches">No matching apps</string>
-    <string name="main_empty_message_no_matches">Search or active filters are hiding every app in this view.</string>
+    <string name="main_empty_message_no_matches">Search or active filters are hiding every app in this view. Clear the current query or filters to return to the full list.</string>
     <string name="main_empty_message_no_matches_with_filters">Active filters: <xliff:g id="filter_list" example="With trackers, Frozen apps">%1$s</xliff:g>. Clear them to return to the full app list.</string>
     <string name="main_empty_action_clear_search">Clear search</string>
     <string name="main_empty_action_clear_filters">Clear filters</string>
@@ -552,7 +552,7 @@
     <string name="scanner_export_success">Scan report exported.</string>
     <string name="scanner_export_filename" translatable="false">appmanagerng-scan-report-%1$s.json</string>
     <string name="scanner_offline_banner_title">Offline scan</string>
-    <string name="scanner_offline_banner_summary">Showing local APK checks only. Online reports require network access.</string>
+    <string name="scanner_offline_banner_summary">Local APK checks are still available. VirusTotal and Pithus reports stay hidden until network features are enabled.</string>
     <string name="scanner_requires_network">Requires network access</string>
     <string name="scanner_tracker_database_summary">Database: %1$s (%2$d signatures)</string>
     <string name="scanner_tracker_database_latest">Latest available: %1$s</string>
@@ -1253,8 +1253,8 @@
     <string name="profile_item_content_description">%1$s, %2$s profile, saved state %3$s. %4$s</string>
     <string name="profile_delete_confirmation">This profile will be permanently deleted. Existing shortcuts that use it may stop working.</string>
     <string name="profile_apply_review_title">Review before applying</string>
-    <string name="profile_apply_review_apps_summary">Runs the saved app actions in this profile. Choose the state to apply before continuing.</string>
-    <string name="profile_apply_review_filters_summary">Runs this profile against apps matching its saved filters. Choose the state to apply before continuing.</string>
+    <string name="profile_apply_review_apps_summary">Review the saved app actions and choose the state to apply before continuing.</string>
+    <string name="profile_apply_review_filters_summary">Review the saved filters and choose the state to apply to matching apps.</string>
     <string name="profile_apply_review_meta">%1$s profile - default state %2$s</string>
     <string name="profile_apply_review_id">ID: %1$s</string>
     <string name="profile_apply_privilege_warning_title">Some profile actions need more privilege</string>
@@ -1366,7 +1366,7 @@
     <string name="no_libs">No libraries</string>
     <string name="lib_details">Library details</string>
     <string name="tap_to_see_details">Tap to see details</string>
-    <string name="view_missing_signatures">Tap to view or send in signatures not yet present in App Manager\'s database of libraries.</string>
+    <string name="view_missing_signatures">Review unknown signatures or send selected entries for future library detection.</string>
     <string name="copy">Copy</string>
     <string name="filter_running_apps">Running apps</string>
     <string name="am_crashed">AppManagerNG has just crashed</string>
@@ -2128,7 +2128,7 @@
     <string name="vt_success">VirusTotal: %1$d/%2$d</string>
     <string name="vt_scan_date">Scan date: %1$s</string>
     <string name="vt_permalink">Permanent link to VirusTotal</string>
-    <string name="vt_slowness_warning">Depending on the Internet speed and load on the server, this may take a while.</string>
+    <string name="vt_slowness_warning">VirusTotal checks can take a minute on slower connections or busy servers.</string>
     <string name="vt_disclaimer">VirusTotal and its logos are a trademark of Chronicle LLC. Neither App Manager—the API client—nor its authors are responsible for any data you may send to VirusTotal.</string>
     <string name="pref_vt_apikey">VirusTotal API Key</string>
     <string name="pref_vt_apikey_description">An API key enables App Manager to upload APK files to VirusTotal as well as fetch reports. Sign up at https://virustotal.com to get an API key for free.</string>
@@ -2202,7 +2202,7 @@
     <string name="regenerate_auth_key_warning">Regenerating this key immediately invalidates existing third-party integrations. Reconfigure trusted apps with the new key to keep them working.</string>
     <string name="shortcut_icon">Shortcut icon</string>
     <string name="sort_by_installation_date">Installation date</string>
-    <string name="backup_volume_unavailable_warning">The selected backup volume is not currently available. If it is located in an external storage, please insert it, or change the backup volume.</string>
+    <string name="backup_volume_unavailable_warning">The selected backup volume is not available. Connect the external storage device, or choose a different backup volume.</string>
     <string name="change_backup_volume">Change volume</string>
     <string name="external">External</string>
     <string name="internal">Internal</string>
