@@ -317,6 +317,9 @@ public class BackupMetadataV5 implements LocalizedString {
         public String verificationStatus = VERIFICATION_STATUS_UNKNOWN;  // verification_status
         public long verificationTime;  // verification_time
         public int verificationFailedFiles;  // verification_failed_files
+        public boolean protectedFromPrune;  // protected_from_prune
+        @Nullable
+        public String note;  // note
 
         public Metadata(@Nullable String backupName) {
             this.version = MetadataManager.getCurrentBackupMetaVersion();
@@ -347,6 +350,8 @@ public class BackupMetadataV5 implements LocalizedString {
             verificationStatus = metadata.verificationStatus;
             verificationTime = metadata.verificationTime;
             verificationFailedFiles = metadata.verificationFailedFiles;
+            protectedFromPrune = metadata.protectedFromPrune;
+            note = normalizeNote(metadata.note);
         }
 
         public Metadata(@NonNull JSONObject rootObject) throws JSONException {
@@ -373,6 +378,8 @@ public class BackupMetadataV5 implements LocalizedString {
             this.verificationStatus = verificationStatus != null ? verificationStatus : VERIFICATION_STATUS_UNKNOWN;
             verificationTime = rootObject.optLong("verification_time", 0L);
             verificationFailedFiles = rootObject.optInt("verification_failed_files", 0);
+            protectedFromPrune = rootObject.optBoolean("protected_from_prune", false);
+            note = normalizeNote(JSONUtils.optString(rootObject, "note"));
             verifyMetadata();
         }
 
@@ -393,6 +400,18 @@ public class BackupMetadataV5 implements LocalizedString {
             }
             String normalizedBackupName = backupName.trim();
             return normalizedBackupName.isEmpty() ? null : normalizedBackupName;
+        }
+
+        @Nullable
+        public static String normalizeNote(@Nullable CharSequence note) {
+            if (note == null) {
+                return null;
+            }
+            String normalized = note.toString()
+                    .replace("\r\n", "\n")
+                    .replace('\r', '\n')
+                    .trim();
+            return normalized.isEmpty() ? null : normalized;
         }
 
         private void verifyMetadata() {
@@ -464,6 +483,8 @@ public class BackupMetadataV5 implements LocalizedString {
             rootObject.put("verification_status", verificationStatus);
             rootObject.put("verification_time", verificationTime);
             rootObject.put("verification_failed_files", verificationFailedFiles);
+            rootObject.put("protected_from_prune", protectedFromPrune);
+            rootObject.put("note", note);
             return rootObject;
         }
     }
@@ -519,6 +540,12 @@ public class BackupMetadataV5 implements LocalizedString {
 
         if (info.isFrozen()) {
             subtitleText.append(", ").append(context.getText(R.string.frozen));
+        }
+        if (metadata.protectedFromPrune) {
+            subtitleText.append(", ").append(context.getText(R.string.backup_protected_from_cleanup));
+        }
+        if (!TextUtils.isEmpty(metadata.note)) {
+            subtitleText.append("\n").append(metadata.note);
         }
 
         return new SpannableStringBuilder(getTitleText(context, titleText)).append("\n")

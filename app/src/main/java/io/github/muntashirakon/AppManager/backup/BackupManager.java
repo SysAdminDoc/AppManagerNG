@@ -116,7 +116,7 @@ public class BackupManager {
                     + storageStatus.freeBytes + " bytes free.");
         }
         try (BackupOp backupOp = new BackupOp(options.packageName, options.flags, backupItem, options.userId,
-                options.exclusionGlobs)) {
+                options.exclusionGlobs, options.protectFromPrune, options.backupNote)) {
             backupOp.runBackup(progressHandler);
             BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), backupOp.getMetadata());
         }
@@ -207,8 +207,8 @@ public class BackupManager {
                 } catch (IOException e) {
                     throw new BackupException("Could not retrieve metadata from backup.", e);
                 }
-                if (item.isFrozen()) {
-                    // A frozen backup is user-protected: leave its files AND its DB row intact.
+                if (item.isFrozen() || metadata.metadata.protectedFromPrune) {
+                    // Frozen/protected backups are user-protected: leave files AND DB row intact.
                     // Removing only the DB row (the previous behaviour) orphaned the on-disk backup.
                     continue;
                 }

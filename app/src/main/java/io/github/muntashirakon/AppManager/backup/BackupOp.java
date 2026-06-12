@@ -118,6 +118,9 @@ class BackupOp implements Closeable {
     private final PackageManager mPm;
     @Nullable
     private final String[] mExclusionGlobs;
+    private final boolean mProtectFromPrune;
+    @Nullable
+    private final String mBackupNote;
 
     BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
              @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId)
@@ -129,11 +132,20 @@ class BackupOp implements Closeable {
              @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId,
              @Nullable String[] exclusionGlobs)
             throws BackupException {
+        this(packageName, backupFlags, backupItem, userId, exclusionGlobs, false, null);
+    }
+
+    BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
+             @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId,
+             @Nullable String[] exclusionGlobs, boolean protectFromPrune, @Nullable String backupNote)
+            throws BackupException {
         mPackageName = packageName;
         mBackupItem = backupItem;
         mUserId = userId;
         mBackupFlags = backupFlags;
         mExclusionGlobs = BackupPathExclusionPatterns.sanitize(exclusionGlobs);
+        mProtectFromPrune = protectFromPrune;
+        mBackupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
         mPm = ContextUtils.getContext().getPackageManager();
         try {
             mPackageInfo = PackageManagerCompat.getPackageInfo(mPackageName,
@@ -293,6 +305,8 @@ class BackupOp implements Closeable {
                 cryptoHelper.getAes(), cryptoHelper.getKeyIds());
         backupInfo.setBackupItem(mBackupItem);
         BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(backupName);
+        metadata.protectedFromPrune = mProtectFromPrune;
+        metadata.note = mBackupNote;
         metadata.keyStore = !systemDataBackup && KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
         metadata.label = mApplicationInfo.loadLabel(mPm).toString();
         metadata.packageName = mPackageName;
