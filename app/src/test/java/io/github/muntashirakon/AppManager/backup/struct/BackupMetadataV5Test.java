@@ -58,6 +58,30 @@ public class BackupMetadataV5Test {
         assertEquals("nightly", Backup.fromBackupMetadataV5(backupMetadata).backupName);
     }
 
+    @Test
+    public void metadataParsesAndSerializesProtectionAndNote() throws JSONException {
+        JSONObject json = metadataJson("nightly")
+                .put("protected_from_prune", true)
+                .put("note", "  Before upgrade\r\nKeep  ");
+
+        BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(json);
+        BackupMetadataV5.Metadata copy = new BackupMetadataV5.Metadata(metadata);
+        JSONObject serialized = copy.serializeToJson();
+
+        assertTrue(copy.protectedFromPrune);
+        assertEquals("Before upgrade\nKeep", copy.note);
+        assertTrue(serialized.getBoolean("protected_from_prune"));
+        assertEquals("Before upgrade\nKeep", serialized.getString("note"));
+    }
+
+    @Test
+    public void metadataDefaultsProtectionAndNoteForOldBackups() throws JSONException {
+        BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(metadataJson("nightly"));
+
+        assertFalse(metadata.protectedFromPrune);
+        assertNull(metadata.note);
+    }
+
     private static BackupMetadataV5.Info info() {
         return new BackupMetadataV5.Info(1L, new BackupFlags(BackupFlags.BACKUP_APK_FILES), 0, TarUtils.TAR_GZIP,
                 DigestUtils.SHA_256, CryptoUtils.MODE_NO_ENCRYPTION, null, null, null);

@@ -7,6 +7,7 @@ import android.os.Parcel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.os.ParcelCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
+import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.RestoreOpOptions;
@@ -35,6 +37,9 @@ public class BatchBackupOptions implements IBatchOpOptions {
     private final String[] mRelativeDirs;
     @Nullable
     private final String[] mExclusionGlobs;
+    private final boolean mProtectFromPrune;
+    @Nullable
+    private final String mBackupNote;
 
     public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
                               @Nullable String[] backupNames,
@@ -46,10 +51,21 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               @Nullable String[] backupNames,
                               @Nullable String[] relativeDirs,
                               @Nullable String[] exclusionGlobs) {
+        this(flags, backupNames, relativeDirs, exclusionGlobs, false, null);
+    }
+
+    public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
+                              @Nullable String[] backupNames,
+                              @Nullable String[] relativeDirs,
+                              @Nullable String[] exclusionGlobs,
+                              boolean protectFromPrune,
+                              @Nullable String backupNote) {
         mFlags = requireValidFlags(flags);
         mBackupNames = requireValidBackupNames(backupNames);
         mRelativeDirs = requireValidRelativeDirs(relativeDirs);
         mExclusionGlobs = sanitizeExclusionGlobs(exclusionGlobs);
+        mProtectFromPrune = protectFromPrune;
+        mBackupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
     }
 
     public BackupOpOptions getBackupOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -60,7 +76,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
         } else {
             backupName = customBackup ? DateUtils.formatMediumDateTime(ContextUtils.getContext(), System.currentTimeMillis()) : null;
         }
-        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup, mExclusionGlobs);
+        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup, mExclusionGlobs,
+                mProtectFromPrune, mBackupNote);
     }
 
     public RestoreOpOptions getRestoreOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -115,6 +132,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mBackupNames = requireValidBackupNames(in.createStringArray());
         mRelativeDirs = requireValidRelativeDirs(in.createStringArray());
         mExclusionGlobs = sanitizeExclusionGlobs(in.createStringArray());
+        mProtectFromPrune = ParcelCompat.readBoolean(in);
+        mBackupNote = BackupMetadataV5.Metadata.normalizeNote(in.readString());
     }
 
     public static final Creator<BatchBackupOptions> CREATOR = new Creator<BatchBackupOptions>() {
@@ -142,6 +161,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
         dest.writeStringArray(requireValidBackupNames(mBackupNames));
         dest.writeStringArray(requireValidRelativeDirs(mRelativeDirs));
         dest.writeStringArray(sanitizeExclusionGlobs(mExclusionGlobs));
+        ParcelCompat.writeBoolean(dest, mProtectFromPrune);
+        dest.writeString(BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
     }
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -154,6 +175,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
                     false, "relative directory"));
             mExclusionGlobs = sanitizeExclusionGlobs(readStringArray(jsonObject, "exclusion_globs",
                     false, "exclusion glob"));
+            mProtectFromPrune = jsonObject.optBoolean("protect_from_prune", false);
+            mBackupNote = BackupMetadataV5.Metadata.normalizeNote(JSONUtils.optString(jsonObject, "backup_note"));
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -171,6 +194,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
         jsonObject.put("backup_names", JSONUtils.getJSONArray(requireValidBackupNames(mBackupNames)));
         jsonObject.put("relative_dirs", JSONUtils.getJSONArray(requireValidRelativeDirs(mRelativeDirs)));
         jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(sanitizeExclusionGlobs(mExclusionGlobs)));
+        jsonObject.put("protect_from_prune", mProtectFromPrune);
+        jsonObject.put("backup_note", BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
         return jsonObject;
     }
 

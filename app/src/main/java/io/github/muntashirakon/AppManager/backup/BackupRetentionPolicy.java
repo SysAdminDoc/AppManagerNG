@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -126,17 +127,23 @@ public final class BackupRetentionPolicy {
 
     @WorkerThread
     private static boolean deletePrunedBackup(@NonNull Backup backup) throws Throwable {
-        BackupItems.BackupItem item = backup.getItem();
-        if (item == null || item.isFrozen()) {
-            // Frozen backups are explicitly protected from deletion by the user;
-            // automated retention must skip them, mirroring manual deleteBackup().
-            return false;
+        try (BackupItems.BackupItem item = backup.getItem()) {
+            if (item == null || item.isFrozen()) {
+                // Frozen backups are explicitly protected from deletion by the user;
+                // automated retention must skip them, mirroring manual deleteBackup().
+                return false;
+            }
+            BackupMetadataV5 metadata = item.getMetadata();
+            if (metadata.metadata.protectedFromPrune) {
+                // User-marked keep-forever backups must survive automated cleanup.
+                return false;
+            }
+            if (!item.delete()) {
+                return false;
+            }
+            BackupUtils.deleteBackupToDbAndBroadcast(ContextUtils.getContext(), backup);
+            return true;
         }
-        if (!item.delete()) {
-            return false;
-        }
-        BackupUtils.deleteBackupToDbAndBroadcast(ContextUtils.getContext(), backup);
-        return true;
     }
 
     /**
