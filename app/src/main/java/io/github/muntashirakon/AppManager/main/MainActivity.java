@@ -29,6 +29,8 @@ import androidx.appcompat.app.ActionBar;
 import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.core.os.BundleCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
@@ -122,6 +124,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     /** Saved RecyclerView layout state to restore after the async list re-populates. */
     @Nullable
     private android.os.Parcelable mPendingListState;
+    private boolean mImeVisibleBeforeLeave;
     private SwipeRefreshLayout mSwipeRefresh;
     private MultiSelectionView mMultiSelectionView;
     private View mEmptyState;
@@ -277,11 +280,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             actionBar.setCustomView(searchView, layoutParams);
             mSearchView = searchView;
             mSearchView.setIconifiedByDefault(false);
-            mSearchView.setOnFocusChangeListener((v, hasFocus) -> {
-                if (!hasFocus) {
-                    UiUtils.hideKeyboard(v);
-                }
-            });
             // Check for market://search/?q=<query>
             Uri marketUri = getIntent().getData();
             if (marketUri != null && "market".equals(marketUri.getScheme()) && "search".equals(marketUri.getHost())) {
@@ -734,12 +732,25 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         }
         refreshGuidedControls();
         refreshQuickFilterChips();
+        if (mSearchView != null) {
+            mSearchView.post(() -> {
+                if (mImeVisibleBeforeLeave && mSearchView != null) {
+                    mSearchView.requestFocus();
+                    UiUtils.showKeyboard(mSearchView);
+                }
+            });
+        }
         ContextCompat.registerReceiver(this, mBatchOpsBroadCastReceiver,
                 new IntentFilter(BatchOpsService.ACTION_BATCH_OPS_COMPLETED), ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     @Override
     protected void onPause() {
+        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(getWindow().getDecorView());
+        mImeVisibleBeforeLeave = insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+        if (mSearchView != null && mSearchView.hasFocus()) {
+            mSearchView.clearFocus();
+        }
         super.onPause();
         unregisterReceiver(mBatchOpsBroadCastReceiver);
     }
