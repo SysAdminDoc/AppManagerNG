@@ -89,6 +89,8 @@ Reliability & data safety
 - Profile export, upstream-compatible export, and quick share now serialize and
   write profiles off the UI thread so large profiles do not freeze the Profiles
   screen.
+- APK "What's new" comparison no longer crashes when package metadata is missing
+  application SDK fields; the SDK row now degrades to an unknown value.
 - Profiles no longer expose the inherited "export blocking rules" option that
   had never been implemented and silently did nothing when applied.
 - App details now builds its info list from a captured application context, so
