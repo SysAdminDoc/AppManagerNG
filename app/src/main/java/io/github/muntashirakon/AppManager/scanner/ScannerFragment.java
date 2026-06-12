@@ -92,12 +92,15 @@ public class ScannerFragment extends Fragment {
         classesView.setCardBackgroundColor(cardColor);
         MaterialCardView trackersView = view.findViewById(R.id.tracker);
         trackersView.setCardBackgroundColor(cardColor);
+        MaterialCardView offlineBannerView = view.findViewById(R.id.scanner_offline_banner);
+        offlineBannerView.setCardBackgroundColor(cardColor);
         mVtContainerView = view.findViewById(R.id.vt);
         mVtContainerView.setCardBackgroundColor(cardColor);
         mVtTitleView = view.findViewById(R.id.vt_title);
         mVtDescriptionView = view.findViewById(R.id.vt_description);
         MaterialCardView pithusContainerView = view.findViewById(R.id.pithus);
         pithusContainerView.setCardBackgroundColor(cardColor);
+        TextView pithusTitleView = view.findViewById(R.id.pithus_title);
         pithusDescriptionView = view.findViewById(R.id.pithus_description);
         MaterialCardView libsView = view.findViewById(R.id.libs);
         libsView.setCardBackgroundColor(cardColor);
@@ -107,14 +110,25 @@ public class ScannerFragment extends Fragment {
         signaturesView.setCardBackgroundColor(cardColor);
         MaterialCardView missingLibsView = view.findViewById(R.id.missing_libs);
         missingLibsView.setCardBackgroundColor(cardColor);
+        boolean internetEnabled = FeatureController.isInternetEnabled();
+        offlineBannerView.setVisibility(internetEnabled ? View.GONE : View.VISIBLE);
         // VirusTotal
-        if (!FeatureController.isVirusTotalEnabled() || Prefs.VirusTotal.getApiKey() == null) {
+        if (!internetEnabled) {
+            if (Prefs.VirusTotal.getApiKey() != null) {
+                setOnlineReportRequiresNetwork(mVtContainerView, mVtTitleView, mVtDescriptionView,
+                        R.string.virus_total);
+            } else {
+                mVtContainerView.setVisibility(View.GONE);
+            }
+            view.findViewById(R.id.vt_disclaimer).setVisibility(View.GONE);
+        } else if (!FeatureController.isVirusTotalEnabled() || Prefs.VirusTotal.getApiKey() == null) {
             mVtContainerView.setVisibility(View.GONE);
             view.findViewById(R.id.vt_disclaimer).setVisibility(View.GONE);
         }
         // Pithus
-        if (!FeatureController.isInternetEnabled()) {
-            pithusContainerView.setVisibility(View.GONE);
+        if (!internetEnabled) {
+            setOnlineReportRequiresNetwork(pithusContainerView, pithusTitleView, pithusDescriptionView,
+                    R.string.scan_report_from_pithus);
         }
         // Checksum
         mViewModel.apkChecksumsLiveData().observe(getViewLifecycleOwner(), checksums -> {
@@ -191,6 +205,9 @@ public class ScannerFragment extends Fragment {
             }
         });
         mViewModel.vtFileUploadLiveData().observe(getViewLifecycleOwner(), permalink -> {
+            if (!internetEnabled) {
+                return;
+            }
             if (permalink == null) {
                 // Uploading
                 mVtTitleView.setText(R.string.vt_uploading);
@@ -210,6 +227,9 @@ public class ScannerFragment extends Fragment {
             }
         });
         mViewModel.vtFileReportLiveData().observe(getViewLifecycleOwner(), vtFileReport -> {
+            if (!internetEnabled) {
+                return;
+            }
             if (vtFileReport == null) {
                 // Failed
                 mVtTitleView.setText(R.string.vt_failed);
@@ -221,6 +241,9 @@ public class ScannerFragment extends Fragment {
             }
         });
         mViewModel.getPithusReportLiveData().observe(getViewLifecycleOwner(), url -> {
+            if (!internetEnabled) {
+                return;
+            }
             if (url != null) {
                 // Report available
                 pithusDescriptionView.setText(url);
@@ -231,6 +254,18 @@ public class ScannerFragment extends Fragment {
         });
         // Load summary for the APK file
         mViewModel.loadSummary();
+    }
+
+    private void setOnlineReportRequiresNetwork(@NonNull MaterialCardView containerView,
+                                                @NonNull TextView titleView,
+                                                @NonNull TextView descriptionView,
+                                                int titleRes) {
+        containerView.setVisibility(View.VISIBLE);
+        containerView.setEnabled(false);
+        containerView.setClickable(false);
+        containerView.setAlpha(0.62f);
+        titleView.setText(titleRes);
+        descriptionView.setText(R.string.scanner_requires_network);
     }
 
     @VisibleForTesting
