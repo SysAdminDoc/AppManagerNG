@@ -38,6 +38,8 @@ Reliability & data safety
 - Audio playback, OpenPGP key selection, App Details, App Info, and main
   preferences now clean up handlers, wake locks, service bindings, and
   executors when their UI lifecycle ends.
+- App usage details now cancels its delayed loading callback when the dialog
+  view is destroyed, and restored parcelable state uses API-safe compat readers.
 - Deleting a frozen (user-protected) backup no longer removes its database row
   while leaving the files on disk — it now leaves both intact, so the backup
   can't silently disappear from the UI while still consuming storage.
