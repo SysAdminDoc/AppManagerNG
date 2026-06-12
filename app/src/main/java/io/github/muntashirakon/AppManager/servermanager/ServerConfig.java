@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.security.SecureRandom;
 
-import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.server.common.Constants;
@@ -51,24 +50,25 @@ public final class ServerConfig {
         }
 
         // Setup paths
-        File externalCachePath = FileUtils.getExternalCachePath(context);
-        File externalMediaPath = FileUtils.getExternalMediaPath(context);
         File deStorage = ContextUtils.getDeContext(context).getCacheDir();
-        SERVER_RUNNER_EXEC[0] = new File(externalCachePath, SERVER_RUNNER_EXEC_NAME);
-        SERVER_RUNNER_EXEC[1] = new File(deStorage, SERVER_RUNNER_EXEC_NAME);
-        SERVER_RUNNER_JAR[0] = new File(externalCachePath, Constants.JAR_NAME);
-        SERVER_RUNNER_JAR[1] = new File(deStorage, Constants.JAR_NAME);
+        File serverRunnerExec = new File(deStorage, SERVER_RUNNER_EXEC_NAME);
+        File serverRunnerJar = new File(deStorage, Constants.JAR_NAME);
+        SERVER_RUNNER_EXEC[0] = serverRunnerExec;
+        SERVER_RUNNER_EXEC[1] = serverRunnerExec;
+        SERVER_RUNNER_JAR[0] = serverRunnerJar;
+        SERVER_RUNNER_JAR[1] = serverRunnerJar;
         // Copy JAR
-        boolean force = BuildConfig.DEBUG;
-        AssetsUtils.copyFile(context, Constants.JAR_NAME, SERVER_RUNNER_JAR[0], force);
-        AssetsUtils.copyFile(context, Constants.JAR_NAME, SERVER_RUNNER_JAR[1], force);
+        AssetsUtils.copyFile(context, Constants.JAR_NAME, serverRunnerJar, true);
         // Write script
-        AssetsUtils.writeServerExecScript(context, SERVER_RUNNER_EXEC[0], SERVER_RUNNER_JAR[0].getAbsolutePath());
-        AssetsUtils.writeServerExecScript(context, SERVER_RUNNER_EXEC[1], SERVER_RUNNER_JAR[1].getAbsolutePath());
+        AssetsUtils.writeServerExecScript(context, serverRunnerExec, serverRunnerJar.getAbsolutePath());
         // Update permission
+        File deStorageRoot = deStorage.getParentFile();
+        if (deStorageRoot != null) {
+            FileUtils.chmod711(deStorageRoot);
+        }
         FileUtils.chmod711(deStorage);
-        FileUtils.chmod644(SERVER_RUNNER_JAR[1]);
-        FileUtils.chmod644(SERVER_RUNNER_EXEC[1]);
+        FileUtils.chmod644(serverRunnerJar);
+        FileUtils.chmod644(serverRunnerExec);
 
         sInitialised = true;
     }
@@ -91,11 +91,7 @@ public final class ServerConfig {
     @AnyThread
     @NonNull
     public static String getServerRunnerAdbCommand() throws IndexOutOfBoundsException {
-        // Prefer the internal device-encrypted copy (index 1); fall back to the external-storage
-        // copy (index 0) only if the ADB shell uid cannot traverse to the private path on this
-        // device. This keeps the external copy off the primary path to avoid the swap-the-script
-        // local privilege escalation, while preserving compatibility via the fallback.
-        return getServerRunnerCommand(1) + " || " + getServerRunnerCommand(0);
+        return getServerRunnerCommand(1);
     }
 
     /**
