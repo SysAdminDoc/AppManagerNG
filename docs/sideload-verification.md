@@ -64,6 +64,18 @@ This flow applies globally from August 2026. AppManagerNG will document the
 flow's status in the installer UI when it detects the enhanced verification
 gate is active.
 
+## Limited Distribution Accounts
+
+Google Play Console allows verified developers to create **Limited Distribution
+Accounts** for distributing apps outside Google Play on certified devices. Apps
+signed by an LDA-enrolled developer pass the platform verifier gate without
+requiring the enhanced verification flow. This is relevant for enterprise
+sideloading and internal test distribution in regions where Developer
+Verification is enforced (BR, ID, SG, TH from September 2026, expanding
+globally). AppManagerNG does not interact with LDA enrollment — it is a
+server-side Google Play Console setting that affects how the platform verifier
+treats the installing developer's identity.
+
 ## Recommendations for affected users
 
 - **Obtainium users**: Pair with [AppVerifier](https://github.com/soupslurpr/AppVerifier)
