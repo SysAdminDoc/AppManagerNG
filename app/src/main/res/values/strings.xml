@@ -3452,6 +3452,7 @@
     <string name="duplicate_backups_pruned">Removed <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s).</string>
     <string name="duplicate_backups_pruned_with_reclaim">Deleted <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s), reclaimed <xliff:g id="size" example="400 MB">%2$s</xliff:g>.</string>
     <string name="authenticate_to_delete_backups">Authenticate to delete backups</string>
+    <string name="authenticate_to_open_terminal">Authenticate to open terminal</string>
     <!-- Permission Change Monitor (T9/Next) -->
     <string name="pref_permission_change_monitor">Permission change monitor</string>
     <string name="pref_permission_change_monitor_msg">Notify when an updated app gains a new dangerous permission compared to the previously installed version. Opt-in; runs locally with no network use.</string>
