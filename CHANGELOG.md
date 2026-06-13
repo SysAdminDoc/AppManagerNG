@@ -48,6 +48,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   gated; terminal and backup deletion were the remaining ungated
   destructive flows.
 
+### Fixed — Security and reliability hardening (2026-06-13)
+
+- Fixed shell command injection risk in backup restore: chown path argument
+  is now passed through the String[] overload of Runner.runCommand (which
+  escapes each argument) instead of interpolated into a shell string.
+- Raw AES key material in RSACrypto and ECCCrypto is now zeroed immediately
+  after SecretKeySpec construction, preventing key bytes from lingering on
+  the heap until GC.
+- ProxyBinder.getUnprivilegedService() no longer caches null binders from
+  transiently unavailable services; a null ServiceManager result is now
+  retried on the next call instead of permanently failing.
+- PackageManagerCompat.queryAppDataBytesQuietly() now catches Exception
+  instead of Throwable, so OOM and other fatal VM errors propagate rather
+  than being silently swallowed.
+- CompatUtil.getPrng() SecureRandom field is now volatile, preventing a
+  data race where a partially-constructed object could be returned to a
+  concurrent caller.
+- ServiceConnectionWrapper.stopDaemon() now synchronizes on the service
+  connection lock, preventing a race with concurrent startDaemon() that
+  could null a valid binder.
+- RunningAppsAdapter click listeners now use holder.getBindingAdapterPosition()
+  with NO_POSITION guard instead of capturing the stale onBind position
+  parameter, fixing wrong-item selection after list mutations.
+- BackupRestoreDialogFragment child fragment transactions use
+  commitAllowingStateLoss() and dismiss uses dismissAllowingStateLoss(),
+  preventing IllegalStateException crashes when LiveData fires between
+  onSaveInstanceState and onStop.
+
 ### Changed — Terminal formally deferred to Preview (2026-06-13)
 
 - Terminal labeled "Terminal (Preview)" with a toolbar subtitle explaining

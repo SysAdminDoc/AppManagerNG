@@ -695,7 +695,7 @@ class RestoreOp implements Closeable {
         }
         boolean isRoboUnitTest = Utils.isRoboUnitTest();
         // Restore UID and GID
-        if (!isRoboUnitTest && !Runner.runCommand(String.format(Locale.ROOT, "chown -R %d:%d \"%s\"", uidGidPair.uid, uidGidPair.gid, dataSourceFile.getFilePath())).isSuccessful()) {
+        if (!isRoboUnitTest && !Runner.runCommand(new String[]{"chown", "-R", uidGidPair.uid + ":" + uidGidPair.gid, dataSourceFile.getFilePath()}).isSuccessful()) {
             throw new BackupException("Failed to restore ownership info for index " + index + ".");
         }
         // Restore context

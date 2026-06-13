@@ -24,6 +24,7 @@ import androidx.annotation.AttrRes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -344,25 +345,31 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         });
         // Set selections
         holder.icon.setOnClickListener(v -> {
-            toggleSelection(position);
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
+            toggleSelection(pos);
             AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
         });
         holder.itemView.setOnLongClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return true;
             ProcessItem lastSelectedItem = mModel.getLastSelectedItem();
             int lastSelectedItemPosition = lastSelectedItem == null ? -1 : mProcessItems.indexOf(lastSelectedItem);
             if (lastSelectedItemPosition >= 0) {
                 // Select from last selection to this selection
-                selectRange(lastSelectedItemPosition + 1, position);
+                selectRange(lastSelectedItemPosition + 1, pos);
             } else {
-                toggleSelection(position);
+                toggleSelection(pos);
                 AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
             }
             return true;
         });
         // Open process details
         holder.itemView.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
             if (isInSelectionMode()) {
-                toggleSelection(position);
+                toggleSelection(pos);
                 AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
             } else {
                 mModel.requestDisplayProcessDetails(processItem);
