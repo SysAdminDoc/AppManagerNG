@@ -37,6 +37,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Fixed — Deferred-audit reliability batch (2026-06-13)
+
+- BackupItem resource leaks closed across five call sites: backup size
+  resolution, duplicate backup deletion, backup existence validation,
+  backup icon loading, and data-directory change detection now use
+  try-with-resources so encrypted backup temp copies and derived key
+  material are cleaned up promptly.
+
 ### Compliance — Android 17 behavior-change audit batch (2026-06-13)
 
 - Three new dated audit docs complete the Android 17 (API 37) behavior-change

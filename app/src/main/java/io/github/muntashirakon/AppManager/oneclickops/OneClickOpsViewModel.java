@@ -275,8 +275,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                 if (ThreadUtils.isInterrupted()) {
                     break;
                 }
-                try {
-                    BackupItems.BackupItem item = entry.backup.getItem();
+                try (BackupItems.BackupItem item = entry.backup.getItem()) {
                     if (item != null && item.delete()) {
                         ++deleted;
                         if (entry.size > 0L) {
