@@ -11,19 +11,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import io.github.muntashirakon.AppManager.db.dao.AppDao;
 import io.github.muntashirakon.AppManager.db.dao.BackupDao;
+import io.github.muntashirakon.AppManager.db.dao.CachedScanResultDao;
 import io.github.muntashirakon.AppManager.db.dao.FmFavoriteDao;
 import io.github.muntashirakon.AppManager.db.dao.FreezeTypeDao;
 import io.github.muntashirakon.AppManager.db.dao.LogFilterDao;
 import io.github.muntashirakon.AppManager.db.dao.OpHistoryDao;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
+import io.github.muntashirakon.AppManager.db.entity.CachedScanResult;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
-@Database(entities = {App.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class}, version = 9)
+@Database(entities = {App.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class}, version = 10)
 public abstract class AppsDb extends RoomDatabase {
     private static AppsDb sAppsDb;
 
@@ -85,13 +87,27 @@ public abstract class AppsDb extends RoomDatabase {
             db.execSQL("ALTER TABLE `app` ADD COLUMN `dangerous_perm_granted` INTEGER NOT NULL DEFAULT 0");
         }
     };
+    public static final Migration M_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `cached_scan_result` ("
+                    + "`package_name` TEXT NOT NULL, "
+                    + "`version_code` INTEGER NOT NULL, "
+                    + "`scan_timestamp` INTEGER NOT NULL, "
+                    + "`tracker_count` INTEGER NOT NULL, "
+                    + "`library_count` INTEGER NOT NULL, "
+                    + "`trackers_json` TEXT, "
+                    + "`libraries_json` TEXT, "
+                    + "PRIMARY KEY(`package_name`, `version_code`))");
+        }
+    };
 
     public static synchronized AppsDb getInstance() {
         // Synchronized: a concurrent first-caller could otherwise build a second
         // RoomDatabase, run its migrations, and leak it when sAppsDb is overwritten.
         if (sAppsDb == null) {
             sAppsDb = Room.databaseBuilder(ContextUtils.getContext(), AppsDb.class, "apps.db")
-                    .addMigrations(M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9)
+                    .addMigrations(M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9, M_9_10)
                     // No M_1_2 migration is registered, so an on-disk v1 apps.db (or any
                     // other unfound forward path) would otherwise throw an unrecoverable
                     // IllegalStateException on first access. apps.db is a rebuildable
@@ -121,4 +137,6 @@ public abstract class AppsDb extends RoomDatabase {
     public abstract FmFavoriteDao fmFavoriteDao();
 
     public abstract FreezeTypeDao freezeTypeDao();
+
+    public abstract CachedScanResultDao cachedScanResultDao();
 }
