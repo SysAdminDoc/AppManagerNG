@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.BackupManager;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragment;
@@ -310,8 +311,9 @@ public class BackupTasksDialogFragment extends DialogFragment {
     }
 
     private static boolean isDataDirectoryChanged(@NonNull Backup backup, Set<String> ignoredDirs) {
-        try {
-            for (String dir : backup.getItem().getMetadata().metadata.dataDirs) {
+        try (BackupItems.BackupItem item = backup.getItem()) {
+            if (item == null) return false;
+            for (String dir : item.getMetadata().metadata.dataDirs) {
                 if (DirectoryUtils.isDirectoryChanged(Paths.get(dir), backup.backupTime, 3, ignoredDirs)) {
                     return true;
                 }
