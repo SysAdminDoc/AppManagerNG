@@ -3709,6 +3709,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 return context.getString(R.string.exit_reason_dependency_died);
             case ApplicationExitInfo.REASON_OTHER:
                 return context.getString(R.string.exit_reason_other);
+            case 14: // REASON_FREEZER (API 33)
+                return context.getString(R.string.exit_reason_freezer);
+            case 15: // REASON_PACKAGE_STATE_CHANGE (API 34)
+                return context.getString(R.string.exit_reason_package_state_change);
+            case 16: // REASON_PACKAGE_UPDATED (API 34)
+                return context.getString(R.string.exit_reason_package_updated);
             default:
                 return context.getString(R.string.exit_reason_unknown, reason);
         }
