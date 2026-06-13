@@ -2946,6 +2946,10 @@
         <item quantity="one">Credential provider: %1$d service</item>
         <item quantity="other">Credential provider: %1$d services</item>
     </plurals>
+    <plurals name="app_functions_chip_count">
+        <item quantity="one">App functions: %1$d service</item>
+        <item quantity="other">App functions: %1$d services</item>
+    </plurals>
     <string name="credential_provider_dialog_title">Credential provider</string>
     <string name="credential_provider_dialog_unsupported">Android exposes Credential Manager providers starting with Android 14. This device is API %1$d.</string>
     <string name="credential_provider_dialog_none">No manifest Credential Manager provider services were found for this package.</string>
