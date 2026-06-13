@@ -11,4 +11,14 @@
         android:icon="@drawable/ic_list_status"
         android:title="@string/list_options"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_export_preset"
+        android:icon="@drawable/ic_get_app"
+        android:title="@string/debloat_export_preset"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_import_preset"
+        android:icon="@drawable/ic_restore"
+        android:title="@string/debloat_import_preset"
+        app:showAsAction="never" />
 </menu>
