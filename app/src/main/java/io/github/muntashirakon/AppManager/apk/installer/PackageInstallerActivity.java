@@ -188,6 +188,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private boolean mSplitCertMismatchDialogShown;
     private boolean mSplitCertMismatchCheckInProgress;
     private boolean mSplitCompatibilityWarningShown;
+    private boolean mCallerWantsResult;
+    private int mLastInstallStatusCode = PackageInstallerCompat.STATUS_FAILURE_INVALID;
+    @Nullable
+    private String mLastInstalledPackage;
     private final View.OnClickListener mAppInfoClickListener = v -> {
         assert mCurrentItem != null;
         try {
@@ -251,6 +255,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             return;
         }
         mBatchInstall = intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
+        mCallerWantsResult = intent.getBooleanExtra(Intent.EXTRA_RETURN_RESULT, false);
         mModel = new ViewModelProvider(this).get(PackageInstallerViewModel.class);
         if (!bindService(
                 new Intent(this, PackageInstallerService.class), mServiceConnection, BIND_AUTO_CREATE)) {
@@ -837,6 +842,15 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         } else {
             mIsDealingWithApk = false;
             mDialogHelper.dismiss();
+            if (mCallerWantsResult) {
+                int resultCode = mLastInstallStatusCode == STATUS_SUCCESS
+                        ? RESULT_OK : RESULT_FIRST_USER;
+                Intent resultData = new Intent();
+                resultData.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME,
+                        mLastInstalledPackage != null ? mLastInstalledPackage : "");
+                resultData.putExtra(PackageInstaller.EXTRA_STATUS, mLastInstallStatusCode);
+                setResult(resultCode, resultData);
+            }
             finish();
         }
     }
@@ -869,6 +883,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     public void showInstallationFinishedDialog(String packageName, CharSequence message,
                                                @Nullable String statusMessage, boolean displayOpenAndAppInfo,
                                                int statusCode) {
+        mLastInstallStatusCode = statusCode;
+        mLastInstalledPackage = packageName;
         SpannableStringBuilder ssb = new SpannableStringBuilder(message);
         if (statusCode != STATUS_SUCCESS) {
             ssb.append("\n\n").append(PackageInstallerService.getRecoveryHintFromStatus(this, statusCode));
