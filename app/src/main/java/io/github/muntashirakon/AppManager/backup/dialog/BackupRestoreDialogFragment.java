@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
@@ -382,12 +383,14 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.delete_backup)
                 .setMessage(R.string.delete_base_backups_confirmation)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
-                    operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
-                    operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
-                    mViewModel.prepareForOperation(operationInfo);
-                })
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(mActivity,
+                                R.string.authenticate_to_delete_backups, () -> {
+                                    BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
+                                    operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
+                                    operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
+                                    mViewModel.prepareForOperation(operationInfo);
+                                }))
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }

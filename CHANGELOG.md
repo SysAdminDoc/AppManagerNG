@@ -28,6 +28,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Restored the missing minSdk-21 dependency ceiling ledger at
   docs/policy/minsdk-21-ceiling.md with pinned-cluster table and trigger status.
 
+### Added — Biometric gate for terminal and backup deletion (2026-06-13)
+
+- Terminal launch from Labs and backup deletion (both individual and base
+  backup) now challenge through the ActionAuthGate biometric prompt when
+  the existing Privacy authentication gate is enabled. Batch uninstall,
+  batch clear-data, install, and per-app uninstall/clear-data were already
+  gated; terminal and backup deletion were the remaining ungated
+  destructive flows.
+
 ### Changed — Terminal formally deferred to Preview (2026-06-13)
 
 - Terminal labeled "Terminal (Preview)" with a toolbar subtitle explaining
