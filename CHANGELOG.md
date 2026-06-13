@@ -67,9 +67,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Improved — Empty state coverage (2026-06-13)
 
-- Finder (filter results) and Permission Inspector (catalog) screens now show
-  a contextual empty state with icon, title, and guidance instead of a blank
-  screen when results are empty or filters exclude everything.
+- Finder (filter results), Permission Inspector (catalog), and Running Apps
+  screens now show a contextual empty state with icon, title, and guidance
+  instead of a blank screen when results are empty or filters exclude
+  everything.
 
 ### Fixed — Deferred-audit reliability batch (2026-06-13)
 

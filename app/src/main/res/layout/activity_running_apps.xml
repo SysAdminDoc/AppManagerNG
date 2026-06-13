@@ -30,19 +30,31 @@
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
-        <io.github.muntashirakon.widget.RecyclerView
-            android:id="@+id/scrollView"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false"
-            android:fitsSystemWindows="true"
-            android:focusable="false"
-            android:paddingTop="@dimen/premium_space_4"
-            android:paddingBottom="@dimen/premium_space_32"
-            android:scrollbars="none"
-            app:fastScrollerEnabled="true"
-            tools:listitem="@layout/item_running_app" />
+            android:layout_weight="1">
+
+            <io.github.muntashirakon.widget.RecyclerView
+                android:id="@+id/scrollView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:fitsSystemWindows="true"
+                android:focusable="false"
+                android:paddingTop="@dimen/premium_space_4"
+                android:paddingBottom="@dimen/premium_space_32"
+                android:scrollbars="none"
+                app:fastScrollerEnabled="true"
+                tools:listitem="@layout/item_running_app" />
+
+            <include
+                android:id="@android:id/empty"
+                layout="@layout/view_list_empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
