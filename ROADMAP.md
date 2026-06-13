@@ -129,15 +129,6 @@ device, or need on-device visual verification.
 
 ## Research-Driven Additions
 
-### P0
-
-- [ ] P0 — Android 17 behavior-change audit batch (API 37)
-  Why: A17 stable is imminent (Beta 4.1 2026-06-01); targetSdk-37 changes hit NG's core mechanics: static-final fields unmodifiable via reflection (hidden-API bypass stack), lock-free MessageQueue (reflection into privates breaks), ACCESS_LOCAL_NETWORK runtime permission (wireless-ADB mDNS discovery), cleartext-attribute deprecation (localhost carve-out).
-  Evidence: https://developer.android.com/about/versions/17/behavior-changes-17 ; https://developer.android.com/about/versions/17/behavior-changes-all
-  Touches: docs/audits/ (one dated audit per change), hiddenapi/, libserver/, adb/, app/src/main/res/xml/network_security_config.xml
-  Acceptance: four dated audit docs with verdicts per docs/audits doctrine; confirmed-needs-fix findings get their own rows; app runs its privileged paths on an A17 emulator (android17-emulator.yml) without regressions.
-  Complexity: M
-
 ### P1
 
 - [ ] P1 — Backup/restore round-trip integration tests in emulator CI
@@ -162,13 +153,6 @@ device, or need on-device visual verification.
   Complexity: M
 
 ### P2
-
-- [ ] P2 — Restore the missing minSdk-21 ceiling ledger (decision itself is already made)
-  Why: The minSdk-23 decision EXISTS on disk (docs/policy/2026-05-26-minsdk-23-decision.md: hold 21 through v0.6.x, four forced-decision triggers) — but the dependency ledger it depends on, docs/policy/minsdk-21-ceiling.md, is absent while being linked from versions.gradle:39, the decision memo, and docs/architecture/README.md; without it the trigger watch has no bookkeeping.
-  Evidence: docs/policy/2026-05-26-minsdk-23-decision.md (verified on disk, 2026-06-10); https://github.com/material-components/material-components-android/releases/tag/1.14.0 (minSdk 23 confirmed); versions.gradle:39
-  Touches: docs/policy/minsdk-21-ceiling.md (recreate the ledger: material/activity/biometric/room/webkit/sora-editor pinned-cluster table + trigger status), versions.gradle (ledger comments)
-  Acceptance: the ledger file exists with the current pinned-cluster table and a dated trigger-status section; all three inbound references resolve.
-  Complexity: S
 
 - [ ] P2 — Permission/app-op reference states (desired-vs-actual drift)
   Why: PermissionManagerX's reference-state model (pin desired value per permission/app-op, surface drift, restore references) is the only audit-grade permission pattern in the ecosystem and slots into NG's existing rule store + Permission Inspector.
@@ -327,13 +311,6 @@ device, or need on-device visual verification.
   Acceptance: the per-app tracker report groups findings by parent company with category chips and a one-line "what this category means"; flat list remains available as a toggle; works fully offline.
   Complexity: M
 
-- [ ] P3 — AppFunctions exposure datapoint (API 36+)
-  Why: Apps exposing agent-callable functions (android.app.appfunctions) are a new privacy-relevant surface; "this app exposes N agent functions" is a cheap, fork-first inspection datapoint consistent with NG's exported-component reporting.
-  Evidence: https://developer.android.com/ai/appfunctions ; no AppFunctions reference in tree (Assumption: API surface stable at 36)
-  Touches: details/info/ tag cloud or components list (new chip/section), compat/ (AppFunctionManager wrapper)
-  Acceptance: on API 36+, apps declaring AppFunctions show a chip with the function count; tapping lists the declared functions; absent below API 36.
-  Complexity: S
-
 - [ ] P3 — Theme/a11y coherence pass (deferred-audit visual debt)
   Why: The 2026-06-09 audit verified divergent dark palettes across NG-added screens, dead premium design tokens, and tracker/perm badges under the 48dp touch-target minimum — small fixes that compound into perceived quality.
   Evidence: 2026-06-09 audit session record (deferred list); res/ themes and the named drawables (spot-verified)
@@ -354,17 +331,6 @@ Deferred from the 2026-06-11 deep engineering/QA/UX audit pass. The fixed half
 of that pass is in the commit history / CHANGELOG `Unreleased`. Items below were
 verified real but are device-gated, design-verification-gated, or carry enough
 regression risk to need their own change.
-
-### P1
-
-### P2
-
-- [ ] P2 — RootService main.jar staged via external storage before privileged copy (TOCTOU)
-  Why: For the ADB/non-root RootService channel, `main.jar` is written to `getExternalCachePath()` then a later privileged shell `cp` copies it into `/data/local/tmp` and runs it via `app_process`. Between the app write and the privileged `cp`, another app with external-storage write access can swap the jar, so the privileged backend loads attacker bytes.
-  Evidence: ipc/RootServiceManager.java:170-201,228-268
-  Touches: ipc/RootServiceManager.java
-  Acceptance: `main.jar` is dumped to app-internal (DE cache) storage, never external, before the privileged `cp`; or a digest is verified inside the privileged script before `app_process` loads it. (Device-gated.)
-  Complexity: S
 
 ### P3
 
@@ -397,10 +363,6 @@ Findings from a six-domain codebase sweep (settings/onboarding, file-manager/edi
 installer/scanner, running-apps/usage, rules/profiles/automation, CI/build/distribution).
 Deduplicated against all sections above.
 
-### P1
-
-### P2
-
 ### P3
 
 - [ ] P3 — Code editor: undo history browser + diff view
@@ -425,22 +387,6 @@ Deduplicated against all sections above.
   Complexity: M
 
 ## Research-Driven Additions
-
-### P1
-
-- [ ] P1 — Distribution documentation link-rot repair
-  Why: README and policy docs point reviewers to missing build-flavor, package-visibility, reproducible-build, sideload, and project-context markdown, weakening F-Droid/Izzy/Obtainium trust despite strong release automation.
-  Evidence: README.md:116,165; docs/policy/permissions.md; .github/workflows/docs-link-check.yml:78; CLAUDE.md:6,20,167; IzzyOnDroid/F-Droid reproducible-build requirements.
-  Touches: README.md, CLAUDE.md, .github/workflows/docs-link-check.yml, existing docs/distribution/ and docs/policy/ references
-  Acceptance: every README/docs/workflow markdown link resolves in a clean checkout by repointing or removing stale references; reviewer-facing flavor, package-visibility, reproducibility, and sideload-verification claims have one canonical destination; docs-link-check fails on future drift.
-  Complexity: S
-
-- [ ] P1 — Main-list load failure watchdog and recovery surface
-  Why: accepted upstream reports show the app list can appear to load forever or show no apps when package enumeration throws; NG currently logs loader failures but does not expose a failed-load state with retry/support details.
-  Evidence: upstream AppManager #1982/#1825/#1948; app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:593-619; app/src/main/res/layout/activity_main.xml:172-221
-  Touches: app/src/main/java/io/github/muntashirakon/AppManager/main/, app/src/main/res/layout/activity_main.xml, app/src/main/res/values/strings.xml, app/src/test/
-  Acceptance: injected package-enumeration failure exits loading within a bounded timeout, shows a retry/support-info action instead of stale indefinite loading, labels any last-good list as stale, and has a JVM or Robolectric regression test.
-  Complexity: M
 
 ### P2
 
@@ -476,29 +422,6 @@ Deduplicated against all sections above.
 
 ## Research-Driven Additions (Pass 3 — 2026-06-13)
 
-### P2
-
-- [ ] P2 — IFW+PM dual-mode component blocking
-  Why: Component blocking currently uses either IFW (Intent Firewall rules in /data/system/ifw/) or PM (setComponentEnabledSetting) but never both. Blocker's IFW_PLUS_PM mode proves combined blocking is more reliable: IFW rules survive factory reset while PM disables don't, and PM disables take effect immediately while IFW rules may need a reboot on some ROMs. Using both gives belt-and-suspenders reliability.
-  Evidence: https://github.com/lihenggui/blocker (IFW+PM dual-mode); rules/compontents/ and details/AppDetailsComponentsFragment (verified: single-mode per operation)
-  Touches: rules/compontents/ComponentRule.java (add COMBINED mode enum), rules/RulesStorageManager.java (apply both in sequence), details/AppDetailsComponentsFragment.java (mode selector), batchops/ (batch component ops), settings/ (default blocking mode preference)
-  Acceptance: a "Combined (IFW+PM)" blocking mode is available in component-blocking flows; blocking applies both IFW and PM rules in sequence; verify both states survive reboot and factory-reset scenarios separately; existing single-mode behavior unchanged for users who prefer it.
-  Complexity: M
-
-- [ ] P2 — Human-readable split APK labels in installer chooser
-  Why: SplitApkChooser presents raw split entry names (config.arm64_v8a, config.en, config.xxhdpi) in a SearchableMultiChoiceDialogBuilder. Users without Android packaging knowledge cannot distinguish ABI splits from locale or density splits. InstallerX-Revived solves this with a human-readable label layer that maps split names to descriptions.
-  Evidence: https://github.com/wxxsfxyzm/InstallerX-Revived (split APK UX); apk/splitapk/SplitApkChooser.java (verified: raw ApkFile.Entry names passed to dialog)
-  Touches: apk/splitapk/SplitApkChooser.java (label resolution), apk/splitapk/ (new SplitLabelResolver utility: ABI → "ARM 64-bit", density → "High-DPI resources", locale → "French language pack", feature → feature module name), app/src/main/res/values/strings.xml (label templates)
-  Acceptance: the split chooser shows human-readable descriptions alongside or instead of raw split names; auto-selection still picks the best ABI+density+locale for the device; users can override; unknown split types fall back to the raw name.
-  Complexity: S
-
-- [ ] P2 — Debloat preset export/import for OTA re-application
-  Why: Users who debloat before an OTA update must re-select every package manually afterward because debloat selections have no export/import path. Canta and UAD-NG both support debloat-list export for re-application. NG has profiles for per-app configuration but no export/import specifically for the set of packages marked for removal/disabling in the debloater.
-  Evidence: https://github.com/samolego/Canta (debloat list export); https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (package database export); debloat/ package (verified: no preset export/import flow)
-  Touches: debloat/ (export current selections to JSON, import from JSON), debloat/DebloatActivity or DebloaterFragment (export/import menu actions), profiles/ (optional: convert a debloat preset into a profile for reuse)
-  Acceptance: a "Export debloat preset" action saves current debloat selections (package names + chosen action per package) to a shareable JSON file; "Import preset" loads selections and highlights any packages not found on the current device; round-trip tested with at least one OEM-specific set.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Dedicated freeze surface with home-screen widget
@@ -513,13 +436,6 @@ Deduplicated against all sections above.
   Evidence: https://github.com/MuntashirAkon/AppManager/issues/1738 ; versions.gradle:biometric_version = '1.4.0-alpha04' (verified dependency); batchops/, terminal/, backup/ (no BiometricPrompt usage, verified)
   Touches: settings/ (opt-in toggle, default off), a shared BiometricGateHelper utility, batchops/ (batch uninstall, clear data, disable), terminal/TermActivity.java, backup/ (restore, delete backup)
   Acceptance: with the toggle on, BiometricPrompt challenges before batch uninstall, batch clear-data, terminal launch, and backup deletion; authentication failure blocks the operation; toggle off = current behavior unchanged; works with fingerprint, face, and device credential fallback.
-  Complexity: S
-
-- [ ] P3 — Backup restore API-level compatibility warnings
-  Why: Community complaints about Neo-Backup and Titanium Backup restoration unreliability across Android version jumps (e.g., Android 12 backup restored on Android 14) apply equally to NG. Backup metadata already records the source device's targetSdk and Android version, but the restore flow does not warn when these differ significantly from the current device.
-  Evidence: https://github.com/NeoApplications/Neo-Backup (restore reliability complaints); backup/ metadata (MetadataManager records source SDK/OS version); backup/RestoreOp.java (no API-level boundary check, verified)
-  Touches: backup/RestoreOp.java (pre-restore compatibility check), backup/dialog/ (warning dialog with "proceed anyway" option), app/src/main/res/values/strings.xml (warning copy)
-  Acceptance: when restoring a backup whose source Android API level differs by 2+ from the device, a warning explains the risk and offers "proceed anyway" or "cancel"; warning includes specific risk factors (permission model changes, scoped storage, package visibility); no warning for same-API or adjacent-API restores.
   Complexity: S
 
 - [ ] P3 — Scheduled cache/data clearing as routine operation type
