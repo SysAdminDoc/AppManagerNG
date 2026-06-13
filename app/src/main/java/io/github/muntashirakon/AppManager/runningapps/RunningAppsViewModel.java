@@ -220,8 +220,12 @@ public class RunningAppsViewModel extends AndroidViewModel {
     private final MutableLiveData<List<ProcessItem>> mKillSelectedProcessesResult = new MutableLiveData<>();
 
     public void killProcess(ProcessItem processItem) {
-        mExecutor.submit(() -> mKillProcessResult.postValue(new Pair<>(processItem, Runner.runCommand(
-                new String[]{"kill", "-9", String.valueOf(processItem.pid)}).isSuccessful())));
+        mExecutor.submit(() -> {
+            boolean success = Runner.runCommand(
+                    new String[]{"kill", "-9", String.valueOf(processItem.pid)}).isSuccessful();
+            recordKillHistory(processItem, success);
+            mKillProcessResult.postValue(new Pair<>(processItem, success));
+        });
     }
 
     public LiveData<Pair<ProcessItem, Boolean>> observeKillProcess() {
@@ -232,9 +236,11 @@ public class RunningAppsViewModel extends AndroidViewModel {
         mExecutor.submit(() -> {
             List<ProcessItem> failedProcesses = new ArrayList<>();
             for (ProcessItem processItem : mSelectedItems) {
-                if (!Runner.runCommand(new String[]{"kill", "-9", String.valueOf(processItem.pid)}).isSuccessful()) {
+                boolean success = Runner.runCommand(new String[]{"kill", "-9", String.valueOf(processItem.pid)}).isSuccessful();
+                if (!success) {
                     failedProcesses.add(processItem);
                 }
+                recordKillHistory(processItem, success);
             }
             mKillSelectedProcessesResult.postValue(failedProcesses);
         });
@@ -248,13 +254,17 @@ public class RunningAppsViewModel extends AndroidViewModel {
 
     public void forceStop(@NonNull ApplicationInfo info) {
         mExecutor.submit(() -> {
+            boolean success = false;
+            Throwable failure = null;
             try {
                 PackageManagerCompat.forceStopPackage(info.packageName, UserHandleHidden.getUserId(info.uid));
-                mForceStopAppResult.postValue(new Pair<>(info, true));
+                success = true;
             } catch (SecurityException e) {
+                failure = e;
                 e.printStackTrace();
-                mForceStopAppResult.postValue(new Pair<>(info, false));
             }
+            recordForceStopHistory(info, success, failure);
+            mForceStopAppResult.postValue(new Pair<>(info, success));
         });
     }
 
@@ -411,6 +421,47 @@ public class RunningAppsViewModel extends AndroidViewModel {
     }
 
     @NonNull
+    @WorkerThread
+    private void recordKillHistory(@NonNull ProcessItem processItem, boolean success) {
+        try {
+            String packageName = processItem instanceof AppProcessItem
+                    ? ((AppProcessItem) processItem).packageInfo.packageName
+                    : "pid:" + processItem.pid;
+            SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                    SingleAppActionHistoryItem.ACTION_KILL,
+                    getApplication().getString(R.string.kill_process),
+                    packageName,
+                    0,
+                    processItem.name,
+                    "PID " + processItem.pid);
+            OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
+                    OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
+                            OperationJournalMetadata.RISK_HIGH, false, null));
+        } catch (Throwable th) {
+            Log.e("RunningApps", "Could not record kill history.", th);
+        }
+    }
+
+    @WorkerThread
+    private void recordForceStopHistory(@NonNull ApplicationInfo info, boolean success,
+                                        @Nullable Throwable failure) {
+        try {
+            int userId = UserHandleHidden.getUserId(info.uid);
+            SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                    SingleAppActionHistoryItem.ACTION_FORCE_STOP,
+                    getApplication().getString(R.string.force_stop),
+                    info.packageName,
+                    userId,
+                    info.packageName,
+                    null);
+            OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
+                    OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
+                            OperationJournalMetadata.RISK_MEDIUM, false, failure));
+        } catch (Throwable th) {
+            Log.e("RunningApps", "Could not record force-stop history.", th);
+        }
+    }
+
     @VisibleForTesting
     static String formatBackgroundRunRestoreDetail(@NonNull List<BackgroundRunAppOpPlan.OpModeChange> changes) {
         if (changes.isEmpty()) {
