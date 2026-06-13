@@ -63,6 +63,7 @@ import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.apk.splitapk.ApksMetadata;
+import io.github.muntashirakon.AppManager.apk.splitapk.SplitLabelResolver;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
@@ -941,18 +942,22 @@ public final class ApkFile implements AutoCloseable {
             switch (type) {
                 case ApkFile.APK_BASE:
                     return context.getString(R.string.base_apk);
-                case ApkFile.APK_SPLIT_DENSITY:
+                case ApkFile.APK_SPLIT_DENSITY: {
+                    String label = SplitLabelResolver.getDensityLabel(mSplitSuffix);
                     if (mForFeature != null) {
-                        return context.getString(R.string.density_split_for_feature, mSplitSuffix, getDensity(), mForFeature);
+                        return context.getString(R.string.density_split_for_feature, label, getDensity(), mForFeature);
                     } else {
-                        return context.getString(R.string.density_split_for_base_apk, mSplitSuffix, getDensity());
+                        return context.getString(R.string.density_split_for_base_apk, label, getDensity());
                     }
-                case ApkFile.APK_SPLIT_ABI:
+                }
+                case ApkFile.APK_SPLIT_ABI: {
+                    String label = SplitLabelResolver.getAbiLabel(getAbi());
                     if (mForFeature != null) {
-                        return context.getString(R.string.abi_split_for_feature, getAbi(), mForFeature);
+                        return context.getString(R.string.abi_split_for_feature, label, mForFeature);
                     } else {
-                        return context.getString(R.string.abi_split_for_base_apk, getAbi());
+                        return context.getString(R.string.abi_split_for_base_apk, label);
                     }
+                }
                 case ApkFile.APK_SPLIT_LOCALE:
                     if (mForFeature != null) {
                         return context.getString(R.string.locale_split_for_feature, getLocale().getDisplayLanguage(), mForFeature);
