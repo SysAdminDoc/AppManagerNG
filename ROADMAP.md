@@ -184,12 +184,6 @@ device, or need on-device visual verification.
   Acceptance: with the toggle on and privilege available, a third-party SAF file manager can browse/copy a test app's /data/data dir through NG's provider; toggle off = provider hides those roots.
   Complexity: M
 
-- [ ] P2 — Per-app crash feed (system-wide crash monitor)
-  Why: Upstream's accepted-but-unbuilt #163 (crash monitor with widget + viewer) and Inure's per-app battery/boot panels show demand for "what's wrong with this app" surfaces; NG already parses logcat and tracks ApplicationExitInfo-adjacent data in usage/.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/163 ; logcat/ package (verified)
-  Touches: logcat/ (crash extraction), details/ (per-app crash tab/card), usage/ (exit info)
-  Acceptance: app details shows recent crashes (timestamp + stack head) for the selected app sourced from ApplicationExitInfo (API 30+) and privileged logcat where available; empty state explains required privilege.
-  Complexity: M
 
 ### P3
 

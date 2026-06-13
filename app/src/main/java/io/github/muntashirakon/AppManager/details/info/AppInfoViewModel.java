@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.UserIdInt;
 import android.app.ActivityManager;
 import android.app.Application;
+import android.app.ApplicationExitInfo;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -630,6 +631,13 @@ public class AppInfoViewModel extends AndroidViewModel {
                 appInfo.hiddenApiEnforcementPolicy = ApplicationInfoCompat.getHiddenApiEnforcementPolicy(applicationInfo);
                 // standby bucket
                 appInfo.standbyBucket = UsageStatsManagerCompat.getAppStandbyBucket(packageName, userId);
+                // recent process exits
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    appInfo.recentExits = ExUtils.requireNonNullElse(
+                            () -> ActivityManagerCompat.getHistoricalProcessExitReasons(
+                                    packageName, 0, 10, userId),
+                            Collections.emptyList());
+                }
             }
             appInfo.sdkSandboxInfo = SdkSandboxInfo.from(applicationInfo);
             populateSigningCertInfo(appInfo, packageInfo, isExternalApk);
@@ -822,6 +830,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         public String zygotePreloadName;
         public int hiddenApiEnforcementPolicy;
         public int standbyBucket = -1;
+        @NonNull
+        public List<ApplicationExitInfo> recentExits = Collections.emptyList();
         @NonNull
         public SdkSandboxInfo sdkSandboxInfo = SdkSandboxInfo.unsupported(Build.VERSION.SDK_INT);
         @Nullable

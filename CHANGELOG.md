@@ -57,6 +57,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Added — Per-app process exit history (2026-06-13)
+
+- App details shows a "Recent Exits" section (API 30+) listing the last 10
+  process exit events with reason labels (Crash, ANR, Low Memory, Force Stopped,
+  etc.) and timestamps. Uses the privileged IActivityManager hidden API through
+  ProxyBinder for cross-package querying in root/ADB/Shizuku modes.
+
 ### Added — Per-app standby bucket inspect/set (2026-06-13)
 
 - App details (More info section) now shows the app's current standby bucket
