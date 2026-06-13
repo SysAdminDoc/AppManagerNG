@@ -58,17 +58,29 @@
 
     </io.github.muntashirakon.widget.AppBarLayout>
 
-    <io.github.muntashirakon.widget.RecyclerView
-        android:id="@+id/item_list"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:fitsSystemWindows="true"
-        android:focusable="false"
-        android:scrollbars="none"
-        app:fastScrollerEnabled="true"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
-        tools:listitem="@layout/item_main" />
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <io.github.muntashirakon.widget.RecyclerView
+            android:id="@+id/item_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fitsSystemWindows="true"
+            android:focusable="false"
+            android:scrollbars="none"
+            app:fastScrollerEnabled="true"
+            tools:listitem="@layout/item_main" />
+
+        <include
+            android:id="@android:id/empty"
+            layout="@layout/view_list_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/floatingActionButton"
