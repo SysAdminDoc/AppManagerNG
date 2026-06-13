@@ -47,9 +47,11 @@ means:
 
 Android 16 introduces [Advanced Protection](https://developer.android.com/about/versions/17/features)
 via `AdvancedProtectionManager`. When active, sideloading is blocked outright.
-A future AppManagerNG update will detect this state and explain it before
-attempting an install (tracked in ROADMAP as the Advanced Protection surfacing
-item).
+AppManagerNG detects this state via `AdvancedProtectionCompat` and shows a
+blocking dialog before attempting an install, explaining that Advanced Protection
+must be disabled in Android settings first. The check runs as the first
+pre-flight gate in `PackageInstallerActivity`, before the developer verification
+and split-compatibility checks.
 
 ## Enhanced verification flow (August 2026)
 

@@ -170,6 +170,8 @@ public class ModeDoctorPreferences extends PreferenceFragment {
                 return getString(R.string.privilege_health_restricted_settings_open_app_info);
             case BOOTSTRAP_SMOKE_TEST:
                 return getString(R.string.privilege_health_bootstrap_smoke_test_title);
+            case SECURITY_SETTINGS:
+                return getString(R.string.privilege_health_mode_doctor_action_security_settings);
             case SUPPORT_BUNDLE:
             default:
                 return getString(R.string.support_info_bundle_share_title);
@@ -217,6 +219,9 @@ public class ModeDoctorPreferences extends PreferenceFragment {
                 return DhizukuBridge.getSettingsIntent(context);
             case DEVELOPER_OPTIONS:
                 return new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            case SECURITY_SETTINGS:
+                return new Intent(Settings.ACTION_SECURITY_SETTINGS)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             case RESTRICTED_APP_INFO:
                 return RestrictedSettingsDiagnostics.buildAppInfoIntent(context);

@@ -2054,6 +2054,8 @@
     <string name="installer_split_dependency_warning_title">Split compatibility warning</string>
     <string name="installer_developer_verification_warning">Android Developer Verification is active on this device. In Brazil, Indonesia, Singapore, and Thailand, Android may block installs or updates when the package name and signing key are not registered to a verified developer. If Android shows an advanced flow, continue only when you trust the source.</string>
     <string name="installer_developer_verification_failure_reason">Developer verification: %1$s (%2$s)</string>
+    <string name="advanced_protection">Advanced Protection</string>
+    <string name="installer_advanced_protection_blocked">Advanced Protection is enabled on this device. Android blocks all sideloaded app installs while this policy is active. To install apps from sources other than Google Play, disable Advanced Protection in Android settings first.</string>
     <string name="developer_verification_failure_unknown">unknown verifier failure</string>
     <string name="developer_verification_failure_network">network unavailable during developer verification</string>
     <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>
@@ -2487,6 +2489,9 @@
     <string name="privilege_health_restricted_settings_open_accessibility">Open Accessibility</string>
     <string name="privilege_health_restricted_settings_settings_unavailable">Could not open this Settings screen.</string>
     <string name="privilege_health_restricted_settings_mode_doctor_fix">Open Settings -> App info for AppManagerNG, choose Allow restricted settings from the menu, then return to Accessibility / notification listener / device-admin settings. If your ROM exposes it from the blocked toggle, long-press that disabled toggle.</string>
+    <string name="privilege_health_advanced_protection_active">Active — sideloading is blocked by Android. Disable Advanced Protection in Android settings to install APKs.</string>
+    <string name="privilege_health_advanced_protection_inactive">Inactive — sideloading is not blocked by Advanced Protection.</string>
+    <string name="privilege_health_mode_doctor_action_security_settings">Security settings</string>
     <string name="privilege_health_bootstrap_smoke_test_title">LocalServer bootstrap smoke test</string>
     <string name="privilege_health_bootstrap_smoke_test_summary">Run the privileged-shell handshake and copyable diagnostic signature for the current mode.</string>
     <string name="privilege_health_bootstrap_smoke_test_running">Running LocalServer bootstrap smoke test...</string>
