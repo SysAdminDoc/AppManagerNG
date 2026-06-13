@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
@@ -54,6 +55,7 @@ public final class PrivilegeModeDoctor {
         probes.add(probeDhizuku(appContext));
         probes.add(probeAdb(appContext));
         probes.add(probeRestrictedSettings(appContext));
+        probes.add(probeAdvancedProtection(appContext));
         probes.add(probeLocalServer());
         probes.add(probeSelinux());
         probes.add(probeAbi());
@@ -257,6 +259,23 @@ public final class PrivilegeModeDoctor {
     }
 
     @NonNull
+    private static Probe probeAdvancedProtection(@NonNull Context context) {
+        if (Build.VERSION.SDK_INT < 36) {
+            return Probe.skip("Advanced Protection", "sdk=" + Build.VERSION.SDK_INT,
+                    "Advanced Protection requires Android 16 (API 36) or later.");
+        }
+        boolean enabled = AdvancedProtectionCompat.isAdvancedProtectionEnabled(context);
+        String details = "sdk=" + Build.VERSION.SDK_INT + ", enabled=" + enabled;
+        if (enabled) {
+            return Probe.warn("Advanced Protection", details,
+                    "Advanced Protection blocks sideloading. Disable it in Android settings to install APKs.",
+                    FixTarget.SECURITY_SETTINGS);
+        }
+        return Probe.pass("Advanced Protection", details,
+                "Sideloading is not blocked by Advanced Protection.");
+    }
+
+    @NonNull
     private static Probe probeLocalServer() {
         long started = android.os.SystemClock.elapsedRealtime();
         try {
@@ -406,6 +425,7 @@ public final class PrivilegeModeDoctor {
         DEVELOPER_OPTIONS,
         RESTRICTED_APP_INFO,
         BOOTSTRAP_SMOKE_TEST,
+        SECURITY_SETTINGS,
         SUPPORT_BUNDLE,
     }
 

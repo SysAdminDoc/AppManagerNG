@@ -73,6 +73,7 @@ import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 import io.github.muntashirakon.AppManager.apk.splitapk.SplitApkChooser;
 import io.github.muntashirakon.AppManager.apk.whatsnew.WhatsNewFragment;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
+import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
@@ -697,6 +698,15 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             });
             return;
         }
+        if (AdvancedProtectionCompat.isAdvancedProtectionEnabled(this)) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.advanced_protection)
+                    .setMessage(R.string.installer_advanced_protection_blocked)
+                    .setCancelable(false)
+                    .setNegativeButton(R.string.cancel, (dialog, which) -> triggerCancel())
+                    .show();
+            return;
+        }
         if (!mDeveloperVerificationWarningShown
                 && DeveloperVerificationCompat.isVerifierServiceAvailable(this)) {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
@@ -1023,7 +1033,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private CharSequence composeInstallCallout(int trackers,
                                                @NonNull List<InstallDependencyChecker.Issue> issues,
                                                @NonNull InstallerPrivilegeCascade.Plan privilegePlan) {
-        List<CharSequence> lines = new ArrayList<>(issues.size() + 3);
+        List<CharSequence> lines = new ArrayList<>(issues.size() + 4);
+        if (AdvancedProtectionCompat.isAdvancedProtectionEnabled(this)) {
+            lines.add(getText(R.string.installer_advanced_protection_blocked));
+        }
         if (DeveloperVerificationCompat.isVerifierServiceAvailable(this)) {
             lines.add(getText(R.string.installer_developer_verification_warning));
             mDeveloperVerificationWarningShown = true;
