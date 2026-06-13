@@ -1,126 +1,130 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
 # Research — AppManagerNG
-
-Research pass date: 2026-06-10 (pass 2; supersedes pass 1 of the same date).
-Verification pass 2026-06-10 (late): all upstream/issue/dependency claims re-checked
-against live sources (#1982/#1967/#1973 open as stated; v4.1.0 milestone 41 closed /
-2 open — #1733 + #1982 — due 2026-06-21; NG now skips/logs #1733 root-only
-dexopt profile-reset options in non-root modes; sora-editor 0.24.6 confirmed last
-minSdk-21 release; Magisk v30.7 caps-preserved confirmed; MDC 1.14.0 minSdk-23
-confirmed). Two corrections applied: the minSdk decision memo exists on disk
-(see §Architecture), and Pithus responded operational (see §Open Questions).
-Repo state: main @ d692a5a0 (v0.5.0 shipped 2026-05-25).
-Evidence labels: Verified / Likely / Assumption / Needs live validation.
 
 ## Executive Summary
 
-AppManagerNG is a Java/Views Android package manager (fork of MuntashirAkon/AppManager, pinned 3d11bcb 2026-04-16) whose strongest current shape is "the only tool that does everything in one app, with an approachable front door": Permission Inspector, onboarding wizard, M3 dashboard, routine-scheduler executor, tags/filter-preset layers, snapshot bundles, app archiving (API 35, already shipped via AppArchiveManager — ahead of every OSS competitor), reproducible two-build releases. The highest-value direction remains **trust under pressure**, now sharpened by pass-2 findings: (1) upstream v4.1.0 tags ~2026-06-21 with local fixes now in place for #1982 and #1733; (2) backup-engine debt is now precisely located (missing overwrite option, the 2026-06-09 audit's deferred reliability batch); (3) the platform wave (Developer Verification advanced flow Aug 2026, Advanced Protection, ApplicationStartInfo, AppFunctions) gives NG cheap inspection/diagnostic surfaces nobody in the niche ships. Top opportunities in order: upstream post-pin cherry-pick batch, root-detection retune for Magisk 30.7/KSU-Next 3.1 (upstream #1967), backup overwrite + deferred-audit reliability batch, sora-editor bump (0.24.6 is the last minSdk-21 release — time-boxed), ApplicationStartInfo panel, assistant-launched privileged services (#1973, accepted-unbuilt upstream).
+AppManagerNG is a GPL-3.0-or-later Android package-manager fork (minSdk 21, target 36) built on Android Views, Material Components 1.13.0, Java/Kotlin, Room, WorkManager, Gradle 9.4.1/AGP 9.2.0, `floss`/`full` flavors, and root/ADB/Shizuku/Dhizuku privilege lanes. 910 source files (237 NG-only additions since the 3d11bcb fork), 354 unit tests, 4 instrumented tests, 142 layout files.
 
-Carried forward from pass 1 (already itemized in ROADMAP, still valid): A17 behavior audits, backup verification, restore-fix ports, debloat safety net, wireless-ADB resilience, change auditing, reference states, Dhizuku parity.
+Its strongest current shape is a local-first power-user control plane: app inspection, package-state editing, split-APK installation, backup/restore, profile automation, component blocking, debloating, and permission auditing — with NG-specific additions like Permission Inspector, app archiving, scheduled auto-backup, per-app tags/notes, debloat risk tables, package-event profile triggers, and a routine scheduler.
+
+The highest-value direction is not more breadth; it is **trust under pressure and workflow friction reduction**: make component blocking belt-and-suspenders reliable (IFW+PM dual-mode), give freeze workflows a dedicated surface, make split-APK installs self-explanatory, let debloat presets survive OTA updates, warn before backup restores cross API boundaries, and extend the routine scheduler to cover cache/data clearing. The reliability, privilege-integrity, and distribution-documentation items from prior research passes remain load-bearing.
+
+Top opportunities in priority order:
+1. IFW+PM dual-mode component blocking (reliability, competitive parity with Blocker).
+2. Human-readable split APK labels in installer chooser (UX, competitive parity with InstallerX-Revived).
+3. Debloat preset export/import for OTA re-application (workflow, competitive parity with UAD-NG/Canta).
+4. Dedicated freeze surface with home-screen widget (UX, competitive parity with Hail).
+5. Biometric gate option for privileged/destructive operations (trust, upstream #1738).
+6. Backup restore API-level compatibility warnings (trust, community pain point).
+7. Scheduled cache/data clearing as routine operation type (feature, competitive parity with SD Maid SE).
+8. Prior-pass items remain: main-list load failure watchdog, distribution doc link-rot repair, backup round-trip CI, form-factor permission gating, hostile APK corpus, installer caller result support.
 
 ## Product Map
 
-- Core workflows: inspect app (details/components/permissions/app-ops/signatures) → act (block/freeze/revoke/uninstall/backup/archive) → automate (profiles, routine triggers, batch ops, Tasker/URI) → audit (tracker scan, op history, permission/signing monitors).
-- Personas: privacy-focused power user (root/Shizuku/GrapheneOS-adjacent), debloating novice (NG's UX target), fleet/ROM tinkerer (preseed docs, snapshot bundles).
-- Platforms: Android 5.0+ (minSdk 21 ceiling policy — one-way door, now time-pressured by sora-editor and MDC both ending minSdk-21 support), targetSdk 36; floss (offline) + full (opt-in online) flavors.
-- Distribution: GitHub Releases (signed, reproducibility-gated) + Obtainium config; IzzyOnDroid aspirational (tracker now at codeberg.org/IzzyOnDroid/repo); Accrescent **closed to new submissions** (capacity) — drop it from distribution plans for now.
-- Key data flows: RulesStorageManager, Room AppsDb v9, SharedPrefs-JSON stores (tags/filter presets/profile triggers — tags confirmed round-tripping through SnapshotBundle), encrypted backups (metadata v7), privileged ops via root/Shizuku/Dhizuku/ADB local server.
+- **Core workflows**: app list inspection, app details (components/permissions/app-ops/signatures/usage), install/update/split-package handling, batch operations, backup/restore (multi-format, encrypted), profiles/routines, debloating, component blocking, tracker/library scanning, permission inspector, logcat viewer, file manager, code editor, terminal (stub).
+- **User personas**: privacy-conscious power users, ROM/root tinkerers, corporate device maintainers, debloat-and-forget casual users, automation-heavy DevOps/sysadmin users.
+- **Platforms and distribution**: Android minSdk 21 through target/compile 36 (API 37 audit pending), phone/tablet with declared leanback support, GitHub Releases/Obtainium (primary), F-Droid/IzzyOnDroid (planned), `floss` (offline-only) and `full` (opt-in network) flavors.
+- **Key integrations**: PackageManager/PackageInstaller, AppOps, UsageStats, WorkManager, Room, SAF, split APK/APKS/APKM/XAPK parsing, root shell (libsu 6.0.0), ADB TCP, Shizuku 13.1.5, Dhizuku, OpenPGP (BouncyCastle 1.84), optional VirusTotal/Pithus (full flavor).
 
 ## Competitive Landscape
 
-- **Upstream App Manager** — v4.1.0 milestone 41/43 closed, due 2026-06-21; latest master commit 133b5acb (2026-06-02). Learn: cherry-pick the uncatalogued post-pin fix batch (706c36fb APKS compile, daa54ac0 profile filter expressions, 4a25c3f0 intent resolution, 3bf97856/184df334 NPEs, 329b8dc1 debloater listing, 4d3da96b nav buttons, 0d1be565 editor crop); track whether upstream also closes #1982/#1733; implement accepted-unbuilt #1973 (assistant-launched privileged services/broadcasts). The M3-preferences commit set (e24eb8d0 et al.) will be the main rebase-conflict source — decide port-vs-skip deliberately. Shizuku/Dhizuku requests keep arriving monthly (#1970/#1972/#1979/#1981, all closed duplicate of rejected #55) — the fork's structural lane is confirmed again. Avoid: store-client ambitions.
-- **Inure App Manager** (1.8k★, the biggest direct OSS competitor) — does well: usage-stats panel (1-year window), device-wide analytics charts (SDK/installer/signature distributions with tap-through filtered lists), battery-optimization panel, boot manager, deep per-app AppOps (UID-vs-package scoping), debloat badges on every App Info page + post-op state re-verification. Learn: analytics dashboard, boot-component manager, debloat-state badges. Avoid: media-player scope creep, trial-license model, fully custom non-Material UI (bus-factor and a11y trap), zero-open-issues policy (kills community signal).
-- **AppDash (commercial)** — does well: configurable insight-card dashboard ("unused apps", "storage-heavy", "updates available"), color auto-tagging, versioned backups. Learn: insight cards as a main-screen surface. Avoid: Play-intelligence subscription angle, watchlist polling.
-- **APKUpdater / UpgradeAll** — multi-source version-watch (F-Droid/IzzyOnDroid/GitHub) with scheduled checks proves real demand (3.8k★, active); UpgradeAll died when its cloud rules-hub maintenance stopped. Learn: version-watch from static indexes, full-flavor only. Avoid: cloud rules-hub dependency.
-- **Brevent / Thanox / App Ops (Rikka)** — background policy via standby buckets (`am set-standby-bucket`), op templates applied to app groups, ops backup/restore. Learn: per-app standby-bucket control fits NG's ADB tier; op templates fit the existing rules store. Avoid: task-killer "boost" framing, Thanox's fake-data "privacy cheat" (legal/ethical surface), pro-gating.
-- **TrackerControl / ClassyShark3xodus** — tracker reporting grouped company → category → jurisdiction with plain-language explanations; dynamic-vs-static manifest diff; per-app SELinux/sharedUserId badges. Learn: rollup presentation over flat library lists (NG's TrackerInfoDialog is the base). Avoid: live Exodus API calls in core flows (rate-limited 3 req/min; offline doctrine) — bundle signatures, deep-link out instead.
-- **InstallerX-Revived (5.1k★) / Blocker (2.3k★)** — modern installer benchmark (silent install, downgrade, SDK-block bypass, Dhizuku); component control with MyAndroidTools-rule import and community rule sharing. Learn: installer option depth; rule-format import breadth. Avoid: nothing notable.
-- **Shelter / Island / Insular** — work-profile freeze/clone tier. NG already ships the half worth having (FreezeUnfreezeService auto-refreezes on screen-off — verified); the profile-management half is fragile across OS updates (Island's A15 QPR2 breakage, XDA "ruined everything" threads). Avoid the cloning tier; keep it rejected.
+**Upstream App Manager (MuntashirAkon)** — The canonical implementation. v4.1.0 milestone (39 issues, due 2026-06-21) includes critical restore fixes (#1286 Samsung/A14 SecurityException), HMAC mutual auth for the local privileged channel, and native run_server. Permanently rejected Shizuku (#55) — rootless power is NG's structural lane. Key open issues for NG: ADB mode silently lost (#1596), one-tap freeze UX (#1558), root not detected on A16 (#1967), assistant-launched services (#1973), SAF documents provider (#516), crash monitor (#163), D-pad/TV navigation (#107). Learn from its accepted bug queue and v4.1.0 restore hardening. Avoid importing upstream behavior that hides exceptions behind stale UI.
+
+**Blocker (lihenggui)** — Compose/M3 component blocker with IFW+PM dual-mode ("belt-and-suspenders") blocking — stronger than either alone. Ships community tracker-rule sync and batch search-result operations across multiple apps. MyAndroidTools import is broken in recent releases (v2.0.3058+). Learn the dual-mode blocking and cross-app search. Avoid the tracker-rule cloud sync complexity until the local rule store is fully mature.
+
+**Hail (aistra0528)** — Freeze/suspend specialist supporting four privilege models (Device Owner, Dhizuku, Root, Shizuku) with graceful degradation. Ships a dedicated frozen-apps grid with one-tap toggle, home-screen widget, and grayscale launcher icons for suspended apps. Suspend vs. disable distinction is a UX win (app visible in launcher as gray, not hidden). Learn the freeze grid, widget, and multi-model privilege fallback. Avoid full device-owner mode until Dhizuku executor parity lands.
+
+**Inure (Hamza417)** — The aesthetic competitor: per-app usage analytics (1-year history with granular drill-down), battery optimization panel, per-app notes/tags, VirusTotal hash lookup, boot manager, custom theme engine, tabbed app-detail layout. Paid unlocker model. Learn the analytics dashboard, tabbed detail layout, and boot-component view. Avoid the theme-engine expansion — NG's identity is control, not customization.
+
+**InstallerX-Revived / SAI** — Split APK installer that auto-selects best ABI+density+language splits from APKS/APKM/XAPK bundles with human-readable descriptions (not raw split filenames). Silent install via Shizuku/root. Per-split UI with guidance. Learn the human-readable split labels and auto-selection. Avoid building a general-purpose installer — NG's installer serves its inspection workflows.
+
+**Canta / UAD-NG** — Debloat tools with community-maintained per-OEM safety-tier databases (Safe/Caution/Expert/Unsafe). Canta issue #355 reveals success messages shown even when uninstall state is ambiguous. UAD-NG's package database JSON is the portable artifact. Learn the safety-tier presentation and the debloat-list export for OTA re-application. Avoid shipping "recommended" presets without device/vendor-specific rollback evidence.
+
+**Neo-Backup** — Root-only backup with per-app custom schedules (unlimited), restore-without-reboot for system apps, custom backup filters (by install source, last-used date, size). Issue area #1027: storage backend flexibility. Learn scheduled backup flexibility and storage-location clarity. Avoid adding backup modes until overwrite, recovery, and CI round-trip evidence are stable.
+
+**SD Maid 2/SE** — Trusted maintenance UX: app cleaner with per-app cache attribution, corpse detection (post-uninstall residue), scheduled cache clearing, Android TV launcher support, signing fingerprints, changelog discipline. Not an app manager — deliberately scoped to cleaning. Learn the scheduled cache-clearing pattern and TV support polish. Avoid general "cleaner" features that compete with SD Maid's core.
 
 ## Security, Privacy, and Reliability
 
-- **Resolved since pass 1 (no action)**: Bouncy Castle already at 1.84 with CVE ledger comments (versions.gradle:26 — CVE-2026-5588/-3505/-5598 cleared). Shizuku-API 13.1.5 is the current artifact. Negative CVE findings for zstd-jni 1.5.7-7, okhttp, AndroidX, XZ-for-Java, ARSCLib/apksig (Verified absence). commons-compress is not a dependency (no pin, no build.gradle reference) — scanner findings against it can be dismissed.
-- **Resolved on 2026-06-11**: jadx 1.4.7 CVE-2024-32653 audit. GitHub's advisory scopes the issue to the `jadx-gui` package/device-launch flow; AppManagerNG depends on `jadx-core` and `jadx-dex-input` only, and repository searches found no `jadx-gui`, `ADBDevice`, or `execShellCommandRaw` launch path.
-- **Resolved on 2026-06-11**: Android 16 hidden-API refresh. Upstream commits `eff7f587c` and `04ed88d03` were cherry-picked with attribution, the hidden-API descriptor baseline was regenerated, local compile passed, and the emulator workflow now runs the hidden-API instrumented gate on API 36 and API 37.
-- **Resolved on 2026-06-11**: #1982 private-space main-list guard. `ApplicationItem.generateOtherInfo()` now treats per-user permission/usage-state lookup failures as unavailable for that user and logs package/user context; `MainViewModel.loadApplicationItems()` logs unexpected load-path failures instead of losing them inside the worker `Future`. Unit coverage simulates the Android 16 private-space `SecurityException` degradation path.
-- **Resolved on 2026-06-11**: session-lock cryptographic-material wipe. `SessionMonitoringService.lockScreen()` now drops the cached app keystore before process termination; `KeyStoreManager` clears decrypted keystore-password bytes and plaintext password conversion buffers, `CompatUtil` clears wrapped AES blobs and destroys local-protection keys after decrypt, and `AuthManager.generateKey()` zeroes its generated char buffer after producing the persisted key string.
-- **Data-loss class in tree**: backup overwrite option still unimplemented (backup/dialog/ TODO since 2020).
-- **2026-06-09 audit deferred reliability batch (recovered from session record; classes verified present)**: AppUsageViewModel live-list CME; stale-position notifyItemChanged in AppDetails fragments; ApkWhatsNewFinder singleton shared temp-set; SAF pending-write fields lost on process death + profile-export main-thread IO; OneClickOps onPause busy-clear without scan-cancel; retention pruners leave stale Room rows and fire no broadcast; commit() can skip the previous-backup freeze flag; verify-backups surfaces raw getMessage(); tracker/perm badges below 48dp touch-target minimum.
-- **Root-detection drift**: Magisk v30.7 (2026-02) now preserves capabilities by default (`--drop-cap` to opt out) — NG ships KernelSU/Magisk *drop-cap diagnostics* built on the old default; KernelSU-Next 3.1.0 and the A16 root-detection failure (upstream #1967, accepted P1/S0) hit the same probe stack (runner/RootManagerInfo). libsu 6.0.0 predates A16; topjohnwu's unreleased master has a pseudo-file NIO fix (4910d8dc) worth vendoring if /proc reads misbehave.
-- **Developer Verification (since 2026-05-15)**: Limited Distribution Accounts (free, 20 devices) in early access now; the **"advanced flow" for installing unverified apps launches globally Aug 2026** (developer mode + anti-coaching confirm + reboot + one-day wait + biometric). Enforcement date and ADB exemption unchanged. The installer now preserves verifier failure reasons from PackageInstaller results and offers a one-tap ADB retry when the APK source is still retryable and ADB is already reachable. Advanced Protection (AdvancedProtectionManager, API 36+) surfacing remains itemized separately.
-- **Guardrail notes carried forward**: Pithus keep-vs-remove still needs live validation; post-backup verification and debloat safety net remain itemized in ROADMAP.
+- **Verified resolved**: BouncyCastle bcprov/bcpkix is at 1.84, closing CVE-2026-0636 (LDAP injection, critical) and CVE-2025-14813 (GOSTCTR broken block cipher). No action needed.
+- **Verified risk**: `MainViewModel.java:593-619` catches app-list load failures and logs them but does not publish an explicit failed-load state with retry/support details. Upstream #1982/#1825/#1948 confirm this is a current reliability gap. (Existing roadmap item.)
+- **Verified risk**: `RootServiceManager` external-storage staging TOCTOU issue is tracked in ROADMAP. (Existing roadmap item.)
+- **Verified risk**: Reviewer-facing documentation references are stale — README/CLAUDE/workflow references point at missing distribution, package-visibility, reproducible-build, sideload, and project-context docs. (Existing roadmap item.)
+- **Verified risk**: `ApkFile.java:236` carries an archive parsing FIXME; Android's zip path traversal guidance (CVE-2024-32653 pattern) and the Apktool CVE-2026-39973 (path traversal in resource decoding) reinforce the existing hostile APK corpus roadmap item.
+- **Verified risk**: Component blocking uses only one mechanism (IFW or PM) per operation. Blocker's IFW+PM dual-mode proves combined blocking is more reliable: IFW rules survive factory reset while PM disables don't, and PM disables take effect immediately while IFW rules may need a reboot on some ROMs.
+- **Verified present**: `LeftoverScanner.java` already detects post-uninstall orphan directories under `Android/{data,obb,media}/`. UI wiring (recursive size, deletion with op-history) is noted as pending on T19-B. Not a new gap.
+- **Verified present**: `PackageStateVerifier.java` verifies post-operation package state. Future work should extend this verifier for debloat operations specifically (Canta #355 pattern).
+- **Likely risk**: Wear/TV users hit permission/settings prompts that don't exist on their form factor. Manifest declares leanback support; upstream #1823 and PermissionManagerX #61 have related complaints. (Existing roadmap item.)
+- **Likely risk**: SplitApkChooser presents raw split entry names in a multi-choice dialog. Users cannot distinguish `config.arm64_v8a` from `config.en` without Android packaging knowledge. InstallerX-Revived shows this is solvable with a human-readable label layer.
+- **Platform risk (A17)**: Android 17 Beta 4.1 (2026-06-01) introduces: static-final field reflection ban (breaks hidden-API bypass), lock-free MessageQueue (breaks IPC shims), ACCESS_LOCAL_NETWORK runtime permission (mDNS discovery), APK Signature Scheme v3.2 (ML-DSA hybrid PQC), AdvancedProtectionManager (blocks sideloading), Certificate Transparency enforcement, native DCL hardening, BAL MODE_BACKGROUND_ACTIVITY_START_ALLOWED deprecation. (Existing A17 audit batch roadmap item covers this.)
+- **Needs live validation**: exact TV/Wear behavior, release artifact sizes for IzzyOnDroid submission, RootService state after existing work finishes.
 
 ## Architecture Assessment
 
-- **Already shipped, under-marketed**: API-35 app archiving (AppArchiveManager + batch ops + App Info + main list) — no mainstream OSS manager ships this; it belongs in README/feature marketing, not the roadmap.
-- **Refactor candidates**: AppDetailsPermissionsFragment → ViewModel (5 TODOs, privileged ops on the fragment thread, blocks error handling); settings/Ops.java:1030 duplicate revocation paths; terminal/TermActivity mock (4 TODOs) — finish or formally defer with a decision record; PackageInstallerCompat.java:685 task-wait race + :1198 HyperOS handling.
-- **Test map**: ~303 unit-test classes concentrated in I/O/parsing; zero coverage in libserver/, server/, hiddenapi/, backup core, batchops/; androidTest has 3 classes (smoke/Room-migration/a11y). CI: tests, A17 emulator, dependency-scan, CodeQL, lint, release, two watch workflows, docs-link-check. Backup round-trip integration tests remain itemized in ROADMAP.
-- **Dependency time-pressure**: sora-editor pinned at fork 0.22.2; Rosemoe 0.24.4–0.24.6 fix IME composing-text corruption, completion-list ANR, IOOB, emoji deletion; **0.24.6 (2026-06-10) is the last minSdk-21 release** (Verified: release notes state next release raises minSdk to 23). Since the floor decision is now "hold 21" (below), 0.24.6 is the terminal upstream version NG can take — bump now, don't wait. libadb-android: no 2026 commits (current); ARSCLib pin predates the 2026-05 sparse-resource and DEX-validation fixes on master (no tagged release — watch, don't chase).
-- **minSdk decision: MADE, not blocked** (correction to pass-1/2 text). `docs/policy/2026-05-26-minsdk-23-decision.md` exists on disk (Verified) and recommends **holding minSdk 21 through at least v0.6.x**, with four forced-decision triggers (unbackportable CVE in a pinned-cluster dep, hard 1.14-component dependency, API-21/22 untestable in CI, external automation-API integrator need) and a five-step flip plan. What is actually missing is the *ledger* it references: `docs/policy/minsdk-21-ceiling.md` is absent while being linked from versions.gradle:39, the decision memo itself, and docs/architecture/README.md.
-- **i18n**: 44 locales, no pipeline (Weblate item already in ROADMAP); ~48 "App Manager" references remain in default-locale strings.xml.
-- **Docs drift**: CLAUDE.md's canonical-context pointer `PROJECT_CONTEXT.md` does not exist on disk (Verified) — per repo doc-hygiene policy it should not be recreated; the dangling references in CLAUDE.md should be repointed at ROADMAP/CHANGELOG/docs/architecture instead.
+- **Component blocking should support dual-mode (IFW+PM)**: The existing blocking infrastructure writes IFW rules (root) or calls `setComponentEnabledSetting` (ADB/root) but never both for belt-and-suspenders reliability. Blocker's `IFW_PLUS_PM` mode applies both, ensuring the block survives both factory reset (IFW) and immediate-effect scenarios (PM). Implementation: extend `ComponentRule` with a combined mode, apply both in sequence, verify both states.
+- **Split APK chooser needs a label-resolution layer**: `SplitApkChooser` passes raw `ApkFile.Entry` names to `SearchableMultiChoiceDialogBuilder`. A thin mapping layer (ABI → "ARM 64-bit", density → "High-DPI resources", locale → "French language pack") makes the chooser self-explanatory.
+- **Freeze UX is buried**: Freeze/unfreeze works but is only accessible from app details or batch ops. Hail's dedicated grid (all frozen apps, one-tap toggle, widget) is the competitive standard. NG should add a dedicated freeze surface under the main menu, reusing existing freeze/unfreeze plumbing.
+- **Routine scheduler (v0.6.0) should include cache/data clearing**: SD Maid SE's scheduled cache-clearing is the #1 feature users associate with automated maintenance. NG's `RoutineScheduler` already has the executor pattern; adding a `CLEAR_CACHE` operation type extends it without new plumbing.
+- **Backup restore should warn about API-level boundaries**: Community complaints about Neo-Backup reliability across Android version jumps (e.g., A12 backup → A14 restore) apply equally to NG. Backup metadata already includes `targetSdk`; a pre-restore warning when the backup's API level differs significantly from the device's is a trust improvement.
+- **Debloat presets need an export/import path**: Profiles handle per-app configuration, but debloat presets (the set of packages marked for removal) have no export/import flow. Users who debloat before an OTA must re-select everything manually. A JSON export of the current debloat selections, importable after OTA, is a workflow fix.
+- **Tests**: 354 unit tests cover most packages. Key untested areas: `ipc/`, `logcat/`, `magisk/`, `servermanager/`, `intercept/` — all handle privileged operations. Instrumented tests (4 files) cover hidden-API compat, Room migration, and app-launch smoke. Backup round-trip and hostile-archive integration tests are roadmapped.
 
 ## Rejected Ideas
 
-Carried forward from pass 1 (sources there): store client (#464), app cloning (#1029), Xposed auto-unfreeze, native cloud-target SDKs, accessibility-service fallback tier, store watchlist, crash-analytics auto-upload, parallel ADB-firewall build-out (#1754 — now confirmed slipped to upstream v4.1.1, due 2026-12-20), APK editor (#138), Titanium import, Secure Folder.
-
-New this pass:
-- App archiving feature build-out — already shipped (AppArchiveManager, verified); remaining work is marketing copy, not engineering.
-- Unfreeze-and-launch with auto-refreeze (Shelter/Island pattern) — already shipped (FreezeUnfreezeService freezes all on ACTION_SCREEN_OFF, verified).
-- Bouncy Castle 1.84 bump — already done (versions.gradle:26).
-- Shizuku-API bump — 13.1.5 is the latest published API artifact; app v13.6.0 ≠ API version.
-- "Nuke all trackers" one-shot (Warden) — NG's One-Click Ops tracker blocking with three-tier intensity already covers it.
-- VirusTotal integration (Inure #276) — NG full flavor already ships it hash-first, opt-in.
-- WebDAV/SMB backup targets — still rejected; SAF DocumentsProvider destinations reach Nextcloud et al. without new network SDKs in core.
-- Work-profile cloning/sandbox tier (Shelter/Island/Insular) — fragile across OS updates (Island A15 QPR2 breakage); freeze half already shipped.
-- Media/audio/image viewers, trial-license models, custom UI toolkits (Inure) — scope creep and bus-factor traps.
-- Cloud rules-hub for update tracking (UpgradeAll) — died with maintenance; static indexes only.
-- Thanox-style fake-device-data "incognito" — ethical/legal surface, misfit.
-- commons-compress CVE remediation — not a dependency (verified).
-- Levenshtein-ranked search, icon-PNG export, copyable batch package names, dynamic-vs-static manifest diff (Inure/UAD-NG/ClassyShark) — Under consideration, not itemized: individually trivial or L-effort with niche payoff; revisit as a single QoL batch if user requests surface.
+- **Post-uninstall orphan/residue detection**: Rejected — `LeftoverScanner.java` already implements this (orphan detection under `Android/{data,obb,media}/`). UI wiring is pending on T19-B; no new roadmap item needed.
+- **Shizuku `newProcess` → `UserService` migration**: Rejected — `newProcess` in the codebase is NG's own `AMService.newProcess()` AIDL method for remote process spawning, not Shizuku's deprecated API. Not applicable.
+- **Full device-owner/profile-owner mode**: Rejected — depends on Dhizuku executor parity (existing roadmap item) and would expand privilege semantics prematurely.
+- **Generic cleaner/storage optimizer**: Rejected — SD Maid SE owns this better; NG's fit is package/rule/backup control. Cache clearing as a routine operation type is the bounded intersection.
+- **Compose rewrite**: Rejected — repo instructions keep Android Views; Material 1.14.0 raises minSdk to 23 against the minSdk 21 ceiling policy.
+- **Cloud backup/sync**: Rejected — contradicts local-first privacy posture and adds multi-user/cloud trust work.
+- **Tracker-rule cloud sync (Blocker pattern)**: Rejected for now — adds network dependency and community-curation governance overhead; local rule store maturity comes first.
+- **App update price-change tracking (AppDash pattern)**: Rejected — niche commercial feature that requires Play Store scraping; doesn't fit local-first posture.
+- **Custom theme engine (Inure pattern)**: Rejected — NG's identity is control/trust, not visual customization; existing M3 dynamic color + AMOLED/dark/light is sufficient.
+- **OEM bloatware safety-tier database (UAD-NG)**: Rejected as separate item — existing debloat work already added `OemBloatRiskTable`, OEM resolution, and bloatware filter predicates; full UAD model/region ingest is parked behind an external dataset blocker.
+- **New ApplicationStartInfo, AppFunctions, standby bucket, Advanced Protection, Android 17, and installer-result items**: Rejected as duplicates — ROADMAP already contains actionable entries for each.
 
 ## Sources
 
-Upstream / companion libs:
-- https://github.com/MuntashirAkon/AppManager/commits/master
-- https://github.com/MuntashirAkon/AppManager/milestone/72
-- https://github.com/MuntashirAkon/AppManager/issues/1982
-- https://github.com/MuntashirAkon/AppManager/issues/1973
-- https://github.com/MuntashirAkon/AppManager/issues/1967
-- https://github.com/MuntashirAkon/AppManager/issues/1733
-- https://github.com/Rosemoe/sora-editor/releases
-- https://github.com/topjohnwu/libsu/commits
-- https://github.com/REAndroid/ARSCLib/releases
-- https://github.com/topjohnwu/Magisk/releases
-
-Platform / policy:
-- https://developer.android.com/about/versions/17/features
-- https://developer.android.com/reference/android/app/ApplicationStartInfo
-- https://developer.android.com/ai/appfunctions
-- https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html
-- https://android-developers.googleblog.com/2026/03/android-developer-verification-rolling-out-to-all-developers.html
-- https://android.gadgethacks.com/news/google-keeps-android-sideloading-for-power-users-in-2026/
-- https://www.bouncycastle.org/resources/new-releases-bouncy-castle-java-1-84-and-bouncy-castle-java-lts-2-73-11/
-- https://commons.apache.org/proper/commons-compress/security.html
-- https://accrescent.app/docs/guide/getting-started/new-app.html
-- https://f-droid.org/2026/01/24/fdroid-basic-2.0-alpha.html
-
-Competitors / community:
-- https://github.com/Hamza417/Inure
-- https://appdash.app/
-- https://github.com/rumboalla/apkupdater
-- https://github.com/brevent/Brevent
-- https://trackercontrol.org/
-- https://f-droid.org/packages/com.oF2pks.classyshark3xodus/
-- https://github.com/wxxsfxyzm/InstallerX-Revived
-- https://github.com/lihenggui/blocker
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
+Upstream and OSS:
+- https://github.com/MuntashirAkon/AppManager (v4.1.0 milestone, issues #1982/#1967/#1973/#1596/#1558/#516/#163/#107/#55)
+- https://github.com/lihenggui/blocker (IFW+PM dual-mode, component search)
+- https://github.com/aistra0528/Hail (freeze grid, widget, multi-privilege)
+- https://github.com/Hamza417/Inure (analytics, boot manager, tabbed detail)
+- https://github.com/wxxsfxyzm/InstallerX-Revived (split APK UX, issue #672)
+- https://github.com/samolego/Canta (issue #355: ambiguous success state)
+- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (safety tiers, debloat export)
+- https://github.com/NeoApplications/Neo-Backup (scheduled backup, issue #1027)
+- https://github.com/mirfatif/PermissionManagerX (reference states, drift, issue #61)
+- https://github.com/d4rken-org/sdmaid-se (TV support, cache clearing, corpse detection)
+- https://github.com/rumboalla/apkupdater (multi-source update checking, TV support)
+- https://github.com/RikkaApps/Shizuku (v13.6.0 auto-start, issue #1251)
+- https://github.com/iamr0s/Dhizuku (v2.11.2, device-owner delegation)
 - https://github.com/timschneeb/awesome-shizuku
+
+Commercial and adjacent:
+- https://appdash.app/ (pricing tiers, paywalled features)
+- https://adbappcontrol.com/en/ (desktop ADB tool, $7 extended)
+- https://sdmse.darken.eu/changelog
+
+Android platform and policy:
+- https://developer.android.com/about/versions/17/behavior-changes-17
+- https://developer.android.com/about/versions/17/behavior-changes-all
+- https://developer.android.com/about/versions/17/features
+- https://developer.android.com/about/versions/16/behavior-changes-16
+- https://developer.android.com/privacy-and-security/risks/zip-path-traversal
+- https://developer.android.com/ai/appfunctions
+- https://developer.android.com/reference/android/app/ApplicationStartInfo
+- https://developer.android.com/guide/practices/page-sizes
+
+Distribution and advisories:
+- https://f-droid.org/docs/All_our_APIs/ (index v2)
+- https://izzyondroid.org/docs/general/AppInclusionPolicy/
+- https://advisories.gitlab.com/maven/org.bouncycastle/bcprov-jdk18on/CVE-2026-0636/
+- https://advisories.gitlab.com/maven/org.apktool/apktool-lib/CVE-2026-39973/
+- https://github.com/material-components/material-components-android/releases/tag/1.14.0
 
 ## Open Questions
 
-- Pithus: beta.pithus.org responded operational with an upload form on 2026-06-10 (Likely alive; one HTTP check, not a full submission round-trip). The keep-vs-remove item shifts toward "keep" — but NG's scanner/Pithus.java endpoint + network_security_config.xml cert pins must be validated against the current host, and upstream's removal rationale (commits 0e187e8/2c00f69) should be read before deciding.
-- Per-ABI release APK sizes vs IzzyOnDroid's ~30 MB reservation — needs a local release build.
-- minSdk-23: decision is MADE (hold 21 through v0.6.x, docs/policy/2026-05-26-minsdk-23-decision.md) — the remaining open question is only whether any forced-decision trigger has fired since 2026-05-26 (none observed in this pass: no unbackportable CVE in the pinned cluster, API-21 emulator images still published). The missing ceiling-ledger doc still needs restoring.
-- Does `pm archive` via the privileged shell path work for apps NG did not install (installer-of-record routing on unarchive)? AppArchiveManager ships; the multi-installer unarchive matrix needs device validation.
-- Whether the planned v0.5.x "background-run rule persistence" surface covers standby-bucket policy — decides the scope of the new standby-bucket item (kept narrow deliberately).
+- Does the existing `SplitApkChooser` show any human-readable labels, or purely raw split entry names? (Determines scope of the split-label item.)
+- What is the current split between IFW-only and PM-only blocking across different privilege modes? (Determines the dual-mode rollout strategy.)
+- Which specific routine operation types are planned for v0.6.0's `RoutineScheduler`? (Determines whether cache clearing is already scoped or genuinely new.)
+- Needs live validation: exact TV/Wear behavior, release APK sizes for IzzyOnDroid submission, RootService state after existing dirty work finishes.
