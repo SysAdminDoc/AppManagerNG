@@ -1825,6 +1825,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         credentialProviderTag.setColor(getCredentialProviderChipColor(context, tagCloud.credentialProviderManifestInfo))
                 .setOnClickListener(v -> showCredentialProviderDialog(v.getContext(),
                         tagCloud.credentialProviderManifestInfo));
+        if (tagCloud.appFunctionCount > 0) {
+            tagItems.add(new TagItem()
+                    .setText(getResources().getQuantityString(R.plurals.app_functions_chip_count,
+                            tagCloud.appFunctionCount, tagCloud.appFunctionCount)));
+        }
         if (tagCloud.manifestMetadataInfo.hasMetadata()) {
             int metadataCount = tagCloud.manifestMetadataInfo.getMetadataCount();
             TagItem manifestMetadataTag = new TagItem();
