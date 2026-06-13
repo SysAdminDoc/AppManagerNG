@@ -193,13 +193,6 @@ device, or need on-device visual verification.
 
 ### P3
 
-- [ ] P3 — APK Signature Scheme v3.2 (hybrid PQC) display/verify readiness
-  Why: Android 17 introduces v3.2 hybrid post-quantum signing (classical + ML-DSA); NG's signature panels and apksig 4.4.0 line must at minimum not mislabel v3.2-signed APKs.
-  Evidence: https://developer.android.com/about/versions/17/release-notes ; versions.gradle:21 (apksig 4.4.0)
-  Touches: versions.gradle (apksig bump when available), details/ signature display, apk/signing/
-  Acceptance: a v3.2-signed sample APK shows the correct scheme list (not "unknown"/crash); audit doc records the verdict if apksig upstream lags.
-  Complexity: S
-
 - [ ] P3 — IzzyOnDroid submission readiness audit
   Why: IzzyOnDroid is the natural first repo for an Obtainium-era app (release-key signing and reproducible builds already in place) but enforces ~30 MB per-app reservation and zero-tracker scans — size per ABI split is unmeasured.
   Evidence: https://izzyondroid.org/docs/general/AppInclusionPolicy/ ; release.yml ABI splits
@@ -351,13 +344,6 @@ Deduplicated against all sections above.
   Evidence: editor/CodeEditorFragment.java:652-656 (undo/redo wired, no history UI)
   Touches: editor/ (undo history panel, simple inline diff)
   Acceptance: a toolbar action shows the undo stack; a diff toggle highlights changes vs. the saved file.
-  Complexity: M
-
-- [ ] P3 — Scanner results not cached for app-details display
-  Why: The main-list and app-details screens show a tracker count badge, but tapping it re-scans from scratch. Previous scan results (which trackers, which components) aren't cached per package+version, so users repeat expensive scans to review findings.
-  Evidence: details/info/AppInfoFragment.java (opens ScannerActivity, no result cache)
-  Touches: scanner/ (persist last scan result keyed by package+versionCode), details/info/ ("Last scanned: [date], [N] trackers" card with tap-through)
-  Acceptance: re-opening app details after a scan shows the cached result without re-scanning; cache invalidates on app update.
   Complexity: M
 
 - [ ] P3 — Profile sharing via QR code or deep link

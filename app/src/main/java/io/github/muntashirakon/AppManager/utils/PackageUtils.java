@@ -874,6 +874,7 @@ public final class PackageUtils {
             if (result.isVerifiedUsingV2Scheme()) sigSchemes.add("v2");
             if (result.isVerifiedUsingV3Scheme()) sigSchemes.add("v3");
             if (result.isVerifiedUsingV31Scheme()) sigSchemes.add("v3.1");
+            // TODO: add v3.2 (hybrid PQC) when apksig-android supports isVerifiedUsingV32Scheme()
             if (result.isVerifiedUsingV4Scheme()) sigSchemes.add("v4");
             builder.append("\n").append(getPrimaryText(ctx, ctx.getResources()
                     .getQuantityString(R.plurals.app_signing_signature_schemes_pl, sigSchemes.size()) + LangUtils.getSeparatorString()));
