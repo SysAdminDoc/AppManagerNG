@@ -187,6 +187,9 @@ import io.github.muntashirakon.AppManager.ssaid.ChangeSsaidDialog;
 import io.github.muntashirakon.AppManager.types.PackageSizeInfo;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.uri.GrantUriUtils;
+import android.app.usage.UsageStatsManager;
+
+import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -3472,6 +3475,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 mListItems.add(ListItem.newRegularItem(appContext.getString(R.string.hidden_api_enforcement_policy),
                         getHiddenApiEnforcementPolicy(appContext, appInfo.hiddenApiEnforcementPolicy)));
             }
+            addStandbyBucketInfo(appContext, appInfo);
             addSelinuxInfo(appContext, appInfo);
             // Main activity
             if (appInfo.mainActivity != null) {
@@ -3551,6 +3555,99 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_set_app_language, mAppLabel));
             }
         });
+    }
+
+    @GuardedBy("mListItems")
+    private void addStandbyBucketInfo(@NonNull Context appContext, @NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || mIsExternalApk) {
+            return;
+        }
+        int bucket = appInfo.standbyBucket;
+        if (bucket == UsageStatsManagerCompat.STANDBY_BUCKET_UNKNOWN) {
+            return;
+        }
+        String bucketLabel = getStandbyBucketLabel(appContext, bucket);
+        if (SelfPermissions.checkUsageStatsPermission()) {
+            ListItem item = ListItem.newSelectableRegularItem(
+                    appContext.getString(R.string.standby_bucket), bucketLabel,
+                    v -> showStandbyBucketPicker(bucket));
+            item.setActionIcon(R.drawable.ic_edit);
+            item.setActionContentDescription(R.string.standby_bucket_change);
+            mListItems.add(item);
+        } else {
+            mListItems.add(ListItem.newRegularItem(
+                    appContext.getString(R.string.standby_bucket), bucketLabel));
+        }
+    }
+
+    @MainThread
+    private void showStandbyBucketPicker(int currentBucket) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return;
+        int[] buckets = {
+                UsageStatsManager.STANDBY_BUCKET_ACTIVE,
+                UsageStatsManager.STANDBY_BUCKET_WORKING_SET,
+                UsageStatsManager.STANDBY_BUCKET_FREQUENT,
+                UsageStatsManager.STANDBY_BUCKET_RARE,
+                UsageStatsManager.STANDBY_BUCKET_RESTRICTED,
+        };
+        int[] labelRes = {
+                R.string.standby_bucket_active,
+                R.string.standby_bucket_working_set,
+                R.string.standby_bucket_frequent,
+                R.string.standby_bucket_rare,
+                R.string.standby_bucket_restricted,
+        };
+        CharSequence[] labels = new CharSequence[buckets.length];
+        int checkedItem = -1;
+        for (int i = 0; i < buckets.length; i++) {
+            labels[i] = getString(labelRes[i]);
+            if (buckets[i] == currentBucket) {
+                checkedItem = i;
+            }
+        }
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.standby_bucket_change)
+                .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                    dialog.dismiss();
+                    setStandbyBucket(buckets[which]);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @MainThread
+    private void setStandbyBucket(int bucket) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                UsageStatsManagerCompat.setAppStandbyBucket(mPackageName, bucket, mUserId);
+                ThreadUtils.postOnMainThread(() -> {
+                    UIUtils.displayShortToast(R.string.done);
+                    refreshDetails();
+                });
+            } catch (Throwable th) {
+                Log.e(TAG, th);
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed));
+            }
+        });
+    }
+
+    @NonNull
+    private static String getStandbyBucketLabel(@NonNull Context context, int bucket) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return String.valueOf(bucket);
+        }
+        if (bucket <= UsageStatsManager.STANDBY_BUCKET_ACTIVE) {
+            return context.getString(R.string.standby_bucket_active);
+        } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_WORKING_SET) {
+            return context.getString(R.string.standby_bucket_working_set);
+        } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_FREQUENT) {
+            return context.getString(R.string.standby_bucket_frequent);
+        } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_RARE) {
+            return context.getString(R.string.standby_bucket_rare);
+        } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_RESTRICTED) {
+            return context.getString(R.string.standby_bucket_restricted);
+        }
+        return context.getString(R.string.standby_bucket_unknown, bucket);
     }
 
     @GuardedBy("mListItems")

@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
@@ -104,6 +105,35 @@ public final class UsageStatsManagerCompat {
         }
         // Unsupported Android version: return false
         return false;
+    }
+
+    public static final int STANDBY_BUCKET_UNKNOWN = -1;
+
+    public static int getAppStandbyBucket(@NonNull String packageName, @UserIdInt int userId) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return STANDBY_BUCKET_UNKNOWN;
+        }
+        try {
+            String callingPackage = SelfPermissions.getCallingPackage(Users.getSelfOrRemoteUid());
+            return getUsageStatsManager().getAppStandbyBucket(packageName, callingPackage, userId);
+        } catch (RemoteException e) {
+            return ExUtils.rethrowFromSystemServer(e);
+        } catch (Throwable th) {
+            Log.w("UsageStatsManagerCompat", "getAppStandbyBucket failed", th);
+            return STANDBY_BUCKET_UNKNOWN;
+        }
+    }
+
+    public static void setAppStandbyBucket(@NonNull String packageName, int bucket, @UserIdInt int userId) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return;
+        }
+        try {
+            getUsageStatsManager().setAppStandbyBucket(packageName, bucket, userId);
+            BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{packageName});
+        } catch (RemoteException e) {
+            ExUtils.rethrowFromSystemServer(e);
+        }
     }
 
     public static IUsageStatsManager getUsageStatsManager() {
