@@ -647,7 +647,7 @@ public final class PackageManagerCompat {
                     pair.getUserId(),
                     ContextUtils.getContext().getPackageName());
             return stats.getDataBytes() + stats.getCacheBytes();
-        } catch (Throwable t) {
+        } catch (Exception e) {
             return -1L;
         }
     }

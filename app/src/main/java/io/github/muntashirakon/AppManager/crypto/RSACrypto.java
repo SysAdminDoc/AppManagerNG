@@ -17,6 +17,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
+import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 
@@ -45,7 +46,9 @@ public class RSACrypto extends AESCrypto {
         SecureRandom random = new SecureRandom();
         byte[] key = new byte[AES_KEY_SIZE_BITS/8];
         random.nextBytes(key);
-        return new SecretKeySpec(key, "AES");
+        SecretKey secretKey = new SecretKeySpec(key, "AES");
+        Utils.clearBytes(key);
+        return secretKey;
     }
 
     @NonNull

@@ -370,3 +370,53 @@ Deduplicated against all sections above.
   Evidence: https://github.com/d4rken-org/sdmaid-se (scheduled cache clearing); profiles/RoutineScheduler.java and profiles/RoutineWorker.java (verified: no CLEAR_CACHE operation type); compat/PackageManagerCompat.java (freeStorageAndNotify available for privileged modes)
   Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
   Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
+
+## Deep Audit Follow-ups (2026-06-13)
+
+Deferred from the 2026-06-13 deep engineering audit pass. Fixed items are in
+the commit history / CHANGELOG. Items below were verified real but need design
+decisions, careful refactoring, or on-device testing.
+
+### P1
+
+- [ ] P1 — Restore clears app data before extraction (crash = total data loss)
+  Why: RestoreOp.restoreData() calls clearApplicationUserData before extracting the backup. If extraction fails (corrupted tar, disk full, SAF error), the app's original data is gone with no rollback. Needs a copy-then-swap or rollback mechanism.
+  Where: backup/RestoreOp.java:581-598
+  Complexity: L
+
+- [ ] P1 — Legacy 32-bit GCM authentication tag accepted on restore
+  Why: AES-GCM with MAC_SIZE_BITS_OLD=32 (metadata <v4) can be forged at ~2^-32 per attempt. New backups use 128-bit tags. Consider refusing or warning on restore of pre-v4 backups.
+  Where: crypto/AESCrypto.java:46, backup/BackupCryptSetupHelper.java:84-86
+  Complexity: S
+
+- [ ] P1 — Master-key verification permanently disabled on restore
+  Why: RestoreOp.checkMasterKey() starts with `if (true) { return; }` (TODO from 2022). KeyStore integrity is never validated during restore. If the device's KeyStore master key changed (factory reset), restored KeyStore entries may be silently corrupted.
+  Where: backup/RestoreOp.java:303-307
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Backup commit() has no crash atomicity (delete-then-move)
+  Why: BackupItems.commit() deletes the old backup directory before moving temp to final. Process crash between delete and move loses both old and new backup.
+  Where: backup/BackupItems.java:520-547
+  Complexity: M
+
+- [ ] P2 — No tar/zip extraction size or entry count limits (bomb vulnerability)
+  Why: TarUtils.extract() and FmArchiveUtils.extractZipArchive() enforce no limit on total entries, total bytes, or decompression ratio. A crafted archive can fill disk.
+  Where: utils/TarUtils.java:148-252, fm/FmArchiveUtils.java:82-116
+  Complexity: M
+
+- [ ] P2 — ProxyBinder service cache has no dead-binder eviction
+  Why: sServiceCache stores binders permanently with no DeathRecipient. A binder that dies (remote process exits) stays cached and all subsequent calls through that service fail until process restart.
+  Where: ipc/ProxyBinder.java:41-52
+  Complexity: M
+
+- [ ] P2 — DialogFragment LiveData observers use Fragment lifecycle instead of view lifecycle
+  Why: BackupRestoreDialogFragment, IconPickerDialogFragment, and RSACryptoSelectionDialogFragment observe LiveData with `this` instead of `getViewLifecycleOwner()`. Observers survive view destruction and can fire UI updates against null views after config changes.
+  Where: backup/dialog/BackupRestoreDialogFragment.java:184-186, details/IconPickerDialogFragment.java:74, settings/crypto/RSACryptoSelectionDialogFragment.java:72-83
+  Complexity: S
+
+- [ ] P2 — BackupRestoreDialogFragment BroadcastReceiver never unregistered on detach
+  Why: mBatchOpsBroadCastReceiver references mActivity and is never unregistered in onDestroyView/onDetach. If the broadcast arrives after fragment detach, the stale activity reference can crash.
+  Where: backup/dialog/BackupRestoreDialogFragment.java:129-138
+  Complexity: S
