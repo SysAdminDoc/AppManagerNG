@@ -6,6 +6,10 @@ import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
@@ -74,6 +78,25 @@ public class MainRecyclerAdapterBadgeStyleTest {
         MainRecyclerAdapter.expandTouchRectToMinimum(rect, 48);
 
         assertEquals(new Rect(10, 20, 80, 90), rect);
+    }
+
+    @Test
+    public void getTouchDelegateBoundsUsesTargetLocalCoordinates() {
+        Context context = RuntimeEnvironment.getApplication();
+        FrameLayout itemView = new FrameLayout(context);
+        LinearLayout badgeRow = new LinearLayout(context);
+        TextView badge = new TextView(context);
+        itemView.addView(badgeRow, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        badgeRow.addView(badge, new LinearLayout.LayoutParams(24, 24));
+
+        itemView.layout(0, 0, 300, 120);
+        badgeRow.layout(50, 20, 250, 80);
+        badge.layout(10, 5, 34, 29);
+
+        Rect bounds = MainRecyclerAdapter.getTouchDelegateBounds(itemView, badge, 48);
+
+        assertEquals(new Rect(48, 13, 96, 61), bounds);
     }
 
     private static int color(Context context, int colorRes) {
