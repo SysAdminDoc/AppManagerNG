@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -66,6 +68,15 @@ public class PermissionInspectorActivity extends BaseActivity {
 
         RecyclerView recycler = findViewById(R.id.recycler_view);
         recycler.setLayoutManager(new LinearLayoutManager(this));
+        View emptyState = findViewById(android.R.id.empty);
+        ImageView emptyIcon = emptyState.findViewById(R.id.empty_state_icon);
+        emptyIcon.setImageResource(R.drawable.ic_shield_key);
+        ((TextView) emptyState.findViewById(R.id.empty_state_title))
+                .setText(R.string.perm_inspector_catalog_empty_title);
+        ((TextView) emptyState.findViewById(R.id.empty_state_summary))
+                .setText(R.string.perm_inspector_catalog_empty_message);
+        emptyState.setVisibility(View.GONE);
+        recycler.setEmptyView(emptyState);
         mAdapter = new PermissionInspectorAdapter(group -> {
             Intent i = new Intent(this, PermissionAppsActivity.class);
             i.putExtra(PermissionAppsActivity.EXTRA_GROUP_ID, group.id);
