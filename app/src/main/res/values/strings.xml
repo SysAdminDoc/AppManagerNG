@@ -1608,6 +1608,11 @@
     <string name="backup_extras_skip_ssaid_android_version">requires Android 8.0+</string>
     <string name="backup_extras_skip_ssaid_store">SSAID settings store unavailable</string>
     <string name="backup_extras_skip_unknown_type">unsupported extra type</string>
+    <string name="restore_api_warning_newer_device">This backup was created on Android API %1$d but this device runs API %2$d. Data restored across major Android versions may not work correctly.</string>
+    <string name="restore_api_warning_older_device">This backup was created on Android API %1$d but this device runs the older API %2$d. Some data formats may be incompatible.</string>
+    <string name="restore_api_risk_scoped_storage">Scoped storage enforcement changed between these versions — file paths in the backup may not resolve.</string>
+    <string name="restore_api_risk_runtime_permissions">The runtime permission model changed between these versions — permission grants in the backup may not apply.</string>
+    <string name="restore_api_risk_package_visibility">Package visibility filtering changed between these versions — cross-app references in the backup may not resolve.</string>
     <string name="backup_rules_description">Back up rules configured within App Manager. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
     <string name="backup_system_data">System data</string>
     <string name="backup_system_data_description">Root-only backup for Android System: Wi-Fi networks, Bluetooth pairings, and account databases.</string>

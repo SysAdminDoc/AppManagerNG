@@ -320,6 +320,7 @@ public class BackupMetadataV5 implements LocalizedString {
         public boolean protectedFromPrune;  // protected_from_prune
         @Nullable
         public String note;  // note
+        public int sourceApiLevel;  // source_api_level (Build.VERSION.SDK_INT at backup time; 0 = unknown/pre-v8)
 
         public Metadata(@Nullable String backupName) {
             this.version = MetadataManager.getCurrentBackupMetaVersion();
@@ -352,6 +353,7 @@ public class BackupMetadataV5 implements LocalizedString {
             verificationFailedFiles = metadata.verificationFailedFiles;
             protectedFromPrune = metadata.protectedFromPrune;
             note = normalizeNote(metadata.note);
+            sourceApiLevel = metadata.sourceApiLevel;
         }
 
         public Metadata(@NonNull JSONObject rootObject) throws JSONException {
@@ -380,6 +382,7 @@ public class BackupMetadataV5 implements LocalizedString {
             verificationFailedFiles = rootObject.optInt("verification_failed_files", 0);
             protectedFromPrune = rootObject.optBoolean("protected_from_prune", false);
             note = normalizeNote(JSONUtils.optString(rootObject, "note"));
+            sourceApiLevel = rootObject.optInt("source_api_level", 0);
             verifyMetadata();
         }
 
@@ -485,6 +488,7 @@ public class BackupMetadataV5 implements LocalizedString {
             rootObject.put("verification_failed_files", verificationFailedFiles);
             rootObject.put("protected_from_prune", protectedFromPrune);
             rootObject.put("note", note);
+            rootObject.put("source_api_level", sourceApiLevel);
             return rootObject;
         }
     }
