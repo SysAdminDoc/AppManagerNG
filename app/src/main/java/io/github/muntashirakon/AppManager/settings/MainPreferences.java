@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -82,9 +83,10 @@ public class MainPreferences extends PreferenceFragment implements SearchView.On
         mNoResultsPref.setVisible(false);
         getPreferenceScreen().addPreference(mNoResultsPref);
 
-        model.getOperationCompletedLiveData().observe(requireActivity(), completed -> {
-            if (requireActivity() instanceof SettingsActivity) {
-                ((SettingsActivity) requireActivity()).progressIndicator.hide();
+        model.getOperationCompletedLiveData().observe(getViewLifecycleOwner(), completed -> {
+            Activity activity = getActivity();
+            if (activity instanceof SettingsActivity) {
+                ((SettingsActivity) activity).progressIndicator.hide();
             }
             UIUtils.displayShortToast(R.string.the_operation_was_successful);
         });

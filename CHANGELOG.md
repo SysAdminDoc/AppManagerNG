@@ -48,6 +48,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   gated; terminal and backup deletion were the remaining ungated
   destructive flows.
 
+### Fixed — Fragment lifecycle crash fixes (2026-06-13)
+
+- MainPreferences LiveData observer used requireActivity() as lifecycle
+  owner instead of getViewLifecycleOwner(), causing observer to outlive
+  the fragment view and crash on config changes.
+- ModeOfOpsPreference mode-of-ops observer now guards with isAdded() and
+  caches the activity reference once instead of calling requireActivity()
+  6 times inside the switch body, preventing ISE crashes when the observer
+  fires during fragment teardown.
+
 ### Fixed — Security and reliability hardening (2026-06-13)
 
 - Fixed shell command injection risk in backup restore: chown path argument
