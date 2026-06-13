@@ -2243,6 +2243,9 @@
     <string name="exit_reason_user_stopped">User Stopped</string>
     <string name="exit_reason_dependency_died">Dependency Died</string>
     <string name="exit_reason_other">Other</string>
+    <string name="exit_reason_freezer">Frozen</string>
+    <string name="exit_reason_package_state_change">Package State Change</string>
+    <string name="exit_reason_package_updated">Package Updated</string>
     <string name="exit_reason_unknown">Unknown (%d)</string>
     <string name="binary_32_bit">32 Bit</string>
     <string name="binary_64_bit">64 Bit</string>
