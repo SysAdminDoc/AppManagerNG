@@ -142,10 +142,12 @@ class ServiceConnectionWrapper {
 
     @WorkerThread
     public void stopDaemon() {
-        Intent intent = new Intent();
-        intent.setComponent(mComponentName);
-        ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
-        mIBinder = null;
+        synchronized (mServiceConnection) {
+            Intent intent = new Intent();
+            intent.setComponent(mComponentName);
+            ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
+            mIBinder = null;
+        }
     }
 
     boolean isBinderActive() {

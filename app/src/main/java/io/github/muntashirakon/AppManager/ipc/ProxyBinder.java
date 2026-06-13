@@ -81,7 +81,9 @@ public class ProxyBinder implements IBinder {
         IBinder binder = sServiceCache.get(serviceName);
         if (binder == null) {
             binder = ServiceManager.getService(serviceName);
-            sServiceCache.put(serviceName, binder);
+            if (binder != null) {
+                sServiceCache.put(serviceName, binder);
+            }
         }
         if (binder == null) {
             throw new ServiceNotFoundException("Service couldn't be found: " + serviceName);
