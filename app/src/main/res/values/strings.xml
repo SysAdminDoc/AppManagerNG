@@ -2221,6 +2221,14 @@
     <string name="hidden_api_enf_policy_warn">Warn (full-access to the hidden API but issues warnings)</string>
     <string name="hidden_api_enf_policy_dark_grey_and_black">Enforce (dark-grey and black lists)</string>
     <string name="hidden_api_enf_policy_black">Enforce (blacklists only)</string>
+    <string name="standby_bucket">Standby bucket</string>
+    <string name="standby_bucket_change">Change standby bucket</string>
+    <string name="standby_bucket_active">Active</string>
+    <string name="standby_bucket_working_set">Working set</string>
+    <string name="standby_bucket_frequent">Frequent</string>
+    <string name="standby_bucket_rare">Rare</string>
+    <string name="standby_bucket_restricted">Restricted</string>
+    <string name="standby_bucket_unknown">Unknown (%d)</string>
     <string name="binary_32_bit">32 Bit</string>
     <string name="binary_64_bit">64 Bit</string>
     <string name="endianness_little_endian">Little endian</string>
