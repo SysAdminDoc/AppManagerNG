@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.installer.InstallerOptions;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
@@ -66,6 +67,7 @@ import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.ssaid.SsaidSettings;
 import io.github.muntashirakon.AppManager.uri.UriManager;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
@@ -166,6 +168,32 @@ class RestoreOp implements Closeable {
         } catch (Exception ignore) {
         }
         mIsInstalled = mPackageInfo != null;
+        checkApiLevelCompatibility();
+    }
+
+    private void checkApiLevelCompatibility() {
+        int sourceApi = mBackupMetadata.sourceApiLevel;
+        if (sourceApi == 0) return;
+        int deviceApi = Build.VERSION.SDK_INT;
+        int delta = Math.abs(deviceApi - sourceApi);
+        if (delta < 2) return;
+        Context context = ContextUtils.getContext();
+        StringBuilder warning = new StringBuilder();
+        if (deviceApi > sourceApi) {
+            warning.append(context.getString(R.string.restore_api_warning_newer_device, sourceApi, deviceApi));
+        } else {
+            warning.append(context.getString(R.string.restore_api_warning_older_device, sourceApi, deviceApi));
+        }
+        if (sourceApi <= 29 && deviceApi >= 30) {
+            warning.append("\n").append(context.getString(R.string.restore_api_risk_scoped_storage));
+        }
+        if (sourceApi <= 22 && deviceApi >= 23) {
+            warning.append("\n").append(context.getString(R.string.restore_api_risk_runtime_permissions));
+        }
+        if (sourceApi <= 29 && deviceApi >= 30) {
+            warning.append("\n").append(context.getString(R.string.restore_api_risk_package_visibility));
+        }
+        addRestoreExtraWarning(warning.toString());
     }
 
     @Override

@@ -309,6 +309,7 @@ class BackupOp implements Closeable {
         BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata(backupName);
         metadata.protectedFromPrune = mProtectFromPrune;
         metadata.note = mBackupNote;
+        metadata.sourceApiLevel = Build.VERSION.SDK_INT;
         metadata.keyStore = !systemDataBackup && KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
         metadata.label = mApplicationInfo.loadLabel(mPm).toString();
         metadata.packageName = mPackageName;
