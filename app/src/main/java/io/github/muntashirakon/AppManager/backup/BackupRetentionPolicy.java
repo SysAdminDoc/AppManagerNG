@@ -295,8 +295,7 @@ public final class BackupRetentionPolicy {
 
     @VisibleForTesting
     static long resolveBackupSize(@NonNull Backup backup) {
-        try {
-            BackupItems.BackupItem item = backup.getItem();
+        try (BackupItems.BackupItem item = backup.getItem()) {
             return item != null ? item.getTotalSize() : -1L;
         } catch (Throwable t) {
             Log.w(TAG, "Failed to resolve backup size " + backup.relativeDir, t);

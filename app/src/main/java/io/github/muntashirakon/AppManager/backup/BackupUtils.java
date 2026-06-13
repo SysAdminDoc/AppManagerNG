@@ -209,8 +209,8 @@ public final class BackupUtils {
         List<Backup> backups = new AppDb().getAllBackupsNoLock(packageName);
         List<Backup> validatedBackups = new ArrayList<>(backups.size());
         for (Backup backup : backups) {
-            try {
-                if (backup.getItem().exists()) {
+            try (BackupItems.BackupItem item = backup.getItem()) {
+                if (item != null && item.exists()) {
                     validatedBackups.add(backup);
                 }
             } catch (IOException e) {
