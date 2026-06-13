@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Compliance — Android 17 behavior-change audit batch (2026-06-13)
+
+- Three new dated audit docs complete the Android 17 (API 37) behavior-change
+  sweep: static-final field reflection (clean — already guarded with SDK < 37
+  check), ACCESS_LOCAL_NETWORK runtime permission (clean — already declared and
+  runtime-requested), and cleartext-attribute deprecation (clean — network
+  security config already uses the modern domain-config pattern). Together with
+  the existing MessageQueue and System.load read-only audits, all five known
+  A17 behavior changes are now recorded.
+
 ### Fixed - Deep engineering/QA/UX audit pass (2026-06-11)
 
 Installer
@@ -98,6 +108,9 @@ Reliability & data safety
 - Batch state-change failures now point users to PACKAGE_STATE_VERIFY logs, and
   packages that reappear after a successful AppManagerNG uninstall create an
   app-change warning for follow-up.
+- RootService now stages its `main.jar` trampoline from app-internal
+  device-protected cache before privileged startup instead of external cache,
+  closing the pre-copy swap window for the ADB/non-root path.
 - Pithus report lookups are kept after live endpoint verification, now reject
   malformed hashes before network access, and use bounded request timeouts.
 - The code editor now uses Sora editor 0.24.6, the final API 21-compatible
@@ -125,6 +138,8 @@ Reliability & data safety
   existing bookmarks drawer without relying on breadcrumb long-press discovery.
 - Main-list tracker and dangerous-permission badges now use expanded row-level
   touch targets while keeping their compact visual size.
+- Main-list badge hit areas now use correctly translated nested coordinates, so
+  expanded tracker/permission tap targets stay centered on the visible badge.
 - Secondary list rows, scanner cards, profile-review warnings, empty states, and
   failure rows now share the V2 premium card, spacing, type, and callout
   treatment; compact app-type flags now use a visible separator instead of
