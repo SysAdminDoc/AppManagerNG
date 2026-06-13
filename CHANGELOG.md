@@ -28,6 +28,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Restored the missing minSdk-21 dependency ceiling ledger at
   docs/policy/minsdk-21-ceiling.md with pinned-cluster table and trigger status.
 
+### Added — Critical-flow contract tests (2026-06-13)
+
+- DestructiveConfirmationContractTest verifies every destructive operation
+  entry point (batch uninstall, batch clear-data, install, terminal launch,
+  backup deletion, file-manager delete, per-app uninstall/clear-data) calls
+  ActionAuthGate.authenticate — fails if a new destructive flow is added
+  without wiring the biometric/credential gate.
+- BackupItemClosureContractTest scans for BackupItems.BackupItem.getItem()
+  calls not wrapped in try-with-resources, catching resource leaks of
+  encrypted backup temp copies and key material.
+
 ### Added — Biometric gate for terminal and backup deletion (2026-06-13)
 
 - Terminal launch from Labs and backup deletion (both individual and base
