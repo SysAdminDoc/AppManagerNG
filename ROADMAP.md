@@ -410,13 +410,6 @@ Deduplicated against all sections above.
   Acceptance: a main-menu entry opens a grid of all frozen/suspended apps; each row has a one-tap toggle that freezes or unfreezes immediately; a home-screen widget shows frozen-app count and opens the freeze surface on tap; works in root, ADB, and Shizuku modes.
   Complexity: M
 
-- [ ] P3 — Biometric gate option for privileged/destructive operations
-  Why: Upstream #1738 requests biometric authentication before terminal access and destructive batch operations. NG's destructive flows have confirmation dialogs but no optional biometric gate, leaving the device vulnerable if unlocked and unattended. The biometric library (1.4.0-alpha04) is already a dependency.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1738 ; versions.gradle:biometric_version = '1.4.0-alpha04' (verified dependency); batchops/, terminal/, backup/ (no BiometricPrompt usage, verified)
-  Touches: settings/ (opt-in toggle, default off), a shared BiometricGateHelper utility, batchops/ (batch uninstall, clear data, disable), terminal/TermActivity.java, backup/ (restore, delete backup)
-  Acceptance: with the toggle on, BiometricPrompt challenges before batch uninstall, batch clear-data, terminal launch, and backup deletion; authentication failure blocks the operation; toggle off = current behavior unchanged; works with fingerprint, face, and device credential fallback.
-  Complexity: S
-
 - [ ] P3 — Scheduled cache/data clearing as routine operation type
   Why: SD Maid SE's scheduled cache-clearing is the #1 feature users associate with automated Android maintenance. NG's RoutineScheduler (v0.6.0 target) already has the executor pattern for scheduled operations but does not include cache or expendable-data clearing as an operation type.
   Evidence: https://github.com/d4rken-org/sdmaid-se (scheduled cache clearing); profiles/RoutineScheduler.java and profiles/RoutineWorker.java (verified: no CLEAR_CACHE operation type); compat/PackageManagerCompat.java (freeStorageAndNotify available for privileged modes)
