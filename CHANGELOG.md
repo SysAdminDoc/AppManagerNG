@@ -57,6 +57,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Added — Per-app standby bucket inspect/set (2026-06-13)
+
+- App details (More info section) now shows the app's current standby bucket
+  (Active, Working set, Frequent, Rare, Restricted) on API 28+.
+- In privileged modes (root, ADB, Shizuku), tapping the bucket row opens a
+  picker to change the bucket. No-root mode shows the bucket read-only.
+
 ### Added — Advanced Protection detection (2026-06-13)
 
 - Installer pre-flight now detects Android 16+ Advanced Protection

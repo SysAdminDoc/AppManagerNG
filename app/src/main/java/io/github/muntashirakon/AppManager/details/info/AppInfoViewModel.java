@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.SensorServiceCompat;
+import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.details.AppDetailsViewModel;
@@ -627,6 +628,8 @@ public class AppInfoViewModel extends AndroidViewModel {
                 appInfo.zygotePreloadName = ApplicationInfoCompat.getZygotePreloadName(applicationInfo);
                 // hiddenApiEnforcementPolicy
                 appInfo.hiddenApiEnforcementPolicy = ApplicationInfoCompat.getHiddenApiEnforcementPolicy(applicationInfo);
+                // standby bucket
+                appInfo.standbyBucket = UsageStatsManagerCompat.getAppStandbyBucket(packageName, userId);
             }
             appInfo.sdkSandboxInfo = SdkSandboxInfo.from(applicationInfo);
             populateSigningCertInfo(appInfo, packageInfo, isExternalApk);
@@ -818,6 +821,7 @@ public class AppInfoViewModel extends AndroidViewModel {
         @Nullable
         public String zygotePreloadName;
         public int hiddenApiEnforcementPolicy;
+        public int standbyBucket = -1;
         @NonNull
         public SdkSandboxInfo sdkSandboxInfo = SdkSandboxInfo.unsupported(Build.VERSION.SDK_INT);
         @Nullable
