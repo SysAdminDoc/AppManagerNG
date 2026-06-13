@@ -3,7 +3,7 @@
 # IzzyOnDroid Listing Packet
 
 Status: ready for maintainer submission.
-Checked: 2026-05-26.
+Checked: 2026-06-13.
 
 This packet is the source-of-truth for the IzzyOnDroid inclusion request. It is
 not proof that the external issue has been filed.
@@ -22,6 +22,17 @@ not proof that the external issue has been filed.
 The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
 surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
+
+## Per-ABI Split Sizes
+
+The build produces per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`)
+plus a universal APK. Per-ABI splits contain only the native libraries for one
+architecture and are strictly smaller than the universal APK (29.3 MB measured at
+v0.5.0). The CI release workflow enforces a hard size gate
+(`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK — any split exceeding it fails
+the build. IzzyOnDroid should be configured to match the universal
+`AppManagerNG-*-floss-release.apk` artifact (sub-30 MB) or the `arm64-v8a` split
+for the smallest download.
 
 ## Policy Checks
 

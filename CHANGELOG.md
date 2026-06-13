@@ -57,6 +57,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Distribution — IzzyOnDroid readiness audit refreshed (2026-06-13)
+
+- IzzyOnDroid listing packet refreshed with per-ABI split size analysis. The CI
+  release workflow enforces a hard 30 MiB size gate per APK; per-ABI splits are
+  strictly smaller than the 29.3 MB universal APK. Policy compliance, fastlane
+  metadata, and suggested inclusion request remain current. Maintainer submission
+  is the remaining blocker.
+
 ### Improved — Empty state coverage (2026-06-13)
 
 - Finder (filter results) and Permission Inspector (catalog) screens now show

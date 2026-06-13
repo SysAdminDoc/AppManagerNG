@@ -193,13 +193,6 @@ device, or need on-device visual verification.
 
 ### P3
 
-- [ ] P3 — IzzyOnDroid submission readiness audit
-  Why: IzzyOnDroid is the natural first repo for an Obtainium-era app (release-key signing and reproducible builds already in place) but enforces ~30 MB per-app reservation and zero-tracker scans — size per ABI split is unmeasured.
-  Evidence: https://izzyondroid.org/docs/general/AppInclusionPolicy/ ; release.yml ABI splits
-  Touches: docs/distribution/ (submission notes), possibly app/build.gradle (resource shrinking if over budget)
-  Acceptance: dated audit doc records per-ABI release APK sizes and policy-compliance checklist; submission filed or blockers listed.
-  Complexity: S
-
 - [ ] P3 — File-manager trash bin (staged deletion)
   Why: NG's FM hard-deletes; Files-by-Google's staged trash with 30-day retention is the established data-safety pattern and FM batch ops magnify mistake cost.
   Evidence: Files by Google clean-flow walkthrough (RESEARCH.md Sources); fm/ has no trash concept (verified)
