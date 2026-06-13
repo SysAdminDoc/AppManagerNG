@@ -11,6 +11,7 @@ import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -21,8 +22,6 @@ import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -54,6 +53,7 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.MultiSelectionView;
+import io.github.muntashirakon.widget.RecyclerView;
 
 public class RunningAppsActivity extends BaseActivity implements MultiSelectionView.OnSelectionChangeListener,
         MultiSelectionActionsView.OnItemSelectedListener, AdvancedSearchView.OnQueryTextListener,
@@ -154,6 +154,15 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mStatusView = findViewById(R.id.running_apps_status);
         RecyclerView recyclerView = findViewById(R.id.scrollView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        View emptyState = findViewById(android.R.id.empty);
+        ImageView emptyIcon = emptyState.findViewById(R.id.empty_state_icon);
+        emptyIcon.setImageResource(R.drawable.ic_run_fast);
+        ((TextView) emptyState.findViewById(R.id.empty_state_title))
+                .setText(R.string.running_apps_empty_title);
+        ((TextView) emptyState.findViewById(R.id.empty_state_summary))
+                .setText(R.string.running_apps_empty_no_processes_summary);
+        emptyState.setVisibility(View.GONE);
+        recyclerView.setEmptyView(emptyState);
         mAdapter = new RunningAppsAdapter(this);
         mAdapter.setHasStableIds(false);
         recyclerView.setAdapter(mAdapter);
