@@ -413,13 +413,6 @@ Deduplicated against all sections above.
   Acceptance: fixture archives cover path traversal, special names, duplicate entries, unsupported compression, malformed manifests, and oversized member metadata; scanner/installer/manifest-viewer paths return structured per-file errors with no crash, hang, or path escape.
   Complexity: M
 
-- [ ] P3 — Installer caller outcome result support
-  Why: external callers and automation tools need a reliable result contract instead of scraping UI or notifications after NG handles an install.
-  Evidence: InstallerX-Revived #672; app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/; Android PackageInstaller status result conventions.
-  Touches: app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/, app/src/main/res/values/strings.xml
-  Acceptance: when launched with the standard return-result extra, NG finishes with result code plus package/status/message extras after single or queued install completion; failures still show the existing transcript in-app.
-  Complexity: S
-
 ## Research-Driven Additions (Pass 3 — 2026-06-13)
 
 ### P3
