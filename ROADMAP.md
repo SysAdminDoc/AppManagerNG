@@ -264,12 +264,6 @@ device, or need on-device visual verification.
   Acceptance: a screen lists every app with BOOT_COMPLETED/LOCKED_BOOT_COMPLETED receivers and their enable state; per-row and batch block/unblock work through the existing rule store with undo.
   Complexity: M
 
-- [ ] P3 — Per-app standby-bucket inspect/set (privileged)
-  Why: Brevent built a product on `am set-standby-bucket` and Inure ships a battery panel; NG has the privilege plumbing but no standby-bucket surface (verified no usage) — a narrow inspect/set row in app details is the policy-not-boost framing that fits NG.
-  Evidence: https://github.com/brevent/Brevent ; Inure battery panel; grep: no setAppStandbyBucket in tree (verified). Cross-check the v0.5.x "background-run rule persistence" scope before building (RESEARCH.md Open Questions).
-  Touches: compat/UsageStatsManagerCompat.java (get/setAppStandbyBucket), details/info/ (row), batchops/ (optional batch set)
-  Acceptance: app details shows the current bucket on API 28+; in root/ADB/Shizuku modes the user can pin a bucket (active/working set/frequent/rare/restricted) and the change persists across the details screen reload.
-  Complexity: M
 
 - [ ] P3 — Tracker report rollup: company → category → jurisdiction
   Why: TrackerControl's grouped presentation (parent company, ads/analytics/social category, HQ country) with plain-language blurbs is meaningfully more legible than flat library lists and is pure offline metadata; NG's TrackerInfoDialog already resolves tracker identity (verified) — the rollup is presentation work.
