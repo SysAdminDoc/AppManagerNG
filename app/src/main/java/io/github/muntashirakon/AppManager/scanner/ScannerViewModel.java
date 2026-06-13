@@ -73,13 +73,15 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     @Nullable
     private final VirusTotal mVt;
     @Nullable
-    private String mPackageName;
+    private volatile String mPackageName;
+    private volatile long mVersionCode = -1;
 
     private List<String> mAllClasses;
     private List<String> mTrackerClasses;
     private Collection<String> mNativeLibraries;
 
     private CountDownLatch mWaitForFile;
+    private CountDownLatch mWaitForPackageInfo;
     private final FileCache mFileCache = new FileCache();
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
     private final MutableLiveData<Pair<String, String>[]> mApkChecksumsLiveData = new MutableLiveData<>();
@@ -117,6 +119,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         if (mIsSummaryLoaded) return;
         mIsSummaryLoaded = true;
         mWaitForFile = new CountDownLatch(1);
+        mWaitForPackageInfo = new CountDownLatch(1);
         // Cache files
         mExecutor.submit(() -> {
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
@@ -460,17 +463,26 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     @WorkerThread
     private void loadPackageInfo() {
         waitForFile();
-        PackageManager pm = getApplication().getPackageManager();
-        PackageInfo packageInfo = pm.getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
-        if (packageInfo != null) {
-            mPackageName = packageInfo.packageName;
+        try {
+            PackageManager pm = getApplication().getPackageManager();
+            PackageInfo packageInfo = pm.getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
+            if (packageInfo != null) {
+                mPackageName = packageInfo.packageName;
+                mVersionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? packageInfo.getLongVersionCode()
+                        : packageInfo.versionCode;
+            }
+            mPackageInfoLiveData.postValue(packageInfo);
+        } finally {
+            mWaitForPackageInfo.countDown();
         }
-        mPackageInfoLiveData.postValue(packageInfo);
     }
 
     @WorkerThread
     private void loadAllClasses() {
         waitForFile();
+        waitForPackageInfo();
+        if (tryLoadFromCache()) return;
         try {
             NativeLibraries nativeLibraries = new NativeLibraries(mApkFile);
             mNativeLibraries = nativeLibraries.getUniqueLibs();
@@ -491,9 +503,55 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             mAllClasses = Collections.emptyList();
         }
         mAllClassesLiveData.postValue(mAllClasses);
-        // Load tracker and library info
         loadTrackers();
         loadLibraries();
+        persistToCache();
+    }
+
+    @WorkerThread
+    private void waitForPackageInfo() {
+        try {
+            mWaitForPackageInfo.await(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @WorkerThread
+    private boolean tryLoadFromCache() {
+        String pkgName = mPackageName;
+        long verCode = mVersionCode;
+        if (pkgName == null || verCode < 0) return false;
+        try {
+            io.github.muntashirakon.AppManager.db.entity.CachedScanResult cached =
+                    ScanResultCache.get(pkgName, verCode);
+            if (cached == null) return false;
+            List<SignatureInfo> trackers = ScanResultCache.deserializeTrackers(cached.trackersJson);
+            List<SignatureInfo> libraries = ScanResultCache.deserializeLibraries(cached.librariesJson);
+            mAllClasses = Collections.emptyList();
+            mTrackerClasses = Collections.emptyList();
+            mAllClassesLiveData.postValue(mAllClasses);
+            mTrackerClassesLiveData.postValue(trackers);
+            mLibraryClassesLiveData.postValue(libraries);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @WorkerThread
+    private void persistToCache() {
+        String pkgName = mPackageName;
+        long verCode = mVersionCode;
+        if (pkgName == null || verCode < 0) return;
+        try {
+            List<SignatureInfo> trackers = mTrackerClassesLiveData.getValue();
+            List<SignatureInfo> libraries = mLibraryClassesLiveData.getValue();
+            if (trackers == null) trackers = Collections.emptyList();
+            if (libraries == null) libraries = Collections.emptyList();
+            ScanResultCache.put(pkgName, verCode, trackers, libraries);
+        } catch (Exception ignored) {
+        }
     }
 
     @WorkerThread
