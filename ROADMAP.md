@@ -241,13 +241,6 @@ device, or need on-device visual verification.
   Acceptance: in WRITE_SECURE_SETTINGS mode a non-exported service can be started and a broadcast sent from the component list, with the same confirmation UX as the existing activity path; cleanly refused (with reason) where the mechanism is unavailable.
   Complexity: M
 
-- [ ] P2 — Advanced Protection + Developer Verifier state surfacing (companion to the existing P0 installer item)
-  Why: Android 16+ Advanced Protection (AdvancedProtectionManager) blocks sideloading outright and the verification "advanced flow" for power users goes global Aug 2026 (developer mode + one-day wait + biometric) — NG should detect both states and explain them before an install fails, and its sideload-verification doc predates both.
-  Evidence: https://developer.android.com/about/versions/17/features (AdvancedProtectionManager); https://android.gadgethacks.com/news/google-keeps-android-sideloading-for-power-users-in-2026/ (advanced flow, Aug 2026); docs/sideload-verification.md (predates)
-  Touches: apk/installer/ (pre-flight check + explainer), settings/ or onboarding Mode Doctor (state row), docs/sideload-verification.md
-  Acceptance: on a device with Advanced Protection active, NG shows the state and the documented consequence before attempting an install; the in-app FAQ describes the advanced flow and Limited Distribution Accounts accurately.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Device-wide analytics dashboard (install-source / SDK / signing distributions)
