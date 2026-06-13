@@ -1527,6 +1527,29 @@
     <string name="running_apps_critical_force_stop_message"><xliff:g id="app_label" example="Android System">%1$s</xliff:g> (<xliff:g id="package_name" example="android">%2$s</xliff:g>) is required for core device services. Force-stopping it can interrupt phone, system UI, networking, or background services until Android restarts them.</string>
     <string name="batch_uninstall_dialog_title">Uninstall selected apps?</string>
     <string name="batch_uninstall_dialog_message">This will uninstall or remove leftover data entries for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. App data may be removed by Android and cannot be restored from AppManagerNG unless you have a backup.</string>
+    <string name="batch_clear_data_dialog_title">Clear app data?</string>
+    <string name="batch_clear_data_dialog_message">Erase all stored data (accounts, settings, files) for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. Apps will behave as freshly installed.</string>
+    <string name="batch_clear_cache_dialog_title">Clear cache?</string>
+    <string name="batch_clear_cache_dialog_message">Remove cached files for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. This frees storage space; apps will rebuild their caches as needed.</string>
+    <string name="batch_delete_backup_dialog_title">Delete backups?</string>
+    <string name="batch_delete_backup_dialog_message">Permanently delete backups for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. The backed-up data cannot be recovered.</string>
+    <string name="batch_freeze_dialog_title">Freeze selected apps?</string>
+    <string name="batch_freeze_dialog_message">Freeze <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g> so they cannot run or appear in the launcher. You can unfreeze them later to restore access.</string>
+    <string name="batch_block_trackers_dialog_title">Block trackers?</string>
+    <string name="batch_block_trackers_dialog_message">Disable known tracker components in <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. Some apps may lose functionality if they depend on blocked trackers. You can unblock them later.</string>
+    <string name="batch_block_components_dialog_title">Block components?</string>
+    <string name="batch_block_components_dialog_message">Disable the selected components in <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. Blocking the wrong component can make an app malfunction. You can unblock them later.</string>
+    <string name="batch_revoke_permissions_dialog_title">Revoke permissions?</string>
+    <string name="batch_revoke_permissions_dialog_message">Revoke the selected permissions for <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>. Apps may prompt for these permissions again or lose related functionality. You can re-grant them later.</string>
+    <string name="batch_generic_dialog_message">Apply this operation to <xliff:g id="selected_count" example="12 selected apps">%1$s</xliff:g>.</string>
+    <string name="running_apps_kill_dialog_title">Kill selected processes?</string>
+    <string name="running_apps_kill_dialog_message">Immediately terminate <xliff:g id="process_count" example="3 processes">%1$s</xliff:g>. Unlike force-stop, killed processes bypass normal shutdown and may lose unsaved state. Android may restart them automatically.</string>
+    <plurals name="running_apps_kill_count">
+        <item quantity="one">%d process</item>
+        <item quantity="other">%d processes</item>
+    </plurals>
+    <string name="destructive_confirm_reversible_note">This action is reversible — you can undo it later.</string>
+    <string name="destructive_confirm_irreversible_warning">This action cannot be undone.</string>
     <string name="keep_data_and_app_signing_signatures">Keep data and signatures</string>
     <string name="pref_backup_android_keystore">Back up apps with Android KeyStore</string>
     <string name="pref_backup_android_keystore_msg">Not all apps will work after being restored. Restoring KeyStore doesn\'t work on most devices.</string>

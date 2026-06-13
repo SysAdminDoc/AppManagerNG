@@ -38,6 +38,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
@@ -421,7 +422,13 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         ArrayList<ProcessItem> selectedItems = mAdapter.getSelectedItems();
         int id = item.getItemId();
         if (id == R.id.action_kill) {
-            model.killSelectedProcesses();
+            int processCount = mAdapter != null ? mAdapter.getSelectedItems().size() : 0;
+            if (processCount == 0) return true;
+            DestructiveActionConfirmation.forKill(this, processCount)
+                    .setPositiveButton(R.string.kill_process, (dialog, which) -> {
+                        if (model != null) model.killSelectedProcesses();
+                    })
+                    .show();
         } else if (id == R.id.action_force_stop) {
             handleBatchOpWithWarning(BatchOpsManager.OP_FORCE_STOP);
         } else if (id == R.id.action_disable_background) {
@@ -496,28 +503,8 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         }
         String selectedAppCountText = getResources().getQuantityString(R.plurals.batch_selected_app_count,
                 selectedAppCount, selectedAppCount);
-        int title;
-        int message;
-        int positiveButton;
-        if (op == BatchOpsManager.OP_FORCE_STOP) {
-            title = R.string.batch_force_stop_dialog_title;
-            message = R.string.batch_force_stop_dialog_message;
-            positiveButton = R.string.force_stop;
-        } else if (op == BatchOpsManager.OP_DISABLE_BACKGROUND) {
-            title = R.string.batch_disable_background_dialog_title;
-            message = R.string.batch_disable_background_dialog_message;
-            positiveButton = R.string.disable_background_run;
-        } else {
-            title = R.string.are_you_sure;
-            message = R.string.this_action_cannot_be_undone;
-            positiveButton = R.string.yes;
-        }
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(title)
-                .setMessage(getString(message, selectedAppCountText))
-                .setPositiveButton(positiveButton, (dialog, which) -> handleBatchOp(op))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        DestructiveActionConfirmation.forBatchOp(this, op, selectedAppCountText,
+                (dialog, which) -> handleBatchOp(op)).show();
     }
 
     void refresh() {
