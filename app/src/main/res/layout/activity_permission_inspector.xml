@@ -173,6 +173,12 @@
             android:scrollbars="none"
             tools:listitem="@layout/item_permission_group" />
 
+        <include
+            android:id="@android:id/empty"
+            layout="@layout/view_list_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
     </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -57,6 +57,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Improved — Empty state coverage (2026-06-13)
+
+- Finder (filter results) and Permission Inspector (catalog) screens now show
+  a contextual empty state with icon, title, and guidance instead of a blank
+  screen when results are empty or filters exclude everything.
+
 ### Fixed — Deferred-audit reliability batch (2026-06-13)
 
 - BackupItem resource leaks closed across five call sites: backup size

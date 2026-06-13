@@ -3802,6 +3802,10 @@
     <string name="perm_recovery_failed">Could not restore system app permissions.</string>
     <string name="permission_inspector_empty_title">No apps request this permission</string>
     <string name="permission_inspector_no_apps">No installed apps request %1$s. Try another permission group or refresh after installing apps.</string>
+    <string name="perm_inspector_catalog_empty_title">No permission groups</string>
+    <string name="perm_inspector_catalog_empty_message">No permission groups matched the active filter. Try another filter chip or refresh the list.</string>
+    <string name="finder_empty_title">No matching apps</string>
+    <string name="finder_empty_message">No apps match the current filter criteria. Adjust or clear the filters to broaden the search.</string>
     <string name="perm_inspector_count_fmt">%1$d of %2$d apps granted</string>
     <string name="perm_inspector_count_short_fmt">%1$d/%2$d</string>
     <string name="perm_inspector_group_a11y">%1$s. %2$s. %3$s.</string>

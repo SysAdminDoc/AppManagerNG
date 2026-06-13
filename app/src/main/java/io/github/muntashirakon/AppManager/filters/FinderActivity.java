@@ -5,6 +5,8 @@ package io.github.muntashirakon.AppManager.filters;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -47,8 +49,17 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
         mActiveFiltersChip = findViewById(R.id.finder_active_filters);
         mMultiSelectionView = findViewById(R.id.selection_view);
         UiUtils.applyWindowInsetsAsMargin(mFilterBtn);
+        View emptyState = findViewById(android.R.id.empty);
+        ImageView emptyIcon = emptyState.findViewById(R.id.empty_state_icon);
+        emptyIcon.setImageResource(R.drawable.ic_filter_list);
+        ((TextView) emptyState.findViewById(R.id.empty_state_title))
+                .setText(R.string.finder_empty_title);
+        ((TextView) emptyState.findViewById(R.id.empty_state_summary))
+                .setText(R.string.finder_empty_message);
+        emptyState.setVisibility(View.GONE);
         mAdapter = new FinderAdapter();
         mRecyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        mRecyclerView.setEmptyView(emptyState);
         mRecyclerView.setAdapter(mAdapter);
         mMultiSelectionView.hide();
         mFilterBtn.setOnClickListener(v -> showFiltersDialog());
