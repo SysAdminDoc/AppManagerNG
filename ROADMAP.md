@@ -7,6 +7,66 @@ Live checklist of incomplete work. Historical surfaces are archived under
 If a live copy of this file exists on another machine, merge these additions
 into it — existing items take precedence over duplicates.
 
+## Product Quality Roadmap (2026-06-12)
+
+- [ ] P1 — Unified destructive-action safety model
+  Why: destructive flows should consistently explain impact, name the affected apps/users,
+  distinguish reversible vs irreversible work, and require the same confirmation quality
+  across batch ops, app details, running apps, backup, and profiles.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/{batchops,details,runningapps,backup,profiles}/
+
+- [ ] P1 — Recovery-first operation trail
+  Why: powerful operations should leave a clear recovery path: what changed, what failed,
+  what can be retried, and where logs/history/backups can be used to recover.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/{batchops,history,backup,details}/
+
+- [ ] P1 — Privilege health and capability status surface
+  Why: root/ADB/no-root capability differences shape nearly every workflow; users need a
+  plain status surface that explains available modes, degraded behavior, and remediation.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/{settings,servermanager,adb,runner}/
+
+- [ ] P2 — First-run confidence pass
+  Why: the app exposes advanced controls before users understand privilege mode, backup
+  safety, tracker rules, and restore risk; first-run guidance should establish trust without
+  becoming a marketing screen.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/{main,settings,backup,rules}/
+
+- [ ] P2 — Cross-surface workflow cohesion
+  Why: app list, app details, batch operations, profiles, backup, and running-apps screens
+  should use the same terms, primary actions, result states, and handoff points.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/
+
+- [ ] P2 — Accessibility, keyboard, and touch-target hardening
+  Why: dense expert tools still need predictable focus, visible labels, 48dp controls, and
+  non-color-only status meaning across dialogs, lists, chips, menus, and result screens.
+  Where: app/src/main/res/layout/, app/src/main/java/io/github/muntashirakon/AppManager/
+
+- [ ] P2 — Degraded, empty, error, loading, and success state system
+  Why: secondary screens should never fail silently or show blank states; every unavailable,
+  partial, or failed workflow needs calm actionable copy and an obvious next step.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/, app/src/main/res/layout/
+
+- [ ] P2 — Settings information architecture cleanup
+  Why: settings should group risk, privileges, appearance, backup, rules, notifications, and
+  advanced/debug controls so users can find decisions without memorizing implementation
+  boundaries.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/settings/
+
+- [ ] P2 — Critical-flow smoke and contract tests
+  Why: destructive confirmations, parser hardening, lifecycle cleanup, restore recovery, and
+  privilege fallbacks need tests that fail when safety regressions return.
+  Where: app/src/test/, app/src/androidTest/, .github/workflows/
+
+- [ ] P3 — Visual token and component polish pass
+  Why: cards, banners, list rows, dialogs, badges, chips, toasts, and nested surfaces should
+  feel like one product in light, dark, and AMOLED modes without one-off colors or spacing.
+  Where: app/src/main/res/{layout,values,drawable}/
+
+- [ ] P3 — Tooltips and microcopy consistency pass
+  Why: expert controls need concise labels, explainers, and warnings that are useful without
+  being robotic, vague, or inconsistent between screens.
+  Where: app/src/main/res/values/strings.xml, app/src/main/java/io/github/muntashirakon/AppManager/
+
 ## Active Build Initiative — Quality & Capability Push (2026-06-11)
 
 Sequenced from the post-audit improvement review. Items already specced in detail
@@ -17,24 +77,6 @@ patched blind — they touch the privileged bootstrap, need an emulator/rooted
 device, or need on-device visual verification.
 
 ### Building now (verifiable headless)
-
-- [ ] INIT-1 — Main-list perceived performance: search debounce + scroll-position restore
-  Why: the main list is the highest-friction screen; per-keystroke re-filtering and lost
-  scroll position on rotation/return are the things users feel. (Subset of the upstream
-  "main-list performance/correctness batch" that does not require the full ListAdapter swap.)
-  Touches: main/MainActivity (search handler), main/MainViewModel (debounced filter),
-  main/MainRecyclerAdapter / RecyclerView state save-restore
-  Acceptance: typing debounces filtering (≈300 ms); rotation/return restores scroll
-  position; a JVM test covers the debounce/coalescing helper. Visual confirmation of
-  scroll restore is device-gated and noted as such.
-  Complexity: M
-
-- [x] INIT-2a — Lock in the backup commit data-safety property (DONE 2026-06-11)
-  Finding: BackupItems.commit() already writes the new backup to a temp dir and swaps it
-  into place BEFORE deleting previous backups (new-before-old), so a crash mid-commit
-  leaves the previous backup intact — the commit path is already crash-safe for the common
-  UUID-named flow. Added BackupItemsTest.commitSwapsNewPayloadIntoPlaceBeforeRemovingPreviousBackup
-  to guard this property against regression.
 
 - [ ] INIT-2b — Backup overwrite-option UI + move-aside for custom-name collisions (device-gated)
   Why: the net-new in the 2020 overwrite TODO is a UX feature — offer "overwrite" when a
@@ -49,25 +91,6 @@ device, or need on-device visual verification.
   the previous backup readable, verified on both file and SAF (Android/data) storage on a
   device.
   Complexity: M
-
-- [ ] INIT-3 — Regression test safety net for the 2026-06-11 audit fixes
-  Why: the lifecycle/data fixes have nothing stopping them regressing. Cover the
-  JVM-testable data paths: ProfileApplierResult failure aggregation, BatchOpsManager
-  grant/revoke single-package-per-failure, SplitInputStream 0xFF masking, and the
-  AutoBackupWorker concurrency guard contract.
-  Touches: app/src/test/ (new focused unit tests)
-  Acceptance: tests fail against the pre-fix behaviour and pass against current; run in
-  the existing :app:testFlossDebugUnitTest suite.
-  Complexity: S
-
-- [x] INIT-4a — Device-wide analytics aggregation data layer (DONE 2026-06-11)
-  Shipped `analytics/DeviceAnalyticsAggregator` — a pure, Android-free aggregation turning a
-  flat list of per-app datapoints (installer label, target SDK, installed, last-used millis)
-  into installer-source / target-SDK distributions and cumulative "unused in 30/60/90 days"
-  counts, with apps lacking usage data tracked separately as "unknown". `nowMillis` is
-  injected for deterministic buckets. Covered by `DeviceAnalyticsAggregatorTest` (6 cases:
-  ordering, ascending SDK, exact day boundaries, unknown-usage, uninstalled totals, empty).
-  Follows the project's "ship the tested data layer, wire UI next" pattern.
 
 - [ ] INIT-4b — Analytics / discovery dashboard screen (device-gated UI wiring)
   Why: render the INIT-4a summary as the discovery surface (Inure/AppDash-style) with
@@ -100,11 +123,7 @@ device, or need on-device visual verification.
 - [ ] INIT-D1 — Full main-list ListAdapter / DiffUtil migration (supersedes the manual
   adapter plumbing that generated many lifecycle bugs). View-ID preservation needs a
   device. See "Port upstream main-list performance/correctness batch".
-- [ ] INIT-D2 — ADB-mode privileged backend off external storage + copyFile digest (LPE).
-  See "Deep Audit Follow-ups (2026-06-11) → P1".
 - [ ] INIT-D3 — HMAC mutual auth + native run_server port. See "Port HMAC mutual auth …".
-- [ ] INIT-D4 — Suspend target app during backup (SIGSTOP). Needs privilege to verify.
-  See "Pause target app during backup".
 - [ ] INIT-D5 — Backup round-trip emulator CI. Needs the emulator runner. See "Backup/
   restore round-trip integration tests in emulator CI".
 
@@ -135,13 +154,6 @@ device, or need on-device visual verification.
   Acceptance: the #1286 reproduction (non-root restore with a session-based installer on API 34) succeeds; ported commits listed in CHANGELOG with upstream attribution.
   Complexity: M
 
-- [ ] P1 — Pause target app during backup (suspend/SIGSTOP) for data consistency
-  Why: Live app writes during backup produce silently inconsistent archives; Neo Backup pauses via `pm suspend`/`kill -STOP` and resumes after — a small change that removes a whole class of corrupt backups.
-  Evidence: Neo Backup README/FAQ (RESEARCH.md §Competitive); backup/BackupOp.java has no suspend/STOP today (verified)
-  Touches: backup/BackupOp.java, compat/PackageManagerCompat.java (suspend), runner/ (root SIGSTOP fallback)
-  Acceptance: with root or privileged mode, the target app is suspended for the duration of data backup and resumed after (also on failure paths); behavior is a user-visible toggle defaulting on for privileged modes.
-  Complexity: S
-
 - [ ] P1 — Port HMAC mutual auth + native run_server for the local privileged channel
   Why: Upstream hardened the app↔ADB-server channel with HMAC challenge-response and converted run_server to a native executable (fixing root mode broken since 3.0.0, #948, and reducing detectable service footprint); NG's channel lacks both.
   Evidence: upstream commits 88eb453, 07c7199, b42efbb, f8d3126 (RESEARCH.md §Competitive); grep: no HMAC in adb/ or libserver/ (verified)
@@ -149,35 +161,7 @@ device, or need on-device visual verification.
   Acceptance: server rejects unauthenticated connections (negative test); root mode works on a rooted A16 emulator; ported commits attributed.
   Complexity: M
 
-- [ ] P1 — Debloat safety net: critical-package guard + pre-op snapshot + ADB rescue script
-  Why: Bricking fear is the #1 adoption blocker for debloaters (documented OneUI bootloop from a debloat list; F-Droid forum recovery thread); NG's critical-package guard exists only in Permission Inspector recovery, not in Debloater/batch uninstall; Canta wins recommendations on undo alone.
-  Evidence: https://gitlab.com/W1nst0n/universal-android-debloater/-/issues/43 ; forum.f-droid.org/t/29341 ; upstream #1161; permissions/PermissionRecovery.java (existing guard)
-  Touches: debloat/, batchops/, oneclickops/, permissions/PermissionRecovery.java (extract shared guard), snapshot/SnapshotBundle.java (pre-op auto-export)
-  Acceptance: batch uninstall/disable of a guarded package requires an explicit second confirmation naming the risk; every batch system-app operation auto-exports a snapshot + generates a plain-text `adb shell cmd package install-existing ...` rescue script in the backup volume.
-  Complexity: M
-
-- [ ] P1 — Port upstream main-list performance/correctness batch
-  Why: Upstream fixed the "app list loads forever" class (#1982 remains its last v4.1.0 blocker) with a search debouncer, ListAdapter migration, scroll-position restore, IME fixes, and filter-highlight fixes — all post-pin and directly applicable to NG's main list.
-  Evidence: upstream commits bba53eb, 8cf2c1e, 69b28cb, 5418038, 886ad90, ab2b17f (RESEARCH.md §Competitive)
-  Touches: main/ (MainActivity, adapters, view models)
-  Acceptance: typing in main-list search does not re-filter per keystroke (debounced); rotation/return preserves scroll position; ported commits attributed.
-  Complexity: M
-
 ### P2
-
-- [ ] P2 — Malformed-APK parser robustness pass
-  Why: The Konfety malware wave deliberately ships APKs (bogus encryption flag, declared-unsupported compression, malformed string pools) that crash OSS parsers; NG users feed it exactly such hostile APKs via installer/scanner/manifest viewer.
-  Evidence: Zimperium Konfety report (RESEARCH.md Sources); apk/, ARSCLib usage
-  Touches: apk/ (ApkFile, splitapk), scanner/, details/ManifestViewer paths; app/src/test/ corpus
-  Acceptance: a regression corpus of malformed APKs (Konfety-style tricks) parses to a graceful per-file error — no crash, no hang — enforced by unit tests.
-  Complexity: M
-
-- [ ] P2 — Pithus integration decision: verify service, then remove or keep
-  Why: Upstream deleted its Pithus scanner + pinned certificates on 2026-05-26; if the service is dead, NG's full flavor ships a dead online feature with stale cert pins (scanner/Pithus.java, network_security_config.xml).
-  Evidence: upstream commits 0e187e8 + 2c00f69; scanner/Pithus.java (verified present)
-  Touches: scanner/Pithus.java, scanner/ScannerViewModel.java, scanner/ScannerFragment.java, res/xml/network_security_config.xml, settings/PrivacyPreferences.java
-  Acceptance: dated audit doc records the service status check; integration removed (with cert pins) or kept with a recorded working-endpoint verdict.
-  Complexity: S
 
 - [ ] P2 — Restore the missing minSdk-21 ceiling ledger (decision itself is already made)
   Why: The minSdk-23 decision EXISTS on disk (docs/policy/2026-05-26-minsdk-23-decision.md: hold 21 through v0.6.x, four forced-decision triggers) — but the dependency ledger it depends on, docs/policy/minsdk-21-ceiling.md, is absent while being linked from versions.gradle:39, the decision memo, and docs/architecture/README.md; without it the trigger watch has no bookkeeping.
@@ -185,13 +169,6 @@ device, or need on-device visual verification.
   Touches: docs/policy/minsdk-21-ceiling.md (recreate the ledger: material/activity/biometric/room/webkit/sora-editor pinned-cluster table + trigger status), versions.gradle (ledger comments)
   Acceptance: the ledger file exists with the current pinned-cluster table and a dated trigger-status section; all three inbound references resolve.
   Complexity: S
-
-- [ ] P2 — App Change Auditor: component/tracker diffs + unified change feed
-  Why: Change-over-time auditing is the ecosystem's 2025-26 innovation wave (Permission Pilot watcher, LibChecker snapshot diffs); NG already ships permission + signing-cert monitors (T9) — adding component/tracker diffing and one browsable feed makes NG first in its niche to unify install/update auditing.
-  Evidence: permission/monitor/PermissionChangeMonitor.java (T9, verified); LibChecker snapshots, permission-pilot README (RESEARCH.md §Competitive)
-  Touches: permission/monitor/ (new ComponentChangeMonitor/TrackerChangeMonitor + feed store), scanner/ (tracker sigs), main/ or settings/ (feed UI entry)
-  Acceptance: updating a fixture app that adds a tracker + exported component produces a feed entry and notification listing both diffs; feed persists and is reachable from the main menu.
-  Complexity: M
 
 - [ ] P2 — Permission/app-op reference states (desired-vs-actual drift)
   Why: PermissionManagerX's reference-state model (pin desired value per permission/app-op, surface drift, restore references) is the only audit-grade permission pattern in the ecosystem and slots into NG's existing rule store + Permission Inspector.
@@ -244,27 +221,6 @@ device, or need on-device visual verification.
   Acceptance: a v3.2-signed sample APK shows the correct scheme list (not "unknown"/crash); audit doc records the verdict if apksig upstream lags.
   Complexity: S
 
-- [ ] P3 — APK export device-specificity labeling
-  Why: Power users archive APKs ahead of verification enforcement and are burned by device-trimmed splits rendering wrong elsewhere — an XDA PSA exists solely to explain AM's extract vs Aurora's export; labeling exports (and warning on share) is cheap clarity.
-  Evidence: XDA PSA thread 4784234 (RESEARCH.md Sources); apk/splitapk/SplitApkExporter.java
-  Touches: apk/splitapk/SplitApkExporter.java, details/ share/export dialogs (string resources)
-  Acceptance: export/share dialogs state which splits are included and that the set is device-specific; exported .apks filename or manifest notes the source device ABI/DPI.
-  Complexity: S
-
-- [ ] P3 — Per-app notes
-  Why: Top-tier competitors (Inure, AppDash) and upstream request #1269 (tags + notes per app) treat notes as table stakes; NG shipped the tags data layer — notes is the missing sibling and feeds the planned tag UI.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1269 ; Inure feature list; tags/AppTagStore.java (pattern to clone)
-  Touches: tags/ (new AppNoteStore, same SharedPrefs-JSON pattern), details/info/ (note card), snapshot/SnapshotBundle.java (include notes)
-  Acceptance: a note set on an app persists across restarts, appears in app details, round-trips through snapshot bundles, and is searchable from the main list.
-  Complexity: S
-
-- [ ] P3 — Backup protect-flag and per-backup notes
-  Why: Swift Backup v5's deletion-locked backups + notes are the cheap half of its premium tier; NG's retention pruning (BackupRetentionPolicy) needs a protect-flag anyway so rotation never deletes a backup the user marked keep-forever.
-  Evidence: Swift Backup feature/FAQ pages (RESEARCH.md §Competitive); backup/BackupRetentionPolicy.java (verified — prunes without protect concept)
-  Touches: backup/ (metadata field), backup/BackupRetentionPolicy.java (skip protected), backup/dialog/ (UI flag + note)
-  Acceptance: a protected backup survives retention pruning and bulk delete prompts; notes display in the backup list.
-  Complexity: S
-
 - [ ] P3 — IzzyOnDroid submission readiness audit
   Why: IzzyOnDroid is the natural first repo for an Obtainium-era app (release-key signing and reproducible builds already in place) but enforces ~30 MB per-app reservation and zero-tracker scans — size per ABI split is unmeasured.
   Evidence: https://izzyondroid.org/docs/general/AppInclusionPolicy/ ; release.yml ABI splits
@@ -290,13 +246,6 @@ device, or need on-device visual verification.
 
 ### P1
 
-- [ ] P1 — Port upstream post-pin crash/correctness batch (2026-05-26 → 06-02)
-  Why: Eight uncatalogued upstream fixes land cleanly on a 3d11bcb-pinned tree and close silent-corruption/crash classes: APKS compile regression, profile custom-expression filters matching wrong app sets, am-start link resolution, two NPEs, Debloater missing uninstalled system apps, broken Finder/Debloater nav, editor symbol cropping at large font scale.
-  Evidence: upstream commits 706c36fb, daa54ac0 (closes #1718), 4a25c3f0, 3bf97856, 184df334, 329b8dc1, 4d3da96b, 0d1be565 — https://github.com/MuntashirAkon/AppManager/commits/master
-  Touches: apk/ (APKS compile), filters/ + profiles/ (custom expressions), intercept/, debloat/, finder/, editor/
-  Acceptance: each ported commit attributed in CHANGELOG; profile-with-custom-expression filter test added; APKS merge of a fixture split-bundle round-trips; v4.1.0 tag (due ~2026-06-21) re-diffed after release for stragglers.
-  Complexity: M
-
 - [ ] P1 — Root-detection retune for 2026 root managers (upstream #1967 + Magisk 30.7 caps change)
   Why: Upstream's accepted P1 "root not detected on Android 16" (#1967) hits the same probe stack NG owns (runner/RootManagerInfo); separately Magisk v30.7 now preserves capabilities by default, inverting the assumption behind NG's shipped KernelSU/Magisk drop-cap diagnostics, and KernelSU-Next 3.1.0 moved paths again.
   Evidence: https://github.com/MuntashirAkon/AppManager/issues/1967 ; https://github.com/topjohnwu/Magisk/releases (v30.7 caps default); runner/RootManagerInfo (verified, probes /data/adb/{magisk,ksu,ap})
@@ -318,13 +267,6 @@ device, or need on-device visual verification.
   Evidence: 2026-06-09 audit session record (commits 4f46a0e9..079e96f1 shipped the non-deferred half); usage/AppUsageViewModel.java + apk/whatsnew/ApkWhatsNewFinder.java verified present
   Touches: usage/, details/ fragments, apk/whatsnew/, profiles/ (export IO), oneclickops/, backup/ (pruners, commit, verify), db/
   Acceptance: each sub-item fixed with a regression test where JVM-testable; batch may ship across multiple commits; none re-deferred without a dated decision note.
-  Complexity: M
-
-- [ ] P2 — sora-editor bump 0.22.2 → 0.24.6 (last minSdk-21 release — time-boxed)
-  Why: The pinned fork build 0.22.2 misses upstream 0.24.4–0.24.6 fixes for IME composing-text corruption, completion-list scroll ANR, IndexOutOfBounds on completion, and emoji deletion; 0.24.6 (2026-06-10) is the final release supporting minSdk 21 (verified in release notes), and the minSdk decision is already settled at "hold 21" (docs/policy/2026-05-26-minsdk-23-decision.md) — so 0.24.6 is the terminal version NG can take; bump now or carry the bugs indefinitely.
-  Evidence: https://github.com/Rosemoe/sora-editor/releases (0.24.4/0.24.5/0.24.6 notes); versions.gradle:45 (fork pin, verified)
-  Touches: versions.gradle, editor/ (API drift), possibly the MuntashirAkon/sora-editor fork (rebase) or a switch to upstream artifacts
-  Acceptance: editor opens/edits/saves java+xml+smali fixtures with completion and wordwrap working; the IME composing regression (type-with-gboard scenario) verified on device or emulator; pin decision recorded in the dependency ledger.
   Complexity: M
 
 - [ ] P2 — ApplicationStartInfo "why did this app start" panel (API 35+)
@@ -415,13 +357,6 @@ regression risk to need their own change.
 
 ### P1
 
-- [ ] P1 — ADB-mode privileged backend runs from world-accessible external storage (LPE)
-  Why: The DE-private-storage hardening for the privileged server was applied only to the root path. ADB mode still launches `run_server.sh` + `am.jar` from `getExternalCachePath()` via the `getServerRunnerCommand(1) + " || " + getServerRunnerCommand(0)` fallback in `ServerConfig.getServerRunnerAdbCommand` — and because the ADB shell uid (2000) cannot read the DE-private index-1 copy, the index-0 external-storage branch is effectively always taken. On pre-scoped-storage devices (or via all-files access) another app can overwrite those artifacts and gain code execution in AM's ADB-privileged backend. Compounded by `AssetsUtils.copyFile` only refreshing on length mismatch (no digest, `force=BuildConfig.DEBUG`), so a same-length planted file is never overwritten.
-  Evidence: servermanager/ServerConfig.java:54-71,91-99; servermanager/LocalServerManager.java:230-236; utils/AssetsUtils.java:36-43
-  Touches: servermanager/ServerConfig.java, servermanager/LocalServerManager.java, utils/AssetsUtils.java
-  Acceptance: the ADB-privileged backend is staged to `/data/local/tmp` (chown 2000:2000, chmod 700) or another non-world-writable path instead of `/sdcard`; the external index-0 copies are no longer written; `copyFile` verifies content (digest) and always refreshes the privileged artifacts on init. Verify root + ADB modes still start on a rooted A16 emulator. (Device-gated: touches the privileged bootstrap, cannot be validated headless.)
-  Complexity: M
-
 ### P2
 
 - [ ] P2 — RootService main.jar staged via external storage before privileged copy (TOCTOU)
@@ -431,20 +366,6 @@ regression risk to need their own change.
   Acceptance: `main.jar` is dumped to app-internal (DE cache) storage, never external, before the privileged `cp`; or a digest is verified inside the privileged script before `app_process` loads it. (Device-gated.)
   Complexity: S
 
-- [ ] P2 — AppInfoFragment list build resolves strings on a background thread (silent stuck progress)
-  Why: `setupVerticalView` and its `setAppIdentity`/`setMoreInfo`/`setStorageAndCache`/`setDataUsage` helpers call dozens of `Fragment.getString()` on the worker thread inside `mListFuture`. After `onDetach()` cancels with `cancel(true)`, the next `getString()` throws via `requireContext()`; because `ThreadUtils.postOnBackgroundThread` swallows the exception into the unobserved Future, the worker dies mid-list and `mLoadedItemCount` never reaches 4, so a tab revisit before a fresh emission can leave the progress indicator stuck.
-  Evidence: details/info/AppInfoFragment.java:3576-3611 (and the setters invoked from the same worker)
-  Touches: details/info/AppInfoFragment.java
-  Acceptance: snapshot `Context appContext = requireContext().getApplicationContext()` before submitting and resolve all strings from it (not `Fragment.getString()`); the list builds fully even if the fragment detaches mid-load. (Large file, broad surface — wants its own focused change + manual walkthrough.)
-  Complexity: M
-
-- [ ] P2 — Main-list badge text colors fail 4.5:1 contrast in some themes
-  Why: `MainRecyclerAdapter.applyBadgeStyle` sets the badge text to a saturated raw `ColorCodes` hue over a ~17%-alpha tint of the same hue, so the tracker-count badge text (#FF8017 orange) reads ~2.0:1 on a light card and the blocked-tracker badge (salem_green) ~3.3:1 on a dark card — both below the 4.5:1 text minimum.
-  Evidence: MainRecyclerAdapter.java:630-642; ColorCodes.java:38-40,116-118; libcore colors.xml:18
-  Touches: MainRecyclerAdapter.java (applyBadgeStyle), colors-v2.xml (night-aware on-container aliases)
-  Acceptance: badge content colors route through night-aware semantic on-container aliases (e.g. premium_warning_content / premium_success_content) so text hits ≥4.5:1 in light, dark and AMOLED; verified with a contrast checker against rendered screens. (Needs on-device visual verification — colors can't be validated headless.)
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Clickable main-list badges have <48dp touch targets
@@ -452,13 +373,11 @@ regression risk to need their own change.
   Evidence: MainRecyclerAdapter.java:420-422,457-459; item_main_v2.xml:115-116,136-137; dimens-v2.xml:76-77
   Touches: MainRecyclerAdapter.java (composite touch delegate on the badge row), item_main_v2.xml
   Acceptance: each clickable badge has a ≥48dp effective hit rect via a composite/multi-target TouchDelegate posted on the parent FlowLayout (visual size stays 24dp); a11y scanner clean. (Needs on-device touch verification.)
-  Complexity: S
-
-- [ ] P3 — Dead V2 premium design tokens (colors / dimens / styles / attr)
-  Why: The premium resource system shipped a number of tokens that have zero references: precomputed elevation-overlay colors (`premium_elevated_1..5_{dark,amoled}`), unused brand ramp steps (`premium_brand_25/50/400/500/700/800`), several `premium_*` dimens/type tokens, dead V2 styles (`SearchBarCard`, `Button.EFAB`, `BottomSheet.Content`, `Dialog.Content`, `EmptyState`, `Skeleton`, `ShapeAppearance.AppTheme.V2.Card`), and the unused `listItemIndicatorWidth` attr (declared 8dp in themes-v2 / 9dp in styles — also mutually inconsistent). Dead tokens inflate the resource table and mislead future work.
-  Evidence: colors-v2.xml + values-night/colors-v2.xml; dimens-v2.xml; themes-v2.xml:135,197,203,207,211,215,224; libcore attrs.xml:8
-  Touches: app/src/main/res/values* (colors-v2, dimens-v2, themes-v2), libcore/ui/.../attrs.xml + styles.xml
-  Acceptance: each token confirmed zero-reference (incl. R.* usage in Java) then removed; build + resource merge green; no behavior change.
+  Progress 2026-06-12: fixed the nested coordinate translation bug in the
+  composite badge TouchDelegate, added a Robolectric regression test, installed
+  the Floss debug build on the emulator, and captured the main-list badge
+  surface. Remaining: clean a11y scanner confirmation after the emulator
+  UiAutomation service recovers.
   Complexity: S
 
 - [ ] P3 — Sibling list rows diverge from the V2 card treatment
@@ -472,13 +391,6 @@ regression risk to need their own change.
   Acceptance: NG list rows share the V2 card treatment; spot-checked across debloater / permission / one-click lists in light, dark and AMOLED. (Visual — needs on-device verification.)
   Complexity: S
 
-- [ ] P3 — `BatchOpsResultsActivity` still single-foreground-notification-ID across workers (defense-in-depth)
-  Why: AutoBackupWorker's manual + periodic runs share `FOREGROUND_NOTIFICATION_ID`/`RESULT_NOTIFICATION_ID`. The new process-wide run guard prevents concurrent runs (the real correctness issue), but deriving the foreground id from `getId()` would remove the last way two notifications can clobber each other if the guard is ever relaxed.
-  Evidence: backup/schedule/AutoBackupWorker.java:46-47,177-188
-  Touches: backup/schedule/AutoBackupWorker.java
-  Acceptance: foreground notification id derived from the worker id; result notification unaffected.
-  Complexity: S
-
 ## Improvement Sweep (2026-06-11)
 
 Findings from a six-domain codebase sweep (settings/onboarding, file-manager/editor,
@@ -487,100 +399,9 @@ Deduplicated against all sections above.
 
 ### P1
 
-- [ ] P1 — Enable R8 in release builds + resolve ProGuard keep rules
-  Why: `app/build.gradle:66` has `minifyEnabled = false` in the release buildType, so release APKs ship without dead-code elimination, class merging, or obfuscation. This inflates APK size, leaves all internal class names readable, and skips tree-shaking of vendored AAR dependencies. `proguard-rules.pro:30,33` has two FIXMEs citing missing keep strategies for XmlPullParser and server IPC classes — these are the likely reason R8 was disabled rather than fixed.
-  Evidence: app/build.gradle:66; proguard-rules.pro:30,33 (FIXME)
-  Touches: app/build.gradle (minifyEnabled, shrinkResources), proguard-rules.pro (resolve FIXMEs), possibly app/libs/ AAR consumer rules
-  Acceptance: `./gradlew assembleRelease` with minify + resource shrinking produces a working APK that installs, runs its privileged paths, and passes a smoke test; per-ABI APK sizes logged. (Device-gated for smoke test.)
-  Complexity: M
-
-- [ ] P1 — Batch-install version downgrade bypasses confirmation
-  Why: `PackageInstallerActivity:718` checks for downgrade in the single-install flow, but `triggerBatchInstall():751` skips it entirely, allowing silent downgrades in a queued install. A downgraded app loses data on devices that enforce it.
-  Evidence: apk/installer/PackageInstallerActivity.java:718 vs 751-761
-  Touches: apk/installer/PackageInstallerActivity.java (propagate check to batch path)
-  Acceptance: batch-installing a set that includes a downgrade shows the same warning as single-install; user can skip individual items.
-  Complexity: S
-
-- [ ] P1 — Profile apply ignores privilege requirements (silent mass-failure)
-  Why: Profiles that contain freeze, component-block, or permission-change operations execute without checking whether the current privilege level (no-root, ADB, Shizuku, root) can actually perform those operations. The result is a silent batch failure reported as success (now reported as failure after the 2026-06-11 fix, but still confusing — the user is told it failed without knowing *why*).
-  Evidence: profiles/struct/AppsBaseProfile.java:110-298 (no privilege check before each op section)
-  Touches: profiles/struct/AppsBaseProfile.java (pre-flight privilege check), profiles/ProfileApplierService.java (surface reason)
-  Acceptance: applying a profile whose operations exceed the current privilege shows a pre-apply warning naming the impossible ops, with options to skip them or abort; the warning is JVM-testable.
-  Complexity: M
-
 ### P2
 
-- [ ] P2 — Installer error messages are bare status codes
-  Why: `InstallTranscript.java:185-220` maps `STATUS_FAILURE_*` codes to their raw constant names ("STATUS_FAILURE_INCOMPATIBLE_ROM") with no localized user explanation or recovery guidance. Users see opaque strings in the finished dialog.
-  Evidence: apk/installer/InstallTranscript.java:185-220
-  Touches: apk/installer/InstallTranscript.java (user-friendly mapping), strings.xml (new resources)
-  Acceptance: each `STATUS_FAILURE_*` code shows a one-line localized explanation + a recovery hint; raw code still available in diagnostic transcript.
-  Complexity: S
-
-- [ ] P2 — Tracker database has no freshness signal
-  Why: `StaticDataset.java:110-115` loads tracker signatures from the bundled `trackers.xml` resource (1985 entries) with no version/date metadata and no check-for-updates mechanism. Users have no way to know whether their offline scan is running a stale signature set.
-  Evidence: app/src/main/res/values/trackers.xml (no date metadata); StaticDataset.java:110-115
-  Touches: trackers.xml (add date meta), scanner/ (surface "Database: YYYY-MM-DD" label in results card)
-  Acceptance: scanner results card shows the bundled database date; the full flavor checks for a newer asset bundle on a schedule (opt-in, default on).
-  Complexity: S
-
-- [ ] P2 — Scanner results are ephemeral with no export
-  Why: Scan reports are rendered on-screen but can't be exported or shared. Security-conscious users (the target audience) need to archive scan results or share them with teams.
-  Evidence: scanner/ScannerViewModel.java + ScannerActivity.java (no export mechanism)
-  Touches: scanner/ (export action → JSON/CSV snapshot with timestamp, device, app version, tracker matches)
-  Acceptance: a "Share scan report" action in the scanner toolbar exports a structured snapshot; round-trips via import or plain-text reading.
-  Complexity: S
-
-- [ ] P2 — Implement stub profile rule export (6-year-old TODO)
-  Why: `AppsBaseProfile.java:186-187` logs "Not implemented export rules" with a `TODO(18/11/20)`. The `exportRules` field is declared, serialized, configurable in the UI, but never applied — so a user who configures rule export in a profile gets silent no-op.
-  Evidence: profiles/struct/AppsBaseProfile.java:186-187 (TODO from 2020-11-18)
-  Touches: profiles/struct/AppsBaseProfile.java (wire rule export via RulesStorageManager)
-  Acceptance: a profile with `exportRules` set exports component/app-op/permission rules on apply; the export appears in the rule store or a user-specified file. Alternatively: remove the dead field and UI toggle with a dated decision note.
-  Complexity: M
-
-- [ ] P2 — Expand profile trigger types beyond time-of-day
-  Why: `ProfileTrigger.java:32-36` supports only 5 trigger types (time-of-day, charging, Wi-Fi, any-network, boot). Missing high-value triggers: on-app-install, on-app-update, on-app-uninstall — the use cases where automation matters most (e.g., "block trackers in any newly installed app"). Tasker integration exists (`AutomationIntents.java`) but NG's own triggers are narrow.
-  Evidence: profiles/trigger/ProfileTrigger.java:32-36
-  Touches: profiles/trigger/ (new trigger types + BroadcastReceiver for PACKAGE_ADDED/REPLACED/REMOVED), RoutineWorker/RoutineScheduler (type dispatch)
-  Acceptance: a profile can trigger on app-install/update with a JVM test covering the trigger dispatch; on-app-uninstall trigger fires cleanup profiles.
-  Complexity: M
-
-- [ ] P2 — PR check workflow + lint gate
-  Why: No CI runs on pull requests — lint, unit tests, and dependency review only run on pushes to main or scheduled scans. `app/build.gradle:102` sets `checkReleaseBuilds = false` and `abortOnError = false`, so lint findings never fail anything.
-  Evidence: .github/workflows/ (no pr-checks.yml); app/build.gradle:102
-  Touches: .github/workflows/ (new pr-checks.yml: lint + unit test + dependency-review), app/build.gradle (enable checkReleaseBuilds)
-  Acceptance: every PR targeting main gets a pass/fail status from lint + tests before merge; lint warnings on release builds are visible in PR checks.
-  Complexity: S
-
-- [ ] P2 — Split APK ABI/density pre-install validation
-  Why: `InstallDependencyChecker.java:84-96` checks minSdk and shared libraries but not whether selected APK splits are ABI- and density-compatible with the device. Installing arm64 splits on an x86 emulator (or the reverse) fails at runtime, not at install-time in NG.
-  Evidence: apk/installer/InstallDependencyChecker.java:84-96
-  Touches: apk/installer/InstallDependencyChecker.java (add ABI/density split validation)
-  Acceptance: installing an incompatible split set shows a warning before the install attempt, naming the mismatched ABI/density.
-  Complexity: S
-
-- [ ] P2 — Onboarding should guide through POST_NOTIFICATIONS and other critical permissions
-  Why: The onboarding wizard focuses on privilege *modes* (root/ADB/Shizuku) but doesn't guide through granting Android 13+ `POST_NOTIFICATIONS` or other mode-required permissions. Fresh installs on A13+ may hit silent notification failures with no context.
-  Evidence: onboarding/OnboardingFragment.java (no permission-request step)
-  Touches: onboarding/ (add permission-grant step before or after mode selection)
-  Acceptance: fresh install on A13+ prompts for notification permission during onboarding; mode-specific permissions (usage access for usage stats, etc.) are requested with context.
-  Complexity: S
-
-- [ ] P2 — Capability detection re-runs heavyweight probes on every onResume
-  Why: `OnboardingFragment.java:892-900` calls `refreshCapabilityStatuses()` unconditionally on every resume, re-probing root, Shizuku, ADB, and Dhizuku even if nothing changed. `RootManagerInfo.detect()` runs shell commands — expensive and battery-wasteful on every screen return.
-  Evidence: onboarding/OnboardingFragment.java:892-900; runner/RootManagerInfo (shell probes)
-  Touches: onboarding/OnboardingFragment.java (cache results, only re-probe on explicit "Re-check" tap)
-  Acceptance: capability status is cached across the fragment lifecycle; "Re-check" button is the only path to a fresh probe; no visible lag on tab-return.
-  Complexity: S
-
 ### P3
-
-- [ ] P3 — Code editor: word-wrap preference not persistent + limited language map
-  Why: `CodeEditorFragment:589` toggles word-wrap at runtime but doesn't persist the preference across sessions. `CodeEditorViewModel.EXT_TO_LANGUAGE_MAP:69-78` manually maps a narrow set of extensions; Kotlin, HTML, CSS, TOML, INI have no explicit entries.
-  Evidence: editor/CodeEditorFragment.java:589; editor/CodeEditorViewModel.java:69-78
-  Touches: editor/ (persist wrap pref, extend language map)
-  Acceptance: word-wrap state survives session restart; at least Kotlin, HTML, CSS, TOML are syntax-highlighted.
-  Complexity: S
 
 - [ ] P3 — Code editor: undo history browser + diff view
   Why: The editor supports undo/redo but no UI to browse history depth or see what changed. No file-version diff view for comparing current edits against the on-disk version.
@@ -589,61 +410,12 @@ Deduplicated against all sections above.
   Acceptance: a toolbar action shows the undo stack; a diff toggle highlights changes vs. the saved file.
   Complexity: M
 
-- [ ] P3 — File manager: hardcoded 2s sleep in batch paste inflates apparent duration
-  Why: `FmFragment.java:1526` inserts `SystemClock.sleep(2_000)` per file in the paste loop. A 50-file paste takes ≥100s of pure sleep regardless of actual copy speed — misleading progress and frustrating users.
-  Evidence: fm/FmFragment.java:1526
-  Touches: fm/FmFragment.java (remove the sleep or replace with a per-file progress update callback)
-  Acceptance: pasting 50 small files completes proportionally to actual I/O, not a fixed 100s floor.
-  Complexity: S
-
-- [ ] P3 — File manager: "Open with" unimplemented in file properties
-  Why: `FilePropertiesDialogFragment:147` has a TODO "Handle open with" — the action is wired in the dialog but does nothing on tap.
-  Evidence: fm/FilePropertiesDialogFragment.java:147
-  Touches: fm/FilePropertiesDialogFragment.java (wire ACTION_VIEW intent with MIME type)
-  Acceptance: tapping "Open with" in file properties launches a chooser; unsupported MIME types show a toast.
-  Complexity: S
-
-- [ ] P3 — File manager: bookmarks panel lacks UI prominence
-  Why: `FmFavoritesManager` exists and breadcrumb long-press adds to favorites, but there's no dedicated bookmarks panel or sidebar quick-access — only the breadcrumb context menu.
-  Evidence: fm/FmFavoritesManager.java; fm/FmPathListAdapter.java:137-142
-  Touches: fm/ (bookmarks drawer or bottom-sheet, accessible from toolbar)
-  Acceptance: a toolbar icon opens a bookmarks panel; add/remove works from both the panel and the existing breadcrumb long-press.
-  Complexity: S
-
 - [ ] P3 — Scanner results not cached for app-details display
   Why: The main-list and app-details screens show a tracker count badge, but tapping it re-scans from scratch. Previous scan results (which trackers, which components) aren't cached per package+version, so users repeat expensive scans to review findings.
   Evidence: details/info/AppInfoFragment.java (opens ScannerActivity, no result cache)
   Touches: scanner/ (persist last scan result keyed by package+versionCode), details/info/ ("Last scanned: [date], [N] trackers" card with tap-through)
   Acceptance: re-opening app details after a scan shows the cached result without re-scanning; cache invalidates on app update.
   Complexity: M
-
-- [ ] P3 — Running apps: fixed 10s polling with no configurability
-  Why: `RunningAppsActivity:331-341` hardcodes a 10s `Timer` interval. No user preference, no adaptive throttling when backgrounded, no skip when the process list hasn't changed.
-  Evidence: runningapps/RunningAppsActivity.java:331-341
-  Touches: runningapps/ (configurable interval in settings, pause polling when backgrounded)
-  Acceptance: user can choose refresh interval (5/10/30s/manual); polling pauses on onStop and resumes on onStart.
-  Complexity: S
-
-- [ ] P3 — Running apps: force-stop lacks critical-package guard
-  Why: `RunningAppsViewModel:249-259` calls `forceStopPackage()` without checking if the target is system-critical. The debloat safety net (ROADMAP P1) guards batch ops but running-apps force-stop is unguarded.
-  Evidence: runningapps/RunningAppsViewModel.java:249-259
-  Touches: runningapps/RunningAppsViewModel.java (reuse the critical-package guard from PermissionRecovery)
-  Acceptance: force-stopping a critical/system package shows a confirmation naming the risk; non-critical apps force-stop immediately.
-  Complexity: S
-
-- [ ] P3 — Usage stats: no comparative views or data export
-  Why: `AppUsageViewModel:115-138` loads a single interval only. No week-over-week comparison, no trend visualization, no export to CSV/JSON for external analysis.
-  Evidence: usage/AppUsageViewModel.java:115-138; usage/AppUsageAdapter.java (display only)
-  Touches: usage/ (comparative interval selector, export action)
-  Acceptance: usage screen offers a "Compare" toggle showing this-week vs. last-week deltas; an export action writes per-app usage to a shareable CSV.
-  Complexity: M
-
-- [ ] P3 — Offline scanner mode should be explicit
-  Why: `ScannerViewModel.java:89-131` fires VirusTotal and Pithus network tasks unconditionally. When offline, they fail silently and users get partial results without knowing why online reports are missing.
-  Evidence: scanner/ScannerViewModel.java:89-131
-  Touches: scanner/ScannerViewModel.java (isOffline check), scanner/ScannerFragment.java (banner: "Offline — showing local scan only")
-  Acceptance: offline scan shows a visible banner; online sections are grayed with "Requires network" labels rather than silently absent.
-  Complexity: S
 
 - [ ] P3 — Profile sharing via QR code or deep link
   Why: Profiles serialize to JSON but there's no QR code or `am://profile/import/<encoded>` deep link for mobile-to-mobile sharing. Users must export to file, transfer, and import manually.
@@ -652,30 +424,106 @@ Deduplicated against all sections above.
   Acceptance: a "Share" action in the profile editor generates a QR code or copyable deep link; scanning/tapping it on another device opens the import flow.
   Complexity: M
 
-- [ ] P3 — MyAndroidTools rule import format
-  Why: `ExternalComponentsImporter.java:38-40` supports only Blocker (JSON) and Watt (IFW XML). MyAndroidTools has a legacy but active user base whose rule exports are incompatible.
-  Evidence: rules/compontents/ExternalComponentsImporter.java:38-40
-  Touches: rules/compontents/ExternalComponentsImporter.java (MyAndroidTools parser)
-  Acceptance: importing a MyAndroidTools backup file produces the correct component-blocking rules in the rule store; conflicting rules are surfaced.
+## Research-Driven Additions
+
+### P1
+
+- [ ] P1 — Distribution documentation link-rot repair
+  Why: README and policy docs point reviewers to missing build-flavor, package-visibility, reproducible-build, sideload, and project-context markdown, weakening F-Droid/Izzy/Obtainium trust despite strong release automation.
+  Evidence: README.md:116,165; docs/policy/permissions.md; .github/workflows/docs-link-check.yml:78; CLAUDE.md:6,20,167; IzzyOnDroid/F-Droid reproducible-build requirements.
+  Touches: README.md, CLAUDE.md, .github/workflows/docs-link-check.yml, existing docs/distribution/ and docs/policy/ references
+  Acceptance: every README/docs/workflow markdown link resolves in a clean checkout by repointing or removing stale references; reviewer-facing flavor, package-visibility, reproducibility, and sideload-verification claims have one canonical destination; docs-link-check fails on future drift.
   Complexity: S
 
-- [ ] P3 — Backup schedule summary doesn't show "Next run"
-  Why: `BackupRestorePreferences.java:587-609` updates schedule summaries (time, network) only when the user manually opens the preference dialog. If auto-backup is active, there's no "Next run: ..." line updating reactively.
-  Evidence: settings/BackupRestorePreferences.java:587-609
-  Touches: settings/BackupRestorePreferences.java (reactive summary via observer)
-  Acceptance: the backup-schedule preference shows "Next run: [date/time]" that updates automatically.
+- [ ] P1 — Main-list load failure watchdog and recovery surface
+  Why: accepted upstream reports show the app list can appear to load forever or show no apps when package enumeration throws; NG currently logs loader failures but does not expose a failed-load state with retry/support details.
+  Evidence: upstream AppManager #1982/#1825/#1948; app/src/main/java/io/github/muntashirakon/AppManager/main/MainViewModel.java:593-619; app/src/main/res/layout/activity_main.xml:172-221
+  Touches: app/src/main/java/io/github/muntashirakon/AppManager/main/, app/src/main/res/layout/activity_main.xml, app/src/main/res/values/strings.xml, app/src/test/
+  Acceptance: injected package-enumeration failure exits loading within a bounded timeout, shows a retry/support-info action instead of stale indefinite loading, labels any last-good list as stale, and has a JVM or Robolectric regression test.
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Form-factor-aware permission prompt gate
+  Why: WearOS/TV sideload users hit repeated or unreachable permission prompts for settings panels that do not exist on their device class.
+  Evidence: upstream AppManager #1823; PermissionManagerX #61; app/src/main/AndroidManifest.xml leanback feature declaration; app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java permission/settings launch paths.
+  Touches: app/src/main/java/io/github/muntashirakon/AppManager/{details,main,onboarding,settings,self}/, app/src/main/res/values/strings.xml
+  Acceptance: unavailable permission/settings requests are suppressed or downgraded to a single dismissible explanation on TV/Wear; prompts remain reachable by D-pad/round screens; the gate is unit-tested with phone, TV, and Wear capability fixtures.
+  Complexity: M
+
+- [ ] P2 — Trigger-bound profile filters
+  Why: package install/update/uninstall triggers now exist, but they cannot yet apply a profile only to apps matching a saved filter such as newly installed apps with trackers or a vendor package prefix.
+  Evidence: docs/architecture/05-routine-scheduler.md open decision; app/src/main/java/io/github/muntashirakon/AppManager/profiles/trigger/ProfileTrigger.java TYPE_ON_APP_*; app/src/main/java/io/github/muntashirakon/AppManager/filters/FilterItem.java; AppDash tag/filter workflows.
+  Touches: app/src/main/java/io/github/muntashirakon/AppManager/{profiles/trigger,profiles,filters/preset,automation}/, app/src/main/res/values/strings.xml
+  Acceptance: a routine trigger can reference an optional filter/preset; package-event triggers pass the changed package through the matcher; non-matching events do not run the profile; JSON round-trip and scheduler tests cover the filter field.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Hostile APK/APKS archive fixture corpus
+  Why: NG accepts untrusted APK, APKS, APKM, and XAPK-style archives; parser or extraction mistakes can become crashes, hangs, or path traversal.
+  Evidence: app/src/main/java/io/github/muntashirakon/AppManager/apk/ApkFile.java:236 FIXME(#227); Android Zip Path Traversal guidance; APKMirror Installer/SAI split-archive support.
+  Touches: app/src/main/java/io/github/muntashirakon/AppManager/apk/, app/src/test/
+  Acceptance: fixture archives cover path traversal, special names, duplicate entries, unsupported compression, malformed manifests, and oversized member metadata; scanner/installer/manifest-viewer paths return structured per-file errors with no crash, hang, or path escape.
+  Complexity: M
+
+- [ ] P3 — Installer caller outcome result support
+  Why: external callers and automation tools need a reliable result contract instead of scraping UI or notifications after NG handles an install.
+  Evidence: InstallerX-Revived #672; app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/; Android PackageInstaller status result conventions.
+  Touches: app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/, app/src/main/res/values/strings.xml
+  Acceptance: when launched with the standard return-result extra, NG finishes with result code plus package/status/message extras after single or queued install completion; failures still show the existing transcript in-app.
   Complexity: S
 
-- [ ] P3 — Post-install abandoned session cleanup
-  Why: `PackageInstallerService.java` manages install sessions but abandoned ones (force-quit mid-install) aren't explicitly cleaned. Stale sessions consume the system's package-installer quota.
-  Evidence: apk/installer/PackageInstallerService.java (no cleanup logic)
-  Touches: apk/installer/ (periodic cleanup of sessions older than N minutes on app start)
-  Acceptance: stale install sessions are cleaned on app launch; no quota exhaustion from repeated failed installs.
+## Research-Driven Additions (Pass 3 — 2026-06-13)
+
+### P2
+
+- [ ] P2 — IFW+PM dual-mode component blocking
+  Why: Component blocking currently uses either IFW (Intent Firewall rules in /data/system/ifw/) or PM (setComponentEnabledSetting) but never both. Blocker's IFW_PLUS_PM mode proves combined blocking is more reliable: IFW rules survive factory reset while PM disables don't, and PM disables take effect immediately while IFW rules may need a reboot on some ROMs. Using both gives belt-and-suspenders reliability.
+  Evidence: https://github.com/lihenggui/blocker (IFW+PM dual-mode); rules/compontents/ and details/AppDetailsComponentsFragment (verified: single-mode per operation)
+  Touches: rules/compontents/ComponentRule.java (add COMBINED mode enum), rules/RulesStorageManager.java (apply both in sequence), details/AppDetailsComponentsFragment.java (mode selector), batchops/ (batch component ops), settings/ (default blocking mode preference)
+  Acceptance: a "Combined (IFW+PM)" blocking mode is available in component-blocking flows; blocking applies both IFW and PM rules in sequence; verify both states survive reboot and factory-reset scenarios separately; existing single-mode behavior unchanged for users who prefer it.
+  Complexity: M
+
+- [ ] P2 — Human-readable split APK labels in installer chooser
+  Why: SplitApkChooser presents raw split entry names (config.arm64_v8a, config.en, config.xxhdpi) in a SearchableMultiChoiceDialogBuilder. Users without Android packaging knowledge cannot distinguish ABI splits from locale or density splits. InstallerX-Revived solves this with a human-readable label layer that maps split names to descriptions.
+  Evidence: https://github.com/wxxsfxyzm/InstallerX-Revived (split APK UX); apk/splitapk/SplitApkChooser.java (verified: raw ApkFile.Entry names passed to dialog)
+  Touches: apk/splitapk/SplitApkChooser.java (label resolution), apk/splitapk/ (new SplitLabelResolver utility: ABI → "ARM 64-bit", density → "High-DPI resources", locale → "French language pack", feature → feature module name), app/src/main/res/values/strings.xml (label templates)
+  Acceptance: the split chooser shows human-readable descriptions alongside or instead of raw split names; auto-selection still picks the best ABI+density+locale for the device; users can override; unknown split types fall back to the raw name.
   Complexity: S
 
-- [ ] P3 — APK size tracking in release CI
-  Why: The release workflow produces per-ABI APKs but doesn't capture or report their sizes. Without a baseline, bloat creeps unnoticed — especially important pre-IzzyOnDroid (30 MB cap).
-  Evidence: .github/workflows/release.yml (no size logging step)
-  Touches: .github/workflows/release.yml (add size-reporting step)
-  Acceptance: release workflow logs per-ABI APK sizes as a workflow summary; optionally fails if any exceed a configurable threshold.
+- [ ] P2 — Debloat preset export/import for OTA re-application
+  Why: Users who debloat before an OTA update must re-select every package manually afterward because debloat selections have no export/import path. Canta and UAD-NG both support debloat-list export for re-application. NG has profiles for per-app configuration but no export/import specifically for the set of packages marked for removal/disabling in the debloater.
+  Evidence: https://github.com/samolego/Canta (debloat list export); https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (package database export); debloat/ package (verified: no preset export/import flow)
+  Touches: debloat/ (export current selections to JSON, import from JSON), debloat/DebloatActivity or DebloaterFragment (export/import menu actions), profiles/ (optional: convert a debloat preset into a profile for reuse)
+  Acceptance: a "Export debloat preset" action saves current debloat selections (package names + chosen action per package) to a shareable JSON file; "Import preset" loads selections and highlights any packages not found on the current device; round-trip tested with at least one OEM-specific set.
   Complexity: S
+
+### P3
+
+- [ ] P3 — Dedicated freeze surface with home-screen widget
+  Why: Freeze/unfreeze works via app details or batch ops, but there is no dedicated screen listing all frozen apps with one-tap toggle — the feature is buried. Hail's frozen-apps grid with one-tap toggle and home-screen widget is the competitive standard for daily freeze/unfreeze workflows. NG ships a QS freeze tile but no in-app freeze surface or widget.
+  Evidence: https://github.com/aistra0528/Hail (freeze grid, widget, grayscale icons); main/MainActivity.java (frozen filter exists but no dedicated freeze fragment); QuickFreezeTileService (QS tile only, no widget)
+  Touches: new FreezeManagerFragment under main/ (reuse existing freeze/unfreeze plumbing from batchops/), new AppWidgetProvider for home-screen toggle, main menu entry, app/src/main/res/layout/ (grid layout), app/src/main/res/xml/ (widget metadata)
+  Acceptance: a main-menu entry opens a grid of all frozen/suspended apps; each row has a one-tap toggle that freezes or unfreezes immediately; a home-screen widget shows frozen-app count and opens the freeze surface on tap; works in root, ADB, and Shizuku modes.
+  Complexity: M
+
+- [ ] P3 — Biometric gate option for privileged/destructive operations
+  Why: Upstream #1738 requests biometric authentication before terminal access and destructive batch operations. NG's destructive flows have confirmation dialogs but no optional biometric gate, leaving the device vulnerable if unlocked and unattended. The biometric library (1.4.0-alpha04) is already a dependency.
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1738 ; versions.gradle:biometric_version = '1.4.0-alpha04' (verified dependency); batchops/, terminal/, backup/ (no BiometricPrompt usage, verified)
+  Touches: settings/ (opt-in toggle, default off), a shared BiometricGateHelper utility, batchops/ (batch uninstall, clear data, disable), terminal/TermActivity.java, backup/ (restore, delete backup)
+  Acceptance: with the toggle on, BiometricPrompt challenges before batch uninstall, batch clear-data, terminal launch, and backup deletion; authentication failure blocks the operation; toggle off = current behavior unchanged; works with fingerprint, face, and device credential fallback.
+  Complexity: S
+
+- [ ] P3 — Backup restore API-level compatibility warnings
+  Why: Community complaints about Neo-Backup and Titanium Backup restoration unreliability across Android version jumps (e.g., Android 12 backup restored on Android 14) apply equally to NG. Backup metadata already records the source device's targetSdk and Android version, but the restore flow does not warn when these differ significantly from the current device.
+  Evidence: https://github.com/NeoApplications/Neo-Backup (restore reliability complaints); backup/ metadata (MetadataManager records source SDK/OS version); backup/RestoreOp.java (no API-level boundary check, verified)
+  Touches: backup/RestoreOp.java (pre-restore compatibility check), backup/dialog/ (warning dialog with "proceed anyway" option), app/src/main/res/values/strings.xml (warning copy)
+  Acceptance: when restoring a backup whose source Android API level differs by 2+ from the device, a warning explains the risk and offers "proceed anyway" or "cancel"; warning includes specific risk factors (permission model changes, scoped storage, package visibility); no warning for same-API or adjacent-API restores.
+  Complexity: S
+
+- [ ] P3 — Scheduled cache/data clearing as routine operation type
+  Why: SD Maid SE's scheduled cache-clearing is the #1 feature users associate with automated Android maintenance. NG's RoutineScheduler (v0.6.0 target) already has the executor pattern for scheduled operations but does not include cache or expendable-data clearing as an operation type.
+  Evidence: https://github.com/d4rken-org/sdmaid-se (scheduled cache clearing); profiles/RoutineScheduler.java and profiles/RoutineWorker.java (verified: no CLEAR_CACHE operation type); compat/PackageManagerCompat.java (freeStorageAndNotify available for privileged modes)
+  Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
+  Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
