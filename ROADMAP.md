@@ -318,13 +318,6 @@ device, or need on-device visual verification.
   Acceptance: NG-added screens share one dark palette token set; the misused drawables are replaced with purpose-named assets; all interactive badges hit ≥48dp touch targets (a11y scanner clean on those screens).
   Complexity: M
 
-- [ ] P3 — Terminal: implement or formally defer (decision item)
-  Why: terminal/TermActivity has shipped as a 4-TODO mock since the fork (completion, history, init script absent); a stub feature in the menu erodes trust — either wire a real terminal (Termux-style PTY) or hide it behind Pro Mode with a "preview" label and a dated decision record.
-  Evidence: terminal/TermActivity.java:49,95,104,181 (verified TODOs)
-  Touches: terminal/, main menu registration, docs/ (decision record)
-  Acceptance: a dated decision doc exists; the menu either offers a working PTY terminal (run `id` in privileged mode, see output) or labels the entry "preview" with the mock's limits stated in-UI.
-  Complexity: S (defer) / XL (implement)
-
 ## Deep Audit Follow-ups (2026-06-11)
 
 Deferred from the 2026-06-11 deep engineering/QA/UX audit pass. The fixed half

@@ -68,6 +68,9 @@ public class TermActivity extends BaseActivity {
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
         setContentView(R.layout.activity_term);
         setSupportActionBar(findViewById(R.id.toolbar));
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setSubtitle(R.string.terminal_preview_notice);
+        }
         mCommandInput = findViewById(R.id.command_input);
         mRouteStatusView = findViewById(R.id.route_status);
         mCommandOutput = findViewById(R.id.command_output);

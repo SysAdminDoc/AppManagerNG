@@ -28,6 +28,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Restored the missing minSdk-21 dependency ceiling ledger at
   docs/policy/minsdk-21-ceiling.md with pinned-cluster table and trigger status.
 
+### Changed — Terminal formally deferred to Preview (2026-06-13)
+
+- Terminal labeled "Terminal (Preview)" with a toolbar subtitle explaining
+  missing features (tab completion, command history, init scripts). The terminal
+  remains behind the Labs feature gate (disabled by default). Decision: defer
+  full PTY terminal implementation to a future release; the current
+  EditText-based mock is functional for basic privileged shell commands but is
+  not production-quality terminal emulation.
+
 ### Compliance — Android 17 behavior-change audit batch (2026-06-13)
 
 - Three new dated audit docs complete the Android 17 (API 37) behavior-change
