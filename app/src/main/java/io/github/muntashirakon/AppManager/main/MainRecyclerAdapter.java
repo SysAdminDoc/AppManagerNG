@@ -1086,11 +1086,18 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         if (target == null || target.getVisibility() != View.VISIBLE || !target.isClickable()) {
             return;
         }
+        Rect bounds = getTouchDelegateBounds(delegateParent, target, minTouchSize);
+        delegates.add(new TouchDelegate(bounds, target));
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static Rect getTouchDelegateBounds(@NonNull ViewGroup delegateParent, @NonNull View target, int minTouchSize) {
         Rect bounds = new Rect();
-        target.getHitRect(bounds);
+        target.getDrawingRect(bounds);
         delegateParent.offsetDescendantRectToMyCoords(target, bounds);
         expandTouchRectToMinimum(bounds, minTouchSize);
-        delegates.add(new TouchDelegate(bounds, target));
+        return bounds;
     }
 
     @VisibleForTesting
