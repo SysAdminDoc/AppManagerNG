@@ -52,11 +52,6 @@ into it — existing items take precedence over duplicates.
   boundaries.
   Where: app/src/main/java/io/github/muntashirakon/AppManager/settings/
 
-- [ ] P2 — Critical-flow smoke and contract tests
-  Why: destructive confirmations, parser hardening, lifecycle cleanup, restore recovery, and
-  privilege fallbacks need tests that fail when safety regressions return.
-  Where: app/src/test/, app/src/androidTest/, .github/workflows/
-
 - [ ] P3 — Visual token and component polish pass
   Why: cards, banners, list rows, dialogs, badges, chips, toasts, and nested surfaces should
   feel like one product in light, dark, and AMOLED modes without one-off colors or spacing.
