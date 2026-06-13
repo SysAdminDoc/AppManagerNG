@@ -372,6 +372,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             tagCloud.healthConnectInfo = HealthConnectInfo.from(packageInfo);
             tagCloud.credentialProviderManifestInfo = CredentialProviderManifestInfo.from(applicationInfo,
                     packageInfo.services);
+            tagCloud.appFunctionCount = countAppFunctionServices(packageInfo);
             tagCloud.manifestMetadataInfo = ManifestMetadataInfo.from(applicationInfo);
             tagCloud.warnsCleartextDeprecation = shouldWarnCleartextDeprecation(
                     (applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0,
@@ -474,6 +475,18 @@ public class AppInfoViewModel extends AndroidViewModel {
     @VisibleForTesting
     static boolean shouldWarnCleartextDeprecation(boolean usesCleartextTraffic, int networkSecurityConfigRes) {
         return usesCleartextTraffic && networkSecurityConfigRes == 0;
+    }
+
+    private static int countAppFunctionServices(@NonNull PackageInfo packageInfo) {
+        if (Build.VERSION.SDK_INT < 36 || packageInfo.services == null) return 0;
+        int count = 0;
+        for (android.content.pm.ServiceInfo service : packageInfo.services) {
+            if (service.metaData != null
+                    && service.metaData.containsKey("android.app.appfunctions")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     @NonNull
@@ -764,6 +777,7 @@ public class AppInfoViewModel extends AndroidViewModel {
          */
         @Nullable
         public String signingCertIssuer;
+        public int appFunctionCount;
     }
 
     public static class AppInfo {
