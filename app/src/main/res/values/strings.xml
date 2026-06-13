@@ -2991,6 +2991,11 @@
     <string name="debloat_removal_type">Type</string>
     <string name="debloater_list_options_summary">Choose which source lists, safety levels, and app states are visible.</string>
     <string name="debloater_status_loading">Loading debloat recommendations…</string>
+    <string name="debloat_export_preset">Export debloat preset</string>
+    <string name="debloat_import_preset">Import debloat preset</string>
+    <string name="debloat_export_empty">Select packages to export first</string>
+    <string name="debloat_import_success">Imported %1$d of %2$d packages</string>
+    <string name="debloat_import_not_found">%1$d packages from the preset were not found on this device</string>
     <string name="debloat_presets">Presets</string>
     <string name="debloat_presets_intro">Choose a curated set of installed recommendations. AppManagerNG selects the matching packages first so you can review them before applying changes.</string>
     <string name="debloat_preset_privacy">Privacy</string>
