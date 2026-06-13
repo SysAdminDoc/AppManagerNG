@@ -20,6 +20,7 @@ import com.google.android.material.button.MaterialButton;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.activity.LeadingActivityTrackerActivity;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.editor.CodeEditorActivity;
 import io.github.muntashirakon.AppManager.fm.FmActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryActivity;
@@ -52,11 +53,12 @@ public class LabsActivity extends BaseActivity {
                 });
         if (FeatureController.isTerminalEnabled()) {
             addAction(this, flowLayout, R.string.title_terminal_emulator, R.drawable.ic_frost_termux)
-                    .setOnClickListener(v -> {
-                        Intent intent = new Intent(this, TermActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                    });
+                    .setOnClickListener(v -> ActionAuthGate.authenticate(this,
+                            R.string.authenticate_to_open_terminal, () -> {
+                                Intent intent = new Intent(this, TermActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            }));
         }
         addAction(this, flowLayout, R.string.files, R.drawable.ic_file_document_multiple)
                 .setOnClickListener(v -> {

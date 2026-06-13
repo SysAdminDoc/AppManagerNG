@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.fm.SharableItems;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -237,17 +238,19 @@ public class RestoreSingleFragment extends Fragment {
                 .setMessage(getResources().getQuantityString(R.plurals.delete_selected_backups_confirmation,
                         selectedBackups.size(), selectedBackups.size()))
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    List<String> relativeDirs = new ArrayList<>(selectedBackups.size());
-                    for (BackupMetadataV5 backup : selectedBackups) {
-                        relativeDirs.add(backup.info.getRelativeDir());
-                    }
-                    BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
-                    operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
-                    operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
-                    operationInfo.relativeDirs = relativeDirs.toArray(new String[0]);
-                    mViewModel.prepareForOperation(operationInfo);
-                })
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        ActionAuthGate.authenticate(requireActivity(),
+                                R.string.authenticate_to_delete_backups, () -> {
+                                    List<String> relativeDirs = new ArrayList<>(selectedBackups.size());
+                                    for (BackupMetadataV5 backup : selectedBackups) {
+                                        relativeDirs.add(backup.info.getRelativeDir());
+                                    }
+                                    BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
+                                    operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
+                                    operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
+                                    operationInfo.relativeDirs = relativeDirs.toArray(new String[0]);
+                                    mViewModel.prepareForOperation(operationInfo);
+                                }))
                 .show();
     }
 
