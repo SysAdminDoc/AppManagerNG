@@ -5,6 +5,29 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added (2026-06-13)
+
+- Split APK chooser now shows human-readable labels ("ARM 64-bit", "Extra-high
+  density", "English language pack") instead of raw split names (arm64-v8a,
+  xxhdpi, en) via a new SplitLabelResolver utility.
+- Debloater export/import: users can save their debloat selections to a JSON
+  preset file and re-import them after an OTA update or on another device.
+  Import highlights packages not found on the current device.
+- Backup metadata now records the source Android API level. Restore warns when
+  the source and device API levels differ by 2+, citing specific risks (scoped
+  storage, runtime permissions, package visibility).
+- App Details tag cloud shows an "App functions: N services" chip for apps
+  declaring AppFunctionService metadata (Android 16+).
+- Installer now supports the standard EXTRA_RETURN_RESULT contract: when
+  launched with the flag, it calls setResult() with RESULT_OK/RESULT_FIRST_USER
+  plus EXTRA_PACKAGE_NAME and EXTRA_STATUS before finishing.
+- Distribution documentation link-rot repaired: created build-flavors.md,
+  reproducible-builds.md, rom-fdroid-preseed.md, package-visibility.md, and
+  sideload-verification.md. Updated .gitignore to track docs/**/*.md so
+  reviewer-facing docs resolve in clean checkouts.
+- Restored the missing minSdk-21 dependency ceiling ledger at
+  docs/policy/minsdk-21-ceiling.md with pinned-cluster table and trigger status.
+
 ### Compliance — Android 17 behavior-change audit batch (2026-06-13)
 
 - Three new dated audit docs complete the Android 17 (API 37) behavior-change
