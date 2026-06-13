@@ -2857,7 +2857,8 @@
     <string name="tracker_window_resume">Resume UI tracker</string>
     <string name="tracker_window_close">Close UI tracker</string>
     <string name="open_in_app_store">Open in app store</string>
-    <string name="title_terminal_emulator">Terminal</string>
+    <string name="title_terminal_emulator">Terminal (Preview)</string>
+    <string name="terminal_preview_notice">Preview: no tab completion, command history, or init scripts.</string>
     <string name="terminal_route_status">Route: <xliff:g id="route" example="ADB">%1$s</xliff:g></string>
     <string name="terminal_route_status_fallback">Route: Local fallback (<xliff:g id="route" example="ADB">%1$s</xliff:g> unavailable)</string>
     <string name="terminal_route_local">Local</string>
