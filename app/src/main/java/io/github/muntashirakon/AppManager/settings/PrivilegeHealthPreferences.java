@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
@@ -62,6 +63,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private Preference mRemoteServicesPref;
     private Preference mBatteryOptimizationPref;
     private Preference mRestrictedSettingsPref;
+    private Preference mAdvancedProtectionPref;
     private Preference mBootstrapSmokeTestPref;
     @Nullable
     private KernelSuDiagnostics.Result mKernelSuLastResult;
@@ -84,6 +86,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mRemoteServicesPref = requirePreference("privilege_health_remote_services");
         mBatteryOptimizationPref = requirePreference("privilege_health_battery_optimization");
         mRestrictedSettingsPref = requirePreference("privilege_health_restricted_settings");
+        mAdvancedProtectionPref = requirePreference("privilege_health_advanced_protection");
         mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
             bindCapabilityDroppingAsync();
@@ -146,6 +149,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindRemoteServices(context);
         bindBatteryOptimization(context);
         bindRestrictedSettings(context);
+        bindAdvancedProtection(context);
         bindRootManagerAsync(context.getApplicationContext());
         bindRootModulesAsync();
         bindCapabilityDroppingAsync();
@@ -447,6 +451,20 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 mRestrictedSettingsPref.setSummary(getString(
                         R.string.privilege_health_restricted_settings_review, source));
                 break;
+        }
+    }
+
+    private void bindAdvancedProtection(@NonNull Context context) {
+        if (Build.VERSION.SDK_INT < 36) {
+            mAdvancedProtectionPref.setVisible(false);
+            return;
+        }
+        mAdvancedProtectionPref.setVisible(true);
+        boolean enabled = AdvancedProtectionCompat.isAdvancedProtectionEnabled(context);
+        if (enabled) {
+            mAdvancedProtectionPref.setSummary(R.string.privilege_health_advanced_protection_active);
+        } else {
+            mAdvancedProtectionPref.setSummary(R.string.privilege_health_advanced_protection_inactive);
         }
     }
 

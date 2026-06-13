@@ -57,6 +57,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
+### Added — Advanced Protection detection (2026-06-13)
+
+- Installer pre-flight now detects Android 16+ Advanced Protection
+  (AdvancedProtectionManager) and shows a blocking dialog before attempting
+  install, explaining that sideloading is disabled at the platform level.
+- Privilege Health screen shows an Advanced Protection state row (hidden on
+  devices below API 36) indicating whether sideloading is blocked.
+- Mode Doctor includes an Advanced Protection probe that warns when AP is
+  active and links to Android security settings.
+- Updated sideload-verification.md to document the detection behavior.
+
 ### Distribution — IzzyOnDroid readiness audit refreshed (2026-06-13)
 
 - IzzyOnDroid listing packet refreshed with per-ABI split size analysis. The CI

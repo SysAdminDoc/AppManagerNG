@@ -83,6 +83,11 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="privilege_health_advanced_protection"
+        app:title="@string/advanced_protection"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         android:fragment="io.github.muntashirakon.AppManager.settings.ModeDoctorPreferences"
         app:key="privilege_health_mode_doctor"
         app:title="@string/privilege_health_mode_doctor_title"
