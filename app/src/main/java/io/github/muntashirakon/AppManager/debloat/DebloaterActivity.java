@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -15,6 +16,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -69,6 +72,14 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     private MaterialButton mEmptyStateAction;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
+    private final ActivityResultLauncher<String> mExportPreset = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("application/json"), uri -> {
+                if (uri != null) exportPresetAsync(uri);
+            });
+    private final ActivityResultLauncher<String[]> mImportPreset = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) importPresetAsync(uri);
+            });
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -179,6 +190,16 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             return true;
         } else if (id == R.id.action_debloat_presets) {
             showDebloatPresetPicker();
+            return true;
+        } else if (id == R.id.action_export_preset) {
+            if (viewModel != null && viewModel.getSelectedItemCount() > 0) {
+                mExportPreset.launch("debloat-preset.json");
+            } else {
+                UIUtils.displayShortToast(R.string.debloat_export_empty);
+            }
+            return true;
+        } else if (id == R.id.action_import_preset) {
+            mImportPreset.launch(new String[]{"application/json", "application/octet-stream"});
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -671,6 +692,52 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                 .setPositiveButton(R.string.action_continue, (dialog, which) -> action.run(true))
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void exportPresetAsync(@NonNull Uri uri) {
+        if (viewModel == null) return;
+        java.util.Map<String, int[]> selected = viewModel.getSelectedPackages();
+        java.util.concurrent.Executor executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                DebloatPresetIO.exportPreset(this, uri, selected);
+                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_import_success,
+                        selected.size(), selected.size()));
+            } catch (java.io.IOException e) {
+                String msg = e.getMessage();
+                runOnUiThread(() -> UIUtils.displayShortToast(msg != null ? msg : "Export failed"));
+            }
+        });
+    }
+
+    private void importPresetAsync(@NonNull Uri uri) {
+        if (viewModel == null) return;
+        java.util.concurrent.Executor executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                DebloatPresetIO.DebloatPresetData data = DebloatPresetIO.importPreset(this, uri);
+                runOnUiThread(() -> applyImportedPreset(data));
+            } catch (java.io.IOException e) {
+                String msg = e.getMessage();
+                runOnUiThread(() -> UIUtils.displayShortToast(msg != null ? msg : "Import failed"));
+            }
+        });
+    }
+
+    private void applyImportedPreset(@NonNull DebloatPresetIO.DebloatPresetData data) {
+        if (viewModel == null || data.entries == null) return;
+        int matched = viewModel.selectByPackageNames(data.entries);
+        int total = data.entries.size();
+        int notFound = total - matched;
+        mAdapter.notifyDataSetChanged();
+        if (matched > 0) {
+            mMultiSelectionView.show();
+            mMultiSelectionView.updateCounter(false);
+        }
+        UIUtils.displayShortToast(R.string.debloat_import_success, matched, total);
+        if (notFound > 0) {
+            UIUtils.displayShortToast(R.string.debloat_import_not_found, notFound);
+        }
     }
 
     private interface CriticalPackageAction {
