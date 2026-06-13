@@ -17,6 +17,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.FragmentActivity;
 import androidx.core.widget.TextViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -157,9 +158,10 @@ public class ModeOfOpsPreference extends Fragment {
         updateViews();
         // Mode of ops
         mModel.getModeOfOpsStatus().observe(getViewLifecycleOwner(), status -> {
-            if (!mModeApplyState.isApplying()) {
+            if (!mModeApplyState.isApplying() || !isAdded()) {
                 return;
             }
+            FragmentActivity activity = requireActivity();
             switch (status) {
                 case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -171,33 +173,33 @@ public class ModeOfOpsPreference extends Fragment {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         mModeOfOpsAlertDialog.dismiss();
                         updateViews();
-                        Ops.connectWirelessDebugging(requireActivity(), mModel);
+                        Ops.connectWirelessDebugging(activity, mModel);
                         return;
                     } // fall-through
                 case Ops.STATUS_ADB_CONNECT_REQUIRED:
                     mModeOfOpsAlertDialog.dismiss();
                     updateViews();
-                    Ops.connectAdbInput(requireActivity(), mModel);
+                    Ops.connectAdbInput(activity, mModel);
                     return;
                 case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
                     mModeOfOpsAlertDialog.dismiss();
                     updateViews();
-                    Ops.requestShizukuPermission(requireActivity(), mModel);
+                    Ops.requestShizukuPermission(activity, mModel);
                     return;
                 case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
                     mModeOfOpsAlertDialog.dismiss();
                     updateViews();
-                    Ops.displayLocalNetworkPermissionMessage(requireActivity(), mModel);
+                    Ops.displayLocalNetworkPermissionMessage(activity, mModel);
                     return;
                 case Ops.STATUS_ADB_PAIRING_REQUIRED:
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         mModeOfOpsAlertDialog.dismiss();
                         updateViews();
-                        Ops.pairAdbInput(requireActivity(), mModel);
+                        Ops.pairAdbInput(activity, mModel);
                         return;
                     } // fall-through
                 case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                    Ops.displayIncompleteUsbDebuggingMessage(requireActivity());
+                    Ops.displayIncompleteUsbDebuggingMessage(activity);
                     finishModeApply(false, true);
                     return;
                 case Ops.STATUS_SUCCESS:
