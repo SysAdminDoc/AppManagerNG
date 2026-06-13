@@ -420,3 +420,15 @@ decisions, careful refactoring, or on-device testing.
   Why: mBatchOpsBroadCastReceiver references mActivity and is never unregistered in onDestroyView/onDetach. If the broadcast arrives after fragment detach, the stale activity reference can crash.
   Where: backup/dialog/BackupRestoreDialogFragment.java:129-138
   Complexity: S
+
+- [ ] P2 — Narrow ~140 unjustified catch(Throwable) to catch(Exception)
+  Why: ~140 catch blocks catch Throwable around standard library, JSON, file I/O, and UI code that can only throw Exception subclasses. This swallows OOM/StackOverflowError/VirtualMachineError silently. ~73 instances around IPC/hidden API calls are justified (can throw Error subclasses from reflection/binder). Priority files: AppInfoFragment (22), BatchOpsManager (22), BackupRetentionPolicy (6), MainRecyclerAdapter (5), AssistActionActivity (9).
+  Where: app/src/main/java/ (89 files, 356 total instances)
+  Complexity: L
+
+### P3
+
+- [ ] P3 — requireActivity()/requireContext() in nested dialog and async callbacks
+  Why: ~8 MEDIUM-severity instances where requireActivity() is called inside nested dialog button callbacks or adapter bind methods that can fire after fragment detach. Not immediate crashers (requires specific timing) but violate lifecycle safety.
+  Where: AdvancedPreferences.java:194-206, AppInfoFragment.java:793/866/894, RestoreSingleFragment.java:242, AppDetailsComponentsFragment.java:1179
+  Complexity: S
