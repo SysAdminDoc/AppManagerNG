@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.UserIdInt;
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
+import android.app.ApplicationExitInfo;
 import android.app.IActivityManager;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -13,6 +14,7 @@ import android.content.Context;
 import android.content.IContentProvider;
 import android.content.IIntentReceiver;
 import android.content.Intent;
+import android.content.pm.ParceledListSlice;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -221,6 +223,22 @@ public final class ActivityManagerCompat {
     @RequiresPermission("android.permission.KILL_UID")
     public static void killUid(int uid, String reason) throws RemoteException {
         getActivityManager().killUid(UserHandleHidden.getAppId(uid), UserHandleHidden.getUserId(uid), reason);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    @NonNull
+    public static List<ApplicationExitInfo> getHistoricalProcessExitReasons(
+            @NonNull String packageName, int pid, int maxNum, @UserIdInt int userId) {
+        try {
+            ParceledListSlice<ApplicationExitInfo> result = getActivityManager()
+                    .getHistoricalProcessExitReasons(packageName, pid, maxNum, userId);
+            return result != null ? result.getList() : Collections.emptyList();
+        } catch (RemoteException e) {
+            return Collections.emptyList();
+        } catch (Throwable th) {
+            Log.w("ActivityManagerCompat", th);
+            return Collections.emptyList();
+        }
     }
 
     @SuppressWarnings("deprecation")

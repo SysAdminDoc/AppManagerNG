@@ -20,6 +20,7 @@ import static io.github.muntashirakon.AppManager.utils.Utils.openAsFolderInFM;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.ApplicationExitInfo;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -3651,6 +3652,69 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     @GuardedBy("mListItems")
+    private void addExitHistoryInfo(@NonNull Context appContext, @NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || mIsExternalApk) {
+            return;
+        }
+        List<ApplicationExitInfo> exits = appInfo.recentExits;
+        if (exits.isEmpty()) {
+            return;
+        }
+        synchronized (mListItems) {
+            mListItems.add(ListItem.newGroupStart(appContext.getString(R.string.exit_history)));
+            for (ApplicationExitInfo info : exits) {
+                String reasonLabel = getExitReasonLabel(appContext, info.getReason());
+                String timestamp = getTime(appContext, info.getTimestamp());
+                String description = info.getDescription();
+                String subtitle;
+                if (description != null && !description.isEmpty()) {
+                    subtitle = timestamp + " — " + description;
+                } else {
+                    subtitle = timestamp;
+                }
+                mListItems.add(ListItem.newSelectableRegularItem(reasonLabel, subtitle));
+            }
+        }
+    }
+
+    @NonNull
+    private static String getExitReasonLabel(@NonNull Context context, int reason) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return String.valueOf(reason);
+        }
+        switch (reason) {
+            case ApplicationExitInfo.REASON_EXIT_SELF:
+                return context.getString(R.string.exit_reason_exit_self);
+            case ApplicationExitInfo.REASON_SIGNALED:
+                return context.getString(R.string.exit_reason_signaled);
+            case ApplicationExitInfo.REASON_LOW_MEMORY:
+                return context.getString(R.string.exit_reason_low_memory);
+            case ApplicationExitInfo.REASON_CRASH:
+                return context.getString(R.string.exit_reason_crash);
+            case ApplicationExitInfo.REASON_CRASH_NATIVE:
+                return context.getString(R.string.exit_reason_crash_native);
+            case ApplicationExitInfo.REASON_ANR:
+                return context.getString(R.string.exit_reason_anr);
+            case ApplicationExitInfo.REASON_INITIALIZATION_FAILURE:
+                return context.getString(R.string.exit_reason_initialization_failure);
+            case ApplicationExitInfo.REASON_PERMISSION_CHANGE:
+                return context.getString(R.string.exit_reason_permission_change);
+            case ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE:
+                return context.getString(R.string.exit_reason_excessive_resource);
+            case ApplicationExitInfo.REASON_USER_REQUESTED:
+                return context.getString(R.string.exit_reason_user_requested);
+            case ApplicationExitInfo.REASON_USER_STOPPED:
+                return context.getString(R.string.exit_reason_user_stopped);
+            case ApplicationExitInfo.REASON_DEPENDENCY_DIED:
+                return context.getString(R.string.exit_reason_dependency_died);
+            case ApplicationExitInfo.REASON_OTHER:
+                return context.getString(R.string.exit_reason_other);
+            default:
+                return context.getString(R.string.exit_reason_unknown, reason);
+        }
+    }
+
+    @GuardedBy("mListItems")
     private void addSelinuxInfo(@NonNull Context appContext, @NonNull AppInfoViewModel.AppInfo appInfo) {
         if (appInfo.seInfo != null) {
             mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.selinux_policy_info),
@@ -3788,6 +3852,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }
                 }
                 setMoreInfo(appContext, appInfo);
+                addExitHistoryInfo(appContext, appInfo);
                 ThreadUtils.postOnMainThread(() -> {
                     if (!isAdded()) return;
                     ++mLoadedItemCount;
