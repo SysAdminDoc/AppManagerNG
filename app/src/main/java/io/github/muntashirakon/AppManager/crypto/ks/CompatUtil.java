@@ -64,7 +64,7 @@ public class CompatUtil {
     private static final String SHARED_KEY_ANDROID_VERSION_WHEN_KEY_HAS_BEEN_GENERATED =
             "android_version_when_key_has_been_generated";
 
-    private static SecureRandom sPrng;
+    private static volatile SecureRandom sPrng;
 
     /**
      * Returns the AES key used for local storage encryption/decryption with AES/GCM.

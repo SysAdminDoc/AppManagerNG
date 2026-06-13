@@ -271,7 +271,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getChildFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container_view_tag, getBackupFragment())
-                .commit();
+                .commitAllowingStateLoss();
     }
 
     private void loadMultipleRestoreFragment() {
@@ -281,7 +281,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getChildFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container_view_tag, RestoreMultipleFragment.getInstance())
-                .commit();
+                .commitAllowingStateLoss();
     }
 
     private void loadMultipleBackupRestoreViewPager() {
@@ -316,7 +316,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getChildFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container_view_tag, getBackupFragment())
-                .commit();
+                .commitAllowingStateLoss();
     }
 
     private void loadSingleRestoreFragment() {
@@ -326,7 +326,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getChildFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container_view_tag, RestoreSingleFragment.getInstance())
-                .commit();
+                .commitAllowingStateLoss();
     }
 
     private void loadSingleBackupRestoreViewPager() {
@@ -418,7 +418,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
             // awake / app open during the backup. Mirrors Neo Backup 8.3.17 behavior.
             UIUtils.displayLongToast(R.string.backup_keep_device_awake_warning);
         }
-        dismiss();
+        dismissAllowingStateLoss();
     }
 
     private class BackupDialogFragmentPagerAdapter extends FragmentStateAdapter {
