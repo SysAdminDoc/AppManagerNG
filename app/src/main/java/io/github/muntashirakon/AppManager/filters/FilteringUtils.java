@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
@@ -187,8 +188,8 @@ public final class FilteringUtils {
     }
 
     private static boolean backupExists(@NonNull Backup backup) {
-        try {
-            return backup.getItem().exists();
+        try (BackupItems.BackupItem item = backup.getItem()) {
+            return item != null && item.exists();
         } catch (IOException ignore) {
             return false;
         }
