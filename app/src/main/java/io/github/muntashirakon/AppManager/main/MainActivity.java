@@ -59,6 +59,7 @@ import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragm
 import io.github.muntashirakon.AppManager.batchops.BatchKeepOpenHint;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.changelog.ChangelogAutoDisplay;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsJournal;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.SnackbarDurationPolicy;
@@ -1221,37 +1222,21 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void showDisableBackgroundDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setIcon(R.drawable.ic_block)
-                .setTitle(R.string.batch_disable_background_dialog_title)
-                .setMessage(getString(R.string.batch_disable_background_dialog_message,
-                        getSelectedAppCountLabel()))
-                .setPositiveButton(R.string.disable_background, (dialog, which) ->
-                        handleBatchOp(BatchOpsManager.OP_DISABLE_BACKGROUND))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        DestructiveActionConfirmation.forBatchOp(this, BatchOpsManager.OP_DISABLE_BACKGROUND,
+                getSelectedAppCountLabel(), (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_DISABLE_BACKGROUND)).show();
     }
 
     private void showForceStopDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setIcon(R.drawable.ic_power_settings)
-                .setTitle(R.string.batch_force_stop_dialog_title)
-                .setMessage(getString(R.string.batch_force_stop_dialog_message, getSelectedAppCountLabel()))
-                .setPositiveButton(R.string.force_stop, (dialog, which) ->
-                        handleBatchOp(BatchOpsManager.OP_FORCE_STOP))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        DestructiveActionConfirmation.forBatchOp(this, BatchOpsManager.OP_FORCE_STOP,
+                getSelectedAppCountLabel(), (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_FORCE_STOP)).show();
     }
 
     private void showUninstallDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setIcon(R.drawable.ic_trash_can)
-                .setTitle(R.string.batch_uninstall_dialog_title)
-                .setMessage(getString(R.string.batch_uninstall_dialog_message, getSelectedAppCountLabel()))
-                .setPositiveButton(R.string.uninstall, (dialog, which) ->
-                        handleBatchOp(BatchOpsManager.OP_UNINSTALL))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        DestructiveActionConfirmation.forBatchOp(this, BatchOpsManager.OP_UNINSTALL,
+                getSelectedAppCountLabel(), (dialog, which) ->
+                        handleBatchOp(BatchOpsManager.OP_UNINSTALL)).show();
     }
 
     @NonNull
