@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Stop swallowing fatal VM errors (2026-06-14)
+
+- Narrowed catch(Throwable) to catch(Exception) in backup-retention pruning
+  (DB/file paths) and the main-list quick-action launch paths (startActivity).
+  These blocks caught standard exceptions only, so widening to Throwable
+  silently swallowed OutOfMemoryError/StackOverflowError/other VM errors.
+  Sites whose callee genuinely declares throws Throwable, or that wrap
+  reflection/IPC/hidden-API Compat calls (which can throw Error subclasses),
+  were deliberately left as-is.
+
 ### Fixed — IPC binder cache reliability (2026-06-14)
 
 - ProxyBinder's service cache now evicts dead binders. Previously a cached
