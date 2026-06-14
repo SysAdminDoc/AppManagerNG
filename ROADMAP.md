@@ -441,18 +441,53 @@ HKDF key v7) and is intentionally NOT listed — see RESEARCH.md §Rejected.
   Acceptance: installing an APK+OBB bundle does not report success until OBBs are copied for every targeted user; an injected copy failure surfaces as an install failure (not a silent partial install); multi-user OBB behavior is intentional and documented.
   Complexity: M
 
+## Research-Driven Additions (Pass 5 — 2026-06-14)
+
+Newly surfaced, verified against current source, deduplicated against every section above.
+Backing analysis: RESEARCH.md.
+
+### P1
+
+- [ ] P1 — FGS `specialUse` declared without the required subtype property (crash on A16 OEMs)
+  Why: The manifest declares FOREGROUND_SERVICE_SPECIAL_USE and eight services with
+  foregroundServiceType="dataSync|specialUse" but no PROPERTY_SPECIAL_USE_FGS_SUBTYPE property —
+  the exact configuration behind upstream #1978's FOREGROUND_SERVICE crash on Android 16 /
+  OxygenOS 16. NG targets SDK 36 so it is live; the FGS launches during backup/install/batch ops,
+  so a crash aborts a core operation. The real workloads are dataSync, so `specialUse` is
+  redundant — the safe fix is to drop `specialUse` (or add the property if a special use is
+  intended). Headless-safe and independently Play-policy-correct.
+  Evidence: app/src/main/AndroidManifest.xml:54 (permission), :1655-1727 (eight `dataSync|specialUse`
+  services), no PROPERTY_SPECIAL_USE_FGS_SUBTYPE anywhere (verified); https://github.com/MuntashirAkon/AppManager/issues/1978 ;
+  https://developer.android.com/develop/background-work/services/fgs/service-types
+  Touches: app/src/main/AndroidManifest.xml (foregroundServiceType + optional `<property>`),
+  types/ForegroundService.java if a subtype constant is needed
+  Acceptance: services no longer declare `specialUse` without a subtype property; a foreground
+  backup/install starts without the #1978 crash on an Android 16 device/emulator; `:app:lint`
+  and a manifest-merger check pass. (Crash repro is device-gated; the manifest change is headless.)
+  Complexity: S
+
 ### P3
 
-- [ ] P3 — Biometric-gate option for uninstall / destructive installer ops
-  Why: ActionAuthGate already gates terminal, file-manager, and backup-delete via BiometricPrompt behind the privacy toggle, but uninstall — the most destructive installer-lane action — fires without it; InstallerX-Revived (v2.3.2, Feb 2026) made biometric-gated install/uninstall the field standard.
-  Evidence: crypto/auth/ActionAuthGate.java (existing gate, terminal/FM/backup-delete only); https://github.com/wxxsfxyzm/InstallerX-Revived/releases ; RESEARCH.md §Architecture
-  Touches: crypto/auth/ActionAuthGate.java, apk/installer/ uninstall path, batchops/ batch-uninstall path, settings/ (extend the existing action-auth privacy toggle scope)
-  Acceptance: with the action-auth toggle on, single and batch uninstall require biometric confirmation before proceeding; with it off, behavior is unchanged; the gate degrades cleanly on devices without biometric hardware.
+- [ ] P3 — Privileged-server readiness probe instead of fixed start/stop sleeps
+  Why: LocalServerManager sleeps a hardcoded ~3s after starting and stopping the privileged
+  server with no readiness check or retry, so on slow/embedded devices the next IPC call can race
+  a not-yet-ready (or not-yet-dead) server and fail intermittently — a hard-to-reproduce
+  reliability bug in the root/ADB bootstrap.
+  Evidence: servermanager/LocalServerManager.java:262,326 (fixed sleeps), :350 (per-session SSL TODO)
+  Touches: servermanager/LocalServerManager.java (bounded readiness poll on the control socket
+  with timeout + retry, replacing the fixed sleeps)
+  Acceptance: server start/stop waits on an actual readiness/liveness signal with a bounded
+  timeout rather than a fixed 3s; an artificially slow start still connects; root/ADB bootstrap
+  succeeds on a slow emulator without the sleep tuning.
   Complexity: S
 
-- [ ] P3 — Confirm BouncyCastle 1.84 patches the 2026 CVE line; bump if not
-  Why: bcprov/bcpkix is pinned at 1.84; the repo audit claims it closes CVE-2026-3505 (PGP AEAD chunk-size DoS — reachable through OpenPGP backup decrypt), CVE-2026-5588, and CVE-2026-5598, but the audit predates some of those publications so "covered" is unverified. Only CVE-2026-3505 is on a reachable NG path (NG uses no PKIX composite verifier or FrodoKEM).
-  Evidence: versions.gradle:26 (bouncycastle_version = "1.84"); https://app.opencve.io/cve/?vendor=bouncycastle ; RESEARCH.md §Security
-  Touches: versions.gradle, buildscript-gradle.lockfile (if bumped), docs/audits/ (dated verification note)
-  Acceptance: a GHSA/NVD check confirms 1.84 contains the CVE-2026-3505 fix, or the dependency is bumped to the patched line; a dated audit note records the affected-vs-reachable analysis.
+- [ ] P3 — HyperOS in installer-source detection (correct flags/labels on Xiaomi)
+  Why: PackageInstallerCompat carries a `TODO: Check for HyperOS?` — Xiaomi's HyperOS is absent
+  from the installer-source/OEM detection, so MIUI/HyperOS-specific install flags and source
+  labels can be set or shown incorrectly on a large device population.
+  Evidence: apk/installer/PackageInstallerCompat.java:1198 (verified TODO)
+  Touches: apk/installer/PackageInstallerCompat.java (HyperOS branch alongside the MIUI/OEM checks)
+  Acceptance: on a HyperOS device the installer applies the correct OEM install flags and source
+  label; non-Xiaomi behavior is unchanged; the TODO is resolved.
   Complexity: S
+
