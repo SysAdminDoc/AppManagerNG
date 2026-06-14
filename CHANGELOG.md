@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security — Backup restore hardening (2026-06-14)
+
+- Restoring a pre-v4 backup, whose AES-GCM ciphertext was authenticated with a
+  weak 32-bit tag (forgeable at ~2^-32 per attempt), now logs a clear security
+  warning advising the backup be re-created to upgrade to the 128-bit tag used
+  by current backups. The legacy tag is still accepted so old backups remain
+  restorable. The version→tag-size decision is centralized in
+  AESCrypto.metadataUsesLegacyAuthTag (covered by a unit test).
+- Archive extraction (file-manager zip extraction and backup tar restore) is
+  now guarded against decompression bombs. A shared ArchiveExtractionGuard caps
+  total uncompressed output (compressed-size × 200, floored at 256 MiB, or a
+  32 GiB ceiling when the input size is unknown) and entry count (1,000,000),
+  checked before each write so disk usage is bounded. Legitimate archives, whose
+  ratios are ordinary, are unaffected; a crafted bomb aborts with an error
+  instead of filling the disk.
+
 ### Changed — Fork branding cleanup (2026-06-14)
 
 - About screen and links now point at the AppManagerNG fork: source-code link

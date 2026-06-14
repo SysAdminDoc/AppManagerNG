@@ -21,6 +21,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.IoUtils;
@@ -86,11 +87,13 @@ final class FmArchiveUtils {
         if (progressCallback != null) {
             progressCallback.onProgress(archive.getName(), 0, total);
         }
+        ArchiveExtractionGuard bombGuard = new ArchiveExtractionGuard(archive.length());
         try (ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(archive.openInputStream()))) {
             ZipEntry zipEntry;
             int done = 0;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
                 throwIfInterrupted();
+                bombGuard.onNewEntry();
                 String entryName = normalizeZipEntryName(zipEntry.getName());
                 if (zipEntry.isDirectory()) {
                     destination.createDirectoriesIfRequired(entryName);
@@ -99,7 +102,7 @@ final class FmArchiveUtils {
                     if (outputName != null) {
                         Path outputFile = destination.createNewArbitraryFile(outputName, null);
                         try (OutputStream outputStream = new BufferedOutputStream(outputFile.openOutputStream())) {
-                            IoUtils.copy(zipInputStream, outputStream);
+                            bombGuard.copy(zipInputStream, outputStream);
                         }
                         long entryTime = zipEntry.getTime();
                         if (entryTime > 0) {
