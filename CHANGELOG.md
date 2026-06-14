@@ -5,6 +5,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added — Package filter for app-event routine triggers (2026-06-14)
+
+- App install/update/uninstall routine triggers can now be limited to packages
+  matching an optional glob (e.g. com.vendor.*). When set, the trigger only runs
+  the profile if the changed package matches; an empty filter keeps the previous
+  "run for every app" behavior. The changed package is passed from the package-
+  change receiver through the scheduler to a per-trigger matcher; the filter is
+  set via a prompt when adding the trigger and shown in the trigger title. The
+  field round-trips through the trigger JSON store and is covered by unit and
+  scheduler tests.
+
 ### Fixed — Stop swallowing fatal VM errors (2026-06-14)
 
 - Narrowed catch(Throwable) to catch(Exception) in backup-retention pruning

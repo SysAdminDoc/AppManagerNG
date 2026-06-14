@@ -1422,6 +1422,10 @@
     <string name="profile_trigger_on_app_install">When an app is installed</string>
     <string name="profile_trigger_on_app_update">When an app is updated</string>
     <string name="profile_trigger_on_app_uninstall">When an app is uninstalled</string>
+    <string name="profile_trigger_package_filter_title">Limit to packages</string>
+    <string name="profile_trigger_package_filter_hint">Package filter (optional)</string>
+    <string name="profile_trigger_package_filter_helper">Leave empty to run for every app. Use * as a wildcard, e.g. com.vendor.* to match a vendor\'s packages.</string>
+    <string name="profile_trigger_package_filter_suffix" translatable="false">%1$s · %2$s</string>
     <string name="profile_trigger_summary">%1$s\n%2$s\n%3$s</string>
     <string name="profile_trigger_last_run_never">Never run</string>
     <string name="profile_trigger_last_run_format">%1$s: %2$s</string>

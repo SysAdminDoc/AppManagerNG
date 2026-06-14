@@ -14,6 +14,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * NF-09 — value object describing a profile-execution trigger.
@@ -51,9 +52,17 @@ public final class ProfileTrigger {
     public final int hourOfDay;
     public final int minuteOfHour;
     public final long createdAt;
+    /**
+     * Optional glob (e.g. {@code com.vendor.*}) applied to package-event triggers only.
+     * When empty the trigger fires for every package change of its type. {@code *} matches
+     * any run of characters; matching is case-sensitive (package names are). Ignored for
+     * non-package trigger types.
+     */
+    @NonNull public final String packagePattern;
 
     private ProfileTrigger(@NonNull String id, @NonNull String profileId, @Type int type,
-                           boolean enabled, int hourOfDay, int minuteOfHour, long createdAt) {
+                           boolean enabled, int hourOfDay, int minuteOfHour, long createdAt,
+                           @NonNull String packagePattern) {
         this.id = id;
         this.profileId = profileId;
         this.type = type;
@@ -61,6 +70,49 @@ public final class ProfileTrigger {
         this.hourOfDay = hourOfDay;
         this.minuteOfHour = minuteOfHour;
         this.createdAt = createdAt;
+        this.packagePattern = isPackageEventType(type) ? packagePattern : "";
+    }
+
+    /** Whether {@code type} is one of the package-change trigger types. */
+    public static boolean isPackageEventType(@Type int type) {
+        return type == TYPE_ON_APP_INSTALL
+                || type == TYPE_ON_APP_UPDATE
+                || type == TYPE_ON_APP_UNINSTALL;
+    }
+
+    /**
+     * Whether this trigger should fire for the given changed package. Triggers with no
+     * {@link #packagePattern} match everything. A non-empty pattern requires a non-null
+     * package that matches the glob; an unknown ({@code null}) package never matches a
+     * pattern-bound trigger.
+     */
+    public boolean matchesPackage(@Nullable String changedPackage) {
+        if (packagePattern.isEmpty()) {
+            return true;
+        }
+        if (changedPackage == null || changedPackage.isEmpty()) {
+            return false;
+        }
+        return globToPattern(packagePattern).matcher(changedPackage).matches();
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static Pattern globToPattern(@NonNull String glob) {
+        StringBuilder regex = new StringBuilder(glob.length() + 8);
+        int start = 0;
+        int star;
+        while ((star = glob.indexOf('*', start)) >= 0) {
+            if (star > start) {
+                regex.append(Pattern.quote(glob.substring(start, star)));
+            }
+            regex.append(".*");
+            start = star + 1;
+        }
+        if (start < glob.length()) {
+            regex.append(Pattern.quote(glob.substring(start)));
+        }
+        return Pattern.compile(regex.toString());
     }
 
     /** Builder for callers; trips trip {@link IllegalArgumentException} on invalid input. */
@@ -72,6 +124,7 @@ public final class ProfileTrigger {
         private int hourOfDay = 0;
         private int minuteOfHour = 0;
         private long createdAt = System.currentTimeMillis();
+        @NonNull private String packagePattern = "";
 
         public Builder(@NonNull String profileId, @Type int type) {
             this.profileId = profileId;
@@ -81,6 +134,12 @@ public final class ProfileTrigger {
         public Builder id(@NonNull String id) { this.id = id; return this; }
         public Builder enabled(boolean enabled) { this.enabled = enabled; return this; }
         public Builder createdAt(long ms) { this.createdAt = ms; return this; }
+
+        /** Optional glob restricting a package-event trigger to matching packages. */
+        public Builder packagePattern(@Nullable String packagePattern) {
+            this.packagePattern = packagePattern != null ? packagePattern.trim() : "";
+            return this;
+        }
 
         /** Set {@code hour:minute} for {@link #TYPE_TIME_OF_DAY} triggers. */
         public Builder timeOfDay(int hourOfDay, int minuteOfHour) {
@@ -105,7 +164,7 @@ public final class ProfileTrigger {
             }
             String resolvedId = id != null ? id : UUID.randomUUID().toString();
             return new ProfileTrigger(resolvedId, profileId, type, enabled,
-                    hourOfDay, minuteOfHour, createdAt);
+                    hourOfDay, minuteOfHour, createdAt, packagePattern);
         }
     }
 
@@ -124,7 +183,8 @@ public final class ProfileTrigger {
     @NonNull
     public ProfileTrigger withEnabled(boolean enabled) {
         if (this.enabled == enabled) return this;
-        return new ProfileTrigger(id, profileId, type, enabled, hourOfDay, minuteOfHour, createdAt);
+        return new ProfileTrigger(id, profileId, type, enabled, hourOfDay, minuteOfHour, createdAt,
+                packagePattern);
     }
 
     @NonNull
@@ -138,6 +198,9 @@ public final class ProfileTrigger {
             json.put("hour", hourOfDay);
             json.put("minute", minuteOfHour);
         }
+        if (!packagePattern.isEmpty()) {
+            json.put("packagePattern", packagePattern);
+        }
         json.put("createdAt", createdAt);
         return json;
     }
@@ -150,6 +213,7 @@ public final class ProfileTrigger {
         boolean enabled = json.optBoolean("enabled", true);
         int hour = json.optInt("hour", 0);
         int minute = json.optInt("minute", 0);
+        String packagePattern = json.optString("packagePattern", "");
         long createdAt = json.optLong("createdAt", System.currentTimeMillis());
         if (id.isEmpty() || profileId.isEmpty()) {
             throw new JSONException("trigger JSON missing id or profile");
@@ -165,7 +229,7 @@ public final class ProfileTrigger {
             hour = 0;
             minute = 0;
         }
-        return new ProfileTrigger(id, profileId, type, enabled, hour, minute, createdAt);
+        return new ProfileTrigger(id, profileId, type, enabled, hour, minute, createdAt, packagePattern);
     }
 
     @NonNull

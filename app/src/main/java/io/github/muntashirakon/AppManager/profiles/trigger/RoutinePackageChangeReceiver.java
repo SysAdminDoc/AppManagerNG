@@ -42,7 +42,7 @@ public class RoutinePackageChangeReceiver extends BroadcastReceiver {
                         Log.w(TAG, "Could not check package reappearance for " + finalPackageName, th);
                     }
                 }
-                RoutineScheduler.enqueuePackageEventTriggers(appContext, triggerType);
+                RoutineScheduler.enqueuePackageEventTriggers(appContext, triggerType, finalPackageName);
             } catch (Throwable th) {
                 Log.w(TAG, "Could not dispatch package routine trigger for " + finalPackageName, th);
             } finally {
