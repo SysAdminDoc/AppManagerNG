@@ -3,7 +3,14 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.0 — 2026-06-14
+
+Rootless Power release. Headline: package-filtered app-event routine triggers,
+backup/archive restore hardening (weak auth-tag warning, decompression-bomb
+guard, internal staging of the privileged root trampoline), IPC binder-cache
+reliability, and an engineering/UX audit pass (crash guard, resource leak,
+microcopy and grammar). Signed with the same release key as v0.5.0, so it
+installs as an in-place update.
 
 ### Fixed — Audit pass: crash guard, leak, microcopy (2026-06-14)
 
