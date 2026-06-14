@@ -5,6 +5,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Audit pass: crash guard, leak, microcopy (2026-06-14)
+
+- packagesToAppLabels no longer assumes the user-handle list is parallel to the
+  package list. A shorter or null list previously threw
+  IndexOutOfBoundsException/NullPointerException and crashed the batch-operation
+  results screen; it now falls back to the current user per package.
+- BackupRestoreDialogFragment read its tab titles through an obtainTypedArray()
+  that was never recycled (a resource leak on every open). Switched to
+  getStringArray(), which is the right type for the string-array and leaves
+  nothing to recycle.
+- Fixed grammatical errors in three confirmation dialogs ("Are you sure want
+  to…" → "Are you sure you want to…"): uninstall system app, clear app data,
+  and replace KeyStore.
+
 ### Added — Package filter for app-event routine triggers (2026-06-14)
 
 - App install/update/uninstall routine triggers can now be limited to packages
