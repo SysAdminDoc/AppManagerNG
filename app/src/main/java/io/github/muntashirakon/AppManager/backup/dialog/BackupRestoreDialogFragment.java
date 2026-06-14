@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.os.UserHandleHidden;
 import android.util.Log;
@@ -121,7 +120,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     private FragmentActivity mActivity;
     private BackupRestoreDialogViewModel mViewModel;
     private Fragment[] mTabFragments;
-    private TypedArray mTabTitles;
+    private String[] mTabTitles;
     private DialogTitleBuilder mDialogTitleBuilder;
     private int mCustomModes;
 
@@ -287,8 +286,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     private void loadMultipleBackupRestoreViewPager() {
         updateMultipleRestoreHeader();
 
-        mTabTitles = getResources().obtainTypedArray(R.array.backup_restore_tabs_multiple);
-        mTabFragments = new Fragment[mTabTitles.length()];
+        mTabTitles = getResources().getStringArray(R.array.backup_restore_tabs_multiple);
+        mTabFragments = new Fragment[mTabTitles.length];
         mTabFragments[0] = getBackupFragment();
         mTabFragments[1] = RestoreMultipleFragment.getInstance();
         getBody().findViewById(R.id.container).setVisibility(View.VISIBLE);
@@ -298,7 +297,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         viewPager.registerOnPageChangeCallback(new ViewPagerUpdateScrollingChildListener(viewPager, getBehavior()));
         finishLoading();
         viewPager.setAdapter(new BackupDialogFragmentPagerAdapter(this));
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(mTabTitles.getString(position)))
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(mTabTitles[position]))
                 .attach();
     }
 
@@ -332,8 +331,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     private void loadSingleBackupRestoreViewPager() {
         updateSingleBackupHeader();
 
-        mTabTitles = getResources().obtainTypedArray(R.array.backup_restore_tabs_single);
-        mTabFragments = new Fragment[mTabTitles.length()];
+        mTabTitles = getResources().getStringArray(R.array.backup_restore_tabs_single);
+        mTabFragments = new Fragment[mTabTitles.length];
         mTabFragments[0] = getBackupFragment();
         mTabFragments[1] = RestoreSingleFragment.getInstance();
         getBody().findViewById(R.id.container).setVisibility(View.VISIBLE);
@@ -343,7 +342,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         viewPager.registerOnPageChangeCallback(new ViewPagerUpdateScrollingChildListener(viewPager, getBehavior()));
         finishLoading();
         viewPager.setAdapter(new BackupDialogFragmentPagerAdapter(this));
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(mTabTitles.getString(position)))
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(mTabTitles[position]))
                 .attach();
     }
 
@@ -434,7 +433,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
 
         @Override
         public int getItemCount() {
-            return mTabTitles.length();
+            return mTabTitles.length;
         }
     }
 

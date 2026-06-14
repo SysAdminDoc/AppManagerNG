@@ -417,7 +417,7 @@
     <string name="failed_to_archive_app">Could not archive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="failed_to_unarchive_app">Could not unarchive <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="app_archiving_not_supported">App archiving is available on Android 15 and later.</string>
-    <string name="uninstall_system_app_message">This is a system app. Are you sure want to uninstall this app?</string>
+    <string name="uninstall_system_app_message">This is a system app. Are you sure you want to uninstall it?</string>
     <string name="stopped">Stopped</string>
     <string name="disable">Disable</string>
     <string name="enable">Enable</string>
@@ -1013,7 +1013,7 @@
     <string name="no">No</string>
     <string name="yes">Yes</string>
     <string name="skip_signature_checks">Skip signature checks</string>
-    <string name="clear_data_message">Are you sure want to clear data from this app?</string>
+    <string name="clear_data_message">Are you sure you want to clear this app\'s data?</string>
     <string name="shizuku_clear_data_self_warning">This clears AppManagerNG\'s saved data and can revoke its Shizuku authorization. You may need to grant Shizuku access again before privileged actions work.</string>
     <string name="shizuku_clear_data_manager_warning">This clears Shizuku Manager\'s saved authorization state. Apps that use Shizuku, including AppManagerNG, may need to be authorized again.</string>
     <string name="shizuku_clear_data_client_warning">This app declares Shizuku support. Clearing its data may revoke its Shizuku authorization even if Shizuku Manager still shows it as authorized until restart.</string>
@@ -1976,7 +1976,7 @@
     <string name="pref_import_export_keystore">Import/export KeyStore</string>
     <string name="pref_import_export_keystore_msg">Import/export Bouncy Castle KeyStore (BKS) internally used by AppManagerNG.</string>
     <string name="import_keystore">Import KeyStore</string>
-    <string name="confirm_import_keystore">Are you sure want to replace the existing KeyStore? This action cannot be undone.</string>
+    <string name="confirm_import_keystore">Are you sure you want to replace the existing KeyStore? This action cannot be undone.</string>
     <string name="failed">Failed</string>
     <string name="pref_rules_msg">Component blocking, import/export, and rule reset controls.</string>
     <string name="saf">SAF</string>
