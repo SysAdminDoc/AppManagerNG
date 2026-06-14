@@ -131,9 +131,31 @@ public class AESCrypto implements Crypto {
         mSecretKey = secretKey;
     }
 
+    /**
+     * Backup-metadata version that first authenticated ciphertext with a full
+     * 128-bit GCM tag. Anything older used a 32-bit tag (see {@link #MAC_SIZE_BITS_OLD}).
+     */
+    public static final int FIRST_STRONG_AUTH_TAG_VERSION = 4;
+
+    /**
+     * Whether a backup of the given metadata version authenticated its ciphertext with
+     * the legacy 32-bit GCM tag, which can be forged at ~2^-32 per attempt. Such backups
+     * remain restorable, but their integrity guarantee is weak; re-create them to upgrade
+     * to a 128-bit tag.
+     */
+    public static boolean metadataUsesLegacyAuthTag(int version) {
+        return version < FIRST_STRONG_AUTH_TAG_VERSION;
+    }
+
     public void setMacSizeBits(int macSizeBits) {
         if (macSizeBits == MAC_SIZE_BITS || macSizeBits == MAC_SIZE_BITS_OLD) {
             mMacSizeBits = macSizeBits;
+            if (macSizeBits == MAC_SIZE_BITS_OLD) {
+                Log.w(TAG, "Restoring a pre-v" + FIRST_STRONG_AUTH_TAG_VERSION
+                        + " backup authenticated with a 32-bit GCM tag; ciphertext integrity is"
+                        + " only weakly protected. Re-create the backup to upgrade to a 128-bit"
+                        + " authentication tag.");
+            }
         }
     }
 
