@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.crypto;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -69,6 +70,15 @@ public class AESCryptoTest {
         byte[] derived = AESCrypto.deriveArchiveKey(masterKey, baseIv, masterKey.length);
 
         assertEquals(masterKey.length, derived.length);
+    }
+
+    @Test
+    public void metadataUsesLegacyAuthTagOnlyForPreV4Versions() {
+        assertTrue(AESCrypto.metadataUsesLegacyAuthTag(1));
+        assertTrue(AESCrypto.metadataUsesLegacyAuthTag(3));
+        assertFalse(AESCrypto.metadataUsesLegacyAuthTag(AESCrypto.FIRST_STRONG_AUTH_TAG_VERSION));
+        assertFalse(AESCrypto.metadataUsesLegacyAuthTag(5));
+        assertFalse(AESCrypto.metadataUsesLegacyAuthTag(AESCrypto.ARCHIVE_KEY_DERIVATION_VERSION));
     }
 
     @Test

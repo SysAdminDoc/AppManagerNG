@@ -81,7 +81,7 @@ public class BackupCryptSetupHelper {
     }
 
     private static void configureAesCrypto(@NonNull AESCrypto crypto, int version) {
-        if (version < 4) {
+        if (AESCrypto.metadataUsesLegacyAuthTag(version)) {
             // Old backups use 32 bit MAC
             crypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
         }

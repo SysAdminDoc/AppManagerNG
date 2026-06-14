@@ -261,7 +261,7 @@ public class BackupMetadataV5 implements LocalizedString {
         }
 
         private void configureAesCrypto(@NonNull AESCrypto crypto) {
-            if (version < 4) {
+            if (AESCrypto.metadataUsesLegacyAuthTag(version)) {
                 // Old backups use 32 bit MAC
                 crypto.setMacSizeBits(AESCrypto.MAC_SIZE_BITS_OLD);
             }
