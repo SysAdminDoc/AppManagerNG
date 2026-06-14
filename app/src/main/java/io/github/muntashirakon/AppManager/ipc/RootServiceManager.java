@@ -31,6 +31,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 
 import com.topjohnwu.superuser.Shell;
@@ -77,6 +78,7 @@ public class RootServiceManager implements Handler.Callback {
     private static final String INTENT_BUNDLE_KEY = "extra.bundle";
     private static final String INTENT_DAEMON_KEY = "extra.daemon";
     private static final String RECEIVER_BROADCAST = BuildConfig.APPLICATION_ID + ".RECEIVER_BROADCAST";
+    private static final String MAIN_JAR_NAME = "main.jar";
     private static final String API_27_DEBUG =
             "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y " +
                     "-Xcompiler-option --debuggable";
@@ -167,22 +169,13 @@ public class RootServiceManager implements Handler.Callback {
                 Log.e(TAG, JVMTI_ERROR);
             }
 
-            String mainJarName = "main.jar";
-            Context ctx = ContextUtils.getContext();
-            Context de = ContextUtils.getDeContext(ctx);
             File mainJar;
             try {
-                mainJar = new File(FileUtils.getExternalCachePath(de), mainJarName);
+                mainJar = prepareMainJar(context);
             } catch (IOException e) {
-                throw new IllegalStateException("External directory unavailable.", e);
+                throw new IllegalStateException("Could not stage main.jar.", e);
             }
-            File stagingMainJar = new File(PACKAGE_STAGING_DIRECTORY, mainJarName);
-            // Dump main.jar as trampoline
-            try (InputStream in = context.getResources().getAssets().open("main.jar");
-                 OutputStream out = new FileOutputStream(mainJar)) {
-                Utils.pump(in, out);
-            }
-            FileUtils.chmod644(mainJar);
+            File stagingMainJar = new File(PACKAGE_STAGING_DIRECTORY, MAIN_JAR_NAME);
 
             StringBuilder env = new StringBuilder();
             String params = getParams(env);
@@ -198,6 +191,32 @@ public class RootServiceManager implements Handler.Callback {
             // the command runs in the background, we don't need to wait and
             // can just return.
         };
+    }
+
+    @NonNull
+    private static File prepareMainJar(@NonNull Context context) throws IOException {
+        File mainJar = getMainJarFile(context);
+        File deCache = mainJar.getParentFile();
+        if (deCache == null) {
+            throw new IOException("Cache directory unavailable.");
+        }
+        File deStorageRoot = deCache.getParentFile();
+        if (deStorageRoot != null) {
+            FileUtils.chmod711(deStorageRoot);
+        }
+        FileUtils.chmod711(deCache);
+        try (InputStream in = context.getResources().getAssets().open(MAIN_JAR_NAME);
+             OutputStream out = new FileOutputStream(mainJar)) {
+            Utils.pump(in, out);
+        }
+        FileUtils.chmod644(mainJar);
+        return mainJar;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static File getMainJarFile(@NonNull Context context) {
+        return new File(ContextUtils.getDeContext(context).getCacheDir(), MAIN_JAR_NAME);
     }
 
     @SuppressLint("RestrictedApi")

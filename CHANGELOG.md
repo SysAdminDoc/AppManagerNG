@@ -85,6 +85,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   commitAllowingStateLoss() and dismiss uses dismissAllowingStateLoss(),
   preventing IllegalStateException crashes when LiveData fires between
   onSaveInstanceState and onStop.
+- The privileged root-service trampoline (main.jar) is now staged in the
+  app's internal device-protected cache instead of external cache storage.
+  External cache lives on shared/emulated storage that other apps and the
+  user can read; staging the binder bootstrap JAR there risked tampering of
+  code executed at root. The staging directory and its parent now get 0711
+  so the root process can traverse to the JAR. Covered by a new
+  RootServiceManagerTest asserting the staging path never falls under any
+  external cache root.
 
 ### Changed — Terminal formally deferred to Preview (2026-06-13)
 
