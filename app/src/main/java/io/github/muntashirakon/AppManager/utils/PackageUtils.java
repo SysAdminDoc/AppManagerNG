@@ -500,12 +500,17 @@ public final class PackageUtils {
     }
 
     @Nullable
-    public static ArrayList<CharSequence> packagesToAppLabels(@NonNull PackageManager pm, @Nullable List<String> packages, List<Integer> userHandles) {
+    public static ArrayList<CharSequence> packagesToAppLabels(@NonNull PackageManager pm, @Nullable List<String> packages, @Nullable List<Integer> userHandles) {
         if (packages == null) return null;
+        int currentUser = UserHandleHidden.myUserId();
         ArrayList<CharSequence> appLabels = new ArrayList<>();
         int i = 0;
         for (String packageName : packages) {
-            appLabels.add(PackageUtils.getPackageLabel(pm, packageName, userHandles.get(i)).toString());
+            // userHandles is expected to be parallel to packages, but never assume it:
+            // a shorter/null list would otherwise throw IndexOutOfBoundsException/NPE and
+            // crash the results screen. Fall back to the current user when it doesn't line up.
+            int userHandle = userHandles != null && i < userHandles.size() ? userHandles.get(i) : currentUser;
+            appLabels.add(PackageUtils.getPackageLabel(pm, packageName, userHandle).toString());
             ++i;
         }
         return appLabels;
