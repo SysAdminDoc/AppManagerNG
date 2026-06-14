@@ -338,13 +338,6 @@ Deduplicated against all sections above.
   Acceptance: unavailable permission/settings requests are suppressed or downgraded to a single dismissible explanation on TV/Wear; prompts remain reachable by D-pad/round screens; the gate is unit-tested with phone, TV, and Wear capability fixtures.
   Complexity: M
 
-- [ ] P2 — Trigger-bound profile filters
-  Why: package install/update/uninstall triggers now exist, but they cannot yet apply a profile only to apps matching a saved filter such as newly installed apps with trackers or a vendor package prefix.
-  Evidence: docs/architecture/05-routine-scheduler.md open decision; app/src/main/java/io/github/muntashirakon/AppManager/profiles/trigger/ProfileTrigger.java TYPE_ON_APP_*; app/src/main/java/io/github/muntashirakon/AppManager/filters/FilterItem.java; AppDash tag/filter workflows.
-  Touches: app/src/main/java/io/github/muntashirakon/AppManager/{profiles/trigger,profiles,filters/preset,automation}/, app/src/main/res/values/strings.xml
-  Acceptance: a routine trigger can reference an optional filter/preset; package-event triggers pass the changed package through the matcher; non-matching events do not run the profile; JSON round-trip and scheduler tests cover the filter field.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Hostile APK/APKS archive fixture corpus
