@@ -205,7 +205,7 @@
     <string name="license">License</string>
     <string name="license_message" translatable="false"><a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General
         Public License v3.0</a></string>
-    <string name="copyright_message" translatable="false">© 2020–2025 <a href="https://github.com/MuntashirAkon">Muntashir Al-Islam</a></string>
+    <string name="copyright_message" translatable="false">© 2020–2025 <a href="https://github.com/MuntashirAkon">Muntashir Al-Islam</a>\n© 2026 <a href="https://github.com/SysAdminDoc">SysAdminDoc</a> (AppManagerNG fork)</string>
     <string name="third_party">Third-party libraries and icons</string>
     <string name="third_party_message" translatable="false">-
         <a href="https://github.com/zhanghai/AndroidFastScroll">AndroidFastScroll</a> (Apache 2.0)
@@ -650,11 +650,7 @@
     <string name="install">Install</string>
     <string name="update">Update</string>
     <string name="source_code">Source code</string>
-    <string name="source_code_links" translatable="false"><a href="https://github.com/MuntashirAkon/AppManager">GitHub</a> •
-        <a href="https://codeberg.org/muntashir/AppManager">Codeberg</a> •
-        <a href="https://gitlab.com/muntashir/AppManager">GitLab</a> •
-        <a href="https://0xacab.org/muntashir/AppManager">Riseup</a> •
-        <a href="https://git.sr.ht/~muntashir/AppManager">sourcehut</a></string>
+    <string name="source_code_links" translatable="false"><a href="https://github.com/SysAdminDoc/AppManagerNG">GitHub</a></string>
     <string name="community">Community</string>
     <string name="community_links"><a href="https://matrix.to/#/#appmanager:matrix.org">Matrix</a> •
         <a href="https://t.me/AppManagerChannel">Telegram</a> •
@@ -1036,8 +1032,8 @@
     <string name="installer_launch_failed">Couldn\'t open the installer.</string>
     <string name="installer_open_app_failed">Couldn\'t open the app.</string>
     <string name="website">Website</string>
-    <string name="website_message" translatable="false">https://muntashirakon.github.io/AppManager</string>
-    <string name="discussions_site" translatable="false">https://github.com/MuntashirAkon/AppManager/issues</string>
+    <string name="website_message" translatable="false">https://github.com/SysAdminDoc/AppManagerNG</string>
+    <string name="discussions_site" translatable="false">https://github.com/SysAdminDoc/AppManagerNG/issues</string>
     <string name="pref_remove_all_rules">Remove all rules</string>
     <string name="pref_remove_all_rules_msg">Permissions will be granted, app ops and components will return to their default values.</string>
     <string name="are_you_sure">Are you sure?</string>
@@ -1337,7 +1333,7 @@
     <string name="confirm_installation">Confirm installation</string>
     <string name="allow_open_pgp_operation">Tap to allow App Manager to use OpenPGP</string>
     <string name="uninstall_updates">Uninstall updates</string>
-    <string name="update_uninstalled_successfully">Updates for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g> has been uninstalled.</string>
+    <string name="update_uninstalled_successfully">Updates for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g> have been uninstalled.</string>
     <string name="failed_to_uninstall_updates">Could not uninstall updates for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
     <string name="sort_by_backup">Backed up first</string>
     <string name="filter_apps_with_backups">With backups</string>
@@ -3544,8 +3540,8 @@
     <string name="op_history_export_all_csv">Export all CSV</string>
     <string name="op_history_share_summary">Share visible summary</string>
     <string name="op_history_share_all_summary">Share all summary</string>
-    <string name="op_history_export_filename_json" translatable="false">app-manager-operation-history.json</string>
-    <string name="op_history_export_filename_csv" translatable="false">app-manager-operation-history.csv</string>
+    <string name="op_history_export_filename_json" translatable="false">appmanagerng-operation-history.json</string>
+    <string name="op_history_export_filename_csv" translatable="false">appmanagerng-operation-history.csv</string>
     <string name="op_history_export_success">Operation history exported.</string>
     <string name="op_history_share_title">Share operation history</string>
     <string name="op_history_sort_newest">Newest first</string>
