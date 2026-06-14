@@ -396,11 +396,6 @@ decisions, careful refactoring, or on-device testing.
   Where: backup/BackupItems.java:520-547
   Complexity: M
 
-- [ ] P2 — ProxyBinder service cache has no dead-binder eviction
-  Why: sServiceCache stores binders permanently with no DeathRecipient. A binder that dies (remote process exits) stays cached and all subsequent calls through that service fail until process restart.
-  Where: ipc/ProxyBinder.java:41-52
-  Complexity: M
-
 - [ ] P2 — DialogFragment LiveData observers use Fragment lifecycle instead of view lifecycle
   Why: BackupRestoreDialogFragment, IconPickerDialogFragment, and RSACryptoSelectionDialogFragment observe LiveData with `this` instead of `getViewLifecycleOwner()`. Observers survive view destruction and can fire UI updates against null views after config changes.
   Where: backup/dialog/BackupRestoreDialogFragment.java:184-186, details/IconPickerDialogFragment.java:74, settings/crypto/RSACryptoSelectionDialogFragment.java:72-83
