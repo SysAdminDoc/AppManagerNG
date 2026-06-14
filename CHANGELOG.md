@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Fork branding cleanup (2026-06-14)
+
+- About screen and links now point at the AppManagerNG fork: source-code link
+  is the SysAdminDoc/AppManagerNG repo, website/discussions links target the
+  fork, and the copyright notice credits the fork alongside upstream. Removed
+  the upstream-only mirror links (Codeberg/GitLab/Riseup/sourcehut) that did
+  not host this fork. Operation-history export filenames rebranded to
+  appmanagerng-*. Minor English copy fix ("have been uninstalled").
+
 ### Added (2026-06-13)
 
 - Split APK chooser now shows human-readable labels ("ARM 64-bit", "Extra-high
