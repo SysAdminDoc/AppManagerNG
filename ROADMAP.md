@@ -415,3 +415,44 @@ decisions, careful refactoring, or on-device testing.
   Why: Batch force-stop and running-apps force-stop route through DestructiveActionConfirmation / the critical-package kill gate, but single-app force-stop in App Details fires immediately with no confirmation. Force-stop is reversible (the app restarts on next launch), so a confirmation may be unwanted friction in a power-user tool — needs a product call on whether to make the destructive-confirmation model uniform or to intentionally exempt reversible actions.
   Where: app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:2906-2915
   Complexity: S
+
+## Research-Driven Additions (Pass 4 — 2026-06-14)
+
+Post-v0.6.0 pass. Most prior-pass top opportunities shipped before v0.6.0; the items
+below are the verified remainder, deduplicated against every section above. The GCM
+multi-file nonce-reuse "bug" was verified already fixed (per-file IV v6 + per-archive
+HKDF key v7) and is intentionally NOT listed — see RESEARCH.md §Rejected.
+
+### P1
+
+- [ ] P1 — Validate & fix Android 17 app-list enumeration (device-gated)
+  Why: Upstream #1948 reports the main app list comes up empty/sparse on Android 17 — an OS-level enumeration regression that applies regardless of targetSdk and has no working answer anywhere in the ecosystem; NG's A17 work so far was a static behavior-change audit, not an on-device enumeration check. Re-validate the Shizuku 13.6.0 / Dhizuku 2.11.2 lanes on A17 in the same pass (both upstream tools have shipped no A17 release).
+  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1948 ; RESEARCH.md §Security (A17); main/MainViewModel + compat/PackageManagerCompat (getInstalledPackages/queryIntent* enumeration path)
+  Touches: main/MainViewModel.java, compat/PackageManagerCompat.java, runner/ + servermanager/ (Shizuku/Dhizuku bind on A17), .github/workflows/android17-emulator.yml (enumeration smoke test)
+  Acceptance: on an API-37 emulator the main list enumerates the same package set it does on API 36 (no empty/sparse regression); root/Shizuku/Dhizuku bind successfully or fail with a surfaced, actionable reason; an emulator smoke test asserts a non-empty list. NOT patched blind — needs the A17 emulator/device.
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Installer awaits OBB copy before reporting success
+  Why: PackageInstallerCompat fires copyObb() on a background thread and returns immediately (standing TODO "Wait for this task to finish before returning"), so OBB-bearing apps (large games) can be reported installed and launched before their expansion files land — appearing as a broken/incomplete install. The adjacent "Needed only for one user?" FIXME on the multi-user OBB path should be resolved in the same change.
+  Evidence: apk/installer/PackageInstallerCompat.java:684-689 (verified: ThreadUtils.postOnBackgroundThread fire-and-forget copyObb loop + both TODO/FIXME)
+  Touches: apk/installer/PackageInstallerCompat.java (await/join the OBB copy or fold its status into the install result), apk/installer/ result/callback path
+  Acceptance: installing an APK+OBB bundle does not report success until OBBs are copied for every targeted user; an injected copy failure surfaces as an install failure (not a silent partial install); multi-user OBB behavior is intentional and documented.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Biometric-gate option for uninstall / destructive installer ops
+  Why: ActionAuthGate already gates terminal, file-manager, and backup-delete via BiometricPrompt behind the privacy toggle, but uninstall — the most destructive installer-lane action — fires without it; InstallerX-Revived (v2.3.2, Feb 2026) made biometric-gated install/uninstall the field standard.
+  Evidence: crypto/auth/ActionAuthGate.java (existing gate, terminal/FM/backup-delete only); https://github.com/wxxsfxyzm/InstallerX-Revived/releases ; RESEARCH.md §Architecture
+  Touches: crypto/auth/ActionAuthGate.java, apk/installer/ uninstall path, batchops/ batch-uninstall path, settings/ (extend the existing action-auth privacy toggle scope)
+  Acceptance: with the action-auth toggle on, single and batch uninstall require biometric confirmation before proceeding; with it off, behavior is unchanged; the gate degrades cleanly on devices without biometric hardware.
+  Complexity: S
+
+- [ ] P3 — Confirm BouncyCastle 1.84 patches the 2026 CVE line; bump if not
+  Why: bcprov/bcpkix is pinned at 1.84; the repo audit claims it closes CVE-2026-3505 (PGP AEAD chunk-size DoS — reachable through OpenPGP backup decrypt), CVE-2026-5588, and CVE-2026-5598, but the audit predates some of those publications so "covered" is unverified. Only CVE-2026-3505 is on a reachable NG path (NG uses no PKIX composite verifier or FrodoKEM).
+  Evidence: versions.gradle:26 (bouncycastle_version = "1.84"); https://app.opencve.io/cve/?vendor=bouncycastle ; RESEARCH.md §Security
+  Touches: versions.gradle, buildscript-gradle.lockfile (if bumped), docs/audits/ (dated verification note)
+  Acceptance: a GHSA/NVD check confirms 1.84 contains the CVE-2026-3505 fix, or the dependency is bumped to the patched line; a dated audit note records the affected-vs-reachable analysis.
+  Complexity: S
