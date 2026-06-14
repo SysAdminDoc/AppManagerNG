@@ -5,6 +5,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — IPC binder cache reliability (2026-06-14)
+
+- ProxyBinder's service cache now evicts dead binders. Previously a cached
+  binder whose remote process exited stayed cached forever, so every call
+  through that service failed until the app process restarted. The cache now
+  validates liveness on read (isBinderAlive) and links a DeathRecipient that
+  removes the entry when the service dies, both guarded so a concurrently
+  re-cached binder is never wrongly evicted. Recovery is automatic: the next
+  lookup re-fetches a fresh binder.
+
 ### Security — Backup restore hardening (2026-06-14)
 
 - Restoring a pre-v4 backup, whose AES-GCM ciphertext was authenticated with a

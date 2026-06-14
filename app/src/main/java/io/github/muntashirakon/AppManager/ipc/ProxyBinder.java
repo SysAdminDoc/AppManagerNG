@@ -43,12 +43,56 @@ public class ProxyBinder implements IBinder {
 
     @NonNull
     public static IBinder getService(String serviceName) throws ServiceNotFoundException {
-        IBinder binder = sServiceCache.get(serviceName);
+        IBinder binder = getCachedLiveService(serviceName);
         if (binder == null) {
             binder = getServiceInternal(serviceName);
-            sServiceCache.put(serviceName, binder);
+            cacheService(serviceName, binder);
         }
         return new ProxyBinder(binder);
+    }
+
+    /**
+     * Returns the cached binder for {@code serviceName} only if it is still alive.
+     * A binder whose remote process has died is evicted and {@code null} is returned so
+     * the caller re-fetches a fresh one instead of failing on every call until restart.
+     */
+    @Nullable
+    private static IBinder getCachedLiveService(String serviceName) {
+        IBinder binder = sServiceCache.get(serviceName);
+        if (binder != null && !binder.isBinderAlive()) {
+            // Dead binder: evict it (only if it is still the one we cached).
+            synchronized (sServiceCache) {
+                if (binder.equals(sServiceCache.get(serviceName))) {
+                    sServiceCache.remove(serviceName);
+                }
+            }
+            return null;
+        }
+        return binder;
+    }
+
+    /**
+     * Caches a binder and links a death recipient that evicts it when the remote process
+     * exits, so a stale entry never lingers after the service dies.
+     */
+    private static void cacheService(String serviceName, @NonNull IBinder binder) {
+        sServiceCache.put(serviceName, binder);
+        try {
+            binder.linkToDeath(() -> {
+                synchronized (sServiceCache) {
+                    if (binder.equals(sServiceCache.get(serviceName))) {
+                        sServiceCache.remove(serviceName);
+                    }
+                }
+            }, 0);
+        } catch (RemoteException e) {
+            // Already dead between fetch and link: do not keep a dead binder cached.
+            synchronized (sServiceCache) {
+                if (binder.equals(sServiceCache.get(serviceName))) {
+                    sServiceCache.remove(serviceName);
+                }
+            }
+        }
     }
 
     /**
@@ -78,11 +122,11 @@ public class ProxyBinder implements IBinder {
 
     @NonNull
     public static IBinder getUnprivilegedService(String serviceName) throws ServiceNotFoundException {
-        IBinder binder = sServiceCache.get(serviceName);
+        IBinder binder = getCachedLiveService(serviceName);
         if (binder == null) {
             binder = ServiceManager.getService(serviceName);
             if (binder != null) {
-                sServiceCache.put(serviceName, binder);
+                cacheService(serviceName, binder);
             }
         }
         if (binder == null) {
