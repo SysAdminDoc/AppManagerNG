@@ -309,7 +309,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     try {
                         mActivity.startActivity(launchIntent);
                         return;
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         UIUtils.displayLongToast(R.string.failed_to_launch_app);
                         return;
                     }
@@ -810,7 +810,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     try {
                         mActivity.startActivity(launch);
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         UIUtils.displayLongToast(R.string.failed_to_launch_app);
                     }
                 }
@@ -825,7 +825,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 try {
                     mActivity.startActivity(settings);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     UIUtils.displayLongToast(R.string.error);
                 }
                 return true;
@@ -836,7 +836,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     uninstall.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     try {
                         mActivity.startActivity(uninstall);
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         UIUtils.displayLongToast(R.string.error);
                     }
                 });

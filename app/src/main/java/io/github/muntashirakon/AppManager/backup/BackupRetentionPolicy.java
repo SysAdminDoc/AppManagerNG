@@ -58,7 +58,7 @@ public final class BackupRetentionPolicy {
         try {
             List<Backup> all = AppsDb.getInstance().backupDao().getAll();
             return pruneFromList(all, maxCount, maxAgeDays, System.currentTimeMillis());
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Backup retention pruneAll failed", t);
             return 0;
         }
@@ -77,7 +77,7 @@ public final class BackupRetentionPolicy {
         try {
             List<Backup> all = AppsDb.getInstance().backupDao().getAll();
             return pruneFromList(all, maxCount, maxAgeDays, System.currentTimeMillis());
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Backup retention pruneWithPolicy failed", t);
             return 0;
         }
@@ -95,7 +95,7 @@ public final class BackupRetentionPolicy {
         try {
             List<Backup> rows = BackupUtils.getBackupMetadataFromDbNoLockValidate(packageName);
             return pruneFromList(rows, maxCount, maxAgeDays, System.currentTimeMillis());
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Backup retention pruneForPackage(" + packageName + ") failed", t);
             return 0;
         }
@@ -297,7 +297,7 @@ public final class BackupRetentionPolicy {
     static long resolveBackupSize(@NonNull Backup backup) {
         try (BackupItems.BackupItem item = backup.getItem()) {
             return item != null ? item.getTotalSize() : -1L;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Failed to resolve backup size " + backup.relativeDir, t);
             return -1L;
         }
@@ -370,7 +370,7 @@ public final class BackupRetentionPolicy {
             List<Backup> all = AppsDb.getInstance().backupDao().getAll();
             List<Backup> duplicates = selectVersionDuplicates(all, strategy, sizeResolver);
             return pruneSelectedBackups(duplicates, BackupRetentionPolicy::deletePrunedBackup);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Backup duplicate prune failed", t);
             return 0;
         }
