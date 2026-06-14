@@ -473,9 +473,25 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     int type = triggerTypes[which];
                     if (type == ProfileTrigger.TYPE_TIME_OF_DAY) {
                         showTimeOfDayTriggerDialog(profileId);
+                    } else if (ProfileTrigger.isPackageEventType(type)) {
+                        showPackagePatternTriggerDialog(profileId, type);
                     } else {
                         addRoutineTrigger(new ProfileTrigger.Builder(profileId, type).build());
                     }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showPackagePatternTriggerDialog(@NonNull String profileId, @ProfileTrigger.Type int type) {
+        new TextInputDialogBuilder(mActivity, R.string.profile_trigger_package_filter_hint)
+                .setTitle(R.string.profile_trigger_package_filter_title)
+                .setHelperText(getString(R.string.profile_trigger_package_filter_helper))
+                .setPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
+                    String pattern = inputText != null ? inputText.toString().trim() : "";
+                    addRoutineTrigger(new ProfileTrigger.Builder(profileId, type)
+                            .packagePattern(pattern)
+                            .build());
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();

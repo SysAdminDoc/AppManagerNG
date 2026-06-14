@@ -90,11 +90,17 @@ public final class RoutineScheduler {
     }
 
     public static void enqueuePackageEventTriggers(@NonNull Context context, @ProfileTrigger.Type int triggerType) {
+        enqueuePackageEventTriggers(context, triggerType, null);
+    }
+
+    public static void enqueuePackageEventTriggers(@NonNull Context context,
+                                                   @ProfileTrigger.Type int triggerType,
+                                                   @Nullable String changedPackage) {
         if (!isPackageEventTrigger(triggerType)) {
             return;
         }
         ProfileTriggerStore store = new ProfileTriggerStore(context);
-        for (ProfileTrigger trigger : matchingPackageEventTriggers(store, triggerType)) {
+        for (ProfileTrigger trigger : matchingPackageEventTriggers(store, triggerType, changedPackage)) {
             enqueueOneTime(context, trigger);
         }
     }
@@ -171,26 +177,39 @@ public final class RoutineScheduler {
 
     @NonNull
     public static String formatTriggerTitle(@NonNull Context context, @NonNull ProfileTrigger trigger) {
+        String base;
         switch (trigger.type) {
             case ProfileTrigger.TYPE_ON_CHARGING:
-                return context.getString(R.string.profile_trigger_on_charging);
+                base = context.getString(R.string.profile_trigger_on_charging);
+                break;
             case ProfileTrigger.TYPE_ON_NETWORK_WIFI:
-                return context.getString(R.string.profile_trigger_on_network_wifi);
+                base = context.getString(R.string.profile_trigger_on_network_wifi);
+                break;
             case ProfileTrigger.TYPE_ON_NETWORK_ANY:
-                return context.getString(R.string.profile_trigger_on_network_any);
+                base = context.getString(R.string.profile_trigger_on_network_any);
+                break;
             case ProfileTrigger.TYPE_ON_BOOT:
-                return context.getString(R.string.profile_trigger_on_boot);
+                base = context.getString(R.string.profile_trigger_on_boot);
+                break;
             case ProfileTrigger.TYPE_ON_APP_INSTALL:
-                return context.getString(R.string.profile_trigger_on_app_install);
+                base = context.getString(R.string.profile_trigger_on_app_install);
+                break;
             case ProfileTrigger.TYPE_ON_APP_UPDATE:
-                return context.getString(R.string.profile_trigger_on_app_update);
+                base = context.getString(R.string.profile_trigger_on_app_update);
+                break;
             case ProfileTrigger.TYPE_ON_APP_UNINSTALL:
-                return context.getString(R.string.profile_trigger_on_app_uninstall);
+                base = context.getString(R.string.profile_trigger_on_app_uninstall);
+                break;
             case ProfileTrigger.TYPE_TIME_OF_DAY:
             default:
-                return context.getString(R.string.profile_trigger_time_of_day,
+                base = context.getString(R.string.profile_trigger_time_of_day,
                         formatTriggerTime(trigger.hourOfDay, trigger.minuteOfHour));
+                break;
         }
+        if (ProfileTrigger.isPackageEventType(trigger.type) && !trigger.packagePattern.isEmpty()) {
+            return context.getString(R.string.profile_trigger_package_filter_suffix, base, trigger.packagePattern);
+        }
+        return base;
     }
 
     @NonNull
@@ -272,12 +291,20 @@ public final class RoutineScheduler {
     @NonNull
     static java.util.List<ProfileTrigger> matchingPackageEventTriggers(@NonNull ProfileTriggerStore store,
                                                                        @ProfileTrigger.Type int triggerType) {
+        return matchingPackageEventTriggers(store, triggerType, null);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static java.util.List<ProfileTrigger> matchingPackageEventTriggers(@NonNull ProfileTriggerStore store,
+                                                                       @ProfileTrigger.Type int triggerType,
+                                                                       @Nullable String changedPackage) {
         java.util.ArrayList<ProfileTrigger> triggers = new java.util.ArrayList<>();
         if (!isPackageEventTrigger(triggerType)) {
             return triggers;
         }
         for (ProfileTrigger trigger : store.all()) {
-            if (trigger.enabled && trigger.type == triggerType) {
+            if (trigger.enabled && trigger.type == triggerType && trigger.matchesPackage(changedPackage)) {
                 triggers.add(trigger);
             }
         }
