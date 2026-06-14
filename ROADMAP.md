@@ -410,3 +410,8 @@ decisions, careful refactoring, or on-device testing.
   Why: ~8 MEDIUM-severity instances where requireActivity() is called inside nested dialog button callbacks or adapter bind methods that can fire after fragment detach. Not immediate crashers (requires specific timing) but violate lifecycle safety.
   Where: AdvancedPreferences.java:194-206, AppInfoFragment.java:793/866/894, RestoreSingleFragment.java:242, AppDetailsComponentsFragment.java:1179
   Complexity: S
+
+- [ ] P3 — Inconsistent confirmation for single-app force-stop (product decision)
+  Why: Batch force-stop and running-apps force-stop route through DestructiveActionConfirmation / the critical-package kill gate, but single-app force-stop in App Details fires immediately with no confirmation. Force-stop is reversible (the app restarts on next launch), so a confirmation may be unwanted friction in a power-user tool — needs a product call on whether to make the destructive-confirmation model uniform or to intentionally exempt reversible actions.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:2906-2915
+  Complexity: S
