@@ -164,6 +164,13 @@ public final class TarUtils {
                 exclusionPatterns[i] = Pattern.compile(exclusions[i]);
             }
         } else exclusionPatterns = null;
+        // Guard against decompression bombs: a tampered/shared backup could decompress
+        // to a disk-filling size or contain a pathological number of entries.
+        long compressedSize = 0;
+        for (Path source : sources) {
+            compressedSize += source.length();
+        }
+        ArchiveExtractionGuard bombGuard = new ArchiveExtractionGuard(compressedSize);
         // Run extraction
         try (SplitInputStream sis = new SplitInputStream(sources);
              BufferedInputStream bis = new BufferedInputStream(sis);
@@ -172,6 +179,7 @@ public final class TarUtils {
                 String realDestPath = dest.getRealFilePath();
                 TarArchiveEntry entry;
                 while ((entry = tis.getNextEntry()) != null) {
+                    bombGuard.onNewEntry();
                     String filename = Paths.normalize(entry.getName());
                     // Early zip slip vulnerability check to avoid creating any files at all
                     if (filename == null || filename.startsWith("../")) {
@@ -231,7 +239,7 @@ public final class TarUtils {
                         }
                         if (!entry.isDirectory()) {
                             try (OutputStream os = file.openOutputStream()) {
-                                IoUtils.copy(tis, os);
+                                bombGuard.copy(tis, os);
                             }
                         }
                     }
