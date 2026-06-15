@@ -27,6 +27,7 @@ import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
@@ -127,10 +128,20 @@ public class PackageInstallerService extends ForegroundService {
     static boolean shouldAbandonInstallSession(@NonNull PackageInstaller.SessionInfo sessionInfo,
                                                long nowMillis,
                                                long staleAfterMillis) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || sessionInfo.isActive() || sessionInfo.isCommitted()) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || sessionInfo.isActive() || isCommitted(sessionInfo)) {
             return false;
         }
-        return isStaleInstallSession(sessionInfo.getUpdatedMillis(), nowMillis, staleAfterMillis);
+        return isStaleInstallSession(getUpdatedMillis(sessionInfo), nowMillis, staleAfterMillis);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private static boolean isCommitted(@NonNull PackageInstaller.SessionInfo sessionInfo) {
+        return sessionInfo.isCommitted();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private static long getUpdatedMillis(@NonNull PackageInstaller.SessionInfo sessionInfo) {
+        return sessionInfo.getUpdatedMillis();
     }
 
     @VisibleForTesting

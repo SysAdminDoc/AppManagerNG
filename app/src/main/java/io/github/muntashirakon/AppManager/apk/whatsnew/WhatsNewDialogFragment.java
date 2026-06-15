@@ -24,6 +24,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.changelog.ChangelogDialogUi;
 
 public class WhatsNewDialogFragment extends DialogFragment {
     public static final String TAG = WhatsNewDialogFragment.class.getSimpleName();
@@ -67,7 +68,7 @@ public class WhatsNewDialogFragment extends DialogFragment {
         WhatsNewDialogViewModel viewModel = new ViewModelProvider(this).get(WhatsNewDialogViewModel.class);
         mNewPkgInfo = Objects.requireNonNull(BundleCompat.getParcelable(requireArguments(), ARG_NEW_PKG_INFO, PackageInfo.class));
         mOldPkgInfo = Objects.requireNonNull(BundleCompat.getParcelable(requireArguments(), ARG_OLD_PKG_INFO, PackageInfo.class));
-        RecyclerView recyclerView = mDialogView.findViewById(android.R.id.list);
+        RecyclerView recyclerView = ChangelogDialogUi.setupList(mDialogView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         mAdapter = new WhatsNewRecyclerAdapter(requireContext(), mNewPkgInfo.packageName);
         recyclerView.setAdapter(mAdapter);

@@ -13,6 +13,7 @@ import android.os.Build;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
@@ -202,10 +203,19 @@ public class ApkWhatsNewFinder {
                 .append(appInfo != null ? appInfo.targetSdkVersion : "?");
         if (includeMinSdk) {
             sdk.append(", ").append(minSdkLabel)
-                    .append(LangUtils.getSeparatorString())
-                    .append(appInfo != null ? appInfo.minSdkVersion : "?");
+                    .append(LangUtils.getSeparatorString());
+            if (appInfo != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                sdk.append(getMinSdkVersion(appInfo));
+            } else {
+                sdk.append("?");
+            }
         }
         return sdk.toString();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private static int getMinSdkVersion(@NonNull ApplicationInfo appInfo) {
+        return appInfo.minSdkVersion;
     }
 
     @VisibleForTesting

@@ -5,8 +5,12 @@ package io.github.muntashirakon.AppManager.apk.whatsnew;
 import static org.junit.Assert.assertEquals;
 
 import android.content.pm.ApplicationInfo;
+import android.os.Build;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +18,8 @@ import java.util.Set;
 
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = Build.VERSION_CODES.N)
 public class ApkWhatsNewFinderTest {
     @Test
     public void findChangesDoesNotMutateInputs() {
@@ -38,6 +44,7 @@ public class ApkWhatsNewFinderTest {
     }
 
     @Test
+    @Config(sdk = Build.VERSION_CODES.N)
     public void buildSdkInfoIncludesTargetAndMinSdk() {
         ApplicationInfo applicationInfo = new ApplicationInfo();
         applicationInfo.targetSdkVersion = 35;
@@ -45,6 +52,17 @@ public class ApkWhatsNewFinderTest {
 
         assertEquals("Target" + LangUtils.getSeparatorString() + "35, Min"
                         + LangUtils.getSeparatorString() + "23",
+                ApkWhatsNewFinder.buildSdkInfo("Target", "Min", true, applicationInfo));
+    }
+
+    @Test
+    @Config(sdk = Build.VERSION_CODES.M)
+    public void buildSdkInfoUsesUnknownForMinSdkBeforeNougat() {
+        ApplicationInfo applicationInfo = new ApplicationInfo();
+        applicationInfo.targetSdkVersion = 35;
+
+        assertEquals("Target" + LangUtils.getSeparatorString() + "35, Min"
+                        + LangUtils.getSeparatorString() + "?",
                 ApkWhatsNewFinder.buildSdkInfo("Target", "Min", true, applicationInfo));
     }
 

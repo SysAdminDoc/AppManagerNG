@@ -22,10 +22,11 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
-import io.github.muntashirakon.AppManager.utils.MotionUtils;
+import io.github.muntashirakon.AppManager.changelog.ChangelogDialogUi;
 import io.github.muntashirakon.AppManager.changelog.ChangelogRecyclerAdapter;
 import io.github.muntashirakon.AppManager.misc.DiagnosticUtils;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
+import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.AlertDialogBuilder;
@@ -130,14 +131,14 @@ public class AboutPreferences extends PreferenceFragment {
                 return;
             }
             View v = View.inflate(requireContext(), R.layout.dialog_whats_new, null);
-            RecyclerView recyclerView = v.findViewById(android.R.id.list);
+            RecyclerView recyclerView = ChangelogDialogUi.setupList(v);
             recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
             ChangelogRecyclerAdapter adapter = new ChangelogRecyclerAdapter();
             recyclerView.setAdapter(adapter);
             adapter.setAdapterList(changelog.getChangelogItems());
             new AlertDialogBuilder(requireActivity(), true)
                     .setTitle(R.string.changelog)
-                    .setView(recyclerView)
+                    .setView(v)
                     .show();
         });
     }

@@ -647,27 +647,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
                 return true;
             }
-            ArrayMap<Integer, String> netPolicyMap = NetworkPolicyManagerCompat.getAllReadablePolicies(ContextUtils.getContext());
-            Integer[] polices = new Integer[netPolicyMap.size()];
-            CharSequence[] policyStrings = new String[netPolicyMap.size()];
-            int selectedPolicies = NetworkPolicyManagerCompat.getUidPolicy(mApplicationInfo.uid);
-            for (int i = 0; i < netPolicyMap.size(); ++i) {
-                polices[i] = netPolicyMap.keyAt(i);
-                policyStrings[i] = netPolicyMap.valueAt(i);
-            }
-            new SearchableFlagsDialogBuilder<>(mActivity, polices, policyStrings, selectedPolicies)
-                    .setTitle(R.string.net_policy)
-                    .showSelectAll(false)
-                    .setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton(R.string.save, (dialog, which, selections) -> {
-                        int flags = 0;
-                        for (int flag : selections) {
-                            flags |= flag;
-                        }
-                        NetworkPolicyManagerCompat.setUidPolicy(mApplicationInfo.uid, flags);
-                        mMainModel.getTagsAlteredLiveData().setValue(true);
-                    })
-                    .show();
+            loadAndShowNetPolicyDialog(mApplicationInfo.uid);
         } else if (itemId == R.id.action_extract_icon) {
             String iconName = mAppLabel + "_icon.png";
             mExport.launch(iconName, uri -> {
@@ -718,6 +698,63 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         return true;
     }
 
+    private void loadAndShowNetPolicyDialog(int uid) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                ArrayMap<Integer, String> netPolicyMap = NetworkPolicyManagerCompat.getAllReadablePolicies(ContextUtils.getContext());
+                int selectedPolicies = NetworkPolicyManagerCompat.getUidPolicy(uid);
+                ThreadUtils.postOnMainThread(() -> showNetPolicyDialog(uid, netPolicyMap, selectedPolicies));
+            } catch (Exception e) {
+                Log.w(TAG, "Could not load network policy for uid " + uid, e);
+                ThreadUtils.postOnMainThread(() -> displayShortToast(R.string.failed));
+            }
+        });
+    }
+
+    @UiThread
+    private void showNetPolicyDialog(int uid,
+                                     @NonNull ArrayMap<Integer, String> netPolicyMap,
+                                     int selectedPolicies) {
+        if (!isAdded() || mActivity == null || mMainModel == null
+                || mApplicationInfo == null || mApplicationInfo.uid != uid) {
+            return;
+        }
+        Integer[] policies = new Integer[netPolicyMap.size()];
+        CharSequence[] policyStrings = new String[netPolicyMap.size()];
+        for (int i = 0; i < netPolicyMap.size(); ++i) {
+            policies[i] = netPolicyMap.keyAt(i);
+            policyStrings[i] = netPolicyMap.valueAt(i);
+        }
+        new SearchableFlagsDialogBuilder<>(mActivity, policies, policyStrings, selectedPolicies)
+                .setTitle(R.string.net_policy)
+                .showSelectAll(false)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, (dialog, which, selections) -> saveNetPolicy(uid, selections))
+                .show();
+    }
+
+    private void saveNetPolicy(int uid, @NonNull List<Integer> selections) {
+        int flags = 0;
+        for (int flag : selections) {
+            flags |= flag;
+        }
+        int policyFlags = flags;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags);
+                ThreadUtils.postOnMainThread(() -> {
+                    if (mMainModel != null && mApplicationInfo != null && mApplicationInfo.uid == uid) {
+                        mMainModel.getTagsAlteredLiveData().setValue(true);
+                    }
+                    displayShortToast(R.string.done);
+                });
+            } catch (Exception e) {
+                Log.w(TAG, "Could not save network policy for uid " + uid, e);
+                ThreadUtils.postOnMainThread(() -> displayShortToast(R.string.failed));
+            }
+        });
+    }
+
     @VisibleForTesting
     @NonNull
     static Intent buildApkShareIntent(@NonNull Path apkPath) {
@@ -734,7 +771,32 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void shareApkWithDeviceSpecificWarning() {
-        List<String> deviceSpecificSplits = SplitApkExporter.getDeviceSpecificSplitApkNames(mPackageInfo.applicationInfo);
+        ApplicationInfo applicationInfo = mPackageInfo != null ? mPackageInfo.applicationInfo : null;
+        if (applicationInfo == null) {
+            displayShortToast(R.string.failed);
+            return;
+        }
+        showProgressIndicator(true);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try {
+                List<String> deviceSpecificSplits = SplitApkExporter.getDeviceSpecificSplitApkNames(applicationInfo);
+                ThreadUtils.postOnMainThread(() -> showApkShareWarningOrShare(deviceSpecificSplits));
+            } catch (Exception e) {
+                Log.w(TAG, "Could not inspect split APKs before sharing " + mPackageName, e);
+                ThreadUtils.postOnMainThread(() -> {
+                    showProgressIndicator(false);
+                    displayShortToast(R.string.failed);
+                });
+            }
+        });
+    }
+
+    @UiThread
+    private void showApkShareWarningOrShare(@NonNull List<String> deviceSpecificSplits) {
+        if (!isAdded()) {
+            return;
+        }
+        showProgressIndicator(false);
         if (deviceSpecificSplits.isEmpty()) {
             shareApk();
             return;

@@ -5,6 +5,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed - Release polish pass (2026-06-15)
+
+- Restored backup-dialog option parity on large screens/tablets so exclusions,
+  cleanup protection, and backup notes are available in the `w900dp` layout.
+- Moved App Info network-policy loading and saving off the UI thread and added
+  success/failure feedback for the save path.
+- Moved installer privilege-preview probing off the UI thread before rendering
+  install/downgrade confirmation prompts.
+- Moved split-APK device-specific share inspection off the UI thread and kept
+  the existing warning flow for device-specific exports.
+- Added a bottom safe area to the changelog/What's New dialog so long release
+  notes stay clear of Android navigation controls in edge-to-edge mode.
+- Fixed release-blocking lint issues around Android 16 Advanced Protection
+  permission/service access, API 24/29 field guards, and a restricted internal
+  libsu copy helper call.
+
 ### Changed — AppManagerNG docs/privacy rebaseline (2026-06-15)
 
 - Rebased the packaged manuals' app identity, distribution/source links,
