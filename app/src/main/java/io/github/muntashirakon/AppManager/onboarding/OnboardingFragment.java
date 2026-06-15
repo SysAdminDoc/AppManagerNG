@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
@@ -962,8 +963,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private void bindNotificationPermissionTile(@NonNull View root) {
         View notifications = root.findViewById(R.id.onboarding_next_step_notifications);
         if (notifications == null) return;
-        boolean granted = SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || granted) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hasPostNotificationsPermission()) {
             notifications.setVisibility(View.GONE);
             notifications.setOnClickListener(null);
             return;
@@ -973,9 +973,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void maybePromptForNotificationPermission(@NonNull View root) {
-        boolean granted = SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS);
-        if (!shouldPromptForNotificationPermission(Build.VERSION.SDK_INT, granted,
-                mNotificationPermissionPromptShown)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || mNotificationPermissionPromptShown
+                || hasPostNotificationsPermission()) {
             return;
         }
         mNotificationPermissionPromptShown = true;
@@ -984,6 +983,11 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 requestNotificationPermission(root);
             }
         });
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private static boolean hasPostNotificationsPermission() {
+        return SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS);
     }
 
     private void requestNotificationPermission(@NonNull View root) {

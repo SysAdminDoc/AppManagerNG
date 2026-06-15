@@ -335,7 +335,7 @@ public final class RoutineScheduler {
         return next.getTimeInMillis() - nowMillis;
     }
 
-    @VisibleForTesting
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     @NonNull
     static String uniqueWorkName(@NonNull String triggerId) {
         return UNIQUE_WORK_PREFIX + triggerId;

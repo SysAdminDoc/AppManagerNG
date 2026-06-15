@@ -548,7 +548,6 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         return CriticalPackageGuard.isCriticalPackage(packageName);
     }
 
-    @VisibleForTesting
     public static int normalizeRefreshIntervalSeconds(int intervalSeconds) {
         switch (intervalSeconds) {
             case REFRESH_INTERVAL_MANUAL:

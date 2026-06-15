@@ -129,7 +129,7 @@ public final class InstallerPrivilegeCascade {
         return new Activation(appContext, originalMode, null, plan);
     }
 
-    @VisibleForTesting
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     @NonNull
     static Plan buildPlan(boolean currentPrivileged,
                           boolean adbAvailable,

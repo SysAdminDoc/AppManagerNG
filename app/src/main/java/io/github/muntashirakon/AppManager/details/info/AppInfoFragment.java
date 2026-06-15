@@ -65,6 +65,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
@@ -3646,24 +3647,24 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     @MainThread
     private void showStandbyBucketPicker(int currentBucket) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return;
-        int[] buckets = {
-                UsageStatsManager.STANDBY_BUCKET_ACTIVE,
-                UsageStatsManager.STANDBY_BUCKET_WORKING_SET,
-                UsageStatsManager.STANDBY_BUCKET_FREQUENT,
-                UsageStatsManager.STANDBY_BUCKET_RARE,
-                UsageStatsManager.STANDBY_BUCKET_RESTRICTED,
-        };
-        int[] labelRes = {
-                R.string.standby_bucket_active,
-                R.string.standby_bucket_working_set,
-                R.string.standby_bucket_frequent,
-                R.string.standby_bucket_rare,
-                R.string.standby_bucket_restricted,
-        };
+        List<Integer> bucketList = new ArrayList<>(5);
+        List<Integer> labelResList = new ArrayList<>(5);
+        bucketList.add(UsageStatsManager.STANDBY_BUCKET_ACTIVE);
+        labelResList.add(R.string.standby_bucket_active);
+        bucketList.add(UsageStatsManager.STANDBY_BUCKET_WORKING_SET);
+        labelResList.add(R.string.standby_bucket_working_set);
+        bucketList.add(UsageStatsManager.STANDBY_BUCKET_FREQUENT);
+        labelResList.add(R.string.standby_bucket_frequent);
+        bucketList.add(UsageStatsManager.STANDBY_BUCKET_RARE);
+        labelResList.add(R.string.standby_bucket_rare);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            addRestrictedStandbyBucket(bucketList, labelResList);
+        }
+        Integer[] buckets = bucketList.toArray(new Integer[0]);
         CharSequence[] labels = new CharSequence[buckets.length];
         int checkedItem = -1;
         for (int i = 0; i < buckets.length; i++) {
-            labels[i] = getString(labelRes[i]);
+            labels[i] = getString(labelResList.get(i));
             if (buckets[i] == currentBucket) {
                 checkedItem = i;
             }
@@ -3676,6 +3677,13 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private static void addRestrictedStandbyBucket(@NonNull List<Integer> buckets,
+                                                   @NonNull List<Integer> labelRes) {
+        buckets.add(UsageStatsManager.STANDBY_BUCKET_RESTRICTED);
+        labelRes.add(R.string.standby_bucket_restricted);
     }
 
     @MainThread
@@ -3707,10 +3715,15 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             return context.getString(R.string.standby_bucket_frequent);
         } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_RARE) {
             return context.getString(R.string.standby_bucket_rare);
-        } else if (bucket <= UsageStatsManager.STANDBY_BUCKET_RESTRICTED) {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && bucket <= getRestrictedStandbyBucket()) {
             return context.getString(R.string.standby_bucket_restricted);
         }
         return context.getString(R.string.standby_bucket_unknown, bucket);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private static int getRestrictedStandbyBucket() {
+        return UsageStatsManager.STANDBY_BUCKET_RESTRICTED;
     }
 
     @GuardedBy("mListItems")

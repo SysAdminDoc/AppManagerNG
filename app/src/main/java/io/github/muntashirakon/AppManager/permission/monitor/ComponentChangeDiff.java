@@ -48,11 +48,11 @@ public final class ComponentChangeDiff {
     private ComponentChangeDiff() {
     }
 
-    @VisibleForTesting
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     @NonNull
-    public static Result compute(@NonNull String packageName,
-                                 @NonNull ComponentSnapshot before,
-                                 @NonNull ComponentSnapshot after) {
+    static Result compute(@NonNull String packageName,
+                          @NonNull ComponentSnapshot before,
+                          @NonNull ComponentSnapshot after) {
         Set<String> addedComponents = new LinkedHashSet<>(after.components);
         addedComponents.removeAll(before.components);
         Set<String> removedComponents = new LinkedHashSet<>(before.components);
