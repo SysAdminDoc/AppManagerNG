@@ -337,7 +337,7 @@
     <string name="app_usage_permission_empty_message">Usage access is off. Allow AppManagerNG in Android settings, then return here to load the report.</string>
     <string name="app_usage_open_usage_settings">Open usage access</string>
     <string name="share_apk">Share APK</string>
-    <string name="share_apk_device_specific_warning">This export includes device-selected split APKs: %1$s.\n\nIt was built from this device (%2$s, %3$d dpi) and may not install correctly on devices with different ABI, density, or locale requirements. The exported .apks bundle records these details in info.json.</string>
+    <string name="share_apk_device_specific_warning">This export includes device-selected split APKs: %1$s.\n\nIt was built from this device (%2$s, density %3$d) and may not install correctly on devices with different ABI, density, or locale requirements. The exported .apks bundle records these details in info.json.</string>
     <string name="app_note_title">Notes</string>
     <string name="app_note_empty">No note saved for this app.</string>
     <string name="app_note_input_hint">Note</string>
@@ -563,7 +563,10 @@
     <string name="scanner_offline_banner_title">Offline scan</string>
     <string name="scanner_offline_banner_summary">Local APK checks are still available. VirusTotal and Pithus reports stay hidden until network features are enabled.</string>
     <string name="scanner_requires_network">Requires network access</string>
-    <string name="scanner_tracker_database_summary">Database: %1$s (%2$d signatures)</string>
+    <plurals name="scanner_tracker_database_summary">
+        <item quantity="one">Database: %1$s (%2$d signature)</item>
+        <item quantity="other">Database: %1$s (%2$d signatures)</item>
+    </plurals>
     <string name="scanner_tracker_database_latest">Latest available: %1$s</string>
     <string name="scanner_tracker_database_last_checked">Last checked: %1$s</string>
     <string name="scanner_tracker_database_not_checked">Update check not run</string>
@@ -1631,8 +1634,8 @@
     <string name="backup_extras_skip_ssaid_android_version">requires Android 8.0+</string>
     <string name="backup_extras_skip_ssaid_store">SSAID settings store unavailable</string>
     <string name="backup_extras_skip_unknown_type">unsupported extra type</string>
-    <string name="restore_api_warning_newer_device">This backup was created on Android API %1$d but this device runs API %2$d. Data restored across major Android versions may not work correctly.</string>
-    <string name="restore_api_warning_older_device">This backup was created on Android API %1$d but this device runs the older API %2$d. Some data formats may be incompatible.</string>
+    <string name="restore_api_warning_newer_device">Backup Android API: %1$d. This device runs API %2$d. Data restored across major Android versions may not work correctly.</string>
+    <string name="restore_api_warning_older_device">Backup Android API: %1$d. This device runs the older API %2$d. Some data formats may be incompatible.</string>
     <string name="restore_api_risk_scoped_storage">Scoped storage enforcement changed between these versions — file paths in the backup may not resolve.</string>
     <string name="restore_api_risk_runtime_permissions">The runtime permission model changed between these versions — permission grants in the backup may not apply.</string>
     <string name="restore_api_risk_package_visibility">Package visibility filtering changed between these versions — cross-app references in the backup may not resolve.</string>
@@ -3394,7 +3397,10 @@
     <string name="snapshot_import_failed">Could not import snapshot bundle: %1$s</string>
     <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
-    <string name="profiles_external_import_done">Imported %2$d packages (%1$s)</string>
+    <plurals name="profiles_external_import_done">
+        <item quantity="one">Imported %2$d package (%1$s)</item>
+        <item quantity="other">Imported %2$d packages (%1$s)</item>
+    </plurals>
     <string name="profiles_external_import_failed">External profile import failed · %1$s</string>
     <!-- Export-to-Upstream-AM Compat Profile (Next/T11) -->
     <string name="pref_export_upstream_compat">Export for upstream App Manager</string>
@@ -3515,7 +3521,10 @@
     <string name="app_change_feed_title">App change feed</string>
     <string name="app_change_feed_summary">Review local app update audit events from permission, signing-key, component, and tracker monitors.</string>
     <string name="app_change_feed_empty">No app change events recorded yet.</string>
-    <string name="app_change_feed_more">%1$d more event(s) hidden.</string>
+    <plurals name="app_change_feed_more">
+        <item quantity="one">%1$d more event hidden.</item>
+        <item quantity="other">%1$d more events hidden.</item>
+    </plurals>
     <string name="pref_app_change_auditor">Component and tracker change auditor</string>
     <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>
     <string name="app_change_auditor_title">%1$s changed components</string>
@@ -3829,7 +3838,7 @@
     <string name="perm_recovery_confirm_title">Restore system app permissions?</string>
     <string name="perm_recovery_confirm_body">Re-grants dangerous permissions to known OS- and vendor-critical packages, then clears AppManager permission rules saved for those packages.\n\nUse this if a bulk revoke disrupted phone, location, messaging, or other system services.</string>
     <string name="perm_recovery_running">Restoring system app permissions…</string>
-    <string name="perm_recovery_done_fmt">Restored permissions on %1$d packages (%2$d permissions re-granted, %3$d stale rules cleared).</string>
+    <string name="perm_recovery_done_fmt">Restored system app permissions. Packages: %1$d. Permissions re-granted: %2$d. Stale rules cleared: %3$d.</string>
     <string name="perm_recovery_failed">Could not restore system app permissions.</string>
     <string name="permission_inspector_empty_title">No apps request this permission</string>
     <string name="permission_inspector_no_apps">No installed apps request %1$s. Try another permission group or refresh after installing apps.</string>

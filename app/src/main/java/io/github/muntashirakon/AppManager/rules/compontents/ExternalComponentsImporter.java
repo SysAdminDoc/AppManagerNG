@@ -130,7 +130,7 @@ public class ExternalComponentsImporter {
 
     @WorkerThread
     @NonNull
-    public static List<String> applyFromMyAndroidTools(@NonNull List<Uri> uriList, int[] userHandles) {
+    public static List<String> applyFromMyAndroidTools(@NonNull List<Uri> uriList, @NonNull int[] userHandles) {
         List<String> failedFiles = new ArrayList<>();
         for (Uri uri : uriList) {
             Path path = Paths.get(uri);

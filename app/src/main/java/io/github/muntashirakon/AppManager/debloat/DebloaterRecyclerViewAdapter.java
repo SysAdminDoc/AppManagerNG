@@ -23,6 +23,7 @@ import com.google.android.material.color.MaterialColors;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -67,6 +68,19 @@ public class DebloaterRecyclerViewAdapter extends MultiSelectionView.Adapter<Deb
     public void setAdapterList(List<DebloatObject> adapterList) {
         synchronized (mLock) {
             AdapterUtils.notifyDataSetChanged(this, mAdapterList, adapterList);
+        }
+    }
+
+    public void notifyPackagesChanged(@NonNull Collection<String> packageNames) {
+        if (packageNames.isEmpty()) {
+            return;
+        }
+        synchronized (mLock) {
+            for (int i = 0; i < mAdapterList.size(); ++i) {
+                if (packageNames.contains(mAdapterList.get(i).packageName)) {
+                    notifyItemChanged(i);
+                }
+            }
         }
     }
 

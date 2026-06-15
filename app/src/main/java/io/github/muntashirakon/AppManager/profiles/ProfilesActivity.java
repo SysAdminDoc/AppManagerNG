@@ -372,8 +372,12 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             try (OutputStream os = innerProfilePath.openOutputStream()) {
                 newProfile.write(os);
             }
-            UIUtils.displayShortToast(getString(R.string.profiles_external_import_done,
-                    preview.format.name(), preview.packages.length));
+            int packageCount = preview.packages.length;
+            UIUtils.displayShortToast(getResources().getQuantityString(
+                    R.plurals.profiles_external_import_done,
+                    packageCount,
+                    preview.format.name(),
+                    packageCount));
             startActivity(ProfileManager.getProfileIntent(this, newProfile.type, newProfile.profileId));
         } catch (IOException | JSONException e) {
             Log.e(TAG, "External profile import failed", e);

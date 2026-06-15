@@ -484,10 +484,12 @@ public class ScannerFragment extends Fragment {
     @VisibleForTesting
     @NonNull
     static CharSequence getTrackerDatabaseSummary(@NonNull Context context) {
-        SpannableStringBuilder summary = new SpannableStringBuilder(context.getString(
-                R.string.scanner_tracker_database_summary,
+        int signatureCount = StaticDataset.getTrackerDatabaseSignatureCount();
+        SpannableStringBuilder summary = new SpannableStringBuilder(context.getResources().getQuantityString(
+                R.plurals.scanner_tracker_database_summary,
+                signatureCount,
                 StaticDataset.getTrackerDatabaseVersion(),
-                StaticDataset.getTrackerDatabaseSignatureCount()));
+                signatureCount));
         String latestVersion = Prefs.Privacy.getLatestTrackerDatabaseVersion();
         if (!TextUtils.isEmpty(latestVersion)
                 && !latestVersion.equals(StaticDataset.getTrackerDatabaseVersion())) {

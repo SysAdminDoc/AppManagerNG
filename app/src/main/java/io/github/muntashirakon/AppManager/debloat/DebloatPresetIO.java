@@ -6,6 +6,7 @@ import android.content.Context;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -57,13 +58,16 @@ public final class DebloatPresetIO {
     public static class DebloatPresetData {
         @SerializedName("version")
         public int version;
+        @Nullable
         @SerializedName("entries")
         public List<DebloatPresetEntry> entries;
     }
 
     public static class DebloatPresetEntry {
+        @Nullable
         @SerializedName("package_name")
         public String packageName;
+        @Nullable
         @SerializedName("user_ids")
         public int[] userIds;
     }

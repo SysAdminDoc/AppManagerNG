@@ -142,6 +142,7 @@ public final class ProfileTrigger {
         }
 
         /** Set {@code hour:minute} for {@link #TYPE_TIME_OF_DAY} triggers. */
+        @NonNull
         public Builder timeOfDay(int hourOfDay, int minuteOfHour) {
             if (hourOfDay < 0 || hourOfDay > 23) {
                 throw new IllegalArgumentException("hourOfDay out of range: " + hourOfDay);

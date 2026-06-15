@@ -28,6 +28,7 @@ public final class ComponentSnapshot {
     }
 
     @VisibleForTesting
+    @NonNull
     public static ComponentSnapshot of(long versionCode, @NonNull String[] components,
                                        @NonNull String[] trackerComponents) {
         Set<String> componentSet = new LinkedHashSet<>();
