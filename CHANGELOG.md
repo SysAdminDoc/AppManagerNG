@@ -20,6 +20,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed release-blocking lint issues around Android 16 Advanced Protection
   permission/service access, API 24/29 field guards, and a restricted internal
   libsu copy helper call.
+- Guarded onboarding notification permission and App Info standby-bucket
+  actions behind their platform API levels, removing release-lint false
+  positives while keeping older Android versions on their supported paths.
+- Added explanatory cleanup-protection copy to phone and large-screen backup
+  dialogs so the destructive-cleanup exception is clearer before users start a
+  backup.
+- Tightened production visibility contracts for component-diff, routine, and
+  running-apps helpers that are shared with tests.
 
 ### Changed — AppManagerNG docs/privacy rebaseline (2026-06-15)
 
