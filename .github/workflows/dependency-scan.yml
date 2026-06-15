@@ -68,6 +68,8 @@ jobs:
       # (~700 MB); subsequent runs hit the GitHub Actions Gradle cache. The root build
       # defaults to report-only for local runs; this weekly audit fails on CVSS >= 9.0.
       - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./gradlew dependencyCheckAggregate --info -PdependencyCheckFailBuildOnCvss=9.0
       - name: Upload HTML report
         if: always()
