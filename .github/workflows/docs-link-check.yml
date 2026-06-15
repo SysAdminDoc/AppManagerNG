@@ -73,9 +73,6 @@ jobs:
             './*.md'
             './docs/**/*.md'
             './.ai/**/*.md'
-            './ROADMAP.md'
-            './CHANGELOG.md'
-            './PROJECT_CONTEXT.md'
           fail: true
           output: ./lychee-out.md
 
