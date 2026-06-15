@@ -89,11 +89,12 @@ Reclaim storage without losing anything: archiving removes an app's APK and cach
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for planned work. Completed and stale items are in
-[COMPLETED.md](COMPLETED.md); consolidated research is in
-[RESEARCH_REPORT.md](RESEARCH_REPORT.md). Historical roadmap and research ledgers
-are archived under [`docs/roadmap/archive/`](docs/roadmap/archive/) and
-[`docs/archive/`](docs/archive/). Version targets:
+See [ROADMAP.md](ROADMAP.md) for planned work, [RESEARCH.md](RESEARCH.md) for
+the current research backing, and
+[`docs/roadmap/COMPLETED.md`](docs/roadmap/COMPLETED.md) for completed or stale
+items. Historical roadmap and research ledgers are archived under
+[`docs/roadmap/archive/`](docs/roadmap/archive/) and [`docs/archive/`](docs/archive/).
+Version targets:
 
 - **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
 - **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
@@ -184,7 +185,8 @@ git submodule update --init --recursive
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Translation contributions go through Weblate (link TBD).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Translation intake is planned, but the
+fork-owned Weblate/Crowdin project is not live yet.
 
 ## License
 

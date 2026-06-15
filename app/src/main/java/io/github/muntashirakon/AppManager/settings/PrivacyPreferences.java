@@ -317,7 +317,7 @@ public class PrivacyPreferences extends PreferenceFragment {
             } else {
                 result = SnapshotBundle.writeTo(appContext, out);
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             failure = t;
         }
         final SnapshotBundle.ExportResult finalResult = result;
@@ -349,7 +349,7 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
         } catch (SnapshotImportException e) {
             failureMessage = e.getMessage();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             failureMessage = t.getClass().getSimpleName()
                     + (t.getMessage() != null ? ": " + t.getMessage() : "");
         }
