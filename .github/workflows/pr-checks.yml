@@ -64,6 +64,29 @@ jobs:
           path: app/build/reports/tests/testFlossDebugUnitTest/
           if-no-files-found: warn
 
+  permission-parity:
+    name: Manifest ↔ Docs Permission Parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check manifest permissions match docs catalogue
+        run: |
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          CATALOGUE="docs/policy/permissions.md"
+          # Extract android.permission.* names from the manifest
+          manifest_perms=$(grep -oP 'android:name="android\.permission\.\K[A-Z_]+' "$MANIFEST" | sort -u)
+          # Extract all ALL_CAPS permission names mentioned anywhere in the catalogue
+          catalogue_perms=$(grep -oP '`([A-Z][A-Z_]+)`' "$CATALOGUE" | tr -d '`' | sort -u)
+          missing=$(comm -23 <(echo "$manifest_perms") <(echo "$catalogue_perms"))
+          rc=0
+          if [ -n "$missing" ]; then
+            echo "::error::Manifest permissions missing from docs/policy/permissions.md:"
+            echo "$missing" | while read p; do echo "  - $p"; done
+            rc=1
+          fi
+          exit $rc
+
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
