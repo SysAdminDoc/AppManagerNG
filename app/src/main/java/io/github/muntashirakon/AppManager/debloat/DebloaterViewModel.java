@@ -145,7 +145,9 @@ public class DebloaterViewModel extends AndroidViewModel {
         int matched = 0;
         java.util.Set<String> targetPackages = new java.util.HashSet<>(entries.size());
         for (DebloatPresetIO.DebloatPresetEntry entry : entries) {
-            targetPackages.add(entry.packageName);
+            if (entry.packageName != null) {
+                targetPackages.add(entry.packageName);
+            }
         }
         for (DebloatObject debloatObject : mDebloatObjects) {
             if (targetPackages.contains(debloatObject.packageName)) {

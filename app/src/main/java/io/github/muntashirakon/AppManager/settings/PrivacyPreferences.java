@@ -303,7 +303,8 @@ public class PrivacyPreferences extends PreferenceFragment {
         }
         int hidden = entries.size() - count;
         if (hidden > 0) {
-            builder.append("\n\n").append(getString(R.string.app_change_feed_more, hidden));
+            builder.append("\n\n").append(getResources().getQuantityString(
+                    R.plurals.app_change_feed_more, hidden, hidden));
         }
         return builder.toString();
     }

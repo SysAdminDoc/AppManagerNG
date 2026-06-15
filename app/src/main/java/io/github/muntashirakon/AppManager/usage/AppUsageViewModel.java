@@ -149,7 +149,7 @@ public class AppUsageViewModel extends AndroidViewModel {
         setCurrentDate(UsageUtils.getPreviousDateFromInterval(mCurrentInterval, mCurrentDate));
     }
 
-    public void loadPackageUsageInfo(PackageUsageInfo usageInfo) {
+    public void loadPackageUsageInfo(@NonNull PackageUsageInfo usageInfo) {
         if (ThreadUtils.isMainThread()) {
             mPackageUsageInfoLiveData.setValue(usageInfo);
         } else {

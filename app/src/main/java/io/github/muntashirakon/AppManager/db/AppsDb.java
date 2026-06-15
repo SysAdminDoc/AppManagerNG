@@ -138,5 +138,6 @@ public abstract class AppsDb extends RoomDatabase {
 
     public abstract FreezeTypeDao freezeTypeDao();
 
+    @NonNull
     public abstract CachedScanResultDao cachedScanResultDao();
 }

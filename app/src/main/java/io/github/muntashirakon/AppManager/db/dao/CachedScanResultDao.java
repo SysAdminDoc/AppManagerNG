@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Dao;
 import androidx.room.Insert;
@@ -14,13 +15,13 @@ import io.github.muntashirakon.AppManager.db.entity.CachedScanResult;
 public interface CachedScanResultDao {
     @Nullable
     @Query("SELECT * FROM cached_scan_result WHERE package_name = :packageName AND version_code = :versionCode LIMIT 1")
-    CachedScanResult get(String packageName, long versionCode);
+    CachedScanResult get(@NonNull String packageName, long versionCode);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertOrReplace(CachedScanResult result);
+    void insertOrReplace(@NonNull CachedScanResult result);
 
     @Query("DELETE FROM cached_scan_result WHERE package_name = :packageName")
-    void deleteByPackage(String packageName);
+    void deleteByPackage(@NonNull String packageName);
 
     @Query("DELETE FROM cached_scan_result")
     void deleteAll();

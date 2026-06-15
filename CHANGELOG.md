@@ -28,6 +28,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   backup.
 - Tightened production visibility contracts for component-diff, routine, and
   running-apps helpers that are shared with tests.
+- Replaced remaining awkward count copy with plural-aware strings, made debloat
+  preset import refresh only affected rows, and removed unused premium/list-card
+  visual tokens left behind by earlier UI passes.
 
 ### Changed — AppManagerNG docs/privacy rebaseline (2026-06-15)
 

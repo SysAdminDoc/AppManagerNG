@@ -31,7 +31,9 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -726,10 +728,16 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
 
     private void applyImportedPreset(@NonNull DebloatPresetIO.DebloatPresetData data) {
         if (viewModel == null || data.entries == null) return;
+        Set<String> changedPackages = new HashSet<>(viewModel.getSelectedPackages().keySet());
+        for (DebloatPresetIO.DebloatPresetEntry entry : data.entries) {
+            if (entry.packageName != null) {
+                changedPackages.add(entry.packageName);
+            }
+        }
         int matched = viewModel.selectByPackageNames(data.entries);
         int total = data.entries.size();
         int notFound = total - matched;
-        mAdapter.notifyDataSetChanged();
+        mAdapter.notifyPackagesChanged(changedPackages);
         if (matched > 0) {
             mMultiSelectionView.show();
             mMultiSelectionView.updateCounter(false);
