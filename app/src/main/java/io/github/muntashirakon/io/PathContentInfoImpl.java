@@ -72,7 +72,7 @@ class PathContentInfoImpl extends PathContentInfo {
                 }
                 return fromContentInfo(contentInfo);
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.e(TAG, "Could not load MIME type for path %s", e, path);
         }
         if (extInfo != null) {

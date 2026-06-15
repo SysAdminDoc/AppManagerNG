@@ -153,7 +153,7 @@ public final class AppearanceUtils {
                 // the OS-side per-app locale picker reflects reality.
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(prefLang));
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             // Locale reconciliation is a best-effort polish step — never let it kill app startup.
             android.util.Log.w(TAG, "Locale reconciliation failed; continuing with Prefs as truth.", th);
         }

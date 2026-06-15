@@ -759,7 +759,7 @@ public class Ops {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     try {
                         activity.startActivity(intent);
-                    } catch (Throwable ignore) {
+                    } catch (Exception ignore) {
                     }
                 })
                 .show();
@@ -1020,13 +1020,13 @@ public class Ops {
                         ActivityCompat.requestPermissions(activity,
                                 new String[]{ManifestCompat.permission.ACCESS_LOCAL_NETWORK},
                                 REQUEST_LOCAL_NETWORK_PERMISSION);
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         Log.w(TAG, "Could not request local network permission directly.", e);
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                 .setData(Uri.parse("package:" + activity.getPackageName()));
                         try {
                             activity.startActivity(intent);
-                        } catch (Throwable ignore) {
+                        } catch (Exception ignore) {
                         }
                     }
                     callback.onStatusReceived(STATUS_FAILURE);

@@ -483,7 +483,7 @@ public class ModeOfOpsPreference extends Fragment {
         try {
             return android.provider.Settings.Global.getInt(
                     requireContext().getContentResolver(), "adb_enabled", 0) != 0;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return false;
         }
     }
@@ -493,7 +493,7 @@ public class ModeOfOpsPreference extends Fragment {
         try {
             return android.provider.Settings.Global.getInt(
                     requireContext().getContentResolver(), "adb_wifi_enabled", 0) != 0;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return false;
         }
     }

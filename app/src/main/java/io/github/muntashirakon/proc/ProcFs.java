@@ -119,7 +119,7 @@ public class ProcFs {
                     return line.substring(colonLoc).trim();
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

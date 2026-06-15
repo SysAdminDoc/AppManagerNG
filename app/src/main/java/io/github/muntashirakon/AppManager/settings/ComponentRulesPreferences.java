@@ -93,7 +93,7 @@ public class ComponentRulesPreferences extends PreferenceFragment {
                     rows.add(new ComponentRulesRow(packageName, label != null ? label.toString() : packageName,
                             userId, summary, ComponentRulesPreview.buildIfwXml(packageName, componentRules),
                             describeComponents(componentRules)));
-                } catch (Throwable ignored) {
+                } catch (Exception ignored) {
                 }
             }
             ThreadUtils.postOnMainThread(() -> bindRows(rows));

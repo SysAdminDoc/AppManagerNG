@@ -45,16 +45,27 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the repo now tracks fork-specific `CONTRIBUTING.md` and
   `PROJECT_CONTEXT.md`.
 
-### Fixed — UX copy and fatal-error swallowing audit (2026-06-15)
+### Fixed — Resource leaks and fatal-error swallowing audit (2026-06-15)
 
+- Fixed unclosed `InputStream` resource leak in `XposedModuleInfo` when parsing
+  modern Xposed module properties from ZIP entries.
+- Fixed unclosed `InputStream` resource leaks in `ApkFile` constructor when
+  reading APKS/XAPK metadata (`info.json`) and `.idsig` files from bundled
+  archives — repeated APK scans could exhaust the ZipFile stream pool.
+- Modernized `EglSurfaceBase.saveFrame()` to use try-with-resources, closing
+  a potential `FileOutputStream` leak if the `BufferedOutputStream` wrapper
+  threw during construction.
 - Updated stale "App Manager" copy in support/privacy/settings strings that now
   refer to AppManagerNG, including USB-debugging documentation and optional
   Internet-feature wording.
-- Narrowed additional ordinary I/O, UI, and parser `catch (Throwable)` blocks to
-  `catch (Exception)` in backup storage checks, interceptor UI handling, main
-  quick actions, component-rule parsing, and privacy snapshot import/export.
-  Hidden API, privileged IPC, reflection, and framework-boundary sites remain
-  deliberately unchanged.
+- Narrowed `catch (Throwable)` to `catch (Exception)` in ~18 additional sites
+  across backup retention, changelog display, tracker window, locale
+  reconciliation, component rule enumeration, process parsing, Settings.Global
+  queries, activity launches, support-info bundle generation, MIME-type
+  detection, and rule-storage initialization. This prevents silent swallowing
+  of `OutOfMemoryError` / `StackOverflowError` in ordinary I/O, UI, and parser
+  code. Hidden API, privileged IPC, reflection, and framework-boundary catches
+  remain deliberately broad.
 
 ## v0.6.0 — 2026-06-14
 
