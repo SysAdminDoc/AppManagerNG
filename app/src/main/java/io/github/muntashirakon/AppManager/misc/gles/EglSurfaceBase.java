@@ -170,15 +170,11 @@ public class EglSurfaceBase {
         GlUtil.checkGlError("glReadPixels");
         buf.rewind();
 
-        BufferedOutputStream bos = null;
-        try {
-            bos = new BufferedOutputStream(new FileOutputStream(filename));
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filename))) {
             Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             bmp.copyPixelsFromBuffer(buf);
             bmp.compress(Bitmap.CompressFormat.PNG, 90, bos);
             bmp.recycle();
-        } finally {
-            if (bos != null) bos.close();
         }
         Log.d(TAG, "Saved " + width + "x" + height + " frame as '" + filename + "'");
     }

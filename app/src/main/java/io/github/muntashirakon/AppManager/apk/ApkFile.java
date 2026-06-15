@@ -328,8 +328,8 @@ public final class ApkFile implements AutoCloseable {
                         throw new ApkFileException(e);
                     }
                 } else if (fileName.equals(ApksMetadata.META_FILE)) {
-                    try {
-                        String jsonString = IoUtils.getInputStreamContent(mZipFile.getInputStream(zipEntry));
+                    try (InputStream metaIs = mZipFile.getInputStream(zipEntry)) {
+                        String jsonString = IoUtils.getInputStreamContent(metaIs);
                         mApksMetadata = new ApksMetadata();
                         mApksMetadata.readMetadata(jsonString);
                     } catch (IOException | JSONException e) {
@@ -339,8 +339,8 @@ public final class ApkFile implements AutoCloseable {
                 } else if (fileName.endsWith(".obb")) {
                     mObbFiles.add(zipEntry);
                 } else if (fileName.endsWith(".idsig")) {
-                    try {
-                        mIdsigFile = mFileCache.getCachedFile(mZipFile.getInputStream(zipEntry), ".idsig");
+                    try (InputStream idsigIs = mZipFile.getInputStream(zipEntry)) {
+                        mIdsigFile = mFileCache.getCachedFile(idsigIs, ".idsig");
                     } catch (IOException e) {
                         throw new ApkFileException(e);
                     }

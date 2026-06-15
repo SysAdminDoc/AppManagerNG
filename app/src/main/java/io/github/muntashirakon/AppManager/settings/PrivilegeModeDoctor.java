@@ -395,7 +395,7 @@ public final class PrivilegeModeDoctor {
     private static boolean isGlobalSettingEnabled(@NonNull Context context, @NonNull String key) {
         try {
             return Settings.Global.getInt(context.getContentResolver(), key, 0) != 0;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return false;
         }
     }

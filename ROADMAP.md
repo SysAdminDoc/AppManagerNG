@@ -388,8 +388,13 @@ decisions, careful refactoring, or on-device testing.
   Where: app/src/main/java/ (87 remaining files)
   Progress 2026-06-15: narrowed additional ordinary I/O, UI, parser, and settings import/export
   sites in BackupStorageCheck, ActivityInterceptor, MainRecyclerAdapter, ComponentUtils, and
-  PrivacyPreferences. Hidden API, privileged IPC, reflection, and framework-boundary catches
-  remain intentionally broad. This row stays open because many unrelated call sites remain.
+  PrivacyPreferences. Deep audit pass also narrowed BackupRetentionPolicy (including callback
+  interface and implementation signatures), ChangelogAutoDisplay, TrackerWindow,
+  AppearanceUtils, ComponentUtils (IFW listing), PathContentInfoImpl, ProcFs,
+  RulesStorageManager, ProcessParser, ComponentRulesPreferences, ModeOfOpsPreference (2),
+  Ops (3), PrivilegeHealthPreferences, PrivilegeModeDoctor, and TroubleshootingPreferences.
+  Hidden API, privileged IPC, reflection, and framework-boundary catches remain intentionally
+  broad. This row stays open because many unrelated call sites remain.
   Complexity: L
 
 ### P3

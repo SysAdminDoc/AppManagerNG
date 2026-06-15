@@ -167,7 +167,7 @@ public class TroubleshootingPreferences extends PreferenceFragment {
             Path bundlePath = null;
             try {
                 bundlePath = SupportInfoBundle.writeTextBundle(appContext);
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
             }
             Path finalBundlePath = bundlePath;
             ThreadUtils.postOnMainThread(() -> {

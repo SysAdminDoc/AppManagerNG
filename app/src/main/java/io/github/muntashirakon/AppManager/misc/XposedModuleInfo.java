@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +81,9 @@ public class XposedModuleInfo implements LocalizedString {
                 ZipEntry propEntry = modernModuleApk.getEntry("META-INF/xposed/module.prop");
                 if (propEntry != null) {
                     Properties prop = new Properties();
-                    prop.load(modernModuleApk.getInputStream(propEntry));
+                    try (InputStream is = modernModuleApk.getInputStream(propEntry)) {
+                        prop.load(is);
+                    }
                     minVersion = extractIntPart(prop.getProperty("minApiVersion"));
                     targetVersion = extractIntPart(prop.getProperty("targetApiVersion"));
                     staticScope = TextUtils.equals(prop.getProperty("staticScope"), "true");

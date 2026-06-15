@@ -71,7 +71,7 @@ public final class ProcessParser {
                 } catch (Exception ignore) {
                 }
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e("ProcessParser", th);
         }
         return processItems;

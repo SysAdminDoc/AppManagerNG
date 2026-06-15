@@ -88,7 +88,7 @@ public final class ChangelogAutoDisplay {
                     .setTitle(R.string.whats_new)
                     .setView(v)
                     .show();
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             // Window may have been torn down between the post and the show; ignore.
         }
     }

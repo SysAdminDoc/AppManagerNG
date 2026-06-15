@@ -235,7 +235,7 @@ public final class ComponentUtils {
         Path[] paths;
         try {
             paths = ifwDir.listFiles((dir, name) -> name.endsWith(".xml"));
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             return packages;
         }
         for (Path path : paths) {

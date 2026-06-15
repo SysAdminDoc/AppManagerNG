@@ -139,7 +139,7 @@ public class TrackerWindow implements View.OnTouchListener {
             appInfoIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 context.startActivity(appInfoIntent);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 UIUtils.displayLongToast("Error: " + th.getMessage());
             }
         });

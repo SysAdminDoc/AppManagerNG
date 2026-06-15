@@ -118,7 +118,7 @@ public final class BackupRetentionPolicy {
                 if (callback.delete(b)) {
                     ++deleted;
                 }
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Log.w(TAG, "Failed to delete pruned backup " + b.relativeDir, t);
             }
         }
@@ -126,7 +126,7 @@ public final class BackupRetentionPolicy {
     }
 
     @WorkerThread
-    private static boolean deletePrunedBackup(@NonNull Backup backup) throws Throwable {
+    private static boolean deletePrunedBackup(@NonNull Backup backup) throws Exception {
         try (BackupItems.BackupItem item = backup.getItem()) {
             if (item == null || item.isFrozen()) {
                 // Frozen backups are explicitly protected from deletion by the user;
@@ -401,7 +401,7 @@ public final class BackupRetentionPolicy {
     }
 
     interface BackupPruneCallback {
-        boolean delete(@NonNull Backup backup) throws Throwable;
+        boolean delete(@NonNull Backup backup) throws Exception;
     }
 
     private static final Comparator<Backup> NEWEST_FIRST_DETERMINISTIC = (a, b) -> {
