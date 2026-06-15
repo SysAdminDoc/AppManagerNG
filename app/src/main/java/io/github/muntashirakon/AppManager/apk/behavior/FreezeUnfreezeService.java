@@ -125,8 +125,7 @@ public class FreezeUnfreezeService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .addAction(stopServiceAction);
         ForegroundService.start(this, NotificationUtils.nextNotificationId(null), builder.build(),
-                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                        | ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_USER_PRESENT);

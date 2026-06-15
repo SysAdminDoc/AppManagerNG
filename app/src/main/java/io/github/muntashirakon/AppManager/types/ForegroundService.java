@@ -27,11 +27,9 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public abstract class ForegroundService extends Service {
     public static final int FOREGROUND_SERVICE_TYPE_DATA_SYNC;
-    public static final int FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
 
     static {
         FOREGROUND_SERVICE_TYPE_DATA_SYNC = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC : 0;
-        FOREGROUND_SERVICE_TYPE_SPECIAL_USE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ? ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE : 0;
     }
 
     @SuppressLint("ForegroundServiceType")

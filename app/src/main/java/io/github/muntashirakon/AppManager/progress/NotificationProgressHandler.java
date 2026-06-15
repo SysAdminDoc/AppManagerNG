@@ -96,8 +96,7 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
                     .setProgress(0, 0, false)
                     .build();
             ForegroundService.start(service, mProgressNotificationId, notification,
-                    ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                            | ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                    ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         }
     }
 
