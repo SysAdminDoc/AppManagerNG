@@ -1079,7 +1079,7 @@ public class ActivityInterceptor extends BaseActivity {
                     }
                 }
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, th);
             UIUtils.displayLongToast(R.string.error_with_details, th.getClass().getName() + ": " + th.getMessage());
         }
@@ -1181,7 +1181,7 @@ public class ActivityInterceptor extends BaseActivity {
                 shortcutInfo.setIcon(UIUtils.getBitmapFromDrawable(icon));
                 CreateShortcutDialogFragment dialog = CreateShortcutDialogFragment.getInstance(shortcutInfo);
                 dialog.show(getSupportFragmentManager(), CreateShortcutDialogFragment.TAG);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.e(TAG, th);
                 UIUtils.displayLongToast(R.string.error_with_details, th.getClass().getName() + ": " + th.getMessage());
             }

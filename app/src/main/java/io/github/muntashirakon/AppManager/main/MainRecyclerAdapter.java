@@ -849,7 +849,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                                         .UserPackagePair(item.packageName, userId));
                         io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
                                 UIUtils.displayShortToast(R.string.trackers_blocked_successfully));
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() ->
                                 UIUtils.displayLongToast(R.string.failed_to_block_trackers));
                     }

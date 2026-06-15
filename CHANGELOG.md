@@ -3,6 +3,32 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Changed — AppManagerNG docs/privacy rebaseline (2026-06-15)
+
+- Rebased the packaged manuals' app identity, distribution/source links,
+  translation guidance, donation copy, and contact surface around
+  AppManagerNG/SysAdminDoc. Inherited historical changelog sections remain
+  explicitly upstream-era content.
+- Rewrote the top-level build and privacy docs for the fork's current package
+  identity, release channel, `floss`/`full` flavor split, optional network
+  features, VirusTotal/Pithus/debloat-definition behavior, and support links.
+- README planning links now point at the live roadmap/research surfaces, and
+  the repo now tracks fork-specific `CONTRIBUTING.md` and
+  `PROJECT_CONTEXT.md`.
+
+### Fixed — UX copy and fatal-error swallowing audit (2026-06-15)
+
+- Updated stale "App Manager" copy in support/privacy/settings strings that now
+  refer to AppManagerNG, including USB-debugging documentation and optional
+  Internet-feature wording.
+- Narrowed additional ordinary I/O, UI, and parser `catch (Throwable)` blocks to
+  `catch (Exception)` in backup storage checks, interceptor UI handling, main
+  quick actions, component-rule parsing, and privacy snapshot import/export.
+  Hidden API, privileged IPC, reflection, and framework-boundary sites remain
+  deliberately unchanged.
+
 ## v0.6.0 — 2026-06-14
 
 Rootless Power release. Headline: package-filtered app-event routine triggers,

@@ -193,7 +193,7 @@ public final class BackupStorageCheck {
             android.app.usage.StorageStats stats = ssm.queryStatsForPackage(volumeUuid, packageName,
                     Process.myUserHandle());
             return stats.getDataBytes() + stats.getCacheBytes();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             // PACKAGE_USAGE_STATS may be denied; fall back to APK-only estimate.
             Log.d(TAG, "queryStatsForPackage(" + packageName + ") not available: " + t.getMessage());
             return 0;
@@ -215,7 +215,7 @@ public final class BackupStorageCheck {
             if (f == null) return -1;
             long usable = f.getUsableSpace();
             return usable > 0 ? usable : -1;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.d(TAG, "Could not query free space on backup volume: " + t.getMessage());
             return -1;
         }
@@ -235,7 +235,7 @@ public final class BackupStorageCheck {
             if (fsType != null && (fsType.equals("vfat") || fsType.equals("fat32"))) {
                 return FAT32_MAX_FILE_BYTES;
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.d(TAG, "Could not detect filesystem type: " + t.getMessage());
         }
         return -1;

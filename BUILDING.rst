@@ -1,14 +1,14 @@
 .. SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0
 
-====================
-Building App Manager
-====================
+=====================
+Building AppManagerNG
+=====================
 
 Requirements
 ============
 
 * **Hardware:** Any computer with 8 GB RAM and 20 GB storage
-* **Operating system:** Linux/macOS/WSL
+* **Operating system:** Windows, Linux, macOS, or WSL
 * **Software:** Android Studio/IntelliJ IDEA, Gradle, Latex, pandoc, JDK 17+
 * **Active network connection:** Depending on your development environment,
   you may need at least 20 GB data package.
@@ -57,24 +57,24 @@ Linux|GNU
       yay -S bundletool
 
 
-Clone and Build App Manager
-===========================
+Clone and Build AppManagerNG
+============================
 
 1. Clone the repo along with submodules::
 
-     git clone --recurse-submodules https://github.com/MuntashirAkon/AppManager.git
+     git clone --recurse-submodules https://github.com/SysAdminDoc/AppManagerNG.git
 
    You can use the `--depth 1` argument if you don't want to clone past
    commits.
-2. Open the project **AppManager** using Android Studio/IntelliJ IDEA.  The IDE
+2. Open the project **AppManagerNG** using Android Studio/IntelliJ IDEA.  The IDE
    should start syncing automatically.  It will also download all the necessary
    dependencies automatically provided you have a working network connection.
-3. Build debug version of App Manager from *Menu* > *Build* > *Make Project*,
+3. Build debug version of AppManagerNG from *Menu* > *Build* > *Make Project*,
    or, from the terminal::
 
-     ./gradlew packageDebugUniversalApk
+     ./gradlew :app:assembleFlossDebug
 
-   The command will generate a universal APK instead of a bundled app.
+   On Windows, use ``gradlew.bat`` instead of ``./gradlew``.
 
 Create Bundled App
 ==================
@@ -93,4 +93,9 @@ The script above will also generate a universal APK.
 
 Build documentation
 ===================
-See  `docs/raw/en/README.md <docs/raw/en/README.md>`_
+Run::
+
+  ./gradlew :docs:buildDocs
+
+The packaged manual is generated from ``docs/raw`` into the ``docs`` Android
+library module during the normal app build.

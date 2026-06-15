@@ -348,7 +348,7 @@ public final class ComponentUtils {
                 }
                 event = parser.nextTag();
             }
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             // The file contains errors, simply ignore
         }
         return rules;

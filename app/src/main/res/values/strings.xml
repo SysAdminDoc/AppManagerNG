@@ -570,8 +570,8 @@
     <string name="keyboard_type">Keyboard type</string>
     <string name="navigation">Navigation</string>
     <string name="touchscreen">Touchscreen</string>
-    <string name="pref_export_msg">Export blocking rules configured within App Manager to external storage.</string>
-    <string name="pref_import_msg">Import previously exported blocking rules from App Manager.</string>
+    <string name="pref_export_msg">Export blocking rules configured within AppManagerNG to external storage.</string>
+    <string name="pref_import_msg">Import previously exported blocking rules from AppManagerNG.</string>
     <string name="pref_import_watt_msg">Import blocking rules from Watt, each file containing rules for a single named package as <tt>packagename.xml</tt> etc.</string>
     <string name="pref_import_blocker_msg">Import blocking rules from Blocker, each file containing rules for a single package.</string>
     <string name="pref_import_my_android_tools_msg">Import MyAndroidTools text backups or <tt>.ifw</tt> backup archives.</string>
@@ -657,7 +657,7 @@
         <a href="https://x.com/AppManagerNews">Twitter/X</a> •
         <a href="https://floss.social/@appmanager">Mastodon</a></string>
     <string name="pref_import_existing">Import existing rules</string>
-    <string name="pref_import_existing_msg">Add components disabled by other apps to App Manager.
+    <string name="pref_import_existing_msg">Add components disabled by other apps to AppManagerNG.
         Be careful when using this tool as there can be many false positives. Choose only the apps you\'re certain about.</string>
     <string name="clear_cache">Clear cache</string>
     <string name="block_unblock_trackers_description">Find apps with tracker components, then choose which ones to block or unblock.</string>
@@ -1331,7 +1331,7 @@
     <string name="backup_protect_from_cleanup_summary">Keep this backup out of retention pruning and bulk delete cleanup.</string>
     <string name="backup_protected_from_cleanup">Protected</string>
     <string name="confirm_installation">Confirm installation</string>
-    <string name="allow_open_pgp_operation">Tap to allow App Manager to use OpenPGP</string>
+    <string name="allow_open_pgp_operation">Tap to allow AppManagerNG to use OpenPGP</string>
     <string name="uninstall_updates">Uninstall updates</string>
     <string name="update_uninstalled_successfully">Updates for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g> have been uninstalled.</string>
     <string name="failed_to_uninstall_updates">Could not uninstall updates for <xliff:g id="app_name" example="App Manager">%1$s</xliff:g>.</string>
@@ -1636,7 +1636,7 @@
     <string name="restore_api_risk_scoped_storage">Scoped storage enforcement changed between these versions — file paths in the backup may not resolve.</string>
     <string name="restore_api_risk_runtime_permissions">The runtime permission model changed between these versions — permission grants in the backup may not apply.</string>
     <string name="restore_api_risk_package_visibility">Package visibility filtering changed between these versions — cross-app references in the backup may not resolve.</string>
-    <string name="backup_rules_description">Back up rules configured within App Manager. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
+    <string name="backup_rules_description">Back up rules configured within AppManagerNG. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
     <string name="backup_system_data">System data</string>
     <string name="backup_system_data_description">Root-only backup for Android System: Wi-Fi networks, Bluetooth pairings, and account databases.</string>
     <string name="backup_multiple_description">Create a separate <i>named</i> backup instead of the base backup.</string>
@@ -1801,7 +1801,7 @@
     <string name="restart_to_reflect_changes">You must restart the device immediately to use the new changes.</string>
     <string name="installed_apps">Installed apps</string>
     <string name="enable_disable_features">Enable/disable features</string>
-    <string name="pref_enable_disable_features_msg">Enable or disable features in App Manager.</string>
+    <string name="pref_enable_disable_features_msg">Enable or disable features in AppManagerNG.</string>
     <string name="last_actions">Last actions</string>
     <string name="isolated">Isolated</string>
     <string name="screen_lock_not_enabled">Please pick a screen lock in the Android settings, or clear app data.</string>
@@ -2018,7 +2018,7 @@
     <string name="minimum_version">Min version: %d</string>
     <string name="added_to_queue">Added to queue</string>
     <string name="pref_selected_users">Selected users</string>
-    <string name="pref_selected_users_msg">Restrict App Manager to work with the selected users only.</string>
+    <string name="pref_selected_users_msg">Restrict AppManagerNG to work with the selected users only.</string>
     <string name="profile_visibility_not_visible_current_mode">Private Space/hidden profiles may be not visible from current mode/state. Android requires the default launcher role and an unlocked profile to expose them through launcher APIs.</string>
     <string name="profile_visibility_available_when_unlocked">Private Space/hidden profiles are visible when Android exposes the profile and it is unlocked.</string>
     <string name="permission_flags">Permission flags</string>
@@ -2148,7 +2148,7 @@
     <string name="search_type_suffix">Suffix</string>
     <string name="search_type_regular_expressions">Regex</string>
     <string name="toggle_internet">Use the Internet</string>
-    <string name="pref_toggle_internet_msg">Activate the Internet features in App Manager</string>
+    <string name="pref_toggle_internet_msg">Enable optional Internet features in AppManagerNG.</string>
     <string name="pref_toggle_internet_msg_floss_disabled">Optional Internet features are disabled in this FLOSS build. Install the full build from GitHub Releases to enable VirusTotal, Pithus, and debloat-definition auto-updates.</string>
     <string name="pref_auto_update_debloat_definitions">Update debloat definitions on launch</string>
     <string name="pref_auto_update_debloat_definitions_msg">Opt in to fetching the latest debloat definitions from AppManagerNG\'s pinned GitHub raw manifest. Requires Internet access; cached files fall back to the bundled snapshot.</string>
@@ -2168,9 +2168,9 @@
     <string name="vt_scan_date">Scan date: %1$s</string>
     <string name="vt_permalink">Permanent link to VirusTotal</string>
     <string name="vt_slowness_warning">VirusTotal checks can take a minute on slower connections or busy servers.</string>
-    <string name="vt_disclaimer">VirusTotal and its logos are a trademark of Chronicle LLC. Neither App Manager—the API client—nor its authors are responsible for any data you may send to VirusTotal.</string>
+    <string name="vt_disclaimer">VirusTotal and its logos are a trademark of Chronicle LLC. Neither AppManagerNG—the API client—nor its authors are responsible for any data you may send to VirusTotal.</string>
     <string name="pref_vt_apikey">VirusTotal API Key</string>
-    <string name="pref_vt_apikey_description">An API key enables App Manager to upload APK files to VirusTotal as well as fetch reports. Sign up at https://virustotal.com to get an API key for free.</string>
+    <string name="pref_vt_apikey_description">An API key enables AppManagerNG to upload APK files to VirusTotal as well as fetch reports. Sign up at https://virustotal.com to get an API key for free.</string>
     <string name="pref_vt_apikey_summary">Scan APK files with VirusTotal after you add an API key.</string>
     <string name="uses_play_app_signing">Play app signing</string>
     <string name="uses_play_app_signing_description">This app contains certain markers that indicate that it <i>might</i> be using <a href="https://support.google.com/googleplay/android-developer/answer/9842756">Play App Signing</a>. With this scheme, the signing keys are stored in Google\'s servers, and Google is responsible for signing the app. Note that matching signing information is the only way to verify that the app has not been modified by any person other than the developer (and in this case, Google too).</string>
@@ -2885,7 +2885,7 @@
     <string name="export_option_xml">XML</string>
     <string name="export_option_markdown">Markdown</string>
     <string name="adb_incomplete_usb_debugging_title">Incomplete USB debugging</string>
-    <string name="adb_incomplete_usb_debugging_message">It looks like USB debugging is not configured properly. Please read <a href="https://muntashirakon.github.io/AppManager/#subsec:enable-usb-debugging">the documentation</a> for additional steps. If you already know the steps, please click “Open” to open the developer options, or click “Close” to continue to use no-root mode.</string>
+    <string name="adb_incomplete_usb_debugging_message">It looks like USB debugging is not configured properly. Please read <a href="https://sysadmindoc.github.io/AppManagerNG/#subsec:enable-usb-debugging">the documentation</a> for additional steps. If you already know the steps, please click “Open” to open the developer options, or click “Close” to continue to use no-root mode.</string>
     <string name="local_network_permission_required">Local network permission required</string>
     <string name="local_network_permission_required_message">Android 17 requires the Local network permission before AppManagerNG can discover Wireless ADB pairing and connection services. Allow Local network access, then start Wireless debugging again.</string>
     <string name="local_network_permission_allow">Allow local network</string>
@@ -2899,8 +2899,8 @@
     <string name="install_for_another_user">Install for…</string>
     <string name="confirm_uninstallation">Confirm uninstallation</string>
     <string name="grant_required_permission">Grant required permission</string>
-    <string name="grant_overlay_permission_message">Allow App Manager to display a floating window on top of all other windows</string>
-    <string name="grant_accessibility_permission_for_tracking_window_contents">Allow App Manager to utilise the accessibility feature to track the contents of the leading window.</string>
+    <string name="grant_overlay_permission_message">Allow AppManagerNG to display a floating window on top of all other windows.</string>
+    <string name="grant_accessibility_permission_for_tracking_window_contents">Allow AppManagerNG to use the accessibility service to track the contents of the active window.</string>
     <string name="class_hierarchy">Hierarchy</string>
     <string name="title_ui_tracker">UI tracker</string>
     <string name="tracker_window_expand">Expand UI tracker</string>
@@ -3038,7 +3038,7 @@
     <string name="title_code_editor">Code editor</string>
     <string name="redo">Redo</string>
     <string name="read_only_file">Read only file</string>
-    <string name="read_only_file_warning">The changes cannot be written into the file, possibly because it is located in a volume that App Manager has no permission to write to. Do you want to save it in a different place?</string>
+    <string name="read_only_file_warning">The changes cannot be written into the file, possibly because it is located on a volume that AppManagerNG has no permission to write to. Do you want to save it in a different place?</string>
     <string name="line_separator">Line separator</string>
     <plurals name="search_results">
         <item quantity="one">%d result</item>
@@ -3161,7 +3161,7 @@
     <string name="empty_folder">Empty</string>
     <string name="fm_empty_folder_title">Empty folder</string>
     <string name="fm_empty_folder_message">There are no files here yet. Use Add to create a file or folder, or refresh if the folder changed elsewhere.</string>
-    <string name="fm_folder_error_message">App Manager could not open this location. Review storage access or try refreshing.</string>
+    <string name="fm_folder_error_message">AppManagerNG could not open this location. Review storage access or try refreshing.</string>
     <string name="fm_search_hint">Search files in this folder</string>
     <string name="fm_search_active_filter">Search: %1$s</string>
     <string name="fm_search_empty_title">No matching files</string>
@@ -3295,7 +3295,7 @@
     <string name="profile_id">Profile ID</string>
     <string name="copy_profile_id">Copy profile ID</string>
     <string name="launch_activity_dialog_title">Launch activity: action required</string>
-    <string name="launch_activity_dialog_message">App Manager is trying to launch the activity via <b>Search assistant</b> (usually Google Assistant), but it\'s unable to do so due to insufficient permission. To open the activity, please activate <b>Search assistant</b> manually (which is usually done by long clicking on the Home button). Click on the <b>Close</b> button after you\'ve finished launching the activity to revert back to the original assistant.</string>
+    <string name="launch_activity_dialog_message">AppManagerNG is trying to launch the activity via <b>Search assistant</b> (usually Google Assistant), but it cannot continue without the required permission. To open the activity, activate <b>Search assistant</b> manually, usually by long-pressing the Home button. Tap <b>Close</b> after launching the activity to restore your original assistant.</string>
     <string name="finder_title">Finder</string>
     <string name="select_filter">Select a filter</string>
     <string name="size_in_bytes">Size (bytes)</string>
@@ -3333,7 +3333,7 @@
     <string name="adb_pairing_failed_retry_in_app">Pairing failed. Check the code and try again.</string>
     <string name="adb_pairing_retry_pairing">Retry</string>
     <string name="mode_of_op_custom_command_title">Custom command</string>
-    <string name="mode_of_op_custom_command">If you are unable to use any of the modes, you can run the following command in any supported shell to run App Manager in privileged mode:</string>
+    <string name="mode_of_op_custom_command">If you are unable to use any of the modes, you can run the following command in any supported shell to run AppManagerNG in privileged mode:</string>
     <string name="mode_of_op_alternative_custom_command">If you get a “permission denied” error with the above command, run the following command instead:</string>
     <string name="sensors">Sensors</string>
     <string name="tag_sensors_disabled">Sensors disabled</string>

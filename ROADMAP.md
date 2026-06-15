@@ -111,6 +111,9 @@ device, or need on-device visual verification.
   Acceptance: a hosted translation project is live and linked from README; top-5 inherited
   locales get the NG-string components; CI accepts translation commits. Until then this stays
   maintainer-gated rather than shipping placeholder config.
+  Progress 2026-06-15: repo-side contributor docs are now tracked, and README/manual copy no
+  longer promises a live fork-owned Weblate/Crowdin instance. The hosted translation service
+  remains the blocker.
   Complexity: S (once unblocked)
 
 ### Device-gated (specced, not patched blind — see detailed entries below)
@@ -377,44 +380,21 @@ decisions, careful refactoring, or on-device testing.
   Where: backup/RestoreOp.java:581-598
   Complexity: L
 
-- [ ] P1 — Master-key verification permanently disabled on restore
-  Why: RestoreOp.checkMasterKey() starts with `if (true) { return; }` (TODO from 2022). KeyStore integrity is never validated during restore. If the device's KeyStore master key changed (factory reset), restored KeyStore entries may be silently corrupted.
-  Where: backup/RestoreOp.java:303-307
-  Complexity: M
-
 ### P2
 
-- [ ] P2 — Backup commit() has no crash atomicity (delete-then-move)
-  Why: BackupItems.commit() deletes the old backup directory before moving temp to final. Process crash between delete and move loses both old and new backup.
-  Where: backup/BackupItems.java:520-547
-  Complexity: M
 
-- [ ] P2 — DialogFragment LiveData observers use Fragment lifecycle instead of view lifecycle
-  Why: BackupRestoreDialogFragment, IconPickerDialogFragment, and RSACryptoSelectionDialogFragment observe LiveData with `this` instead of `getViewLifecycleOwner()`. Observers survive view destruction and can fire UI updates against null views after config changes.
-  Where: backup/dialog/BackupRestoreDialogFragment.java:184-186, details/IconPickerDialogFragment.java:74, settings/crypto/RSACryptoSelectionDialogFragment.java:72-83
-  Complexity: S
-
-- [ ] P2 — BackupRestoreDialogFragment BroadcastReceiver never unregistered on detach
-  Why: mBatchOpsBroadCastReceiver references mActivity and is never unregistered in onDestroyView/onDetach. If the broadcast arrives after fragment detach, the stale activity reference can crash.
-  Where: backup/dialog/BackupRestoreDialogFragment.java:129-138
-  Complexity: S
-
-- [ ] P2 — Narrow ~140 unjustified catch(Throwable) to catch(Exception)
-  Why: ~140 catch blocks catch Throwable around standard library, JSON, file I/O, and UI code that can only throw Exception subclasses. This swallows OOM/StackOverflowError/VirtualMachineError silently. ~73 instances around IPC/hidden API calls are justified (can throw Error subclasses from reflection/binder). Priority files: AppInfoFragment (22), BatchOpsManager (22), BackupRetentionPolicy (6), MainRecyclerAdapter (5), AssistActionActivity (9).
-  Where: app/src/main/java/ (89 files, 356 total instances)
+- [ ] P2 — Narrow remaining unjustified catch(Throwable) to catch(Exception)
+  Why: catch blocks catch Throwable around standard library, JSON, file I/O, and UI code. This swallows OOM/StackOverflowError/VirtualMachineError silently. ~73 instances around IPC/hidden API calls are justified. AppInfoFragment (17 narrowed) and BatchOpsManager (17 narrowed) are done; remaining files: BackupRetentionPolicy (6), MainRecyclerAdapter (5), AssistActionActivity (9), ~67 others.
+  Where: app/src/main/java/ (87 remaining files)
+  Progress 2026-06-15: narrowed additional ordinary I/O, UI, parser, and settings import/export
+  sites in BackupStorageCheck, ActivityInterceptor, MainRecyclerAdapter, ComponentUtils, and
+  PrivacyPreferences. Hidden API, privileged IPC, reflection, and framework-boundary catches
+  remain intentionally broad. This row stays open because many unrelated call sites remain.
   Complexity: L
 
 ### P3
 
-- [ ] P3 — requireActivity()/requireContext() in nested dialog and async callbacks
-  Why: ~8 MEDIUM-severity instances where requireActivity() is called inside nested dialog button callbacks or adapter bind methods that can fire after fragment detach. Not immediate crashers (requires specific timing) but violate lifecycle safety.
-  Where: AdvancedPreferences.java:194-206, AppInfoFragment.java:793/866/894, RestoreSingleFragment.java:242, AppDetailsComponentsFragment.java:1179
-  Complexity: S
 
-- [ ] P3 — Inconsistent confirmation for single-app force-stop (product decision)
-  Why: Batch force-stop and running-apps force-stop route through DestructiveActionConfirmation / the critical-package kill gate, but single-app force-stop in App Details fires immediately with no confirmation. Force-stop is reversible (the app restarts on next launch), so a confirmation may be unwanted friction in a power-user tool — needs a product call on whether to make the destructive-confirmation model uniform or to intentionally exempt reversible actions.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:2906-2915
-  Complexity: S
 
 ## Research-Driven Additions (Pass 4 — 2026-06-14)
 
@@ -434,12 +414,6 @@ HKDF key v7) and is intentionally NOT listed — see RESEARCH.md §Rejected.
 
 ### P2
 
-- [ ] P2 — Installer awaits OBB copy before reporting success
-  Why: PackageInstallerCompat fires copyObb() on a background thread and returns immediately (standing TODO "Wait for this task to finish before returning"), so OBB-bearing apps (large games) can be reported installed and launched before their expansion files land — appearing as a broken/incomplete install. The adjacent "Needed only for one user?" FIXME on the multi-user OBB path should be resolved in the same change.
-  Evidence: apk/installer/PackageInstallerCompat.java:684-689 (verified: ThreadUtils.postOnBackgroundThread fire-and-forget copyObb loop + both TODO/FIXME)
-  Touches: apk/installer/PackageInstallerCompat.java (await/join the OBB copy or fold its status into the install result), apk/installer/ result/callback path
-  Acceptance: installing an APK+OBB bundle does not report success until OBBs are copied for every targeted user; an injected copy failure surfaces as an install failure (not a silent partial install); multi-user OBB behavior is intentional and documented.
-  Complexity: M
 
 ## Research-Driven Additions (Pass 5 — 2026-06-14)
 
@@ -448,46 +422,50 @@ Backing analysis: RESEARCH.md.
 
 ### P1
 
-- [ ] P1 — FGS `specialUse` declared without the required subtype property (crash on A16 OEMs)
-  Why: The manifest declares FOREGROUND_SERVICE_SPECIAL_USE and eight services with
-  foregroundServiceType="dataSync|specialUse" but no PROPERTY_SPECIAL_USE_FGS_SUBTYPE property —
-  the exact configuration behind upstream #1978's FOREGROUND_SERVICE crash on Android 16 /
-  OxygenOS 16. NG targets SDK 36 so it is live; the FGS launches during backup/install/batch ops,
-  so a crash aborts a core operation. The real workloads are dataSync, so `specialUse` is
-  redundant — the safe fix is to drop `specialUse` (or add the property if a special use is
-  intended). Headless-safe and independently Play-policy-correct.
-  Evidence: app/src/main/AndroidManifest.xml:54 (permission), :1655-1727 (eight `dataSync|specialUse`
-  services), no PROPERTY_SPECIAL_USE_FGS_SUBTYPE anywhere (verified); https://github.com/MuntashirAkon/AppManager/issues/1978 ;
-  https://developer.android.com/develop/background-work/services/fgs/service-types
-  Touches: app/src/main/AndroidManifest.xml (foregroundServiceType + optional `<property>`),
-  types/ForegroundService.java if a subtype constant is needed
-  Acceptance: services no longer declare `specialUse` without a subtype property; a foreground
-  backup/install starts without the #1978 crash on an Android 16 device/emulator; `:app:lint`
-  and a manifest-merger check pass. (Crash repro is device-gated; the manifest change is headless.)
-  Complexity: S
 
 ### P3
 
-- [ ] P3 — Privileged-server readiness probe instead of fixed start/stop sleeps
-  Why: LocalServerManager sleeps a hardcoded ~3s after starting and stopping the privileged
-  server with no readiness check or retry, so on slow/embedded devices the next IPC call can race
-  a not-yet-ready (or not-yet-dead) server and fail intermittently — a hard-to-reproduce
-  reliability bug in the root/ADB bootstrap.
-  Evidence: servermanager/LocalServerManager.java:262,326 (fixed sleeps), :350 (per-session SSL TODO)
-  Touches: servermanager/LocalServerManager.java (bounded readiness poll on the control socket
-  with timeout + retry, replacing the fixed sleeps)
-  Acceptance: server start/stop waits on an actual readiness/liveness signal with a bounded
-  timeout rather than a fixed 3s; an artificially slow start still connects; root/ADB bootstrap
-  succeeds on a slow emulator without the sleep tuning.
+
+
+
+## Research-Driven Additions (Pass 6 — 2026-06-14)
+
+Newly surfaced, verified against current source, deduplicated against every section above.
+Backing analysis: RESEARCH.md.
+
+### P1
+
+- [x] P1 — Rebaseline shipped docs and privacy policy for AppManagerNG
+  Why: AppManagerNG now has its own package ID, release channel, maintainer identity, `floss`/`full` flavor split, and optional full-flavor network features, but the packaged docs and top-level privacy/build docs still identify upstream App Manager in critical places. A privileged package manager needs clear provenance and privacy disclosure before adding more user-facing breadth.
+  Evidence: `docs/build.gradle` wires `preBuild.dependsOn buildDocs`, so generated docs are shipped; `docs/raw/**/index.html` still says App Manager v4.0.5, upstream package IDs, upstream issue tracker, upstream release channels, and upstream contacts; `BUILDING.rst:4,65` still says Building App Manager and clones `MuntashirAkon/AppManager`; `PRIVACY_POLICY.rst:11,41,107` still defines the project/site/contact as upstream; `README.md:92-94` links stale planning docs (`COMPLETED.md`, `RESEARCH_REPORT.md`) instead of the live research file. Google Play Data Safety, F-Droid anti-feature policy, and VirusTotal API/upload terms all require accurate app/third-party network disclosure.
+  Touches: `BUILDING.rst`, `PRIVACY_POLICY.rst`, `README.md`, `docs/build.gradle`, `docs/raw/{en,de,es,ja,ru,zh-rCN}/`, docs generation inputs/templates, `app/src/main/res/values/strings.xml` for support/privacy link copy if needed.
+  Acceptance: built docs and top-level docs identify AppManagerNG/SysAdminDoc channels, package IDs, support links, version, and issue tracker; privacy text accurately explains the default `floss` build, optional `full` flavor network features, VirusTotal/Pithus/debloat-definition behavior, and third-party upload implications; README links `ROADMAP.md` and `RESEARCH.md`; `./gradlew :docs:buildDocs` succeeds and a link scan finds no upstream-only support/release URLs except explicit attribution.
+  Completed 2026-06-15: rebaselined packaged manual identity/source/distribution/contact
+  sections, privacy/build/README planning docs, and support/settings copy. Verified
+  `:docs:buildDocs`, `:app:processFlossDebugResources`, and
+  `:app:compileFlossDebugJavaWithJavac`; shipped supported-manual link scan found no stale
+  upstream support/release URLs.
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Make the v0.7 API 21→23 floor-lift decision explicit
+  Why: API 21-22 support is currently intentional, but it pins multiple core dependency families below current release lines. Room 2.8+, WorkManager 2.11+, Activity 1.12+, and Material Components 1.14+ all carry fixes or platform features behind minSdk 23, so v0.7 needs a dated product/maintenance decision instead of silent dependency drift.
+  Evidence: `versions.gradle` pins Material 1.13.0, WorkManager 2.10.5, Room 2.7.2, Activity 1.11.0, and related API-21-compatible lines; `docs/policy/minsdk-21-ceiling.md` and `docs/policy/2026-05-26-minsdk-23-decision.md` document the current ceiling; AndroidX/Material release notes now show current lines requiring minSdk 23.
+  Touches: `docs/policy/minsdk-21-ceiling.md`, `docs/policy/2026-05-26-minsdk-23-decision.md`, `versions.gradle`, CI/emulator matrix docs, README badges if the floor changes.
+  Acceptance: a v0.7 decision memo records API 21-22 install/support signal, dependency security/bugfix delta, CI impact, and maintainer decision; either the project reaffirms API 21 with a next review date and pinned-dependency watch list, or lands a coordinated minSdk 23 bump with dependency, docs, CI, and release-note updates.
   Complexity: S
 
-- [ ] P3 — HyperOS in installer-source detection (correct flags/labels on Xiaomi)
-  Why: PackageInstallerCompat carries a `TODO: Check for HyperOS?` — Xiaomi's HyperOS is absent
-  from the installer-source/OEM detection, so MIUI/HyperOS-specific install flags and source
-  labels can be set or shown incorrectly on a large device population.
-  Evidence: apk/installer/PackageInstallerCompat.java:1198 (verified TODO)
-  Touches: apk/installer/PackageInstallerCompat.java (HyperOS branch alongside the MIUI/OEM checks)
-  Acceptance: on a HyperOS device the installer applies the correct OEM install flags and source
-  label; non-Xiaomi behavior is unchanged; the TODO is resolved.
-  Complexity: S
+## Research-Driven Additions
+
+### P0 - Critical Security and Data Safety
+
+### P1 - Reliability and Hardening
+
+
+### P2 - Evidence Quality and Observability
+
+
+
+### P3 - Operational Maturity
 
