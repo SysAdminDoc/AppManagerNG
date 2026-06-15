@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -233,13 +234,14 @@ public class RestoreSingleFragment extends Fragment {
     }
 
     private void handleDelete(List<BackupMetadataV5> selectedBackups) {
+        FragmentActivity activity = requireActivity();
         new MaterialAlertDialogBuilder(mContext)
                 .setTitle(R.string.delete_backup)
                 .setMessage(getResources().getQuantityString(R.plurals.delete_selected_backups_confirmation,
                         selectedBackups.size(), selectedBackups.size()))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) ->
-                        ActionAuthGate.authenticate(requireActivity(),
+                        ActionAuthGate.authenticate(activity,
                                 R.string.authenticate_to_delete_backups, () -> {
                                     List<String> relativeDirs = new ArrayList<>(selectedBackups.size());
                                     for (BackupMetadataV5 backup : selectedBackups) {

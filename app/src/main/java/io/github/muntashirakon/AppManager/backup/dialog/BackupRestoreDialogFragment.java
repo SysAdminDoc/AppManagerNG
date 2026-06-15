@@ -123,6 +123,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     private String[] mTabTitles;
     private DialogTitleBuilder mDialogTitleBuilder;
     private int mCustomModes;
+    private boolean mReceiverRegistered;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
@@ -132,6 +133,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 ArrayList<String> failedPackages = intent.getStringArrayListExtra(BatchOpsService.EXTRA_FAILED_PKG);
                 mActionCompleteInterface.onActionComplete(mMode, failedPackages != null ? failedPackages.toArray(new String[0]) : new String[0]);
             }
+            mReceiverRegistered = false;
             mActivity.unregisterReceiver(mBatchOpsBroadCastReceiver);
         }
     };
@@ -180,9 +182,9 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 .setStartIcon(R.drawable.ic_backup_restore);
         setHeader(mDialogTitleBuilder.build());
 
-        mViewModel.getBackupInfoStateLiveData().observe(this, this::loadBody);
-        mViewModel.getBackupOperationLiveData().observe(this, this::startOperation);
-        mViewModel.getUserSelectionLiveData().observe(this, this::handleCustomUsers);
+        mViewModel.getBackupInfoStateLiveData().observe(getViewLifecycleOwner(), this::loadBody);
+        mViewModel.getBackupOperationLiveData().observe(getViewLifecycleOwner(), this::startOperation);
+        mViewModel.getUserSelectionLiveData().observe(getViewLifecycleOwner(), this::handleCustomUsers);
         mViewModel.processPackages(targetPackages);
     }
 
@@ -402,6 +404,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         }
         ContextCompat.registerReceiver(mActivity, mBatchOpsBroadCastReceiver,
                 new IntentFilter(BatchOpsService.ACTION_BATCH_OPS_COMPLETED), ContextCompat.RECEIVER_NOT_EXPORTED);
+        mReceiverRegistered = true;
         // Start batch ops service
         BatchBackupOptions options = new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
                 operationInfo.relativeDirs, operationInfo.exclusionGlobs,
@@ -418,6 +421,18 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
             UIUtils.displayLongToast(R.string.backup_keep_device_awake_warning);
         }
         dismissAllowingStateLoss();
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (mReceiverRegistered) {
+            mReceiverRegistered = false;
+            try {
+                mActivity.unregisterReceiver(mBatchOpsBroadCastReceiver);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        super.onDestroyView();
     }
 
     private class BackupDialogFragmentPagerAdapter extends FragmentStateAdapter {

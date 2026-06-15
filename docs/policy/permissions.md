@@ -9,7 +9,7 @@ users auditing what the app can in principle do.
 
 Generated and last reconciled against
 [`app/src/main/AndroidManifest.xml`](../../app/src/main/AndroidManifest.xml) on
-2026-05-25 (iter-145). Re-verify with:
+2026-06-14 (post-v0.6.0). Re-verify with:
 
 ```
 grep -oE 'android:name="[^"]*permission\.[^"]*"' app/src/main/AndroidManifest.xml | sort -u
@@ -32,7 +32,6 @@ them at runtime on Android 6+ before use.
 | `RECEIVE_BOOT_COMPLETED` | Scheduled Auto-Backup re-enqueue on reboot; future NF-09 routine triggers (`TYPE_ON_BOOT`). | `backup/schedule/AutoBackupBootReceiver` (future: `profiles/trigger/BootCompletedReceiver`) |
 | `FOREGROUND_SERVICE` | Required since Android 9 for any service the app starts via `startForegroundService()`. | `batchops/BatchOpsService`, `installer/PackageInstallerService`, `profiles/ProfileApplierService`, `backup/schedule/AutoBackupWorker` |
 | `FOREGROUND_SERVICE_DATA_SYNC` | Android 14+ subtype for backup / install / batch foreground services. | same services as `FOREGROUND_SERVICE` |
-| `FOREGROUND_SERVICE_SPECIAL_USE` | Android 14+ subtype for ADB / Shizuku bridge services that do not fit any standard FGS subtype. | `ipc/LocalServerService` |
 | `WAKE_LOCK` | Partial wake-lock during batch backup / restore so a 10-minute backup doesn't get cut by Doze. Centralised via `CpuUtils.acquireWakeLock`. | `batchops/BatchOpsService`, `backup/BackupManager` |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Android-standard prompt asking the user to add AppManagerNG to the Doze allowlist before long backups. | `self/SelfBatteryOptimization` |
 | `REQUEST_INSTALL_PACKAGES` | Direct install path when AppManagerNG is the user-chosen installer. | `apk/installer/PackageInstallerActivity` |
