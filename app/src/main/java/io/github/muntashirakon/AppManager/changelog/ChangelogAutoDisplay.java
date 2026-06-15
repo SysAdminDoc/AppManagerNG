@@ -78,7 +78,7 @@ public final class ChangelogAutoDisplay {
             return;
         }
         View v = View.inflate(activity, R.layout.dialog_whats_new, null);
-        RecyclerView recyclerView = v.findViewById(android.R.id.list);
+        RecyclerView recyclerView = ChangelogDialogUi.setupList(v);
         recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
         ChangelogRecyclerAdapter adapter = new ChangelogRecyclerAdapter();
         recyclerView.setAdapter(adapter);
@@ -86,7 +86,7 @@ public final class ChangelogAutoDisplay {
         try {
             new AlertDialogBuilder(activity, true)
                     .setTitle(R.string.whats_new)
-                    .setView(recyclerView)
+                    .setView(v)
                     .show();
         } catch (Throwable ignored) {
             // Window may have been torn down between the post and the show; ignore.

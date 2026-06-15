@@ -207,10 +207,18 @@ public class RootServiceManager implements Handler.Callback {
         FileUtils.chmod711(deCache);
         try (InputStream in = context.getResources().getAssets().open(MAIN_JAR_NAME);
              OutputStream out = new FileOutputStream(mainJar)) {
-            Utils.pump(in, out);
+            copy(in, out);
         }
         FileUtils.chmod644(mainJar);
         return mainJar;
+    }
+
+    private static void copy(@NonNull InputStream in, @NonNull OutputStream out) throws IOException {
+        byte[] buffer = new byte[8192];
+        int len;
+        while ((len = in.read(buffer)) != -1) {
+            out.write(buffer, 0, len);
+        }
     }
 
     @VisibleForTesting
