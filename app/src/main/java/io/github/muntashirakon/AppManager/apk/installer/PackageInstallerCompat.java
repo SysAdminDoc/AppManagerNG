@@ -1195,7 +1195,7 @@ public final class PackageInstallerCompat {
             // MIUI-end
             // HyperOS-begin: In HyperOS 2.0, installer package needs to be altered
             if (privileged
-                    // TODO: 1/10/25 Check for HyperOS?
+                    && MiuiUtils.isHyperOs()
                     && statusMessage != null
                     && statusMessage.startsWith("INSTALL_FAILED_HYPEROS_ISOLATION_VIOLATION: ")
                     && mAttempts <= 2) {

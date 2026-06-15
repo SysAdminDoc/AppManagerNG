@@ -22,6 +22,10 @@ public class MiuiUtils {
         return !TextUtils.isEmpty(SystemProperties.get("ro.miui.ui.version.name", ""));
     }
 
+    public static boolean isHyperOs() {
+        return !TextUtils.isEmpty(SystemProperties.get("ro.mi.os.version.name", ""));
+    }
+
     @Nullable
     public static MiuiVersionInfo getMiuiVersionInfo() {
         if (sMiuiVersionInfo != null) {
