@@ -78,8 +78,7 @@ public class WifiWaitService extends Service {
                 .setOngoing(true)
                 .build();
         ForegroundService.start(this, NotificationUtils.nextNotificationId(null),
-                notification, ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-                        | ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                notification, ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
 
         if (LocalServer.alive(getApplicationContext())) {
             // Already connected

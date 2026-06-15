@@ -301,10 +301,6 @@ class RestoreOp implements Closeable {
     }
 
     private void checkMasterKey() throws BackupException {
-        if (true) {
-            // TODO: 6/2/22 MasterKey may not actually be necessary.
-            return;
-        }
         String oldChecksum = mChecksum.get(MASTER_KEY);
         Path masterKey;
         try {

@@ -51,7 +51,6 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission
         android:name="android.permission.GET_PACKAGE_SIZE"
         android:maxSdkVersion="25" />
@@ -1652,15 +1651,15 @@
         <service
             android:name=".apk.installer.PackageInstallerService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".batchops.BatchOpsService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".profiles.ProfileApplierService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".profiles.QuickFreezeTileService"
             android:exported="true"
@@ -1692,11 +1691,11 @@
         <service
             android:name=".logcat.LogcatRecordingService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".apk.behavior.FreezeUnfreezeService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".accessibility.NoRootAccessibilityService"
             android:exported="false"
@@ -1715,16 +1714,16 @@
         <service
             android:name=".session.SessionMonitoringService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse" />
+            android:foregroundServiceType="dataSync" />
         <service
             android:name=".servermanager.WifiWaitService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse"
+            android:foregroundServiceType="dataSync"
             tools:targetApi="30" />
         <service
             android:name=".adb.AdbPairingService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|specialUse"
+            android:foregroundServiceType="dataSync"
             tools:targetApi="r" />
 
         <receiver

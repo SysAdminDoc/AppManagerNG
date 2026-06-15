@@ -3,7 +3,6 @@
 package io.github.muntashirakon.AppManager.adb;
 
 import static io.github.muntashirakon.AppManager.types.ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
-import static io.github.muntashirakon.AppManager.types.ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
 
 import android.Manifest;
 import android.app.Notification;
@@ -177,7 +176,7 @@ public class AdbPairingService extends Service {
                 .clearActions()
                 .addAction(stopAction);
         ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
-                FOREGROUND_SERVICE_TYPE_DATA_SYNC | FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         mAdbMdnsPairing.start();
     }
 
@@ -217,7 +216,7 @@ public class AdbPairingService extends Service {
         mNotificationBuilder.setContentText(getString(R.string.adb_pairing_pairing_in_progress))
                 .clearActions();
         ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
-                FOREGROUND_SERVICE_TYPE_DATA_SYNC | FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         ThreadUtils.postOnBackgroundThread(() -> {
             boolean isSuccess;
             try {
