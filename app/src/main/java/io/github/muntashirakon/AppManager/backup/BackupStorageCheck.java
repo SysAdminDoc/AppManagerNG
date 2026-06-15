@@ -15,7 +15,10 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -54,9 +57,17 @@ public final class BackupStorageCheck {
     @VisibleForTesting
     static final long SAFETY_MARGIN_BYTES = 64L * 1024 * 1024;  // 64 MB
 
+    /**
+     * FAT32 max file size (4 GiB − 1 byte). Archives on FAT32/vfat destinations
+     * whose split size exceeds this will be silently truncated.
+     */
+    @VisibleForTesting
+    static final long FAT32_MAX_FILE_BYTES = (4L * 1024 * 1024 * 1024) - 1;
+
     public enum Status {
         OK,
         WARN_LOW_HEADROOM,
+        WARN_MAX_FILE_SIZE,
         INSUFFICIENT
     }
 
@@ -86,6 +97,16 @@ public final class BackupStorageCheck {
         long estimated = estimateRequiredBytes(appContext, packageName);
         long free = getFreeBytesOnBackupVolume(appContext);
         Status status = classify(estimated, free, SAFETY_MARGIN_BYTES);
+        if (status == Status.OK || status == Status.WARN_LOW_HEADROOM) {
+            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext);
+            if (maxFileSize > 0 && estimated > maxFileSize) {
+                return new Result(Status.WARN_MAX_FILE_SIZE, estimated, free,
+                        "Estimated backup (" + (estimated / (1024 * 1024)) + " MB) exceeds the "
+                                + "destination filesystem's max file size ("
+                                + (maxFileSize / (1024 * 1024)) + " MB). "
+                                + "The archive may be silently truncated.");
+            }
+        }
         return new Result(status, estimated, free, null);
     }
 
@@ -197,6 +218,51 @@ public final class BackupStorageCheck {
         } catch (Throwable t) {
             Log.d(TAG, "Could not query free space on backup volume: " + t.getMessage());
             return -1;
+        }
+    }
+
+    @WorkerThread
+    @VisibleForTesting
+    static long getMaxFileSizeOnBackupVolume(@NonNull Context appContext) {
+        try {
+            Path baseDir = Prefs.Storage.getAppManagerDirectory();
+            File f = baseDir.getFile();
+            if (f == null) {
+                return -1;
+            }
+            String mountPoint = f.getAbsolutePath();
+            String fsType = detectFilesystemType(mountPoint);
+            if (fsType != null && (fsType.equals("vfat") || fsType.equals("fat32"))) {
+                return FAT32_MAX_FILE_BYTES;
+            }
+        } catch (Throwable t) {
+            Log.d(TAG, "Could not detect filesystem type: " + t.getMessage());
+        }
+        return -1;
+    }
+
+    @Nullable
+    @VisibleForTesting
+    static String detectFilesystemType(@NonNull String path) {
+        try {
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.FileReader("/proc/mounts"));
+            String line;
+            String bestMatch = null;
+            int bestLen = 0;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\s+");
+                if (parts.length < 3) continue;
+                String mountPoint = parts[1];
+                if (path.startsWith(mountPoint) && mountPoint.length() > bestLen) {
+                    bestLen = mountPoint.length();
+                    bestMatch = parts[2];
+                }
+            }
+            reader.close();
+            return bestMatch;
+        } catch (IOException e) {
+            return null;
         }
     }
 
