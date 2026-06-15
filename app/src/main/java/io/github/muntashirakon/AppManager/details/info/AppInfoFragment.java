@@ -519,7 +519,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } else if (itemId == R.id.action_view_settings) {
             try {
                 ActivityManagerCompat.startActivity(IntentUtils.getAppDetailsSettings(mPackageName), mUserId);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
             }
         } else if (itemId == R.id.action_edit_tags) {
@@ -593,7 +593,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 try {
                     startActivity(IntentUtils.getBatteryOptSettings(mPackageName));
-                } catch (Throwable th) {
+                } catch (Exception th) {
                     UIUtils.displayShortToast("No DEVICE_POWER permission.");
                 }
             }
@@ -641,7 +641,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     try {
                         startActivity(IntentUtils.getNetPolicySettings(mPackageName));
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         UIUtils.displayShortToast("No MANAGE_NETWORK_POLICY permission.");
                     }
                 }
@@ -969,7 +969,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         try {
                             startActivity(new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                        } catch (Throwable th) {
+                        } catch (Exception th) {
                             UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
                         }
                     })
@@ -1136,7 +1136,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
         }
     }
@@ -1718,7 +1718,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             builder.setPositiveButton(R.string.app_settings, (dialog, which) -> {
                                 try {
                                     startActivity(IntentUtils.getSettings(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, mPackageName));
-                                } catch (Throwable th) {
+                                } catch (Exception th) {
                                     ExUtils.exceptionAsIgnored(() -> startActivity(IntentUtils.getAppDetailsSettings(mPackageName)));
                                 }
                             });
@@ -2343,7 +2343,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             Intent intent = new Intent(ACTION_MANAGE_HEALTH_PERMISSIONS)
                     .putExtra(Intent.EXTRA_PACKAGE_NAME, mPackageName);
             context.startActivity(intent);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             displayShortToast(R.string.health_connect_permissions_unavailable);
         }
     }
@@ -2411,7 +2411,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private void openCredentialProviderSettings(@NonNull Context context) {
         try {
             context.startActivity(new Intent(ACTION_CREDENTIAL_PROVIDER_SETTINGS));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             displayShortToast(R.string.credential_provider_settings_unavailable);
         }
     }
@@ -2527,7 +2527,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             RuntimeTelemetryHelper.Snapshot snapshot;
             try {
                 snapshot = RuntimeTelemetryHelper.collectLast24h(packageName, userId);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 ThreadUtils.postOnMainThread(() -> {
                     if (isAdded()) UIUtils.displayShortToast(R.string.runtime_telemetry_unavailable);
                 });
@@ -2765,7 +2765,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 launchAction.setOnClickListener(v -> {
                     try {
                         ActivityManagerCompat.startActivity(launchIntent, mUserId);
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
                     }
                 });
@@ -2834,7 +2834,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             uninstallIntent.setData(Uri.parse("package:" + mPackageName));
                             ActivityManagerCompat.startActivity(uninstallIntent, mUserId);
                             // TODO: 19/8/24 Watch for uninstallation
-                        } catch (Throwable th) {
+                        } catch (Exception th) {
                             UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
                         }
                     });
@@ -3010,7 +3010,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 settingAction.setOnClickListener(v -> {
                     try {
                         ActivityManagerCompat.startActivity(IntentUtils.getAppDetailsSettings(mPackageName), mUserId);
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
                     }
                 });
@@ -3207,7 +3207,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(archive
                         ? R.string.archive_app_requested
                         : R.string.unarchive_app_requested, appLabel));
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.e(TAG, "Could not request app archive operation.", th);
                 ThreadUtils.postOnMainThread(() -> displayLongToast(archive
                         ? R.string.failed_to_archive_app
@@ -3786,7 +3786,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         long pageSize;
         try {
             pageSize = Os.sysconf(OsConstants._SC_PAGESIZE);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return appContext.getString(R.string.device_page_size_unknown);
         }
         if (pageSize == 16384L) {
@@ -4000,7 +4000,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(context, item, success,
                             OperationJournalMetadata.RISK_MEDIUM, true, failure));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, "Could not record single-app operation history.", th);
         }
     }
@@ -4015,7 +4015,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
             FreezeUtils.freeze(mPackageName, mUserId, freezeType);
             recordFreezeHistory(true, true, null);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, th);
             recordFreezeHistory(true, false, th);
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_freeze, mAppLabel));
@@ -4027,7 +4027,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         try {
             FreezeUtils.unfreeze(mPackageName, mUserId);
             recordFreezeHistory(false, true, null);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, th);
             recordFreezeHistory(false, false, th);
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_unfreeze, mAppLabel));
@@ -4189,7 +4189,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 sb.append(Character.forDigit(v & 0x0f, 16));
             }
             return sb.toString().toUpperCase(java.util.Locale.ROOT);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return null;
         }
     }
