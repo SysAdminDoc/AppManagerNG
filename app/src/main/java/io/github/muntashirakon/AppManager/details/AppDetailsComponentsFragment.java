@@ -1176,7 +1176,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     || SelfPermissions.checkSelfPermission(providerInfo.readPermission);
             String providerPackageName = providerInfo.packageName == null ? mPackageName : providerInfo.packageName;
             return ProviderQueryUtils.canUseUnprivilegedQuery(providerInfo.exported, providerInfo.readPermission,
-                    hasReadPermission, providerPackageName, requireContext().getPackageName(), mUserId,
+                    hasReadPermission, providerPackageName, ContextUtils.getContext().getPackageName(), mUserId,
                     UserHandleHidden.myUserId());
         }
     }

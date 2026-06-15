@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
@@ -191,19 +192,20 @@ public class AdvancedPreferences extends PreferenceFragment {
                     preselectedUserIds.add(userIds[i]);
                 }
             }
-            new SearchableMultiChoiceDialogBuilder<>(requireActivity(), userIds, userInfo)
+            FragmentActivity activity = requireActivity();
+            new SearchableMultiChoiceDialogBuilder<>(activity, userIds, userInfo)
                     .setTitle(R.string.pref_selected_users)
                     .addSelections(preselectedUserIds)
                     .setPositiveButton(R.string.save, (dialog, which, selectedUserIds) -> {
                         if (!selectedUserIds.isEmpty()) {
                             Prefs.Misc.setSelectedUsers(ArrayUtils.convertToIntArray(selectedUserIds));
                         } else Prefs.Misc.setSelectedUsers(null);
-                        Utils.relaunchApp(requireActivity());
+                        Utils.relaunchApp(activity);
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .setNeutralButton(R.string.use_default, (dialog, which, selectedUserIds) -> {
                         Prefs.Misc.setSelectedUsers(null);
-                        Utils.relaunchApp(requireActivity());
+                        Utils.relaunchApp(activity);
                     })
                     .show();
         });
