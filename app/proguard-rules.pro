@@ -38,6 +38,14 @@
 -keep public class io.github.muntashirakon.AppManager.servermanager.** { *; }
 -keep public class io.github.muntashirakon.AppManager.server.** { *; }
 -keep public class io.github.muntashirakon.AppManager.ipc.** { *; }
+# Keep ComponentCallbacks2 implementations intact — R8 can devirtualize empty
+# onTrimMemory/onLowMemory bodies and merge the class, causing
+# AbstractMethodError when Android dispatches onTrimMemory to the callback list.
+-keep class * implements android.content.ComponentCallbacks2 {
+    void onTrimMemory(int);
+    void onLowMemory();
+    void onConfigurationChanged(android.content.res.Configuration);
+}
 # Don't minify debug-sepcific resource file
 -keep public class io.github.muntashirakon.AppManager.debug.R$raw {*;}
 # Don't minify OpenPGP API
