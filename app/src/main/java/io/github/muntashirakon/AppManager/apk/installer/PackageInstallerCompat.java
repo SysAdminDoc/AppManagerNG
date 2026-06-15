@@ -681,13 +681,12 @@ public final class PackageInstallerCompat {
                     return false;
                 }
             }
-            ThreadUtils.postOnBackgroundThread(() -> {
-                // TODO: 6/6/23 Wait for this task to finish before returning
-                // FIXME: 16/6/23 Needed only for one user?
-                for (int u : allRequestedUsers) {
-                    copyObb(apkFile, u);
-                }
-            });
+            // Copy OBB files synchronously so the install is not reported as
+            // complete before expansion files land.  OBBs live in per-user
+            // external storage, so copy for every targeted user.
+            for (int u : allRequestedUsers) {
+                copyObb(apkFile, u);
+            }
             userId = allRequestedUsers[0];
             String originatingPackage = options.isSetOriginatingPackage() ? options.getOriginatingPackage() : null;
             Uri originatingUri = options.isSetOriginatingPackage() ? options.getOriginatingUri() : null;
