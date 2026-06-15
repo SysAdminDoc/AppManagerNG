@@ -259,8 +259,39 @@ class LocalServerManager {
         if (!result.isSuccessful()) {
             throw new Exception("Could not start server.");
         }
-        SystemClock.sleep(3000);
-        Log.e(TAG, "useRootStartServer: Server has started.");
+        waitForServerReady();
+        Log.d(TAG, "useRootStartServer: Server has started.");
+    }
+
+    private void waitForServerReady() throws Exception {
+        String host = ServerConfig.getLocalServerHost(mContext);
+        int port = ServerConfig.getLocalServerPort();
+        long deadline = SystemClock.elapsedRealtime() + 10_000;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            try (Socket probe = new Socket()) {
+                probe.connect(new java.net.InetSocketAddress(host, port), 500);
+                return;
+            } catch (IOException ignored) {
+            }
+            SystemClock.sleep(200);
+        }
+        throw new Exception("Server did not become ready within 10 seconds.");
+    }
+
+    private void waitForServerStopped() {
+        String host = ServerConfig.getLocalServerHost(mContext);
+        int port = ServerConfig.getLocalServerPort();
+        long deadline = SystemClock.elapsedRealtime() + 10_000;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            try (Socket probe = new Socket()) {
+                probe.connect(new java.net.InetSocketAddress(host, port), 500);
+                // Still accepting connections — server not dead yet
+            } catch (IOException ignored) {
+                return;
+            }
+            SystemClock.sleep(200);
+        }
+        Log.w(TAG, "Server still accepting connections after 10s stop wait");
     }
 
     /**
@@ -321,10 +352,10 @@ class LocalServerManager {
             Runner.Result result = Runner.runCommand(command);
             Log.d(TAG, "stopServer (root): %s", result.getOutput());
             if (!result.isSuccessful()) {
-                throw new Exception("Could not start server.");
+                throw new Exception("Could not stop server.");
             }
-            SystemClock.sleep(3000);
-            Log.e(TAG, "useRootStartServer: Server has started.");
+            waitForServerStopped();
+            Log.d(TAG, "stopServer (root): Server has stopped.");
         } else throw new Exception("Neither root nor ADB mode is enabled.");
     }
 
