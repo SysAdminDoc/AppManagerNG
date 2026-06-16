@@ -560,10 +560,29 @@
             app:iconGravity="textStart" />
 
         <androidx.appcompat.widget.AppCompatTextView
-            android:id="@+id/onboarding_next_steps_title"
+            android:id="@+id/onboarding_confidence_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_very_small"
+            android:text="@string/onboarding_confidence_title"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/onboarding_confidence_checklist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_small"
+            android:lineSpacingExtra="@dimen/premium_space_4"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="- Mode: Auto can use a privileged path if one is ready.\n- Backup/restore: Create or verify a backup before destructive work.\n- Tracker rules: Review detected components before applying." />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/onboarding_next_steps_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_very_small"
             android:text="@string/onboarding_next_steps_title"
             android:textAppearance="?attr/textAppearanceTitleSmall"
