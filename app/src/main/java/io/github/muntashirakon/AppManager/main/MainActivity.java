@@ -1348,7 +1348,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         try {
             return Settings.Global.getFloat(getContentResolver(),
                     Settings.Global.ANIMATOR_DURATION_SCALE, 1f);
-        } catch (Throwable t) {
+        } catch (Exception e) {
             return 1f;
         }
     }

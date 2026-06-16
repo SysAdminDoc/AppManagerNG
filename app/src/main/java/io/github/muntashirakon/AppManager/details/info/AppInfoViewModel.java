@@ -202,7 +202,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             return new SigningCertInfo(sha256,
                     cert.getSubjectX500Principal().getName(),
                     cert.getIssuerX500Principal().getName());
-        } catch (Throwable t) {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -287,7 +287,7 @@ public class AppInfoViewModel extends AndroidViewModel {
                                             .REQUESTED_PERMISSION_GRANTED) != 0;
                             if (isGranted) granted++;
                         }
-                    } catch (Throwable ignore) {
+                    } catch (Exception ignore) {
                         // unknown / removed permission; skip
                     }
                 }
@@ -363,8 +363,8 @@ public class AppInfoViewModel extends AndroidViewModel {
                     if (!Boolean.FALSE.equals(isXposedModule)) {
                         tagCloud.xposedModuleInfo = new XposedModuleInfo(applicationInfo, isXposedModule == null ? null : zipFile);
                     }
-                } catch (Throwable th) {
-                    th.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
             tagCloud.canWriteAndExecute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q

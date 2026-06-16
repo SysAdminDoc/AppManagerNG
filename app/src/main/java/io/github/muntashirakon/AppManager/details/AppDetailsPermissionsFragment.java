@@ -461,7 +461,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             try {
                 startActivity(intent);
                 return;
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
                 // Some OEM ROMs strip the action; fall through to app-details intent.
             }
         }
@@ -472,7 +472,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
         try {
             startActivity(fallback);
             UIUtils.displayShortToast(R.string.privacy_dashboard_fallback_hint);
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             UIUtils.displayShortToast(R.string.privacy_dashboard_unavailable);
         }
     }
@@ -858,10 +858,10 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         try {
                             String packageName = Objects.requireNonNull(viewModel).getPackageName();
                             startActivity(permissionItem.settingItem.toIntent(Objects.requireNonNull(packageName)));
-                        } catch (Throwable th) {
-                            th.printStackTrace();
-                            if (th.getLocalizedMessage() != null) {
-                                UIUtils.displayLongToast(th.getLocalizedMessage());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            if (e.getLocalizedMessage() != null) {
+                                UIUtils.displayLongToast(e.getLocalizedMessage());
                             }
                         }
                     });

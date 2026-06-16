@@ -227,8 +227,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mApkPath = cachedApkFile.getAbsolutePath();
                 setPackageInfo(false);
                 mPackageInfoLiveData.postValue(getPackageInfo());
-            } catch (Throwable th) {
-                Log.e(TAG, "Could not fetch package info.", th);
+            } catch (Exception e) {
+                Log.e(TAG, "Could not fetch package info.", e);
                 mPackageInfoLiveData.postValue(null);
             } finally {
                 mPackageInfoWatcher.countDown();
@@ -254,8 +254,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mApkFile = mApkSource.resolve();
                 }
                 mPackageInfoLiveData.postValue(pi);
-            } catch (Throwable th) {
-                Log.e(TAG, "Could not fetch package info.", th);
+            } catch (Exception e) {
+                Log.e(TAG, "Could not fetch package info.", e);
                 mPackageInfoLiveData.postValue(null);
             } finally {
                 mPackageInfoWatcher.countDown();
@@ -556,8 +556,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
                             risk, reversible, failure));
-        } catch (Throwable th) {
-            Log.e(TAG, "Could not record single-app operation history.", th);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not record single-app operation history.", e);
         }
     }
 
@@ -1336,7 +1336,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             Log.e(TAG, e);
             mDataOnlyPackage = false;
             mIsPackageExistLiveData.postValue(mIsPackageExist = false);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.e(TAG, e);
         } finally {
             mPackageChanged.postValue(true);
@@ -1561,7 +1561,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     details.categories.addAll(filter.categories);
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.w(TAG, "Could not parse receiver intent filters for %s", e, packageInfo.packageName);
             return Collections.emptyMap();
         }
@@ -2204,8 +2204,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                         } else appDetailsItem.type = "⚠️";
                         appDetailsItems.add(appDetailsItem);
                     }
-                } catch (Throwable th) {
-                    Log.e(TAG, th);
+                } catch (Exception e) {
+                    Log.e(TAG, e);
                 }
             }
         }
