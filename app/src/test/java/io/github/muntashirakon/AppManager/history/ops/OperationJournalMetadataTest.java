@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.types.UserPackagePair;
 
 @RunWith(RobolectricTestRunner.class)
 public class OperationJournalMetadataTest {
@@ -69,6 +71,38 @@ public class OperationJournalMetadataTest {
         assertTrue(history.getDetailMessage(context).contains("Warnings"));
         assertTrue(history.getDetailMessage(context).contains("runtime permission grant/revoke unavailable"));
         assertEquals(1, history.getExportJson(context).getJSONArray("warnings").length());
+    }
+
+    @Test
+    public void failedRestoreHistoryExposesRecoveryActions() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        BatchOpsManager.Result result = new BatchOpsManager.Result(Collections.singletonList(
+                new UserPackagePair("com.example.app", 0)));
+        result.setRequiresRestart(true);
+        ArrayList<String> packages = new ArrayList<>();
+        packages.add("com.example.app");
+        BatchQueueItem queueItem = BatchQueueItem.getBatchOpQueue(
+                BatchOpsManager.OP_RESTORE_BACKUP, packages, null, null);
+
+        OpHistory row = new OpHistory();
+        row.id = 13L;
+        row.type = OpHistoryManager.HISTORY_TYPE_BATCH_OPS;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_FAILURE;
+        row.serializedData = new JSONObject().put("op", BatchOpsManager.OP_RESTORE_BACKUP).toString();
+        row.serializedExtra = OperationJournalMetadata.forBatchOperation(context, queueItem, result)
+                .serializeToJson().toString();
+        OpHistoryItem history = new OpHistoryItem(row);
+
+        assertTrue(history.hasRecoveryGuidance());
+        String detail = history.getDetailMessage(context);
+        assertTrue(detail.contains(context.getString(R.string.op_history_detail_recovery_actions)));
+        assertTrue(detail.contains(context.getString(R.string.op_history_recovery_rerun_failed)));
+        assertTrue(detail.contains(context.getString(R.string.op_history_recovery_restore_backup)));
+        assertTrue(detail.contains(context.getString(R.string.op_history_recovery_restart)));
+        assertTrue(history.getRecoveryGuidanceMessage(context)
+                .contains(context.getString(R.string.op_history_recovery_review_logs)));
+        assertEquals(6, history.getExportJson(context).getJSONArray("recovery_actions").length());
     }
 
     @Test

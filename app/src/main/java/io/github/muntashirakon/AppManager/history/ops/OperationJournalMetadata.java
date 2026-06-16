@@ -31,9 +31,10 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 
 public final class OperationJournalMetadata implements IJsonSerializer {
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
     private static final int MAX_TARGET_PREVIEW = 8;
     private static final int MAX_WARNINGS = 24;
+    private static final int MAX_RECOVERY_ACTIONS = 10;
 
     private static final String KEY_SCHEMA_VERSION = "schema_version";
     private static final String KEY_MODE_LABEL = "mode_label";
@@ -50,6 +51,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String KEY_FAILURE_MESSAGE = "failure_message";
     private static final String KEY_BOOTSTRAP_SIGNATURE = "bootstrap_signature";
     private static final String KEY_WARNINGS = "warnings";
+    private static final String KEY_RECOVERY_ACTIONS = "recovery_actions";
 
     public static final int RISK_LOW = 0;
     public static final int RISK_MEDIUM = 1;
@@ -66,6 +68,18 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String ROLLBACK_REINSTALL = "reinstall";
     private static final String ROLLBACK_MANUAL_REAPPLY = "manual_reapply";
     private static final String ROLLBACK_DELETE_ARTIFACT = "delete_artifact";
+
+    private static final String RECOVERY_REVIEW_HISTORY = "review_history";
+    private static final String RECOVERY_REVIEW_LOGS = "review_logs";
+    private static final String RECOVERY_RERUN_FAILED = "rerun_failed";
+    private static final String RECOVERY_RESTORE_BACKUP = "restore_backup";
+    private static final String RECOVERY_RUN_INVERSE = "run_inverse";
+    private static final String RECOVERY_REINSTALL = "reinstall";
+    private static final String RECOVERY_MANUAL_REAPPLY = "manual_reapply";
+    private static final String RECOVERY_DELETE_ARTIFACT = "delete_artifact";
+    private static final String RECOVERY_RESTART = "restart";
+    private static final String RECOVERY_VERIFY_TARGET = "verify_target";
+    private static final String RECOVERY_NO_AUTOMATIC = "no_automatic";
 
     @NonNull
     private final JSONObject mJsonObject;
@@ -101,6 +115,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setReversible(isReversibleBatchOp(op))
                 .setRisk(getRiskForBatchOp(op))
                 .setRollbackHint(getRollbackHintForBatchOp(op))
+                .setRecoveryActions(getRecoveryActionsForBatchOp(op, result))
                 .setTargetPreview(item.getPackages())
                 .setWarnings(result.getWarnings())
                 .build();
@@ -127,6 +142,8 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setReversible(false)
                 .setRisk(item.isInstallExisting() ? RISK_LOW : RISK_MEDIUM)
                 .setRollbackHint(ROLLBACK_REINSTALL)
+                .setRecoveryActions(getRecoveryActionsForRollbackHint(ROLLBACK_REINSTALL, success ? 0 : 1,
+                        true, false, false))
                 .setTargetPreview(label);
         if (!success) {
             String failureMessage = PackageInstallerService.getStringFromStatus(context, status, label, blockingPackage);
@@ -154,6 +171,8 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setReversible(false)
                 .setRisk(RISK_HIGH)
                 .setRollbackHint(ROLLBACK_MANUAL_REAPPLY)
+                .setRecoveryActions(getRecoveryActionsForRollbackHint(ROLLBACK_MANUAL_REAPPLY, success ? 0 : 1,
+                        true, requiresRestart, false))
                 .setTargetPreview(item.getProfileName());
         if (!success && error != null && error.getMessage() != null) {
             builder.setFailureMessage(error.getMessage());
@@ -177,6 +196,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setReversible(false)
                 .setRisk(RISK_HIGH)
                 .setRollbackHint(ROLLBACK_NONE)
+                .setRecoveryActions(getRecoveryActionsForRollbackHint(ROLLBACK_NONE, failedCount, false, false, false))
                 .setTargetPreview(targetPreview)
                 .build();
     }
@@ -198,6 +218,9 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                 .setReversible(reversible)
                 .setRisk(risk)
                 .setRollbackHint(reversible ? ROLLBACK_RUN_INVERSE : ROLLBACK_MANUAL_REAPPLY)
+                .setRecoveryActions(getRecoveryActionsForRollbackHint(
+                        reversible ? ROLLBACK_RUN_INVERSE : ROLLBACK_MANUAL_REAPPLY,
+                        success ? 0 : 1, false, false, false))
                 .setTargetPreview(item.getTargetPreviewLabel());
         if (!success && failure != null && failure.getMessage() != null) {
             builder.setFailureMessage(failure.getMessage());
@@ -289,6 +312,69 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    private static List<String> getRecoveryActionsForBatchOp(@BatchOpsManager.OpType int op,
+                                                             @NonNull BatchOpsManager.Result result) {
+        return getRecoveryActionsForRollbackHint(getRollbackHintForBatchOp(op),
+                result.getFailedPackages().size(), true, result.requiresRestart(), true);
+    }
+
+    @NonNull
+    private static List<String> getRecoveryActionsForRollbackHint(@NonNull String rollbackHint,
+                                                                  int failedCount,
+                                                                  boolean replayable,
+                                                                  boolean requiresRestart,
+                                                                  boolean hasResultLog) {
+        ArrayList<String> actions = new ArrayList<>();
+        addRecoveryAction(actions, RECOVERY_REVIEW_HISTORY);
+        if (failedCount > 0 && hasResultLog) {
+            addRecoveryAction(actions, RECOVERY_REVIEW_LOGS);
+        }
+        if (failedCount > 0) {
+            if (replayable) {
+                addRecoveryAction(actions, RECOVERY_RERUN_FAILED);
+            }
+        }
+        addRollbackRecoveryAction(actions, rollbackHint);
+        if (requiresRestart) {
+            addRecoveryAction(actions, RECOVERY_RESTART);
+        }
+        addRecoveryAction(actions, RECOVERY_VERIFY_TARGET);
+        return actions;
+    }
+
+    private static void addRollbackRecoveryAction(@NonNull List<String> actions,
+                                                  @NonNull String rollbackHint) {
+        switch (rollbackHint) {
+            case ROLLBACK_DELETE_ARTIFACT:
+                addRecoveryAction(actions, RECOVERY_DELETE_ARTIFACT);
+                break;
+            case ROLLBACK_RESTORE_BACKUP:
+                addRecoveryAction(actions, RECOVERY_RESTORE_BACKUP);
+                break;
+            case ROLLBACK_RUN_INVERSE:
+                addRecoveryAction(actions, RECOVERY_RUN_INVERSE);
+                break;
+            case ROLLBACK_REINSTALL:
+                addRecoveryAction(actions, RECOVERY_REINSTALL);
+                break;
+            case ROLLBACK_MANUAL_REAPPLY:
+                addRecoveryAction(actions, RECOVERY_MANUAL_REAPPLY);
+                break;
+            case ROLLBACK_NONE:
+            default:
+                addRecoveryAction(actions, RECOVERY_NO_AUTOMATIC);
+                break;
+        }
+    }
+
+    private static void addRecoveryAction(@NonNull List<String> actions,
+                                          @NonNull String action) {
+        if (!actions.contains(action) && actions.size() < MAX_RECOVERY_ACTIONS) {
+            actions.add(action);
+        }
+    }
+
+    @NonNull
     public String getModeLabel() {
         return mJsonObject.optString(KEY_MODE_LABEL, "");
     }
@@ -362,6 +448,19 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    public List<String> getLocalizedRecoveryActions(@NonNull Context context) {
+        List<String> actionKeys = getRecoveryActionKeys();
+        ArrayList<String> actions = new ArrayList<>(actionKeys.size());
+        for (String actionKey : actionKeys) {
+            String localized = getLocalizedRecoveryAction(context, actionKey);
+            if (localized != null && !actions.contains(localized)) {
+                actions.add(localized);
+            }
+        }
+        return actions;
+    }
+
+    @NonNull
     public String getLocalizedRisk(@NonNull Context context) {
         switch (getRisk()) {
             case RISK_LOW:
@@ -394,6 +493,48 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     }
 
     @NonNull
+    private List<String> getRecoveryActionKeys() {
+        List<String> actionKeys = getSanitizedStringArray(KEY_RECOVERY_ACTIONS, MAX_RECOVERY_ACTIONS);
+        if (!actionKeys.isEmpty()) {
+            return actionKeys;
+        }
+        return getRecoveryActionsForRollbackHint(
+                mJsonObject.optString(KEY_ROLLBACK_HINT, ROLLBACK_NONE),
+                getFailedCount(), isReplayable(), requiresRestart(), true);
+    }
+
+    @Nullable
+    private static String getLocalizedRecoveryAction(@NonNull Context context,
+                                                     @NonNull String actionKey) {
+        switch (actionKey) {
+            case RECOVERY_REVIEW_HISTORY:
+                return context.getString(R.string.op_history_recovery_review_history);
+            case RECOVERY_REVIEW_LOGS:
+                return context.getString(R.string.op_history_recovery_review_logs);
+            case RECOVERY_RERUN_FAILED:
+                return context.getString(R.string.op_history_recovery_rerun_failed);
+            case RECOVERY_RESTORE_BACKUP:
+                return context.getString(R.string.op_history_recovery_restore_backup);
+            case RECOVERY_RUN_INVERSE:
+                return context.getString(R.string.op_history_recovery_run_inverse);
+            case RECOVERY_REINSTALL:
+                return context.getString(R.string.op_history_recovery_reinstall);
+            case RECOVERY_MANUAL_REAPPLY:
+                return context.getString(R.string.op_history_recovery_manual_reapply);
+            case RECOVERY_DELETE_ARTIFACT:
+                return context.getString(R.string.op_history_recovery_delete_artifact);
+            case RECOVERY_RESTART:
+                return context.getString(R.string.op_history_recovery_restart);
+            case RECOVERY_VERIFY_TARGET:
+                return context.getString(R.string.op_history_recovery_verify_target);
+            case RECOVERY_NO_AUTOMATIC:
+                return context.getString(R.string.op_history_recovery_no_automatic);
+            default:
+                return null;
+        }
+    }
+
+    @NonNull
     public String getSummary(@NonNull Context context) {
         String targetCount = context.getResources().getQuantityString(
                 R.plurals.op_history_target_count, getTargetCount(), getTargetCount());
@@ -421,6 +562,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
         } else {
             jsonObject.put(KEY_WARNINGS, toSanitizedStringArray(warnings, MAX_WARNINGS));
         }
+        jsonObject.put(KEY_RECOVERY_ACTIONS, toSanitizedStringArray(getRecoveryActionKeys(), MAX_RECOVERY_ACTIONS));
         return jsonObject;
     }
 
@@ -567,6 +709,12 @@ public final class OperationJournalMetadata implements IJsonSerializer {
             if (warningArray.length() > 0) {
                 put(KEY_WARNINGS, warningArray);
             }
+            return this;
+        }
+
+        @NonNull
+        Builder setRecoveryActions(@Nullable List<String> recoveryActions) {
+            put(KEY_RECOVERY_ACTIONS, toSanitizedStringArray(recoveryActions, MAX_RECOVERY_ACTIONS));
             return this;
         }
 

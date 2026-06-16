@@ -576,7 +576,7 @@ public class OpHistoryActivity extends BaseActivity {
             labels.add(getString(R.string.op_history_action_rerun));
             actions.add(() -> showRerunConfirmation(history));
         }
-        if (history.isReversible()) {
+        if (history.hasRecoveryGuidance()) {
             labels.add(getString(R.string.op_history_action_recovery_guidance));
             actions.add(() -> showRecoveryGuidance(history));
         }
@@ -624,7 +624,7 @@ public class OpHistoryActivity extends BaseActivity {
     private void showRecoveryGuidance(@NonNull OpHistoryItem history) {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.op_history_recovery_guidance_title)
-                .setMessage(history.getLocalizedRollbackHint(this))
+                .setMessage(history.getRecoveryGuidanceMessage(this))
                 .setPositiveButton(R.string.close, null)
                 .show();
     }
