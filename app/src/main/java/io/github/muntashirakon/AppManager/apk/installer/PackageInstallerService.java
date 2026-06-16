@@ -254,7 +254,7 @@ public class PackageInstallerService extends ForegroundService {
                 try {
                     try {
                         apkFile = apkSource.resolve();
-                    } catch (Exception th) {
+                    } catch (Throwable th) { // ApkFileException extends Throwable, not Exception
                         Log.w(TAG, "Could not get ApkFile", th);
                         OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
                                 OperationJournalMetadata.forInstaller(this, apkQueueItem,

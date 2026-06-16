@@ -155,7 +155,7 @@ class BackupOp implements Closeable {
             mApplicationInfo = Objects.requireNonNull(mPackageInfo.applicationInfo);
             // Override existing metadata
             mMetadata = setupMetadataAndCrypto();
-        } catch (Exception e) {
+        } catch (Throwable e) { // CryptoException extends Throwable, not Exception
             mBackupItem.cleanup();
             throw new BackupException("Failed to setup metadata.", e);
         }

@@ -227,7 +227,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mApkPath = cachedApkFile.getAbsolutePath();
                 setPackageInfo(false);
                 mPackageInfoLiveData.postValue(getPackageInfo());
-            } catch (Exception e) {
+            } catch (Throwable e) { // ApkFileException extends Throwable, not Exception
                 Log.e(TAG, "Could not fetch package info.", e);
                 mPackageInfoLiveData.postValue(null);
             } finally {
@@ -254,7 +254,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mApkFile = mApkSource.resolve();
                 }
                 mPackageInfoLiveData.postValue(pi);
-            } catch (Exception e) {
+            } catch (Throwable e) { // ApkFileException extends Throwable, not Exception
                 Log.e(TAG, "Could not fetch package info.", e);
                 mPackageInfoLiveData.postValue(null);
             } finally {
@@ -1561,7 +1561,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     details.categories.addAll(filter.categories);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) { // ApkFileException extends Throwable, not Exception
             Log.w(TAG, "Could not parse receiver intent filters for %s", e, packageInfo.packageName);
             return Collections.emptyMap();
         }

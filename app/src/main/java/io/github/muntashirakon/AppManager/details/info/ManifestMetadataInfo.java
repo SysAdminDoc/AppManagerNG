@@ -43,7 +43,7 @@ public final class ManifestMetadataInfo {
             List<ManifestMetadata> metadata = new ManifestParser(ApkUtils.getManifestFromApk(
                     new File(applicationInfo.publicSourceDir))).parseMetadata();
             return fromManifest(metadata);
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) { // ApkFileException extends Throwable, not Exception
             return empty();
         }
     }

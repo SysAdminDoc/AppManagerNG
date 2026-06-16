@@ -82,7 +82,7 @@ public final class PackageStateVerifier {
                 default:
                     return true;
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) { // StateReader methods declare throws Throwable
             return false;
         }
     }

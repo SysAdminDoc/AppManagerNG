@@ -170,7 +170,7 @@ public class BackupTasksDialogFragment extends DialogFragment {
                         if (backup == null || !item.isInstalled) continue;
                         try {
                             backupManager.verify(backup.relativeDir);
-                        } catch (Exception e) {
+                        } catch (Throwable e) { // BackupException extends Throwable
                             applicationItems.add(item);
                             applicationLabels.add(new SpannableStringBuilder(backup.label)
                                     .append(LangUtils.getSeparatorString())
@@ -305,7 +305,7 @@ public class BackupTasksDialogFragment extends DialogFragment {
         try {
             backupManager.verify(backup.relativeDir);
             return true;
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) { // BackupException extends Throwable
             return false;
         }
     }
