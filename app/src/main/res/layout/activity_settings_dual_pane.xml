@@ -50,19 +50,17 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="?attr/colorSurfaceContainerLow"
-            android:visibility="gone"
             android:clipToPadding="false"
+            android:paddingTop="@dimen/premium_main_list_top_padding"
+            android:paddingBottom="@dimen/premium_main_list_bottom_padding"
+            android:visibility="gone"
             app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
-        <TextView
+        <include
             android:id="@+id/settings_search_empty"
+            layout="@layout/view_settings_search_empty_state"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="24dp"
-            android:gravity="center"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:text="@string/settings_search_empty_title"
+            android:layout_height="match_parent"
             android:visibility="gone"
             app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
