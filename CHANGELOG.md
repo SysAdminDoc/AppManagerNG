@@ -19,6 +19,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   repair steps where applicable.
 - Privilege health now shows a capability coverage summary with available
   actions, degraded actions, and the next remediation step for the active mode.
+- First-run onboarding now includes a compact confidence checklist covering the
+  selected privilege mode, backup/restore safety, and tracker-rule reversibility.
 
 ## v0.6.1 — 2026-06-15
 

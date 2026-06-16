@@ -771,6 +771,19 @@
     <string name="onboarding_next_step_privileges">Run Mode Doctor &amp; Privileges check</string>
     <string name="onboarding_next_step_permission_inspector">Audit dangerous permissions</string>
     <string name="onboarding_next_step_backup">Set up Scheduled Auto-Backup</string>
+    <string name="onboarding_confidence_title">Before powerful changes</string>
+    <string name="onboarding_confidence_checklist_body">- Mode: <xliff:g id="mode_status" example="Auto can use a privileged path if one is ready.">%1$s</xliff:g>\n- Backup/restore: <xliff:g id="backup_restore_status" example="Create or verify a backup before destructive work.">%2$s</xliff:g>\n- Tracker rules: <xliff:g id="tracker_rules_status" example="Review detected components before applying.">%3$s</xliff:g></string>
+    <string name="onboarding_confidence_backup_restore">Create or verify a backup before clear-data, restore, or bulk blocking. Restore stages archives first and stops before clearing app data if extraction fails.</string>
+    <string name="onboarding_confidence_tracker_rules">Review detected tracker components before applying. Blocking can be undone from App Details or saved rules.</string>
+    <string name="onboarding_confidence_mode_root_ready">Root is detected; full data backup, IFW rules, and privileged repairs are available after su is granted.</string>
+    <string name="onboarding_confidence_mode_root_pending">Root mode is selected, but su was not detected. Privileged actions can fail until root is granted.</string>
+    <string name="onboarding_confidence_mode_shizuku_ready">Shizuku/Dhizuku is ready for shell-level package actions; protected app data and IFW still need root.</string>
+    <string name="onboarding_confidence_mode_shizuku_pending">Shizuku mode is selected, but the bridge still needs to be started or authorized.</string>
+    <string name="onboarding_confidence_mode_adb_ready">ADB is ready for shell-level package actions; protected app data and IFW still need root.</string>
+    <string name="onboarding_confidence_mode_adb_pending">ADB mode is selected, but pairing or tcpip connection is not ready yet.</string>
+    <string name="onboarding_confidence_mode_no_root">No-root mode is safe for inspection; privileged changes stay disabled until a stronger mode is configured.</string>
+    <string name="onboarding_confidence_mode_auto_ready">Auto can use the strongest available privileged path and fall back when it is not available.</string>
+    <string name="onboarding_confidence_mode_auto_pending">Auto will start in no-root until root, Shizuku, or ADB is configured.</string>
     <string name="blocking_rules">Blocking rules</string>
     <string name="external_data">External data</string>
     <string name="internal_data">Internal data</string>

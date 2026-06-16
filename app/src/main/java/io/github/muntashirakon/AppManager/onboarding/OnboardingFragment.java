@@ -277,6 +277,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             mCapabilityProbeGeneration++;
         }
         bindCapabilityStatuses(view, snapshot, mCapabilityProbeGeneration, runProbes);
+        bindConfidenceChecklist(view, snapshot);
     }
 
     @VisibleForTesting
@@ -288,6 +289,56 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     static boolean shouldPromptForNotificationPermission(int sdk, boolean permissionGranted,
                                                          boolean promptAlreadyShown) {
         return sdk >= Build.VERSION_CODES.TIRAMISU && !permissionGranted && !promptAlreadyShown;
+    }
+
+    @VisibleForTesting
+    static int getConfidenceModeStatusRes(@NonNull String mode, boolean rootAvailable,
+                                          boolean shizukuReady, boolean adbReady) {
+        switch (mode) {
+            case Ops.MODE_ROOT:
+                return rootAvailable
+                        ? R.string.onboarding_confidence_mode_root_ready
+                        : R.string.onboarding_confidence_mode_root_pending;
+            case Ops.MODE_SHIZUKU:
+                return shizukuReady
+                        ? R.string.onboarding_confidence_mode_shizuku_ready
+                        : R.string.onboarding_confidence_mode_shizuku_pending;
+            case Ops.MODE_ADB_WIFI:
+            case Ops.MODE_ADB_OVER_TCP:
+                return adbReady
+                        ? R.string.onboarding_confidence_mode_adb_ready
+                        : R.string.onboarding_confidence_mode_adb_pending;
+            case Ops.MODE_NO_ROOT:
+                return R.string.onboarding_confidence_mode_no_root;
+            case Ops.MODE_AUTO:
+            default:
+                return rootAvailable || shizukuReady || adbReady
+                        ? R.string.onboarding_confidence_mode_auto_ready
+                        : R.string.onboarding_confidence_mode_auto_pending;
+        }
+    }
+
+    private void bindConfidenceChecklist(@NonNull View view, @NonNull CapabilitySnapshot snapshot) {
+        TextView checklist = view.findViewById(R.id.onboarding_confidence_checklist);
+        if (checklist == null) return;
+        int modeStatusRes = getConfidenceModeStatusRes(Ops.getMode(),
+                snapshot.rootAvailable, isShizukuReady(snapshot), isAdbReady(snapshot));
+        checklist.setText(getString(R.string.onboarding_confidence_checklist_body,
+                getString(modeStatusRes),
+                getString(R.string.onboarding_confidence_backup_restore),
+                getString(R.string.onboarding_confidence_tracker_rules)));
+        checklist.setContentDescription(checklist.getText());
+    }
+
+    private static boolean isShizukuReady(@NonNull CapabilitySnapshot snapshot) {
+        return snapshot.shizukuHasPermission
+                || (snapshot.dhizukuResult.providerVisible && snapshot.dhizukuResult.apiPermissionGranted);
+    }
+
+    private static boolean isAdbReady(@NonNull CapabilitySnapshot snapshot) {
+        return snapshot.wirelessDebuggingActive
+                || snapshot.hasPairedAdbDevice
+                || snapshot.adbTcpipSessionDetected;
     }
 
     @NonNull
