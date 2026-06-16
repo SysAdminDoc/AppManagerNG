@@ -3,6 +3,15 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Fixed
+
+- Backup restore now extracts regular data archives into sibling staging
+  directories before clearing the target app, aborts without clearing data when
+  archive extraction fails, and preserves staged payloads if post-clear
+  placement fails.
+
 ## v0.6.1 — 2026-06-15
 
 ### Fixed - Release polish pass (2026-06-15)

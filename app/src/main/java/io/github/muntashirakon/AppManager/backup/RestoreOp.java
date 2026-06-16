@@ -574,22 +574,74 @@ class RestoreOp implements Closeable {
                 }
             }
         }
+        StagedDataDirectoryRestore[] stagedDataRestores = null;
         if (!hasSystemData) {
-            // Force-stop and clear app data. Global system-data restores must
-            // never clear the Android framework package.
-            PackageManagerCompat.clearApplicationUserData(mPackageName, mUserId);
+            stagedDataRestores = stageRegularDataRestores();
+            // Force-stop and clear app data only after regular tar-backed
+            // restore payloads have been extracted into sibling staging dirs.
+            // Global system-data restores must never clear the framework package.
+            if (!PackageManagerCompat.clearApplicationUserData(mPackageName, mUserId)) {
+                throw new BackupException("Could not clear app data before committing staged restore for "
+                        + mPackageName + ".");
+            }
         }
-        // Restore backups
-        for (int i = 0; i < mBackupMetadata.dataDirs.length; ++i) {
-            String backupDataDir = mBackupMetadata.dataDirs[i];
-            if (backupDataDir.equals(BackupManager.DATA_BACKUP_SPECIAL_ADB)) {
-                // Adb backup restore
-                restoreAdb(i);
-            } else if (SystemDataBackup.isSystemDataToken(backupDataDir)) {
-                restoreSystemData(backupDataDir, i);
-            } else {
-                // Regular directory restore
-                restoreDirectory(mBackupMetadata.dataDirs[i], i);
+        try {
+            // Restore backups
+            for (int i = 0; i < mBackupMetadata.dataDirs.length; ++i) {
+                String backupDataDir = mBackupMetadata.dataDirs[i];
+                if (backupDataDir.equals(BackupManager.DATA_BACKUP_SPECIAL_ADB)) {
+                    // Adb backup restore
+                    restoreAdb(i);
+                } else if (SystemDataBackup.isSystemDataToken(backupDataDir)) {
+                    restoreSystemData(backupDataDir, i);
+                } else if (stagedDataRestores != null) {
+                    StagedDataDirectoryRestore stagedDataRestore = stagedDataRestores[i];
+                    if (stagedDataRestore != null) {
+                        stagedDataRestore.commit();
+                    }
+                } else {
+                    // Regular directory restore
+                    restoreDirectory(mBackupMetadata.dataDirs[i], i);
+                }
+            }
+        } finally {
+            cleanupStagedDataRestores(stagedDataRestores);
+        }
+    }
+
+    @NonNull
+    private StagedDataDirectoryRestore[] stageRegularDataRestores() throws BackupException {
+        StagedDataDirectoryRestore[] stagedDataRestores = new StagedDataDirectoryRestore[mBackupMetadata.dataDirs.length];
+        try {
+            for (int i = 0; i < mBackupMetadata.dataDirs.length; ++i) {
+                String backupDataDir = mBackupMetadata.dataDirs[i];
+                if (backupDataDir.equals(BackupManager.DATA_BACKUP_SPECIAL_ADB)
+                        || SystemDataBackup.isSystemDataToken(backupDataDir)) {
+                    continue;
+                }
+                DataDirectoryRestoreTarget restoreTarget = prepareDirectoryRestore(backupDataDir, i);
+                if (restoreTarget == null) {
+                    continue;
+                }
+                StagedDataDirectoryRestore stagedDataRestore = new StagedDataDirectoryRestore(restoreTarget,
+                        createRestoreStagingDirectory(restoreTarget.dataSourceFile, i));
+                stagedDataRestore.extract();
+                stagedDataRestores[i] = stagedDataRestore;
+            }
+            return stagedDataRestores;
+        } catch (BackupException e) {
+            cleanupStagedDataRestores(stagedDataRestores);
+            throw e;
+        }
+    }
+
+    private void cleanupStagedDataRestores(@Nullable StagedDataDirectoryRestore[] stagedDataRestores) {
+        if (stagedDataRestores == null) {
+            return;
+        }
+        for (StagedDataDirectoryRestore stagedDataRestore : stagedDataRestores) {
+            if (stagedDataRestore != null) {
+                stagedDataRestore.cleanup();
             }
         }
     }
@@ -619,6 +671,16 @@ class RestoreOp implements Closeable {
     }
 
     private void restoreDirectory(@NonNull String dir, int index) throws BackupException {
+        DataDirectoryRestoreTarget restoreTarget = prepareDirectoryRestore(dir, index);
+        if (restoreTarget == null) {
+            return;
+        }
+        restoreDirectoryToTarget(restoreTarget, restoreTarget.dataSourceFile);
+        finishRestoredDirectory(restoreTarget, restoreTarget.dataSourceFile);
+    }
+
+    @Nullable
+    private DataDirectoryRestoreTarget prepareDirectoryRestore(@NonNull String dir, int index) throws BackupException {
         String dataSource = BackupUtils.getWritableDataDirectory(dir, mBackupInfo.userId, mUserId);
         BackupDataDirectoryInfo dataDirectoryInfo = BackupDataDirectoryInfo.getInfo(dataSource, mUserId);
         Path dataSourceFile = dataDirectoryInfo.getDirectory();
@@ -638,14 +700,14 @@ class RestoreOp implements Closeable {
                 case BackupDataDirectoryInfo.TYPE_ANDROID_DATA:
                     // Skip restoring Android/data directory if not requested
                     if (!mRequestedFlags.backupExternalData()) {
-                        return;
+                        return null;
                     }
                     break;
                 case BackupDataDirectoryInfo.TYPE_ANDROID_OBB:
                 case BackupDataDirectoryInfo.TYPE_ANDROID_MEDIA:
                     // Skip restoring Android/data or Android/media if media/obb restore not requested
                     if (!mRequestedFlags.backupMediaObb()) {
-                        return;
+                        return null;
                     }
                     break;
                 case BackupDataDirectoryInfo.TYPE_CREDENTIAL_PROTECTED:
@@ -657,25 +719,30 @@ class RestoreOp implements Closeable {
         } else {
             // Skip if internal data restore is not requested.
             if (!mRequestedFlags.backupInternalData()) {
-                return;
+                return null;
             }
         }
+        if (!dataSourceFile.exists() && dataDirectoryInfo.isExternal()
+                && !dataDirectoryInfo.isMounted && !Utils.isRoboUnitTest()) {
+            throw new BackupException("External directory containing " + dataSource + " is not mounted.");
+        }
+        return new DataDirectoryRestoreTarget(index, dataDirectoryInfo, dataSourceFile, dataFiles, uidGidPair);
+    }
+
+    private void restoreDirectoryToTarget(@NonNull DataDirectoryRestoreTarget restoreTarget,
+                                          @NonNull Path destination) throws BackupException {
         // Create data folder if not exists
-        if (!dataSourceFile.exists()) {
-            if (dataDirectoryInfo.isExternal() && !dataDirectoryInfo.isMounted) {
-                if (!Utils.isRoboUnitTest()) {
-                    throw new BackupException("External directory containing " + dataSource + " is not mounted.");
-                } // else Skip checking for mounted partition for robolectric tests
+        if (!destination.exists()) {
+            if (!destination.mkdirs()) {
+                throw new BackupException("Could not create directory " + destination);
             }
-            if (!dataSourceFile.mkdirs()) {
-                throw new BackupException("Could not create directory " + dataSourceFile);
-            }
-            if (!dataDirectoryInfo.isExternal()) {
+            if (!restoreTarget.dataDirectoryInfo.isExternal()) {
                 // Restore UID, GID
-                dataSourceFile.setUidGid(uidGidPair);
+                destination.setUidGid(restoreTarget.uidGidPair);
             }
         }
         // Decrypt data
+        Path[] dataFiles = restoreTarget.dataFiles;
         try {
             dataFiles = mBackupItem.decrypt(dataFiles);
         } catch (IOException e) {
@@ -684,20 +751,46 @@ class RestoreOp implements Closeable {
         // Extract data to the data directory
         try {
             String publicSourceDir = new File(Objects.requireNonNull(mPackageInfo.applicationInfo).publicSourceDir).getParent();
-            TarUtils.extract(mBackupInfo.tarType, dataFiles, dataSourceFile, null, BackupUtils
+            TarUtils.extract(mBackupInfo.tarType, dataFiles, destination, null, BackupUtils
                     .getExcludeDirs(!mRequestedFlags.backupCache(), null), publicSourceDir);
         } catch (Throwable th) {
-            throw new BackupException("Failed to restore data files for index " + index + ".", th);
+            throw new BackupException("Failed to restore data files for index " + restoreTarget.index + ".", th);
         }
+    }
+
+    private void finishRestoredDirectory(@NonNull DataDirectoryRestoreTarget restoreTarget,
+                                         @NonNull Path restoredDirectory) throws BackupException {
         boolean isRoboUnitTest = Utils.isRoboUnitTest();
         // Restore UID and GID
-        if (!isRoboUnitTest && !Runner.runCommand(new String[]{"chown", "-R", uidGidPair.uid + ":" + uidGidPair.gid, dataSourceFile.getFilePath()}).isSuccessful()) {
-            throw new BackupException("Failed to restore ownership info for index " + index + ".");
+        if (!isRoboUnitTest && !Runner.runCommand(new String[]{"chown", "-R",
+                restoreTarget.uidGidPair.uid + ":" + restoreTarget.uidGidPair.gid,
+                restoredDirectory.getFilePath()}).isSuccessful()) {
+            throw new BackupException("Failed to restore ownership info for index " + restoreTarget.index + ".");
         }
         // Restore context
-        if (!isRoboUnitTest && !dataDirectoryInfo.isExternal()) {
-            Runner.runCommand(new String[]{"restorecon", "-R", dataSourceFile.getFilePath()});
+        if (!isRoboUnitTest && !restoreTarget.dataDirectoryInfo.isExternal()) {
+            Runner.runCommand(new String[]{"restorecon", "-R", restoredDirectory.getFilePath()});
         }
+    }
+
+    @NonNull
+    private Path createRestoreStagingDirectory(@NonNull Path dataSourceFile, int index) throws BackupException {
+        Path parent = dataSourceFile.requireParent();
+        if (!parent.exists() && !parent.mkdirs()) {
+            throw new BackupException("Could not create parent directory " + parent);
+        }
+        String baseName = dataSourceFile.getName() + ".restore-" + index + "-" + Long.toHexString(System.nanoTime());
+        for (int attempt = 0; attempt < 8; ++attempt) {
+            String displayName = attempt == 0 ? baseName : baseName + "-" + attempt;
+            try {
+                return parent.createNewDirectory(displayName);
+            } catch (IOException e) {
+                if (attempt == 7) {
+                    throw new BackupException("Could not create restore staging directory in " + parent, e);
+                }
+            }
+        }
+        throw new BackupException("Could not create restore staging directory in " + parent);
     }
 
     private void restoreAdb(int index) throws BackupException {
@@ -948,6 +1041,91 @@ class RestoreOp implements Closeable {
             importer.applyRules(true);
         } catch (IOException e) {
             throw new BackupException("Failed to restore rules file.", e);
+        }
+    }
+
+    private static final class DataDirectoryRestoreTarget {
+        private final int index;
+        @NonNull
+        private final BackupDataDirectoryInfo dataDirectoryInfo;
+        @NonNull
+        private final Path dataSourceFile;
+        @NonNull
+        private final Path[] dataFiles;
+        @NonNull
+        private final UidGidPair uidGidPair;
+
+        private DataDirectoryRestoreTarget(int index, @NonNull BackupDataDirectoryInfo dataDirectoryInfo,
+                                           @NonNull Path dataSourceFile, @NonNull Path[] dataFiles,
+                                           @NonNull UidGidPair uidGidPair) {
+            this.index = index;
+            this.dataDirectoryInfo = dataDirectoryInfo;
+            this.dataSourceFile = dataSourceFile;
+            this.dataFiles = dataFiles;
+            this.uidGidPair = uidGidPair;
+        }
+    }
+
+    private final class StagedDataDirectoryRestore {
+        @NonNull
+        private final DataDirectoryRestoreTarget mRestoreTarget;
+        @NonNull
+        private final Path mStagingDirectory;
+        private boolean mCommitted;
+        private boolean mPreserveStaging;
+
+        private StagedDataDirectoryRestore(@NonNull DataDirectoryRestoreTarget restoreTarget,
+                                           @NonNull Path stagingDirectory) {
+            mRestoreTarget = restoreTarget;
+            mStagingDirectory = stagingDirectory;
+        }
+
+        private void extract() throws BackupException {
+            restoreDirectoryToTarget(mRestoreTarget, mStagingDirectory);
+        }
+
+        private void commit() throws BackupException {
+            mPreserveStaging = true;
+            Path targetDirectory = mRestoreTarget.dataSourceFile;
+            Path targetParent = targetDirectory.requireParent();
+            if (!targetParent.exists() && !targetParent.mkdirs()) {
+                throw new BackupException("Could not create parent directory " + targetParent);
+            }
+            if (targetDirectory.exists() && !targetDirectory.delete()) {
+                throw new BackupException("Could not clear restore target directory " + targetDirectory);
+            }
+            if (!mStagingDirectory.moveTo(targetDirectory, false)) {
+                copyStagingDirectoryToTarget(targetDirectory);
+            }
+            mCommitted = true;
+            mPreserveStaging = false;
+            finishRestoredDirectory(mRestoreTarget, targetDirectory);
+        }
+
+        private void copyStagingDirectoryToTarget(@NonNull Path targetDirectory) throws BackupException {
+            if (targetDirectory.exists() && !targetDirectory.delete()) {
+                throw new BackupException("Could not clear partial restore target directory " + targetDirectory
+                        + "; staged restore data is preserved at " + mStagingDirectory + ".");
+            }
+            if (!targetDirectory.mkdirs()) {
+                throw new BackupException("Could not create restore target directory " + targetDirectory
+                        + "; staged restore data is preserved at " + mStagingDirectory + ".");
+            }
+            for (Path child : mStagingDirectory.listFiles()) {
+                if (child.copyTo(targetDirectory, true) == null) {
+                    throw new BackupException("Could not copy staged restore item " + child + " to "
+                            + targetDirectory + "; staged restore data is preserved at " + mStagingDirectory + ".");
+                }
+            }
+            if (!mStagingDirectory.delete()) {
+                Log.w(TAG, "Could not delete restore staging directory %s after fallback copy.", mStagingDirectory);
+            }
+        }
+
+        private void cleanup() {
+            if (!mCommitted && !mPreserveStaging) {
+                mStagingDirectory.delete();
+            }
         }
     }
 
