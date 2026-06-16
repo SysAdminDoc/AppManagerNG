@@ -27,6 +27,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.RoboUtils;
 import io.github.muntashirakon.AppManager.utils.TarUtils;
+import io.github.muntashirakon.test.shadows.ShadowPackageManagerCompat;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -44,12 +45,14 @@ public class BackupManagerTest {
         mDefaultMetaVersion = MetadataManager.getCurrentBackupMetaVersion();
         rscBackupPath = Paths.get(classLoader.getResource("backups/v4").getFile());
         tmpBackupPath = Paths.get(RoboUtils.getTestBaseDir());
+        ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
     }
 
     @After
     public void tearDown() {
         BackupOp.setPostWriteBackupHook(null);
         MetadataManager.setCurrentBackupMetaVersion(mDefaultMetaVersion);
+        ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
         for (Path path : tmpBackupPath.listFiles()) {
             path.delete();
         }
@@ -212,6 +215,29 @@ public class BackupManagerTest {
         });
 
         assertTrue(exception.getMessage().contains("Could not read APK archive."));
+    }
+
+    @Test
+    public void testRestoreDoesNotClearDataBeforeArchiveExtractionSucceeds() throws Exception {
+        Prefs.Storage.setVolumePath(tmpBackupPath.getUri().toString());
+        assertNotNull(rscBackupPath.findFile("AppManager")
+                .copyTo(tmpBackupPath, true));
+        Path backupPath = tmpBackupPath.findFile("AppManager")
+                .findFile("dnsfilter.android")
+                .findFile("0");
+        Path dataArchive = backupPath.findFile("data0.tar.gz.0");
+        writeBytes(dataArchive, new byte[]{0x1f});
+        Path checksumFile = backupPath.findFile("checksums.txt");
+        String updatedChecksums = replaceChecksum(checksumFile.getContentAsString(),
+                dataArchive.getName(), DigestUtils.getHexDigest(DigestUtils.SHA_256, dataArchive));
+        writeString(checksumFile, updatedChecksums);
+        BackupManager bm = new BackupManager();
+        RestoreOpOptions options = new RestoreOpOptions("dnsfilter.android", 0, "dnsfilter.android/0", 1110);
+
+        BackupException exception = assertThrows(BackupException.class, () -> bm.restore(options, null));
+
+        assertTrue(exception.getMessage().contains("Failed to restore data files for index 0."));
+        assertEquals(0, ShadowPackageManagerCompat.getClearApplicationUserDataCalls());
     }
 
     @Test
@@ -517,5 +543,17 @@ public class BackupManagerTest {
         try (OutputStream os = file.openOutputStream()) {
             os.write(contents);
         }
+    }
+
+    private static String replaceChecksum(String checksums, String filename, String checksum) {
+        String[] lines = checksums.split("\\R", -1);
+        for (int i = 0; i < lines.length; ++i) {
+            if (lines[i].endsWith("\t" + filename)) {
+                lines[i] = checksum + "\t" + filename;
+                return String.join("\n", lines);
+            }
+        }
+        fail("Missing checksum entry for " + filename);
+        return checksums;
     }
 }

@@ -17,6 +17,8 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 @Implements(PackageManagerCompat.class)
 public class ShadowPackageManagerCompat {
+    private static int sClearApplicationUserDataCalls;
+
     @Implementation
     @NonNull
     public static PackageInfo getPackageInfo(@NonNull String packageName, int flags, int userId)
@@ -24,12 +26,23 @@ public class ShadowPackageManagerCompat {
         return ContextUtils.getContext().getPackageManager().getPackageInfo(packageName, flags);
     }
 
+    @Implementation
     public static boolean clearApplicationUserData(@NonNull String packageName, int userId) {
+        ++sClearApplicationUserDataCalls;
         // App data may have been cleaned already depending on how it was handled in unit tests
         return true;
     }
 
+    @Implementation
     public static String getInstallerPackageName(@NonNull String packageName, int userId) {
         return BuildConfig.APPLICATION_ID;
+    }
+
+    public static void resetClearApplicationUserDataCalls() {
+        sClearApplicationUserDataCalls = 0;
+    }
+
+    public static int getClearApplicationUserDataCalls() {
+        return sClearApplicationUserDataCalls;
     }
 }
