@@ -630,14 +630,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                         AppListLoadStatus.loaded(updatedApplicationItems.size()))) {
                     publishDynamicShortcuts(updatedApplicationItems);
                 }
-            } catch (Throwable th) {
-                Log.e(TAG, "Could not load application list.", th);
+            } catch (Exception e) {
+                Log.e(TAG, "Could not load application list.", e);
                 int staleItemCount;
                 synchronized (mApplicationItems) {
                     mApplicationItemsLiveData.postValue(new ArrayList<>(mApplicationItems));
                     staleItemCount = mApplicationItems.size();
                 }
-                updateApplicationListLoadStatus(loadGeneration, AppListLoadStatus.failed(th, staleItemCount));
+                updateApplicationListLoadStatus(loadGeneration, AppListLoadStatus.failed(e, staleItemCount));
             }
         });
     }

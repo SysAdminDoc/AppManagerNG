@@ -191,8 +191,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
                     mProcessList.clear();
                     mProcessList.addAll(new ProcessParser().parse());
                     filterAndSort();
-                } catch (Throwable th) {
-                    Log.e("RunningApps", th);
+                } catch (Exception e) {
+                    Log.e("RunningApps", e);
                     // Still emit a (now-empty) list so the observer hides the progress indicator
                     // and shows the empty state — otherwise a parse failure leaves it spinning
                     // forever with no feedback.
@@ -350,9 +350,9 @@ public class RunningAppsViewModel extends AndroidViewModel {
             } catch (RemoteException | SecurityException e) {
                 failure = e;
                 Log.e("RunningApps", "Could not read background app-op modes.", e);
-            } catch (Throwable th) {
-                failure = th;
-                Log.e("RunningApps", "Could not restore background operation.", th);
+            } catch (Exception e) {
+                failure = e;
+                Log.e("RunningApps", "Could not restore background operation.", e);
             }
             boolean success = failure == null && appliedChanges.size() == plan.size();
             recordBackgroundRunRestoreHistory(info, appliedChanges, success, failure);
@@ -415,8 +415,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
                             OperationJournalMetadata.RISK_MEDIUM, false, failure));
-        } catch (Throwable th) {
-            Log.e("RunningApps", "Could not record background-run restore history.", th);
+        } catch (Exception e) {
+            Log.e("RunningApps", "Could not record background-run restore history.", e);
         }
     }
 
@@ -437,8 +437,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
                             OperationJournalMetadata.RISK_HIGH, false, null));
-        } catch (Throwable th) {
-            Log.e("RunningApps", "Could not record kill history.", th);
+        } catch (Exception e) {
+            Log.e("RunningApps", "Could not record kill history.", e);
         }
     }
 
@@ -457,8 +457,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
                             OperationJournalMetadata.RISK_MEDIUM, false, failure));
-        } catch (Throwable th) {
-            Log.e("RunningApps", "Could not record force-stop history.", th);
+        } catch (Exception e) {
+            Log.e("RunningApps", "Could not record force-stop history.", e);
         }
     }
 
