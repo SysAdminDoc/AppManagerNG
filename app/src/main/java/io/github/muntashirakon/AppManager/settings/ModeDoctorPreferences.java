@@ -257,7 +257,7 @@ public class ModeDoctorPreferences extends PreferenceFragment {
             try {
                 bundle = SupportInfoBundle.writeTextBundle(appContext,
                         PrivilegeModeDoctor.buildSupportPreamble(report));
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 ThreadUtils.postOnMainThread(() -> {
                     Context current = getContext();
                     if (current != null) {

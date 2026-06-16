@@ -47,7 +47,7 @@ public class AppArchiveResultReceiver extends BroadcastReceiver {
             confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 context.startActivity(confirmIntent);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.e(TAG, "Could not launch archive confirmation.", th);
                 UIUtils.displayLongToast(operation == AppArchiveManager.OP_ARCHIVE
                         ? R.string.failed_to_archive_app

@@ -102,7 +102,7 @@ public class PackageInstallerService extends ForegroundService {
         List<PackageInstaller.SessionInfo> sessions;
         try {
             sessions = packageInstaller.getMySessions();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.w(TAG, "Could not enumerate stale installer sessions.", e);
             return 0;
         }
@@ -114,7 +114,7 @@ public class PackageInstallerService extends ForegroundService {
             try {
                 packageInstaller.abandonSession(sessionInfo.getSessionId());
                 ++cleaned;
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Log.w(TAG, "Could not abandon stale installer session " + sessionInfo.getSessionId(), e);
             }
         }
@@ -254,7 +254,7 @@ public class PackageInstallerService extends ForegroundService {
                 try {
                     try {
                         apkFile = apkSource.resolve();
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         Log.w(TAG, "Could not get ApkFile", th);
                         OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
                                 OperationJournalMetadata.forInstaller(this, apkQueueItem,
