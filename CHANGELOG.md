@@ -11,6 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   directories before clearing the target app, aborts without clearing data when
   archive extraction fails, and preserves staged payloads if post-clear
   placement fails.
+- Destructive confirmations now share the same reversible/irreversible safety
+  notes across batch ops, app details, running apps, backup deletion, and
+  profile delete/apply review flows.
 
 ## v0.6.1 — 2026-06-15
 

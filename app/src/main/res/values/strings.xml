@@ -523,8 +523,8 @@
         <item quantity="other">Could not clear data from %1$d apps</item>
     </plurals>
     <plurals name="clear_uninstalled_app_data_confirmation">
-        <item quantity="one">Clear leftover data for %1$d uninstalled app? This cannot be undone from AppManagerNG.</item>
-        <item quantity="other">Clear leftover data for %1$d uninstalled apps? This cannot be undone from AppManagerNG.</item>
+        <item quantity="one">Clear leftover data for %1$d uninstalled app?</item>
+        <item quantity="other">Clear leftover data for %1$d uninstalled apps?</item>
     </plurals>
     <plurals name="alert_failed_to_uninstall">
         <item quantity="one">Could not uninstall %1$d app</item>
@@ -885,8 +885,8 @@
         <item quantity="other">Replace the existing base backups for %1$d apps? Named backups are not changed.</item>
     </plurals>
     <plurals name="delete_selected_backups_confirmation">
-        <item quantity="one">Delete %1$d selected backup? This cannot be undone.</item>
-        <item quantity="other">Delete %1$d selected backups? This cannot be undone.</item>
+        <item quantity="one">Delete %1$d selected backup?</item>
+        <item quantity="other">Delete %1$d selected backups?</item>
     </plurals>
     <plurals name="classes">
         <item quantity="one">%1$d class</item>

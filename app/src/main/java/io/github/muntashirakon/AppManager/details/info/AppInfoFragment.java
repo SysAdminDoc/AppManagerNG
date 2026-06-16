@@ -158,6 +158,7 @@ import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.PerAppRollbackManager;
 import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
@@ -2801,13 +2802,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             ActionItem clearDataAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_DATA,
                     R.string.clear_data, R.drawable.ic_clear_data);
             actionItems.add(clearDataAction);
-            clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
-                    .setTitle(mAppLabel)
-                    .setMessage(getResources().getQuantityString(
-                            R.plurals.clear_uninstalled_app_data_confirmation, 1, 1))
-                    .setPositiveButton(R.string.clear, (dialog, which) -> ActionAuthGate.authenticate(mActivity,
-                            R.string.authenticate_to_clear_data, this::clearDataOnlyPackage))
-                    .setNegativeButton(R.string.cancel, null)
+            clearDataAction.setOnClickListener(v -> DestructiveActionConfirmation
+                    .forDataOnlyPackageClear(mActivity, mAppLabel, 1, (dialog, which) ->
+                            ActionAuthGate.authenticate(mActivity,
+                                    R.string.authenticate_to_clear_data, this::clearDataOnlyPackage))
                     .show());
             return AppInfoActionOrderResolver.resolve(actionItems, Prefs.AppDetailsPage.getActionRailPriorityIds());
         }
@@ -2904,11 +2902,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     return;
                 }
                 final boolean isSystemApp = (mApplicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-                ScrollableDialogBuilder builder = new ScrollableDialogBuilder(mActivity,
-                        isSystemApp ? R.string.uninstall_system_app_message : R.string.uninstall_app_message)
-                        .setTitle(mAppLabel)
+                ScrollableDialogBuilder builder = DestructiveActionConfirmation
+                        .forUninstall(mActivity, mAppLabel, isSystemApp)
                         // FIXME: 16/6/23 Does it even work without INSTALL_PACKAGES?
-                        .setCheckboxLabel(R.string.keep_data_and_app_signing_signatures)
                         .setPositiveButton(R.string.uninstall, (dialog, which, keepData) ->
                                 ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall,
                                         () -> ThreadUtils.postOnBackgroundThread(() -> {
@@ -2997,10 +2993,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 ActionItem clearDataAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_DATA,
                         R.string.clear_data, R.drawable.ic_clear_data);
                 actionItems.add(clearDataAction);
-                clearDataAction.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
-                        .setTitle(mAppLabel)
-                        .setMessage(getClearDataConfirmationMessage())
-                        .setPositiveButton(R.string.clear, (dialog, which) -> ActionAuthGate.authenticate(mActivity,
+                clearDataAction.setOnClickListener(v -> DestructiveActionConfirmation
+                        .forClearData(mActivity, mAppLabel, getClearDataConfirmationMessage(),
+                                (dialog, which) -> ActionAuthGate.authenticate(mActivity,
                                 R.string.authenticate_to_clear_data, () -> {
                             if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)) {
                                 ThreadUtils.postOnBackgroundThread(() -> {
@@ -3030,7 +3025,6 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                         });
                             }
                         }))
-                        .setNegativeButton(R.string.cancel, null)
                         .show());
             }
             if (!isStaticSharedLib && (SelfPermissions.canClearAppCache() || accessibilityServiceRunning)) {

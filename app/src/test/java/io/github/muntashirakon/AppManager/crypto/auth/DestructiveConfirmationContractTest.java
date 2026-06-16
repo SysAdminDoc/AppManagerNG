@@ -79,6 +79,66 @@ public class DestructiveConfirmationContractTest {
     }
 
     @Test
+    public void destructiveDialogsUseSharedSafetyModel() throws Exception {
+        String mainActivity = readSource("app/src/main/java/io/github/muntashirakon/AppManager/main/MainActivity.java");
+        assertTrue("Batch destructive dialogs must use DestructiveActionConfirmation",
+                mainActivity.contains("DestructiveActionConfirmation.forBatchOp"));
+
+        String runningApps = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/runningapps/RunningAppsActivity.java");
+        assertTrue("Running-app destructive dialogs must use DestructiveActionConfirmation",
+                runningApps.contains("DestructiveActionConfirmation.forKill")
+                        && runningApps.contains("DestructiveActionConfirmation.forBatchOp"));
+
+        String appInfo = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java");
+        assertTrue("App Details clear-data dialogs must use DestructiveActionConfirmation",
+                appInfo.contains("DestructiveActionConfirmation")
+                        && appInfo.contains(".forClearData(")
+                        && appInfo.contains(".forDataOnlyPackageClear("));
+        assertTrue("App Details uninstall dialogs must use DestructiveActionConfirmation",
+                appInfo.contains(".forUninstall("));
+
+        String singleRestore = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/RestoreSingleFragment.java");
+        assertTrue("Selected-backup deletion must use DestructiveActionConfirmation",
+                singleRestore.contains("DestructiveActionConfirmation")
+                        && singleRestore.contains(".forBackupDelete("));
+
+        String dialogFragment = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupRestoreDialogFragment.java");
+        assertTrue("Base-backup deletion must use DestructiveActionConfirmation",
+                dialogFragment.contains("DestructiveActionConfirmation")
+                        && dialogFragment.contains(".forBaseBackupDelete("));
+
+        String profiles = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivity.java");
+        assertTrue("Profile deletion must use DestructiveActionConfirmation",
+                profiles.contains("DestructiveActionConfirmation")
+                        && profiles.contains(".forProfileDelete("));
+
+        String profileApplier = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfileApplierActivity.java");
+        assertTrue("Profile apply confirmations must use the shared safety note model",
+                profileApplier.contains("DestructiveActionConfirmation.withSafetyNote")
+                        && profileApplier.contains("requiresProfileApplyConfirmation"));
+    }
+
+    @Test
+    public void sharedSafetyModelDistinguishesReversibleAndIrreversibleActions() throws Exception {
+        String source = readSource(
+                "app/src/main/java/io/github/muntashirakon/AppManager/history/ops/DestructiveActionConfirmation.java");
+        assertTrue("Shared destructive confirmation must include the reversible-note branch",
+                source.contains("destructive_confirm_reversible_note"));
+        assertTrue("Shared destructive confirmation must include the irreversible-warning branch",
+                source.contains("destructive_confirm_irreversible_warning"));
+        assertTrue("Shared destructive confirmation must key irreversible warnings to high risk",
+                source.contains("OperationJournalMetadata.RISK_HIGH"));
+        assertTrue("Shared destructive confirmation must include profile-delete coverage",
+                source.contains("forProfileDelete"));
+    }
+
+    @Test
     public void fileManagerDuplicateDeleteGatedByAuthGate() throws Exception {
         String source = readSource("app/src/main/java/io/github/muntashirakon/AppManager/fm/FmFragment.java");
         assertTrue("Duplicate APK deletion in FmFragment must call ActionAuthGate.authenticate",

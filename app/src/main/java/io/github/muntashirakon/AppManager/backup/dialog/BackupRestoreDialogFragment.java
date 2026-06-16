@@ -27,7 +27,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -44,6 +43,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
@@ -381,10 +381,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
 
     private void handleDeleteBaseBackup() {
         // TODO: 5/7/22 Display a check box that will include all the backups instead of only base backups.
-        new MaterialAlertDialogBuilder(mActivity)
-                .setTitle(R.string.delete_backup)
-                .setMessage(R.string.delete_base_backups_confirmation)
-                .setPositiveButton(R.string.delete, (dialog, which) ->
+        DestructiveActionConfirmation
+                .forBaseBackupDelete(mActivity, (dialog, which) ->
                         ActionAuthGate.authenticate(mActivity,
                                 R.string.authenticate_to_delete_backups, () -> {
                                     BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
@@ -392,7 +390,6 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                                     operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
                                     mViewModel.prepareForOperation(operationInfo);
                                 }))
-                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
