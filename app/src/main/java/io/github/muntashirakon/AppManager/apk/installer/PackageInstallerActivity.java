@@ -964,7 +964,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 displayOpenAndAppInfo && intent != null ? v -> {
                     try {
                         startActivity(intent);
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         UIUtils.displayLongToast(R.string.installer_open_app_failed);
                     } finally {
                         goToNext();
@@ -1019,7 +1019,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             if (systemLibs != null) {
                 installedLibraries = new ArrayList<>(java.util.Arrays.asList(systemLibs));
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not fetch system shared library names.", th);
         }
         return InstallDependencyChecker.check(apkMinSdk, Build.VERSION.SDK_INT,

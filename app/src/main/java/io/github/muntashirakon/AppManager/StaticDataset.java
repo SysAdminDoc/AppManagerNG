@@ -161,7 +161,7 @@ public class StaticDataset {
                 debloatObject.setId(id++);
             }
             return debloatObjects;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
         }
@@ -184,7 +184,7 @@ public class StaticDataset {
                     objects.add(suggestionObject);
                 }
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             th.printStackTrace();
         }
         return idSuggestionObjectsMap;
