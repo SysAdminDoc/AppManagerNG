@@ -3617,6 +3617,7 @@
     <string name="op_history_detail_restart">Restart required</string>
     <string name="op_history_detail_rollback">Rollback guidance</string>
     <string name="op_history_detail_target_preview">Target preview</string>
+    <string name="op_history_detail_recovery_actions">Recovery actions</string>
     <string name="op_history_detail_failure_message">Failure message</string>
     <string name="op_history_detail_warnings">Warnings</string>
     <string name="op_history_status_success">Succeeded</string>
@@ -3636,6 +3637,17 @@
     <string name="op_history_rollback_reinstall">Uninstall the app or reinstall the previous APK if you saved one.</string>
     <string name="op_history_rollback_manual_reapply">Review the changed settings and manually reapply the prior state if needed.</string>
     <string name="op_history_rollback_delete_artifact">Delete the generated backup or export artifact if it is no longer wanted.</string>
+    <string name="op_history_recovery_review_history">Review this history entry before making another change.</string>
+    <string name="op_history_recovery_review_logs">Review the saved result log and warnings for failed targets.</string>
+    <string name="op_history_recovery_rerun_failed">Rerun only the failed targets after correcting the cause.</string>
+    <string name="op_history_recovery_restore_backup">Restore the previous backup snapshot if one exists.</string>
+    <string name="op_history_recovery_run_inverse">Run the matching inverse operation for the same targets.</string>
+    <string name="op_history_recovery_reinstall">Reinstall the previous APK or uninstall the new one if needed.</string>
+    <string name="op_history_recovery_manual_reapply">Manually reapply the previous app state from known-good settings.</string>
+    <string name="op_history_recovery_delete_artifact">Delete the generated backup or export artifact if it is unwanted.</string>
+    <string name="op_history_recovery_restart">Restart AppManagerNG or the device if the entry requires it.</string>
+    <string name="op_history_recovery_verify_target">Open the affected target and verify its current state.</string>
+    <string name="op_history_recovery_no_automatic">No automatic recovery is available; use backups, reinstall, or manual repair.</string>
     <string name="adb" translatable="false">ADB</string>
     <plurals name="op_history_target_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> target</item>

@@ -149,6 +149,10 @@ public class OpHistoryItem {
         return metadata != null && metadata.isReversible();
     }
 
+    public boolean hasRecoveryGuidance() {
+        return metadata != null;
+    }
+
     @OperationJournalMetadata.Risk
     public int getRisk() {
         return metadata != null ? metadata.getRisk() : OperationJournalMetadata.RISK_MEDIUM;
@@ -186,6 +190,11 @@ public class OpHistoryItem {
 
     public boolean requiresRestart() {
         return metadata != null && metadata.requiresRestart();
+    }
+
+    @NonNull
+    public List<String> getLocalizedRecoveryActions(@NonNull Context context) {
+        return metadata != null ? metadata.getLocalizedRecoveryActions(context) : Collections.emptyList();
     }
 
     @NonNull
@@ -291,6 +300,11 @@ public class OpHistoryItem {
         if (warnings.length() > 0) {
             entry.put("warnings", warnings);
         }
+        JSONArray recoveryActions = new JSONArray();
+        for (String action : getLocalizedRecoveryActions(context)) {
+            recoveryActions.put(action);
+        }
+        entry.put("recovery_actions", recoveryActions);
         String bootstrapSignature = getBootstrapSignature();
         if (bootstrapSignature != null) {
             entry.put("bootstrap_signature", bootstrapSignature);
@@ -350,6 +364,11 @@ public class OpHistoryItem {
                 context.getString(requiresRestart() ? R.string.yes : R.string.no));
         appendSection(context, detail, R.string.op_history_detail_section_recovery);
         appendLine(context, detail, R.string.op_history_detail_rollback, getLocalizedRollbackHint(context));
+        List<String> recoveryActions = getLocalizedRecoveryActions(context);
+        if (!recoveryActions.isEmpty()) {
+            appendLine(context, detail, R.string.op_history_detail_recovery_actions,
+                    TextUtils.join("\n", recoveryActions));
+        }
         String failureMessage = metadata.getFailureMessage();
         if (failureMessage != null) {
             appendLine(context, detail, R.string.op_history_detail_failure_message, failureMessage);
@@ -365,6 +384,15 @@ public class OpHistoryItem {
     public String getExecutionConfirmationMessage(@NonNull Context context) {
         return OperationPreflight.fromHistory(context, this)
                 .getConfirmationMessage(context, this);
+    }
+
+    @NonNull
+    public String getRecoveryGuidanceMessage(@NonNull Context context) {
+        List<String> recoveryActions = getLocalizedRecoveryActions(context);
+        if (recoveryActions.isEmpty()) {
+            return getLocalizedRollbackHint(context);
+        }
+        return getLocalizedRollbackHint(context) + "\n\n" + TextUtils.join("\n", recoveryActions);
     }
 
     @Nullable

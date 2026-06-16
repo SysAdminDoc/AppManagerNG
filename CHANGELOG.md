@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Destructive confirmations now share the same reversible/irreversible safety
   notes across batch ops, app details, running apps, backup deletion, and
   profile delete/apply review flows.
+- Operation history entries now carry recovery-action guidance in details and
+  JSON export, including retry, log review, backup restore, restart, and manual
+  repair steps where applicable.
 
 ## v0.6.1 — 2026-06-15
 
