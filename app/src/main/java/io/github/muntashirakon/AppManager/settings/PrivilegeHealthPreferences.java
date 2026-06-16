@@ -53,6 +53,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
 
     private Preference mModePref;
     private Preference mSelfTestPref;
+    private Preference mCapabilityCoveragePref;
     private Preference mRootManagerPref;
     private Preference mRootModulesPref;
     private Preference mCapabilityDroppingPref;
@@ -76,6 +77,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         getPreferenceManager().setPreferenceDataStore(new SettingsDataStore());
         mModePref = requirePreference("privilege_health_mode");
         mSelfTestPref = requirePreference("privilege_health_self_test");
+        mCapabilityCoveragePref = requirePreference("privilege_health_capability_coverage");
         mRootManagerPref = requirePreference("privilege_health_root_manager");
         mRootModulesPref = requirePreference("privilege_health_modules");
         mCapabilityDroppingPref = requirePreference("privilege_health_capability_dropping");
@@ -143,6 +145,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         Context context = getContext();
         if (context == null) return;
         bindMode(context);
+        bindCapabilityCoverage(context);
         bindShizuku(context);
         bindDhizuku(context);
         bindAdb(context);
@@ -167,6 +170,11 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             mSelfTestPref.setSummary(getString(R.string.privilege_health_self_test_fail,
                     getModeLabel(mode), uid));
         }
+    }
+
+    private void bindCapabilityCoverage(@NonNull Context context) {
+        mCapabilityCoveragePref.setSummary(PrivilegeCapabilitySummary.buildSummary(context,
+                PrivilegeCapabilitySummary.probe()));
     }
 
     private void bindRootManagerAsync(@NonNull Context appContext) {
