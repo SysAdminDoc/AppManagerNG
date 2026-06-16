@@ -7,6 +7,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Settings search now has a single owner: the global result overlay remains in
+  control instead of being replaced by the legacy main-preference filter.
+- Settings startup now registers main-preference operation feedback after the
+  preference view exists, avoiding a lifecycle crash during first render.
+- Settings search progress now stays in the primary pane on wide two-pane
+  layouts while long-running detail operations keep the secondary progress bar.
 - Settings search now uses V2 result cards, a composed no-results state, and
   appbar progress feedback while the index updates.
 - One-click operations now use sectioned compact and wide layouts with
