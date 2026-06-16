@@ -171,17 +171,6 @@ Deduplicated against all sections above.
   Acceptance: a "Share" action in the profile editor generates a QR code or copyable deep link; scanning/tapping it on another device opens the import flow.
   Complexity: M
 
-## Research-Driven Additions
-
-### P3
-
-- [ ] P3 — Hostile APK/APKS archive fixture corpus
-  Why: NG accepts untrusted APK, APKS, APKM, and XAPK-style archives; parser or extraction mistakes can become crashes, hangs, or path traversal.
-  Evidence: app/src/main/java/io/github/muntashirakon/AppManager/apk/ApkFile.java:236 FIXME(#227); Android Zip Path Traversal guidance; APKMirror Installer/SAI split-archive support.
-  Touches: app/src/main/java/io/github/muntashirakon/AppManager/apk/, app/src/test/
-  Acceptance: fixture archives cover path traversal, special names, duplicate entries, unsupported compression, malformed manifests, and oversized member metadata; scanner/installer/manifest-viewer paths return structured per-file errors with no crash, hang, or path escape.
-  Complexity: M
-
 ## Research-Driven Additions (Pass 3 — 2026-06-13)
 
 ### P3
@@ -224,9 +213,12 @@ decisions, careful refactoring, or on-device testing.
   etc.), and database/utility files. Remaining ~115 catches are in IPC bridges (ShizukuBridge,
   DhizukuBridge), hidden API compat layers (PackageInstallerCompat, AppOpsManagerCompat,
   PermissionToggleHelper), privileged services (ComponentsBlocker, FreezeUnfreezeService),
-  framework-boundary code (Ops, ExUtils), and a handful of mixed files (BatchOpsManager,
-  BatchOpsService, PackageInstallerActivity) where individual-site triage is needed.
-  Complexity: S (remaining)
+  framework-boundary code (Ops, ExUtils), mixed files (BatchOpsManager, BatchOpsService)
+  where individual-site triage confirmed all remaining catches are justified, and sites
+  that catch custom Throwable subclasses (ApkFileException, BackupException,
+  CryptoException all extend Throwable directly, not Exception — narrowing these breaks
+  compilation). The remaining ~115 catches are intentionally broad.
+  Complexity: done (remaining catches are justified)
 
 ### P3
 
