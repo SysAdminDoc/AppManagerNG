@@ -2423,6 +2423,20 @@
     <string name="privilege_health_self_test_title">Mode self-test</string>
     <string name="privilege_health_self_test_pass">The configured mode is consistent with the current working UID.</string>
     <string name="privilege_health_self_test_fail">Configured mode <xliff:g id="mode" example="Root">%1$s</xliff:g> does not match working UID <xliff:g id="uid" example="10234">%2$d</xliff:g>. Reconnect from Mode of operation.</string>
+    <string name="privilege_health_capability_coverage_title">Capability coverage</string>
+    <string name="privilege_health_capability_summary">Available: <xliff:g id="available" example="app ops, force-stop">%1$s</xliff:g>.\nLimited: <xliff:g id="limited" example="protected app data">%2$s</xliff:g>.\nNext step: <xliff:g id="next_step" example="Reconnect or switch modes">%3$s</xliff:g></string>
+    <string name="privilege_health_capability_feature_install">installer sessions</string>
+    <string name="privilege_health_capability_feature_app_ops">app ops</string>
+    <string name="privilege_health_capability_feature_runtime_permissions">runtime permissions</string>
+    <string name="privilege_health_capability_feature_freeze">freeze/unfreeze</string>
+    <string name="privilege_health_capability_feature_force_stop">force-stop</string>
+    <string name="privilege_health_capability_feature_clear_data">clear data</string>
+    <string name="privilege_health_capability_feature_clear_cache">clear cache</string>
+    <string name="privilege_health_capability_feature_private_data">protected app data</string>
+    <string name="privilege_health_capability_feature_ifw_rules">root IFW rules</string>
+    <string name="privilege_health_capability_next_full_power">Current mode has the privileged capabilities AppManagerNG can detect.</string>
+    <string name="privilege_health_capability_next_root">Use root mode for protected app data and IFW rule writes; otherwise keep the current mode and expect those features to degrade.</string>
+    <string name="privilege_health_capability_next_reconnect">Reconnect or switch modes, then refresh this screen before retrying failed privileged actions.</string>
     <string name="privilege_health_root_manager_title">Root manager</string>
     <string name="privilege_health_root_manager_missing">No root manager detected.</string>
     <string name="privilege_health_root_manager_summary"><xliff:g id="manager" example="Magisk">%1$s</xliff:g> detected via <xliff:g id="source" example="marker directory">%2$s</xliff:g><xliff:g id="extras" example=" + ZygiskNext">%3$s</xliff:g>.</string>

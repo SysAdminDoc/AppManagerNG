@@ -17,6 +17,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Operation history entries now carry recovery-action guidance in details and
   JSON export, including retry, log review, backup restore, restart, and manual
   repair steps where applicable.
+- Privilege health now shows a capability coverage summary with available
+  actions, degraded actions, and the next remediation step for the active mode.
 
 ## v0.6.1 — 2026-06-15
 
