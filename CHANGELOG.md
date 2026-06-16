@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Settings search now uses V2 result cards, a composed no-results state, and
+  appbar progress feedback while the index updates.
+- One-click operations now use sectioned compact and wide layouts with
+  consistent V2 spacing and surface treatment.
 - Backup restore now extracts regular data archives into sibling staging
   directories before clearing the target app, aborts without clearing data when
   archive extraction fails, and preserves staged payloads if post-clear

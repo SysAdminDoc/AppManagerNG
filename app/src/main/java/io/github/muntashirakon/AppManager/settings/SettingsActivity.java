@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -82,7 +81,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     @Nullable
     private RecyclerView mSearchResultsView;
     @Nullable
-    private TextView mSearchEmptyView;
+    private View mSearchEmptyView;
     @Nullable
     private SettingsSearchAdapter mSearchAdapter;
 
@@ -296,9 +295,12 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
             mSearchEmptyView.setVisibility(View.GONE);
             mMainPane.setVisibility(View.VISIBLE);
             mSearchAdapter.submit(Collections.emptyList());
+            progressIndicator.hide();
             return;
         }
         mMainPane.setVisibility(View.GONE);
+        mSearchEmptyView.setVisibility(View.GONE);
+        progressIndicator.show();
         Context appContext = getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
             List<SettingsSearchIndex.Entry> matches = SettingsSearchIndex.get(appContext).search(text);
@@ -310,6 +312,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
                     // Result is stale for the current query
                     return;
                 }
+                progressIndicator.hide();
                 mSearchAdapter.submit(matches);
                 boolean hasMatches = !matches.isEmpty();
                 mSearchResultsView.setVisibility(hasMatches ? View.VISIBLE : View.GONE);
