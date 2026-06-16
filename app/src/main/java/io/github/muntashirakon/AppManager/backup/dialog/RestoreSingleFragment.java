@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.resources.MaterialAttributes;
 
 import java.io.IOException;
@@ -39,6 +38,7 @@ import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.fm.SharableItems;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
@@ -235,12 +235,8 @@ public class RestoreSingleFragment extends Fragment {
 
     private void handleDelete(List<BackupMetadataV5> selectedBackups) {
         FragmentActivity activity = requireActivity();
-        new MaterialAlertDialogBuilder(mContext)
-                .setTitle(R.string.delete_backup)
-                .setMessage(getResources().getQuantityString(R.plurals.delete_selected_backups_confirmation,
-                        selectedBackups.size(), selectedBackups.size()))
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (dialog, which) ->
+        DestructiveActionConfirmation
+                .forBackupDelete(mContext, selectedBackups.size(), (dialog, which) ->
                         ActionAuthGate.authenticate(activity,
                                 R.string.authenticate_to_delete_backups, () -> {
                                     List<String> relativeDirs = new ArrayList<>(selectedBackups.size());

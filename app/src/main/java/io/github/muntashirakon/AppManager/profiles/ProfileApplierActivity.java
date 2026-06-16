@@ -18,6 +18,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import org.json.JSONException;
 
 import java.io.IOException;
@@ -29,6 +31,8 @@ import java.util.Queue;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
@@ -217,20 +221,28 @@ public class ProfileApplierActivity extends BaseActivity {
     }
 
     private void maybeWarnThenApplySimpleProfile(@NonNull ProfileApplierInfo info) {
+        BaseProfile profile = info.profile;
+        if (profile == null) {
+            next();
+            return;
+        }
         List<Integer> unsupportedOperations = getUnsupportedOperations(info);
-        if (unsupportedOperations.isEmpty()) {
+        if (unsupportedOperations.isEmpty() && !requiresProfileApplyConfirmation(profile)) {
             startProfileApplier(info);
             next();
             return;
         }
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.profile_apply_privilege_warning_title)
-                .setMessage(getString(R.string.profile_apply_privilege_warning_message,
-                        formatProfileOperations(this, unsupportedOperations)))
-                .setPositiveButton(R.string.profile_apply_supported_ops, (dialog, which) -> {
-                    startProfileApplier(info);
-                    next();
-                })
+        boolean privilegeWarning = !unsupportedOperations.isEmpty();
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(privilegeWarning
+                        ? getString(R.string.profile_apply_privilege_warning_title)
+                        : getString(R.string.apply_profile, profile.name))
+                .setMessage(getSimpleProfileApplyConfirmationMessage(profile, unsupportedOperations))
+                .setPositiveButton(privilegeWarning ? R.string.profile_apply_supported_ops : R.string.apply_now,
+                        (dialog, which) -> {
+                            startProfileApplier(info);
+                            next();
+                        })
                 .setNegativeButton(R.string.cancel, (dialog, which) -> next())
                 .setOnCancelListener(dialog -> next())
                 .show();
@@ -256,13 +268,15 @@ public class ProfileApplierActivity extends BaseActivity {
                                        @NonNull List<Integer> unsupportedOperations) {
         View view = LayoutInflater.from(this).inflate(R.layout.view_profile_apply_review, null, false);
         ((TextView) view.findViewById(R.id.profile_apply_review_summary))
-                .setText(getProfileApplyReviewSummary(info.profile.type));
+                .setText(getProfileApplyReviewSummary(info.profile));
         TextView warning = view.findViewById(R.id.profile_apply_review_warning);
         if (unsupportedOperations.isEmpty()) {
             warning.setVisibility(View.GONE);
         } else {
-            warning.setText(getString(R.string.profile_apply_privilege_warning_message,
-                    formatProfileOperations(this, unsupportedOperations)));
+            warning.setText(DestructiveActionConfirmation.withSafetyNote(this,
+                    getString(R.string.profile_apply_privilege_warning_message,
+                            formatProfileOperations(this, unsupportedOperations)),
+                    getProfileApplyRisk(info.profile), isProfileApplyReversible(info.profile)));
             warning.setVisibility(View.VISIBLE);
         }
         ((TextView) view.findViewById(R.id.profile_apply_review_meta)).setText(getString(
@@ -274,11 +288,49 @@ public class ProfileApplierActivity extends BaseActivity {
         return view;
     }
 
-    private int getProfileApplyReviewSummary(int profileType) {
-        if (profileType == BaseProfile.PROFILE_TYPE_APPS_FILTER) {
-            return R.string.profile_apply_review_filters_summary;
+    @NonNull
+    private CharSequence getSimpleProfileApplyConfirmationMessage(@NonNull BaseProfile profile,
+                                                                  @NonNull List<Integer> unsupportedOperations) {
+        if (unsupportedOperations.isEmpty()) {
+            return getProfileApplyReviewSummary(profile);
         }
-        return R.string.profile_apply_review_apps_summary;
+        return DestructiveActionConfirmation.withSafetyNote(this,
+                getString(R.string.profile_apply_privilege_warning_message,
+                        formatProfileOperations(this, unsupportedOperations)),
+                getProfileApplyRisk(profile), isProfileApplyReversible(profile));
+    }
+
+    @NonNull
+    private CharSequence getProfileApplyReviewSummary(@NonNull BaseProfile profile) {
+        int summaryRes = profile.type == BaseProfile.PROFILE_TYPE_APPS_FILTER
+                ? R.string.profile_apply_review_filters_summary
+                : R.string.profile_apply_review_apps_summary;
+        return DestructiveActionConfirmation.withSafetyNote(this, getString(summaryRes),
+                getProfileApplyRisk(profile), isProfileApplyReversible(profile));
+    }
+
+    private static boolean requiresProfileApplyConfirmation(@Nullable BaseProfile profile) {
+        return profile != null && getProfileApplyRisk(profile) == OperationJournalMetadata.RISK_HIGH;
+    }
+
+    @OperationJournalMetadata.Risk
+    private static int getProfileApplyRisk(@Nullable BaseProfile profile) {
+        if (profile instanceof AppsBaseProfile && ((AppsBaseProfile) profile).clearData) {
+            return OperationJournalMetadata.RISK_HIGH;
+        }
+        return OperationJournalMetadata.RISK_MEDIUM;
+    }
+
+    private static boolean isProfileApplyReversible(@Nullable BaseProfile profile) {
+        if (!(profile instanceof AppsBaseProfile)) {
+            return false;
+        }
+        AppsBaseProfile appsProfile = (AppsBaseProfile) profile;
+        return !appsProfile.clearData
+                && !appsProfile.forceStop
+                && !appsProfile.clearCache
+                && appsProfile.backupData == null
+                && !appsProfile.saveApk;
     }
 
     @NonNull

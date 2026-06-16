@@ -13,6 +13,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 
 public final class DestructiveActionConfirmation {
     private DestructiveActionConfirmation() {
@@ -24,12 +25,8 @@ public final class DestructiveActionConfirmation {
                                                         @NonNull String selectedCountText,
                                                         @Nullable DialogInterface.OnClickListener onConfirm) {
         OpDescriptor desc = getOpDescriptor(op);
-        String message = context.getString(desc.messageRes, selectedCountText);
-        if (desc.reversible) {
-            message += "\n\n" + context.getString(R.string.destructive_confirm_reversible_note);
-        } else if (desc.risk == OperationJournalMetadata.RISK_HIGH) {
-            message += "\n\n" + context.getString(R.string.destructive_confirm_irreversible_warning);
-        }
+        CharSequence message = withSafetyNote(context,
+                context.getString(desc.messageRes, selectedCountText), desc.risk, desc.reversible);
         return new MaterialAlertDialogBuilder(context)
                 .setTitle(desc.titleRes)
                 .setPositiveButton(desc.actionRes, onConfirm)
@@ -41,12 +38,96 @@ public final class DestructiveActionConfirmation {
     public static MaterialAlertDialogBuilder forKill(@NonNull Context context, int processCount) {
         String countText = context.getResources().getQuantityString(
                 R.plurals.running_apps_kill_count, processCount, processCount);
-        String message = context.getString(R.string.running_apps_kill_dialog_message, countText);
-        message += "\n\n" + context.getString(R.string.destructive_confirm_irreversible_warning);
+        CharSequence message = withSafetyNote(context,
+                context.getString(R.string.running_apps_kill_dialog_message, countText),
+                OperationJournalMetadata.RISK_HIGH, false);
         return new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.running_apps_kill_dialog_title)
                 .setMessage(message)
                 .setNegativeButton(R.string.cancel, null);
+    }
+
+    @NonNull
+    public static MaterialAlertDialogBuilder forClearData(@NonNull Context context,
+                                                          @NonNull CharSequence appLabel,
+                                                          @NonNull CharSequence message,
+                                                          @Nullable DialogInterface.OnClickListener onConfirm) {
+        return new MaterialAlertDialogBuilder(context)
+                .setTitle(appLabel)
+                .setMessage(withSafetyNote(context, message, OperationJournalMetadata.RISK_HIGH, false))
+                .setPositiveButton(R.string.clear, onConfirm)
+                .setNegativeButton(R.string.cancel, null);
+    }
+
+    @NonNull
+    public static MaterialAlertDialogBuilder forDataOnlyPackageClear(@NonNull Context context,
+                                                                     @NonNull CharSequence appLabel,
+                                                                     int appCount,
+                                                                     @Nullable DialogInterface.OnClickListener onConfirm) {
+        return forClearData(context, appLabel, context.getResources().getQuantityString(
+                R.plurals.clear_uninstalled_app_data_confirmation, appCount, appCount), onConfirm);
+    }
+
+    @NonNull
+    public static ScrollableDialogBuilder forUninstall(@NonNull Context context,
+                                                       @NonNull CharSequence appLabel,
+                                                       boolean isSystemApp) {
+        return new ScrollableDialogBuilder(context, withSafetyNote(context,
+                context.getString(isSystemApp ? R.string.uninstall_system_app_message
+                        : R.string.uninstall_app_message),
+                OperationJournalMetadata.RISK_HIGH, false))
+                .setTitle(appLabel)
+                .setCheckboxLabel(R.string.keep_data_and_app_signing_signatures);
+    }
+
+    @NonNull
+    public static MaterialAlertDialogBuilder forBackupDelete(@NonNull Context context,
+                                                             int backupCount,
+                                                             @Nullable DialogInterface.OnClickListener onConfirm) {
+        CharSequence message = context.getResources().getQuantityString(
+                R.plurals.delete_selected_backups_confirmation, backupCount, backupCount);
+        return new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.delete_backup)
+                .setMessage(withSafetyNote(context, message, OperationJournalMetadata.RISK_HIGH, false))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, onConfirm);
+    }
+
+    @NonNull
+    public static MaterialAlertDialogBuilder forBaseBackupDelete(@NonNull Context context,
+                                                                 @Nullable DialogInterface.OnClickListener onConfirm) {
+        return new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.delete_backup)
+                .setMessage(withSafetyNote(context, context.getString(R.string.delete_base_backups_confirmation),
+                        OperationJournalMetadata.RISK_HIGH, false))
+                .setPositiveButton(R.string.delete, onConfirm)
+                .setNegativeButton(R.string.cancel, null);
+    }
+
+    @NonNull
+    public static MaterialAlertDialogBuilder forProfileDelete(@NonNull Context context,
+                                                              @NonNull CharSequence profileName,
+                                                              @Nullable DialogInterface.OnClickListener onConfirm) {
+        return new MaterialAlertDialogBuilder(context)
+                .setTitle(context.getString(R.string.delete_filename, profileName))
+                .setMessage(withSafetyNote(context, context.getString(R.string.profile_delete_confirmation),
+                        OperationJournalMetadata.RISK_HIGH, false))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, onConfirm);
+    }
+
+    @NonNull
+    public static CharSequence withSafetyNote(@NonNull Context context,
+                                              @NonNull CharSequence message,
+                                              @OperationJournalMetadata.Risk int risk,
+                                              boolean reversible) {
+        StringBuilder builder = new StringBuilder(message);
+        if (reversible) {
+            builder.append("\n\n").append(context.getString(R.string.destructive_confirm_reversible_note));
+        } else if (risk == OperationJournalMetadata.RISK_HIGH) {
+            builder.append("\n\n").append(context.getString(R.string.destructive_confirm_irreversible_warning));
+        }
+        return builder;
     }
 
     @NonNull

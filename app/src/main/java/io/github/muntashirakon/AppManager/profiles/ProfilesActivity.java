@@ -29,7 +29,6 @@ import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -48,6 +47,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporter;
 import io.github.muntashirakon.AppManager.profiles.importers.UpstreamCompatProfileExporter;
@@ -508,20 +508,16 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 if (id == R.id.action_apply) {
                     applyProfile(profile);
                 } else if (id == R.id.action_delete) {
-                    new MaterialAlertDialogBuilder(mActivity)
-                            .setTitle(mActivity.getString(R.string.delete_filename, profile.name))
-                            .setMessage(R.string.profile_delete_confirmation)
-                            .setNegativeButton(R.string.cancel, null)
-                            .setPositiveButton(R.string.delete, (dialog, which) -> {
-                                if (ProfileManager.deleteProfile(profile.profileId)) {
-                                    UIUtils.displayShortToast(R.string.deleted_successfully);
-                                    mActivity.mProgressIndicator.show();
-                                    mActivity.showProfilesLoadingState();
-                                    mActivity.mModel.loadProfiles();
-                                } else {
-                                    UIUtils.displayShortToast(R.string.deletion_failed);
-                                }
-                            })
+                    DestructiveActionConfirmation.forProfileDelete(mActivity, profile.name, (dialog, which) -> {
+                        if (ProfileManager.deleteProfile(profile.profileId)) {
+                            UIUtils.displayShortToast(R.string.deleted_successfully);
+                            mActivity.mProgressIndicator.show();
+                            mActivity.showProfilesLoadingState();
+                            mActivity.mModel.loadProfiles();
+                        } else {
+                            UIUtils.displayShortToast(R.string.deletion_failed);
+                        }
+                    })
                             .show();
                 } else if (id == R.id.action_duplicate) {
                     new TextInputDialogBuilder(mActivity, R.string.input_profile_name)
