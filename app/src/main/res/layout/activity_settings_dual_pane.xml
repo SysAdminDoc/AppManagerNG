@@ -31,6 +31,7 @@
                 app:title="@string/settings" />
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/settings_search_progress"
                 style="@style/Widget.AppTheme.LinearProgressIndicator"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

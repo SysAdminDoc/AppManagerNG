@@ -84,6 +84,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     private View mSearchEmptyView;
     @Nullable
     private SettingsSearchAdapter mSearchAdapter;
+    private LinearProgressIndicator mSearchProgressIndicator;
 
     @Override
     protected void onAuthenticated(Bundle savedInstanceState) {
@@ -95,6 +96,13 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
         progressIndicator.hide();
+        mSearchProgressIndicator = findViewById(R.id.settings_search_progress);
+        if (mSearchProgressIndicator == null) {
+            mSearchProgressIndicator = progressIndicator;
+        } else {
+            mSearchProgressIndicator.setVisibilityAfterHide(View.GONE);
+            mSearchProgressIndicator.hide();
+        }
         mMainPane = findViewById(R.id.main_layout);
         mSearchResultsView = findViewById(R.id.settings_search_results);
         mSearchEmptyView = findViewById(R.id.settings_search_empty);
@@ -295,12 +303,12 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
             mSearchEmptyView.setVisibility(View.GONE);
             mMainPane.setVisibility(View.VISIBLE);
             mSearchAdapter.submit(Collections.emptyList());
-            progressIndicator.hide();
+            mSearchProgressIndicator.hide();
             return;
         }
         mMainPane.setVisibility(View.GONE);
         mSearchEmptyView.setVisibility(View.GONE);
-        progressIndicator.show();
+        mSearchProgressIndicator.show();
         Context appContext = getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
             List<SettingsSearchIndex.Entry> matches = SettingsSearchIndex.get(appContext).search(text);
@@ -312,7 +320,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
                     // Result is stale for the current query
                     return;
                 }
-                progressIndicator.hide();
+                mSearchProgressIndicator.hide();
                 mSearchAdapter.submit(matches);
                 boolean hasMatches = !matches.isEmpty();
                 mSearchResultsView.setVisibility(hasMatches ? View.VISIBLE : View.GONE);
