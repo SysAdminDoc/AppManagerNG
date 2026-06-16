@@ -100,7 +100,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
                 apkQueueItem.setApkSource(mApkSource);
                 apkQueueItem.setPackageName(mPackageName);
                 apkQueueItem.setAppLabel(mAppLabel);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.e("PIVM", "Couldn't fetch package info", th);
                 mPackageInfoLiveData.postValue(null);
             }

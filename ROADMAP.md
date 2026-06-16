@@ -9,33 +9,6 @@ into it — existing items take precedence over duplicates.
 
 ## Product Quality Roadmap (2026-06-12)
 
-- [ ] P1 — Unified destructive-action safety model
-  Why: destructive flows should consistently explain impact, name the affected apps/users,
-  distinguish reversible vs irreversible work, and require the same confirmation quality
-  across batch ops, app details, running apps, backup, and profiles.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/{batchops,details,runningapps,backup,profiles}/
-
-- [ ] P1 — Recovery-first operation trail
-  Why: powerful operations should leave a clear recovery path: what changed, what failed,
-  what can be retried, and where logs/history/backups can be used to recover.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/{batchops,history,backup,details}/
-
-- [ ] P1 — Privilege health and capability status surface
-  Why: root/ADB/no-root capability differences shape nearly every workflow; users need a
-  plain status surface that explains available modes, degraded behavior, and remediation.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/{settings,servermanager,adb,runner}/
-
-- [ ] P2 — First-run confidence pass
-  Why: the app exposes advanced controls before users understand privilege mode, backup
-  safety, tracker rules, and restore risk; first-run guidance should establish trust without
-  becoming a marketing screen.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/{main,settings,backup,rules}/
-
-- [ ] P2 — Cross-surface workflow cohesion
-  Why: app list, app details, batch operations, profiles, backup, and running-apps screens
-  should use the same terms, primary actions, result states, and handoff points.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/
-
 - [ ] P2 — Accessibility, keyboard, and touch-target hardening
   Why: dense expert tools still need predictable focus, visible labels, 48dp controls, and
   non-color-only status meaning across dialogs, lists, chips, menus, and result screens.
@@ -73,82 +46,10 @@ device, or need on-device visual verification.
 
 ### Building now (verifiable headless)
 
-- [ ] INIT-2b — Backup overwrite-option UI + move-aside for custom-name collisions (device-gated)
-  Why: the net-new in the 2020 overwrite TODO is a UX feature — offer "overwrite" when a
-  same-NAME backup exists instead of forcing a manual pre-delete (which opens a no-backup
-  window). For custom-name collisions where mBackupPath can be pre-populated, harden
-  commit() to move-the-existing-aside → swap → delete-aside (rollback on failure) so even
-  that window closes. NOT patched blind: moveTo/rename-aside rollback semantics differ
-  between file-backed and SAF-backed Path implementations and the JVM harness only exercises
-  the file backend — a wrong rollback could corrupt backups on SAF storage.
-  Touches: backup/dialog/ (overwrite option), backup/BackupItems.java (move-aside commit)
-  Acceptance: overwrite offered on same-name collision; an injected mid-swap failure leaves
-  the previous backup readable, verified on both file and SAF (Android/data) storage on a
-  device.
-  Complexity: M
-
-- [ ] INIT-4b — Analytics / discovery dashboard screen (device-gated UI wiring)
-  Why: render the INIT-4a summary as the discovery surface (Inure/AppDash-style) with
-  tap-through to a pre-filtered main list — the highest-value "feels premium" feature.
-  Touches: new dashboard fragment + menu entry under main/, build AppDatapoint list from the
-  loaded ApplicationItem set (installer via getInstallerInfo, targetSdk, lastUsageTime),
-  reuse filters/options/ predicates for segment tap-through, existing chart utilities
-  Acceptance: a screen shows installer-source / targetSDK distributions + an "unused
-  30/60/90 days" card; tapping a segment opens the main list pre-filtered to it; verified on
-  a device in light/dark/AMOLED. (Visual + tap-through need on-device verification.)
-  Complexity: M
-
-- [ ] INIT-5 — i18n intake (maintainer-gated: external Weblate instance is the blocker)
-  Why: 44 inherited locales at 30-40%, NG strings English-only, README:187 promises
-  "Weblate (link TBD)". Re-scoped after inspection: the committable repo-side artifacts are
-  thin and hollow without the actual hosted service — a `.weblate` component config pointing
-  at a non-existent project would be fake polish, and CONTRIBUTING.md is gitignored here
-  (`*.md` with only README/RESEARCH/ROADMAP excepted), so a tracked contributor translation
-  doc would need a `.gitignore` exception first. The real blocker is standing up the hosted
-  Weblate (or Crowdin) project — a maintainer/account action, not code.
-  Touches (once the instance exists): `.gitignore` (un-ignore CONTRIBUTING.md), CONTRIBUTING.md
-  (translation section), README:187 (replace "link TBD"), optional `.weblate` + sync workflow
-  Acceptance: a hosted translation project is live and linked from README; top-5 inherited
-  locales get the NG-string components; CI accepts translation commits. Until then this stays
-  maintainer-gated rather than shipping placeholder config.
-  Progress 2026-06-15: repo-side contributor docs are now tracked, and README/manual copy no
-  longer promises a live fork-owned Weblate/Crowdin instance. The hosted translation service
-  remains the blocker.
-  Complexity: S (once unblocked)
-
-### Device-gated (specced, not patched blind — see detailed entries below)
-
-- [ ] INIT-D1 — Full main-list ListAdapter / DiffUtil migration (supersedes the manual
-  adapter plumbing that generated many lifecycle bugs). View-ID preservation needs a
-  device. See "Port upstream main-list performance/correctness batch".
-- [ ] INIT-D3 — HMAC mutual auth + native run_server port. See "Port HMAC mutual auth …".
-- [ ] INIT-D5 — Backup round-trip emulator CI. Needs the emulator runner. See "Backup/
-  restore round-trip integration tests in emulator CI".
+(All headless-verifiable items from this initiative are completed or moved
+to `Roadmap_Blocks.md` for device/maintainer-gated work.)
 
 ## Research-Driven Additions
-
-### P1
-
-- [ ] P1 — Backup/restore round-trip integration tests in emulator CI
-  Why: The backup engine has the repo's highest debt concentration (10+ TODOs), zero integration coverage, and is the subsystem users distrust most; the android17-emulator.yml workflow already exists to ride on.
-  Evidence: RESEARCH.md §Architecture (test gaps); backup/adb/AndroidBackupHeader.java:375 FIXME; .github/workflows/android17-emulator.yml
-  Touches: app/src/androidTest/ (new backup round-trip suite), .github/workflows/android17-emulator.yml
-  Acceptance: CI installs a fixture app, backs up (no-crypto + AES), uninstalls, restores, and asserts data equality; suite runs on every PR touching backup/.
-  Complexity: M
-
-- [ ] P1 — Port upstream restore fixes from the v4.1.0 milestone
-  Why: Upstream closed 39 issues for v4.1.0 (due 2026-06-21) including #1286 (non-root restore SecurityException on Samsung/A14 — "package com.google.android.packageinstaller does not belong to 10053"); NG's restore path predates these fixes.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1286 ; upstream commits since 3d11bcb (RESEARCH.md §Competitive)
-  Touches: backup/RestoreOp.java, apk/installer/, compat/PackageManagerCompat.java
-  Acceptance: the #1286 reproduction (non-root restore with a session-based installer on API 34) succeeds; ported commits listed in CHANGELOG with upstream attribution.
-  Complexity: M
-
-- [ ] P1 — Port HMAC mutual auth + native run_server for the local privileged channel
-  Why: Upstream hardened the app↔ADB-server channel with HMAC challenge-response and converted run_server to a native executable (fixing root mode broken since 3.0.0, #948, and reducing detectable service footprint); NG's channel lacks both.
-  Evidence: upstream commits 88eb453, 07c7199, b42efbb, f8d3126 (RESEARCH.md §Competitive); grep: no HMAC in adb/ or libserver/ (verified)
-  Touches: libserver/, server/, adb/, servermanager/
-  Acceptance: server rejects unauthenticated connections (negative test); root mode works on a rooted A16 emulator; ported commits attributed.
-  Complexity: M
 
 ### P2
 
@@ -158,34 +59,6 @@ device, or need on-device visual verification.
   Touches: rules/RulesStorageManager.java, rules/struct/, permissions/ (Inspector drift badges), details/AppDetailsPermissionsFragment
   Acceptance: user pins a reference for a permission/app-op; subsequent drift shows a visible indicator in Permission Inspector with one-tap restore-to-reference; references survive app reinstall via the rule store.
   Complexity: L
-
-- [ ] P2 — Dhizuku freeze/suspend executor parity
-  Why: Upstream permanently rejected Shizuku (issue #55, closed not_planned 2026-06-02) — rootless power is NG's structural lane; Hail proves device-owner delegation (Dhizuku) can freeze/suspend without root, and NG's DhizukuBridge currently feeds only the installer cascade + mode doctor.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/55 ; Hail README capability matrix; dhizuku/DhizukuBridge.java, apk/installer/InstallerPrivilegeCascade.java (verified)
-  Touches: dhizuku/DhizukuBridge.java, batchops/, compat/ (freeze/suspend paths), settings/Ops.java
-  Acceptance: with Dhizuku active and no root/Shizuku, freeze/unfreeze and suspend succeed from app details and batch ops; capability matrix in onboarding reflects it.
-  Complexity: M
-
-- [ ] P2 — Wireless-ADB resilience: trusted-network auto-reconnect + pairing-state surface
-  Why: "ADB mode silently lost" is upstream's pinned unsolved bug (#1596, Samsung kills the server); Shizuku 13.6.0 already ships trusted-WLAN auto-restart and Android won't ship native auto-reconnect before QPR3/A17 (2027) — NG can close the gap now and own the most reliable on-device ADB mode.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1596 ; Shizuku 13.6.0 release notes; androidauthority wireless-adb-auto-reconnect (RESEARCH.md Sources); adb/ has no trusted-network logic (verified)
-  Touches: adb/ (AdbPairingService, connection manager), servermanager/, settings/PrivilegeHealthPreferences.java, onboarding/
-  Acceptance: on reconnecting to a user-designated trusted Wi-Fi, NG re-establishes its ADB connection unattended (Android 11+); pairing/connection state (paired, expired, server killed) is visible in Mode Doctor with recovery steps. Cross-check item "Android 17 audit batch" for ACCESS_LOCAL_NETWORK before targeting API 37.
-  Complexity: L
-
-- [ ] P2 — Fork-owned translation pipeline (Weblate) + NG-string catch-up
-  Why: 44 inherited locales sit at 30-40% coverage and every NG-added string (Permission Inspector, onboarding, changelog viewer) is English-only; README says "Weblate (link TBD)" — the fork has no translation intake at all.
-  Evidence: app/src/main/res/values-*/ counts (RESEARCH.md §Architecture); README.md:183
-  Touches: .github/ (Weblate config/webhook), app/src/main/res/values-*/, CONTRIBUTING.md translation section
-  Acceptance: a hosted Weblate (or equivalent) project is live and linked from README; at least the top-5 inherited locales receive NG-string components; CI accepts translation commits without manual XML fixes.
-  Complexity: M
-
-- [ ] P2 — SAF DocumentsProvider exposure of app-private directories (privileged)
-  Why: Upstream's #516 (7 reactions) asks for third-party access to Android/data and app-private dirs via a documents provider when AM holds privilege; NG already ships AppManagerDocumentsProvider — extending it leapfrogs upstream's open request.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/516 ; fm/AppManagerDocumentsProvider (verified in manifest)
-  Touches: fm/ (documents provider), ipc/ (privileged file streams), settings/ (opt-in toggle, default off)
-  Acceptance: with the toggle on and privilege available, a third-party SAF file manager can browse/copy a test app's /data/data dir through NG's provider; toggle off = provider hides those roots.
-  Complexity: M
 
 
 ### P3
@@ -205,38 +78,6 @@ device, or need on-device visual verification.
   Complexity: M
 
 ## Research-Driven Additions (Pass 2 — 2026-06-10)
-
-### P1
-
-- [ ] P1 — Root-detection retune for 2026 root managers (upstream #1967 + Magisk 30.7 caps change)
-  Why: Upstream's accepted P1 "root not detected on Android 16" (#1967) hits the same probe stack NG owns (runner/RootManagerInfo); separately Magisk v30.7 now preserves capabilities by default, inverting the assumption behind NG's shipped KernelSU/Magisk drop-cap diagnostics, and KernelSU-Next 3.1.0 moved paths again.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1967 ; https://github.com/topjohnwu/Magisk/releases (v30.7 caps default); runner/RootManagerInfo (verified, probes /data/adb/{magisk,ksu,ap})
-  Touches: runner/RootManagerInfo.java, the drop-cap diagnostic surfaces, settings/Ops.java (root mode init), docs/audits/ (dated probe-matrix audit)
-  Acceptance: root detected on an A16 emulator rooted with current Magisk and with KSU-Next; drop-cap diagnostics show correct guidance for Magisk ≥30.7 (caps preserved by default); probe matrix documented.
-  Complexity: M
-
-### P2
-
-- [ ] P2 — Backup overwrite option (close the 2020 TODO)
-  Why: Users must delete an existing backup before re-backing-up to the same slot; the TODO has been open since 2020-09-18 and the delete-first dance multiplies data-loss windows (no backup exists between delete and new backup).
-  Evidence: backup/dialog/ BackupFragment "TODO: Add overwrite option" (verified in tree); RESEARCH.md §Security
-  Touches: backup/dialog/ (option UI), backup/BackupManager.java (atomic replace: write-new-then-swap, never delete-first)
-  Acceptance: overwrite is offered when a same-name backup exists and is atomic — an interrupted overwrite leaves the previous backup intact (unit test with injected failure).
-  Complexity: M
-
-- [ ] P2 — ApplicationStartInfo "why did this app start" panel (API 35+)
-  Why: ActivityManager.getHistoricalProcessStartReasons() exposes per-start reason (alarm/broadcast/push/job/launcher), start type, and create→first-frame timings — a forensic per-app surface that fits NG's inspection identity and that no manager in the niche ships; NG has zero usage of the API today (verified).
-  Evidence: https://developer.android.com/reference/android/app/ApplicationStartInfo ; grep: no ApplicationStartInfo in tree (verified)
-  Touches: details/info/ (new card or tab), usage/ (data layer), compat/ActivityManagerCompat.java
-  Acceptance: on API 35+, app details shows recent starts with reason + latency; below API 35 the card is absent (not an error); zero-start apps show an empty state.
-  Complexity: M
-
-- [ ] P2 — Assistant-launched privileged services/broadcasts without root (upstream #1973)
-  Why: Accepted-but-unbuilt upstream feature extending the proven secure-settings assistant trick (already used for non-exported activities) to services and broadcasts in no-root/WRITE_SECURE_SETTINGS mode — a genuine fork-first capability in NG's "rootless power" lane.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1973 (accepted, P3, no implementation)
-  Touches: details/ (component launch actions), the assistant-launch helper used for activities, settings/Ops.java (mode gating)
-  Acceptance: in WRITE_SECURE_SETTINGS mode a non-exported service can be started and a broadcast sent from the component list, with the same confirmation UX as the existing activity path; cleanly refused (with reason) where the mechanism is unavailable.
-  Complexity: M
 
 ### P3
 
@@ -332,15 +173,6 @@ Deduplicated against all sections above.
 
 ## Research-Driven Additions
 
-### P2
-
-- [ ] P2 — Form-factor-aware permission prompt gate
-  Why: WearOS/TV sideload users hit repeated or unreachable permission prompts for settings panels that do not exist on their device class.
-  Evidence: upstream AppManager #1823; PermissionManagerX #61; app/src/main/AndroidManifest.xml leanback feature declaration; app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java permission/settings launch paths.
-  Touches: app/src/main/java/io/github/muntashirakon/AppManager/{details,main,onboarding,settings,self}/, app/src/main/res/values/strings.xml
-  Acceptance: unavailable permission/settings requests are suppressed or downgraded to a single dismissible explanation on TV/Wear; prompts remain reachable by D-pad/round screens; the gate is unit-tested with phone, TV, and Wear capability fixtures.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Hostile APK/APKS archive fixture corpus
@@ -375,102 +207,28 @@ decisions, careful refactoring, or on-device testing.
 
 ### P1
 
-- [ ] P1 — Restore clears app data before extraction (crash = total data loss)
-  Why: RestoreOp.restoreData() calls clearApplicationUserData before extracting the backup. If extraction fails (corrupted tar, disk full, SAF error), the app's original data is gone with no rollback. Needs a copy-then-swap or rollback mechanism.
-  Where: backup/RestoreOp.java:581-598
-  Complexity: L
-
 ### P2
 
 
 - [ ] P2 — Narrow remaining unjustified catch(Throwable) to catch(Exception)
-  Why: catch blocks catch Throwable around standard library, JSON, file I/O, and UI code. This swallows OOM/StackOverflowError/VirtualMachineError silently. ~73 instances around IPC/hidden API calls are justified. AppInfoFragment (17 narrowed) and BatchOpsManager (17 narrowed) are done; remaining files: BackupRetentionPolicy (6), MainRecyclerAdapter (5), AssistActionActivity (9), ~67 others.
-  Where: app/src/main/java/ (87 remaining files)
-  Progress 2026-06-15: narrowed additional ordinary I/O, UI, parser, and settings import/export
-  sites in BackupStorageCheck, ActivityInterceptor, MainRecyclerAdapter, ComponentUtils, and
-  PrivacyPreferences. Deep audit pass also narrowed BackupRetentionPolicy (including callback
-  interface and implementation signatures), ChangelogAutoDisplay, TrackerWindow,
-  AppearanceUtils, ComponentUtils (IFW listing), PathContentInfoImpl, ProcFs,
-  RulesStorageManager, ProcessParser, ComponentRulesPreferences, ModeOfOpsPreference (2),
-  Ops (3), PrivilegeHealthPreferences, PrivilegeModeDoctor, and TroubleshootingPreferences.
-  Hidden API, privileged IPC, reflection, and framework-boundary catches remain intentionally
-  broad. This row stays open because many unrelated call sites remain.
-  Complexity: L
+  Why: catch blocks catch Throwable around standard library, JSON, file I/O, and UI code.
+  This swallows OOM/StackOverflowError/VirtualMachineError silently. ~55 instances around
+  IPC/hidden API calls are justified and intentionally kept broad.
+  Where: app/src/main/java/ (~40 remaining files with narrowable catches)
+  Progress 2026-06-16: narrowed ~170 catches across 92 files in a comprehensive pass
+  covering backup ops (BackupOp, RestoreOp, VerifyOp, converters), all ViewModels
+  (AppDetailsViewModel, AppInfoViewModel, RunningAppsViewModel, MainViewModel, ScannerViewModel,
+  OneClickOpsViewModel, etc.), UI fragments (OnboardingFragment, AppDetailsPermissionsFragment,
+  OpHistoryActivity, etc.), workers/monitors (AutoBackupWorker, PermissionChangeMonitor,
+  RoutineWorker, etc.), activities (AssistActionActivity, TermActivity, AutomationReceiver,
+  etc.), and database/utility files. Remaining ~115 catches are in IPC bridges (ShizukuBridge,
+  DhizukuBridge), hidden API compat layers (PackageInstallerCompat, AppOpsManagerCompat,
+  PermissionToggleHelper), privileged services (ComponentsBlocker, FreezeUnfreezeService),
+  framework-boundary code (Ops, ExUtils), and a handful of mixed files (BatchOpsManager,
+  BatchOpsService, PackageInstallerActivity) where individual-site triage is needed.
+  Complexity: S (remaining)
 
 ### P3
 
 
-
-## Research-Driven Additions (Pass 4 — 2026-06-14)
-
-Post-v0.6.0 pass. Most prior-pass top opportunities shipped before v0.6.0; the items
-below are the verified remainder, deduplicated against every section above. The GCM
-multi-file nonce-reuse "bug" was verified already fixed (per-file IV v6 + per-archive
-HKDF key v7) and is intentionally NOT listed — see RESEARCH.md §Rejected.
-
-### P1
-
-- [ ] P1 — Validate & fix Android 17 app-list enumeration (device-gated)
-  Why: Upstream #1948 reports the main app list comes up empty/sparse on Android 17 — an OS-level enumeration regression that applies regardless of targetSdk and has no working answer anywhere in the ecosystem; NG's A17 work so far was a static behavior-change audit, not an on-device enumeration check. Re-validate the Shizuku 13.6.0 / Dhizuku 2.11.2 lanes on A17 in the same pass (both upstream tools have shipped no A17 release).
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/1948 ; RESEARCH.md §Security (A17); main/MainViewModel + compat/PackageManagerCompat (getInstalledPackages/queryIntent* enumeration path)
-  Touches: main/MainViewModel.java, compat/PackageManagerCompat.java, runner/ + servermanager/ (Shizuku/Dhizuku bind on A17), .github/workflows/android17-emulator.yml (enumeration smoke test)
-  Acceptance: on an API-37 emulator the main list enumerates the same package set it does on API 36 (no empty/sparse regression); root/Shizuku/Dhizuku bind successfully or fail with a surfaced, actionable reason; an emulator smoke test asserts a non-empty list. NOT patched blind — needs the A17 emulator/device.
-  Complexity: M
-
-### P2
-
-
-## Research-Driven Additions (Pass 5 — 2026-06-14)
-
-Newly surfaced, verified against current source, deduplicated against every section above.
-Backing analysis: RESEARCH.md.
-
-### P1
-
-
-### P3
-
-
-
-
-## Research-Driven Additions (Pass 6 — 2026-06-14)
-
-Newly surfaced, verified against current source, deduplicated against every section above.
-Backing analysis: RESEARCH.md.
-
-### P1
-
-- [x] P1 — Rebaseline shipped docs and privacy policy for AppManagerNG
-  Why: AppManagerNG now has its own package ID, release channel, maintainer identity, `floss`/`full` flavor split, and optional full-flavor network features, but the packaged docs and top-level privacy/build docs still identify upstream App Manager in critical places. A privileged package manager needs clear provenance and privacy disclosure before adding more user-facing breadth.
-  Evidence: `docs/build.gradle` wires `preBuild.dependsOn buildDocs`, so generated docs are shipped; `docs/raw/**/index.html` still says App Manager v4.0.5, upstream package IDs, upstream issue tracker, upstream release channels, and upstream contacts; `BUILDING.rst:4,65` still says Building App Manager and clones `MuntashirAkon/AppManager`; `PRIVACY_POLICY.rst:11,41,107` still defines the project/site/contact as upstream; `README.md:92-94` links stale planning docs (`COMPLETED.md`, `RESEARCH_REPORT.md`) instead of the live research file. Google Play Data Safety, F-Droid anti-feature policy, and VirusTotal API/upload terms all require accurate app/third-party network disclosure.
-  Touches: `BUILDING.rst`, `PRIVACY_POLICY.rst`, `README.md`, `docs/build.gradle`, `docs/raw/{en,de,es,ja,ru,zh-rCN}/`, docs generation inputs/templates, `app/src/main/res/values/strings.xml` for support/privacy link copy if needed.
-  Acceptance: built docs and top-level docs identify AppManagerNG/SysAdminDoc channels, package IDs, support links, version, and issue tracker; privacy text accurately explains the default `floss` build, optional `full` flavor network features, VirusTotal/Pithus/debloat-definition behavior, and third-party upload implications; README links `ROADMAP.md` and `RESEARCH.md`; `./gradlew :docs:buildDocs` succeeds and a link scan finds no upstream-only support/release URLs except explicit attribution.
-  Completed 2026-06-15: rebaselined packaged manual identity/source/distribution/contact
-  sections, privacy/build/README planning docs, and support/settings copy. Verified
-  `:docs:buildDocs`, `:app:processFlossDebugResources`, and
-  `:app:compileFlossDebugJavaWithJavac`; shipped supported-manual link scan found no stale
-  upstream support/release URLs.
-  Complexity: M
-
-### P2
-
-- [ ] P2 — Make the v0.7 API 21→23 floor-lift decision explicit
-  Why: API 21-22 support is currently intentional, but it pins multiple core dependency families below current release lines. Room 2.8+, WorkManager 2.11+, Activity 1.12+, and Material Components 1.14+ all carry fixes or platform features behind minSdk 23, so v0.7 needs a dated product/maintenance decision instead of silent dependency drift.
-  Evidence: `versions.gradle` pins Material 1.13.0, WorkManager 2.10.5, Room 2.7.2, Activity 1.11.0, and related API-21-compatible lines; `docs/policy/minsdk-21-ceiling.md` and `docs/policy/2026-05-26-minsdk-23-decision.md` document the current ceiling; AndroidX/Material release notes now show current lines requiring minSdk 23.
-  Touches: `docs/policy/minsdk-21-ceiling.md`, `docs/policy/2026-05-26-minsdk-23-decision.md`, `versions.gradle`, CI/emulator matrix docs, README badges if the floor changes.
-  Acceptance: a v0.7 decision memo records API 21-22 install/support signal, dependency security/bugfix delta, CI impact, and maintainer decision; either the project reaffirms API 21 with a next review date and pinned-dependency watch list, or lands a coordinated minSdk 23 bump with dependency, docs, CI, and release-note updates.
-  Complexity: S
-
-## Research-Driven Additions
-
-### P0 - Critical Security and Data Safety
-
-### P1 - Reliability and Hardening
-
-
-### P2 - Evidence Quality and Observability
-
-
-
-### P3 - Operational Maturity
 

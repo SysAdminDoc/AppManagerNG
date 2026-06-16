@@ -75,7 +75,7 @@ public final class ProfilingTriggerHelper {
         } catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException e) {
             // API surface not yet present on this device; silently no-op.
             Log.d(TAG, "ProfilingManager API absent: " + e.getClass().getSimpleName());
-        } catch (Throwable t) {
+        } catch (Exception t) {
             // Any other reflection failure: don't crash app startup.
             Log.w(TAG, "Failed to register ProfilingManager triggers", t);
         }

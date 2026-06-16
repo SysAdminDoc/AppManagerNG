@@ -163,7 +163,7 @@ public class TermActivity extends BaseActivity {
                                 runOnUiThread(() -> processChunk(chunk, mAnsiState));
                             }
                         }
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
@@ -177,7 +177,7 @@ public class TermActivity extends BaseActivity {
                                 runOnUiThread(() -> processChunk(chunk, mAnsiState));
                             }
                         }
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
@@ -188,7 +188,7 @@ public class TermActivity extends BaseActivity {
                     appendOutput("\n" + finalRoute.getProcessEndedText(this, exitCode) + "\n");
                     mCommandInput.setEnabled(false);
                 });
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Log.e(TAG, e);
                 TerminalRoute finalRoute = route;
                 runOnUiThread(() -> {
@@ -209,7 +209,7 @@ public class TermActivity extends BaseActivity {
                 LocalServices.bindServicesIfNotAlready();
                 route = TerminalRoute.resolve(LocalServices.alive(), Ops.isDirectRoot(), Ops.isShizuku(),
                         Ops.isAdb(), Users.getSelfOrRemoteUid());
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Log.e(TAG, e);
             }
         }
@@ -232,7 +232,7 @@ public class TermActivity extends BaseActivity {
         try {
             mProc = ProcessCompat.exec(SHELL_COMMAND, SHELL_ENV);
             return route;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Log.e(TAG, e);
             TerminalRoute fallbackRoute = route.withLocalFallback();
             runOnUiThread(() -> {
@@ -567,7 +567,7 @@ public class TermActivity extends BaseActivity {
                     mProcessOutputStream.write("\n".getBytes(StandardCharsets.UTF_8));
                 }
                 mProcessOutputStream.flush();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Log.e(TAG, e);
                 appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n");
             }

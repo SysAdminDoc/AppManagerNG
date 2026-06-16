@@ -35,7 +35,7 @@ final class InstallerIconSanitizer {
                 return icon;
             }
             return renderDrawable(context, icon, fallbackIcon, maxEdge);
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return fallbackIcon;
         }
     }
@@ -74,7 +74,7 @@ final class InstallerIconSanitizer {
         try {
             icon.setBounds(0, 0, scaledSize[0], scaledSize[1]);
             icon.draw(canvas);
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return fallbackIcon;
         } finally {
             icon.setBounds(oldLeft, oldTop, oldRight, oldBottom);

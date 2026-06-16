@@ -26,6 +26,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
+import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -161,23 +162,72 @@ public final class OperationJournalMetadata implements IJsonSerializer {
                                                       boolean success,
                                                       boolean requiresRestart,
                                                       @Nullable Throwable error) {
+        return forProfile(context, item, success, requiresRestart, null,
+                error != null ? error.getMessage() : null);
+    }
+
+    @NonNull
+    public static OperationJournalMetadata forProfile(@NonNull Context context,
+                                                      @NonNull ProfileQueueItem item,
+                                                      boolean success,
+                                                      boolean requiresRestart,
+                                                      @Nullable ProfileApplierResult result,
+                                                      @Nullable String failureMessage) {
+        int targetCount = getProfileTargetCount(result);
+        int failedCount = getProfileFailedCount(success, targetCount, result);
+        if (failedCount > targetCount) {
+            targetCount = failedCount;
+        }
         Builder builder = builder(context)
                 .setOperationLabel(context.getString(R.string.profiles))
-                .setTargetCount(1)
-                .setFailedCount(success ? 0 : 1)
+                .setTargetCount(targetCount)
+                .setFailedCount(failedCount)
                 .setExitCode(success ? 0 : 1)
                 .setRequiresRestart(requiresRestart)
                 .setReplayable(true)
                 .setReversible(false)
                 .setRisk(RISK_HIGH)
                 .setRollbackHint(ROLLBACK_MANUAL_REAPPLY)
-                .setRecoveryActions(getRecoveryActionsForRollbackHint(ROLLBACK_MANUAL_REAPPLY, success ? 0 : 1,
+                .setRecoveryActions(getRecoveryActionsForRollbackHint(ROLLBACK_MANUAL_REAPPLY, failedCount,
                         true, requiresRestart, false))
-                .setTargetPreview(item.getProfileName());
-        if (!success && error != null && error.getMessage() != null) {
-            builder.setFailureMessage(error.getMessage());
+                .setTargetPreview(getProfileTargetPreview(item, result));
+        if (!success && failureMessage != null && !failureMessage.isEmpty()) {
+            builder.setFailureMessage(failureMessage);
         }
         return builder.build();
+    }
+
+    private static int getProfileTargetCount(@Nullable ProfileApplierResult result) {
+        if (result == null || result.getTargetCount() <= 0) {
+            return 1;
+        }
+        return result.getTargetCount();
+    }
+
+    private static int getProfileFailedCount(boolean success, int targetCount,
+                                             @Nullable ProfileApplierResult result) {
+        if (success) {
+            return 0;
+        }
+        if (result == null) {
+            return 1;
+        }
+        int failedPackages = result.getFailedPackageCount();
+        if (result.hasSkippedOperations()) {
+            return Math.max(1, Math.max(targetCount, failedPackages));
+        }
+        return Math.max(1, failedPackages);
+    }
+
+    @NonNull
+    private static List<String> getProfileTargetPreview(@NonNull ProfileQueueItem item,
+                                                        @Nullable ProfileApplierResult result) {
+        ArrayList<String> targets = new ArrayList<>();
+        targets.add(item.getProfileName());
+        if (result != null) {
+            targets.addAll(result.getFailedPackages());
+        }
+        return targets;
     }
 
     @NonNull
@@ -244,7 +294,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static String getLastBootstrapSignatureSafely() {
         try {
             return LocalServer.getLastBootstrapSignature();
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return "";
         }
     }

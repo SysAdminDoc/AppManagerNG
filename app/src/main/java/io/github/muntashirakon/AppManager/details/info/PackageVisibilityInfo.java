@@ -140,7 +140,7 @@ public final class PackageVisibilityInfo {
         List<PackageInfo> installed;
         try {
             installed = pm.getInstalledPackages(getQueriesFlag());
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return Collections.emptyList();
         }
         if (installed == null) return Collections.emptyList();

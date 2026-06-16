@@ -194,7 +194,7 @@ public class AppUsageStatsManager {
             try {
                 packageUsageInfoList.addAll(getUsageStatsInternal(interval, userId));
                 re = null;
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 re = e;
             }
         } while (0 != --_try && packageUsageInfoList.isEmpty());

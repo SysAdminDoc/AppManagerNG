@@ -109,7 +109,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         IoUtils.closeQuietly(mFileCache);
         try {
             VirtualFileSystem.unmount(mDexVfsId);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -486,7 +486,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         try {
             NativeLibraries nativeLibraries = new NativeLibraries(mApkFile);
             mNativeLibraries = nativeLibraries.getUniqueLibs();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             mNativeLibraries = Collections.emptyList();
         }
         try {
@@ -498,7 +498,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             DexFileSystem dfs = (DexFileSystem) Objects.requireNonNull(VirtualFileSystem.getFileSystem(mDexVfsId));
             mAllClasses = dfs.getDexClasses().getBaseClassNames();
             Collections.sort(mAllClasses);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
             mAllClasses = Collections.emptyList();
         }

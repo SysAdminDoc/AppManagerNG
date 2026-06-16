@@ -219,7 +219,7 @@ public final class ProviderQueryUtils {
                 default:
                     return limitCell(cursor.getString(columnIndex));
             }
-        } catch (Throwable throwable) {
+        } catch (Exception throwable) {
             return "<unreadable: " + throwable.getClass().getSimpleName() + ">";
         }
     }

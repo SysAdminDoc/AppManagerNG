@@ -104,7 +104,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
             try {
                 packages = PackageManagerCompat.getInstalledPackages(
                         PackageManager.GET_PERMISSIONS, userId);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 packages = Collections.emptyList();
             }
             if (packages == null) packages = Collections.emptyList();
@@ -132,7 +132,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                 Drawable icon = null;
                 try {
                     icon = ai != null ? ai.loadIcon(pm) : null;
-                } catch (Throwable ignore) {}
+                } catch (Exception ignore) {}
                 boolean isSystem = ai != null && (ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
                 boolean modifiable = false;
                 if (firstMatch != null) {

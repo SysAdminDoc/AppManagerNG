@@ -97,7 +97,7 @@ public final class SigningCertChangeMonitor {
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("signing_cert", packageName, title, body));
             try {
                 postNotification(appContext, packageName, title, body);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Log.w(TAG, "Could not post signing-cert change notification for " + packageName, t);
             }
         }
@@ -119,7 +119,7 @@ public final class SigningCertChangeMonitor {
                 store.put(pi.packageName, computeSnapshotFromPackageInfo(pi));
                 ++seen;
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "primeSnapshotsForAllPackages failed", t);
         }
         return seen;

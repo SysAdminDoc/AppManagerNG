@@ -83,7 +83,7 @@ public final class DebloatImpactPreview {
         RoleManager rm;
         try {
             rm = (RoleManager) context.getSystemService(Context.ROLE_SERVICE);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return new Result(Collections.emptyMap());
         }
         if (rm == null) return new Result(Collections.emptyMap());
@@ -94,7 +94,7 @@ public final class DebloatImpactPreview {
             try {
                 if (!rm.isRoleAvailable(role)) continue;
                 holders = getRoleHolders(rm, role);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 continue;
             }
             if (holders == null || holders.isEmpty()) continue;

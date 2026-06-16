@@ -71,7 +71,7 @@ public final class AppMemorySnapshotLoader {
             if (result == null) return null;
             String output = result.getOutput();
             return (output == null || output.isEmpty()) ? null : output;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             return null;
         }
     }

@@ -199,7 +199,7 @@ public final class SupportInfoBundle {
             }
             String stderr = result.getStderr().isEmpty() ? "" : "\n" + TextUtils.join("\n", result.getStderr());
             return "logcat unavailable: exit " + result.getExitCode() + scrubForPublicIssue(stderr);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             return "logcat unavailable: " + th.getClass().getSimpleName();
         }
     }

@@ -72,7 +72,7 @@ public final class SystemAppRescueArtifacts {
                             | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES,
                     target.getUserId());
             return (info.flags & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return false;
         }
     }

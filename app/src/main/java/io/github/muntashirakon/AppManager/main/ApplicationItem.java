@@ -380,7 +380,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
                         }
                     }
                 }
-            } catch (Throwable ignore) {
+            } catch (Exception ignore) {
             }
         }
         return pm.getDefaultActivityIcon();

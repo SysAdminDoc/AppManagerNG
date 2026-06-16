@@ -73,7 +73,7 @@ public final class ApkDuplicateOperations {
             }
             return new ApkDuplicateSelector.Candidate(apk, packageInfo.packageName, versionCode,
                     cert, apk.length());
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Failed to parse APK candidate: " + apk, th);
             return null;
         } finally {
@@ -110,7 +110,7 @@ public final class ApkDuplicateOperations {
                     io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                             "Failed to delete duplicate APK: " + candidate.path);
                 }
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                         "Error deleting duplicate APK: " + candidate.path, th);
             }

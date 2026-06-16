@@ -38,12 +38,12 @@ public class RoutinePackageChangeReceiver extends BroadcastReceiver {
                 if (isFreshInstall) {
                     try {
                         PackageReappearanceMonitor.onPackageAdded(appContext, finalPackageName);
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         Log.w(TAG, "Could not check package reappearance for " + finalPackageName, th);
                     }
                 }
                 RoutineScheduler.enqueuePackageEventTriggers(appContext, triggerType, finalPackageName);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.w(TAG, "Could not dispatch package routine trigger for " + finalPackageName, th);
             } finally {
                 pending.finish();

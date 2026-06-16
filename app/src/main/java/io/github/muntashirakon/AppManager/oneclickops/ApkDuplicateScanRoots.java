@@ -109,7 +109,7 @@ public final class ApkDuplicateScanRoots {
         try {
             Path path = Prefs.Storage.getAppManagerDirectory();
             return path.getFile();
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Failed to resolve configured AppManager directory for APK duplicate scan.", th);
             return null;
         }

@@ -78,7 +78,7 @@ public class HexViewerActivity extends BaseActivity {
         }
         try {
             mPath = Paths.get(uri);
-        } catch (Throwable throwable) {
+        } catch (Exception throwable) {
             UIUtils.displayLongToast(getString(R.string.hex_viewer_open_failed, getErrorMessage(throwable)));
             finish();
             return;
@@ -168,7 +168,7 @@ public class HexViewerActivity extends BaseActivity {
                 if (foundOffset == -1 && finalStartOffset > 0) {
                     foundOffset = HexViewerUtils.findInPath(path, pattern, 0);
                 }
-            } catch (Throwable throwable) {
+            } catch (Exception throwable) {
                 error = throwable;
             }
             long finalFoundOffset = foundOffset;
@@ -210,7 +210,7 @@ public class HexViewerActivity extends BaseActivity {
             try {
                 page = HexViewerUtils.readPage(path, finalOffset, HexViewerUtils.PAGE_SIZE);
                 lines = HexViewerUtils.buildLines(page, finalOffset);
-            } catch (Throwable throwable) {
+            } catch (Exception throwable) {
                 error = throwable;
             }
             byte[] finalPage = page;

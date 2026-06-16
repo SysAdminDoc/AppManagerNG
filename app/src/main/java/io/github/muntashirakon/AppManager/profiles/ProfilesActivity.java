@@ -148,7 +148,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                         } else {
                             preview = ExternalProfileImporter.importStream(in, displayName);
                         }
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         error = t.getClass().getSimpleName()
                                 + (t.getMessage() != null ? ": " + t.getMessage() : "");
                     }

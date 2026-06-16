@@ -918,7 +918,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private void launchNextStep(@NonNull android.content.Intent intent) {
         try {
             startActivity(intent);
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             // Fall through; sheet stays open so the user can pick another tile.
             return;
         }
@@ -933,7 +933,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         try {
             return android.provider.Settings.Global.getInt(
                     requireContext().getContentResolver(), "adb_enabled", 0) != 0;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return false;
         }
     }
@@ -942,7 +942,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         try {
             startActivity(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
         }
     }
 
@@ -958,7 +958,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         try {
             return android.provider.Settings.Global.getInt(
                     requireContext().getContentResolver(), "adb_wifi_enabled", 0) != 0;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return false;
         }
     }

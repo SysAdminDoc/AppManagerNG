@@ -85,7 +85,7 @@ public class AutoBackupWorker extends Worker {
             try {
                 setForegroundAsync(createForegroundInfo(context.getString(R.string.auto_backup_notification_title),
                         runningMessage, 0, 0, true)).get();
-            } catch (Throwable fgErr) {
+            } catch (Exception fgErr) {
                 // Promoting to a foreground service can fail (background-restricted
                 // app, OEM FGS limits). Surface that distinctly and RETRY rather than
                 // logging it as a generic "backup failed" and dropping this periodic
@@ -159,7 +159,7 @@ public class AutoBackupWorker extends Worker {
                     .putInt("failed", failed)
                     .putInt("skipped_recent", skipped)
                     .build());
-        } catch (Throwable th) {
+        } catch (Exception th) {
             if (th instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }

@@ -90,7 +90,7 @@ public class ManifestViewerViewModel extends AndroidViewModel {
                         AndroidBinXmlDecoder.decode(byteBuffer, ps);
                     }
                     mManifestLiveData.postValue(Uri.fromFile(cachedFile));
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     Log.e(TAG, "Could not parse APK", e);
                 }
             }

@@ -69,7 +69,7 @@ public final class DebloatDefinitionsUpdater {
                 } else {
                     Log.i(TAG, "Debloat definitions already current: %s", result.version);
                 }
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.w(TAG, "Could not update debloat definitions.", th);
             }
         }, "debloat-definitions-updater").start();
@@ -162,7 +162,7 @@ public final class DebloatDefinitionsUpdater {
                 }
             }
             return true;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             return false;
         }
     }

@@ -395,7 +395,7 @@ public class SplashActivity extends AppCompatActivity {
             Path bundlePath = null;
             try {
                 bundlePath = SupportInfoBundle.writeTextBundle(appContext);
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
             }
             Path finalBundlePath = bundlePath;
             ThreadUtils.postOnMainThread(() -> {

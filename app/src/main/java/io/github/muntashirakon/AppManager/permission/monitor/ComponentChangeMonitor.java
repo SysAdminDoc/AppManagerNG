@@ -79,7 +79,7 @@ public final class ComponentChangeMonitor {
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("components", packageName, title, body));
             try {
                 postNotification(appContext, packageName, title, body);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Log.w(TAG, "Could not post component-change notification for " + packageName, t);
             }
         }
@@ -98,7 +98,7 @@ public final class ComponentChangeMonitor {
                 store.put(pi.packageName, computeSnapshotFromPackageInfo(pi));
                 ++seen;
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "primeSnapshotsForAllPackages failed", t);
         }
         return seen;

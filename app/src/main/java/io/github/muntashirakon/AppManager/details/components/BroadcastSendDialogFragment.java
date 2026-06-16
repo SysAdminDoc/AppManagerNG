@@ -197,7 +197,7 @@ public class BroadcastSendDialogFragment extends DialogFragment {
                     context.sendBroadcast(intent);
                 }
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.receiver_broadcast_sent));
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 String errorMessage = context.getString(R.string.receiver_broadcast_failed, getErrorMessage(e));
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(errorMessage));
             }

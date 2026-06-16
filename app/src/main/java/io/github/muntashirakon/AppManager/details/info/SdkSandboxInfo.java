@@ -52,7 +52,7 @@ public final class SdkSandboxInfo {
         try {
             return fromManifest(Build.VERSION.SDK_INT, new ManifestParser(
                     ApkUtils.getManifestFromApk(new File(info.publicSourceDir))).parseUsesSdkLibraries());
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return fromRaw(Build.VERSION.SDK_INT, Collections.emptyList());
         }
     }

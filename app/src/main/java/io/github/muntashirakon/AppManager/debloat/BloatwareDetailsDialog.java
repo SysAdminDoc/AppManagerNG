@@ -329,7 +329,7 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
                     appDetailsIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     try {
                         startActivity(appDetailsIntent);
-                    } catch (Throwable th) {
+                    } catch (Exception th) {
                         UIUtils.displayLongToast("Error: " + th.getMessage());
                     }
                 });

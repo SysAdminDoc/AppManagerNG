@@ -2,7 +2,7 @@
 
 # minSdk 21 Dependency Ceiling Ledger
 
-Last updated: 2026-06-13.
+Last updated: 2026-06-16.
 
 This ledger tracks every dependency pinned to its last API-21-compatible
 release. If any of these pins become untenable (security advisory, blocking
@@ -56,7 +56,8 @@ As of 2026-06-13, **no forced-decision trigger has fired**:
 - [ ] API 21-22 emulator images dropped from CI (Android SDK / AGP)
 - [ ] External integrator reports real-world minSdk 23 dependency
 
-The recommendation remains: **hold minSdk 21 through v0.6.x**.
+The recommendation remains: **hold minSdk 21 through v0.7.x**. Next
+scheduled review: **2026-09-01** (see decision memo).
 
 ## How to use this ledger
 

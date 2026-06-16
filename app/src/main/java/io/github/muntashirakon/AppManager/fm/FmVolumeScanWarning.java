@@ -39,7 +39,7 @@ final class FmVolumeScanWarning {
             File file = path.getFile();
             return file != null && path.isDirectory()
                     && isLikelyStorageVolumeRoot(file, Environment.getExternalStorageDirectory());
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return false;
         }
     }
@@ -50,7 +50,7 @@ final class FmVolumeScanWarning {
         try {
             Path path = Paths.getStrict(uri);
             file = path.getFile();
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
         }
         String displayPath = FmUtils.getDisplayablePath(uri);
         long totalBytes = file != null ? getVolumeTotalBytes(context, file) : -1;

@@ -59,7 +59,7 @@ public class StorageUtils {
                     if (uuid != null) {
                         volumeUuids.add(uuid);
                     }
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     Log.w(TAG, "Failed to read storage volume UUID.", e);
                 }
             }

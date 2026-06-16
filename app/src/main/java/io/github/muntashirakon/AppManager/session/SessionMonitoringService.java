@@ -56,7 +56,7 @@ public class SessionMonitoringService extends Service {
                     }
                     mScreenLockChecker.checkLock();
                 });
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 th.printStackTrace();
             }
         }

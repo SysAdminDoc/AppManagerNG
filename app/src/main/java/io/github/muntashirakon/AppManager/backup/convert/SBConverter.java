@@ -149,7 +149,7 @@ public class SBConverter extends Converter {
             backupSuccess = true;
         } catch (BackupException e) {
             throw e;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Unknown error occurred.", th);
         } finally {
             mBackupItem.cleanup();
@@ -185,7 +185,7 @@ public class SBConverter extends Converter {
             // We have to specify APK files because the folder may contain many
             sourceFiles = TarUtils.create(mDestMetadata.info.tarType, sourceDir, mBackupItem.getUnencryptedBackupPath(), sourceBackupFilePrefix,
                     apkFiles, null, null, false).toArray(new Path[0]);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("APK files backup is requested but no APK files have been backed up.", th);
         }
         try {
@@ -403,7 +403,7 @@ public class SBConverter extends Converter {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
                 outputStream.flush();
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not back up icon.", th);
         }
     }

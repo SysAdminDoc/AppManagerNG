@@ -60,7 +60,7 @@ public final class PackageReappearanceMonitor {
                 packageName, title, body));
         try {
             postNotification(appContext, packageName, title, body);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "Could not post reappearance notification for " + packageName, t);
         }
     }

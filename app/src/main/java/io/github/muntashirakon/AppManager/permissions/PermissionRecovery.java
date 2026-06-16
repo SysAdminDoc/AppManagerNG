@@ -100,7 +100,7 @@ public final class PermissionRecovery {
                     }
                     cb.commit();
                 }
-            } catch (Throwable ignore) {
+            } catch (Exception ignore) {
             }
             if (touchedPackage) packagesProcessed++;
         }

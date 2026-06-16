@@ -129,7 +129,7 @@ public final class OsRevertMonitor {
                             System.currentTimeMillis());
                     ThreadUtils.postOnMainThread(() -> sRevertEvents.setValue(event));
                 }
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.w(TAG, "Could not verify post-operation state.", th);
             }
         }), delayMillis);

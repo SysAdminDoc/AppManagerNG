@@ -2,10 +2,11 @@
 
 # minSdk 21 -> 23 Decision Memo
 
-Date: 2026-05-26.
+Date: 2026-05-26 (original); 2026-06-16 (v0.7 reaffirmation).
 Owners: project maintainers.
-Status: **recommend deferring the floor lift through v0.6.x; reopen when a
-forced-decision trigger fires (defined below)**.
+Status: **recommend deferring the floor lift through v0.7.x; reopen when a
+forced-decision trigger fires (defined below) or at the next scheduled
+review on 2026-09-01**.
 
 ## Why this memo exists
 
@@ -18,12 +19,65 @@ provides that recommendation and the conditions under which it should flip.
 
 ## Recommendation
 
-**Hold `min_sdk = 21` through at least v0.6.x.** Reopen the decision when any
-one of the forced-decision triggers in the last section fires.
+**Hold `min_sdk = 21` through v0.7.x.** Reopen the decision when any
+one of the forced-decision triggers in the last section fires, or at the
+next scheduled review on **2026-09-01**.
 
 This is not a "do nothing" recommendation: the ledger does the bookkeeping
 that lets us hold the line cheaply. The forced-decision triggers ensure we
 flip when the cost of holding actually rises, not on a fixed calendar.
+
+## v0.7 Reaffirmation (2026-06-16)
+
+The v0.6.x recommendation is extended through v0.7.x after reviewing the
+following signals:
+
+### API 21-22 install/support signal
+
+- No telemetry exists; the decision must remain conservative. The user
+  segment most likely on API 21-22 (custom-ROM tinkerers, old rooted
+  tablets, institutional devices stuck on vendor ROMs) is also the segment
+  NG is built for.
+- No user reports or issue filings have requested features gated behind
+  minSdk 23. No external integrator has reported a minSdk 23 hard
+  dependency.
+- F-Droid, IzzyOnDroid, Obtainium, and Accrescent impose no minSdk floor
+  policy. Distribution is unaffected.
+
+### Dependency security/bugfix delta since v0.6.x decision
+
+| Dependency | Pinned | Current | Security delta | Feature delta for NG |
+|---|---|---|---|---|
+| Material Components | 1.13.0 | 1.14.0+ | No CVEs in 1.13.0 | SplitButton, FocusRingDrawable, expressive typography — nice-to-have, not blocking |
+| Activity | 1.11.0 | 1.12.x+ | No CVEs | Compose-focused APIs — minimal non-Compose benefit |
+| Biometric | 1.4.0-alpha04 | 1.4.0+ | No CVEs | Key-attestation improvements — not used by NG today |
+| Room | 2.7.2 | 2.8.x+ | No CVEs in 2.7.2 | KMP support, performance — no security-relevant changes |
+| WebKit | 1.14.0 | 1.15.x+ | No CVEs | CrUX-only WebView APIs — minimal impact |
+| Sora Editor | 0.24.6 | 0.25.x+ | No CVEs | Newer editor APIs — 0.24.6 is stable |
+| WorkManager | 2.10.5 | 2.11.x+ | No CVEs in 2.10.5 | No security-relevant changes at pinned version |
+
+**No pinned-cluster dependency has a security advisory requiring an
+unpinnable bump.** The security surface of the pinned versions remains
+acceptable.
+
+### CI impact
+
+- API 21-22 emulator images remain available in the Android SDK.
+- AGP 9.2.0 continues to support minSdk 21.
+- The android17-emulator.yml workflow (CI canary) has not flagged any
+  API-floor incompatibility.
+
+### Decision
+
+**Reaffirm minSdk 21 through v0.7.x.** No forced-decision trigger has
+fired. The dependency pins remain maintainable, the security delta is zero,
+and the user-impact of a floor lift remains unquantifiable without
+telemetry.
+
+**Next scheduled review: 2026-09-01**, or earlier if a trigger fires. The
+review should re-check the pinned dependency security surface, the
+AndroidX/Material release cadence, and whether AGP or CI tooling has
+deprecated API 21-22 support.
 
 ## Pros of lifting now (`minSdk = 23` in v0.6.x)
 

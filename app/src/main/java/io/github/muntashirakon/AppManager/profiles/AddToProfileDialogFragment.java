@@ -88,7 +88,7 @@ public class AddToProfileDialogFragment extends DialogFragment {
                         try (OutputStream os = profilePath.openOutputStream()) {
                             profile.appendPackages(packages);
                             profile.write(os);
-                        } catch (Throwable e) {
+                        } catch (Exception e) {
                             isSuccess = false;
                             e.printStackTrace();
                         }

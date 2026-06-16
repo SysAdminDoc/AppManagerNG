@@ -50,7 +50,7 @@ public class HelpActivity extends BaseActivity implements SearchView.OnQueryText
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
         try {
             setContentView(R.layout.activity_help);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             openDocsSite();
             return;
         }

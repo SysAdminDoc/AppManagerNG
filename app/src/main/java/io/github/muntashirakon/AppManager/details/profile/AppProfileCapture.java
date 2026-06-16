@@ -82,7 +82,7 @@ public final class AppProfileCapture {
                 return Result.ok(outputPath);
             }
             return Result.fail(describeFailure(result));
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return Result.fail(t.getMessage());
         }
     }
@@ -109,7 +109,7 @@ public final class AppProfileCapture {
                 return Result.ok(outputPath);
             }
             return Result.fail(describeFailure(result));
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return Result.fail(t.getMessage());
         }
     }

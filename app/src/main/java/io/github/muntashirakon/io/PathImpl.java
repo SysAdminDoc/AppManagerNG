@@ -1441,7 +1441,7 @@ class PathImpl extends Path {
             try {
                 FileSystemManager fs = LocalServices.getFileSystemManager();
                 mChannel = fs.openChannel(path, modeBits);
-            } catch (Throwable throwable) {
+            } catch (Exception throwable) {
                 throw new IOException(throwable);
             }
         }

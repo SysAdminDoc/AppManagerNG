@@ -142,7 +142,7 @@ class RestoreOp implements Closeable {
         // Get checksums
         try {
             mChecksum = mBackupItem.getChecksum();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             mBackupItem.cleanup();
             throw new BackupException("Failed to get checksums.", e);
         }
@@ -232,7 +232,7 @@ class RestoreOp implements Closeable {
             restoreDefaultAppRoles();
         } catch (BackupException e) {
             throw e;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Unknown error occurred", th);
         }
     }
@@ -409,7 +409,7 @@ class RestoreOp implements Closeable {
             // Extract apk files to the package staging directory
             try {
                 TarUtils.extract(mBackupInfo.tarType, backupSourceFiles, packageStagingDirectory, allApkNames, null, null);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 throw new BackupException("Failed to extract the apk file(s).", th);
             }
             // A normal update will do it now
@@ -527,7 +527,7 @@ class RestoreOp implements Closeable {
             Paths.chown(keyStorePath, uidGidPair.uid, uidGidPair.gid);
             //noinspection OctalInteger
             Paths.chmod(keyStorePath, mode & 0777);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to restore the KeyStore files.", th);
         }
         // Rename files
@@ -662,7 +662,7 @@ class RestoreOp implements Closeable {
         }
         try {
             TarUtils.extract(mBackupInfo.tarType, dataFiles, source.source, source.filters, source.exclusions, null);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to restore system data for index " + index + ".", th);
         }
         if (!Utils.isRoboUnitTest()) {
@@ -753,7 +753,7 @@ class RestoreOp implements Closeable {
             String publicSourceDir = new File(Objects.requireNonNull(mPackageInfo.applicationInfo).publicSourceDir).getParent();
             TarUtils.extract(mBackupInfo.tarType, dataFiles, destination, null, BackupUtils
                     .getExcludeDirs(!mRequestedFlags.backupCache(), null), publicSourceDir);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to restore data files for index " + restoreTarget.index + ".", th);
         }
     }
@@ -819,7 +819,7 @@ class RestoreOp implements Closeable {
                 readSide.close();
             }
             t.join();
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to restore ADB data", th);
         }
     }
@@ -947,7 +947,7 @@ class RestoreOp implements Closeable {
                         FreezeUtils.storeFreezeMethod(mPackageName, freezeType);
                         break;
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 // There are several reason restoring these things go wrong, especially when
                 // downgrading from an Android to another. It's better to simply suppress these
                 // exceptions instead of causing a failure or worse, a crash
@@ -999,7 +999,7 @@ class RestoreOp implements Closeable {
         }
         try {
             rules.loadExternalEntries(miscFile);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw new BackupException("Failed to load rules from misc.", e);
         }
     }
