@@ -35,20 +35,6 @@ into it — existing items take precedence over duplicates.
   being robotic, vague, or inconsistent between screens.
   Where: app/src/main/res/values/strings.xml, app/src/main/java/io/github/muntashirakon/AppManager/
 
-## Active Build Initiative — Quality & Capability Push (2026-06-11)
-
-Sequenced from the post-audit improvement review. Items already specced in detail
-elsewhere in this file are cross-referenced rather than duplicated. "Building now"
-items are verifiable headless (compile / resource merge / JVM tests) and are being
-implemented this initiative; "device-gated" items carry full specs but are NOT
-patched blind — they touch the privileged bootstrap, need an emulator/rooted
-device, or need on-device visual verification.
-
-### Building now (verifiable headless)
-
-(All headless-verifiable items from this initiative are completed or moved
-to `Roadmap_Blocks.md` for device/maintainer-gated work.)
-
 ## Research-Driven Additions
 
 ### P2
@@ -187,40 +173,5 @@ Deduplicated against all sections above.
   Evidence: https://github.com/d4rken-org/sdmaid-se (scheduled cache clearing); profiles/RoutineScheduler.java and profiles/RoutineWorker.java (verified: no CLEAR_CACHE operation type); compat/PackageManagerCompat.java (freeStorageAndNotify available for privileged modes)
   Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
   Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
-
-## Deep Audit Follow-ups (2026-06-13)
-
-Deferred from the 2026-06-13 deep engineering audit pass. Fixed items are in
-the commit history / CHANGELOG. Items below were verified real but need design
-decisions, careful refactoring, or on-device testing.
-
-### P1
-
-### P2
-
-
-- [ ] P2 — Narrow remaining unjustified catch(Throwable) to catch(Exception)
-  Why: catch blocks catch Throwable around standard library, JSON, file I/O, and UI code.
-  This swallows OOM/StackOverflowError/VirtualMachineError silently. ~55 instances around
-  IPC/hidden API calls are justified and intentionally kept broad.
-  Where: app/src/main/java/ (~40 remaining files with narrowable catches)
-  Progress 2026-06-16: narrowed ~170 catches across 92 files in a comprehensive pass
-  covering backup ops (BackupOp, RestoreOp, VerifyOp, converters), all ViewModels
-  (AppDetailsViewModel, AppInfoViewModel, RunningAppsViewModel, MainViewModel, ScannerViewModel,
-  OneClickOpsViewModel, etc.), UI fragments (OnboardingFragment, AppDetailsPermissionsFragment,
-  OpHistoryActivity, etc.), workers/monitors (AutoBackupWorker, PermissionChangeMonitor,
-  RoutineWorker, etc.), activities (AssistActionActivity, TermActivity, AutomationReceiver,
-  etc.), and database/utility files. Remaining ~115 catches are in IPC bridges (ShizukuBridge,
-  DhizukuBridge), hidden API compat layers (PackageInstallerCompat, AppOpsManagerCompat,
-  PermissionToggleHelper), privileged services (ComponentsBlocker, FreezeUnfreezeService),
-  framework-boundary code (Ops, ExUtils), mixed files (BatchOpsManager, BatchOpsService)
-  where individual-site triage confirmed all remaining catches are justified, and sites
-  that catch custom Throwable subclasses (ApkFileException, BackupException,
-  CryptoException all extend Throwable directly, not Exception — narrowing these breaks
-  compilation). The remaining ~115 catches are intentionally broad.
-  Complexity: done (remaining catches are justified)
-
-### P3
-
 
 
