@@ -597,7 +597,7 @@ public class OpHistoryActivity extends BaseActivity {
     private void openHistoryTarget(@NonNull Intent intent) {
         try {
             startActivity(intent);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             UIUtils.displayLongToast(R.string.error);
         }
     }
@@ -805,7 +805,7 @@ public class OpHistoryActivity extends BaseActivity {
         Intent shareIntent = buildHistoryShareIntent(subject, OperationHistoryExporter.toText(this, histories));
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.op_history_share_title)));
-        } catch (Throwable e) {
+        } catch (Exception e) {
             UIUtils.displayLongToast(R.string.error);
         }
     }

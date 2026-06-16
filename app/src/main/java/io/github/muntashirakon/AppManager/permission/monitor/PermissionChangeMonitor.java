@@ -107,7 +107,7 @@ public final class PermissionChangeMonitor {
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("permissions", packageName, title, body));
             try {
                 postNotification(appContext, packageName, title, body);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Log.w(TAG, "Could not post permission-change notification for " + packageName, t);
             }
         }
@@ -131,7 +131,7 @@ public final class PermissionChangeMonitor {
                 store.put(pi.packageName, computeSnapshotFromPackageInfo(appContext, pi));
                 ++seen;
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.w(TAG, "primeSnapshotsForAllPackages failed", t);
         }
         return seen;

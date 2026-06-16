@@ -256,7 +256,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                     }
                 }
                 mDuplicateBackupPlan.postValue(new DuplicateBackupPlan(strategy, entries, reclaimable));
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 io.github.muntashirakon.AppManager.logs.Log.w(TAG, "Duplicate backup scan failed", th);
                 // Post null to signal failure — distinct from a successful empty scan, which
                 // posts a non-null empty plan. The observer surfaces an error for null.
@@ -288,7 +288,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                         io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                                 "Failed to delete duplicate backup: " + entry.backup.relativeDir);
                     }
-                } catch (Throwable th) {
+                } catch (Exception th) {
                     ++failed;
                     io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                             "Error deleting duplicate backup: " + entry.backup.relativeDir, th);
@@ -366,7 +366,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                         io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                                 "Failed to delete leftover folder: " + entry.leftover.path);
                     }
-                } catch (Throwable th) {
+                } catch (Exception th) {
                     ++failed;
                     io.github.muntashirakon.AppManager.logs.Log.w(TAG,
                             "Error deleting leftover folder: " + entry.leftover.path, th);

@@ -95,7 +95,7 @@ public class AppActionShortcutActivity extends BaseActivity {
                     Log.w(TAG, "Unknown app action shortcut: " + action);
                     return 0;
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, th);
             return R.string.failed;
         }

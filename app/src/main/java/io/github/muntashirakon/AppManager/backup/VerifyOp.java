@@ -60,7 +60,7 @@ class VerifyOp implements Closeable {
         // Get checksums
         try {
             mChecksum = mBackupItem.getChecksum();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             mBackupItem.cleanup();
             throw new BackupException("Could not get checksums.", e);
         }
@@ -101,7 +101,7 @@ class VerifyOp implements Closeable {
             }
         } catch (BackupException e) {
             throw e;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Unknown error occurred", th);
         }
     }

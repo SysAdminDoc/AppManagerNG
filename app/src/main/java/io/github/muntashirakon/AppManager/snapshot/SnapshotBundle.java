@@ -207,7 +207,7 @@ public final class SnapshotBundle {
                 List<OpHistory> rows = AppsDb.getInstance().opHistoryDao().getAll();
                 opHistoryJson = serializeOpHistory(rows);
                 opHistoryCount = rows.size();
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Log.w(TAG, "Failed to serialize op history; bundling empty history.", t);
                 opHistoryJson = serializeOpHistory(Collections.emptyList());
                 opHistoryCount = 0;
@@ -491,7 +491,7 @@ public final class SnapshotBundle {
                 try {
                     AppsDb.getInstance().opHistoryDao().insert(row);
                     ++restored;
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     Log.w(TAG, "Skipping un-insertable op-history row " + i, t);
                 }
             }

@@ -244,7 +244,7 @@ public final class AutoBackupScheduler {
             String diagnostics = AutoBackupDiagnostics.collect(context);
             Prefs.BackupRestore.setScheduledBackupLastDiagnostics(diagnostics);
             return diagnostics;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             if (th instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }

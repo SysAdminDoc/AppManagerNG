@@ -69,7 +69,7 @@ public class AutomationReceiver extends BroadcastReceiver {
         }
         try {
             dispatch(context, intent);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Rejected automation intent " + intent.getAction(), th);
         }
     }
@@ -146,7 +146,7 @@ public class AutomationReceiver extends BroadcastReceiver {
                     pendingResult.finish();
                 }
             });
-        } catch (Throwable th) {
+        } catch (Exception th) {
             // If the task could never be enqueued (executor rejected/shut down) the
             // Runnable's finally never runs, so finish the PendingResult here to
             // avoid leaking the receiver past its allowed window.
@@ -288,7 +288,7 @@ public class AutomationReceiver extends BroadcastReceiver {
     private void startForegroundService(@NonNull Context context, @NonNull Intent serviceIntent) {
         try {
             ContextCompat.startForegroundService(context, serviceIntent);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not start automation service", th);
         }
     }

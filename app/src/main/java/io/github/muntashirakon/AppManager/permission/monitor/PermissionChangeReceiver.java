@@ -46,21 +46,21 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
                 if (permMonitorOn) {
                     try {
                         PermissionChangeMonitor.onPackageReplaced(appContext, pkg);
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         Log.w(TAG, "Permission change monitor failed for " + pkg, t);
                     }
                 }
                 if (certMonitorOn) {
                     try {
                         SigningCertChangeMonitor.onPackageReplaced(appContext, pkg);
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         Log.w(TAG, "Signing-cert change monitor failed for " + pkg, t);
                     }
                 }
                 if (componentMonitorOn) {
                     try {
                         ComponentChangeMonitor.onPackageReplaced(appContext, pkg);
-                    } catch (Throwable t) {
+                    } catch (Exception t) {
                         Log.w(TAG, "Component change monitor failed for " + pkg, t);
                     }
                 }

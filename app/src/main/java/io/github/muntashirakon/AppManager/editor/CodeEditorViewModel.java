@@ -327,7 +327,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
                     ps.print(DexUtils.toJavaCode(smaliContents, -1));
                 }
                 mJavaFileLiveData.postValue(Uri.fromFile(cachedFile));
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 mJavaFileLiveData.postValue(null);
             }

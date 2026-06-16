@@ -161,7 +161,7 @@ public class OABConverter extends Converter {
             backupSuccess = true;
         } catch (BackupException e) {
             throw e;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Unknown error occurred.", th);
         } finally {
             mBackupItem.cleanup();
@@ -280,7 +280,7 @@ public class OABConverter extends Converter {
             sourceFiles = TarUtils.create(mDestMetadata.info.tarType, baseApkFile, mBackupItem.getUnencryptedBackupPath(), sourceBackupFilePrefix,
                             /* language=regexp */ new String[]{".*\\.apk"}, null, null, false)
                     .toArray(new Path[0]);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("APK files backup is requested but no APK files have been backed up.", th);
         }
         // Overwrite with the new files

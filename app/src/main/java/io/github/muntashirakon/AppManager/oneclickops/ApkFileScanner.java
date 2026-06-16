@@ -183,7 +183,7 @@ public final class ApkFileScanner {
     private static String canonicalPath(@NonNull File file) {
         try {
             return file.getCanonicalPath();
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             return file.getAbsolutePath();
         }
     }

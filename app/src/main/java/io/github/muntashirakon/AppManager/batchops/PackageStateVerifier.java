@@ -82,7 +82,7 @@ public final class PackageStateVerifier {
                 default:
                     return true;
             }
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             return false;
         }
     }

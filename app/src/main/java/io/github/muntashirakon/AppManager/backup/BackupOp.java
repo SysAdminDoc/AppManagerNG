@@ -155,7 +155,7 @@ class BackupOp implements Closeable {
             mApplicationInfo = Objects.requireNonNull(mPackageInfo.applicationInfo);
             // Override existing metadata
             mMetadata = setupMetadataAndCrypto();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             mBackupItem.cleanup();
             throw new BackupException("Failed to setup metadata.", e);
         }
@@ -165,7 +165,7 @@ class BackupOp implements Closeable {
             for (int i = 0; i < certChecksums.length; ++i) {
                 mChecksum.add(CERT_PREFIX + i, certChecksums[i]);
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             mBackupItem.cleanup();
             throw new BackupException("Failed to create checksum file.", e);
         }
@@ -248,7 +248,7 @@ class BackupOp implements Closeable {
             }
         } catch (BackupException e) {
             throw e;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Unknown error occurred.", th);
         }
     }
@@ -403,7 +403,7 @@ class BackupOp implements Closeable {
         try {
             sourceFiles = TarUtils.createDurable(mMetadata.info.tarType, sourceDir, mBackupItem.getUnencryptedBackupPath(), sourceBackupFilePrefix,
                     /* language=regexp */ new String[]{".*\\.apk"}, null, null, false).toArray(new Path[0]);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("APK files backup is requested but no source directory has been backed up.", th);
         }
         try {
@@ -448,7 +448,7 @@ class BackupOp implements Closeable {
                                 mBackupItem.getUnencryptedBackupPath(),
                                 filePrefix, source.filters, null, source.exclusions, false)
                         .toArray(new Path[0]);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 throw new BackupException("Failed to backup system data " + dir, th);
             }
         }
@@ -461,7 +461,7 @@ class BackupOp implements Closeable {
                             filePrefix, null, null,
                             BackupUtils.getExcludeDirs(!mBackupFlags.backupCache(), userExclusions), false)
                     .toArray(new Path[0]);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to backup data directory at " + dir, th);
         }
     }
@@ -496,7 +496,7 @@ class BackupOp implements Closeable {
                 }
             }
             return new Path[]{abFile};
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Failed to backup ADB data.", th);
         }
     }
@@ -526,7 +526,7 @@ class BackupOp implements Closeable {
                 IoUtils.copy(keyStorePath.findFile(keyStoreFileName), cachePath.findOrCreateFile(newFileName, null));
                 cachedKeyStoreFileNames.add(newFileName);
                 keyStoreFilters.add(Pattern.quote(newFileName));
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 throw new BackupException("Could not cache " + keyStoreFileName, e);
             }
         }
@@ -539,7 +539,7 @@ class BackupOp implements Closeable {
             backedUpKeyStoreFiles = TarUtils.createDurable(mMetadata.info.tarType, cachePath, mBackupItem.getUnencryptedBackupPath(), keyStorePrefix,
                             keyStoreFilters.toArray(new String[0]), null, null, false)
                     .toArray(new Path[0]);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             throw new BackupException("Could not backup KeyStore item.", th);
         }
         // Remove cache

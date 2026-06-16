@@ -154,7 +154,7 @@ public final class LocalCrashSink {
                 builder.append(buffer, 0, read);
             }
             return new JSONObject(builder.toString());
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
             return null;
         }
     }

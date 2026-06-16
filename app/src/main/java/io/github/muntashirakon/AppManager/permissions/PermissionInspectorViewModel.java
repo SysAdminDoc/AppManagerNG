@@ -62,7 +62,7 @@ public class PermissionInspectorViewModel extends AndroidViewModel {
             try {
                 packages = PackageManagerCompat.getInstalledPackages(
                         PackageManager.GET_PERMISSIONS, userId);
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 packages = Collections.emptyList();
             }
             if (packages == null) packages = Collections.emptyList();

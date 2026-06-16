@@ -414,7 +414,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                     }
                     sendLogDetails.setAttachmentType("application/zip");
                     sendLogDetails.setAttachment(zipFile);
-                } catch (Throwable th) {
+                } catch (Exception th) {
                     th.printStackTrace();
                     sendLogDetails.setAttachmentType(null);
                 }

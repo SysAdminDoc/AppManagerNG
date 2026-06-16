@@ -115,7 +115,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
                                 ContextCompat.startForegroundService(this, service);
                                 launchActivity();
                             });
-                        } catch (Throwable e) {
+                        } catch (Exception e) {
                             ThreadUtils.postOnMainThread(() -> {
                                 UIUtils.displayShortToast(R.string.failed);
                                 finishActivity(0);
@@ -137,7 +137,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
             try {
                 finishActivity(0);
                 ActivityManagerCompat.startActivity(mIntent, mUserId);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 UIUtils.displayLongToast("Error: " + e.getMessage());
                 // Try assist instead

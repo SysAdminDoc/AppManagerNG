@@ -270,7 +270,7 @@ public final class BackupStorageCheck {
     private static int currentUserId() {
         try {
             return UserHandleHidden.myUserId();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             return 0;
         }
     }

@@ -74,7 +74,7 @@ public class AutomationUriActivity extends BaseActivity {
         AutomationRequest request;
         try {
             request = AutomationRequest.fromIntent(intent);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Rejected public automation request", th);
             UIUtils.displayShortToast(R.string.automation_request_invalid);
             finish();
@@ -165,7 +165,7 @@ public class AutomationUriActivity extends BaseActivity {
             } else {
                 dispatchBatchOperation(request);
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not dispatch public automation request", th);
             UIUtils.displayShortToast(R.string.failed);
         }

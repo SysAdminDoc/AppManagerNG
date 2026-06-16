@@ -110,7 +110,7 @@ public final class LauncherIconAliasController {
         int state;
         try {
             state = pm.getComponentEnabledSetting(component);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             return manifestDefaultEnabled(style);
         }
         switch (state) {

@@ -59,7 +59,7 @@ public final class CredentialProviderManifestInfo {
             List<ManifestComponent> components = new ManifestParser(ApkUtils.getManifestFromApk(
                     new File(applicationInfo.publicSourceDir))).parseComponents();
             return fromRaw(Build.VERSION.SDK_INT, components, services);
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return fromRaw(Build.VERSION.SDK_INT, Collections.emptyList(), services);
         }
     }

@@ -131,7 +131,7 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                     SVG svg = SVGParser.getSVGFromInputStream(is);
                     Bitmap bitmap = svg.getBitmap();
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true), false, true, defaultImage);
-                } catch (Throwable th) {
+                } catch (Exception th) {
                     // There can be runtime exceptions
                     th.printStackTrace();
                 }

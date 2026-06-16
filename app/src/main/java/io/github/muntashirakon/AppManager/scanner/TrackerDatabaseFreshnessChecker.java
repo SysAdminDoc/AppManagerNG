@@ -52,7 +52,7 @@ public final class TrackerDatabaseFreshnessChecker {
                     Prefs.Privacy.setLatestTrackerDatabaseVersion(latestVersion);
                     Log.i(TAG, "Latest tracker database version: %s", latestVersion);
                 }
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 Log.w(TAG, "Could not check tracker database freshness.", th);
             }
         }, "tracker-database-freshness").start();

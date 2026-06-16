@@ -119,7 +119,7 @@ public abstract class AppsDb extends RoomDatabase {
                     .build();
             try {
                 sAppsDb.appDao().getAll();
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 th.printStackTrace();
             }
         }

@@ -705,7 +705,7 @@ public class DeviceInfo2 implements LocalizedString {
                     ++systemApps;
                 } else ++userApps;
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return new Pair<>(userApps, systemApps);

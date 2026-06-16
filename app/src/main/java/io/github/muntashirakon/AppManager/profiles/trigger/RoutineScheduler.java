@@ -165,7 +165,7 @@ public final class RoutineScheduler {
             String diagnostics = RoutineDiagnostics.collect(context, trigger);
             recordDiagnostics(context, trigger.id, diagnostics);
             return diagnostics;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             if (th instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }

@@ -104,18 +104,20 @@ public class ProfileApplierService extends ForegroundService {
             // (batch ops report failures as data, they don't throw). Reflect that in history + the
             // notification instead of always claiming success.
             boolean success = result.isSuccessful();
+            String failureMessage = success ? null : getProfileFailureMessage(result);
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, success,
-                    OperationJournalMetadata.forProfile(this, item, success, requiresRestart, null));
+                    OperationJournalMetadata.forProfile(this, item, success, requiresRestart, result, failureMessage));
             sendNotification(item.getProfileName(), success ? Activity.RESULT_OK : Activity.RESULT_CANCELED,
-                    notify, requiresRestart, result);
-        } catch (Throwable e) {
+                    notify, requiresRestart, failureMessage);
+        } catch (Exception e) {
             // Catch Throwable, not just IOException: applyProfile -> BatchOpsManager can throw
             // RuntimeException (e.g. a profile op whose options failed to deserialize). Letting
             // it propagate kills the service with no history row and no failure notification.
             Log.w(TAG, "Failed to apply profile " + item.getProfileId(), e);
+            String failureMessage = e.getMessage();
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, false,
-                    OperationJournalMetadata.forProfile(this, item, false, false, e));
-            sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false, null);
+                    OperationJournalMetadata.forProfile(this, item, false, false, null, failureMessage));
+            sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false, failureMessage);
         } finally {
             if (profileManager != null) {
                 // Always close the profile log writer.
@@ -175,7 +177,8 @@ public class ProfileApplierService extends ForegroundService {
     }
 
     private void sendNotification(@NonNull String profileName, int result, boolean notify,
-                                  boolean requiresRestart, @Nullable ProfileApplierResult profileApplierResult) {
+                                  boolean requiresRestart,
+                                  @Nullable String failureMessage) {
         NotificationProgressHandler.NotificationInfo notificationInfo = new NotificationProgressHandler
                 .NotificationInfo()
                 .setAutoCancel(true)
@@ -184,13 +187,9 @@ public class ProfileApplierService extends ForegroundService {
                 .setTitle(profileName);
         switch (result) {
             case Activity.RESULT_CANCELED:  // Failure
-                if (profileApplierResult != null && profileApplierResult.hasSkippedOperations()) {
-                    notificationInfo.setBody(getString(R.string.profile_apply_skipped_privileged_ops,
-                            ProfileApplierActivity.formatProfileOperations(this,
-                                    profileApplierResult.getSkippedOperations())));
-                } else {
-                    notificationInfo.setBody(getString(R.string.error));
-                }
+                notificationInfo.setBody(failureMessage != null && !failureMessage.isEmpty()
+                        ? failureMessage
+                        : getString(R.string.operation_result_review_history));
                 break;
             case Activity.RESULT_OK:  // Successful
                 notificationInfo.setBody(getString(R.string.the_operation_was_successful));
@@ -210,5 +209,42 @@ public class ProfileApplierService extends ForegroundService {
                 PendingIntent.FLAG_UPDATE_CURRENT, false);
         notificationInfo.addAction(0, getString(R.string.op_history), historyPendingIntent);
         mProgressHandler.onResult(notify ? notificationInfo : null);
+    }
+
+    @NonNull
+    private String getProfileFailureMessage(@NonNull ProfileApplierResult profileApplierResult) {
+        String failedTargets = getFailedTargetsSummary(profileApplierResult);
+        String skippedOperations = getSkippedOperationsSummary(profileApplierResult);
+        if (failedTargets != null && skippedOperations != null) {
+            return getString(R.string.profile_apply_result_failed_targets_and_skips,
+                    failedTargets, skippedOperations);
+        }
+        if (failedTargets != null) {
+            return getString(R.string.profile_apply_result_failed_targets, failedTargets);
+        }
+        if (skippedOperations != null) {
+            return getString(R.string.profile_apply_result_skipped_ops, skippedOperations);
+        }
+        return getString(R.string.operation_result_review_history);
+    }
+
+    @Nullable
+    private String getFailedTargetsSummary(@NonNull ProfileApplierResult profileApplierResult) {
+        int failedCount = profileApplierResult.getFailedPackageCount();
+        if (failedCount <= 0) {
+            return null;
+        }
+        return getResources().getQuantityString(R.plurals.profile_apply_failed_app_count,
+                failedCount, failedCount);
+    }
+
+    @Nullable
+    private String getSkippedOperationsSummary(@NonNull ProfileApplierResult profileApplierResult) {
+        if (!profileApplierResult.hasSkippedOperations()) {
+            return null;
+        }
+        return getString(R.string.profile_apply_skipped_privileged_ops,
+                ProfileApplierActivity.formatProfileOperations(this,
+                        profileApplierResult.getSkippedOperations()));
     }
 }

@@ -303,7 +303,7 @@ public final class BatchOpsJournal {
     private static String getModeLabel(@NonNull Context context) {
         try {
             return Ops.getInferredMode(context).toString();
-        } catch (Throwable ignore) {
+        } catch (Exception ignore) {
             return Ops.getMode();
         }
     }

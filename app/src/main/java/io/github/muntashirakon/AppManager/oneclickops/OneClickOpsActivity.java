@@ -587,7 +587,7 @@ public class OneClickOpsActivity extends BaseActivity {
         Intent shareIntent = buildLeftoverShareIntent(entries, getString(R.string.leftover_files_export_subject));
         try {
             startActivity(Intent.createChooser(shareIntent, getString(R.string.leftover_files_export_results)));
-        } catch (Throwable throwable) {
+        } catch (Exception throwable) {
             UIUtils.displayLongToast(R.string.export_failed);
         }
     }

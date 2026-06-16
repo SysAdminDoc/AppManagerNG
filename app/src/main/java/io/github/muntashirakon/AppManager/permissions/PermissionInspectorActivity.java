@@ -161,7 +161,7 @@ public class PermissionInspectorActivity extends BaseActivity {
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                     if (mViewModel != null) mViewModel.load();
                 });
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
                     finishRecoveryUi();

@@ -435,14 +435,14 @@ public class AppDb {
                                                 .REQUESTED_PERMISSION_GRANTED) != 0;
                                 if (isGranted) granted++;
                             }
-                        } catch (Throwable ignore) {
+                        } catch (Exception ignore) {
                             // unknown / removed permission; skip
                         }
                     }
                     app.dangerousPermTotal = total;
                     app.dangerousPermGranted = granted;
                 }
-            } catch (Throwable ignore) {
+            } catch (Exception ignore) {
                 // PackageInfo lookup failed; leave counts at 0
             }
             app.codeSize = app.dataSize = 0;

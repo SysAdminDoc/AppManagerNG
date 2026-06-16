@@ -69,7 +69,7 @@ public final class BatchKeepOpenHint {
             sActive.put(activity, snackbar);
             snackbar.show();
             return snackbar;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             // Defensive: Snackbar.make can throw if the view tree has been torn down.
             return null;
         }
@@ -82,7 +82,7 @@ public final class BatchKeepOpenHint {
         if (prior != null) {
             try {
                 prior.dismiss();
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
             }
         }
     }

@@ -263,7 +263,7 @@ public final class LeftoverScanner {
             if (ThreadUtils.isInterrupted()) return total;
             try {
                 total += sizeOnDisk(child);
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
                 // Permission denied on a sub-tree shouldn't fail the whole scan.
             }
         }

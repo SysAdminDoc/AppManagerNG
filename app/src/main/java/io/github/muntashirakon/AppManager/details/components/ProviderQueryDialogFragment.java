@@ -183,7 +183,7 @@ public class ProviderQueryDialogFragment extends DialogFragment {
             Throwable error = null;
             try {
                 result = ProviderQueryUtils.executeQuery(context, request, rowLimit);
-            } catch (Throwable throwable) {
+            } catch (Exception throwable) {
                 error = throwable;
             }
             ProviderQueryUtils.QueryResult finalResult = result;
@@ -280,7 +280,7 @@ public class ProviderQueryDialogFragment extends DialogFragment {
         Intent sendIntent = buildExportShareIntent(result, subject);
         try {
             startActivity(Intent.createChooser(sendIntent, getString(R.string.provider_query_export_results)));
-        } catch (Throwable throwable) {
+        } catch (Exception throwable) {
             UIUtils.displayLongToast(getString(R.string.provider_query_export_failed, getErrorMessage(throwable)));
         }
     }

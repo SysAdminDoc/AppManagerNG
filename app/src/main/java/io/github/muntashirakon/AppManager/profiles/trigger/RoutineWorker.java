@@ -84,7 +84,7 @@ public class RoutineWorker extends Worker {
             RoutineScheduler.recordRunResult(context, trigger.id,
                     context.getString(R.string.profile_trigger_result_started, profile.name));
             return Result.success();
-        } catch (Throwable th) {
+        } catch (Exception th) {
             if (th instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -111,7 +111,7 @@ public class RoutineWorker extends Worker {
     private static void cancelQuietly(@NonNull Context context, @NonNull ProfileTrigger trigger) {
         try {
             RoutineScheduler.cancel(context, trigger);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not cancel scheduled work for trigger " + trigger.id, th);
         }
     }

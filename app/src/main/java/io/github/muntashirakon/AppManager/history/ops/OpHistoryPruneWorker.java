@@ -32,7 +32,7 @@ public class OpHistoryPruneWorker extends Worker {
         }
         try {
             return success(OpHistoryManager.pruneHistoryOlderThan(retentionDays));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, "Failed to prune operation history.", th);
             return Result.failure();
         }

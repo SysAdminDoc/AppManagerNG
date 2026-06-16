@@ -137,7 +137,7 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
                 ServerConfig.init(getApplication());
                 mCustomCommand0.postValue(ServerConfig.getServerRunnerCommand(0));
                 mCustomCommand1.postValue(ServerConfig.getServerRunnerCommand(1));
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 mCustomCommand0.postValue(null);
                 mCustomCommand1.postValue(null);

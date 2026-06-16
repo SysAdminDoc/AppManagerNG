@@ -100,7 +100,7 @@ public class AssistActionActivity extends BaseActivity {
                             | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, target.userId);
             CharSequence label = applicationInfo.loadLabel(getPackageManager());
             return new TargetInfo(target, label, FreezeUtils.isFrozen(applicationInfo), loadComponentActions(target));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not resolve assist target " + target.packageName, th);
             return null;
         }
@@ -143,7 +143,7 @@ public class AssistActionActivity extends BaseActivity {
                             UserHandleHidden.myUserId()));
                 }
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not load assist component actions for " + target.packageName, th);
         }
         return actions;
@@ -157,7 +157,7 @@ public class AssistActionActivity extends BaseActivity {
         UsageEvents events;
         try {
             events = UsageStatsManagerCompat.queryEvents(beginTime, endTime, userId);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not query usage events for assist target.", th);
             return Collections.emptyList();
         }
@@ -299,7 +299,7 @@ public class AssistActionActivity extends BaseActivity {
                         success = true;
                         break;
                 }
-            } catch (Throwable th) {
+            } catch (Exception th) {
                 failure = th;
                 Log.e(TAG, th);
                 toastText = getComponentActionFailureMessage(this, action, th);
@@ -354,7 +354,7 @@ public class AssistActionActivity extends BaseActivity {
                 default:
                     return 0;
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, th);
             return R.string.failed;
         }
@@ -421,7 +421,7 @@ public class AssistActionActivity extends BaseActivity {
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(this, item, success,
                             OperationJournalMetadata.RISK_MEDIUM, false, failure));
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.e(TAG, "Could not record assistant component action history.", th);
         }
     }
@@ -469,7 +469,7 @@ public class AssistActionActivity extends BaseActivity {
     private static List<ActivityManager.RunningServiceInfo> getRunningServices(@NonNull AssistTargetResolver.Target target) {
         try {
             return ActivityManagerCompat.getRunningServices(target.packageName, target.userId);
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not query running services for assist target.", th);
             return Collections.emptyList();
         }
@@ -496,7 +496,7 @@ public class AssistActionActivity extends BaseActivity {
                 }
             }
             return blocked;
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not read assistant target component rules.", th);
             return Collections.emptySet();
         }
@@ -523,7 +523,7 @@ public class AssistActionActivity extends BaseActivity {
                 }
                 receiverIntentDetails.put(component.cn.getClassName(), details);
             }
-        } catch (Throwable th) {
+        } catch (Exception th) {
             Log.w(TAG, "Could not parse receiver intent filters for assistant target.", th);
         }
         return receiverIntentDetails;
