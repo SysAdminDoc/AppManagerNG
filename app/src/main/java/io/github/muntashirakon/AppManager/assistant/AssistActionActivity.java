@@ -523,7 +523,7 @@ public class AssistActionActivity extends BaseActivity {
                 }
                 receiverIntentDetails.put(component.cn.getClassName(), details);
             }
-        } catch (Exception th) {
+        } catch (Throwable th) { // ApkFileException extends Throwable, not Exception
             Log.w(TAG, "Could not parse receiver intent filters for assistant target.", th);
         }
         return receiverIntentDetails;
