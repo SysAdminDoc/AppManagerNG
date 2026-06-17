@@ -257,10 +257,11 @@ public class AppDetailsActivity extends BaseActivity {
         // Check for the existence of package
         model.getIsPackageExistLiveData().observe(this, isPackageExist -> {
             if (!isPackageExist) {
-                if (!model.isExternalApk()) {
-                    UIUtils.displayShortToast(R.string.app_not_installed);
+                if (model.isExternalApk()) {
+                    finish();
+                    return;
                 }
-                finish();
+                showPackageRemovedDialog();
             }
         });
         // Set subtitle as the username if more than one user exists
@@ -389,6 +390,21 @@ public class AppDetailsActivity extends BaseActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showPackageRemovedDialog() {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.app_not_installed)
+                .setMessage(R.string.package_removed_while_viewing)
+                .setPositiveButton(R.string.go_back, (d, w) -> finish())
+                .setNeutralButton(R.string.search, (d, w) -> {
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private void invalidateLoadedTabs() {
