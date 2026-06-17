@@ -121,15 +121,15 @@ Deduplicated against all sections above.
   Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
   Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
 
-## Research-Driven Additions
+## Audit Findings (2026-06-17)
 
-### P2
+### P1
 
-
-
+- [ ] P1 — BackupItems.commit() deletes old backup before verifying move succeeds
+  Why: if mTempBackupPath.moveTo(mBackupPath) fails after the old backup was already deleted, the previous backup is lost with no recovery path.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupItems.java (commit method)
 
 ### P3
-
 
 - [ ] P3 — Component intent-action finder
   Why: Users need to understand why apps start and which broadcast/action paths exist, while adjacent component managers expose intent-action filtering as a key discovery tool.
@@ -137,5 +137,3 @@ Deduplicated against all sections above.
   Touches: component list/search UI; rules/component scanner; app details component tabs; search/filter tests.
   Acceptance: users can search or filter components by intent action, category, exported state, and enabled rule state across apps, then jump directly to the component control; boot-manager work can reuse the same finder backend.
   Complexity: M
-
-

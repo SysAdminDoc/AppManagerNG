@@ -5,6 +5,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Deep audit pass (2026-06-17)
+
+- Fixed BufferedReader resource leak in backup filesystem-type detection
+  (detectFilesystemType used manual close, not try-with-resources).
+- Fixed potential BadTokenException crash when package is uninstalled while
+  app details is in the background: dialog now checks isFinishing/isDestroyed
+  and prevents duplicate dialogs via a guard flag.
+- Fixed null certificate crash in scoped keystore import: getCertificate()
+  can legally return null for PrivateKey entries; now skips the alias instead
+  of constructing a KeyPair with a null cert.
+- Fixed KeyPair.destroy() not always running during import: wrapped in
+  try-finally so key material is disposed even if addKeyPair throws.
+- Fixed race condition in routine trigger run-history persistence: concurrent
+  workers could read the same JSON, modify independently, and lose one
+  entry; appendRunHistory is now synchronized.
+- Fixed corrupted JSON run-history recovery: malformed stored history now
+  resets to empty instead of silently dropping all subsequent entries.
+- Fixed backup preflight concurrent-click: second click while the first
+  preflight is running is now ignored instead of overwriting the pending op.
+- Fixed app-details action rail permanently hidden after package removal:
+  the observer now restores visibility when the package is reinstalled.
+- Fixed null description crash in debloater detail dialog: packages without
+  descriptions no longer throw NPE on trim().
+- FAT32 filesystem detection is now case-insensitive (vfat/VFAT/fat32/FAT32).
+- Profile applier now tracks target count and failed-package count for
+  accurate operation-history recording. Batch results header uses the
+  "needs attention" label matching the recovery language elsewhere.
+
 ### Added
 
 - Manual backups now show estimated size, free space, and storage warnings
