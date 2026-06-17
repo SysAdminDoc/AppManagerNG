@@ -171,6 +171,7 @@
     <string name="obb_size">Obb</string>
     <string name="media_size">Media</string>
     <string name="app_not_installed">App not installed</string>
+    <string name="package_removed_while_viewing">This app was uninstalled or removed while you were viewing it. Destructive controls have been disabled.</string>
     <string name="system">System</string>
     <string name="user">User</string>
     <string name="sort">Sort</string>

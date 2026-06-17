@@ -390,6 +390,12 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     .orElse(Prefs.Blocking.getDefaultFreezingMethod());
             showFreezeDialog(freezeTypeN, freezeType != null);
         });
+        mMainModel.getIsPackageExistLiveData().observe(getViewLifecycleOwner(), isPackageExist -> {
+            if (!isPackageExist && mHorizontalLayout != null) {
+                mHorizontalLayout.removeAllViews();
+                mHorizontalLayout.setVisibility(View.GONE);
+            }
+        });
         mIconView.setOnClickListener(v -> {
             ThreadUtils.postOnBackgroundThread(() -> {
                 String data = ClipboardUtils.readHashValueFromClipboard(ContextUtils.getContext());
