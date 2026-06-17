@@ -123,12 +123,6 @@ Deduplicated against all sections above.
 
 ## Audit Findings (2026-06-17)
 
-### P1
-
-- [ ] P1 — BackupItems.commit() deletes old backup before verifying move succeeds
-  Why: if mTempBackupPath.moveTo(mBackupPath) fails after the old backup was already deleted, the previous backup is lost with no recovery path.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupItems.java (commit method)
-
 ### P3
 
 - [ ] P3 — Component intent-action finder

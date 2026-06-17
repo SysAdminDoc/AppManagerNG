@@ -147,8 +147,14 @@ public class BackupItems {
 
     @NonNull
     private static synchronized Path getTemporaryBackupPath(@NonNull Path originalBackupPath) throws IOException {
+        return getTemporaryBackupPath(originalBackupPath, "");
+    }
+
+    @NonNull
+    private static synchronized Path getTemporaryBackupPath(@NonNull Path originalBackupPath,
+                                                           @NonNull String suffix) throws IOException {
         Path tmpDir = originalBackupPath.requireParent();
-        String tmpFilename = "." + originalBackupPath.getName();
+        String tmpFilename = "." + originalBackupPath.getName() + suffix;
         String newFilename = tmpFilename;
         int i = 0;
         while (tmpDir.hasFile(newFilename)) {
@@ -523,26 +529,77 @@ public class BackupItems {
                     // Backup already done
                     return;
                 }
-                if (!delete()) {
-                    throw new IOException("Could not delete " + mBackupPath);
-                }
                 boolean freezeCommittedBackup = hasFrozenPreviousBackup();
+                Path stagedPreviousBackup = stageCommittedBackupForRollback();
                 if (!mTempBackupPath.moveTo(mBackupPath)) {
+                    restoreCommittedBackup(stagedPreviousBackup);
                     throw new IOException("Could not move " + mTempBackupPath + " to " + mBackupPath);
                 }
-                if (freezeCommittedBackup) {
-                    mBackupPath.createNewFile(FREEZE, null);
-                }
-                if (mPreviousBackups != null) {
-                    for (BackupItem previousBackup : mPreviousBackups) {
-                        if (!previousBackup.delete()) {
-                            Log.w(TAG, "Could not delete %s", previousBackup.mBackupPath);
+                mBackupSuccess = true;
+                // Set backup mode to false to make it read-only and prevent cleanup from deleting the committed path.
+                mBackupMode = false;
+                try {
+                    if (freezeCommittedBackup) {
+                        mBackupPath.createNewFile(FREEZE, null);
+                    }
+                    if (mPreviousBackups != null) {
+                        for (BackupItem previousBackup : mPreviousBackups) {
+                            if (!previousBackup.delete()) {
+                                Log.w(TAG, "Could not delete %s", previousBackup.mBackupPath);
+                            }
                         }
                     }
+                } finally {
+                    if (stagedPreviousBackup != null && stagedPreviousBackup.exists()
+                            && !stagedPreviousBackup.delete()) {
+                        Log.w(TAG, "Could not delete staged previous backup %s", stagedPreviousBackup);
+                    }
                 }
-                mBackupSuccess = true;
-                // Set backup mode to false to make it read-only
-                mBackupMode = false;
+            }
+        }
+
+        @Nullable
+        private Path stageCommittedBackupForRollback() throws IOException {
+            if (!mBackupPath.exists()) {
+                return null;
+            }
+            if (mBackupPath.isDirectory() && mBackupPath.listFiles().length == 0) {
+                if (!mBackupPath.delete()) {
+                    throw new IOException("Could not delete empty backup placeholder " + mBackupPath);
+                }
+                return null;
+            }
+            Path stagedBackupPath = getTemporaryBackupPath(mBackupPath, ".rollback");
+            if (!stagedBackupPath.delete()) {
+                throw new IOException("Could not prepare rollback path " + stagedBackupPath);
+            }
+            Path stagedBackup = mBackupPath.copyTo(stagedBackupPath);
+            if (stagedBackup == null) {
+                throw new IOException("Could not stage existing backup " + mBackupPath);
+            }
+            if (!mBackupPath.delete()) {
+                if (!stagedBackup.delete()) {
+                    Log.w(TAG, "Could not delete staged previous backup %s", stagedBackup);
+                }
+                throw new IOException("Could not delete " + mBackupPath);
+            }
+            return stagedBackup;
+        }
+
+        private void restoreCommittedBackup(@Nullable Path stagedPreviousBackup) throws IOException {
+            if (stagedPreviousBackup == null) {
+                return;
+            }
+            if (mBackupPath.exists() && !mBackupPath.delete()) {
+                throw new IOException("Could not remove failed backup output " + mBackupPath
+                        + "; previous backup is staged at " + stagedPreviousBackup);
+            }
+            Path restoredBackup = stagedPreviousBackup.copyTo(mBackupPath);
+            if (restoredBackup == null) {
+                throw new IOException("Could not restore previous backup from " + stagedPreviousBackup);
+            }
+            if (!stagedPreviousBackup.delete()) {
+                Log.w(TAG, "Could not delete staged previous backup %s", stagedPreviousBackup);
             }
         }
 
