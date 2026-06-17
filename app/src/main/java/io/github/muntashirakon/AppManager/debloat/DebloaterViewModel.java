@@ -274,12 +274,21 @@ public class DebloaterViewModel extends AndroidViewModel {
             // Apply searching
             List<DebloatObject> newList = AdvancedSearchView.matches(mQueryString, debloatObjects,
                     (AdvancedSearchView.ChoicesGenerator<DebloatObject>) item -> {
+                        List<String> choices = new ArrayList<>();
+                        choices.add(item.packageName);
                         CharSequence label = item.getLabel();
                         if (label != null) {
-                            return Arrays.asList(item.packageName, label.toString().toLowerCase(Locale.getDefault()));
-                        } else {
-                            return Collections.singletonList(item.packageName);
+                            choices.add(label.toString().toLowerCase(Locale.getDefault()));
                         }
+                        String warning = item.getWarning();
+                        if (warning != null && !warning.isEmpty()) {
+                            choices.add(warning.toLowerCase(Locale.getDefault()));
+                        }
+                        String description = item.getDescription();
+                        if (description != null && !description.isEmpty()) {
+                            choices.add(description.toLowerCase(Locale.getDefault()));
+                        }
+                        return choices;
                     },
                     mQueryType);
             mDebloatObjectListLiveData.postValue(newList);

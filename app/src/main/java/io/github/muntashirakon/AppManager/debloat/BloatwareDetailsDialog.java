@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -244,9 +245,13 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
             }
         }
         if (refSites.length > 0) {
-            // Add references
             sb.append(UIUtils.getBoldString("\n\nReferences\n"))
                     .append(UiUtils.getOrderedList(Arrays.asList(refSites)));
+        }
+        String definitionsVersion = Prefs.Privacy.getDebloatDefinitionsVersion();
+        if (definitionsVersion != null && !definitionsVersion.isEmpty()) {
+            sb.append(UIUtils.getBoldString("\n\nSource: "))
+                    .append(getString(R.string.debloat_source_provenance, definitionsVersion));
         }
         return sb;
     }

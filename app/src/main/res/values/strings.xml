@@ -3763,6 +3763,9 @@
     <string name="icon">icon</string>
     <string name="preview">Preview</string>
     <string name="debloat_removal_unsafe">Unsafe</string>
+    <string name="debloat_source_provenance">AppManagerNG debloat-definitions v<xliff:g id="version" example="2026-05-17">%1$s</xliff:g></string>
+    <string name="debloat_confirmation_provenance">Recommendations from debloat-definitions v<xliff:g id="version" example="2026-05-17">%1$s</xliff:g>.</string>
+    <string name="debloat_rollback_hint">To undo: use "Put back" from the Debloater menu to reinstall removed system apps for the current user.</string>
     <!-- Debloater: OEM-specific known-bad warnings (BloatwareDetailsDialog). -->
     <string name="oem_bloat_risk_samsung_smartsuggestions_oneui85">Removing this on Samsung One UI 8.5 has been reported to crash-loop Settings → Mobile Networks (UAD-NG #1394). Disable / freeze it instead, or restore from a backup before retrying.</string>
     <string name="oem_bloat_action_samsung_smartsuggestions_oneui85">Samsung One UI 8.5 reports link this package to Settings → Mobile Networks crash loops when removed. Freeze or disable it instead.</string>
