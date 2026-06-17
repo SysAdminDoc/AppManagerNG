@@ -9,22 +9,6 @@ into it — existing items take precedence over duplicates.
 
 ## Product Quality Roadmap (2026-06-12)
 
-- [ ] P2 — Accessibility, keyboard, and touch-target hardening
-  Why: dense expert tools still need predictable focus, visible labels, 48dp controls, and
-  non-color-only status meaning across dialogs, lists, chips, menus, and result screens.
-  Where: app/src/main/res/layout/, app/src/main/java/io/github/muntashirakon/AppManager/
-
-- [ ] P2 — Degraded, empty, error, loading, and success state system
-  Why: secondary screens should never fail silently or show blank states; every unavailable,
-  partial, or failed workflow needs calm actionable copy and an obvious next step.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/, app/src/main/res/layout/
-
-- [ ] P2 — Settings information architecture cleanup
-  Why: settings should group risk, privileges, appearance, backup, rules, notifications, and
-  advanced/debug controls so users can find decisions without memorizing implementation
-  boundaries.
-  Where: app/src/main/java/io/github/muntashirakon/AppManager/settings/
-
 - [ ] P3 — Visual token and component polish pass
   Why: cards, banners, list rows, dialogs, badges, chips, toasts, and nested surfaces should
   feel like one product in light, dark, and AMOLED modes without one-off colors or spacing.
@@ -139,38 +123,8 @@ Deduplicated against all sections above.
 
 ## Research-Driven Additions
 
-### P1
-
-- [ ] P1 — Backup preflight warnings become user-visible and scheduler-aware
-  Why: Backup storage checks already detect low-headroom and filesystem max-file-size risks, but manual and scheduled backups only block on outright insufficiency.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupStorageCheck.java`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupManager.java`; Swift Backup FAT/FAT32 FAQ; Neo Backup issue requests for backup-part size and splitting.
-  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/backup/`; backup schedule dialogs/workers; backup settings; backup tests.
-  Acceptance: manual backups show estimated size, free space, headroom, and FAT/vfat/sdfat max-file warnings before start; scheduled backups skip with a recorded diagnostic or continue only under an explicit user policy; tests cover `WARN_LOW_HEADROOM`, `WARN_MAX_FILE_SIZE`, and `INSUFFICIENT`.
-  Complexity: M
-
-- [ ] P1 — Scoped keystore import with alias diff and rollback
-  Why: The current import path backs up and overwrites the whole AppManagerNG keystore even though the source TODO says only AppManager-used keys should be imported.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/ImportExportKeyStoreDialogFragment.java`; `app/src/main/java/io/github/muntashirakon/AppManager/crypto/ks/KeyStoreManager.java`; Swift Backup encryption/restore expectations.
-  Touches: keystore import/export dialog; `KeyStoreManager`; encryption-key metadata; keystore tests.
-  Acceptance: importing a keystore previews aliases, merges or replaces only AppManagerNG-owned aliases, preserves unrelated BKS entries, handles alias collisions explicitly, and tests successful scoped import plus failed-import rollback.
-  Complexity: M
-
-
 ### P2
 
-- [ ] P2 — Multi-user/work-profile/private-space capability matrix
-  Why: AppManagerNG has broad `userId` plumbing and hidden-profile permission support, but users need one visible source of truth for which operations work in main, work, hidden, and private profiles under each privilege mode.
-  Evidence: `app/src/main/AndroidManifest.xml`; `docs/policy/permissions.md`; Canta work-profile issue; Neo Backup multi-profile issue; SD Maid SE work-profile and child-profile issues; Bayton Android 15 Private Space analysis.
-  Touches: user/profile discovery; main-list user filter; backup/install/freeze/cache/app-op action guards; automation; settings/help text.
-  Acceptance: a capability matrix shows detected users/profiles, visible packages, and supported backup/install/freeze/cache/AppOp actions per privilege lane; unsupported actions are disabled or refused with a specific reason; tests cover at least main-profile and simulated secondary-profile decisions.
-  Complexity: L
-
-- [ ] P2 — File-manager operations service with cancellation and recovery
-  Why: Copy, move, delete, and archive work is still tied to fragment/background-thread flows even though the code calls out a bound service and cancellable thread ownership as needed.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmFragment.java`; `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmAdapter.java`; SD Maid SE storage workflow issues; ADB AppControl file/productivity positioning.
-  Touches: file-manager fragment/adapter; new or extended file operation service; foreground notification/progress; operation history/recovery; file-manager tests.
-  Acceptance: copy/move/delete/archive run as cancellable jobs with foreground progress when needed; rotation/backgrounding does not lose operation state; partial move failures leave actionable recovery details; tests cover cancellation and failed move rollback metadata.
-  Complexity: L
 
 - [ ] P2 — Routine trigger history, caps, and filtered triggers
   Why: The shipped routine scheduler still has documented open decisions for trigger-bound app filters, maximum trigger count, and history rotation beyond the last result.
@@ -188,12 +142,6 @@ Deduplicated against all sections above.
 
 ### P3
 
-- [ ] P3 — App-details package removal watcher
-  Why: App details can become stale if the inspected package is uninstalled, archived, or otherwise disappears while the screen remains open.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java`; Canta issue about unclear uninstall success state; upstream App Manager app-list reliability issues.
-  Touches: `AppInfoFragment`; details ViewModel/load state; package-change observer or lifecycle refresh; fragment tests.
-  Acceptance: package removal while details is open transitions to a clear removed state with back, reinstall/import, and search actions; stale destructive controls disappear; tests cover package-gone refresh.
-  Complexity: S
 
 - [ ] P3 — Component intent-action finder
   Why: Users need to understand why apps start and which broadcast/action paths exist, while adjacent component managers expose intent-action filtering as a key discovery tool.

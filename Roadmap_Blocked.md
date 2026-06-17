@@ -5,7 +5,31 @@ Items moved here from ROADMAP.md because they cannot be completed without
 device access, external services, or explicit design decisions. Move back to
 ROADMAP.md once the blocker is resolved.
 
-## Device-Gated
+## Device/Design-Verification-Gated
+
+### P2
+
+- [ ] P2 — Accessibility, keyboard, and touch-target hardening
+  Why: dense expert tools still need predictable focus, visible labels, 48dp controls, and
+  non-color-only status meaning across dialogs, lists, chips, menus, and result screens.
+  Where: app/src/main/res/layout/, app/src/main/java/io/github/muntashirakon/AppManager/
+  Blocker: requires on-device a11y scanner, TalkBack, and keyboard navigation testing to identify specific violations before fixing.
+  Complexity: M
+
+- [ ] P2 — Degraded, empty, error, loading, and success state system
+  Why: secondary screens should never fail silently or show blank states; every unavailable,
+  partial, or failed workflow needs calm actionable copy and an obvious next step.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/, app/src/main/res/layout/
+  Blocker: requires systematic on-device walkthrough of each screen's error/empty/loading paths to identify gaps.
+  Complexity: L
+
+- [ ] P2 — Settings information architecture cleanup
+  Why: settings should group risk, privileges, appearance, backup, rules, notifications, and
+  advanced/debug controls so users can find decisions without memorizing implementation
+  boundaries.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/settings/
+  Blocker: current 4-category structure is reasonable; needs UX review on device to identify specific reorganization targets.
+  Complexity: M
 
 ### P3
 
@@ -41,6 +65,18 @@ ROADMAP.md once the blocker is resolved.
   Acceptance: main list -> app details -> batch ops are fully operable with a D-pad on an Android TV emulator; app appears in the TV launcher with a banner.
   Blocker: requires Android TV emulator or device for focus-traversal testing and banner validation.
   Complexity: M
+
+- [ ] P2 — Multi-user/work-profile/private-space capability matrix
+  Why: AppManagerNG has broad userId plumbing and hidden-profile permission support, but users need one visible source of truth for which operations work in main, work, hidden, and private profiles under each privilege mode.
+  Evidence: app/src/main/AndroidManifest.xml; docs/policy/permissions.md; Canta work-profile issue; Neo Backup multi-profile issue.
+  Blocker: requires multi-user/work-profile device or emulator to test capability detection and action guards across profile boundaries.
+  Complexity: L
+
+- [ ] P2 — File-manager operations service with cancellation and recovery
+  Why: Copy, move, delete, and archive work is still tied to fragment/background-thread flows even though the code calls out a bound service and cancellable thread ownership as needed.
+  Evidence: fm/FmFragment.java; fm/FmAdapter.java.
+  Blocker: foreground service behavior, rotation survival, and partial-move recovery need device testing; large architectural change touching the FM core.
+  Complexity: L
 
 ## Security-Design-Gated
 
