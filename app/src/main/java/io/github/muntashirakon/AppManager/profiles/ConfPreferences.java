@@ -416,9 +416,10 @@ public class ConfPreferences extends PreferenceFragmentCompat {
     }
 
     private void showRoutineTriggerActions(@NonNull ProfileTrigger trigger) {
+        CharSequence summary = buildTriggerSummaryWithHistory(trigger);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(RoutineScheduler.formatTriggerTitle(mActivity, trigger))
-                .setMessage(RoutineScheduler.formatTriggerSummary(mActivity, trigger))
+                .setMessage(summary)
                 .setPositiveButton(trigger.enabled ? R.string.disable : R.string.enable, (dialog, which) -> {
                     boolean enabling = !trigger.enabled;
                     ProfileTrigger updated = mTriggerStore.setEnabled(trigger.id, !trigger.enabled);
@@ -446,7 +447,43 @@ public class ConfPreferences extends PreferenceFragmentCompat {
         builder.show();
     }
 
+    @NonNull
+    private CharSequence buildTriggerSummaryWithHistory(@NonNull ProfileTrigger trigger) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(RoutineScheduler.formatTriggerSummary(mActivity, trigger));
+        List<RoutineScheduler.RunHistoryEntry> history = RoutineScheduler.getRunHistory(mActivity, trigger.id);
+        if (!history.isEmpty()) {
+            sb.append("\n\n").append(getString(R.string.profile_trigger_run_history));
+            int shown = Math.min(history.size(), 5);
+            for (int i = 0; i < shown; i++) {
+                RoutineScheduler.RunHistoryEntry entry = history.get(i);
+                sb.append("\n").append(android.text.format.DateUtils.getRelativeTimeSpanString(
+                        entry.runAtMs, System.currentTimeMillis(),
+                        android.text.format.DateUtils.MINUTE_IN_MILLIS))
+                        .append(" — ").append(entry.result);
+            }
+            if (history.size() > shown) {
+                sb.append("\n").append(getString(R.string.profile_trigger_run_history_more,
+                        history.size() - shown));
+            }
+        }
+        return sb;
+    }
+
+    private static final int MAX_TRIGGERS_PER_PROFILE = 10;
+
     private void showAddRoutineTriggerDialog(@NonNull String profileId) {
+        if (mTriggerStore != null) {
+            int currentCount = mTriggerStore.forProfile(profileId).size();
+            if (currentCount >= MAX_TRIGGERS_PER_PROFILE) {
+                new MaterialAlertDialogBuilder(mActivity)
+                        .setTitle(R.string.profile_trigger_cap_title)
+                        .setMessage(getString(R.string.profile_trigger_cap_message, MAX_TRIGGERS_PER_PROFILE))
+                        .setPositiveButton(R.string.close, null)
+                        .show();
+                return;
+            }
+        }
         final int[] triggerTypes = {
                 ProfileTrigger.TYPE_TIME_OF_DAY,
                 ProfileTrigger.TYPE_ON_CHARGING,
