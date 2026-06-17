@@ -608,9 +608,17 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
                     .append("\n")
                     .append(DebloatImpactPreview.render(impact));
         }
+        String definitionsVersion = io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getDebloatDefinitionsVersion();
+        if (definitionsVersion != null && !definitionsVersion.isEmpty()) {
+            message.append("\n\n")
+                    .append(getString(R.string.debloat_confirmation_provenance, definitionsVersion));
+        }
         message.append("\n\n").append(getString(oemFallbacks > 0
                 ? R.string.rootless_debloat_confirmation_oem_footer
                 : R.string.rootless_debloat_confirmation_footer));
+        if (usesPmUninstall) {
+            message.append("\n\n").append(getString(R.string.debloat_rollback_hint));
+        }
         return message.toString();
     }
 
