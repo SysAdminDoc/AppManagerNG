@@ -6,6 +6,7 @@ import static io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager.AM_KE
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.widget.Button;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -25,14 +26,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.KeyStore;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
+import io.github.muntashirakon.AppManager.crypto.ks.ScopedKeyStoreImporter;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.IoUtils;
 
 public class ImportExportKeyStoreDialogFragment extends DialogFragment {
@@ -68,55 +73,84 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
                     dismiss();
                     return;
                 }
-                new MaterialAlertDialogBuilder(mActivity)
+                new TextInputDialogBuilder(mActivity, R.string.keystore_password_field_hint)
                         .setTitle(R.string.import_keystore)
-                        .setMessage(R.string.confirm_import_keystore)
-                        .setPositiveButton(R.string.yes, (dialog, which) -> ThreadUtils.postOnBackgroundThread(() -> {
-                            File backupFile = null;
-                            boolean importSucceeded = false;
-                            try (InputStream is = mActivity.getContentResolver().openInputStream(uri)) {
-                                if (is == null) throw new IOException("Unable to open URI");
-                                backupFile = backupExistingKeyStore(AM_KEYSTORE_FILE);
-                                try (OutputStream os = new FileOutputStream(AM_KEYSTORE_FILE)) {
-                                    IoUtils.copy(is, os);
-                                }
-                                if (KeyStoreManager.hasKeyStorePassword()) {
-                                    CountDownLatch waitForKs = new CountDownLatch(1);
-                                    KeyStoreManager.inputKeyStorePassword(mActivity, waitForKs::countDown);
-                                    waitForKs.await(2, TimeUnit.MINUTES);
-                                    if (waitForKs.getCount() == 1) {
-                                        throw new Exception();
-                                    }
-                                }
-                                KeyStoreManager.reloadKeyStore();
-                                importSucceeded = true;
-                                // TODO: 21/4/21 Only import the keys that we use instead of replacing the entire keystore
-                                ThreadUtils.postOnMainThread(() -> {
-                                    UIUtils.displayShortToast(R.string.done);
-                                    ExUtils.exceptionAsIgnored(this::dismiss);
-                                });
-                            } catch (Exception e) {
-                                try {
-                                    restoreKeyStoreBackup(AM_KEYSTORE_FILE, backupFile);
-                                    try {
-                                        KeyStoreManager.reloadKeyStore();
-                                    } catch (Exception ignore) {
-                                    }
-                                } catch (IOException restoreException) {
-                                    e.addSuppressed(restoreException);
-                                }
-                                ThreadUtils.postOnMainThread(() -> {
-                                    UIUtils.displayShortToast(R.string.failed);
-                                    ExUtils.exceptionAsIgnored(this::dismiss);
-                                });
-                            } finally {
-                                if (importSucceeded) {
-                                    deleteBackup(backupFile);
-                                }
+                        .setPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
+                            if (TextUtils.isEmpty(inputText)) {
+                                UIUtils.displayShortToast(R.string.keystore_pass_cannot_be_empty);
+                                return;
                             }
-                        }))
-                        .setNegativeButton(R.string.close, (dialog, which) -> dismiss())
-                        .setCancelable(false)
+                            char[] importPassword = new char[inputText.length()];
+                            inputText.getChars(0, inputText.length(), importPassword, 0);
+                            ThreadUtils.postOnBackgroundThread(() -> {
+                                File backupFile = null;
+                                boolean importSucceeded = false;
+                                try {
+                                    KeyStore importKs = KeyStore.getInstance("BKS");
+                                    try (InputStream is = mActivity.getContentResolver().openInputStream(uri)) {
+                                        if (is == null) throw new IOException("Unable to open URI");
+                                        importKs.load(is, importPassword);
+                                    }
+                                    KeyStoreManager liveKsm = KeyStoreManager.getInstance();
+                                    ScopedKeyStoreImporter.ImportPreview preview =
+                                            ScopedKeyStoreImporter.preview(importKs, liveKsm);
+                                    List<String> amFound = preview.amAliasesFound;
+                                    if (amFound.isEmpty()) {
+                                        ThreadUtils.postOnMainThread(() -> {
+                                            UIUtils.displayShortToast(R.string.keystore_import_no_am_aliases);
+                                            ExUtils.exceptionAsIgnored(this::dismiss);
+                                        });
+                                        return;
+                                    }
+                                    backupFile = backupExistingKeyStore(AM_KEYSTORE_FILE);
+                                    ScopedKeyStoreImporter.ImportResult result =
+                                            ScopedKeyStoreImporter.importScoped(importKs, importPassword, liveKsm);
+                                    if (result.allFailed()) {
+                                        try {
+                                            restoreKeyStoreBackup(AM_KEYSTORE_FILE, backupFile);
+                                            KeyStoreManager.reloadKeyStore();
+                                        } catch (Exception ignore) {
+                                        }
+                                        ThreadUtils.postOnMainThread(() -> {
+                                            UIUtils.displayShortToast(R.string.failed);
+                                            ExUtils.exceptionAsIgnored(this::dismiss);
+                                        });
+                                        return;
+                                    }
+                                    importSucceeded = true;
+                                    int successCount = result.succeeded.size();
+                                    int failCount = result.failed.size();
+                                    ThreadUtils.postOnMainThread(() -> {
+                                        if (failCount > 0) {
+                                            UIUtils.displayLongToast(R.string.keystore_import_partial,
+                                                    successCount, failCount);
+                                        } else {
+                                            UIUtils.displayShortToast(R.string.keystore_import_success,
+                                                    successCount);
+                                        }
+                                        ExUtils.exceptionAsIgnored(this::dismiss);
+                                    });
+                                } catch (Exception e) {
+                                    if (backupFile != null) {
+                                        try {
+                                            restoreKeyStoreBackup(AM_KEYSTORE_FILE, backupFile);
+                                            KeyStoreManager.reloadKeyStore();
+                                        } catch (Exception ignore) {
+                                        }
+                                    }
+                                    ThreadUtils.postOnMainThread(() -> {
+                                        UIUtils.displayShortToast(R.string.failed);
+                                        ExUtils.exceptionAsIgnored(this::dismiss);
+                                    });
+                                } finally {
+                                    io.github.muntashirakon.AppManager.utils.Utils.clearChars(importPassword);
+                                    if (importSucceeded) {
+                                        deleteBackup(backupFile);
+                                    }
+                                }
+                            });
+                        })
+                        .setNegativeButton(R.string.cancel, null)
                         .show();
             });
 
