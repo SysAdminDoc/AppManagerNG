@@ -126,12 +126,6 @@ Deduplicated against all sections above.
 ### P2
 
 
-- [ ] P2 — Routine trigger history, caps, and filtered triggers
-  Why: The shipped routine scheduler still has documented open decisions for trigger-bound app filters, maximum trigger count, and history rotation beyond the last result.
-  Evidence: `docs/architecture/05-routine-scheduler.md`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/trigger/RoutineScheduler.java`; Hail auto-freeze/logging issues; Neo Backup running-jobs issue; Swift Backup scheduled backup features.
-  Touches: routine trigger editor; profile trigger storage; Room or trigger-run persistence; routine diagnostics/export; profile tests.
-  Acceptance: trigger editor can scope a trigger to a saved filter or tag, warns or enforces a sensible per-profile trigger cap, and shows/export last N routine runs with success, failure, skip reason, and matched-app count.
-  Complexity: M
 
 
 ### P3
