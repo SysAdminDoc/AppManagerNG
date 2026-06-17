@@ -130,10 +130,17 @@ public final class ScopedKeyStoreImporter {
                     succeeded.add(alias);
                 } else if (key instanceof PrivateKey) {
                     Certificate cert = importKs.getCertificate(alias);
+                    if (cert == null) {
+                        failed.add(alias);
+                        continue;
+                    }
                     KeyPair kp = new KeyPair((PrivateKey) key, cert);
-                    liveKsm.addKeyPair(alias, kp, true);
-                    kp.destroy();
-                    succeeded.add(alias);
+                    try {
+                        liveKsm.addKeyPair(alias, kp, true);
+                        succeeded.add(alias);
+                    } finally {
+                        kp.destroy();
+                    }
                 } else {
                     failed.add(alias);
                 }

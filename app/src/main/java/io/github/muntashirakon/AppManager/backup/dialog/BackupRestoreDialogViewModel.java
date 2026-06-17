@@ -119,6 +119,7 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
 
     @AnyThread
     public void runStoragePreflight(@NonNull OperationInfo operationInfo) {
+        if (mPendingOperationInfo != null) return;
         mPendingOperationInfo = operationInfo;
         ThreadUtils.postOnBackgroundThread(() -> {
             List<String> packageNames = new ArrayList<>();

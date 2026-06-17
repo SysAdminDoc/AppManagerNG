@@ -143,6 +143,7 @@ public class AppDetailsActivity extends BaseActivity {
     private Fragment[] mTabFragments;
     private boolean[] mLoadedTabs;
     private boolean mPackageReady;
+    private boolean mPackageRemovedDialogShown;
 
     private boolean mBackToMainPage;
     @Nullable
@@ -256,11 +257,13 @@ public class AppDetailsActivity extends BaseActivity {
         });
         // Check for the existence of package
         model.getIsPackageExistLiveData().observe(this, isPackageExist -> {
-            if (!isPackageExist) {
+            if (!isPackageExist && !mPackageRemovedDialogShown) {
+                if (isFinishing() || isDestroyed()) return;
                 if (model.isExternalApk()) {
                     finish();
                     return;
                 }
+                mPackageRemovedDialogShown = true;
                 showPackageRemovedDialog();
             }
         });

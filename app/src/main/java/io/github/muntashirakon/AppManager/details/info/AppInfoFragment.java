@@ -391,9 +391,13 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             showFreezeDialog(freezeTypeN, freezeType != null);
         });
         mMainModel.getIsPackageExistLiveData().observe(getViewLifecycleOwner(), isPackageExist -> {
-            if (!isPackageExist && mHorizontalLayout != null) {
+            if (mHorizontalLayout == null) return;
+            if (!isPackageExist) {
                 mHorizontalLayout.removeAllViews();
                 mHorizontalLayout.setVisibility(View.GONE);
+            } else if (mHorizontalLayout.getVisibility() == View.GONE) {
+                mHorizontalLayout.setVisibility(View.VISIBLE);
+                setupHorizontalActions();
             }
         });
         mIconView.setOnClickListener(v -> {

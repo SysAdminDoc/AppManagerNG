@@ -140,23 +140,32 @@ public final class RoutineScheduler {
         appendRunHistory(prefs, triggerId, now, result);
     }
 
+    private static final Object sHistoryLock = new Object();
+
     private static void appendRunHistory(@NonNull SharedPreferences prefs,
                                          @NonNull String triggerId,
                                          long runAtMs,
                                          @NonNull String result) {
         String key = KEY_RUN_HISTORY_PREFIX + triggerId;
-        String existing = prefs.getString(key, "[]");
-        try {
-            JSONArray history = new JSONArray(existing);
-            JSONObject entry = new JSONObject();
-            entry.put("t", runAtMs);
-            entry.put("r", result);
-            history.put(entry);
-            while (history.length() > MAX_RUN_HISTORY) {
-                history.remove(0);
+        synchronized (sHistoryLock) {
+            String existing = prefs.getString(key, "[]");
+            JSONArray history;
+            try {
+                history = new JSONArray(existing);
+            } catch (Exception e) {
+                history = new JSONArray();
             }
-            prefs.edit().putString(key, history.toString()).apply();
-        } catch (Exception ignore) {
+            try {
+                JSONObject entry = new JSONObject();
+                entry.put("t", runAtMs);
+                entry.put("r", result);
+                history.put(entry);
+                while (history.length() > MAX_RUN_HISTORY) {
+                    history.remove(0);
+                }
+                prefs.edit().putString(key, history.toString()).apply();
+            } catch (Exception ignore) {
+            }
         }
     }
 
