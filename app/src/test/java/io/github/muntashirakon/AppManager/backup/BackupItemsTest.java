@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.backup;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -31,10 +32,12 @@ import io.github.muntashirakon.io.Paths;
 public class BackupItemsTest {
     private Path testDir;
     private String previousVolumePath;
+    private int previousBackupMetaVersion;
 
     @Before
     public void setUp() throws IOException {
         previousVolumePath = Prefs.Storage.getVolumePath().toString();
+        previousBackupMetaVersion = MetadataManager.getCurrentBackupMetaVersion();
         testDir = Paths.get(RoboUtils.getTestBaseDir()).createNewDirectory("backup-items-test");
         Prefs.Storage.setVolumePath(testDir.getUri().toString());
     }
@@ -42,6 +45,7 @@ public class BackupItemsTest {
     @After
     public void tearDown() {
         Prefs.Storage.setVolumePath(previousVolumePath);
+        MetadataManager.setCurrentBackupMetaVersion(previousBackupMetaVersion);
         testDir.delete();
     }
 
@@ -277,6 +281,26 @@ public class BackupItemsTest {
         assertTrue(replacement.getBackupPath().hasFile("payload"));
         // ...and the previous backup is gone (deleted after the swap, not before).
         assertTrue(!previous.exists());
+    }
+
+    @Test
+    public void commitRestoresExistingBackupWhenReplacementMoveFails() throws IOException {
+        MetadataManager.setCurrentBackupMetaVersion(4);
+        Path packageBackupDir = Prefs.Storage.getAppManagerDirectory()
+                .findOrCreateDirectory("com.example");
+        Path existingBackup = packageBackupDir.findOrCreateDirectory(BackupUtils.getV4BackupName(0, null));
+        existingBackup.createNewFile("old-payload", null);
+
+        BackupItems.BackupItem replacement = BackupItems.findOrCreateBackupItem(0, null, "com.example");
+        replacement.getBackupPath().createNewFile("new-payload", null);
+        assertTrue(replacement.getBackupPath().delete());
+
+        IOException exception = assertThrows(IOException.class, replacement::commit);
+
+        assertTrue(exception.getMessage().contains("Could not move"));
+        Path restoredBackup = packageBackupDir.findFile(BackupUtils.getV4BackupName(0, null));
+        assertTrue(restoredBackup.hasFile("old-payload"));
+        assertFalse(restoredBackup.hasFile("new-payload"));
     }
 
     private static void createFiles(Path directory, String... names) throws IOException {

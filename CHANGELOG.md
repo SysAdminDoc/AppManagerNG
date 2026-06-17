@@ -32,6 +32,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Profile applier now tracks target count and failed-package count for
   accurate operation-history recording. Batch results header uses the
   "needs attention" label matching the recovery language elsewhere.
+- Backup replacement commits now stage the existing committed backup for
+  rollback before deleting it and restore that backup if moving the
+  replacement into place fails.
 
 ### Added
 
