@@ -56,12 +56,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: FM delete moves to a trash location with restore; trash auto-empties after the configured retention; "delete permanently" remains available.
   Complexity: M
 
-- [ ] P3 — D-pad/TV navigation pass + Android TV banner
-  Why: Upstream #107 (keyboard/remote navigation, "Partly Fixed") plus SD Maid SE's Android TV launcher support show the box-tinkerer segment is real (FireOS/Firestick issues already appear upstream: #1835, #1854); NG's M3 dashboard was not audited for focus traversal.
-  Evidence: https://github.com/MuntashirAkon/AppManager/issues/107 ; SD Maid SE releases (TV support); upstream #1835/#1854 (FireOS users)
-  Touches: app/src/main/res/ (focus order, leanback banner, manifest LEANBACK feature flags), main/, details/
-  Acceptance: main list → app details → batch ops are fully operable with a D-pad on an Android TV emulator; app appears in the TV launcher with a banner.
-  Complexity: M
 
 ## Research-Driven Additions (Pass 2 — 2026-06-10)
 
@@ -74,12 +68,6 @@ into it — existing items take precedence over duplicates.
   Acceptance: a dashboard screen shows at least installer-source, targetSdk, and signing distributions plus an "unused 30/60/90 days" card; tapping any segment opens the main list pre-filtered to it.
   Complexity: M
 
-- [ ] P3 — Version-watch panel (full flavor): installed vs latest from static indexes
-  Why: APKUpdater (3.8k★, active) proves demand for multi-source update awareness without being a store; AppDash paywalls it; checking F-Droid/IzzyOnDroid index-v2 + GitHub releases against installed versions fits the full flavor's opt-in network doctrine and NG stays a manager (notify, don't install).
-  Evidence: https://github.com/rumboalla/apkupdater ; https://appdash.app/ ; f-droid index-v2 format (RESEARCH.md Sources)
-  Touches: full-flavor source set (new updates/ package), settings/PrivacyPreferences (opt-in + source toggles), WorkManager scheduled check
-  Acceptance: with the toggle on, a scheduled check lists apps whose installed version trails the chosen indexes, with a signing-cert mismatch warning where the index cert differs; floss flavor compiles the feature out entirely.
-  Complexity: L
 
 - [ ] P3 — Boot-component manager view
   Why: A dedicated "what starts at boot" surface (BOOT_COMPLETED receivers across all apps, batch-blockable) is a classic MyAndroidTools/Inure feature NG can build almost entirely from existing component-blocking plumbing; today only NG's own BootReceiver references BOOT_COMPLETED (verified).
@@ -106,34 +94,9 @@ into it — existing items take precedence over duplicates.
 ## Deep Audit Follow-ups (2026-06-11)
 
 Deferred from the 2026-06-11 deep engineering/QA/UX audit pass. The fixed half
-of that pass is in the commit history / CHANGELOG `Unreleased`. Items below were
-verified real but are device-gated, design-verification-gated, or carry enough
-regression risk to need their own change.
-
-### P3
-
-- [ ] P3 — Clickable main-list badges have <48dp touch targets
-  Why: `tracker_indicator` and `perm_indicator` are clickable (`setClickable(true)` + click listener) but render at `premium_badge_min_height/width` = 24dp with no TouchDelegate. Two clickable badges share one `FlowLayout` parent, so a single `TouchDelegate` (one target rect per view) can't cover both.
-  Evidence: MainRecyclerAdapter.java:420-422,457-459; item_main_v2.xml:115-116,136-137; dimens-v2.xml:76-77
-  Touches: MainRecyclerAdapter.java (composite touch delegate on the badge row), item_main_v2.xml
-  Acceptance: each clickable badge has a ≥48dp effective hit rect via a composite/multi-target TouchDelegate posted on the parent FlowLayout (visual size stays 24dp); a11y scanner clean. (Needs on-device touch verification.)
-  Progress 2026-06-12: fixed the nested coordinate translation bug in the
-  composite badge TouchDelegate, added a Robolectric regression test, installed
-  the Floss debug build on the emulator, and captured the main-list badge
-  surface. Remaining: clean a11y scanner confirmation after the emulator
-  UiAutomation service recovers.
-  Complexity: S
-
-- [ ] P3 — Sibling list rows diverge from the V2 card treatment
-  Why: ~15 list-row layouts (e.g. item_debloater.xml) still use the classic `Widget.AppTheme.CardView.ListItem.Outlined` (bg `?colorSurface`, elevation 0) while the main list uses `Widget.AppTheme.V2.Card.ListRow` (bg `?colorSurfaceContainerLow`, 1dp elevation, hairline stroke), so adjacent NG screens render visibly different card surfaces.
-  Evidence: layout/item_debloater.xml:4 (+ ~14 sibling row layouts); themes-v2.xml V2.Card.ListRow
-  Touches: app/src/main/res/layout/item_*.xml
-  Progress 2026-06-12: migrated the shared sibling list rows, scanner cards,
-  profile-review warnings, empty states, batch failure rows, and secondary
-  toolbars onto V2 premium tokens; dark-mode emulator screenshots pass for the
-  mode sheet, onboarding guides, and populated main list.
-  Acceptance: NG list rows share the V2 card treatment; spot-checked across debloater / permission / one-click lists in light, dark and AMOLED. (Visual — needs on-device verification.)
-  Complexity: S
+of that pass is in the commit history / CHANGELOG `Unreleased`. Device-gated
+items (badge touch targets, sibling row V2 verification) moved to
+`Roadmap_Blocked.md`.
 
 ## Improvement Sweep (2026-06-11)
 
@@ -192,12 +155,6 @@ Deduplicated against all sections above.
   Acceptance: importing a keystore previews aliases, merges or replaces only AppManagerNG-owned aliases, preserves unrelated BKS entries, handles alias collisions explicitly, and tests successful scoped import plus failed-import rollback.
   Complexity: M
 
-- [ ] P1 — Privileged local-server secure-session hardening
-  Why: The privileged server uses a cleartext socket authenticated by a per-session token, while the code itself notes SSL as a future hardening path and Android 17/local ADB changes raise the cost of ambiguous local transport boundaries.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerConfig.java`; `docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md`; Android 17 local-network behavior docs; Shizuku limitation docs.
-  Touches: local server client/server handshake; `ServerConfig`; server connection tests; security docs.
-  Acceptance: the trust model is explicit; loopback-only sessions are enforced where possible or non-loopback sessions use per-session authenticated encryption/TLS; wrong host, wrong token, and replayed session attempts are rejected by tests.
-  Complexity: L
 
 ### P2
 
