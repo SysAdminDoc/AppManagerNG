@@ -5,6 +5,29 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+
+- Manual backups now show estimated size, free space, and storage warnings
+  (low headroom, FAT32 max file size, insufficient space) before starting.
+  Insufficient storage blocks the backup; warnings let the user proceed.
+- Scheduled auto-backups now skip all packages when storage is insufficient and
+  record the diagnostic in the run result notification.
+- Keystore import is now scoped: only AppManagerNG-owned aliases (adb_rsa,
+  signing_key, backup_rsa, backup_aes, backup_ecc) are imported from the
+  source keystore; all other entries are preserved untouched in the live
+  keystore. Failed imports roll back to the backup.
+- App details now shows a "removed" dialog with Go Back and Search actions
+  when the inspected package is uninstalled while the screen is open; the
+  destructive action rail is hidden.
+- Debloater detail dialog shows the debloat-definitions source version.
+- Debloater batch confirmation shows the definitions version and rollback
+  instructions (how to use "Put back" to undo).
+- Debloater search now matches against warning text and descriptions, making
+  breakage warnings findable by keyword.
+- Routine trigger cap: each profile can have at most 10 triggers.
+- Routine trigger actions dialog now shows the last 5 runs with relative
+  timestamps and result strings. Up to 10 runs are persisted per trigger.
+
 ### Fixed
 
 - Settings search now has a single owner: the global result overlay remains in
@@ -31,6 +54,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   actions, degraded actions, and the next remediation step for the active mode.
 - First-run onboarding now includes a compact confidence checklist covering the
   selected privilege mode, backup/restore safety, and tracker-rule reversibility.
+- Profile apply failures now use the same needs-attention recovery language as
+  batch results and preserve target/failure counts in operation history.
 
 ## v0.6.1 — 2026-06-15
 
