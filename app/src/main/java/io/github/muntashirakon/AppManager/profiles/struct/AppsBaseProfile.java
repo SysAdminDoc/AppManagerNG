@@ -175,6 +175,7 @@ public abstract class AppsBaseProfile extends BaseProfile {
             progressHandler.postUpdate(calculateMaxProgress(packageList, unsupportedOperations), 0);
         }
         ProfileApplierResult profileApplierResult = new ProfileApplierResult();
+        profileApplierResult.setTargetCount(packageList.size());
         profileApplierResult.recordSkippedOperations(unsupportedOperations);
         for (@ProfileOperation int operation : unsupportedOperations) {
             log(logger, "====> Skipped unsupported profile operation: " + operation);

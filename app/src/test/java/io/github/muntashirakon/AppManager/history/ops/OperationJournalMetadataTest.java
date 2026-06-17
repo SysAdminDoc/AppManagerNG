@@ -24,6 +24,10 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
+import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
+import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 
 @RunWith(RobolectricTestRunner.class)
@@ -103,6 +107,36 @@ public class OperationJournalMetadataTest {
         assertTrue(history.getRecoveryGuidanceMessage(context)
                 .contains(context.getString(R.string.op_history_recovery_review_logs)));
         assertEquals(6, history.getExportJson(context).getJSONArray("recovery_actions").length());
+    }
+
+    @Test
+    public void failedProfileHistoryUsesProfileResultCountsAndMessage() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        ProfileApplierResult result = new ProfileApplierResult();
+        result.setTargetCount(3);
+        result.recordFailedPackages(Collections.singletonList("com.example.failed"));
+        result.recordSkippedOperations(Collections.singletonList(AppsBaseProfile.PROFILE_OP_FREEZE));
+        ProfileQueueItem item = ProfileQueueItem.DESERIALIZER.deserialize(new JSONObject()
+                .put("profile_id", "profile-a")
+                .put("profile_type", BaseProfile.PROFILE_TYPE_APPS)
+                .put("profile_name", "Profile A")
+                .put("state", BaseProfile.STATE_ON));
+
+        OperationJournalMetadata metadata = OperationJournalMetadata.forProfile(context, item,
+                false, false, result, "Operation needs attention");
+        OperationJournalMetadata restored = OperationJournalMetadata.fromJson(
+                metadata.serializeToJson().toString());
+
+        assertNotNull(restored);
+        assertEquals(3, restored.getTargetCount());
+        assertEquals(3, restored.getFailedCount());
+        assertEquals("Operation needs attention", restored.getFailureMessage());
+        assertTrue(restored.getTargetPreview().contains("Profile A"));
+        assertTrue(restored.getTargetPreview().contains("com.example.failed"));
+        assertTrue(restored.getLocalizedRecoveryActions(context)
+                .contains(context.getString(R.string.op_history_recovery_rerun_failed)));
+        assertTrue(restored.getLocalizedRecoveryActions(context)
+                .contains(context.getString(R.string.op_history_recovery_manual_reapply)));
     }
 
     @Test

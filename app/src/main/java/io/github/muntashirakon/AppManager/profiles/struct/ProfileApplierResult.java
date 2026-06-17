@@ -10,6 +10,7 @@ import java.util.Set;
 public class ProfileApplierResult {
     public static final ProfileApplierResult EMPTY_RESULT = new ProfileApplierResult();
 
+    private int mTargetCount;
     private boolean mRequiresRestart;
     private boolean mFailed;
     @NonNull
@@ -23,6 +24,14 @@ public class ProfileApplierResult {
 
     public boolean requiresRestart() {
         return mRequiresRestart;
+    }
+
+    public void setTargetCount(int targetCount) {
+        mTargetCount = Math.max(0, targetCount);
+    }
+
+    public int getTargetCount() {
+        return mTargetCount;
     }
 
     /**
@@ -67,5 +76,9 @@ public class ProfileApplierResult {
     @NonNull
     public Set<String> getFailedPackages() {
         return mFailedPackages;
+    }
+
+    public int getFailedPackageCount() {
+        return mFailedPackages.size();
     }
 }

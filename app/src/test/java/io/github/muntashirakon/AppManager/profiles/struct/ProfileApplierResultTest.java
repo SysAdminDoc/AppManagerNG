@@ -23,6 +23,7 @@ public class ProfileApplierResultTest {
         ProfileApplierResult result = new ProfileApplierResult();
         assertTrue(result.isSuccessful());
         assertTrue(result.getFailedPackages().isEmpty());
+        assertEquals(0, result.getTargetCount());
     }
 
     @Test
@@ -81,5 +82,15 @@ public class ProfileApplierResultTest {
         result.setRequiresRestart(true);
         assertTrue(result.requiresRestart());
         assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    public void targetCountIsSanitized() {
+        ProfileApplierResult result = new ProfileApplierResult();
+        result.setTargetCount(5);
+        assertEquals(5, result.getTargetCount());
+
+        result.setTargetCount(-1);
+        assertEquals(0, result.getTargetCount());
     }
 }
