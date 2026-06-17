@@ -18,8 +18,14 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +42,9 @@ public final class RoutineScheduler {
     private static final String KEY_LAST_RUN_PREFIX = "last_run_";
     private static final String KEY_LAST_RESULT_PREFIX = "last_result_";
     private static final String KEY_LAST_DIAGNOSTICS_PREFIX = "last_diagnostics_";
+    private static final String KEY_RUN_HISTORY_PREFIX = "run_history_";
+    @VisibleForTesting
+    static final int MAX_RUN_HISTORY = 10;
 
     private RoutineScheduler() {
     }
@@ -122,11 +131,62 @@ public final class RoutineScheduler {
     public static void recordRunResult(@NonNull Context context,
                                        @NonNull String triggerId,
                                        @NonNull String result) {
+        long now = System.currentTimeMillis();
         SharedPreferences prefs = getRunPrefs(context);
         prefs.edit()
-                .putLong(KEY_LAST_RUN_PREFIX + triggerId, System.currentTimeMillis())
+                .putLong(KEY_LAST_RUN_PREFIX + triggerId, now)
                 .putString(KEY_LAST_RESULT_PREFIX + triggerId, result)
                 .apply();
+        appendRunHistory(prefs, triggerId, now, result);
+    }
+
+    private static void appendRunHistory(@NonNull SharedPreferences prefs,
+                                         @NonNull String triggerId,
+                                         long runAtMs,
+                                         @NonNull String result) {
+        String key = KEY_RUN_HISTORY_PREFIX + triggerId;
+        String existing = prefs.getString(key, "[]");
+        try {
+            JSONArray history = new JSONArray(existing);
+            JSONObject entry = new JSONObject();
+            entry.put("t", runAtMs);
+            entry.put("r", result);
+            history.put(entry);
+            while (history.length() > MAX_RUN_HISTORY) {
+                history.remove(0);
+            }
+            prefs.edit().putString(key, history.toString()).apply();
+        } catch (Exception ignore) {
+        }
+    }
+
+    @NonNull
+    public static List<RunHistoryEntry> getRunHistory(@NonNull Context context,
+                                                      @NonNull String triggerId) {
+        String key = KEY_RUN_HISTORY_PREFIX + triggerId;
+        String json = getRunPrefs(context).getString(key, "[]");
+        try {
+            JSONArray history = new JSONArray(json);
+            List<RunHistoryEntry> entries = new ArrayList<>(history.length());
+            for (int i = history.length() - 1; i >= 0; i--) {
+                JSONObject obj = history.getJSONObject(i);
+                entries.add(new RunHistoryEntry(obj.getLong("t"), obj.getString("r")));
+            }
+            return entries;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public static final class RunHistoryEntry {
+        public final long runAtMs;
+        @NonNull
+        public final String result;
+
+        public RunHistoryEntry(long runAtMs, @NonNull String result) {
+            this.runAtMs = runAtMs;
+            this.result = result;
+        }
     }
 
     public static void recordDiagnostics(@NonNull Context context,
@@ -142,6 +202,7 @@ public final class RoutineScheduler {
                 .remove(KEY_LAST_RUN_PREFIX + triggerId)
                 .remove(KEY_LAST_RESULT_PREFIX + triggerId)
                 .remove(KEY_LAST_DIAGNOSTICS_PREFIX + triggerId)
+                .remove(KEY_RUN_HISTORY_PREFIX + triggerId)
                 .apply();
     }
 

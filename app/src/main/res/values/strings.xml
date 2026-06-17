@@ -1439,6 +1439,10 @@
         <item quantity="other">%1$d schedules, %2$d enabled</item>
     </plurals>
     <string name="profile_trigger_add">Add schedule</string>
+    <string name="profile_trigger_cap_title">Trigger limit reached</string>
+    <string name="profile_trigger_cap_message">Each profile can have at most <xliff:g id="max" example="10">%1$d</xliff:g> triggers. Remove an existing trigger before adding a new one.</string>
+    <string name="profile_trigger_run_history">Recent runs:</string>
+    <string name="profile_trigger_run_history_more">… and <xliff:g id="count" example="5">%1$d</xliff:g> more</string>
     <string name="profile_trigger_type_time_of_day">Every day at a time</string>
     <string name="profile_trigger_time_of_day">Every day at %1$s</string>
     <string name="profile_trigger_on_charging">When charging</string>
