@@ -65,7 +65,7 @@
                                 android:id="@+id/batch_result_status_title"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/batch_results_failed_title"
+                                android:text="@string/operation_result_needs_attention"
                                 android:textAppearance="?attr/textAppearanceTitleMedium"
                                 android:textColor="?attr/colorOnSurface" />
 
