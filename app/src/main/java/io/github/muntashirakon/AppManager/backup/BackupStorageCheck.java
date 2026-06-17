@@ -262,7 +262,7 @@ public final class BackupStorageCheck {
             }
             String mountPoint = f.getAbsolutePath();
             String fsType = detectFilesystemType(mountPoint);
-            if (fsType != null && (fsType.equals("vfat") || fsType.equals("fat32"))) {
+            if (fsType != null && (fsType.equalsIgnoreCase("vfat") || fsType.equalsIgnoreCase("fat32"))) {
                 return FAT32_MAX_FILE_BYTES;
             }
         } catch (Exception t) {
@@ -274,9 +274,7 @@ public final class BackupStorageCheck {
     @Nullable
     @VisibleForTesting
     static String detectFilesystemType(@NonNull String path) {
-        try {
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.FileReader("/proc/mounts"));
+        try (BufferedReader reader = new BufferedReader(new FileReader("/proc/mounts"))) {
             String line;
             String bestMatch = null;
             int bestLen = 0;
@@ -289,7 +287,6 @@ public final class BackupStorageCheck {
                     bestMatch = parts[2];
                 }
             }
-            reader.close();
             return bestMatch;
         } catch (IOException e) {
             return null;

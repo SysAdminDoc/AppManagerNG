@@ -225,7 +225,9 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         String[] dependencies = debloatObject.getDependencies();
         String[] requiredBy = debloatObject.getRequiredBy();
         SpannableStringBuilder sb = new SpannableStringBuilder();
-        sb.append(description.trim());
+        if (description != null) {
+            sb.append(description.trim());
+        }
         if (dependencies.length > 0) {
             // Add dependencies
             if (dependencies.length == 1) {

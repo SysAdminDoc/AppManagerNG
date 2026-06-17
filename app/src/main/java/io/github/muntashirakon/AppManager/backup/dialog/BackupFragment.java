@@ -154,6 +154,7 @@ public class BackupFragment extends Fragment {
     }
 
     private void handleStoragePreflight(@NonNull BackupStorageCheck.Result result) {
+        if (!isAdded()) return;
         BackupRestoreDialogViewModel.OperationInfo operationInfo = mViewModel.consumePendingOperation();
         if (operationInfo == null) return;
 
