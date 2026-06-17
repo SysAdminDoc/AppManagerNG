@@ -133,12 +133,6 @@ Deduplicated against all sections above.
   Acceptance: trigger editor can scope a trigger to a saved filter or tag, warns or enforces a sensible per-profile trigger cap, and shows/export last N routine runs with success, failure, skip reason, and matched-app count.
   Complexity: M
 
-- [ ] P2 — Debloat recommendation provenance and breakage rollback
-  Why: Community debloat lists are useful but high-risk; UAD-NG issue traffic shows package documentation and breakage corrections are continuous, so AppManagerNG should expose source/version/OEM scope and rollback before destructive debloat.
-  Evidence: `docs/debloat-definitions/manifest.json`; UAD-NG package documentation and breakage issues; Canta uninstall-state issue.
-  Touches: debloater data import; debloater package rows/details; batch operation preview; operation history/recovery; debloat tests.
-  Acceptance: each debloat recommendation shows source, source version/date, OEM/device scope, and risk bucket; debloat batches export a rollback plan before execution; package-specific breakage warnings are visible and searchable.
-  Complexity: M
 
 ### P3
 
