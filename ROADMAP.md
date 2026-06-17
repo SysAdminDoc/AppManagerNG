@@ -174,4 +174,75 @@ Deduplicated against all sections above.
   Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
   Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
 
+## Research-Driven Additions
+
+### P1
+
+- [ ] P1 — Backup preflight warnings become user-visible and scheduler-aware
+  Why: Backup storage checks already detect low-headroom and filesystem max-file-size risks, but manual and scheduled backups only block on outright insufficiency.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupStorageCheck.java`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupManager.java`; Swift Backup FAT/FAT32 FAQ; Neo Backup issue requests for backup-part size and splitting.
+  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/backup/`; backup schedule dialogs/workers; backup settings; backup tests.
+  Acceptance: manual backups show estimated size, free space, headroom, and FAT/vfat/sdfat max-file warnings before start; scheduled backups skip with a recorded diagnostic or continue only under an explicit user policy; tests cover `WARN_LOW_HEADROOM`, `WARN_MAX_FILE_SIZE`, and `INSUFFICIENT`.
+  Complexity: M
+
+- [ ] P1 — Scoped keystore import with alias diff and rollback
+  Why: The current import path backs up and overwrites the whole AppManagerNG keystore even though the source TODO says only AppManager-used keys should be imported.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/ImportExportKeyStoreDialogFragment.java`; `app/src/main/java/io/github/muntashirakon/AppManager/crypto/ks/KeyStoreManager.java`; Swift Backup encryption/restore expectations.
+  Touches: keystore import/export dialog; `KeyStoreManager`; encryption-key metadata; keystore tests.
+  Acceptance: importing a keystore previews aliases, merges or replaces only AppManagerNG-owned aliases, preserves unrelated BKS entries, handles alias collisions explicitly, and tests successful scoped import plus failed-import rollback.
+  Complexity: M
+
+- [ ] P1 — Privileged local-server secure-session hardening
+  Why: The privileged server uses a cleartext socket authenticated by a per-session token, while the code itself notes SSL as a future hardening path and Android 17/local ADB changes raise the cost of ambiguous local transport boundaries.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerConfig.java`; `docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md`; Android 17 local-network behavior docs; Shizuku limitation docs.
+  Touches: local server client/server handshake; `ServerConfig`; server connection tests; security docs.
+  Acceptance: the trust model is explicit; loopback-only sessions are enforced where possible or non-loopback sessions use per-session authenticated encryption/TLS; wrong host, wrong token, and replayed session attempts are rejected by tests.
+  Complexity: L
+
+### P2
+
+- [ ] P2 — Multi-user/work-profile/private-space capability matrix
+  Why: AppManagerNG has broad `userId` plumbing and hidden-profile permission support, but users need one visible source of truth for which operations work in main, work, hidden, and private profiles under each privilege mode.
+  Evidence: `app/src/main/AndroidManifest.xml`; `docs/policy/permissions.md`; Canta work-profile issue; Neo Backup multi-profile issue; SD Maid SE work-profile and child-profile issues; Bayton Android 15 Private Space analysis.
+  Touches: user/profile discovery; main-list user filter; backup/install/freeze/cache/app-op action guards; automation; settings/help text.
+  Acceptance: a capability matrix shows detected users/profiles, visible packages, and supported backup/install/freeze/cache/AppOp actions per privilege lane; unsupported actions are disabled or refused with a specific reason; tests cover at least main-profile and simulated secondary-profile decisions.
+  Complexity: L
+
+- [ ] P2 — File-manager operations service with cancellation and recovery
+  Why: Copy, move, delete, and archive work is still tied to fragment/background-thread flows even though the code calls out a bound service and cancellable thread ownership as needed.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmFragment.java`; `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmAdapter.java`; SD Maid SE storage workflow issues; ADB AppControl file/productivity positioning.
+  Touches: file-manager fragment/adapter; new or extended file operation service; foreground notification/progress; operation history/recovery; file-manager tests.
+  Acceptance: copy/move/delete/archive run as cancellable jobs with foreground progress when needed; rotation/backgrounding does not lose operation state; partial move failures leave actionable recovery details; tests cover cancellation and failed move rollback metadata.
+  Complexity: L
+
+- [ ] P2 — Routine trigger history, caps, and filtered triggers
+  Why: The shipped routine scheduler still has documented open decisions for trigger-bound app filters, maximum trigger count, and history rotation beyond the last result.
+  Evidence: `docs/architecture/05-routine-scheduler.md`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/trigger/RoutineScheduler.java`; Hail auto-freeze/logging issues; Neo Backup running-jobs issue; Swift Backup scheduled backup features.
+  Touches: routine trigger editor; profile trigger storage; Room or trigger-run persistence; routine diagnostics/export; profile tests.
+  Acceptance: trigger editor can scope a trigger to a saved filter or tag, warns or enforces a sensible per-profile trigger cap, and shows/export last N routine runs with success, failure, skip reason, and matched-app count.
+  Complexity: M
+
+- [ ] P2 — Debloat recommendation provenance and breakage rollback
+  Why: Community debloat lists are useful but high-risk; UAD-NG issue traffic shows package documentation and breakage corrections are continuous, so AppManagerNG should expose source/version/OEM scope and rollback before destructive debloat.
+  Evidence: `docs/debloat-definitions/manifest.json`; UAD-NG package documentation and breakage issues; Canta uninstall-state issue.
+  Touches: debloater data import; debloater package rows/details; batch operation preview; operation history/recovery; debloat tests.
+  Acceptance: each debloat recommendation shows source, source version/date, OEM/device scope, and risk bucket; debloat batches export a rollback plan before execution; package-specific breakage warnings are visible and searchable.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — App-details package removal watcher
+  Why: App details can become stale if the inspected package is uninstalled, archived, or otherwise disappears while the screen remains open.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java`; Canta issue about unclear uninstall success state; upstream App Manager app-list reliability issues.
+  Touches: `AppInfoFragment`; details ViewModel/load state; package-change observer or lifecycle refresh; fragment tests.
+  Acceptance: package removal while details is open transitions to a clear removed state with back, reinstall/import, and search actions; stale destructive controls disappear; tests cover package-gone refresh.
+  Complexity: S
+
+- [ ] P3 — Component intent-action finder
+  Why: Users need to understand why apps start and which broadcast/action paths exist, while adjacent component managers expose intent-action filtering as a key discovery tool.
+  Evidence: upstream App Manager startup-question issue; Blocker component search and intent-action filter issues; existing AppManagerNG component/rules packages.
+  Touches: component list/search UI; rules/component scanner; app details component tabs; search/filter tests.
+  Acceptance: users can search or filter components by intent action, category, exported state, and enabled rule state across apps, then jump directly to the component control; boot-manager work can reuse the same finder backend.
+  Complexity: M
+
 
