@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
+import io.github.muntashirakon.AppManager.backup.BackupStorageCheck;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.App;
@@ -73,6 +74,8 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
     private boolean mAllowCustomUsersInBackup = true;
     private Future<?> mProcessPackageFuture;
     private Future<?> mHandleUsersFuture;
+    @Nullable
+    private volatile OperationInfo mPendingOperationInfo;
 
     @NonNull
     private final List<BackupInfo> mBackupInfoList = new ArrayList<>();
@@ -81,6 +84,7 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
     private final MutableLiveData<OperationInfo> mUserSelectionLiveData = new MutableLiveData<>();
     private final MutableLiveData<OperationInfo> mBackupOperationLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> mBackupInfoStateLiveData = new MutableLiveData<>();
+    private final MutableLiveData<BackupStorageCheck.Result> mStoragePreflightLiveData = new MutableLiveData<>();
 
     public BackupRestoreDialogViewModel(@NonNull Application application) {
         super(application);
@@ -107,6 +111,32 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
 
     public MutableLiveData<OperationInfo> getUserSelectionLiveData() {
         return mUserSelectionLiveData;
+    }
+
+    public LiveData<BackupStorageCheck.Result> getStoragePreflightLiveData() {
+        return mStoragePreflightLiveData;
+    }
+
+    @AnyThread
+    public void runStoragePreflight(@NonNull OperationInfo operationInfo) {
+        mPendingOperationInfo = operationInfo;
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<String> packageNames = new ArrayList<>();
+            for (BackupInfo info : mBackupInfoList) {
+                if (info.isInstalled()) {
+                    packageNames.add(info.packageName);
+                }
+            }
+            BackupStorageCheck.Result result = BackupStorageCheck.evaluateAggregate(packageNames);
+            mStoragePreflightLiveData.postValue(result);
+        });
+    }
+
+    @Nullable
+    public OperationInfo consumePendingOperation() {
+        OperationInfo info = mPendingOperationInfo;
+        mPendingOperationInfo = null;
+        return info;
     }
 
     @NonNull

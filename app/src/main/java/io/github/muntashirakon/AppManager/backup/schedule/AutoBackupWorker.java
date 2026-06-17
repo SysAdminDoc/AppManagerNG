@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.text.format.DateUtils;
+import android.text.format.Formatter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,6 +24,7 @@ import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupStorageCheck;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.BatchOpsInfo;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
@@ -131,6 +134,29 @@ public class AutoBackupWorker extends Worker {
                         .putInt("failed", 0)
                         .putInt("skipped_recent", skipped)
                         .build());
+            }
+            List<String> packageNames = new ArrayList<>(pairs.size());
+            for (UserPackagePair pair : pairs) {
+                packageNames.add(pair.getPackageName());
+            }
+            BackupStorageCheck.Result storageResult = BackupStorageCheck.evaluateAggregate(packageNames);
+            if (storageResult.status == BackupStorageCheck.Status.INSUFFICIENT) {
+                String message = context.getString(R.string.auto_backup_result_insufficient_storage,
+                        Formatter.formatFileSize(context, storageResult.estimatedBytes),
+                        Formatter.formatFileSize(context, storageResult.freeBytes));
+                AutoBackupScheduler.recordRunResult(message, selection.getSkippedDetails());
+                AutoBackupScheduler.refreshDiagnostics(context);
+                postResultNotification(context, message, true);
+                return Result.success(new Data.Builder()
+                        .putInt("packages", 0)
+                        .putInt("failed", 0)
+                        .putInt("skipped_storage", pairs.size())
+                        .build());
+            }
+            if (storageResult.status != BackupStorageCheck.Status.OK) {
+                Log.w(TAG, "Storage preflight warning: " + storageResult.status
+                        + " (estimated=" + storageResult.estimatedBytes
+                        + ", free=" + storageResult.freeBytes + ")");
             }
             int flags = Prefs.BackupRestore.getBackupFlags() | BackupFlags.BACKUP_MULTIPLE;
             BatchBackupOptions options = new BatchBackupOptions(flags, null, null);

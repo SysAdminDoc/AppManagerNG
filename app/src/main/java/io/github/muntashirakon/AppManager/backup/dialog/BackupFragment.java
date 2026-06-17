@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
+import io.github.muntashirakon.AppManager.backup.BackupStorageCheck;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
@@ -106,6 +108,7 @@ public class BackupFragment extends Fragment {
             messageView.setText(sb);
             messageView.setVisibility(View.VISIBLE);
         }
+        mViewModel.getStoragePreflightLiveData().observe(getViewLifecycleOwner(), this::handleStoragePreflight);
         backupButton.setOnClickListener(v -> {
             BackupFlags newFlags = new BackupFlags(adapter.getSelectedFlags());
             handleBackup(newFlags, exclusionGlobs.get(), protectCheckBox.isChecked(), backupNote.get());
@@ -147,12 +150,53 @@ public class BackupFragment extends Fragment {
         operationInfo.exclusionGlobs = BackupPathExclusionPatterns.sanitize(exclusionGlobs);
         operationInfo.protectFromPrune = protectFromPrune;
         operationInfo.backupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
+        mViewModel.runStoragePreflight(operationInfo);
+    }
+
+    private void handleStoragePreflight(@NonNull BackupStorageCheck.Result result) {
+        BackupRestoreDialogViewModel.OperationInfo operationInfo = mViewModel.consumePendingOperation();
+        if (operationInfo == null) return;
+
+        String sizeInfo = getString(R.string.backup_preflight_size_detail,
+                Formatter.formatFileSize(mContext, result.estimatedBytes),
+                Formatter.formatFileSize(mContext, result.freeBytes));
+
+        switch (result.status) {
+            case INSUFFICIENT:
+                new MaterialAlertDialogBuilder(mContext)
+                        .setTitle(R.string.backup_preflight_title)
+                        .setMessage(getString(R.string.backup_preflight_insufficient, sizeInfo))
+                        .setPositiveButton(R.string.close, null)
+                        .show();
+                return;
+            case WARN_LOW_HEADROOM:
+                showPreflightWarning(operationInfo,
+                        getString(R.string.backup_preflight_low_headroom, sizeInfo));
+                return;
+            case WARN_MAX_FILE_SIZE:
+                String detail = result.detail != null ? result.detail : "";
+                showPreflightWarning(operationInfo,
+                        getString(R.string.backup_preflight_max_file_size, sizeInfo, detail));
+                return;
+            default:
+                proceedWithBackup(operationInfo);
+        }
+    }
+
+    private void showPreflightWarning(@NonNull BackupRestoreDialogViewModel.OperationInfo operationInfo,
+                                      @NonNull String message) {
+        new MaterialAlertDialogBuilder(mContext)
+                .setTitle(R.string.backup_preflight_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.backup_preflight_proceed, (d, w) -> proceedWithBackup(operationInfo))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void proceedWithBackup(@NonNull BackupRestoreDialogViewModel.OperationInfo operationInfo) {
+        BackupFlags flags = new BackupFlags(operationInfo.flags);
         if (flags.backupMultiple()) {
-            // Multiple backup is requested, no need to warn users about backups since the
-            // user has a choice between overwriting the existing backup or create a new one
             // TODO(18/9/20): Add overwrite option
-            // Suggest previously-used backup names (Neo-Backup-style) so users can
-            // tag a fresh backup with the same label as last time without retyping.
             List<String> existingNames = collectExistingBackupNames();
             TextInputDropdownDialogBuilder dialog = new TextInputDropdownDialogBuilder(requireActivity(),
                     R.string.input_backup_name)
@@ -173,10 +217,8 @@ public class BackupFragment extends Fragment {
                     })
                     .show();
         } else {
-            // Base backup requested
             int baseBackupCount = mViewModel.getBackupInfoList().size() - mViewModel.getAppsWithoutBackups().size();
             if (baseBackupCount > 0) {
-                // One or more app has backups, warn users
                 new MaterialAlertDialogBuilder(mContext)
                         .setTitle(R.string.backup)
                         .setMessage(getResources().getQuantityString(R.plurals.backup_exists_are_you_sure,
@@ -185,7 +227,6 @@ public class BackupFragment extends Fragment {
                         .setNegativeButton(R.string.cancel, null)
                         .show();
             } else {
-                // No need to warn users, proceed to back up
                 mViewModel.prepareForOperation(operationInfo);
             }
         }

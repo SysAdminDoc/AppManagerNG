@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -88,6 +89,35 @@ public final class BackupStorageCheck {
     }
 
     private BackupStorageCheck() {
+    }
+
+    @WorkerThread
+    @NonNull
+    public static Result evaluateAggregate(@NonNull List<String> packageNames) {
+        if (packageNames.isEmpty()) {
+            return new Result(Status.OK, 0, 0, null);
+        }
+        Context appContext = ContextUtils.getContext();
+        long totalEstimated = 0;
+        long maxSinglePackage = 0;
+        for (String packageName : packageNames) {
+            long est = estimateRequiredBytes(appContext, packageName);
+            totalEstimated += est;
+            maxSinglePackage = Math.max(maxSinglePackage, est);
+        }
+        long free = getFreeBytesOnBackupVolume(appContext);
+        Status status = classify(totalEstimated, free, SAFETY_MARGIN_BYTES);
+        if (status == Status.OK || status == Status.WARN_LOW_HEADROOM) {
+            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext);
+            if (maxFileSize > 0 && maxSinglePackage > maxFileSize) {
+                return new Result(Status.WARN_MAX_FILE_SIZE, totalEstimated, free,
+                        "At least one app's estimated backup (" + (maxSinglePackage / (1024 * 1024)) + " MB) exceeds the "
+                                + "destination filesystem's max file size ("
+                                + (maxFileSize / (1024 * 1024)) + " MB). "
+                                + "That archive may be silently truncated.");
+            }
+        }
+        return new Result(status, totalEstimated, free, null);
     }
 
     @WorkerThread
