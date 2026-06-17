@@ -49,4 +49,5 @@ codexprompt-*.md
 !CHANGELOG.md
 !/RESEARCH.md
 !/ROADMAP.md
+!/Roadmap_Blocked.md
 !docs/**/*.md
