@@ -539,6 +539,8 @@
         <item quantity="other">Could not prevent %1$d apps from running in the background</item>
     </plurals>
     <string name="the_operation_was_successful">Done</string>
+    <string name="operation_result_needs_attention">Operation needs attention</string>
+    <string name="operation_result_review_history">Review operation history for details and recovery guidance.</string>
     <plurals name="alert_failed_to_force_stop">
         <item quantity="one">Could not force-stop %1$d app</item>
         <item quantity="other">Could not force-stop %1$d apps</item>
@@ -1282,6 +1284,13 @@
     <string name="profile_apply_privilege_warning_message">The current mode cannot run: %1$s. Apply the supported actions only, or cancel.</string>
     <string name="profile_apply_supported_ops">Apply supported actions</string>
     <string name="profile_apply_skipped_privileged_ops">Skipped actions needing more privilege: %1$s</string>
+    <plurals name="profile_apply_failed_app_count">
+        <item quantity="one">%d app failed</item>
+        <item quantity="other">%d apps failed</item>
+    </plurals>
+    <string name="profile_apply_result_failed_targets">Operation needs attention: %1$s. Review operation history before retrying.</string>
+    <string name="profile_apply_result_skipped_ops">Operation needs attention: %1$s. Review operation history before retrying.</string>
+    <string name="profile_apply_result_failed_targets_and_skips">Operation needs attention: %1$s; %2$s. Review operation history before retrying.</string>
     <string name="quick_freeze_tile_label">Freeze profile</string>
     <string name="quick_freeze_tile_set_profile">Use for Quick Settings freeze tile</string>
     <string name="quick_freeze_tile_clear_profile">Remove from Quick Settings freeze tile</string>
@@ -3505,8 +3514,17 @@
     <string name="auto_backup_result_partial">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed</string>
     <string name="auto_backup_result_partial_with_skipped">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> due apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed; skipped <xliff:g id="skipped" example="3">%4$d</xliff:g> recent backups</string>
     <string name="auto_backup_result_failed">Scheduled backup failed: <xliff:g id="reason" example="No backup volume">%1$s</xliff:g></string>
+    <string name="auto_backup_result_insufficient_storage">Skipped: not enough free space (estimated <xliff:g id="estimated" example="1.2 GB">%1$s</xliff:g>, free <xliff:g id="free" example="500 MB">%2$s</xliff:g>)</string>
     <string name="auto_backup_result_could_not_start">Couldn\'t start scheduled backup (background restricted); will retry.</string>
     <string name="auto_backup_result_already_running">A backup is already running; this run was skipped.</string>
+
+    <!-- Backup storage preflight -->
+    <string name="backup_preflight_title">Storage check</string>
+    <string name="backup_preflight_insufficient">Not enough free space to complete this backup.\n\n<xliff:g id="detail" example="Estimated: 1.2 GB / Free: 500 MB">%1$s</xliff:g></string>
+    <string name="backup_preflight_low_headroom">The backup should fit, but free space will be critically low afterward.\n\n<xliff:g id="detail" example="Estimated: 1.2 GB / Free: 1.3 GB">%1$s</xliff:g></string>
+    <string name="backup_preflight_max_file_size">A backup archive may exceed the destination filesystem\'s maximum file size and could be silently truncated.\n\n<xliff:g id="detail" example="Estimated: 1.2 GB / Free: 10 GB">%1$s</xliff:g>\n\n<xliff:g id="fs_detail" example="Archive exceeds 4 GB FAT32 limit">%2$s</xliff:g></string>
+    <string name="backup_preflight_size_detail">Estimated size: <xliff:g id="estimated" example="1.2 GB">%1$s</xliff:g>\nFree space: <xliff:g id="free" example="10 GB">%2$s</xliff:g></string>
+    <string name="backup_preflight_proceed">Proceed</string>
     <!-- Backup retention policy (T6/Next) -->
     <string name="pref_backup_retention_max_count">Max backups per app</string>
     <string name="pref_backup_retention_max_age">Max backup age</string>
