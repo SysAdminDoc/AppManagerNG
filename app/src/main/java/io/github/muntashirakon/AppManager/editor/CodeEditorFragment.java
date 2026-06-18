@@ -51,6 +51,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Objects;
+import java.util.concurrent.Future;
 import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.R;
@@ -60,6 +61,7 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
@@ -220,6 +222,9 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private MenuItem mJavaSmaliToggleMenu;
     private MenuItem mShareMenu;
     private CodeEditorViewModel mViewModel;
+    @Nullable
+    private Future<?> mDiffResult;
+    private int mDiffRequestId;
     private boolean mTextModified = false;
     private final ActivityResultLauncher<Intent> mSaveOpenedFile = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -553,6 +558,16 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     }
 
     @Override
+    public void onDestroyView() {
+        if (mDiffResult != null) {
+            mDiffResult.cancel(true);
+            mDiffResult = null;
+        }
+        ++mDiffRequestId;
+        super.onDestroyView();
+    }
+
+    @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         // Handle back press: The order MUST be kept same
@@ -661,61 +676,54 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             UIUtils.displayShortToast(R.string.editor_no_changes);
             return;
         }
-        String[] originalLines = original.split("\\r?\\n|\\r", -1);
-        String[] currentLines = current.split("\\r?\\n|\\r", -1);
-        int totalLines = originalLines.length + currentLines.length;
-        if (totalLines > 20000) {
-            UIUtils.displayShortToast(R.string.editor_diff_too_large);
-            return;
+        int requestId = ++mDiffRequestId;
+        if (mDiffResult != null) {
+            mDiffResult.cancel(true);
         }
+        showProgressIndicator(true);
+        mDiffResult = ThreadUtils.postOnBackgroundThread(() -> {
+            CodeEditorDiff.Result result = CodeEditorDiff.compute(original, current);
+            ThreadUtils.postOnMainThread(() -> {
+                if (requestId != mDiffRequestId) {
+                    return;
+                }
+                mDiffResult = null;
+                if (!isAdded()) {
+                    return;
+                }
+                showProgressIndicator(false);
+                if (result.isTooLarge()) {
+                    UIUtils.displayShortToast(R.string.editor_diff_too_large);
+                    return;
+                }
+                if (result.isNoChanges()) {
+                    UIUtils.displayShortToast(R.string.editor_no_changes);
+                    return;
+                }
+                showDiffResult(result);
+            });
+        });
+    }
+
+    private void showDiffResult(@NonNull CodeEditorDiff.Result result) {
         SpannableStringBuilder diff = new SpannableStringBuilder();
         int addedColor = 0xFF4CAF50;
         int removedColor = 0xFFF44336;
-        int added = 0;
-        int removed = 0;
-        int maxDiffLines = 500;
-        int oi = 0, ci = 0;
-        while (oi < originalLines.length || ci < currentLines.length) {
-            if (oi < originalLines.length && ci < currentLines.length
-                    && originalLines[oi].equals(currentLines[ci])) {
-                oi++;
-                ci++;
-            } else if (ci < currentLines.length
-                    && (oi >= originalLines.length || !containsAhead(originalLines, oi, currentLines[ci], 5))) {
-                if (added + removed < maxDiffLines) {
-                    appendColoredLine(diff, "+ " + currentLines[ci], addedColor);
-                }
-                added++;
-                ci++;
-            } else if (oi < originalLines.length) {
-                if (added + removed < maxDiffLines) {
-                    appendColoredLine(diff, "- " + originalLines[oi], removedColor);
-                }
-                removed++;
-                oi++;
-            }
+        for (CodeEditorDiff.LineChange line : result.displayLines) {
+            int color = line.kind == CodeEditorDiff.Kind.ADDED ? addedColor : removedColor;
+            String prefix = line.kind == CodeEditorDiff.Kind.ADDED ? "+ " : "- ";
+            appendColoredLine(diff, prefix + line.text, color);
         }
-        if (added + removed > maxDiffLines) {
+        if (result.omitted > 0) {
             diff.append("\n… ");
-            diff.append(getString(R.string.editor_diff_truncated, added + removed - maxDiffLines));
+            diff.append(getString(R.string.editor_diff_truncated, result.omitted));
         }
-        String stats = getString(R.string.editor_diff_stats, added, removed);
+        String stats = getString(R.string.editor_diff_stats, result.added, result.removed);
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.editor_diff_title)
                 .setMessage(new SpannableStringBuilder(stats).append("\n\n").append(diff))
                 .setPositiveButton(R.string.ok, null)
                 .show();
-    }
-
-    private static boolean containsAhead(@NonNull String[] lines, int from,
-                                          @NonNull String target, int lookAhead) {
-        int limit = Math.min(from + lookAhead, lines.length);
-        for (int i = from; i < limit; i++) {
-            if (lines[i].equals(target)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static void appendColoredLine(@NonNull SpannableStringBuilder builder,
