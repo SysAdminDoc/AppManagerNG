@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.accessibility;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -61,6 +62,12 @@ public class ActionLabelAccessibilityContractTest {
                 source.contains("R.string.app_info"));
         assertTrue("Market debloat suggestions should announce the app store action",
                 source.contains("R.string.open_in_app_store"));
+        assertFalse("Market failures should not expose raw exception toasts",
+                source.contains("\"Error: \" + th.getMessage()"));
+        assertTrue("Market failures should use localized recovery copy",
+                source.contains("R.string.debloat_app_store_unavailable"));
+        assertTrue("Market failures should keep diagnostics in logs",
+                source.contains("Log.e(TAG, \"Could not open app store for %s.\", th, suggestion.packageName);"));
     }
 
     @Test
@@ -68,6 +75,8 @@ public class ActionLabelAccessibilityContractTest {
         String layout = read(findAppProjectDir().resolve("src/main/res/layout/dialog_audio_player.xml"));
         String source = read(findRepoRoot().resolve(
                 "app/src/main/java/io/github/muntashirakon/AppManager/viewer/audio/AudioPlayerDialogFragment.java"));
+        String viewModelSource = read(findRepoRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/viewer/audio/AudioPlayerViewModel.java"));
 
         assertControlContentDescription(layout, "action_rewind", "@string/audio_player_rewind_10");
         assertControlContentDescription(layout, "action_play_pause", "@string/audio_player_play");
@@ -88,6 +97,35 @@ public class ActionLabelAccessibilityContractTest {
         assertTrue("Audio player should release its wake lock outside final destruction",
                 source.contains("public void onStop()")
                         && source.contains("CpuUtils.releaseWakeLock(mWakeLock);"));
+        assertFalse("Audio metadata fallbacks should be localized",
+                viewModelSource.contains("<Unknown "));
+        assertFalse("Audio player failures should be logged, not printed to stderr",
+                viewModelSource.contains("printStackTrace()"));
+        assertTrue("Audio player should use localized unknown title fallback",
+                viewModelSource.contains("R.string.audio_player_unknown_title"));
+        assertTrue("Audio player should log metadata failures",
+                viewModelSource.contains("Log.e(TAG, \"Could not read audio metadata for %s.\", e, uri);"));
+    }
+
+    @Test
+    public void debloaterPresetImportExportUsesLocalizedCopyAndSharedExecutor() throws IOException {
+        String source = read(findRepoRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterActivity.java"));
+
+        assertFalse("Debloater preset export should not report the import-success copy",
+                source.contains("R.string.debloat_import_success,\n                        selected.size(), selected.size()"));
+        assertFalse("Debloater preset export should not allocate one-off executors",
+                source.contains("Executors.newSingleThreadExecutor()"));
+        assertFalse("Debloater preset failures should not fall back to hardcoded English",
+                source.contains("\"Export failed\"") || source.contains("\"Import failed\""));
+        assertTrue("Debloater preset export should use localized success copy",
+                source.contains("R.string.debloat_export_success"));
+        assertTrue("Debloater preset failures should log export diagnostics",
+                source.contains("Log.e(TAG, \"Could not export debloat preset.\", e);"));
+        assertTrue("Debloater preset failures should log import diagnostics",
+                source.contains("Log.e(TAG, \"Could not import debloat preset.\", e);"));
+        assertTrue("Debloater preset work should use the shared background executor",
+                source.contains("ThreadUtils.postOnBackgroundThread"));
     }
 
     private static void assertControlContentDescription(String layout,

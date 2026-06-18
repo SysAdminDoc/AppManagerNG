@@ -26,6 +26,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.appcompat.widget.TooltipCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -915,7 +916,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             button.setVisibility(mIsExternalApk ? View.GONE : View.VISIBLE);
             int label = drifted ? R.string.permission_reference_restore : R.string.permission_reference_pin;
             button.setContentDescription(getString(label));
-            button.setTooltipText(getString(label));
+            TooltipCompat.setTooltipText(button, getString(label));
             button.setIconResource(drifted ? R.drawable.ic_restore : R.drawable.ic_flag);
             button.setEnabled(!mIsExternalApk && enabled);
             button.setOnClickListener(!mIsExternalApk && enabled ? v -> action.run() : null);

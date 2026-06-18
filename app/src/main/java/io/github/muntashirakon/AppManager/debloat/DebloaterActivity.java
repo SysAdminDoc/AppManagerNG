@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchFreezeOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchSafetyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
@@ -51,6 +52,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.widget.MultiSelectionView;
@@ -59,6 +61,8 @@ import io.github.muntashirakon.widget.RecyclerView;
 public class DebloaterActivity extends BaseActivity implements MultiSelectionView.OnSelectionChangeListener,
         MultiSelectionActionsView.OnItemSelectedListener, AdvancedSearchView.OnQueryTextListener,
         MultiSelectionView.OnSelectionModeChangeListener {
+    private static final String TAG = DebloaterActivity.class.getSimpleName();
+
     DebloaterViewModel viewModel;
 
     private LinearProgressIndicator mProgressIndicator;
@@ -707,29 +711,26 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     private void exportPresetAsync(@NonNull Uri uri) {
         if (viewModel == null) return;
         java.util.Map<String, int[]> selected = viewModel.getSelectedPackages();
-        java.util.concurrent.Executor executor = java.util.concurrent.Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
+        ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 DebloatPresetIO.exportPreset(this, uri, selected);
-                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_import_success,
-                        selected.size(), selected.size()));
+                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_export_success, selected.size()));
             } catch (java.io.IOException e) {
-                String msg = e.getMessage();
-                runOnUiThread(() -> UIUtils.displayShortToast(msg != null ? msg : "Export failed"));
+                Log.e(TAG, "Could not export debloat preset.", e);
+                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_export_failed));
             }
         });
     }
 
     private void importPresetAsync(@NonNull Uri uri) {
         if (viewModel == null) return;
-        java.util.concurrent.Executor executor = java.util.concurrent.Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
+        ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 DebloatPresetIO.DebloatPresetData data = DebloatPresetIO.importPreset(this, uri);
                 runOnUiThread(() -> applyImportedPreset(data));
             } catch (java.io.IOException e) {
-                String msg = e.getMessage();
-                runOnUiThread(() -> UIUtils.displayShortToast(msg != null ? msg : "Import failed"));
+                Log.e(TAG, "Could not import debloat preset.", e);
+                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_import_failed));
             }
         });
     }

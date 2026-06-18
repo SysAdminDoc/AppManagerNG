@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -337,7 +338,8 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
                     try {
                         startActivity(appDetailsIntent);
                     } catch (Exception th) {
-                        UIUtils.displayLongToast("Error: " + th.getMessage());
+                        Log.e(TAG, "Could not open app store for %s.", th, suggestion.packageName);
+                        UIUtils.displayLongToast(R.string.debloat_app_store_unavailable);
                     }
                 });
             }
