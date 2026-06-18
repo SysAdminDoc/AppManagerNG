@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -235,7 +234,7 @@ public class SBConverter extends Converter {
                                 IoUtils.copy(zis, fos);
                             }
                         }
-                        String fileName = zipEntry.getName().replaceFirst(Pattern.quote(mPackageName + "/"), "");
+                        String fileName = ConvertUtils.getRelativeBackupEntryName(zipEntry.getName(), mPackageName + "/");
                         if (fileName.isEmpty()) continue;
                         // New tar entry
                         TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
