@@ -37,6 +37,7 @@ import java.util.zip.ZipInputStream;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -47,8 +48,11 @@ import io.github.muntashirakon.io.Paths;
  * Import components from external apps like Blocker, Watt and MyAndroidTools.
  */
 public class ExternalComponentsImporter {
+    private static final String TAG = ExternalComponentsImporter.class.getSimpleName();
     private static final String MY_ANDROID_TOOLS_IFW_EXTENSION = ".ifw";
     private static final String MY_ANDROID_TOOLS_IFW_ENTRY_SUFFIX = "$.xml";
+    @VisibleForTesting
+    static final int MAX_MY_ANDROID_TOOLS_IFW_ENTRIES = 4096;
 
     public static void setModeToFilteredAppOps(@NonNull AppOpsManagerCompat appOpsManager,
                                                @NonNull UserPackagePair pair,
@@ -84,7 +88,7 @@ public class ExternalComponentsImporter {
                 }
                 cb.applyRules(true);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not import existing component blocks for " + packageName, e);
                 failedPkgList.add(packageName);
             }
         }
@@ -103,7 +107,7 @@ public class ExternalComponentsImporter {
                 }
             } catch (Exception e) {
                 failedFiles.add(filename);
-                e.printStackTrace();
+                Log.w(TAG, "Could not import Blocker rules from " + filename, e);
             }
         }
         return failedFiles;
@@ -122,7 +126,7 @@ public class ExternalComponentsImporter {
                 }
             } catch (IOException e) {
                 failedFiles.add(filename);
-                e.printStackTrace();
+                Log.w(TAG, "Could not import Watt rules from " + filename, e);
             }
         }
         return failedFiles;
@@ -141,7 +145,7 @@ public class ExternalComponentsImporter {
                 }
             } catch (Exception e) {
                 failedFiles.add(filename);
-                e.printStackTrace();
+                Log.w(TAG, "Could not import MyAndroidTools rules from " + filename, e);
             }
         }
         return failedFiles;
@@ -219,21 +223,32 @@ public class ExternalComponentsImporter {
         HashMap<String, HashMap<String, RuleType>> packageComponents = new HashMap<>();
         try (ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(rulesStream))) {
             ZipEntry entry;
+            int entryCount = 0;
             while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    continue;
+                try {
+                    ++entryCount;
+                    if (entryCount > MAX_MY_ANDROID_TOOLS_IFW_ENTRIES) {
+                        throw new IOException("MyAndroidTools IFW archive has too many entries.");
+                    }
+                    if (entry.isDirectory()) {
+                        continue;
+                    }
+                    String filename = getFilenameFromZipEntry(entry);
+                    if (!filename.endsWith(MY_ANDROID_TOOLS_IFW_ENTRY_SUFFIX)) {
+                        continue;
+                    }
+                    String packageName = filename.substring(0,
+                            filename.length() - MY_ANDROID_TOOLS_IFW_ENTRY_SUFFIX.length());
+                    if (!PackageUtils.validateName(packageName)) {
+                        continue;
+                    }
+                    HashMap<String, RuleType> ifwRules = ComponentUtils.readIFWRules(zipInputStream, packageName);
+                    for (Map.Entry<String, RuleType> rule : ifwRules.entrySet()) {
+                        addParsedComponent(packageComponents, packageName, rule.getKey(), rule.getValue());
+                    }
+                } finally {
+                    zipInputStream.closeEntry();
                 }
-                String filename = getFilenameFromZipEntry(entry);
-                if (!filename.endsWith(MY_ANDROID_TOOLS_IFW_ENTRY_SUFFIX)) {
-                    continue;
-                }
-                String packageName = filename.substring(0,
-                        filename.length() - MY_ANDROID_TOOLS_IFW_ENTRY_SUFFIX.length());
-                HashMap<String, RuleType> ifwRules = ComponentUtils.readIFWRules(zipInputStream, packageName);
-                for (Map.Entry<String, RuleType> rule : ifwRules.entrySet()) {
-                    addParsedComponent(packageComponents, packageName, rule.getKey(), rule.getValue());
-                }
-                zipInputStream.closeEntry();
             }
         }
         return packageComponents;

@@ -25,6 +25,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   public URI intents, signed Tasker bundles, and direct automation broadcasts.
 - Moved native profile JSON import off the main thread and avoid launching the
   imported profile editor after the profiles screen has already been destroyed.
+- Capped MyAndroidTools IFW import archive entry count, skip invalid package
+  entries, and log external component import failures through the app logger.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
