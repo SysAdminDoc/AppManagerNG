@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreezeService;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
@@ -37,6 +38,7 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class ActivityLauncherShortcutActivity extends BaseActivity {
+    private static final String TAG = ActivityLauncherShortcutActivity.class.getSimpleName();
     private static final String EXTRA_PKG = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.pkg";
     private static final String EXTRA_CLS = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.cls";
     private static final String EXTRA_AST = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.ast";
@@ -138,8 +140,8 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
                 finishActivity(0);
                 ActivityManagerCompat.startActivity(mIntent, mUserId);
             } catch (Exception e) {
-                e.printStackTrace();
-                UIUtils.displayLongToast("Error: " + e.getMessage());
+                Log.e(TAG, "Could not launch shortcut target.", e);
+                UIUtils.displayLongToast(R.string.shortcut_target_unavailable);
                 // Try assist instead
                 if (mCanLaunchViaAssist) {
                     launchActivityViaAssist();

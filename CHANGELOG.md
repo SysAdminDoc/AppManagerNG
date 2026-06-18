@@ -7,6 +7,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Deep audit pass (2026-06-18)
 
+- Replaced raw shortcut-launch exception toasts with the existing localized
+  "shortcut target unavailable" recovery copy while logging the diagnostic.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
