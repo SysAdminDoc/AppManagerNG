@@ -554,16 +554,45 @@ public class ScannerFragment extends Fragment {
             return null;
         }
         List<CharSequence> messages = new ArrayList<>(rowsByCategory.size() + 1);
-        messages.add(allRows);
+        messages.add(buildGroupedByCategory(rowsByCategory));
         for (TrackerCategory category : TrackerCategory.values()) {
             List<Spannable> rows = rowsByCategory.get(category);
             if (rows == null || rows.isEmpty()) {
                 continue;
             }
             Collections.sort(rows, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
-            messages.add(UiUtils.getOrderedList(rows));
+            SpannableStringBuilder categoryMessage = new SpannableStringBuilder();
+            categoryMessage.append(getSmallerText(getString(category.getDescriptionRes())));
+            categoryMessage.append("\n\n");
+            categoryMessage.append(UiUtils.getOrderedList(rows));
+            messages.add(categoryMessage);
         }
         return messages.toArray(new CharSequence[0]);
+    }
+
+    @NonNull
+    private CharSequence buildGroupedByCategory(
+            @NonNull EnumMap<TrackerCategory, List<Spannable>> rowsByCategory) {
+        SpannableStringBuilder grouped = new SpannableStringBuilder();
+        boolean first = true;
+        for (TrackerCategory category : TrackerCategory.values()) {
+            List<Spannable> rows = rowsByCategory.get(category);
+            if (rows == null || rows.isEmpty()) {
+                continue;
+            }
+            if (!first) {
+                grouped.append("\n\n");
+            }
+            first = false;
+            Collections.sort(rows, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
+            grouped.append(getPrimaryText(mActivity,
+                    getString(category.getLabelRes()) + " (" + rows.size() + ")"));
+            grouped.append("\n");
+            grouped.append(getSmallerText(getString(category.getDescriptionRes())));
+            grouped.append("\n");
+            grouped.append(UiUtils.getOrderedList(rows));
+        }
+        return grouped;
     }
 
     @NonNull

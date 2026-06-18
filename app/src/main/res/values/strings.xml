@@ -2617,6 +2617,14 @@
     <string name="tracker_category_identification">Fingerprint</string>
     <string name="tracker_category_social">Social</string>
     <string name="tracker_category_other">Tracker</string>
+    <string name="tracker_category_ad_desc">Ad and mediation SDKs that display or broker ads inside the app</string>
+    <string name="tracker_category_analytics_desc">Collects usage data, engagement metrics, or A/B test results</string>
+    <string name="tracker_category_crash_desc">Captures crash reports, ANRs, and diagnostic telemetry</string>
+    <string name="tracker_category_push_desc">Delivers push notifications and may report engagement</string>
+    <string name="tracker_category_location_desc">Reads or infers device location for analytics or targeting</string>
+    <string name="tracker_category_identification_desc">Fingerprints or uniquely identifies the device or user</string>
+    <string name="tracker_category_social_desc">Social login, sharing, or engagement SDKs</string>
+    <string name="tracker_category_other_desc">Known tracker that does not match a specific category</string>
     <string name="tracker_chip_with_category" translatable="false"><xliff:g id="vendor" example="Google AdMob">%1$s</xliff:g> · <xliff:g id="category" example="Ad">%2$s</xliff:g></string>
     <string name="tracker_chip_safe_to_block_hint_with_name"><xliff:g id="tracker_name" example="Google AdMob">%1$s</xliff:g> — known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="input_ssaid_instruction">SSAID is a %1$d byte hexadecimal number i.e. a string of length %2$d containing 0 to 9 and a to f.</string>
