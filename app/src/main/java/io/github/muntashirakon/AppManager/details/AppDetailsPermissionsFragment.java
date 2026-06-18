@@ -524,6 +524,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             ImageView imageView;
             MaterialSwitch toggleSwitch;
             MaterialButton settingButton;
+            MaterialButton referenceButton;
             Chip chipType;
 
             public ViewHolder(@NonNull View itemView) {
@@ -554,6 +555,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         textView7 = itemView.findViewById(R.id.op_mode_running_duration);
                         textView8 = itemView.findViewById(R.id.op_accept_reject_time);
                         toggleSwitch = itemView.findViewById(R.id.perm_toggle_btn);
+                        referenceButton = itemView.findViewById(R.id.action_reference);
                         break;
                     case USES_PERMISSIONS:
                         textView1 = itemView.findViewById(R.id.perm_name);
@@ -563,6 +565,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         textView5 = itemView.findViewById(R.id.perm_group);
                         toggleSwitch = itemView.findViewById(R.id.perm_toggle_btn);
                         settingButton = itemView.findViewById(R.id.action_settings);
+                        referenceButton = itemView.findViewById(R.id.action_reference);
                         break;
                     default:
                         break;
@@ -668,6 +671,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         .append(LangUtils.getSeparatorString())
                         .append(DateUtils.getFormattedDuration(context, item.getDuration(), true));
             }
+            if (item.hasReference) {
+                opRunningInfo.append(", ").append(context.getString(item.isReferenceDrifted()
+                        ? R.string.permission_reference_drift
+                        : R.string.permission_reference_status_pinned));
+            }
             holder.textView7.setText(opRunningInfo);
             // Set accept-time and/or reject-time
             long currentTime = System.currentTimeMillis();
@@ -708,6 +716,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 // Protection level
                 String protectionLevel = Utils.getProtectionLevelString(permissionInfo);
                 protectionLevel += '|' + (Objects.requireNonNull(item.permission).isGranted() ? "granted" : "revoked");
+                if (item.hasReference) {
+                    protectionLevel += '|' + getString(item.isReferenceDrifted()
+                            ? R.string.permission_reference_drift
+                            : R.string.permission_reference_status_pinned);
+                }
                 holder.textView3.setVisibility(View.VISIBLE);
                 holder.textView3.setText(String.format(Locale.ROOT, "⚑ %s", protectionLevel));
                 // Set package name
@@ -742,6 +755,9 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             holder.toggleSwitch.setVisibility(mCanModifyAppOpMode ? View.VISIBLE : View.GONE);
             // op granted
             holder.toggleSwitch.setChecked(item.isAllowed());
+            bindReferenceButton(holder.referenceButton, item.isReferenceDrifted(),
+                    !item.isReferenceDrifted() || mCanModifyAppOpMode, () ->
+                            handleAppOpReferenceAction(item));
             holder.itemView.setOnClickListener(v -> {
                 // Three-state cycle ALLOWED → IGNORED → ERRORED → ALLOWED, matching Inure's
                 // AppOps editor model. The IGNORE state is the correct option for ops that
@@ -807,6 +823,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             // Protection level
             String protectionLevel = Utils.getProtectionLevelString(permissionInfo);
             protectionLevel += '|' + (permissionItem.permission.isGranted() ? "granted" : "revoked");
+            if (permissionItem.hasReference) {
+                protectionLevel += '|' + getString(permissionItem.isReferenceDrifted()
+                        ? R.string.permission_reference_drift
+                        : R.string.permission_reference_status_pinned);
+            }
             holder.textView3.setText(String.format(Locale.ROOT, "⚑ %s", protectionLevel));
             // Set background color
             if (permissionItem.isDangerous) {
@@ -828,6 +849,9 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else holder.textView5.setVisibility(View.GONE);
             // Permission Switch
             boolean canGrantOrRevokePermission = permissionItem.modifiable && !mIsExternalApk;
+            bindReferenceButton(holder.referenceButton, permissionItem.isReferenceDrifted(),
+                    !mIsExternalApk && (!permissionItem.isReferenceDrifted() || canGrantOrRevokePermission), () ->
+                            handlePermissionReferenceAction(permissionItem));
             if (canGrantOrRevokePermission) {
                 holder.toggleSwitch.setVisibility(View.VISIBLE);
                 holder.toggleSwitch.setChecked(permissionItem.isGranted());
@@ -884,6 +908,60 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 return true;
             });
             holder.itemView.setLongClickable(flags != 0);
+        }
+
+        private void bindReferenceButton(@NonNull MaterialButton button, boolean drifted, boolean enabled,
+                                         @NonNull Runnable action) {
+            button.setVisibility(mIsExternalApk ? View.GONE : View.VISIBLE);
+            int label = drifted ? R.string.permission_reference_restore : R.string.permission_reference_pin;
+            button.setContentDescription(getString(label));
+            button.setTooltipText(getString(label));
+            button.setIconResource(drifted ? R.drawable.ic_restore : R.drawable.ic_flag);
+            button.setEnabled(!mIsExternalApk && enabled);
+            button.setOnClickListener(!mIsExternalApk && enabled ? v -> action.run() : null);
+        }
+
+        private void handlePermissionReferenceAction(@NonNull AppDetailsPermissionItem item) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                boolean restore = item.isReferenceDrifted();
+                boolean ok = false;
+                if (viewModel != null) {
+                    ok = restore ? viewModel.restorePermissionReference(item)
+                            : viewModel.pinPermissionReference(item);
+                }
+                boolean finalOk = ok;
+                ThreadUtils.postOnMainThread(() -> {
+                    if (finalOk) {
+                        AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
+                        UIUtils.displayShortToast(restore
+                                ? R.string.permission_reference_restored
+                                : R.string.permission_reference_pinned);
+                    } else UIUtils.displayShortToast(restore
+                            ? R.string.permission_reference_restore_failed
+                            : R.string.permission_reference_pin_failed);
+                });
+            });
+        }
+
+        private void handleAppOpReferenceAction(@NonNull AppDetailsAppOpItem item) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                boolean restore = item.isReferenceDrifted();
+                boolean ok = false;
+                if (viewModel != null) {
+                    ok = restore ? viewModel.restoreAppOpReference(item) : viewModel.pinAppOpReference(item);
+                }
+                boolean finalOk = ok;
+                ThreadUtils.postOnMainThread(() -> {
+                    if (finalOk) {
+                        AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
+                        UIUtils.displayShortToast(restore
+                                ? R.string.permission_reference_restored
+                                : R.string.permission_reference_pinned);
+                    } else UIUtils.displayShortToast(restore
+                            ? R.string.permission_reference_restore_failed
+                            : R.string.permission_reference_pin_failed);
+                });
+            });
         }
 
         private void getPermissionsView(@NonNull Context context, @NonNull ViewHolder holder, int index) {

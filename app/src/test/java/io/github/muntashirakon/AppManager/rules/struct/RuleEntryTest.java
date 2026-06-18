@@ -66,10 +66,24 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void flattenAppOpReferenceToString() {
+        RuleEntry rule = new AppOpReferenceRule(PACKAGE_NAME, 55, AppOpsManager.MODE_DEFAULT);
+        assertEquals(PACKAGE_NAME + "\t55\tAPP_OP_REFERENCE\t3", rule.flattenToString(true));
+        assertEquals("55\tAPP_OP_REFERENCE\t3", rule.flattenToString(false));
+    }
+
+    @Test
     public void flattenPermissionToString() {
         RuleEntry rule = new PermissionRule(PACKAGE_NAME, ".permission", true, 32);
         assertEquals(PACKAGE_NAME + "\t.permission\tPERMISSION\ttrue\t32", rule.flattenToString(true));
         assertEquals(".permission\tPERMISSION\ttrue\t32", rule.flattenToString(false));
+    }
+
+    @Test
+    public void flattenPermissionReferenceToString() {
+        RuleEntry rule = new PermissionReferenceRule(PACKAGE_NAME, ".permission", true);
+        assertEquals(PACKAGE_NAME + "\t.permission\tPERMISSION_REFERENCE\ttrue", rule.flattenToString(true));
+        assertEquals(".permission\tPERMISSION_REFERENCE\ttrue", rule.flattenToString(false));
     }
 
     @Test
@@ -198,11 +212,30 @@ public class RuleEntryTest {
     }
 
     @Test
+    public void unflattenAppOpReferenceFromString() {
+        RuleEntry rule = new AppOpReferenceRule(PACKAGE_NAME, 55, AppOpsManager.MODE_DEFAULT);
+        assertEquals(RuleEntry.unflattenFromString(null, PACKAGE_NAME + "\t55\tAPP_OP_REFERENCE\t3", true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, PACKAGE_NAME + "\t55\tAPP_OP_REFERENCE\t3", true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP_REFERENCE\t3", false), rule);
+    }
+
+    @Test
     public void unflattenPermissionFromString() {
         RuleEntry rule = new PermissionRule(PACKAGE_NAME, ".permission", true, 32);
         assertEquals(RuleEntry.unflattenFromString(null, PACKAGE_NAME + "\t.permission\tPERMISSION\ttrue\t32", true), rule);
         assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, PACKAGE_NAME + "\t.permission\tPERMISSION\ttrue\t32", true), rule);
         assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\ttrue\t32", false), rule);
+    }
+
+    @Test
+    public void unflattenPermissionReferenceFromString() {
+        RuleEntry rule = new PermissionReferenceRule(PACKAGE_NAME, ".permission", true);
+        assertEquals(RuleEntry.unflattenFromString(null,
+                PACKAGE_NAME + "\t.permission\tPERMISSION_REFERENCE\ttrue", true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME,
+                PACKAGE_NAME + "\t.permission\tPERMISSION_REFERENCE\ttrue", true), rule);
+        assertEquals(RuleEntry.unflattenFromString(PACKAGE_NAME,
+                ".permission\tPERMISSION_REFERENCE\ttrue", false), rule);
     }
 
     @Test
@@ -342,6 +375,9 @@ public class RuleEntryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".permission\tPERMISSION\tmaybe", false));
         assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME,
+                        ".permission\tPERMISSION_REFERENCE\tmaybe", false));
+        assertThrows(IllegalArgumentException.class,
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "STUB\tBATTERY_OPT\tmaybe", false));
         assertThrows(IllegalArgumentException.class,
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".notif\tNOTIFICATION\tmaybe", false));
@@ -401,8 +437,19 @@ public class RuleEntryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP\t999", false));
         assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "not-number\tAPP_OP_REFERENCE\t3", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "-1\tAPP_OP_REFERENCE\t3", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP_REFERENCE\tnot-number", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME, "55\tAPP_OP_REFERENCE\t999", false));
+        assertThrows(IllegalArgumentException.class,
                 () -> new AppOpRule(PACKAGE_NAME, -1, AppOpsManager.MODE_DEFAULT));
         assertThrows(IllegalArgumentException.class, () -> new AppOpRule(PACKAGE_NAME, 55, 999));
+        assertThrows(IllegalArgumentException.class,
+                () -> new AppOpReferenceRule(PACKAGE_NAME, -1, AppOpsManager.MODE_DEFAULT));
+        assertThrows(IllegalArgumentException.class, () -> new AppOpReferenceRule(PACKAGE_NAME, 55, 999));
     }
 
     @Test

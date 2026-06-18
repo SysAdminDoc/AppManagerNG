@@ -24,6 +24,7 @@ import io.github.muntashirakon.AppManager.permission.Permission;
 import io.github.muntashirakon.AppManager.permission.PermissionException;
 import io.github.muntashirakon.AppManager.permission.ReadOnlyPermission;
 import io.github.muntashirakon.AppManager.permission.RuntimePermission;
+import io.github.muntashirakon.AppManager.rules.struct.AppOpReferenceRule;
 
 public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
     @Nullable
@@ -36,6 +37,9 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
      * Whether the permission is part of the app.
      */
     public final boolean appContainsPermission;
+    public boolean hasReference;
+    @AppOpsManagerCompat.Mode
+    public int referenceMode;
 
     @Nullable
     private AppOpsManagerCompat.OpEntry mOpEntry;
@@ -55,6 +59,7 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
         isDangerous = false;
         hasModifiablePermission = false;
         appContainsPermission = false;
+        referenceMode = AppOpsManagerCompat.opToDefaultMode(getOp());
     }
 
     public AppDetailsAppOpItem(@NonNull AppOpsManagerCompat.OpEntry opEntry, @NonNull PermissionInfo permissionInfo,
@@ -74,6 +79,7 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
             permission = new ReadOnlyPermission(permissionInfo.name, isGranted, opEntry.getOp(), isAllowed(), permissionFlags);
         }
         hasModifiablePermission = PermUtils.isModifiable(permission);
+        referenceMode = AppOpsManagerCompat.opToDefaultMode(getOp());
     }
 
     public AppDetailsAppOpItem(int op, @NonNull PermissionInfo permissionInfo,
@@ -93,6 +99,16 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
             permission = new ReadOnlyPermission(permissionInfo.name, isGranted, op, isAllowed(), permissionFlags);
         }
         hasModifiablePermission = PermUtils.isModifiable(permission);
+        referenceMode = AppOpsManagerCompat.opToDefaultMode(getOp());
+    }
+
+    public void setReference(@Nullable AppOpReferenceRule reference) {
+        hasReference = reference != null;
+        referenceMode = reference != null ? reference.getMode() : AppOpsManagerCompat.opToDefaultMode(getOp());
+    }
+
+    public boolean isReferenceDrifted() {
+        return hasReference && getMode() != referenceMode;
     }
 
     public int getOp() {

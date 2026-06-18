@@ -89,7 +89,13 @@ public class PermissionAppsActivity extends BaseActivity {
 
         RecyclerView recycler = findViewById(R.id.recycler_view);
         recycler.setLayoutManager(new LinearLayoutManager(this));
-        mAdapter = new PermissionAppsAdapter(row -> mViewModel.togglePermission(row));
+        mAdapter = new PermissionAppsAdapter(row -> mViewModel.togglePermission(row), row -> {
+            if (row.referenceDrifted) {
+                mViewModel.restoreReference(row);
+            } else {
+                mViewModel.pinReference(row);
+            }
+        });
         recycler.setAdapter(mAdapter);
 
         mViewModel = new ViewModelProvider(this).get(PermissionAppsViewModel.class);

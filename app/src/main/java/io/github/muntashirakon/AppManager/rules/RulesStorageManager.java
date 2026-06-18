@@ -26,6 +26,7 @@ import io.github.muntashirakon.AppManager.compat.PermissionCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.rules.struct.AppOpReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.BatteryOptimizationRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
@@ -34,6 +35,7 @@ import io.github.muntashirakon.AppManager.rules.struct.MagiskDenyListRule;
 import io.github.muntashirakon.AppManager.rules.struct.MagiskHideRule;
 import io.github.muntashirakon.AppManager.rules.struct.NetPolicyRule;
 import io.github.muntashirakon.AppManager.rules.struct.NotificationListenerRule;
+import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.rules.struct.SsaidRule;
@@ -158,8 +160,48 @@ public class RulesStorageManager implements Closeable {
         removeEntries(String.valueOf(op), RuleType.APP_OP);
     }
 
+    public void setAppOpReference(int op, @AppOpsManagerCompat.Mode int mode) {
+        addUniqueEntry(new AppOpReferenceRule(packageName, op, mode));
+    }
+
+    public void deleteAppOpReference(int op) {
+        removeEntries(String.valueOf(op), RuleType.APP_OP_REFERENCE);
+    }
+
+    @Nullable
+    public AppOpReferenceRule getAppOpReference(int op) {
+        synchronized (mEntries) {
+            for (RuleEntry entry : mEntries) {
+                if (entry instanceof AppOpReferenceRule && entry.name.equals(String.valueOf(op))) {
+                    return (AppOpReferenceRule) entry;
+                }
+            }
+        }
+        return null;
+    }
+
     public void setPermission(String name, boolean isGranted, @PermissionCompat.PermissionFlags int flags) {
         addUniqueEntry(new PermissionRule(packageName, name, isGranted, flags));
+    }
+
+    public void setPermissionReference(String name, boolean isGranted) {
+        addUniqueEntry(new PermissionReferenceRule(packageName, name, isGranted));
+    }
+
+    public void deletePermissionReference(String name) {
+        removeEntries(name, RuleType.PERMISSION_REFERENCE);
+    }
+
+    @Nullable
+    public PermissionReferenceRule getPermissionReference(String name) {
+        synchronized (mEntries) {
+            for (RuleEntry entry : mEntries) {
+                if (entry instanceof PermissionReferenceRule && entry.name.equals(name)) {
+                    return (PermissionReferenceRule) entry;
+                }
+            }
+        }
+        return null;
     }
 
     public void setNotificationListener(String name, boolean isGranted) {

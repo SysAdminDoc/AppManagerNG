@@ -146,8 +146,12 @@ public abstract class RuleEntry {
                 return new ComponentRule(packageName, name, type, tokenizer);
             case APP_OP:
                 return new AppOpRule(packageName, name, tokenizer);
+            case APP_OP_REFERENCE:
+                return new AppOpReferenceRule(packageName, name, tokenizer);
             case PERMISSION:
                 return new PermissionRule(packageName, name, tokenizer);
+            case PERMISSION_REFERENCE:
+                return new PermissionReferenceRule(packageName, name, tokenizer);
             case MAGISK_HIDE:
                 return new MagiskHideRule(packageName, name, tokenizer);
             case MAGISK_DENY_LIST:

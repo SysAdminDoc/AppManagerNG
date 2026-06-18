@@ -15,6 +15,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.permission.PermUtils;
 import io.github.muntashirakon.AppManager.permission.Permission;
 import io.github.muntashirakon.AppManager.permission.PermissionException;
+import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 
 /**
  * Stores individual app details item
@@ -28,6 +29,8 @@ public class AppDetailsPermissionItem extends AppDetailsItem<PermissionInfo> {
     public final int protectionFlags;
     @Nullable
     public final PermUtils.SettingItem settingItem;
+    public boolean hasReference;
+    public boolean referenceGranted;
 
     public AppDetailsPermissionItem(@NonNull PermissionInfo permissionInfo, @NonNull Permission permission, int flags) {
         super(permissionInfo);
@@ -37,6 +40,15 @@ public class AppDetailsPermissionItem extends AppDetailsItem<PermissionInfo> {
         this.modifiable = PermUtils.isModifiable(permission);
         this.flags = flags;
         this.settingItem = PermUtils.permissionNameToSettingItem.get(permissionInfo.name);
+    }
+
+    public void setReference(@Nullable PermissionReferenceRule reference) {
+        hasReference = reference != null;
+        referenceGranted = reference != null && reference.isGranted();
+    }
+
+    public boolean isReferenceDrifted() {
+        return hasReference && isGranted() != referenceGranted;
     }
 
     public boolean isGranted() {

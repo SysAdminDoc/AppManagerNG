@@ -25,6 +25,7 @@ import android.os.UserHandleHidden;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 
 /**
@@ -41,15 +42,31 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         public boolean anyGranted;
         /** Any permission in the group is modifiable (revoke/grant possible). */
         public boolean anyModifiable;
+        @NonNull
+        public final List<String> permissionNames;
+        public boolean hasReference;
+        public boolean referenceDrifted;
+        public int referenceCount;
 
         AppRow(String packageName, CharSequence label, @Nullable Drawable icon, boolean isSystem,
                boolean anyGranted, boolean anyModifiable) {
+            this(packageName, label, icon, isSystem, anyGranted, anyModifiable,
+                    Collections.emptyList(), false, false, 0);
+        }
+
+        AppRow(String packageName, CharSequence label, @Nullable Drawable icon, boolean isSystem,
+               boolean anyGranted, boolean anyModifiable, @NonNull List<String> permissionNames,
+               boolean hasReference, boolean referenceDrifted, int referenceCount) {
             this.packageName = packageName;
             this.label = label;
             this.icon = icon;
             this.isSystem = isSystem;
             this.anyGranted = anyGranted;
             this.anyModifiable = anyModifiable;
+            this.permissionNames = new ArrayList<>(permissionNames);
+            this.hasReference = hasReference;
+            this.referenceDrifted = referenceDrifted;
+            this.referenceCount = referenceCount;
         }
     }
 
@@ -113,17 +130,33 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                 if (pi == null || pi.requestedPermissions == null) continue;
                 boolean requested = false;
                 boolean granted = false;
-                String firstMatch = null;
+                boolean modifiable = false;
+                boolean hasReference = false;
+                boolean referenceDrifted = false;
+                int referenceCount = 0;
+                List<String> permissionNames = new ArrayList<>();
                 for (int i = 0; i < pi.requestedPermissions.length; i++) {
                     String name = pi.requestedPermissions[i];
                     if (!mGroup.permissions.contains(name)) continue;
                     requested = true;
-                    if (firstMatch == null) firstMatch = name;
-                    if (pi.requestedPermissionsFlags != null
+                    permissionNames.add(name);
+                    boolean rawGranted = pi.requestedPermissionsFlags != null
                             && i < pi.requestedPermissionsFlags.length
                             && (pi.requestedPermissionsFlags[i]
-                                    & PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0) {
+                                    & PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0;
+                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                            pi.packageName, userId, name, mAppOpsManager);
+                    boolean effectiveGranted = s != null ? s.effectiveGranted : rawGranted;
+                    if (effectiveGranted) {
                         granted = true;
+                    }
+                    modifiable |= s != null && s.modifiable;
+                    PermissionReferenceRule reference = PermissionToggleHelper.loadReference(
+                            pi.packageName, userId, name);
+                    if (reference != null) {
+                        hasReference = true;
+                        referenceCount++;
+                        referenceDrifted |= reference.isGranted() != effectiveGranted;
                     }
                 }
                 if (!requested) continue;
@@ -134,13 +167,8 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                     icon = ai != null ? ai.loadIcon(pm) : null;
                 } catch (Exception ignore) {}
                 boolean isSystem = ai != null && (ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-                boolean modifiable = false;
-                if (firstMatch != null) {
-                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
-                            pi.packageName, userId, firstMatch, mAppOpsManager);
-                    modifiable = s != null && s.modifiable;
-                }
-                rows.add(new AppRow(pi.packageName, label, icon, isSystem, granted, modifiable));
+                rows.add(new AppRow(pi.packageName, label, icon, isSystem, granted, modifiable,
+                        permissionNames, hasReference, referenceDrifted, referenceCount));
             }
             Collections.sort(rows, new Comparator<AppRow>() {
                 @Override
@@ -204,7 +232,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                     PermissionToggleHelper.State s = PermissionToggleHelper.load(
                             row.packageName, userId, permName, mAppOpsManager);
                     if (s == null || !s.modifiable) continue;
-                    if (s.granted == targetGrant) {
+                    if (s.effectiveGranted == targetGrant) {
                         successCount++;
                         continue;
                     }
@@ -223,6 +251,73 @@ public class PermissionAppsViewModel extends AndroidViewModel {
             if (failedCount > 0) {
                 mToast.postValue(getApplication().getString(
                         io.github.muntashirakon.AppManager.R.string.failed_to_revoke_permission));
+            }
+        });
+    }
+
+    public void pinReference(@NonNull AppRow row) {
+        mLoading.postValue(true);
+        mExecutor.submit(() -> {
+            int pinned = 0;
+            int failed = 0;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                for (String permName : row.permissionNames) {
+                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                            row.packageName, userId, permName, mAppOpsManager);
+                    if (s == null) {
+                        failed++;
+                        continue;
+                    }
+                    if (PermissionToggleHelper.pinReference(row.packageName, userId, permName,
+                            s.effectiveGranted)) {
+                        pinned++;
+                    } else failed++;
+                }
+                mToast.postValue(getApplication().getString(failed == 0 && pinned > 0
+                        ? io.github.muntashirakon.AppManager.R.string.permission_reference_pinned
+                        : io.github.muntashirakon.AppManager.R.string.permission_reference_pin_failed));
+            } finally {
+                loadInternal();
+            }
+        });
+    }
+
+    public void restoreReference(@NonNull AppRow row) {
+        mLoading.postValue(true);
+        mExecutor.submit(() -> {
+            int restored = 0;
+            int failed = 0;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                for (String permName : row.permissionNames) {
+                    PermissionReferenceRule reference = PermissionToggleHelper.loadReference(
+                            row.packageName, userId, permName);
+                    if (reference == null) continue;
+                    PermissionToggleHelper.State s = PermissionToggleHelper.load(
+                            row.packageName, userId, permName, mAppOpsManager);
+                    if (s == null) {
+                        failed++;
+                        continue;
+                    }
+                    if (s.effectiveGranted == reference.isGranted()) {
+                        restored++;
+                        continue;
+                    }
+                    if (!s.modifiable) {
+                        failed++;
+                        continue;
+                    }
+                    if (PermissionToggleHelper.setGranted(row.packageName, userId, permName,
+                            reference.isGranted(), mAppOpsManager)) {
+                        restored++;
+                    } else failed++;
+                }
+                mToast.postValue(getApplication().getString(failed == 0 && restored > 0
+                        ? io.github.muntashirakon.AppManager.R.string.permission_reference_restored
+                        : io.github.muntashirakon.AppManager.R.string.permission_reference_restore_failed));
+            } finally {
+                loadInternal();
             }
         });
     }
@@ -251,7 +346,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                     for (String permName : mGroup.permissions) {
                         PermissionToggleHelper.State s = PermissionToggleHelper.load(
                                 row.packageName, userId, permName, mAppOpsManager);
-                        if (s == null || !s.modifiable || !s.granted) continue;
+                        if (s == null || !s.modifiable || !s.effectiveGranted) continue;
                         if (PermissionToggleHelper.revoke(row.packageName, userId, permName, mAppOpsManager)) {
                             anySuccess = true;
                         } else {
@@ -291,7 +386,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                     for (String permName : mGroup.permissions) {
                         PermissionToggleHelper.State s = PermissionToggleHelper.load(
                                 row.packageName, userId, permName, mAppOpsManager);
-                        if (s == null || !s.modifiable || s.granted) continue;
+                        if (s == null || !s.modifiable || s.effectiveGranted) continue;
                         if (PermissionToggleHelper.grant(row.packageName, userId, permName, mAppOpsManager)) {
                             anySuccess = true;
                         } else {

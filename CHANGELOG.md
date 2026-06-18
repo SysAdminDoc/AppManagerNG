@@ -38,6 +38,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Permission Inspector and app-details permission/app-op rows can now pin
+  rule-store reference states, surface drift, and restore drifted values in one
+  tap.
 - Manual backups now show estimated size, free space, and storage warnings
   (low headroom, FAT32 max file size, insufficient space) before starting.
   Insufficient storage blocks the backup; warnings let the user proceed.

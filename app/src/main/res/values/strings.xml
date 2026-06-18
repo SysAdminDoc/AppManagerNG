@@ -3926,6 +3926,16 @@
     <string name="perm_app_status_granted">Granted</string>
     <string name="perm_app_status_not_granted">Not granted</string>
     <string name="perm_app_status_read_only">Read-only</string>
+    <string name="perm_app_status_reference_pinned">Reference pinned</string>
+    <string name="perm_app_status_reference_drift">Reference drift</string>
+    <string name="permission_reference_pin">Pin reference</string>
+    <string name="permission_reference_restore">Restore reference</string>
+    <string name="permission_reference_pinned">Reference pinned</string>
+    <string name="permission_reference_restored">Reference restored</string>
+    <string name="permission_reference_status_pinned">reference pinned</string>
+    <string name="permission_reference_drift">reference drift</string>
+    <string name="permission_reference_pin_failed">Could not pin reference</string>
+    <string name="permission_reference_restore_failed">Could not restore reference</string>
     <string name="perm_app_row_a11y">%1$s, package %2$s, %3$s.</string>
     <plurals name="perm_inspector_bulk_revoked">
         <item quantity="one">Revoked from %d app</item>

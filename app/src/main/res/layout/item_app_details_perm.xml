@@ -81,6 +81,17 @@
                 android:paddingVertical="@dimen/padding_medium" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/action_reference"
+                style="@style/Widget.AppTheme.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/permission_reference_pin"
+                android:paddingVertical="@dimen/padding_small"
+                app:icon="@drawable/ic_flag"
+                app:iconSize="20dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/action_settings"
                 style="@style/Widget.AppTheme.Button.IconButton"
                 android:layout_width="48dp"
