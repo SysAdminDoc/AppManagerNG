@@ -55,7 +55,6 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 final class AutomationRequest {
     private static final String LEGACY_APPMANAGER_SCHEME = "appmanager";
-    private static final int MAX_PROFILE_OVERRIDES_LENGTH = 64 * 1024;
 
     @NonNull
     final String action;
@@ -378,14 +377,7 @@ final class AutomationRequest {
 
     @Nullable
     private static JSONObject getProfileOverrides(@Nullable String value) throws JSONException {
-        String json = trimToNull(value);
-        if (json == null) {
-            return null;
-        }
-        if (json.length() > MAX_PROFILE_OVERRIDES_LENGTH) {
-            throw new IllegalArgumentException(EXTRA_PROFILE_OVERRIDES + " is too large");
-        }
-        return new JSONObject(json);
+        return AutomationIntents.parseProfileOverrides(value);
     }
 
     @NonNull

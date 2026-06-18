@@ -104,4 +104,18 @@ public class AutomationIntentsTest {
         assertTrue(AutomationIntents.splitValues(null).isEmpty());
         assertTrue(AutomationIntents.splitValues("  ").isEmpty());
     }
+
+    @Test
+    public void parseProfileOverridesRejectsOversizedPayload() {
+        assertThrows(IllegalArgumentException.class, () ->
+                AutomationIntents.parseProfileOverrides("{\"padding\":\"" + repeat('a', 65 * 1024) + "\"}"));
+    }
+
+    private static String repeat(char value, int count) {
+        StringBuilder builder = new StringBuilder(count);
+        for (int i = 0; i < count; ++i) {
+            builder.append(value);
+        }
+        return builder.toString();
+    }
 }

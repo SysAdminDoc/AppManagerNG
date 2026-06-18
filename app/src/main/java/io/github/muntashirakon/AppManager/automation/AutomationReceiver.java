@@ -157,10 +157,7 @@ public class AutomationReceiver extends BroadcastReceiver {
 
     @Nullable
     private JSONObject getProfileOverrides(@Nullable String value) throws JSONException {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return new JSONObject(value.trim());
+        return AutomationIntents.parseProfileOverrides(value);
     }
 
     private void dispatchInstallFromUri(@NonNull Context context, @NonNull Intent intent) {

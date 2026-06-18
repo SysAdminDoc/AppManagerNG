@@ -21,6 +21,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added a destructive-action confirmation before replacing the AppManagerNG
   keystore during import and replaced vague keystore import/export failure
   toasts with specific recovery copy plus diagnostic logging.
+- Applied the automation profile-override size guard consistently across
+  public URI intents, signed Tasker bundles, and direct automation broadcasts.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable

@@ -20,6 +20,7 @@ import org.json.JSONObject;
 
 import java.util.Collections;
 
+import io.github.muntashirakon.AppManager.automation.AutomationIntents;
 import io.github.muntashirakon.AppManager.automation.AutomationReceiver;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -48,7 +49,7 @@ public class ProfileApplierReceiver extends BroadcastReceiver {
             return;
         }
         JSONObject overrides = mergeRuntimePackageOverride(
-                getProfileOverrides(intent.getStringExtra(EXTRA_PROFILE_OVERRIDES)), packageName);
+                AutomationIntents.parseProfileOverrides(intent.getStringExtra(EXTRA_PROFILE_OVERRIDES)), packageName);
         if (overrides != null) {
             intent.putExtra(EXTRA_PROFILE_OVERRIDES, overrides.toString());
         }
@@ -93,14 +94,6 @@ public class ProfileApplierReceiver extends BroadcastReceiver {
             return;
         }
         context.sendBroadcast(automationIntent);
-    }
-
-    @Nullable
-    private static JSONObject getProfileOverrides(@Nullable String value) throws JSONException {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return new JSONObject(value.trim());
     }
 
     @Nullable

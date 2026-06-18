@@ -9,6 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +53,8 @@ public final class AutomationIntents {
     public static final String EXTRA_BACKUP_FLAGS = "EXTRA_BACKUP_FLAGS";
     public static final String EXTRA_DRY_RUN = "EXTRA_DRY_RUN";
     public static final String EXTRA_URI = "EXTRA_URI";
+
+    private static final int MAX_PROFILE_OVERRIDES_LENGTH = 64 * 1024;
 
     private static final Set<String> ACTIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             ACTION_FREEZE,
@@ -189,6 +194,18 @@ public final class AutomationIntents {
         return out;
     }
 
+    @Nullable
+    public static JSONObject parseProfileOverrides(@Nullable String value) throws JSONException {
+        String json = trimToNull(value);
+        if (json == null) {
+            return null;
+        }
+        if (json.length() > MAX_PROFILE_OVERRIDES_LENGTH) {
+            throw new IllegalArgumentException(EXTRA_PROFILE_OVERRIDES + " is too large");
+        }
+        return new JSONObject(json);
+    }
+
     @VisibleForTesting
     @NonNull
     static String normalizeComponentName(@NonNull String packageName, @NonNull String componentName) {
@@ -239,5 +256,14 @@ public final class AutomationIntents {
             }
         }
         return !front;
+    }
+
+    @Nullable
+    private static String trimToNull(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
