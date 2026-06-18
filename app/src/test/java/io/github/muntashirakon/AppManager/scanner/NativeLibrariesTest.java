@@ -4,13 +4,18 @@ package io.github.muntashirakon.AppManager.scanner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class NativeLibrariesTest {
     @Test
@@ -62,6 +67,22 @@ public class NativeLibrariesTest {
                 new ByteArrayInputStream(new byte[]{0x7f, 0x45, 0x4c}));
 
         assertTrue(nativeLib instanceof NativeLibraries.InvalidLib);
+    }
+
+    @Test
+    public void inputStreamConstructorRejectsTooManyZipEntries() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            for (int i = 0; i <= NativeLibraries.MAX_APK_SCAN_ENTRIES; ++i) {
+                zip.putNextEntry(new ZipEntry("res/raw/ignored-" + i + ".bin"));
+                zip.closeEntry();
+            }
+        }
+
+        IOException exception = assertThrows(IOException.class,
+                () -> new NativeLibraries(new ByteArrayInputStream(out.toByteArray())));
+
+        assertEquals("APK has too many entries to scan native libraries.", exception.getMessage());
     }
 
     private static byte[] createElf64(long loadSegmentAlignment) {

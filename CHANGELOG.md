@@ -31,6 +31,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   entries or oversized manifest payloads instead of risking unbounded memory use.
 - Hardened third-party backup conversion so OAndBackup, SwiftBackup, and
   Titanium archive entries cannot emit unsafe traversal paths into converted TARs.
+- Capped native-library scanner ZIP entry traversal so hostile APKs cannot force
+  unbounded native library scans during reports or app detail loading.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable

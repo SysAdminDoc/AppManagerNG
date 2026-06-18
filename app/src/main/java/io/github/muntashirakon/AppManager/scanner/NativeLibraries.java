@@ -8,6 +8,7 @@ import android.text.format.Formatter;
 import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -41,6 +42,8 @@ public class NativeLibraries {
     private static final int ELF_PROGRAM_HEADER_MAX_BYTES = 1024 * 1024;
     private static final int PT_LOAD = 1;
     private static final long PAGE_SIZE_16_KB = 16L * 1024L;
+    @VisibleForTesting
+    static final int MAX_APK_SCAN_ENTRIES = 50_000;
 
     public static abstract class NativeLib implements LocalizedString {
         @NonNull
@@ -418,8 +421,10 @@ public class NativeLibraries {
     public NativeLibraries(@NonNull File apkFile) throws IOException {
         try (ZipFile zipFile = new ZipFile(apkFile)) {
             Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
+            int entryCount = 0;
             while (zipEntries.hasMoreElements()) {
                 ZipEntry zipEntry = zipEntries.nextElement();
+                enforceEntryLimit(++entryCount);
                 if (zipEntry.getName().endsWith(".so")) {
                     try (InputStream is = zipFile.getInputStream(zipEntry)) {
                         NativeLib nativeLib = NativeLib.parse(zipEntry.getName(), zipEntry.getSize(), is);
@@ -437,7 +442,9 @@ public class NativeLibraries {
     public NativeLibraries(@NonNull InputStream apkInputStream) throws IOException {
         try (ZipInputStream zipInputStream = new ZipInputStream(apkInputStream)) {
             ZipEntry zipEntry;
+            int entryCount = 0;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                enforceEntryLimit(++entryCount);
                 if (zipEntry.getName().endsWith(".so")) {
                     try {
                         NativeLib nativeLib = NativeLib.parse(zipEntry.getName(), zipEntry.getSize(), zipInputStream);
@@ -454,8 +461,10 @@ public class NativeLibraries {
     @AnyThread
     public NativeLibraries(@NonNull ZipFile zipFile) throws IOException {
         Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
+        int entryCount = 0;
         while (zipEntries.hasMoreElements()) {
             ZipEntry zipEntry = zipEntries.nextElement();
+            enforceEntryLimit(++entryCount);
             if (!zipEntry.isDirectory() && zipEntry.getName().endsWith(".so")) {
                 try (InputStream is = zipFile.getInputStream(zipEntry)) {
                     NativeLib nativeLib = NativeLib.parse(zipEntry.getName(), zipEntry.getSize(), is);
@@ -476,5 +485,11 @@ public class NativeLibraries {
     @NonNull
     public Collection<String> getUniqueLibs() {
         return mUniqueLibs;
+    }
+
+    private static void enforceEntryLimit(int entryCount) throws IOException {
+        if (entryCount > MAX_APK_SCAN_ENTRIES) {
+            throw new IOException("APK has too many entries to scan native libraries.");
+        }
     }
 }
