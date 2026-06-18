@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.fm;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedInputStream;
@@ -32,6 +33,8 @@ final class FmArchiveUtils {
     static final String ZIP_EXTENSION = "zip";
     /** Upper bound on numbered-collision probing in {@link #findNextBestDisplayName}. */
     private static final int MAX_NAME_ATTEMPTS = 10_000;
+    @VisibleForTesting
+    static final int MAX_ZIP_ENTRIES = ArchiveExtractionGuard.DEFAULT_MAX_ENTRIES;
 
     private FmArchiveUtils() {
     }
@@ -235,10 +238,19 @@ final class FmArchiveUtils {
             while (zipInputStream.getNextEntry() != null) {
                 throwIfInterrupted();
                 ++count;
+                assertReasonableZipEntryCount(count);
                 zipInputStream.closeEntry();
             }
         }
         return count;
+    }
+
+    @VisibleForTesting
+    static void assertReasonableZipEntryCount(int count) throws IOException {
+        if (count > MAX_ZIP_ENTRIES) {
+            throw new IOException("Archive bomb detected: more than " + MAX_ZIP_ENTRIES
+                    + " entries. Aborting extraction.");
+        }
     }
 
     private static void throwIfInterrupted() throws InterruptedIOException {

@@ -98,6 +98,16 @@ public class FmArchiveUtilsTest {
         assertFalse(root.hasFile("escape.txt"));
     }
 
+    @Test
+    public void assertReasonableZipEntryCountRejectsOverLimit() {
+        try {
+            FmArchiveUtils.assertReasonableZipEntryCount(FmArchiveUtils.MAX_ZIP_ENTRIES + 1);
+            fail("Expected over-limit archive entry count to be rejected");
+        } catch (IOException expected) {
+            assertTrue(expected.getMessage().contains("Archive bomb detected"));
+        }
+    }
+
     private static void writeText(Path path, String text) throws IOException {
         try (OutputStream outputStream = path.openOutputStream()) {
             outputStream.write(text.getBytes(StandardCharsets.UTF_8));
