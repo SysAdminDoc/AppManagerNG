@@ -82,4 +82,49 @@ public class ExternalComponentsImporterTest {
         assertEquals(RuleType.SERVICE, parsed.get("com.example").get("com.example.SyncService"));
         assertEquals(RuleType.RECEIVER, parsed.get("com.example").get("com.example.BootReceiver"));
     }
+
+    @Test
+    public void parseMyAndroidToolsIfwRulesSkipsInvalidPackageEntries() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            zip.putNextEntry(new ZipEntry("not-a-package$.xml"));
+            zip.write(("<rules>\n"
+                    + "  <service block=\"true\" log=\"false\">\n"
+                    + "    <component-filter name=\"not-a-package/.SyncService\" />\n"
+                    + "  </service>\n"
+                    + "</rules>\n").getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+            zip.putNextEntry(new ZipEntry("com.example$.xml"));
+            zip.write(("<rules>\n"
+                    + "  <service block=\"true\" log=\"false\">\n"
+                    + "    <component-filter name=\"com.example/.SyncService\" />\n"
+                    + "  </service>\n"
+                    + "</rules>\n").getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+        }
+
+        HashMap<String, HashMap<String, RuleType>> parsed =
+                ExternalComponentsImporter.parseMyAndroidToolsIfwRules(new ByteArrayInputStream(out.toByteArray()));
+
+        assertEquals(1, parsed.size());
+        assertTrue(parsed.containsKey("com.example"));
+    }
+
+    @Test
+    public void parseMyAndroidToolsIfwRulesRejectsTooManyEntries() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+            for (int i = 0; i <= ExternalComponentsImporter.MAX_MY_ANDROID_TOOLS_IFW_ENTRIES; ++i) {
+                zip.putNextEntry(new ZipEntry("ignored-" + i + ".txt"));
+                zip.closeEntry();
+            }
+        }
+
+        try {
+            ExternalComponentsImporter.parseMyAndroidToolsIfwRules(new ByteArrayInputStream(out.toByteArray()));
+            fail("Expected MyAndroidTools IFW archive with too many entries to fail");
+        } catch (IOException expected) {
+            assertTrue(expected.getMessage().contains("too many entries"));
+        }
+    }
 }
