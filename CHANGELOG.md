@@ -33,6 +33,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Titanium archive entries cannot emit unsafe traversal paths into converted TARs.
 - Capped native-library scanner ZIP entry traversal so hostile APKs cannot force
   unbounded native library scans during reports or app detail loading.
+- Hardened SVG thumbnail parsing by disabling DTD and external entity handling
+  before processing user-provided SVG files.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
