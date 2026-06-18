@@ -27,6 +27,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   imported profile editor after the profiles screen has already been destroyed.
 - Capped MyAndroidTools IFW import archive entry count, skip invalid package
   entries, and log external component import failures through the app logger.
+- Bounded APK stream manifest scanning to reject hostile archives with excessive
+  entries or oversized manifest payloads instead of risking unbounded memory use.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable

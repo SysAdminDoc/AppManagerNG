@@ -54,7 +54,6 @@ import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
-import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
@@ -71,6 +70,10 @@ public final class ApkUtils {
 
     private static final Object sLock = new Object();
     private static final String MANIFEST_FILE = "AndroidManifest.xml";
+    @VisibleForTesting
+    static final int MAX_APK_STREAM_ENTRIES = 50_000;
+    @VisibleForTesting
+    static final int MAX_MANIFEST_SIZE_BYTES = 16 * 1024 * 1024;
 
     @WorkerThread
     @NonNull
@@ -199,35 +202,51 @@ public final class ApkUtils {
     public static ByteBuffer getManifestFromApk(InputStream apkInputStream) throws ApkFile.ApkFileException {
         try (ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(apkInputStream))) {
             ZipEntry zipEntry;
+            int entryCount = 0;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-                if (!zipEntry.getName().equals(MANIFEST_FILE)) {
-                    continue;
+                boolean shouldCloseEntry = true;
+                try {
+                    ++entryCount;
+                    if (entryCount > MAX_APK_STREAM_ENTRIES) {
+                        shouldCloseEntry = false;
+                        throw new IOException("APK stream has too many entries.");
+                    }
+                    if (zipEntry.isDirectory() || !MANIFEST_FILE.equals(zipEntry.getName())) {
+                        continue;
+                    }
+                    shouldCloseEntry = false;
+                    return readManifestEntry(zipInputStream, zipEntry);
+                } finally {
+                    if (shouldCloseEntry) {
+                        zipInputStream.closeEntry();
+                    }
                 }
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                byte[] buf = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
-                int n;
-                while (-1 != (n = zipInputStream.read(buf))) {
-                    buffer.write(buf, 0, n);
-                }
-                return ByteBuffer.wrap(buffer.toByteArray());
             }
         } catch (IOException e) {
-            Log.w(TAG, "Could not fetch AndroidManifest.xml from APK stream, trying an alternative...", e);
+            throw new ApkFile.ApkFileException("Could not fetch AndroidManifest.xml from APK stream", e);
         }
-        // This could be due to a Zip error, try caching the APK
-        File cachedApk;
-        try {
-            cachedApk = FileCache.getGlobalFileCache().getCachedFile(apkInputStream, "apk");
-        } catch (IOException e) {
-            throw new ApkFile.ApkFileException("Could not cache the APK file", e);
+        throw new ApkFile.ApkFileException("No AndroidManifest.xml found in APK stream.");
+    }
+
+    @NonNull
+    private static ByteBuffer readManifestEntry(@NonNull ZipInputStream zipInputStream,
+                                                @NonNull ZipEntry zipEntry) throws IOException {
+        long declaredSize = zipEntry.getSize();
+        if (declaredSize > MAX_MANIFEST_SIZE_BYTES) {
+            throw new IOException(MANIFEST_FILE + " is too large.");
         }
-        ByteBuffer byteBuffer;
-        try {
-            byteBuffer = getManifestFromApk(cachedApk);
-        } finally {
-            FileCache.getGlobalFileCache().delete(cachedApk);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] buf = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+        long totalBytes = 0;
+        int n;
+        while (-1 != (n = zipInputStream.read(buf))) {
+            totalBytes += n;
+            if (totalBytes > MAX_MANIFEST_SIZE_BYTES) {
+                throw new IOException(MANIFEST_FILE + " is too large.");
+            }
+            buffer.write(buf, 0, n);
         }
-        return byteBuffer;
+        return ByteBuffer.wrap(buffer.toByteArray());
     }
 
     @NonNull
