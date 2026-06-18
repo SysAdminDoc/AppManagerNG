@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
@@ -67,6 +68,16 @@ public interface IFilterableAppInfo {
 
     @NonNull
     Map<ComponentInfo, Integer> getAllComponents();
+
+    @NonNull
+    default Map<String, Set<String>> getComponentIntentActions() {
+        return Collections.emptyMap();
+    }
+
+    @NonNull
+    default Map<String, Set<String>> getComponentIntentCategories() {
+        return Collections.emptyMap();
+    }
 
     @NonNull
     List<String> getAllPermissions();
