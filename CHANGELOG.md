@@ -38,6 +38,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Code editor diff view: a "Show changes" toolbar action compares current
+  edits against the saved file, displaying added and removed lines with
+  color coding and a summary count.
+- Tracker report rollup: the tracker report dialog now groups trackers by
+  category (Ad, Analytics, Crash, Push, Location, Identification, Social)
+  with section headers and a one-line blurb explaining what each category
+  means. Per-category chip views also show the description at the top.
 - Component intent-action finder: Finder now supports filtering apps by
   component intent actions, categories, and exported state via the new
   "Intent actions" filter option. App Details component search now also
