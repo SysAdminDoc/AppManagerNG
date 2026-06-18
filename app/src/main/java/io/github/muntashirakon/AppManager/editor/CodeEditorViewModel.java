@@ -95,6 +95,8 @@ public class CodeEditorViewModel extends AndroidViewModel {
     public static final int XML_TYPE_ABX = 2;
 
     @Nullable
+    private String mOriginalContent;
+    @Nullable
     private String mLanguage;
     private boolean mCanGenerateJava;
     @XmlType
@@ -187,8 +189,20 @@ public class CodeEditorViewModel extends AndroidViewModel {
                     Log.e(TAG, "Could not read file %s", e, mSourceFile);
                 }
             }
+            if (content != null) {
+                mOriginalContent = content.toString();
+            }
             mContentLiveData.postValue(content);
         });
+    }
+
+    @Nullable
+    public String getOriginalContent() {
+        return mOriginalContent;
+    }
+
+    public void updateOriginalContent(@NonNull String content) {
+        mOriginalContent = content;
     }
 
     public void saveFile(@NonNull Content content, @Nullable Path alternativeFile) {
