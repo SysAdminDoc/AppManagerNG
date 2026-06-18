@@ -6,6 +6,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,6 +60,24 @@ public class ApkBundleBaseExtractorTest {
                 entry("config.xxhdpi.apk", new byte[]{2}));
 
         assertNull(ApkBundleBaseExtractor.extractBaseApk(bundle, tmp.newFolder("cache")));
+    }
+
+    @Test
+    public void extractBaseApkRejectsArchivesWithTooManyEntries() throws IOException {
+        File bundle = new File(tmp.getRoot(), "too-many.apks");
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(bundle))) {
+            for (int i = 0; i <= ApkBundleHeaderParser.MAX_ZIP_ENTRIES; ++i) {
+                out.putNextEntry(new ZipEntry("entry-" + i + ".txt"));
+                out.closeEntry();
+            }
+        }
+
+        try {
+            ApkBundleBaseExtractor.extractBaseApk(bundle, tmp.newFolder("cache"));
+            fail("Expected an IOException for oversized bundle central directory.");
+        } catch (IOException expected) {
+            assertTrue(expected.getMessage().contains("too many entries"));
+        }
     }
 
     @Test
