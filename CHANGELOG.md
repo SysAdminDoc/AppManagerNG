@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Deep audit pass (2026-06-18)
+
+- Moved Code Editor "Show changes" diff computation off the main thread and
+  cancel stale diff work when the editor view is destroyed.
+- Replaced the fixed five-line diff lookahead with a bounded Myers line diff,
+  preserving accurate added/removed counts while still capping rendered output.
+- Hardened editor diffs for empty files and mixed CRLF/LF/CR line endings with
+  focused JVM coverage.
+
 ### Fixed — Audit pass 2 (2026-06-17)
 
 - Fixed thread safety race in FilterableAppInfo intent filter loading:
