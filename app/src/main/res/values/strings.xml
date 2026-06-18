@@ -2016,6 +2016,8 @@
     <string name="pref_import_export_keystore_msg">Import/export Bouncy Castle KeyStore (BKS) internally used by AppManagerNG.</string>
     <string name="import_keystore">Import KeyStore</string>
     <string name="confirm_import_keystore">Are you sure you want to replace the existing KeyStore? This action cannot be undone.</string>
+    <string name="keystore_export_failed">Could not export AppManagerNG keystore.</string>
+    <string name="keystore_import_failed">Could not import AppManagerNG keystore.</string>
     <string name="keystore_import_no_am_aliases">No AppManagerNG keys found in the imported keystore.</string>
     <string name="keystore_import_success">Imported <xliff:g id="count" example="3">%1$d</xliff:g> key(s) successfully.</string>
     <string name="keystore_import_partial">Imported <xliff:g id="success" example="2">%1$d</xliff:g> key(s); <xliff:g id="failed" example="1">%2$d</xliff:g> failed.</string>
