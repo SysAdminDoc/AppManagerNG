@@ -106,10 +106,13 @@ public final class ApkBundleBaseExtractor {
     }
 
     @NonNull
-    private static Set<String> collectEntryNames(@NonNull ZipFile zipFile) {
+    private static Set<String> collectEntryNames(@NonNull ZipFile zipFile) throws IOException {
         Set<String> entryNames = new TreeSet<>();
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
+            if (entryNames.size() >= ApkBundleHeaderParser.MAX_ZIP_ENTRIES) {
+                throw new IOException("Bundle archive has too many entries.");
+            }
             ZipEntry entry = entries.nextElement();
             String name = entry.getName();
             if (name != null && !name.isEmpty()) {
