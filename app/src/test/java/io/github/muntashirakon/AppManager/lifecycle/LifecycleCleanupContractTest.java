@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.lifecycle;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -48,6 +49,17 @@ public class LifecycleCleanupContractTest {
                 "view.postDelayed(mFinishLoadingRunnable, 300);",
                 "public void onDestroyView()",
                 "view.removeCallbacks(mFinishLoadingRunnable);");
+    }
+
+    @Test
+    public void audioPlayerReleaseIsSafeBeforePrepareAndAfterDetach() throws IOException {
+        String source = readRepoFile("app/src/main/java/io/github/muntashirakon/AppManager/viewer/audio/AudioPlayerDialogFragment.java");
+
+        assertFalse("Audio player dismissal must not call stop() before release; stop() throws before prepare",
+                source.contains("mMediaPlayer.stop()"));
+        assertTrue("Audio player should release idempotently", source.contains("private void releaseMediaPlayer()"));
+        assertTrue("Audio player should use a nullable activity when close-on-dismiss runs after detach",
+                source.contains("FragmentActivity activity = getActivity();"));
     }
 
     @Test

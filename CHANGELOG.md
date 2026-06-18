@@ -7,6 +7,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed — Deep audit pass (2026-06-18)
 
+- Fixed Audio Player dismissal crash before media preparation by releasing the
+  MediaPlayer directly instead of calling stop() from an invalid state.
+- Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
+  activity reference when the dialog is already detached.
 - Moved Code Editor "Show changes" diff computation off the main thread and
   cancel stale diff work when the editor view is destroyed.
 - Replaced the fixed five-line diff lookahead with a bounded Myers line diff,
