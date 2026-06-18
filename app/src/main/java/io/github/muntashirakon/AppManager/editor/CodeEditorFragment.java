@@ -12,8 +12,12 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Editable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -511,6 +515,9 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), successful -> {
             if (successful) {
                 UIUtils.displayShortToast(R.string.saved_successfully);
+                if (mEditor != null) {
+                    mViewModel.updateOriginalContent(mEditor.getText().toString());
+                }
                 mTextModified = false;
                 mTextModifiedBackPressedCallback.setEnabled(false);
                 getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
@@ -586,6 +593,9 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                 mEditor.redo();
                 return true;
             }
+        } else if (id == R.id.action_diff) {
+            showDiffDialog();
+            return true;
         } else if (id == R.id.action_wrap) {
             if (mEditor != null) {
                 boolean wordWrap = !mEditor.isWordwrap();
@@ -635,6 +645,67 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         // reach the chooser target on Android 18+ (auto-grant removed).
         intent.setClipData(ClipData.newRawUri("", fileUri));
         return intent;
+    }
+
+    private void showDiffDialog() {
+        String original = mViewModel.getOriginalContent();
+        if (original == null || mEditor == null) {
+            UIUtils.displayShortToast(R.string.editor_no_changes);
+            return;
+        }
+        String current = mEditor.getText().toString();
+        if (original.equals(current)) {
+            UIUtils.displayShortToast(R.string.editor_no_changes);
+            return;
+        }
+        String[] originalLines = original.split("\\n", -1);
+        String[] currentLines = current.split("\\n", -1);
+        SpannableStringBuilder diff = new SpannableStringBuilder();
+        int addedColor = 0xFF4CAF50;
+        int removedColor = 0xFFF44336;
+        int added = 0;
+        int removed = 0;
+        int oi = 0, ci = 0;
+        while (oi < originalLines.length || ci < currentLines.length) {
+            if (oi < originalLines.length && ci < currentLines.length
+                    && originalLines[oi].equals(currentLines[ci])) {
+                oi++;
+                ci++;
+            } else if (ci < currentLines.length
+                    && (oi >= originalLines.length || !containsAhead(originalLines, oi, currentLines[ci], 3))) {
+                appendColoredLine(diff, "+ " + currentLines[ci], addedColor);
+                added++;
+                ci++;
+            } else if (oi < originalLines.length) {
+                appendColoredLine(diff, "- " + originalLines[oi], removedColor);
+                removed++;
+                oi++;
+            }
+        }
+        String stats = getString(R.string.editor_diff_stats, added, removed);
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.editor_diff_title)
+                .setMessage(new SpannableStringBuilder(stats).append("\n\n").append(diff))
+                .setPositiveButton(R.string.ok, null)
+                .show();
+    }
+
+    private static boolean containsAhead(@NonNull String[] lines, int from,
+                                          @NonNull String target, int lookAhead) {
+        int limit = Math.min(from + lookAhead, lines.length);
+        for (int i = from; i < limit; i++) {
+            if (lines[i].equals(target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void appendColoredLine(@NonNull SpannableStringBuilder builder,
+                                           @NonNull String text, int color) {
+        SpannableString span = new SpannableString(text);
+        span.setSpan(new ForegroundColorSpan(color), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        builder.append(span).append("\n");
     }
 
     private void showProgressIndicator(boolean show) {

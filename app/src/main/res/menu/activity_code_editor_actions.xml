@@ -38,6 +38,11 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_diff"
+        android:title="@string/editor_show_changes"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_wrap"
         android:icon="@drawable/ic_wrap_text"
         android:title="@string/word_wrap"
