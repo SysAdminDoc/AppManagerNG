@@ -28,6 +28,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -174,8 +175,10 @@ public class SVGParser {
         try {
             // long start = System.currentTimeMillis();
             SAXParserFactory spf = SAXParserFactory.newInstance();
+            configureSecureParser(spf);
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
+            xr.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
             final Picture picture = new Picture();
             SVGHandler handler = new SVGHandler(picture);
             handler.setColorSwap(searchColor, replaceColor);
@@ -192,6 +195,14 @@ public class SVGParser {
         } catch (Exception e) {
             throw new SVGParseException(e);
         }
+    }
+
+    private static void configureSecureParser(@NonNull SAXParserFactory spf) throws Exception {
+        spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        spf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        spf.setXIncludeAware(false);
     }
 
     @NonNull
