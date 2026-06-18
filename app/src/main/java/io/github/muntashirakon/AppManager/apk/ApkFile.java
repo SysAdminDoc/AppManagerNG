@@ -36,6 +36,7 @@ import com.google.android.material.color.MaterialColors;
 import org.json.JSONException;
 
 import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -45,6 +46,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -91,6 +93,12 @@ public final class ApkFile implements AutoCloseable {
     private static final String CONFIG_PREFIX = "config.";
 
     private static final String UN_APKM_PKG = "io.github.muntashirakon.unapkm";
+    @VisibleForTesting
+    static final int MAX_BUNDLE_ZIP_ENTRIES = 50_000;
+    @VisibleForTesting
+    static final int MAX_BUNDLE_METADATA_BYTES = 1024 * 1024;
+    @VisibleForTesting
+    static final long MAX_IDSIG_BYTES = 64L * 1024 * 1024;
 
     // There's hardly any chance of using multiple instances of ApkFile but still kept for convenience
     private static final SparseArrayCompat<ApkFile> sApkFiles = new SparseArrayCompat<>(3);
@@ -301,7 +309,9 @@ public final class ApkFile implements AutoCloseable {
             }
             Enumeration<? extends ZipEntry> zipEntries = mZipFile.entries();
             Set<String> splitNames = new HashSet<>();
+            int entryCount = 0;
             while (zipEntries.hasMoreElements()) {
+                assertReasonableBundleEntryCount(++entryCount);
                 ZipEntry zipEntry = zipEntries.nextElement();
                 if (zipEntry.isDirectory()) continue;
                 String fileName = FileUtils.getFilenameFromZipEntry(zipEntry);
@@ -329,7 +339,8 @@ public final class ApkFile implements AutoCloseable {
                     }
                 } else if (fileName.equals(ApksMetadata.META_FILE)) {
                     try (InputStream metaIs = mZipFile.getInputStream(zipEntry)) {
-                        String jsonString = IoUtils.getInputStreamContent(metaIs);
+                        String jsonString = readBoundedUtf8Entry(metaIs, zipEntry, MAX_BUNDLE_METADATA_BYTES,
+                                ApksMetadata.META_FILE);
                         mApksMetadata = new ApksMetadata();
                         mApksMetadata.readMetadata(jsonString);
                     } catch (IOException | JSONException e) {
@@ -340,7 +351,7 @@ public final class ApkFile implements AutoCloseable {
                     mObbFiles.add(zipEntry);
                 } else if (fileName.endsWith(".idsig")) {
                     try (InputStream idsigIs = mZipFile.getInputStream(zipEntry)) {
-                        mIdsigFile = mFileCache.getCachedFile(idsigIs, ".idsig");
+                        mIdsigFile = cacheBoundedEntry(idsigIs, zipEntry, "idsig", MAX_IDSIG_BYTES);
                     } catch (IOException e) {
                         throw new ApkFileException(e);
                     }
@@ -373,6 +384,62 @@ public final class ApkFile implements AutoCloseable {
         if (!splitNames.add(splitName)) {
             throw new ApkFileException("Duplicate split apk found: " + splitName);
         }
+    }
+
+    @VisibleForTesting
+    static void assertReasonableBundleEntryCount(int entryCount) throws ApkFileException {
+        if (entryCount > MAX_BUNDLE_ZIP_ENTRIES) {
+            throw new ApkFileException("APK bundle archive has too many entries.");
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String readBoundedUtf8Entry(@NonNull InputStream inputStream,
+                                       @NonNull ZipEntry zipEntry,
+                                       int maxBytes,
+                                       @NonNull String label) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        copyBoundedEntry(inputStream, outputStream, zipEntry, maxBytes, label);
+        return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    @NonNull
+    private File cacheBoundedEntry(@NonNull InputStream inputStream,
+                                   @NonNull ZipEntry zipEntry,
+                                   @NonNull String extension,
+                                   long maxBytes) throws IOException {
+        File tempFile = mFileCache.createCachedFile(extension);
+        try (OutputStream outputStream = new FileOutputStream(tempFile)) {
+            copyBoundedEntry(inputStream, outputStream, zipEntry, maxBytes, zipEntry.getName());
+            return tempFile;
+        } catch (IOException | RuntimeException e) {
+            mFileCache.delete(tempFile);
+            throw e;
+        }
+    }
+
+    @VisibleForTesting
+    static long copyBoundedEntry(@NonNull InputStream inputStream,
+                                 @NonNull OutputStream outputStream,
+                                 @NonNull ZipEntry zipEntry,
+                                 long maxBytes,
+                                 @NonNull String label) throws IOException {
+        long declaredSize = zipEntry.getSize();
+        if (declaredSize > maxBytes) {
+            throw new IOException(label + " is too large.");
+        }
+        byte[] buffer = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+        long totalBytes = 0;
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            totalBytes += read;
+            if (totalBytes > maxBytes) {
+                throw new IOException(label + " is too large.");
+            }
+            outputStream.write(buffer, 0, read);
+        }
+        return totalBytes;
     }
 
     private ApkFile(@NonNull ApplicationInfo info, int sparseArrayKey) throws ApkFileException {
