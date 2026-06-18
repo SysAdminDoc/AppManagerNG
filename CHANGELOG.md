@@ -39,6 +39,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   rejects hostile APKS/APKM/XAPK archives with oversized central directories.
 - Closed PDF thumbnail renderer resources reliably and cap rendered thumbnail
   dimensions before file-manager previews shrink large pages to icon size.
+- Capped APK bundle parsing, metadata reads, and cached V4 signature sidecars
+  so oversized APKS/APKM/XAPK inputs fail before exhausting memory or cache.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
