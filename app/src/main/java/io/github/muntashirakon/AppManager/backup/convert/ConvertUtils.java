@@ -153,6 +153,50 @@ public final class ConvertUtils {
     }
 
     @NonNull
+    static String getRelativeBackupEntryName(@NonNull String entryName, @NonNull String expectedPrefix)
+            throws IOException {
+        String normalizedName = entryName.replace('\\', '/');
+        String normalizedPrefix = expectedPrefix.replace('\\', '/');
+        if (normalizedName.equals(removeTrailingSeparator(normalizedPrefix))) {
+            return "";
+        }
+        if (!normalizedName.startsWith(normalizedPrefix)) {
+            throw new IOException("Backup archive entry is outside the expected package directory: " + entryName);
+        }
+        String relativeName = normalizedName.substring(normalizedPrefix.length());
+        validateRelativeBackupEntryName(relativeName, entryName);
+        return relativeName;
+    }
+
+    private static void validateRelativeBackupEntryName(@NonNull String relativeName, @NonNull String originalName)
+            throws IOException {
+        if (relativeName.isEmpty()) {
+            return;
+        }
+        if (relativeName.indexOf('\0') >= 0 || relativeName.startsWith("/")) {
+            throw new IOException("Unsafe backup archive entry: " + originalName);
+        }
+        String[] parts = relativeName.split("/");
+        for (String part : parts) {
+            if (".".equals(part) || "..".equals(part) || isWindowsDriveSegment(part)) {
+                throw new IOException("Unsafe backup archive entry: " + originalName);
+            }
+        }
+    }
+
+    @NonNull
+    private static String removeTrailingSeparator(@NonNull String path) {
+        if (path.endsWith("/")) {
+            return path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
+    private static boolean isWindowsDriveSegment(@NonNull String segment) {
+        return segment.length() == 2 && segment.charAt(1) == ':' && Character.isLetter(segment.charAt(0));
+    }
+
+    @NonNull
     static String[] getChecksumsFromApk(@NonNull Path apkFile, @DigestUtils.Algorithm String algo)
             throws IOException, ApkFormatException, NoSuchAlgorithmException, CertificateEncodingException {
         // Since we can't directly work with ProxyFile, we need to cache it and read the signature

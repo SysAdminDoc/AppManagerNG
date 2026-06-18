@@ -317,7 +317,8 @@ public class TBConverter extends Converter {
                 String fileName = inTarEntry.getName();
                 boolean isExternal = fileName.startsWith(EXTERNAL_PREFIX);
                 // Get new file name
-                fileName = fileName.replaceFirst((isExternal ? EXTERNAL_PREFIX : INTERNAL_PREFIX) + Pattern.quote(mPackageName + "/") + "\\./", "");
+                fileName = ConvertUtils.getRelativeBackupEntryName(fileName,
+                        (isExternal ? EXTERNAL_PREFIX : INTERNAL_PREFIX) + mPackageName + "/./");
                 if (fileName.isEmpty()) continue;
                 // New tar entry
                 TarArchiveEntry outTarEntry = new TarArchiveEntry(fileName);
