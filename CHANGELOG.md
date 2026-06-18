@@ -5,6 +5,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Audit pass 2 (2026-06-17)
+
+- Fixed thread safety race in FilterableAppInfo intent filter loading:
+  ensureIntentFiltersLoaded() is now synchronized and builds maps into
+  local variables before publishing, preventing torn reads from concurrent
+  filter threads.
+- Fixed overly broad catch(Throwable) in FilterableAppInfo: narrowed to
+  catch(Exception) + catch(ApkFileException) with diagnostic logging.
+- Replaced duplicated component-name resolution logic in FilterableAppInfo
+  with ReceiverBroadcastUtils.toQualifiedComponentName().
+- Fixed AppDetailsViewModel intent filter cache never invalidated:
+  reloadComponents() now clears mCachedIntentDetails so updated packages
+  get fresh intent filter data. collectAllIntentDetails() is synchronized
+  to prevent concurrent parse races.
+- Fixed code editor diff CRLF handling: split regex now handles CR, LF,
+  and CRLF line endings instead of LF-only.
+- Fixed code editor diff crash/ANR on large files: files over 20,000 lines
+  are rejected; diff output is capped at 500 displayed change lines with
+  a truncation notice.
+- Fixed mOriginalContent race: field is now volatile since it is written
+  from a background thread and read from the main thread.
+- Increased diff lookahead from 3 to 5 lines for better move detection.
+- Fixed tracker report grouped view mutating shared row lists: 
+  buildGroupedByCategory() now sorts a copy instead of sorting the
+  shared list in-place that is reused by per-category chip views.
+
 ### Fixed — Deep audit pass (2026-06-17)
 
 - Fixed BufferedReader resource leak in backup filesystem-type detection

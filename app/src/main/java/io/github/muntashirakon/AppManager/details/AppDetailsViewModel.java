@@ -1368,6 +1368,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
 
     @WorkerThread
     private void reloadComponents() {
+        mCachedIntentDetails = null;
         mExecutor.submit(() -> {
             Optional.ofNullable(mReceiver).ifPresent(PackageIntentReceiver::pauseWatcher);
             loadActivities();
@@ -1652,7 +1653,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     private Map<String, ComponentIntentDetails> mCachedIntentDetails;
 
     @NonNull
-    private Map<String, ComponentIntentDetails> collectAllIntentDetails(@NonNull PackageInfo packageInfo) {
+    private synchronized Map<String, ComponentIntentDetails> collectAllIntentDetails(@NonNull PackageInfo packageInfo) {
         if (mCachedIntentDetails != null) {
             return mCachedIntentDetails;
         }

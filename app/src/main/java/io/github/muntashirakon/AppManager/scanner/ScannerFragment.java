@@ -584,13 +584,14 @@ public class ScannerFragment extends Fragment {
                 grouped.append("\n\n");
             }
             first = false;
-            Collections.sort(rows, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
+            List<Spannable> sorted = new ArrayList<>(rows);
+            Collections.sort(sorted, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
             grouped.append(getPrimaryText(mActivity,
                     getString(category.getLabelRes()) + " (" + rows.size() + ")"));
             grouped.append("\n");
             grouped.append(getSmallerText(getString(category.getDescriptionRes())));
             grouped.append("\n");
-            grouped.append(UiUtils.getOrderedList(rows));
+            grouped.append(UiUtils.getOrderedList(sorted));
         }
         return grouped;
     }

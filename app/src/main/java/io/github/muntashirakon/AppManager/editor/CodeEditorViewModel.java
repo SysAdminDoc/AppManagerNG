@@ -95,7 +95,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
     public static final int XML_TYPE_ABX = 2;
 
     @Nullable
-    private String mOriginalContent;
+    private volatile String mOriginalContent;
     @Nullable
     private String mLanguage;
     private boolean mCanGenerateJava;
