@@ -337,6 +337,16 @@ public class SnapshotBundleTest {
     }
 
     @Test
+    public void readRejectsBundleWithTooManyEntries() {
+        try {
+            SnapshotBundle.assertReasonableEntryCount(SnapshotBundle.MAX_BUNDLE_ENTRIES + 1);
+            fail("Expected SnapshotImportException for too many bundle entries");
+        } catch (SnapshotImportException expected) {
+            assertTrue(expected.getMessage().contains("too many entries"));
+        }
+    }
+
+    @Test
     public void mergeSharedPreferencesXmlKeepsLocalKeysAndReplacesImportedKeys() throws Exception {
         byte[] current = ("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
                 + "<map>\n"

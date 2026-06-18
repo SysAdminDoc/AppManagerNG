@@ -118,6 +118,8 @@ public final class SnapshotBundle {
      */
     @VisibleForTesting
     static final long MAX_ENTRY_BYTES = 64L * 1024 * 1024;
+    @VisibleForTesting
+    static final int MAX_BUNDLE_ENTRIES = 10_000;
 
     private SnapshotBundle() {
     }
@@ -241,7 +243,9 @@ public final class SnapshotBundle {
 
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
             ZipEntry entry;
+            int entryCount = 0;
             while ((entry = zis.getNextEntry()) != null) {
+                assertReasonableEntryCount(++entryCount);
                 String name = entry.getName();
                 // Hard rejections.
                 if (name.contains("..") || name.startsWith("/") || name.startsWith("\\")
@@ -354,6 +358,13 @@ public final class SnapshotBundle {
 
         return new ImportResult(manifest, prefsRestored, profilesRestored, tagsRestored,
                 rulesRestored, opHistoryRestored);
+    }
+
+    @VisibleForTesting
+    static void assertReasonableEntryCount(int entryCount) throws SnapshotImportException {
+        if (entryCount > MAX_BUNDLE_ENTRIES) {
+            throw new SnapshotImportException("Snapshot bundle has too many entries.");
+        }
     }
 
     // -----------------------------------------------------------------------
