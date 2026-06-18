@@ -11,13 +11,6 @@ into it — existing items take precedence over duplicates.
 
 ### P3
 
-- [ ] P3 — Boot-component manager view
-  Why: A dedicated "what starts at boot" surface (BOOT_COMPLETED receivers across all apps, batch-blockable) is a classic MyAndroidTools/Inure feature NG can build almost entirely from existing component-blocking plumbing; today only NG's own BootReceiver references BOOT_COMPLETED (verified).
-  Evidence: Inure boot manager (FEATURES.md); https://github.com/lihenggui/blocker (MyAndroidTools rule import demand); grep: no cross-app boot view in tree (verified)
-  Touches: new view under main menu (reuse component list UI), rules/compontents/ (existing IFW/disable paths), filters/
-  Acceptance: a screen lists every app with BOOT_COMPLETED/LOCKED_BOOT_COMPLETED receivers and their enable state; per-row and batch block/unblock work through the existing rule store with undo.
-  Complexity: M
-
 
 - [ ] P3 — Tracker report rollup: company → category → jurisdiction
   Why: TrackerControl's grouped presentation (parent company, ads/analytics/social category, HQ country) with plain-language blurbs is meaningfully more legible than flat library lists and is pure offline metadata; NG's TrackerInfoDialog already resolves tracker identity (verified) — the rollup is presentation work.
@@ -48,23 +41,4 @@ Deduplicated against all sections above.
   Acceptance: a toolbar action shows the undo stack; a diff toggle highlights changes vs. the saved file.
   Complexity: M
 
-## Research-Driven Additions (Pass 3 — 2026-06-13)
 
-### P3
-
-- [ ] P3 — Scheduled cache/data clearing as routine operation type
-  Why: SD Maid SE's scheduled cache-clearing is the #1 feature users associate with automated Android maintenance. NG's RoutineScheduler (v0.6.0 target) already has the executor pattern for scheduled operations but does not include cache or expendable-data clearing as an operation type.
-  Evidence: https://github.com/d4rken-org/sdmaid-se (scheduled cache clearing); profiles/RoutineScheduler.java and profiles/RoutineWorker.java (verified: no CLEAR_CACHE operation type); compat/PackageManagerCompat.java (freeStorageAndNotify available for privileged modes)
-  Touches: profiles/ (add CLEAR_CACHE and CLEAR_DATA operation types to RoutineScheduler), compat/PackageManagerCompat.java (cache-clearing wrapper), settings/ (per-profile operation type selector)
-  Acceptance: a routine can include "clear cache" or "clear expendable data" as an operation, scoped to specific apps or app-set filters; scheduled execution clears cache for matched apps and logs byte counts; requires root or Shizuku privilege; operation type cleanly refused with explanation on no-root mode.
-
-## Audit Findings (2026-06-17)
-
-### P3
-
-- [ ] P3 — Component intent-action finder
-  Why: Users need to understand why apps start and which broadcast/action paths exist, while adjacent component managers expose intent-action filtering as a key discovery tool.
-  Evidence: upstream App Manager startup-question issue; Blocker component search and intent-action filter issues; existing AppManagerNG component/rules packages.
-  Touches: component list/search UI; rules/component scanner; app details component tabs; search/filter tests.
-  Acceptance: users can search or filter components by intent action, category, exported state, and enabled rule state across apps, then jump directly to the component control; boot-manager work can reuse the same finder backend.
-  Complexity: M
