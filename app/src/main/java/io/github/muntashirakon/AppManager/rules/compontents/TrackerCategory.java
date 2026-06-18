@@ -32,7 +32,7 @@ import io.github.muntashirakon.AppManager.R;
  * dataset; changing the order will reshuffle real apps.
  */
 public enum TrackerCategory {
-    AD(R.string.tracker_category_ad,
+    AD(R.string.tracker_category_ad, R.string.tracker_category_ad_desc,
             new String[]{
                     // Direct ad / mediation SDKs.
                     "admob", "applovin", "unity ads", "unity-ads", "tapjoy",
@@ -61,7 +61,7 @@ public enum TrackerCategory {
                     "google ad", "googleads", "google ima", " ads", "ads sdk",
                     "advertis", "ad mediation", "ad network", "ad sdk",
                     "amazon mobile associates", "amazon associates"}),
-    ANALYTICS(R.string.tracker_category_analytics,
+    ANALYTICS(R.string.tracker_category_analytics, R.string.tracker_category_analytics_desc,
             new String[]{
                     "analytics", "mixpanel", "amplitude", "segment", "flurry",
                     "appsflyer", "kochava", "branch", "umeng", "adobe experience",
@@ -83,7 +83,7 @@ public enum TrackerCategory {
                     "akamai map", "appcues", "amptools", "baidu mobile stat",
                     "baidu analytics", "baidu apps", "baidu appx", "tracking",
                     "tracker"}),
-    CRASH(R.string.tracker_category_crash,
+    CRASH(R.string.tracker_category_crash, R.string.tracker_category_crash_desc,
             new String[]{
                     "crashlytics", "crashalytics", "bugsnag", "sentry",
                     "instabug", "raygun", "rollbar", "datadog rum", "newrelic",
@@ -91,7 +91,7 @@ public enum TrackerCategory {
                     "honeybadger", "bugsense", "bugfender", "bugly", "bugsee",
                     "hockeyapp", "apteligent", "crittercism", "fabric",
                     "appcenter analytics", "appcenter crashes", "appcenter"}),
-    PUSH(R.string.tracker_category_push,
+    PUSH(R.string.tracker_category_push, R.string.tracker_category_push_desc,
             new String[]{
                     "firebase cloud messaging", "fcm", "onesignal", "pushwoosh",
                     "urban airship", "airship", "leanplum push", "pusher",
@@ -100,7 +100,7 @@ public enum TrackerCategory {
                     "huawei push", "baidu push", "tencent push", "vivo push",
                     "oppo push", "meizu push", "exact target",
                     "salesforce mobile push", "kumulos", "notificationhub"}),
-    LOCATION(R.string.tracker_category_location,
+    LOCATION(R.string.tracker_category_location, R.string.tracker_category_location_desc,
             new String[]{
                     "foursquare", "factual", "fluxloop", "huq", "predicio",
                     "tamoco", "wireless registry", "x-mode", "xmode", "safegraph",
@@ -115,13 +115,13 @@ public enum TrackerCategory {
                     "tom tom", "tomtom", "geomarketing", "tencent map",
                     "tencent location", "amap location", "near.co",
                     "groundtruth", "near"}),
-    IDENTIFICATION(R.string.tracker_category_identification,
+    IDENTIFICATION(R.string.tracker_category_identification, R.string.tracker_category_identification_desc,
             new String[]{
                     "fingerprint", "didomi", "iovation", "threatmetrix",
                     "incognia", "trustdecision", "device id", "deviceatlas",
                     "acuant", "ipqualityscore", "perimeterx", "sift science",
                     "onfido", "jumio", "mitek", "veridiumid", "shape security"}),
-    SOCIAL(R.string.tracker_category_social,
+    SOCIAL(R.string.tracker_category_social, R.string.tracker_category_social_desc,
             new String[]{
                     "facebook login", "facebook share", "facebook social",
                     "facebook places", "facebook notifications",
@@ -131,21 +131,29 @@ public enum TrackerCategory {
                     "kakao sdk", "kakaotalk", "naver sdk", "snapchat sdk",
                     "tiktok sdk", "instagram sdk", "giphy", "accountkit",
                     "account kit"}),
-    OTHER(R.string.tracker_category_other, new String[0]);
+    OTHER(R.string.tracker_category_other, R.string.tracker_category_other_desc, new String[0]);
 
     @StringRes
     private final int mLabelRes;
+    @StringRes
+    private final int mDescriptionRes;
     @NonNull
     private final String[] mKeywords;
 
-    TrackerCategory(@StringRes int labelRes, @NonNull String[] keywords) {
+    TrackerCategory(@StringRes int labelRes, @StringRes int descriptionRes, @NonNull String[] keywords) {
         mLabelRes = labelRes;
+        mDescriptionRes = descriptionRes;
         mKeywords = keywords;
     }
 
     @StringRes
     public int getLabelRes() {
         return mLabelRes;
+    }
+
+    @StringRes
+    public int getDescriptionRes() {
+        return mDescriptionRes;
     }
 
     /**
