@@ -23,6 +23,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   toasts with specific recovery copy plus diagnostic logging.
 - Applied the automation profile-override size guard consistently across
   public URI intents, signed Tasker bundles, and direct automation broadcasts.
+- Moved native profile JSON import off the main thread and avoid launching the
+  imported profile editor after the profiles screen has already been destroyed.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
