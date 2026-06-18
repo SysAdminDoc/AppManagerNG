@@ -38,6 +38,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Component intent-action finder: Finder now supports filtering apps by
+  component intent actions, categories, and exported state via the new
+  "Intent actions" filter option. App Details component search now also
+  matches against intent actions and categories across all tabs (activities,
+  services, receivers, providers), not just component class names.
 - Permission Inspector and app-details permission/app-op rows can now pin
   rule-store reference states, surface drift, and restore drifted values in one
   tap.

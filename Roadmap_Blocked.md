@@ -140,6 +140,14 @@ ROADMAP.md once the blocker is resolved.
   Blocker: no QR generation library in project; adding ZXing/MLKit dependency needed; deep-link handling requires on-device intent-filter testing.
   Complexity: M
 
+- [ ] P3 — Boot-component manager view
+  Why: A dedicated "what starts at boot" surface (BOOT_COMPLETED receivers across all apps, batch-blockable) is a classic MyAndroidTools/Inure feature NG can build almost entirely from existing component-blocking plumbing.
+  Evidence: Inure boot manager; Blocker component search; existing rules/compontents/ IFW/disable paths
+  Touches: new BootManagerActivity (reuse component list UI), rules/compontents/ (existing IFW/disable paths), filters/, main menu entry
+  Acceptance: a screen lists every app with BOOT_COMPLETED/LOCKED_BOOT_COMPLETED receivers and their enable state; per-row and batch block/unblock work through the existing rule store with undo.
+  Blocker: per-row and batch IFW component blocking requires root/ADB/Shizuku privileged-mode device testing; full Activity + ViewModel + Adapter + layout creation is a multi-file feature.
+  Complexity: M
+
 - [ ] P3 — File-manager trash bin (staged deletion)
   Why: NG's FM hard-deletes; Files-by-Google's staged trash with 30-day retention is the established data-safety pattern and FM batch ops magnify mistake cost.
   Evidence: Files by Google clean-flow walkthrough (RESEARCH.md Sources); fm/ has no trash concept (verified)
