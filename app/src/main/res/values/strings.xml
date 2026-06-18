@@ -258,6 +258,8 @@
     <string name="editor_no_changes">No changes</string>
     <string name="editor_diff_title">Changes vs. saved file</string>
     <string name="editor_diff_stats"><xliff:g id="added" example="3">%1$d</xliff:g> added, <xliff:g id="removed" example="2">%2$d</xliff:g> removed</string>
+    <string name="editor_diff_too_large">File too large for inline diff</string>
+    <string name="editor_diff_truncated"><xliff:g id="remaining" example="120">%1$d</xliff:g> more changes not shown</string>
     <string name="class_viewer">Class viewer</string>
     <string name="toggle_class_listing">Toggle class listing</string>
     <plurals name="main_list_tracker_count_badge_a11y">

@@ -649,8 +649,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
 
     private void showDiffDialog() {
         String original = mViewModel.getOriginalContent();
-        if (original == null || mEditor == null) {
+        if (original == null) {
             UIUtils.displayShortToast(R.string.editor_no_changes);
+            return;
+        }
+        if (mEditor == null) {
             return;
         }
         String current = mEditor.getText().toString();
@@ -658,13 +661,19 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             UIUtils.displayShortToast(R.string.editor_no_changes);
             return;
         }
-        String[] originalLines = original.split("\\n", -1);
-        String[] currentLines = current.split("\\n", -1);
+        String[] originalLines = original.split("\\r?\\n|\\r", -1);
+        String[] currentLines = current.split("\\r?\\n|\\r", -1);
+        int totalLines = originalLines.length + currentLines.length;
+        if (totalLines > 20000) {
+            UIUtils.displayShortToast(R.string.editor_diff_too_large);
+            return;
+        }
         SpannableStringBuilder diff = new SpannableStringBuilder();
         int addedColor = 0xFF4CAF50;
         int removedColor = 0xFFF44336;
         int added = 0;
         int removed = 0;
+        int maxDiffLines = 500;
         int oi = 0, ci = 0;
         while (oi < originalLines.length || ci < currentLines.length) {
             if (oi < originalLines.length && ci < currentLines.length
@@ -672,15 +681,23 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                 oi++;
                 ci++;
             } else if (ci < currentLines.length
-                    && (oi >= originalLines.length || !containsAhead(originalLines, oi, currentLines[ci], 3))) {
-                appendColoredLine(diff, "+ " + currentLines[ci], addedColor);
+                    && (oi >= originalLines.length || !containsAhead(originalLines, oi, currentLines[ci], 5))) {
+                if (added + removed < maxDiffLines) {
+                    appendColoredLine(diff, "+ " + currentLines[ci], addedColor);
+                }
                 added++;
                 ci++;
             } else if (oi < originalLines.length) {
-                appendColoredLine(diff, "- " + originalLines[oi], removedColor);
+                if (added + removed < maxDiffLines) {
+                    appendColoredLine(diff, "- " + originalLines[oi], removedColor);
+                }
                 removed++;
                 oi++;
             }
+        }
+        if (added + removed > maxDiffLines) {
+            diff.append("\n… ");
+            diff.append(getString(R.string.editor_diff_truncated, added + removed - maxDiffLines));
         }
         String stats = getString(R.string.editor_diff_stats, added, removed);
         new MaterialAlertDialogBuilder(requireContext())
