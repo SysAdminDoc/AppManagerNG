@@ -16,6 +16,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import io.github.muntashirakon.AppManager.automation.AutomationIntents;
+
 @RunWith(RobolectricTestRunner.class)
 public class ProfileApplierReceiverTest {
     @Test
@@ -47,5 +49,23 @@ public class ProfileApplierReceiverTest {
     public void runtimePackageOverrideRejectsInvalidPackageName() {
         assertThrows(IllegalArgumentException.class, () ->
                 ProfileApplierReceiver.mergeRuntimePackageOverride(null, "not a package"));
+    }
+
+    @Test
+    public void applyRuntimePackageOverrideRejectsOversizedProfileOverrides() {
+        Intent intent = new Intent(AutomationIntents.ACTION_RUN_PROFILE)
+                .putExtra(AutomationIntents.EXTRA_PROFILE_OVERRIDES,
+                        "{\"padding\":\"" + repeat('a', 65 * 1024) + "\"}");
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ProfileApplierReceiver.applyRuntimePackageOverride(intent, "com.example.dynamic"));
+    }
+
+    private static String repeat(char value, int count) {
+        StringBuilder builder = new StringBuilder(count);
+        for (int i = 0; i < count; ++i) {
+            builder.append(value);
+        }
+        return builder.toString();
     }
 }
