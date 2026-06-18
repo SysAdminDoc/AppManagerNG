@@ -41,6 +41,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   dimensions before file-manager previews shrink large pages to icon size.
 - Capped APK bundle parsing, metadata reads, and cached V4 signature sidecars
   so oversized APKS/APKM/XAPK inputs fail before exhausting memory or cache.
+- Applied the file-manager ZIP entry-count ceiling during the progress-counting
+  pre-pass as well as extraction, avoiding unbounded archive scans.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable
