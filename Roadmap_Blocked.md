@@ -90,6 +90,64 @@ ROADMAP.md once the blocker is resolved.
   Blocker: requires explicit trust-model design decisions and touches native server bootstrap; device-gated for privileged-mode testing.
   Complexity: L
 
+## Visual/Device-Verification-Gated (2026-06-17)
+
+### P3
+
+- [ ] P3 — Visual token and component polish pass
+  Why: cards, banners, list rows, dialogs, badges, chips, toasts, and nested surfaces should
+  feel like one product in light, dark, and AMOLED modes without one-off colors or spacing.
+  Where: app/src/main/res/{layout,values,drawable}/
+  Blocker: requires on-device visual comparison across light, dark, and AMOLED themes to identify specific one-off colors and spacing inconsistencies before fixing.
+  Complexity: M
+
+- [ ] P3 — Tooltips and microcopy consistency pass
+  Why: expert controls need concise labels, explainers, and warnings that are useful without
+  being robotic, vague, or inconsistent between screens.
+  Where: app/src/main/res/values/strings.xml, app/src/main/java/io/github/muntashirakon/AppManager/
+  Blocker: requires on-device walkthrough of all expert controls to identify specific vague/inconsistent labels and warnings before rewriting.
+  Complexity: M
+
+- [ ] P3 — Theme/a11y coherence pass (deferred-audit visual debt)
+  Why: The 2026-06-09 audit verified divergent dark palettes across NG-added screens, dead premium design tokens, and tracker/perm badges under the 48dp touch-target minimum — small fixes that compound into perceived quality.
+  Evidence: 2026-06-09 audit session record (deferred list); res/ themes and the named drawables (spot-verified)
+  Touches: app/src/main/res/ (themes, drawables, dimens), details/ badge layouts
+  Acceptance: NG-added screens share one dark palette token set; the misused drawables are replaced with purpose-named assets; all interactive badges hit ≥48dp touch targets (a11y scanner clean on those screens).
+  Blocker: requires a11y scanner and on-device dark-palette comparison to identify specific divergent tokens before fixing.
+  Complexity: M
+
+- [ ] P3 — Device-wide analytics dashboard (install-source / SDK / signing distributions)
+  Why: Inure's analytics panel and AppDash's insight cards ("unused apps", "storage-heavy") are the category's stickiest discovery surfaces; NG already computes every datapoint (installer source, target SDK, signing info, usage) but offers no aggregate view with tap-through to a filtered list.
+  Evidence: https://github.com/Hamza417/Inure (FEATURES.md analytics panel); https://appdash.app/ (insight cards); NG filters already support these predicates (filters/options/)
+  Touches: main/ or a new dashboard fragment, filters/ (reuse predicates as tap-through), existing chart utilities
+  Acceptance: a dashboard screen shows at least installer-source, targetSdk, and signing distributions plus an "unused 30/60/90 days" card; tapping any segment opens the main list pre-filtered to it.
+  Blocker: chart rendering and tap-through UX require on-device visual verification; no chart library is currently in the project.
+  Complexity: M
+
+- [ ] P3 — Dedicated freeze surface with home-screen widget
+  Why: Freeze/unfreeze works via app details or batch ops, but there is no dedicated screen listing all frozen apps with one-tap toggle — the feature is buried. Hail's frozen-apps grid with one-tap toggle and home-screen widget is the competitive standard for daily freeze/unfreeze workflows. NG ships a QS freeze tile but no in-app freeze surface or widget.
+  Evidence: https://github.com/aistra0528/Hail (freeze grid, widget, grayscale icons); main/MainActivity.java (frozen filter exists but no dedicated freeze fragment); QuickFreezeTileService (QS tile only, no widget)
+  Touches: new FreezeManagerFragment under main/ (reuse existing freeze/unfreeze plumbing from batchops/), new AppWidgetProvider for home-screen toggle, main menu entry, app/src/main/res/layout/ (grid layout), app/src/main/res/xml/ (widget metadata)
+  Acceptance: a main-menu entry opens a grid of all frozen/suspended apps; each row has a one-tap toggle that freezes or unfreezes immediately; a home-screen widget shows frozen-app count and opens the freeze surface on tap; works in root, ADB, and Shizuku modes.
+  Blocker: freeze/unfreeze toggle and widget require root, ADB, or Shizuku privilege modes for device testing; AppWidgetProvider requires launcher interaction.
+  Complexity: M
+
+- [ ] P3 — Profile sharing via QR code or deep link
+  Why: Profiles serialize to JSON but there's no QR code or `am://profile/import/<encoded>` deep link for mobile-to-mobile sharing. Users must export to file, transfer, and import manually.
+  Evidence: profiles/struct/BaseProfile.java (serializeToJson exists, no QR/deep-link codec)
+  Touches: profiles/ (QR encoder/decoder, deep-link handler in manifest)
+  Acceptance: a "Share" action in the profile editor generates a QR code or copyable deep link; scanning/tapping it on another device opens the import flow.
+  Blocker: no QR generation library in project; adding ZXing/MLKit dependency needed; deep-link handling requires on-device intent-filter testing.
+  Complexity: M
+
+- [ ] P3 — File-manager trash bin (staged deletion)
+  Why: NG's FM hard-deletes; Files-by-Google's staged trash with 30-day retention is the established data-safety pattern and FM batch ops magnify mistake cost.
+  Evidence: Files by Google clean-flow walkthrough (RESEARCH.md Sources); fm/ has no trash concept (verified)
+  Touches: fm/ (delete paths, trash root, restore UI), settings/ (retention pref)
+  Acceptance: FM delete moves to a trash location with restore; trash auto-empties after the configured retention; "delete permanently" remains available.
+  Blocker: restore UI flow, trash browsing, and auto-empty behavior need on-device testing; touches critical delete paths.
+  Complexity: M
+
 ## External-Service-Gated
 
 ### P3
