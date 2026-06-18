@@ -9,6 +9,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Replaced raw shortcut-launch exception toasts with the existing localized
   "shortcut target unavailable" recovery copy while logging the diagnostic.
+- Hardened debloat preset import/export against malformed files, unsupported
+  schema versions, and one-off executor leaks while using localized success and
+  failure copy.
+- Replaced raw bloatware app-store launch error toasts with localized recovery
+  copy while logging the diagnostic.
+- Localized Audio Player unknown metadata fallbacks and replaced stderr stack
+  traces with app logs.
+- Fixed permission-reference tooltips on API 21-25 by using the compatibility
+  tooltip helper instead of the API 26-only platform call.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable

@@ -7,9 +7,11 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +32,30 @@ public final class DebloatPresetIO {
 
     public static void exportPreset(@NonNull Context context, @NonNull Uri uri,
                                     @NonNull Map<String, int[]> selectedPackages) throws IOException {
+        try (OutputStream os = context.getContentResolver().openOutputStream(uri)) {
+            if (os == null) {
+                throw new IOException("Could not open debloat preset for writing.");
+            }
+            try (OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                writePreset(writer, selectedPackages);
+            }
+        }
+    }
+
+    @NonNull
+    public static DebloatPresetData importPreset(@NonNull Context context, @NonNull Uri uri) throws IOException {
+        try (InputStream is = context.getContentResolver().openInputStream(uri)) {
+            if (is == null) {
+                throw new IOException("Could not open debloat preset for reading.");
+            }
+            try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                return readPreset(reader);
+            }
+        }
+    }
+
+    @VisibleForTesting
+    static void writePreset(@NonNull Writer writer, @NonNull Map<String, int[]> selectedPackages) {
         DebloatPresetData data = new DebloatPresetData();
         data.version = VERSION;
         data.entries = new ArrayList<>(selectedPackages.size());
@@ -37,22 +65,25 @@ public final class DebloatPresetIO {
             presetEntry.userIds = entry.getValue();
             data.entries.add(presetEntry);
         }
-        try (OutputStream os = context.getContentResolver().openOutputStream(uri);
-             OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-            GSON.toJson(data, writer);
-        }
+        GSON.toJson(data, writer);
     }
 
     @NonNull
-    public static DebloatPresetData importPreset(@NonNull Context context, @NonNull Uri uri) throws IOException {
-        try (InputStream is = context.getContentResolver().openInputStream(uri);
-             InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-            DebloatPresetData data = GSON.fromJson(reader, DebloatPresetData.class);
-            if (data == null || data.entries == null) {
-                throw new IOException("Invalid debloat preset file");
-            }
-            return data;
+    @VisibleForTesting
+    static DebloatPresetData readPreset(@NonNull Reader reader) throws IOException {
+        DebloatPresetData data;
+        try {
+            data = GSON.fromJson(reader, DebloatPresetData.class);
+        } catch (JsonParseException e) {
+            throw new IOException("Invalid debloat preset file.", e);
         }
+        if (data == null || data.entries == null) {
+            throw new IOException("Invalid debloat preset file.");
+        }
+        if (data.version != VERSION) {
+            throw new IOException("Unsupported debloat preset version " + data.version + ".");
+        }
+        return data;
     }
 
     public static class DebloatPresetData {

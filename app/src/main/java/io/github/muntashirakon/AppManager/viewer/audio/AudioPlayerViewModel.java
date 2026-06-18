@@ -7,8 +7,10 @@ import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -18,9 +20,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class AudioPlayerViewModel extends AndroidViewModel {
+    private static final String TAG = AudioPlayerViewModel.class.getSimpleName();
+
     private final MutableLiveData<AudioMetadata> mAudioMetadataLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mMediaPlayerPreparedLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mPlaylistLoadedLiveData = new MutableLiveData<>();
@@ -113,7 +119,7 @@ public class AudioPlayerViewModel extends AndroidViewModel {
                 mediaPlayer.prepare();
                 mMediaPlayerPreparedLiveData.postValue(true);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Could not prepare media player for %s.", e, uri);
                 mMediaPlayerPreparedLiveData.postValue(false);
             }
         });
@@ -130,39 +136,46 @@ public class AudioPlayerViewModel extends AndroidViewModel {
                 audioMetadata.cover = BitmapFactory.decodeByteArray(raw, 0, raw.length);
             }
             String title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-            if (title == null) {
+            if (TextUtils.isEmpty(title)) {
                 title = uri.getLastPathSegment();
-                if (title == null) {
-                    title = "<Unknown Title>";
+                if (TextUtils.isEmpty(title)) {
+                    title = getString(R.string.audio_player_unknown_title);
                 }
             }
-            String artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            if (artist == null) {
-                artist = "<Unknown Artist>";
-            }
-            String album = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
-            if (album == null) {
-                album = "<Unknown Album>";
-            }
-            String albumArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST);
-            if (albumArtist == null) {
-                albumArtist = "<Unknown Artist>";
-            }
+            String artist = getMetadataOrFallback(retriever,
+                    MediaMetadataRetriever.METADATA_KEY_ARTIST, R.string.audio_player_unknown_artist);
+            String album = getMetadataOrFallback(retriever,
+                    MediaMetadataRetriever.METADATA_KEY_ALBUM, R.string.audio_player_unknown_album);
+            String albumArtist = getMetadataOrFallback(retriever,
+                    MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST, R.string.audio_player_unknown_artist);
             audioMetadata.title = title;
             audioMetadata.album = album;
             audioMetadata.albumArtist = albumArtist;
             audioMetadata.artist = artist;
         } catch (RuntimeException | IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Could not read audio metadata for %s.", e, uri);
             String title = uri.getLastPathSegment();
-            if (title == null) {
-                title = "<Unknown Title>";
+            if (TextUtils.isEmpty(title)) {
+                title = getString(R.string.audio_player_unknown_title);
             }
             audioMetadata.title = title;
-            audioMetadata.album = "<Unknown Album>";
-            audioMetadata.albumArtist = "<Unknown Artist>";
-            audioMetadata.artist = "<Unknown Artist>";
+            audioMetadata.album = getString(R.string.audio_player_unknown_album);
+            audioMetadata.albumArtist = getString(R.string.audio_player_unknown_artist);
+            audioMetadata.artist = getString(R.string.audio_player_unknown_artist);
         }
         return audioMetadata;
+    }
+
+    @NonNull
+    private String getMetadataOrFallback(@NonNull MediaMetadataRetriever retriever,
+                                         int metadataKey,
+                                         @StringRes int fallbackRes) {
+        String value = retriever.extractMetadata(metadataKey);
+        return TextUtils.isEmpty(value) ? getString(fallbackRes) : value;
+    }
+
+    @NonNull
+    private String getString(@StringRes int resId) {
+        return getApplication().getString(resId);
     }
 }
