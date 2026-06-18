@@ -13,6 +13,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,6 +73,16 @@ public class ShortcutManifestContractTest {
         assertTrue(alias.exported);
         assertEquals(SOURCE_PACKAGE + ".debloat.DebloaterActivity", alias.targetActivity);
         assertFalse(alias.hasLauncherCategory);
+    }
+
+    @Test
+    public void activityLauncherShortcutFailureUsesRecoveryCopy() throws IOException {
+        String source = readAppSource("details/ActivityLauncherShortcutActivity.java");
+
+        assertFalse("Shortcut launch failures should not expose raw exception toasts",
+                source.contains("\"Error: \" + e.getMessage()"));
+        assertTrue(source.contains("R.string.shortcut_target_unavailable"));
+        assertTrue(source.contains("Log.e(TAG, \"Could not launch shortcut target.\", e);"));
     }
 
     private static Map<String, ManifestComponent> readManifestComponents() throws Exception {
@@ -140,6 +151,12 @@ public class ShortcutManifestContractTest {
             cursor = cursor.getParent();
         }
         throw new IOException("Could not locate app/src/main/AndroidManifest.xml");
+    }
+
+    private static String readAppSource(String relativePath) throws IOException {
+        return new String(Files.readAllBytes(findAppProjectDir()
+                .resolve("src/main/java/io/github/muntashirakon/AppManager")
+                .resolve(relativePath)), StandardCharsets.UTF_8);
     }
 
     private static final class ManifestComponent {
