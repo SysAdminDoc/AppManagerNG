@@ -37,6 +37,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   before processing user-provided SVG files.
 - Capped APK bundle base extraction entry traversal so duplicate detection
   rejects hostile APKS/APKM/XAPK archives with oversized central directories.
+- Closed PDF thumbnail renderer resources reliably and cap rendered thumbnail
+  dimensions before file-manager previews shrink large pages to icon size.
 - Fixed Audio Player dismissal crash before media preparation by releasing the
   MediaPlayer directly instead of calling stop() from an invalid state.
 - Fixed Audio Player close-on-dismiss lifecycle safety by using a nullable

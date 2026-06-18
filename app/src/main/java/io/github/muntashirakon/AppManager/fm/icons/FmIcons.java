@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
@@ -17,6 +18,7 @@ import android.provider.DocumentsContract;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 
 import java.io.File;
@@ -30,6 +32,7 @@ import java.util.zip.ZipFile;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.UriApkSource;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -39,6 +42,10 @@ import io.github.muntashirakon.io.Path;
 // Mostly taken from: https://github.com/zhanghai/MaterialFiles/blob/43a22b31d59a59e44a05a972269a3bd9cd0c9b8b/app/src/main/java/me/zhanghai/android/files/file/MimeTypeIcon.kt
 // Others are freelanced.
 final class FmIcons {
+    private static final String TAG = FmIcons.class.getSimpleName();
+    private static final int MAX_PDF_THUMBNAIL_SIDE_PX = 2048;
+    private static final int MAX_PDF_THUMBNAIL_PIXELS = 4 * 1024 * 1024;
+
     private static final int DRAWABLE_APK = R.drawable.ic_android;
     private static final int DRAWABLE_ARCHIVE = R.drawable.ic_archive;
     private static final int DRAWABLE_AUDIO = R.drawable.ic_audio_file;
@@ -332,29 +339,40 @@ final class FmIcons {
 
     @Nullable
     public static Bitmap generatePdfBitmap(@NonNull Context context, @NonNull Uri uri) {
-        PdfRenderer renderer;
-        try {
-            renderer = new PdfRenderer(FileUtils.getFdFromUri(context, uri, "r"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        try (PdfRenderer renderer = new PdfRenderer(FileUtils.getFdFromUri(context, uri, "r"));
+             PdfRenderer.Page page = renderer.openPage(0)) {
+            int srcWidth = page.getWidth();
+            int srcHeight = page.getHeight();
+            if (srcWidth <= 0 || srcHeight <= 0) {
+                return null;
+            }
+            int[] targetSize = getBoundedPdfThumbnailSize(srcWidth, srcHeight);
+            int destWidth = targetSize[0];
+            int destHeight = targetSize[1];
+            Bitmap bitmap = Bitmap.createBitmap(destWidth, destHeight, Bitmap.Config.ARGB_8888);
+            bitmap.eraseColor(Color.WHITE);
+            Matrix matrix = new Matrix();
+            matrix.postScale((float) destWidth / srcWidth, (float) destHeight / srcHeight);
+            page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+            return bitmap;
+        } catch (IOException | RuntimeException e) {
+            Log.e(TAG, "Could not generate PDF thumbnail.", e);
             return null;
         }
-        PdfRenderer.Page page;
-        try {
-            page = renderer.openPage(0);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            return null;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static int[] getBoundedPdfThumbnailSize(int srcWidth, int srcHeight) {
+        float scale = Math.min(1f, (float) MAX_PDF_THUMBNAIL_SIDE_PX / Math.max(srcWidth, srcHeight));
+        long pixels = (long) srcWidth * srcHeight;
+        if (pixels > MAX_PDF_THUMBNAIL_PIXELS) {
+            scale = Math.min(scale, (float) Math.sqrt((double) MAX_PDF_THUMBNAIL_PIXELS / pixels));
         }
-        int srcWidth = page.getWidth();
-        int srcHeight = page.getHeight();
-        if (srcWidth <= 0 || srcHeight <= 0) {
-            return null;
-        }
-        Bitmap bitmap = Bitmap.createBitmap(srcWidth, srcHeight, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(Color.WHITE);
-        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-        return bitmap;
+        return new int[]{
+                Math.max(1, Math.round(srcWidth * scale)),
+                Math.max(1, Math.round(srcHeight * scale))
+        };
     }
 
     @Nullable
