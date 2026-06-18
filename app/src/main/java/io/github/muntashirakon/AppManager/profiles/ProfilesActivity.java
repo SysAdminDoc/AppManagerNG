@@ -107,23 +107,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                     // Back button pressed.
                     return;
                 }
-                try {
-                    // Verify
-                    Path profilePath = Paths.get(uri);
-                    BaseProfile profile = BaseProfile.fromPath(profilePath);
-                    BaseProfile newProfile = BaseProfile.newProfile(profile.name, profile.type, profile);
-                    Path innerProfilePath = ProfileManager.requireProfilePathById(newProfile.profileId);
-                    // Save
-                    try (OutputStream os = innerProfilePath.openOutputStream()) {
-                        newProfile.write(os);
-                    }
-                    UIUtils.displayShortToast(R.string.the_import_was_successful);
-                    // Load imported profile
-                    startActivity(ProfileManager.getProfileIntent(this, newProfile.type, newProfile.profileId));
-                } catch (IOException | JSONException e) {
-                    Log.e(TAG, "Error: ", e);
-                    UIUtils.displayShortToast(R.string.import_failed);
-                }
+                importProfileAsync(uri);
             });
 
     /**
@@ -299,6 +283,44 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
         });
     }
 
+    private void importProfileAsync(@NonNull Uri uri) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            ImportedProfileResult importedProfile = null;
+            Exception failure = null;
+            try {
+                importedProfile = importProfileFromPath(Paths.get(uri));
+            } catch (IOException | JSONException | RuntimeException e) {
+                failure = e;
+            }
+            ImportedProfileResult finalImportedProfile = importedProfile;
+            Exception finalFailure = failure;
+            ThreadUtils.postOnMainThread(() -> {
+                if (finalFailure != null || finalImportedProfile == null) {
+                    Log.e(TAG, "Profile import failed", finalFailure);
+                    UIUtils.displayShortToast(R.string.import_failed);
+                    return;
+                }
+                UIUtils.displayShortToast(R.string.the_import_was_successful);
+                if (!isFinishing() && !isDestroyed()) {
+                    startActivity(ProfileManager.getProfileIntent(this,
+                            finalImportedProfile.type, finalImportedProfile.profileId));
+                }
+            });
+        });
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static ImportedProfileResult importProfileFromPath(@NonNull Path profilePath) throws IOException, JSONException {
+        BaseProfile profile = BaseProfile.fromPath(profilePath);
+        BaseProfile newProfile = BaseProfile.newProfile(profile.name, profile.type, profile);
+        Path innerProfilePath = ProfileManager.requireProfilePathById(newProfile.profileId);
+        try (OutputStream os = innerProfilePath.openOutputStream()) {
+            newProfile.write(os);
+        }
+        return new ImportedProfileResult(newProfile.profileId, newProfile.type);
+    }
+
     @VisibleForTesting
     static void writeProfileExport(@NonNull OutputStream os, @NonNull BaseProfile profile,
                                    boolean upstreamCompatible)
@@ -322,6 +344,18 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     @NonNull
     static String buildProfileShareFilename(@Nullable String profileName, @NonNull String suffix) {
         return ProfileManager.getProfileIdCompat(formatProfileMetadataLabel(profileName)) + suffix;
+    }
+
+    @VisibleForTesting
+    static final class ImportedProfileResult {
+        @NonNull
+        final String profileId;
+        final int type;
+
+        ImportedProfileResult(@NonNull String profileId, int type) {
+            this.profileId = profileId;
+            this.type = type;
+        }
     }
 
     @Override
