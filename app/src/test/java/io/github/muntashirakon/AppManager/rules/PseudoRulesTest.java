@@ -11,6 +11,7 @@ import org.robolectric.RobolectricTestRunner;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
+import io.github.muntashirakon.AppManager.rules.struct.AppOpReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.BatteryOptimizationRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
@@ -19,6 +20,7 @@ import io.github.muntashirakon.AppManager.rules.struct.MagiskDenyListRule;
 import io.github.muntashirakon.AppManager.rules.struct.MagiskHideRule;
 import io.github.muntashirakon.AppManager.rules.struct.NetPolicyRule;
 import io.github.muntashirakon.AppManager.rules.struct.NotificationListenerRule;
+import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.rules.struct.SsaidRule;
@@ -94,12 +96,33 @@ public class PseudoRulesTest {
     }
 
     @Test
+    public void uniquenessOfAppOpReferencesTest() {
+        rules.setAppOpReference(55, 3);
+        rules.setAppOpReference(55, 0);
+        assertEquals(1, rules.getAll().size());
+        assertNotEquals(new AppOpReferenceRule(PACKAGE_NAME, 55, 3), rules.getAll().get(0));
+        assertEquals(new AppOpReferenceRule(PACKAGE_NAME, 55, 0), rules.getAll().get(0));
+        assertEquals(new AppOpReferenceRule(PACKAGE_NAME, 55, 0), rules.getAppOpReference(55));
+    }
+
+    @Test
     public void uniquenessOfPermissionsTest() {
         rules.setPermission(".perm", true, 32);
         rules.setPermission(".perm", false, 4);
         assertEquals(1, rules.getAll().size());
         assertNotEquals(new PermissionRule(PACKAGE_NAME, ".perm", true, 32), rules.getAll().get(0));
         assertEquals(new PermissionRule(PACKAGE_NAME, ".perm", false, 4), rules.getAll().get(0));
+    }
+
+    @Test
+    public void uniquenessOfPermissionReferencesTest() {
+        rules.setPermissionReference(".perm", true);
+        rules.setPermissionReference(".perm", false);
+        assertEquals(1, rules.getAll().size());
+        assertNotEquals(new PermissionReferenceRule(PACKAGE_NAME, ".perm", true), rules.getAll().get(0));
+        assertEquals(new PermissionReferenceRule(PACKAGE_NAME, ".perm", false), rules.getAll().get(0));
+        assertEquals(new PermissionReferenceRule(PACKAGE_NAME, ".perm", false),
+                rules.getPermissionReference(".perm"));
     }
 
     @Test
@@ -181,9 +204,10 @@ public class PseudoRulesTest {
         rules.setComponent(".component", RuleType.SERVICE, ComponentRule.COMPONENT_BLOCKED_IFW_DISABLE);
         rules.setComponent(".component", RuleType.RECEIVER, ComponentRule.COMPONENT_BLOCKED_IFW_DISABLE);
         rules.setPermission(".component", true, 4);
+        rules.setPermissionReference(".component", true);
         rules.setNotificationListener(".component", true);
         List<RuleEntry> ruleEntries = rules.getAll();
-        assertEquals(6, ruleEntries.size());
+        assertEquals(7, ruleEntries.size());
         assertEquals(new ComponentRule(PACKAGE_NAME, ".component", RuleType.ACTIVITY,
                 ComponentRule.COMPONENT_BLOCKED_IFW_DISABLE), ruleEntries.get(0));
         assertEquals(new ComponentRule(PACKAGE_NAME, ".component", RuleType.PROVIDER,
@@ -193,7 +217,8 @@ public class PseudoRulesTest {
         assertEquals(new ComponentRule(PACKAGE_NAME, ".component", RuleType.RECEIVER,
                 ComponentRule.COMPONENT_BLOCKED_IFW_DISABLE), ruleEntries.get(3));
         assertEquals(new PermissionRule(PACKAGE_NAME, ".component", true, 4), ruleEntries.get(4));
-        assertEquals(new NotificationListenerRule(PACKAGE_NAME, ".component", true), ruleEntries.get(5));
+        assertEquals(new PermissionReferenceRule(PACKAGE_NAME, ".component", true), ruleEntries.get(5));
+        assertEquals(new NotificationListenerRule(PACKAGE_NAME, ".component", true), ruleEntries.get(6));
     }
 
     @Test

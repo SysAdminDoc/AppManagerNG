@@ -67,6 +67,16 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@string/perm_app_status_granted" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/permission_reference_action"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/premium_space_4"
+            android:contentDescription="@string/permission_reference_pin"
+            app:icon="@drawable/ic_flag"
+            app:iconSize="20dp" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/permission_switch"
             android:layout_width="wrap_content"
