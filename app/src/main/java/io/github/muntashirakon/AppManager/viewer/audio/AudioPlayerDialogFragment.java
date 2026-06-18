@@ -20,6 +20,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.slider.Slider;
@@ -140,19 +141,21 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         stopProgressUpdates();
-        if (mediaPlayerInitialized()) {
-            mMediaPlayer.stop();
-            mMediaPlayer.release();
-        }
+        releaseMediaPlayer();
         super.onDismiss(dialog);
     }
 
     @Override
     public void onDestroy() {
+        stopProgressUpdates();
+        releaseMediaPlayer();
         CpuUtils.releaseWakeLock(mWakeLock);
         super.onDestroy();
         if (mCloseActivity) {
-            requireActivity().finish();
+            FragmentActivity activity = getActivity();
+            if (activity != null) {
+                activity.finish();
+            }
         }
     }
 
@@ -341,6 +344,14 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         } catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    private void releaseMediaPlayer() {
+        if (mMediaPlayer == null) {
+            return;
+        }
+        mMediaPlayer.release();
+        mMediaPlayer = null;
     }
 
     private void updatePlaylistSize() {
