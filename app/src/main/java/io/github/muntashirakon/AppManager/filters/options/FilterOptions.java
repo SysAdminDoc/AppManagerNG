@@ -23,6 +23,7 @@ public final class FilterOptions {
             case "freeze_unfreeze": return new FreezeOption();
             case "installed": return new InstalledOption();
             case "install_date": return new InstallDateOption();
+            case "intent_actions": return new IntentActionOption();
             case "installer": return new InstallerOption();
             case "last_update": return new LastUpdateOption();
             case "min_sdk": return new MinSdkOption();

@@ -26,10 +26,12 @@ import androidx.core.content.pm.PackageInfoCompat;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +39,11 @@ import java.util.Set;
 
 import aosp.libcore.util.EmptyArray;
 import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestComponent;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestIntentFilter;
+import io.github.muntashirakon.AppManager.apk.parser.ManifestParser;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
@@ -106,6 +112,10 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     private Map<String, Integer> mDomainVerificationHosts;
     @NonNull
     private Map<String, List<DomainLinkConflictDetector.Conflict>> mDomainLinkConflicts = Collections.emptyMap();
+    @Nullable
+    private Map<String, Set<String>> mComponentIntentActions;
+    @Nullable
+    private Map<String, Set<String>> mComponentIntentCategories;
 
     public FilterableAppInfo(@NonNull PackageInfo packageInfo, @Nullable PackageUsageInfo packageUsageInfo) {
         mPackageInfo = packageInfo;
@@ -269,6 +279,56 @@ public class FilterableAppInfo implements IFilterableAppInfo {
             mAllComponents = components;
         }
         return mAllComponents;
+    }
+
+    private void ensureIntentFiltersLoaded() {
+        if (mComponentIntentActions != null) {
+            return;
+        }
+        mComponentIntentActions = new LinkedHashMap<>();
+        mComponentIntentCategories = new LinkedHashMap<>();
+        String sourceDir = mApplicationInfo.publicSourceDir;
+        if (sourceDir == null) {
+            return;
+        }
+        try {
+            ManifestParser parser = new ManifestParser(ApkUtils.getManifestFromApk(new File(sourceDir)));
+            for (ManifestComponent component : parser.parseComponents()) {
+                Set<String> actions = new LinkedHashSet<>();
+                Set<String> categories = new LinkedHashSet<>();
+                for (ManifestIntentFilter filter : component.intentFilters) {
+                    actions.addAll(filter.actions);
+                    categories.addAll(filter.categories);
+                }
+                String name = component.cn.getClassName();
+                if (name.startsWith(".")) {
+                    name = mPackageInfo.packageName + name;
+                } else if (name.indexOf('.') == -1) {
+                    name = mPackageInfo.packageName + "." + name;
+                }
+                if (!actions.isEmpty()) {
+                    mComponentIntentActions.put(name, actions);
+                }
+                if (!categories.isEmpty()) {
+                    mComponentIntentCategories.put(name, categories);
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
+    @Override
+    @NonNull
+    public Map<String, Set<String>> getComponentIntentActions() {
+        ensureIntentFiltersLoaded();
+        return mComponentIntentActions;
+    }
+
+    @Override
+    @NonNull
+    public Map<String, Set<String>> getComponentIntentCategories() {
+        ensureIntentFiltersLoaded();
+        return mComponentIntentCategories;
     }
 
     @Override

@@ -98,6 +98,7 @@ import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView.ChoiceGenerator;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView.ChoicesGenerator;
 import io.github.muntashirakon.AppManager.permission.DevelopmentPermission;
 import io.github.muntashirakon.AppManager.permission.PermUtils;
 import io.github.muntashirakon.AppManager.permission.Permission;
@@ -512,7 +513,20 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return appDetailsItems;
         }
         List<AppDetailsItem<ComponentInfo>> appDetailsItemsInt = AdvancedSearchView.matches(mSearchQuery, appDetailsItems,
-                (ChoiceGenerator<AppDetailsItem<ComponentInfo>>) item -> lowercaseIfNotRegex(item.name, mSearchType), mSearchType);
+                (ChoicesGenerator<AppDetailsItem<ComponentInfo>>) item -> {
+                    List<String> choices = new ArrayList<>();
+                    choices.add(lowercaseIfNotRegex(item.name, mSearchType));
+                    if (item instanceof AppDetailsComponentItem) {
+                        AppDetailsComponentItem ci = (AppDetailsComponentItem) item;
+                        for (String action : ci.getIntentActions()) {
+                            choices.add(lowercaseIfNotRegex(action, mSearchType));
+                        }
+                        for (String category : ci.getIntentCategories()) {
+                            choices.add(lowercaseIfNotRegex(category, mSearchType));
+                        }
+                    }
+                    return choices;
+                }, mSearchType);
         sortComponents(appDetailsItemsInt);
         return appDetailsItemsInt;
     }
@@ -1507,6 +1521,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mActivities.postValue(mActivityItems);
                 return;
             }
+            Map<String, ComponentIntentDetails> allIntentDetails = collectAllIntentDetails(packageInfo);
             CharSequence appLabel = packageInfo.applicationInfo.loadLabel(mPackageManager);
             boolean canStartAnyActivity = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.START_ANY_ACTIVITY);
             boolean canStartViaAssist = UserHandleHidden.myUserId() == mUserId &&
@@ -1514,6 +1529,11 @@ public class AppDetailsViewModel extends AndroidViewModel {
             for (ActivityInfo activityInfo : packageInfo.activities) {
                 AppDetailsActivityItem componentItem = new AppDetailsActivityItem(activityInfo);
                 componentItem.label = getComponentLabel(activityInfo, appLabel);
+                ComponentIntentDetails intentDetails = allIntentDetails.get(activityInfo.name);
+                if (intentDetails != null) {
+                    componentItem.setIntentActions(new ArrayList<>(intentDetails.actions));
+                    componentItem.setIntentCategories(new ArrayList<>(intentDetails.categories));
+                }
                 synchronized (mBlockerLocker) {
                     if (!mExternalApk) {
                         componentItem.setRule(mBlocker.getComponent(activityInfo.name));
@@ -1523,10 +1543,6 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 componentItem.setTracker(activityTrackerLabel != null);
                 componentItem.setTrackerLabel(activityTrackerLabel);
                 componentItem.setDisabled(isComponentDisabled(activityInfo));
-                // An activity is allowed to launch only if it's
-                // 1) Not from an external APK
-                // 2) Root enabled or the activity is exportable
-                // 3) App or the activity is not disabled and/or blocked
                 componentItem.canLaunch = !mExternalApk && (canStartAnyActivity || activityInfo.exported)
                         && !componentItem.isDisabled() && !componentItem.isBlocked();
                 componentItem.canLaunchAssist = !mExternalApk && canStartViaAssist && !componentItem.isDisabled()
@@ -1553,12 +1569,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mServices.postValue(Collections.emptyList());
                 return;
             }
+            Map<String, ComponentIntentDetails> allIntentDetails = collectAllIntentDetails(packageInfo);
             List<ActivityManager.RunningServiceInfo> runningServiceInfoList;
             runningServiceInfoList = ActivityManagerCompat.getRunningServices(mPackageName, mUserId);
             CharSequence appLabel = packageInfo.applicationInfo.loadLabel(mPackageManager);
             for (ServiceInfo serviceInfo : packageInfo.services) {
                 AppDetailsServiceItem serviceItem = new AppDetailsServiceItem(serviceInfo);
                 serviceItem.label = getComponentLabel(serviceInfo, appLabel);
+                ComponentIntentDetails intentDetails = allIntentDetails.get(serviceInfo.name);
+                if (intentDetails != null) {
+                    serviceItem.setIntentActions(new ArrayList<>(intentDetails.actions));
+                    serviceItem.setIntentCategories(new ArrayList<>(intentDetails.categories));
+                }
                 synchronized (mBlockerLocker) {
                     if (!mExternalApk) {
                         serviceItem.setRule(mBlocker.getComponent(serviceInfo.name));
@@ -1601,12 +1623,12 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mReceivers.postValue(Collections.emptyList());
                 return;
             }
-            Map<String, ReceiverIntentDetails> receiverIntentDetails = collectReceiverIntentDetails(packageInfo);
+            Map<String, ComponentIntentDetails> receiverIntentDetails = collectAllIntentDetails(packageInfo);
             CharSequence appLabel = packageInfo.applicationInfo.loadLabel(mPackageManager);
             for (ActivityInfo activityInfo : packageInfo.receivers) {
                 AppDetailsComponentItem componentItem = new AppDetailsComponentItem(activityInfo);
                 componentItem.label = getComponentLabel(activityInfo, appLabel);
-                ReceiverIntentDetails intentDetails = receiverIntentDetails.get(activityInfo.name);
+                ComponentIntentDetails intentDetails = receiverIntentDetails.get(activityInfo.name);
                 if (intentDetails != null) {
                     componentItem.setIntentActions(new ArrayList<>(intentDetails.actions));
                     componentItem.setIntentCategories(new ArrayList<>(intentDetails.categories));
@@ -1626,39 +1648,45 @@ public class AppDetailsViewModel extends AndroidViewModel {
         }
     }
 
+    @Nullable
+    private Map<String, ComponentIntentDetails> mCachedIntentDetails;
+
     @NonNull
-    private Map<String, ReceiverIntentDetails> collectReceiverIntentDetails(@NonNull PackageInfo packageInfo) {
+    private Map<String, ComponentIntentDetails> collectAllIntentDetails(@NonNull PackageInfo packageInfo) {
+        if (mCachedIntentDetails != null) {
+            return mCachedIntentDetails;
+        }
         ApplicationInfo applicationInfo = packageInfo.applicationInfo;
         if (applicationInfo == null || applicationInfo.publicSourceDir == null) {
-            return Collections.emptyMap();
+            mCachedIntentDetails = Collections.emptyMap();
+            return mCachedIntentDetails;
         }
-        Map<String, ReceiverIntentDetails> receiverIntentDetails = new HashMap<>();
+        Map<String, ComponentIntentDetails> intentDetails = new HashMap<>();
         try {
             ManifestParser parser = new ManifestParser(ApkUtils.getManifestFromApk(new File(applicationInfo.publicSourceDir)));
             for (ManifestComponent component : parser.parseComponents()) {
-                if (!ManifestComponent.TYPE_RECEIVER.equals(component.type)) {
-                    continue;
-                }
-                String receiverName = ReceiverBroadcastUtils.toQualifiedComponentName(packageInfo.packageName,
+                String componentName = ReceiverBroadcastUtils.toQualifiedComponentName(packageInfo.packageName,
                         component.cn.getClassName());
-                ReceiverIntentDetails details = receiverIntentDetails.get(receiverName);
+                ComponentIntentDetails details = intentDetails.get(componentName);
                 if (details == null) {
-                    details = new ReceiverIntentDetails();
-                    receiverIntentDetails.put(receiverName, details);
+                    details = new ComponentIntentDetails();
+                    intentDetails.put(componentName, details);
                 }
                 for (ManifestIntentFilter filter : component.intentFilters) {
                     details.actions.addAll(filter.actions);
                     details.categories.addAll(filter.categories);
                 }
             }
-        } catch (Throwable e) { // ApkFileException extends Throwable, not Exception
-            Log.w(TAG, "Could not parse receiver intent filters for %s", e, packageInfo.packageName);
-            return Collections.emptyMap();
+        } catch (Throwable e) {
+            Log.w(TAG, "Could not parse intent filters for %s", e, packageInfo.packageName);
+            mCachedIntentDetails = Collections.emptyMap();
+            return mCachedIntentDetails;
         }
-        return receiverIntentDetails;
+        mCachedIntentDetails = intentDetails;
+        return mCachedIntentDetails;
     }
 
-    private static class ReceiverIntentDetails {
+    private static class ComponentIntentDetails {
         final Set<String> actions = new LinkedHashSet<>();
         final Set<String> categories = new LinkedHashSet<>();
     }
@@ -1679,10 +1707,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mProviders.postValue(Collections.emptyList());
                 return;
             }
+            Map<String, ComponentIntentDetails> allIntentDetails = collectAllIntentDetails(packageInfo);
             CharSequence appLabel = packageInfo.applicationInfo.loadLabel(mPackageManager);
             for (ProviderInfo providerInfo : packageInfo.providers) {
                 AppDetailsComponentItem componentItem = new AppDetailsComponentItem(providerInfo);
                 componentItem.label = getComponentLabel(providerInfo, appLabel);
+                ComponentIntentDetails intentDetails = allIntentDetails.get(providerInfo.name);
+                if (intentDetails != null) {
+                    componentItem.setIntentActions(new ArrayList<>(intentDetails.actions));
+                    componentItem.setIntentCategories(new ArrayList<>(intentDetails.categories));
+                }
                 synchronized (mBlockerLocker) {
                     if (!mExternalApk) {
                         componentItem.setRule(mBlocker.getComponent(providerInfo.name));
