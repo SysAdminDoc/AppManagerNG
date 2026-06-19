@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed — Premium polish pass (2026-06-19)
+
+- Refined Finder, permission, debloater, profile, operation-history, and
+  backup/restore review surfaces with consistent V2 cards, icon frames, badge
+  sizing, spacing rhythm, and safer one-line truncation.
+- Improved secondary-row accessibility and visual state consistency by restoring
+  theme outline strokes, adding richer Finder row descriptions, and keeping
+  icon-button touch target checks aligned with premium dimension tokens.
+
 ### Fixed — Deep audit pass (2026-06-18)
 
 - Replaced raw shortcut-launch exception toasts with the existing localized

@@ -58,6 +58,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
     private final RunningAppsActivity mActivity;
     private final RunningAppsViewModel mModel;
     private final int mQueryStringHighlightColor;
+    private final int mColorRegularStroke;
     private final Object mLock = new Object();
     @NonNull
     private final List<ProcessItem> mProcessItems = new ArrayList<>();
@@ -68,6 +69,8 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         mActivity = activity;
         mModel = activity.model;
         mQueryStringHighlightColor = ColorCodes.getQueryStringHighlightColor(activity);
+        mColorRegularStroke = MaterialColors.getColor(activity,
+                com.google.android.material.R.attr.colorOutlineVariant, Color.TRANSPARENT);
     }
 
     void setDefaultList(@NonNull List<ProcessItem> processItems) {
@@ -375,7 +378,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
                 mModel.requestDisplayProcessDetails(processItem);
             }
         });
-        holder.itemView.setStrokeColor(Color.TRANSPARENT);
+        holder.itemView.setStrokeColor(mColorRegularStroke);
     }
 
     @Override

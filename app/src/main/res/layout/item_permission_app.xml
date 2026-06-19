@@ -5,8 +5,8 @@
     style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="@dimen/padding_medium"
-    android:layout_marginVertical="@dimen/padding_very_small"
+    android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
+    android:layout_marginVertical="?attr/listItemMarginVertical"
     android:clickable="true"
     android:focusable="true">
 
@@ -14,22 +14,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:minHeight="72dp"
+        android:minHeight="@dimen/premium_scanner_card_min_height"
         android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="@dimen/padding_small">
+        android:paddingHorizontal="?attr/listItemPaddingHorizontal"
+        android:paddingVertical="@dimen/premium_space_12">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/app_icon"
-            android:layout_width="@dimen/premium_icon_40"
-            android:layout_height="@dimen/premium_icon_40"
+            android:layout_width="@dimen/main_list_icon_size"
+            android:layout_height="@dimen/main_list_icon_size"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
             tools:src="@mipmap/ic_launcher" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/padding_medium"
+            android:layout_marginStart="@dimen/premium_space_12"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -61,6 +61,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/premium_space_8"
             android:background="@drawable/badge_background"
+            android:minHeight="@dimen/premium_badge_min_height"
+            android:minWidth="@dimen/premium_badge_min_width"
             android:paddingHorizontal="@dimen/premium_space_8"
             android:paddingVertical="@dimen/premium_space_4"
             android:textAppearance="?attr/textAppearanceLabelMedium"
@@ -81,7 +83,7 @@
             android:id="@+id/permission_switch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/padding_small"
+            android:layout_marginStart="@dimen/premium_space_8"
             android:clickable="false"
             android:focusable="false" />
 

@@ -36,9 +36,9 @@
             style="@style/Widget.AppTheme.V2.Card.Header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_medium"
-            android:layout_marginTop="@dimen/padding_very_small"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginTop="@dimen/premium_space_8"
+            android:layout_marginBottom="@dimen/premium_space_8"
             app:contentPadding="@dimen/premium_space_16">
 
             <LinearLayout

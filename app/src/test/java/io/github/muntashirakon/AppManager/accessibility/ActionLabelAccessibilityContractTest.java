@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.accessibility;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -138,7 +139,8 @@ public class ActionLabelAccessibilityContractTest {
     private static void assertIconButtonTouchTarget(String layout, String viewId) {
         assertControlAttribute(layout, viewId, "android:layout_width=\"48dp\"");
         assertControlAttribute(layout, viewId, "android:layout_height=\"48dp\"");
-        assertControlAttribute(layout, viewId, "app:iconSize=\"24dp\"");
+        assertControlAttributeOneOf(layout, viewId, "app:iconSize=\"24dp\"",
+                "app:iconSize=\"@dimen/premium_icon_24\"");
     }
 
     private static void assertImageButtonTouchTarget(String layout, String viewId) {
@@ -149,12 +151,22 @@ public class ActionLabelAccessibilityContractTest {
     private static void assertControlAttribute(String layout,
                                                String viewId,
                                                String expectedAttribute) {
+        assertControlAttributeOneOf(layout, viewId, expectedAttribute);
+    }
+
+    private static void assertControlAttributeOneOf(String layout,
+                                                    String viewId,
+                                                    String... expectedAttributes) {
         int start = findViewStart(layout, viewId);
         int end = layout.indexOf("/>", start);
         assertTrue("Missing self-closing view block for " + viewId, end > start);
         String block = layout.substring(start, end);
-        assertTrue(viewId + " should use " + expectedAttribute,
-                block.contains(expectedAttribute));
+        for (String expectedAttribute : expectedAttributes) {
+            if (block.contains(expectedAttribute)) {
+                return;
+            }
+        }
+        fail(viewId + " should use one of " + String.join(", ", expectedAttributes));
     }
 
     private static int findViewStart(String layout, String viewId) {

@@ -4,7 +4,6 @@ package io.github.muntashirakon.AppManager.filters;
 
 import android.content.Context;
 import android.content.pm.ComponentInfo;
-import android.graphics.Color;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +18,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textview.MaterialTextView;
 
@@ -84,7 +84,10 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
             holder.item3.setText(matchedExtras);
         }
         holder.toggleBtn.setVisibility(View.GONE);
-        holder.itemView.setStrokeColor(Color.TRANSPARENT);
+        holder.itemView.setStrokeColor(holder.regularStrokeColor);
+        holder.itemView.setContentDescription(context.getString(R.string.finder_row_content_description,
+                appInfo.getAppLabel(), appInfo.getPackageName(), holder.item1.getText(),
+                TextUtils.isEmpty(matchedExtras) ? context.getString(R.string.no_content) : matchedExtras));
     }
 
     @Nullable
@@ -194,10 +197,14 @@ public class FinderAdapter extends RecyclerView.Adapter<FinderAdapter.ViewHolder
         public MaterialTextView item2;
         public MaterialTextView item3;
         public MaterialSwitch toggleBtn;
+        final int regularStrokeColor;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             this.itemView = (MaterialCardView) itemView;
+            regularStrokeColor = MaterialColors.getColor(itemView,
+                    com.google.android.material.R.attr.colorOutlineVariant,
+                    0);
             icon = itemView.findViewById(R.id.icon);
             label = itemView.findViewById(R.id.label);
             pkg = itemView.findViewById(R.id.package_name);

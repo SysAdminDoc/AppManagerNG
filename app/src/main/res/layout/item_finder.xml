@@ -5,15 +5,15 @@
     style="@style/Widget.AppTheme.V2.Card.ListRow"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:focusable="true"
-    android:descendantFocusability="beforeDescendants"
-    app:cardElevation="0dp"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal"
-    android:layout_marginVertical="?attr/listItemMarginVertical">
+    android:layout_marginVertical="?attr/listItemMarginVertical"
+    android:focusable="true"
+    android:descendantFocusability="beforeDescendants">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="@dimen/premium_scanner_card_min_height"
         android:orientation="vertical"
         android:paddingHorizontal="?attr/listItemPaddingHorizontal"
         android:paddingVertical="?attr/listItemPaddingVertical">
@@ -23,13 +23,23 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/icon"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="@dimen/padding_small"
-                android:layout_weight="0"
-                android:contentDescription="@string/str_logo" />
+            <FrameLayout
+                android:layout_width="@dimen/premium_icon_48"
+                android:layout_height="@dimen/premium_icon_48"
+                android:layout_marginEnd="@dimen/premium_space_12"
+                android:background="@drawable/main_icon_frame_background"
+                android:importantForAccessibility="no">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/icon"
+                    android:layout_width="@dimen/premium_icon_40"
+                    android:layout_height="@dimen/premium_icon_40"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    tools:srcCompat="@mipmap/ic_launcher_round" />
+
+            </FrameLayout>
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="0dp"
@@ -39,22 +49,23 @@
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/label"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:gravity="center"
-                    android:singleLine="true"
-                    android:textIsSelectable="true"
+                    android:ellipsize="end"
+                    android:maxLines="2"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     tools:text="@tools:sample/lorem" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/package_name"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textIsSelectable="true"
+                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:ellipsize="middle"
+                    android:singleLine="true"
                     android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textSize="10sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="@tools:sample/lorem"
                     tools:ignore="SmallSp" />
 
@@ -67,37 +78,44 @@
                 android:layout_gravity="center"
                 android:layout_weight="0"
                 android:clickable="false"
-                android:focusable="false" />
+                android:focusable="false"
+                android:visibility="gone" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/item1"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textIsSelectable="true"
+            android:layout_marginTop="@dimen/premium_space_12"
+            android:ellipsize="end"
+            android:maxLines="2"
             android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@tools:sample/lorem"
             tools:ignore="SmallSp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/item2"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textIsSelectable="true"
+            android:layout_marginTop="@dimen/premium_space_4"
+            android:ellipsize="end"
+            android:maxLines="2"
             android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@tools:sample/lorem"
             tools:ignore="SmallSp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/item3"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textIsSelectable="true"
+            android:layout_marginTop="@dimen/premium_space_4"
+            android:ellipsize="end"
+            android:maxLines="3"
             android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@tools:sample/lorem"
             tools:ignore="SmallSp" />
 
