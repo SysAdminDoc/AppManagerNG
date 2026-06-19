@@ -5,6 +5,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- Snapshot import now shows a preview dialog with source version, date, schema, and
+  per-section toggles (preferences, profiles, rules, tags, operation history). Users
+  select which sections to restore before importing.
+- Support bundle export now shows a section preview with toggles for device info,
+  privilege state, feature flags, crash sink, and logcat before sharing. Excluded
+  sections are omitted entirely; redaction still applies to included content.
+- Release/version consistency preflight gate (`scripts/verify-release-consistency.sh`)
+  that fails CI when `versionName`, `versionCode`, README badge, fastlane changelog,
+  CHANGELOG entry, or git tag disagree. Runs in both release and PR-check workflows.
+
+### Security
+- Terminal launch now always requires device credential (biometric/PIN/pattern)
+  regardless of the global action-auth preference. Privileged routes (root, ADB,
+  Shizuku) were previously bypassable when the toggle was disabled (the default).
+- Android 16 strict-intent manifest audit gate: static tests enumerate all exported
+  components, assert exact scheme/host/action constraints for automation URIs, app
+  detail deep links, and settings deep links, and detect new unguarded exports.
+- Optional-network transparency ledger: Settings > Privacy now has a "Network
+  transparency" item (full flavor only) showing each optional network feature's
+  endpoint, payload category, compile availability, toggle state, and last fetch time.
+- Translation and pseudolocale quality gate (`scripts/verify-translation-quality.sh`)
+  verifies pseudoLocalesEnabled, detects stale translations, and reports per-locale
+  coverage. Wired into PR checks.
+- Dependency floor drift gate (`scripts/verify-dependency-floor.sh`) fails CI when
+  a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
+  all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
+
 ### Fixed — Deep audit pass (2026-06-19)
 
 - Replaced raw tracker overlay and permission-settings failure toasts with
