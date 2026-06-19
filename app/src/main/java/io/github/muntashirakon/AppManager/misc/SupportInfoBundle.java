@@ -48,28 +48,37 @@ public final class SupportInfoBundle {
     private static final String UNKNOWN = "unknown";
     private static final String REDACTED = "<redacted>";
 
+    public static final class SectionOptions {
+        public boolean includeDevice = true;
+        public boolean includePrivilegeState = true;
+        public boolean includeFeatureFlags = true;
+        public boolean includeCrashSink = true;
+        public boolean includeLogcat = true;
+    }
+
     private SupportInfoBundle() {
     }
 
     @WorkerThread
     @NonNull
     public static Path writeTextBundle(@NonNull Context context) throws IOException {
-        return writeTextBundle(context, null);
+        return writeTextBundle(context, null, new SectionOptions());
     }
 
-    /**
-     * Variant that lets a caller (e.g. Mode Doctor) inline a probe report or
-     * other free-form section above the standard support bundle. The
-     * {@code preamble}, if non-null, is scrubbed and followed by a blank line
-     * before the regular bundle body so an analyst opening the file sees the
-     * contextual report first and the environment dump below.
-     */
     @WorkerThread
     @NonNull
     public static Path writeTextBundle(@NonNull Context context, @Nullable CharSequence preamble) throws IOException {
+        return writeTextBundle(context, preamble, new SectionOptions());
+    }
+
+    @WorkerThread
+    @NonNull
+    public static Path writeTextBundle(@NonNull Context context, @Nullable CharSequence preamble,
+                                       @NonNull SectionOptions sections) throws IOException {
         Date now = new Date();
         String text = formatBundleTextForPublicIssue(
-                buildText(context.getApplicationContext(), formatUtc(now), readScrubbedLogcatTail()));
+                buildText(context.getApplicationContext(), formatUtc(now),
+                        sections.includeLogcat ? readScrubbedLogcatTail() : null, sections));
         File dir = FileCache.getGlobalFileCache().createCachedDir("support-info");
         File file = new File(dir, buildFileName(Build.DEVICE, now));
         try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
@@ -99,9 +108,11 @@ public final class SupportInfoBundle {
 
     @WorkerThread
     @NonNull
-    private static String buildText(@NonNull Context context,
-                                    @NonNull String timestampUtc,
-                                    @NonNull String scrubbedLogcatTail) {
+    @VisibleForTesting
+    static String buildText(@NonNull Context context,
+                            @NonNull String timestampUtc,
+                            @Nullable String scrubbedLogcatTail,
+                            @NonNull SectionOptions sections) {
         StringBuilder sb = new StringBuilder();
         sb.append("AppManagerNG support info").append('\n');
         sb.append("=========================").append('\n');
@@ -111,69 +122,79 @@ public final class SupportInfoBundle {
         appendLine(sb, "Build type", BuildConfig.BUILD_TYPE);
         sb.append('\n');
 
-        sb.append("Device").append('\n');
-        sb.append("------").append('\n');
-        appendLine(sb, "Manufacturer", Build.MANUFACTURER);
-        appendLine(sb, "Brand", Build.BRAND);
-        appendLine(sb, "Model", Build.MODEL);
-        appendLine(sb, "Product/device", Build.PRODUCT + "/" + Build.DEVICE);
-        appendLine(sb, "Android", Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
-        appendLine(sb, "Security patch", getSecurityPatch());
-        appendLine(sb, "Build ID", Build.ID);
-        appendLine(sb, "Incremental", Build.VERSION.INCREMENTAL);
-        appendLine(sb, "ABIs", Arrays.toString(Build.SUPPORTED_ABIS));
-        appendLine(sb, "LineageOS", SystemProperties.get("ro.lineage.version", UNKNOWN));
-        appendLine(sb, "One UI", SystemProperties.get("ro.build.version.oneui", UNKNOWN));
-        appendLine(sb, "MIUI/HyperOS", firstKnown(
-                SystemProperties.get("ro.mi.os.version.name", ""),
-                SystemProperties.get("ro.miui.ui.version.name", "")));
-        sb.append('\n');
-
-        sb.append("Privilege state").append('\n');
-        sb.append("---------------").append('\n');
-        appendLine(sb, "Configured mode", Ops.getMode());
-        appendLine(sb, "Inferred mode", Ops.getInferredMode(context).toString());
-        appendLine(sb, "Working UID", REDACTED);
-        appendLine(sb, "App UID", REDACTED);
-        appendLine(sb, "Remote server alive", String.valueOf(LocalServer.alive(context)));
-        appendLine(sb, "Remote services alive", String.valueOf(LocalServices.alive()));
-        appendRootManager(context, sb);
-        appendLine(sb, "Shizuku manager", emptyToUnknown(ShizukuBridge.getInstalledVersionName(context)));
-        appendLine(sb, "Shizuku binder alive", String.valueOf(ShizukuBridge.isBinderAlive()));
-        appendLine(sb, "Shizuku API", String.valueOf(ShizukuBridge.getVersionOrZero()));
-        appendLine(sb, "Shizuku permission", String.valueOf(ShizukuBridge.hasPermission()));
-        appendLine(sb, "Shizuku service UID", REDACTED);
-        appendLine(sb, "Battery optimization exempt",
-                SelfBatteryOptimization.isSupported() ? String.valueOf(SelfBatteryOptimization.isExempt(context)) : "unsupported");
-        appendLine(sb, "Last LocalServer bootstrap signature",
-                scrubForPublicIssue(emptyToUnknown(LocalServer.getLastBootstrapSignature())));
-        sb.append('\n');
-
-        sb.append("Feature flags").append('\n');
-        sb.append("-------------").append('\n');
-        appendLine(sb, "Raw flags", "0x" + Integer.toHexString(AppPref.getInt(AppPref.PrefKey.PREF_ENABLED_FEATURES_INT)));
-        appendLine(sb, "Optional network features available",
-                String.valueOf(FeatureController.areOptionalNetworkFeaturesAvailable()));
-        appendLine(sb, "Internet", enabled(FeatureController.isInternetEnabled()));
-        appendLine(sb, "VirusTotal", enabled(FeatureController.isVirusTotalEnabled()));
-        appendLine(sb, "Installer", enabled(FeatureController.isInstallerEnabled()));
-        appendLine(sb, "Scanner", enabled(FeatureController.isScannerEnabled()));
-        appendLine(sb, "Log viewer", enabled(FeatureController.isLogViewerEnabled()));
-        appendLine(sb, "Usage access", enabled(FeatureController.isUsageAccessEnabled()));
-        appendLine(sb, "Terminal", enabled(FeatureController.isTerminalEnabled()));
-        sb.append('\n');
-
-        sb.append("Local crash sink").append('\n');
-        sb.append("----------------").append('\n');
-        appendLine(sb, "Enabled", String.valueOf(Prefs.Privacy.isLocalCrashSinkEnabled()));
-        sb.append(LocalCrashSink.buildSupportSummary(context));
-        sb.append('\n');
-
-        sb.append("Scrubbed logcat tail").append('\n');
-        sb.append("--------------------").append('\n');
-        sb.append(scrubbedLogcatTail);
-        if (!scrubbedLogcatTail.endsWith("\n")) {
+        if (sections.includeDevice) {
+            sb.append("Device").append('\n');
+            sb.append("------").append('\n');
+            appendLine(sb, "Manufacturer", Build.MANUFACTURER);
+            appendLine(sb, "Brand", Build.BRAND);
+            appendLine(sb, "Model", Build.MODEL);
+            appendLine(sb, "Product/device", Build.PRODUCT + "/" + Build.DEVICE);
+            appendLine(sb, "Android", Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+            appendLine(sb, "Security patch", getSecurityPatch());
+            appendLine(sb, "Build ID", Build.ID);
+            appendLine(sb, "Incremental", Build.VERSION.INCREMENTAL);
+            appendLine(sb, "ABIs", Arrays.toString(Build.SUPPORTED_ABIS));
+            appendLine(sb, "LineageOS", SystemProperties.get("ro.lineage.version", UNKNOWN));
+            appendLine(sb, "One UI", SystemProperties.get("ro.build.version.oneui", UNKNOWN));
+            appendLine(sb, "MIUI/HyperOS", firstKnown(
+                    SystemProperties.get("ro.mi.os.version.name", ""),
+                    SystemProperties.get("ro.miui.ui.version.name", "")));
             sb.append('\n');
+        }
+
+        if (sections.includePrivilegeState) {
+            sb.append("Privilege state").append('\n');
+            sb.append("---------------").append('\n');
+            appendLine(sb, "Configured mode", Ops.getMode());
+            appendLine(sb, "Inferred mode", Ops.getInferredMode(context).toString());
+            appendLine(sb, "Working UID", REDACTED);
+            appendLine(sb, "App UID", REDACTED);
+            appendLine(sb, "Remote server alive", String.valueOf(LocalServer.alive(context)));
+            appendLine(sb, "Remote services alive", String.valueOf(LocalServices.alive()));
+            appendRootManager(context, sb);
+            appendLine(sb, "Shizuku manager", emptyToUnknown(ShizukuBridge.getInstalledVersionName(context)));
+            appendLine(sb, "Shizuku binder alive", String.valueOf(ShizukuBridge.isBinderAlive()));
+            appendLine(sb, "Shizuku API", String.valueOf(ShizukuBridge.getVersionOrZero()));
+            appendLine(sb, "Shizuku permission", String.valueOf(ShizukuBridge.hasPermission()));
+            appendLine(sb, "Shizuku service UID", REDACTED);
+            appendLine(sb, "Battery optimization exempt",
+                    SelfBatteryOptimization.isSupported() ? String.valueOf(SelfBatteryOptimization.isExempt(context)) : "unsupported");
+            appendLine(sb, "Last LocalServer bootstrap signature",
+                    scrubForPublicIssue(emptyToUnknown(LocalServer.getLastBootstrapSignature())));
+            sb.append('\n');
+        }
+
+        if (sections.includeFeatureFlags) {
+            sb.append("Feature flags").append('\n');
+            sb.append("-------------").append('\n');
+            appendLine(sb, "Raw flags", "0x" + Integer.toHexString(AppPref.getInt(AppPref.PrefKey.PREF_ENABLED_FEATURES_INT)));
+            appendLine(sb, "Optional network features available",
+                    String.valueOf(FeatureController.areOptionalNetworkFeaturesAvailable()));
+            appendLine(sb, "Internet", enabled(FeatureController.isInternetEnabled()));
+            appendLine(sb, "VirusTotal", enabled(FeatureController.isVirusTotalEnabled()));
+            appendLine(sb, "Installer", enabled(FeatureController.isInstallerEnabled()));
+            appendLine(sb, "Scanner", enabled(FeatureController.isScannerEnabled()));
+            appendLine(sb, "Log viewer", enabled(FeatureController.isLogViewerEnabled()));
+            appendLine(sb, "Usage access", enabled(FeatureController.isUsageAccessEnabled()));
+            appendLine(sb, "Terminal", enabled(FeatureController.isTerminalEnabled()));
+            sb.append('\n');
+        }
+
+        if (sections.includeCrashSink) {
+            sb.append("Local crash sink").append('\n');
+            sb.append("----------------").append('\n');
+            appendLine(sb, "Enabled", String.valueOf(Prefs.Privacy.isLocalCrashSinkEnabled()));
+            sb.append(LocalCrashSink.buildSupportSummary(context));
+            sb.append('\n');
+        }
+
+        if (sections.includeLogcat && scrubbedLogcatTail != null) {
+            sb.append("Scrubbed logcat tail").append('\n');
+            sb.append("--------------------").append('\n');
+            sb.append(scrubbedLogcatTail);
+            if (!scrubbedLogcatTail.endsWith("\n")) {
+                sb.append('\n');
+            }
         }
         return sb.toString();
     }

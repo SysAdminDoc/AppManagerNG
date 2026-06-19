@@ -2756,6 +2756,14 @@
     <string name="no_apps_to_handle">No app available to handle this action.</string>
     <string name="support_info_bundle_preparing">Collecting scrubbed support info...</string>
     <string name="support_info_bundle_failed">Failed to create support info.</string>
+    <string name="support_preview_title">Support bundle sections</string>
+    <string name="support_preview_message">Select which sections to include. Sensitive data is redacted automatically.</string>
+    <string name="support_section_device">Device info</string>
+    <string name="support_section_privilege">Privilege state</string>
+    <string name="support_section_features">Feature flags</string>
+    <string name="support_section_crash_sink">Crash sink</string>
+    <string name="support_section_logcat">Logcat tail</string>
+    <string name="share">Share</string>
     <string name="pref_battery_optimization">Battery optimization</string>
     <string name="pref_battery_optimization_msg">Some scheduled operations (backups, observers, freeze rules) can be paused by Android\'s power-saving heuristics. Tap to manage AppManagerNG\'s exemption.</string>
     <string name="pref_battery_optimization_state_exempt">Exempt — power-saving will not pause AppManagerNG.</string>
