@@ -52,6 +52,9 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle', '**/versions.gradle', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
+      - name: Verify release consistency
+        run: bash scripts/verify-release-consistency.sh
+
       - name: Extract tag version
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
