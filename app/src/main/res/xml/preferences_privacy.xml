@@ -61,6 +61,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="network_transparency_ledger"
+        app:title="@string/pref_network_transparency"
+        app:summary="@string/pref_network_transparency_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="auth_manager"
         app:title="@string/auth_manager_title"
         app:iconSpaceReserved="false" />

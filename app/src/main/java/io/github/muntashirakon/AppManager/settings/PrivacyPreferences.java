@@ -200,6 +200,19 @@ public class PrivacyPreferences extends PreferenceFragment {
             updateTrackerDatabaseFreshnessPreference(trackerDatabaseFreshness, FeatureController.isInternetEnabled());
             return true;
         });
+        // Network transparency ledger
+        Preference networkLedger = requirePreference("network_transparency_ledger");
+        networkLedger.setVisible(optionalNetworkFeaturesAvailable);
+        networkLedger.setOnPreferenceClickListener(preference -> {
+            List<NetworkTransparencyLedger.Entry> entries = NetworkTransparencyLedger.buildEntries();
+            String text = NetworkTransparencyLedger.formatForDisplay(requireContext(), entries);
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.pref_network_transparency)
+                    .setMessage(text)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+            return true;
+        });
         // Authorization Management
         requirePreference("auth_manager").setOnPreferenceClickListener(preference -> {
             startActivity(new Intent(requireContext(), AuthManagerActivity.class));
