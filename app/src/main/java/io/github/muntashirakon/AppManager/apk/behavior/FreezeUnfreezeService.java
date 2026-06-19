@@ -42,6 +42,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.DummyActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.ScreenLockChecker;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
@@ -76,7 +77,7 @@ public class FreezeUnfreezeService extends Service {
                     mScreenLockChecker.checkLock();
                 });
             } catch (Throwable th) {
-                th.printStackTrace();
+                Log.e(TAG, "Could not schedule freeze/unfreeze lock check.", th);
             }
         }
     };
@@ -185,7 +186,7 @@ public class FreezeUnfreezeService extends Service {
                     shortcutInfo.setIcon(getDimmedBitmap(icon));
                     updateShortcuts(shortcutInfo);
                 } catch (RemoteException | PackageManager.NameNotFoundException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Could not freeze %s after lock.", e, shortcutInfo.packageName);
                 }
             }
             if (notificationTag != null) {

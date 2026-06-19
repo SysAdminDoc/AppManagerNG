@@ -11,6 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   localized recovery copy while keeping diagnostics in the app log.
 - Moved App Details permission, app-op, component, and signature failure paths
   from stderr stack traces into structured app logging, with contract coverage.
+- Hardened permission-inspector helper and freeze/unfreeze shortcut failures so
+  they log scoped diagnostics, use stable recovery copy, and close failed
+  transparent flows instead of hanging.
 
 ### Changed — Premium polish pass (2026-06-19)
 

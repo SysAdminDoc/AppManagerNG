@@ -836,6 +836,7 @@
         <item quantity="one">Unfroze %1$d app</item>
         <item quantity="other">Unfroze %1$d apps</item>
     </plurals>
+    <string name="freeze_unfreeze_failed">Could not finish freeze or unfreeze. Check the app state and active privilege mode, then try again.</string>
     <plurals name="alert_succeeded_archive_request">
         <item quantity="one">Requested archive for %1$d app</item>
         <item quantity="other">Requested archive for %1$d apps</item>

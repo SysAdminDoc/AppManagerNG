@@ -19,6 +19,7 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.permission.DevelopmentPermission;
 import io.github.muntashirakon.AppManager.permission.PermUtils;
 import io.github.muntashirakon.AppManager.permission.Permission;
@@ -35,6 +36,8 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
  * does without needing the full app-details state machine.
  */
 public final class PermissionToggleHelper {
+    private static final String TAG = PermissionToggleHelper.class.getSimpleName();
+
     private PermissionToggleHelper() {}
 
     public static final class State {
@@ -121,7 +124,7 @@ public final class PermissionToggleHelper {
             return new State(isGranted, isEffectivelyGranted(permission), modifiable, permission, packageInfo,
                     permissionInfo);
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not load permission %s for %s/%d.", th, permissionName, packageName, userId);
             return null;
         }
     }
@@ -155,7 +158,7 @@ public final class PermissionToggleHelper {
             persistRule(packageName, userId, permissionName, s.permission);
             return !s.granted;
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not toggle permission %s for %s/%d.", th, permissionName, packageName, userId);
             return null;
         }
     }
@@ -172,7 +175,7 @@ public final class PermissionToggleHelper {
             persistRule(packageName, userId, permissionName, s.permission);
             return true;
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not revoke permission %s for %s/%d.", th, permissionName, packageName, userId);
             return false;
         }
     }
@@ -189,7 +192,7 @@ public final class PermissionToggleHelper {
             persistRule(packageName, userId, permissionName, s.permission);
             return true;
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not grant permission %s for %s/%d.", th, permissionName, packageName, userId);
             return false;
         }
     }
@@ -208,7 +211,7 @@ public final class PermissionToggleHelper {
         try (ComponentsBlocker cb = ComponentsBlocker.getInstance(packageName, userId, false)) {
             return cb.getPermissionReference(permissionName);
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not load permission reference %s for %s/%d.", th, permissionName, packageName, userId);
             return null;
         }
     }
@@ -221,7 +224,7 @@ public final class PermissionToggleHelper {
             cb.commit();
             return true;
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not pin permission reference %s for %s/%d.", th, permissionName, packageName, userId);
             return false;
         }
     }
@@ -232,7 +235,7 @@ public final class PermissionToggleHelper {
             cb.setPermission(permissionName, permission.isGranted(), permission.getFlags());
             cb.commit();
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, "Could not persist permission rule %s for %s/%d.", th, permissionName, packageName, userId);
         }
     }
 }

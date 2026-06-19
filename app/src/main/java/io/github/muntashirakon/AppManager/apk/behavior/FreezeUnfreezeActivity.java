@@ -35,6 +35,7 @@ import java.util.Queue;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
@@ -43,6 +44,8 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class FreezeUnfreezeActivity extends BaseActivity {
+    private static final String TAG = FreezeUnfreezeActivity.class.getSimpleName();
+
     private FreezeUnfreezeViewModel mViewModel;
 
     @Override
@@ -85,6 +88,7 @@ public class FreezeUnfreezeActivity extends BaseActivity {
             }
             mViewModel.checkNextFrozen();
         });
+        mViewModel.mFailureLiveData.observe(this, stringRes -> UIUtils.displayLongToast(stringRes));
         mViewModel.mOpenAppOrFreeze.observe(this, shortcutInfo -> new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.freeze_unfreeze)
                 .setMessage(R.string.choose_what_to_do)
@@ -122,6 +126,7 @@ public class FreezeUnfreezeActivity extends BaseActivity {
 
     public static class FreezeUnfreezeViewModel extends AndroidViewModel {
         private final MutableLiveData<Pair<FreezeUnfreezeShortcutInfo, Boolean>> mIsFrozenLiveData = new MutableLiveData<>();
+        private final MutableLiveData<Integer> mFailureLiveData = new MutableLiveData<>();
         private final MutableLiveData<FreezeUnfreezeShortcutInfo> mOpenAppOrFreeze = new MutableLiveData<>();
         private final Queue<FreezeUnfreezeShortcutInfo> mPendingShortcuts = new LinkedList<>();
 
@@ -169,7 +174,9 @@ public class FreezeUnfreezeActivity extends BaseActivity {
                     }
                     mIsFrozenLiveData.postValue(new Pair<>(shortcutInfo, !isFrozen));
                 } catch (RemoteException | PackageManager.NameNotFoundException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Could not change frozen state for %s.", e, shortcutInfo.packageName);
+                    mFailureLiveData.postValue(R.string.freeze_unfreeze_failed);
+                    mIsFrozenLiveData.postValue(null);
                 }
             });
         }
@@ -182,7 +189,9 @@ public class FreezeUnfreezeActivity extends BaseActivity {
                     FreezeUtils.freeze(shortcutInfo.packageName, shortcutInfo.userId, freezeType);
                     mIsFrozenLiveData.postValue(new Pair<>(shortcutInfo, true));
                 } catch (RemoteException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Could not finish freezing %s.", e, shortcutInfo.packageName);
+                    mFailureLiveData.postValue(R.string.freeze_unfreeze_failed);
+                    mIsFrozenLiveData.postValue(null);
                 }
             });
         }

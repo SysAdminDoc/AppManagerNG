@@ -22,6 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -29,6 +30,8 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
 
 public final class FreezeUnfreeze {
+    private static final String TAG = FreezeUnfreeze.class.getSimpleName();
+
     @IntDef(flag = true, value = {
             FLAG_ON_UNFREEZE_OPEN_APP,
             FLAG_ON_OPEN_APP_NO_TASK,
@@ -156,8 +159,9 @@ public final class FreezeUnfreeze {
                         .setClassName(activity, FreezeUnfreezeService.class.getName());
                 ContextCompat.startForegroundService(activity, service);
             }
-        } catch (Throwable th) {
-            UIUtils.displayLongToast(th.getLocalizedMessage());
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Could not launch app during freeze/unfreeze shortcut for %s.", e, shortcutInfo.packageName);
+            UIUtils.displayLongToast(R.string.freeze_unfreeze_failed);
         }
     }
 }
