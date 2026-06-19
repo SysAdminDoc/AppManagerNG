@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.crypto.auth;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -59,10 +60,10 @@ public class DestructiveConfirmationContractTest {
     }
 
     @Test
-    public void terminalLaunchGatedByAuthGate() throws Exception {
+    public void terminalLaunchUsesAlwaysAuthGate() throws Exception {
         String source = readSource("app/src/main/java/io/github/muntashirakon/AppManager/misc/LabsActivity.java");
-        assertTrue("Terminal launch in LabsActivity must call ActionAuthGate.authenticate",
-                source.contains("ActionAuthGate.authenticate"));
+        assertTrue("Terminal launch in LabsActivity must use authenticateAlways (privileged route hardening)",
+                source.contains("ActionAuthGate.authenticateAlways"));
     }
 
     @Test
@@ -152,6 +153,18 @@ public class DestructiveConfirmationContractTest {
                 source.contains("Prefs.Privacy.isActionAuthGateEnabled()"));
         assertTrue("ActionAuthGate must run the callback immediately when disabled",
                 source.contains("onAuthenticated.run()"));
+    }
+
+    @Test
+    public void authenticateAlwaysDoesNotCheckPreference() throws Exception {
+        String source = readSource("app/src/main/java/io/github/muntashirakon/AppManager/crypto/auth/ActionAuthGate.java");
+        int alwaysMethodStart = source.indexOf("public static void authenticateAlways(");
+        assertTrue("authenticateAlways method must exist", alwaysMethodStart >= 0);
+        int nextMethodStart = source.indexOf("private static void doAuthenticate(", alwaysMethodStart);
+        assertTrue("doAuthenticate method must exist after authenticateAlways", nextMethodStart > alwaysMethodStart);
+        String alwaysMethodBody = source.substring(alwaysMethodStart, nextMethodStart);
+        assertFalse("authenticateAlways must NOT check isActionAuthGateEnabled",
+                alwaysMethodBody.contains("isActionAuthGateEnabled"));
     }
 
     private String readSource(String relativePath) throws IOException {

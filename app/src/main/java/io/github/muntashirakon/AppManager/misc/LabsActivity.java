@@ -53,7 +53,7 @@ public class LabsActivity extends BaseActivity {
                 });
         if (FeatureController.isTerminalEnabled()) {
             addAction(this, flowLayout, R.string.title_terminal_emulator, R.drawable.ic_frost_termux)
-                    .setOnClickListener(v -> ActionAuthGate.authenticate(this,
+                    .setOnClickListener(v -> ActionAuthGate.authenticateAlways(this,
                             R.string.authenticate_to_open_terminal, () -> {
                                 Intent intent = new Intent(this, TermActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

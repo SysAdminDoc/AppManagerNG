@@ -31,6 +31,21 @@ public final class ActionAuthGate {
             onAuthenticated.run();
             return;
         }
+        doAuthenticate(activity, titleRes, onAuthenticated);
+    }
+
+    /**
+     * Always requires device credential regardless of the action-auth preference.
+     * Use for privileged surfaces (root/ADB/Shizuku terminal) that must never be
+     * silently reachable.
+     */
+    public static void authenticateAlways(@NonNull FragmentActivity activity, @StringRes int titleRes,
+                                          @NonNull Runnable onAuthenticated) {
+        doAuthenticate(activity, titleRes, onAuthenticated);
+    }
+
+    private static void doAuthenticate(@NonNull FragmentActivity activity, @StringRes int titleRes,
+                                       @NonNull Runnable onAuthenticated) {
         if (!canAuthenticate(activity)) {
             UIUtils.displayLongToast(R.string.screen_lock_not_enabled);
             return;
