@@ -826,7 +826,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 permissionItem.revokePermission(packageInfo, mAppOpsManager);
             }
         } catch (RemoteException | PermissionException e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
             recordPermissionHistory(permissionItem, grant, false, e);
             return false;
         }
@@ -882,7 +882,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 permissionItem.revokePermission(packageInfo, mAppOpsManager);
             }
         } catch (RemoteException | PermissionException e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
             recordPermissionHistory(permissionItem, grant, false, e);
             return false;
         }
@@ -918,7 +918,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     revokedPermissions.add(permissionItem);
                     recordPermissionHistory(permissionItem, false, true, null);
                 } catch (RemoteException | PermissionException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, e);
                     recordPermissionHistory(permissionItem, false, false, e);
                     isSuccessful = false;
                 }
@@ -964,7 +964,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 }
             });
         } catch (PermissionException e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
             recordAppOpHistory(op, mode, false, e);
             return false;
         }
@@ -983,7 +983,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
                 recordAppOpHistory(op, mode, true, null);
             } catch (PermissionException e) {
-                e.printStackTrace();
+                Log.e(TAG, e);
                 recordAppOpHistory(op, mode, false, e);
                 isSuccessful = false;
             }
@@ -1029,7 +1029,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             });
             return true;
         } catch (PermissionException e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
             recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), false, e);
             return false;
         }
@@ -1057,7 +1057,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             });
             return true;
         } catch (PermissionException e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
             recordAppOpHistory(appOpItem.getOp(), mode, false, e);
             return false;
         }
@@ -1118,7 +1118,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             });
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
         }
         return false;
     }
@@ -1148,7 +1148,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                                 opItems.add(mAppOpItem.getOp());
                                 mAppOpItem.invalidate(mAppOpsManager, packageInfo);
                             } catch (PermissionException e) {
-                                e.printStackTrace();
+                                Log.e(TAG, e);
                                 isSuccessful = false;
                                 break;
                             }
@@ -1360,7 +1360,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             try {
                 while (mWaitForBlocker) mBlockerLocker.wait();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Log.e(TAG, e);
                 Thread.currentThread().interrupt();
             }
         }
@@ -1917,7 +1917,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mAppOpItems.add(appDetailsItem);
                 }
             } catch (Throwable e) {
-                e.printStackTrace();
+                Log.e(TAG, e);
             }
         }
         filterAndSortItemsInternal(AppDetailsFragment.APP_OPS);
@@ -2020,7 +2020,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             appDetailsItem.setReference(getPermissionReference(permissionName));
             return appDetailsItem;
         } catch (Throwable th) {
-            th.printStackTrace();
+            Log.e(TAG, th);
             return null;
         }
     }
@@ -2084,7 +2084,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             mPermissionItems.add(appDetailsItem);
                             visitedPerms.add(permissionInfo.name);
                         } catch (RemoteException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, e);
                         }
                     }
                 }
@@ -2104,7 +2104,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             mPermissionItems.add(appDetailsItem);
                             visitedPerms.add(permissionInfo.name);
                         } catch (RemoteException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, e);
                         }
                     }
                 }
@@ -2124,7 +2124,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             mPermissionItems.add(appDetailsItem);
                             visitedPerms.add(permissionInfo.name);
                         } catch (RemoteException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, e);
                         }
                     }
                     if (providerInfo.writePermission != null && !visitedPerms.contains(providerInfo.writePermission)) {
@@ -2140,7 +2140,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             mPermissionItems.add(appDetailsItem);
                             visitedPerms.add(permissionInfo.name);
                         } catch (RemoteException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, e);
                         }
                     }
                 }
@@ -2160,7 +2160,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             mPermissionItems.add(appDetailsItem);
                             visitedPerms.add(permissionInfo.name);
                         } catch (RemoteException e) {
-                            e.printStackTrace();
+                            Log.e(TAG, e);
                         }
                     }
                 }
@@ -2280,7 +2280,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e);
         }
         mSignatures.postValue(appDetailsItems);
     }

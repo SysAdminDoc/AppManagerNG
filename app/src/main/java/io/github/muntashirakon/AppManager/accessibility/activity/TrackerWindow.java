@@ -40,6 +40,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
 import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
@@ -49,6 +50,8 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.widget.TextInputTextView;
 
 public class TrackerWindow implements View.OnTouchListener {
+    private static final String TAG = TrackerWindow.class.getSimpleName();
+
     public final WindowManager mWindowManager;
     private final WindowManager.LayoutParams mWindowLayoutParams;
     private final View mView;
@@ -140,7 +143,8 @@ public class TrackerWindow implements View.OnTouchListener {
             try {
                 context.startActivity(appInfoIntent);
             } catch (Exception th) {
-                UIUtils.displayLongToast("Error: " + th.getMessage());
+                Log.e(TAG, "Could not open tracked app details for %s.", th, packageName);
+                UIUtils.displayLongToast(R.string.tracker_window_app_details_unavailable);
             }
         });
         mView.findViewById(R.id.mini).setOnClickListener(v -> iconify());
@@ -348,7 +352,8 @@ public class TrackerWindow implements View.OnTouchListener {
             mWindowManager.removeView(mView);
         } catch (Exception ignore) {
         }
-        UIUtils.displayLongToast("Tracker overlay disabled: " + error.getMessage());
+        Log.e(TAG, "Tracker overlay disabled after repeated WindowManager failures.", error);
+        UIUtils.displayLongToast(R.string.tracker_window_disabled_after_errors);
     }
 
     private void copyText(CharSequence label, CharSequence content) {

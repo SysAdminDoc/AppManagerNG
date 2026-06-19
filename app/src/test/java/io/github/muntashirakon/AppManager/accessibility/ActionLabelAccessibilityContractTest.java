@@ -45,6 +45,17 @@ public class ActionLabelAccessibilityContractTest {
                 source.contains("R.string.tracker_window_pause"));
         assertTrue("TrackerWindow should update the button content description",
                 source.contains("mPlayPauseButton.setContentDescription"));
+        assertFalse("TrackerWindow app-info failures should not expose raw exception toasts",
+                source.contains("\"Error: \" + th.getMessage()"));
+        assertFalse("TrackerWindow overlay failures should not expose raw exception toasts",
+                source.contains("\"Tracker overlay disabled: \""));
+        assertTrue("TrackerWindow app-info failures should use localized recovery copy",
+                source.contains("R.string.tracker_window_app_details_unavailable"));
+        assertTrue("TrackerWindow overlay failures should use localized recovery copy",
+                source.contains("R.string.tracker_window_disabled_after_errors"));
+        assertTrue("TrackerWindow failures should keep diagnostics in logs",
+                source.contains("Log.e(TAG, \"Could not open tracked app details for %s.\", th, packageName);")
+                        && source.contains("Log.e(TAG, \"Tracker overlay disabled after repeated WindowManager failures.\", error);"));
     }
 
     @Test
