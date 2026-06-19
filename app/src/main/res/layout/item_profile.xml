@@ -24,7 +24,7 @@
             android:layout_height="@dimen/main_list_icon_column_width"
             android:layout_gravity="top"
             android:layout_marginEnd="@dimen/main_list_icon_margin_end"
-            android:background="@drawable/main_status_background"
+            android:background="@drawable/main_icon_frame_background"
             android:importantForAccessibility="no">
 
             <androidx.appcompat.widget.AppCompatImageView
@@ -60,7 +60,7 @@
                 android:id="@android:id/summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/padding_very_small"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:textAppearance="?attr/textAppearanceListItemSecondary"
@@ -70,7 +70,7 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/padding_small"
+                android:layout_marginTop="@dimen/premium_space_8"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -81,11 +81,11 @@
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:minHeight="@dimen/main_list_badge_min_height"
-                    android:minWidth="@dimen/main_list_badge_min_width"
-                    android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
-                    android:paddingVertical="@dimen/main_list_badge_padding_vertical"
-                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:minWidth="@dimen/premium_badge_min_width"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:ignore="SmallSp"
                     tools:text="@string/apps" />
@@ -94,16 +94,16 @@
                     android:id="@+id/profile_state"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/padding_very_small"
+                    android:layout_marginStart="@dimen/premium_space_4"
                     android:background="@drawable/badge_background"
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:minHeight="@dimen/main_list_badge_min_height"
-                    android:minWidth="@dimen/main_list_badge_min_width"
-                    android:paddingHorizontal="@dimen/main_list_badge_padding_horizontal"
-                    android:paddingVertical="@dimen/main_list_badge_padding_vertical"
-                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:minHeight="@dimen/premium_badge_min_height"
+                    android:minWidth="@dimen/premium_badge_min_width"
+                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
+                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:ignore="SmallSp"
                     tools:text="State: On" />
@@ -116,7 +116,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="@dimen/padding_small"
+            android:layout_marginStart="@dimen/premium_space_8"
             android:gravity="center"
             android:orientation="horizontal">
 
@@ -133,7 +133,7 @@
                 style="@style/Widget.AppTheme.Button.IconButton"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_marginStart="@dimen/padding_very_small"
+                android:layout_marginStart="@dimen/premium_space_4"
                 app:icon="@drawable/ic_menu"
                 app:iconSize="20dp" />
 

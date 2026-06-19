@@ -81,8 +81,8 @@
     <string name="main_filter_install_date_from">After <xliff:g id="date" example="May 1, 2026">%1$s</xliff:g></string>
     <string name="main_filter_install_date_to">Before <xliff:g id="date" example="May 18, 2026">%1$s</xliff:g></string>
     <plurals name="main_active_filters_clear">
-        <item quantity="one">%d filter active - clear</item>
-        <item quantity="other">%d filters active - clear</item>
+        <item quantity="one">%d filter active · clear</item>
+        <item quantity="other">%d filters active · clear</item>
     </plurals>
     <string name="tag_dangerous_perms"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions</string>
     <string name="perms_cta_title"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
@@ -134,6 +134,7 @@
     <string name="finder_matched_backups">Backups: <xliff:g id="backups" example="nightly">%1$s</xliff:g></string>
     <string name="finder_matched_signatures">Signatures: <xliff:g id="signatures" example="CN=Example">%1$s</xliff:g></string>
     <string name="finder_more_matches">+%1$d more</string>
+    <string name="finder_row_content_description"><xliff:g id="app_label" example="AppManagerNG">%1$s</xliff:g>, package <xliff:g id="package_name" example="io.github.sysadmindoc.AppManagerNG">%2$s</xliff:g>. <xliff:g id="state" example="User 0: enabled">%3$s</xliff:g>. Matches: <xliff:g id="matches" example="Permissions: android.permission.CAMERA">%4$s</xliff:g></string>
     <string name="main_list_open_app">Open <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="main_list_select_app">Select <xliff:g id="app_label" example="Settings">%1$s</xliff:g></string>
     <string name="select_visible">Select all visible</string>
@@ -1285,7 +1286,7 @@
     <string name="profile_apply_review_title">Review before applying</string>
     <string name="profile_apply_review_apps_summary">Review the saved app actions and choose the state to apply before continuing.</string>
     <string name="profile_apply_review_filters_summary">Review the saved filters and choose the state to apply to matching apps.</string>
-    <string name="profile_apply_review_meta">%1$s profile - default state %2$s</string>
+    <string name="profile_apply_review_meta">%1$s profile · default state %2$s</string>
     <string name="profile_apply_review_id">ID: %1$s</string>
     <string name="profile_apply_privilege_warning_title">Some profile actions need more privilege</string>
     <string name="profile_apply_privilege_warning_message">The current mode cannot run: %1$s. Apply the supported actions only, or cancel.</string>
@@ -2670,7 +2671,7 @@
     <string name="backup_dialog_summary_title">Backup review</string>
     <string name="backup_dialog_summary_base">Back up installed apps with the selected data types. Existing base backups are replaced only after confirmation.</string>
     <string name="backup_dialog_summary_named">Create named backups with the selected data types. Base backups remain untouched.</string>
-    <string name="backup_dialog_meta">%1$s - %2$s</string>
+    <string name="backup_dialog_meta">%1$s · %2$s</string>
     <plurals name="backup_dialog_installed_app_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> installed app</item>
         <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> installed apps</item>
@@ -2682,7 +2683,7 @@
     </plurals>
     <string name="restore_dialog_summary_title">Restore review</string>
     <string name="restore_dialog_summary_multiple">Restore base backups for selected apps. Existing app data may be replaced.</string>
-    <string name="restore_dialog_meta">%1$s - %2$s</string>
+    <string name="restore_dialog_meta">%1$s · %2$s</string>
     <plurals name="restore_dialog_restorable_app_count">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> restorable app</item>
         <item quantity="other"><xliff:g id="count" example="5">%1$d</xliff:g> restorable apps</item>

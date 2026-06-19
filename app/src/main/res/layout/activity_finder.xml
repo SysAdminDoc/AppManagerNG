@@ -70,9 +70,11 @@
             android:clipToPadding="false"
             android:fitsSystemWindows="true"
             android:focusable="false"
+            android:paddingTop="@dimen/premium_space_8"
+            android:paddingBottom="@dimen/premium_space_32"
             android:scrollbars="none"
             app:fastScrollerEnabled="true"
-            tools:listitem="@layout/item_main" />
+            tools:listitem="@layout/item_finder" />
 
         <include
             android:id="@android:id/empty"

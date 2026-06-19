@@ -35,9 +35,9 @@
             style="@style/Widget.AppTheme.V2.Card.Header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_medium"
-            android:layout_marginTop="@dimen/padding_very_small"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginTop="@dimen/premium_space_8"
+            android:layout_marginBottom="@dimen/premium_space_8"
             app:contentPadding="@dimen/premium_space_16">
 
             <LinearLayout
@@ -70,38 +70,46 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/perm_apps_filter_chips"
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_medium"
-            android:layout_marginBottom="@dimen/padding_very_small"
-            app:singleSelection="true"
-            app:selectionRequired="true">
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_4"
+            android:scrollbars="none">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_perm_filter_all"
-                style="@style/Widget.Material3.Chip.Filter"
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/perm_apps_filter_chips"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/perm_apps_filter_all" />
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_perm_filter_user"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/perm_apps_filter_user" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_perm_filter_all"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/perm_apps_filter_all" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_perm_filter_granted"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/perm_apps_filter_granted" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_perm_filter_user"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/perm_apps_filter_user" />
 
-        </com.google.android.material.chip.ChipGroup>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_perm_filter_granted"
+                    style="@style/Widget.AppTheme.Chip.MainFilter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/perm_apps_filter_granted" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
 
     </io.github.muntashirakon.widget.AppBarLayout>
 
