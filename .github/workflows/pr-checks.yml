@@ -96,6 +96,15 @@ jobs:
       - name: Verify release consistency
         run: bash scripts/verify-release-consistency.sh
 
+  dependency-floor:
+    name: Dependency Floor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify dependency floor
+        run: bash scripts/verify-dependency-floor.sh
+
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
