@@ -60,16 +60,22 @@ public class PrivacyPreferences extends PreferenceFragment {
             new ActivityResultContracts.OpenDocument(),
             uri -> {
                 if (uri == null) return;
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.snapshot_import_confirm_title)
-                        .setMessage(R.string.snapshot_import_confirm_message)
-                        .setPositiveButton(R.string.action_continue, (d, w) -> {
-                            Context appContext = requireContext().getApplicationContext();
-                            Toast.makeText(appContext, R.string.snapshot_import_in_progress, Toast.LENGTH_SHORT).show();
-                            ThreadUtils.postOnBackgroundThread(() -> importSnapshot(appContext, uri));
-                        })
-                        .setNegativeButton(R.string.cancel, null)
-                        .show();
+                Context appContext = requireContext().getApplicationContext();
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    try (InputStream in = appContext.getContentResolver().openInputStream(uri)) {
+                        if (in == null) {
+                            ThreadUtils.postOnMainThread(() ->
+                                    UIUtils.displayLongToast(R.string.snapshot_import_failed, "Cannot open file"));
+                            return;
+                        }
+                        SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(in);
+                        ThreadUtils.postOnMainThread(() -> showImportPreview(manifest, uri));
+                    } catch (Exception e) {
+                        String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                        ThreadUtils.postOnMainThread(() ->
+                                UIUtils.displayLongToast(R.string.snapshot_import_failed, msg));
+                    }
+                });
             });
 
     @Override
@@ -339,14 +345,74 @@ public class PrivacyPreferences extends PreferenceFragment {
         });
     }
 
-    private void importSnapshot(@NonNull Context appContext, @NonNull Uri source) {
+    private void showImportPreview(@NonNull SnapshotBundle.ManifestSummary manifest,
+                                   @NonNull Uri source) {
+        Context context = requireContext();
+        String[] sectionLabels = {
+                getString(R.string.snapshot_section_prefs, manifest.prefsCount),
+                getString(R.string.snapshot_section_profiles, manifest.profilesCount),
+                getString(R.string.snapshot_section_rules, manifest.rulesCount),
+                getString(R.string.snapshot_section_tags),
+                getString(R.string.snapshot_section_op_history, manifest.opHistoryCount)
+        };
+        boolean[] available = {
+                manifest.hasPrefs(), manifest.hasProfiles(), manifest.hasRules(),
+                manifest.hasTags(), manifest.hasOpHistory()
+        };
+        boolean[] checked = available.clone();
+
+        StringBuilder summary = new StringBuilder();
+        if (manifest.sourceVersionName != null) {
+            summary.append(getString(R.string.snapshot_preview_source,
+                    manifest.sourceVersionName, manifest.sourceVersionCode));
+        }
+        if (manifest.generatedAt > 0) {
+            if (summary.length() > 0) summary.append('\n');
+            summary.append(getString(R.string.snapshot_preview_date,
+                    new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+                            .format(new Date(manifest.generatedAt))));
+        }
+        summary.append('\n');
+        summary.append(getString(R.string.snapshot_preview_schema, manifest.schemaVersion));
+
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.snapshot_import_preview_title)
+                .setMessage(summary)
+                .setMultiChoiceItems(sectionLabels, checked, (dialog, which, isChecked) -> {
+                    if (!available[which]) {
+                        checked[which] = false;
+                        ((android.app.AlertDialog) dialog).getListView()
+                                .setItemChecked(which, false);
+                    } else {
+                        checked[which] = isChecked;
+                    }
+                })
+                .setPositiveButton(R.string.action_import, (d, w) -> {
+                    SnapshotBundle.ImportOptions options = new SnapshotBundle.ImportOptions();
+                    options.restorePrefs = checked[0];
+                    options.restoreProfiles = checked[1];
+                    options.restoreRules = checked[2];
+                    options.restoreTags = checked[3];
+                    options.restoreOpHistory = checked[4];
+                    Context appContext = context.getApplicationContext();
+                    Toast.makeText(appContext, R.string.snapshot_import_in_progress,
+                            Toast.LENGTH_SHORT).show();
+                    ThreadUtils.postOnBackgroundThread(
+                            () -> importSnapshot(appContext, source, options));
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void importSnapshot(@NonNull Context appContext, @NonNull Uri source,
+                                @NonNull SnapshotBundle.ImportOptions options) {
         SnapshotBundle.ImportResult result = null;
         String failureMessage = null;
         try (InputStream in = appContext.getContentResolver().openInputStream(source)) {
             if (in == null) {
                 failureMessage = "Cannot open input stream";
             } else {
-                result = SnapshotBundle.readFrom(appContext, in, new SnapshotBundle.ImportOptions());
+                result = SnapshotBundle.readFrom(appContext, in, options);
             }
         } catch (SnapshotImportException e) {
             failureMessage = e.getMessage();
