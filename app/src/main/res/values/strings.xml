@@ -3485,6 +3485,18 @@
     <string name="snapshot_section_tags">Tags</string>
     <string name="snapshot_section_op_history">Operation history (%1$d rows)</string>
     <string name="action_import">Import</string>
+    <string name="pref_network_transparency">Network transparency</string>
+    <string name="pref_network_transparency_summary">View what can talk to the network, endpoint details, and last fetch time.</string>
+    <string name="network_ledger_endpoint">Endpoint: %1$s</string>
+    <string name="network_ledger_payload">Payload: %1$s</string>
+    <string name="network_ledger_compile">Compile: %1$s</string>
+    <string name="network_ledger_toggle">Status: %1$s</string>
+    <string name="network_ledger_last_fetch">Last fetch: %1$s</string>
+    <string name="network_ledger_available">available</string>
+    <string name="network_ledger_compiled_out">compiled out (floss)</string>
+    <string name="network_ledger_never">never</string>
+    <string name="enabled">enabled</string>
+    <string name="disabled">disabled</string>
     <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
     <plurals name="profiles_external_import_done">
