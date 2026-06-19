@@ -84,4 +84,39 @@ public class SupportInfoBundleTest {
         assertEquals("'=cmd payload\nplain line",
                 SupportInfoBundle.formatBundleTextForPublicIssue("=cmd\tpayload\nplain\rline"));
     }
+
+    @Test
+    public void excludedSectionsAreAbsentFromOutput() {
+        android.content.Context ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext();
+        SupportInfoBundle.SectionOptions options = new SupportInfoBundle.SectionOptions();
+        options.includeDevice = false;
+        options.includePrivilegeState = false;
+        options.includeFeatureFlags = true;
+        options.includeCrashSink = false;
+        options.includeLogcat = false;
+
+        String text = SupportInfoBundle.buildText(ctx, "2026-06-19T00:00:00Z", null, options);
+
+        assertTrue("Header must always appear", text.contains("AppManagerNG support info"));
+        assertFalse("Device section must be excluded", text.contains("Device\n------"));
+        assertFalse("Privilege section must be excluded", text.contains("Privilege state"));
+        assertTrue("Feature flags section must be included", text.contains("Feature flags"));
+        assertFalse("Crash sink section must be excluded", text.contains("Local crash sink"));
+        assertFalse("Logcat section must be excluded", text.contains("Scrubbed logcat tail"));
+    }
+
+    @Test
+    public void allSectionsEnabledIncludesEverything() {
+        android.content.Context ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext();
+        SupportInfoBundle.SectionOptions options = new SupportInfoBundle.SectionOptions();
+
+        String text = SupportInfoBundle.buildText(ctx, "2026-06-19T00:00:00Z", "test logcat line", options);
+
+        assertTrue(text.contains("Device\n------"));
+        assertTrue(text.contains("Privilege state"));
+        assertTrue(text.contains("Feature flags"));
+        assertTrue(text.contains("Local crash sink"));
+        assertTrue(text.contains("Scrubbed logcat tail"));
+        assertTrue(text.contains("test logcat line"));
+    }
 }

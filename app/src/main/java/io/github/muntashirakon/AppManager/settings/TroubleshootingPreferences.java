@@ -160,13 +160,44 @@ public class TroubleshootingPreferences extends PreferenceFragment {
     private void composeSupportInfoBundle() {
         Context ctx = getContext();
         if (ctx == null) return;
+
+        String[] sectionLabels = {
+                getString(R.string.support_section_device),
+                getString(R.string.support_section_privilege),
+                getString(R.string.support_section_features),
+                getString(R.string.support_section_crash_sink),
+                getString(R.string.support_section_logcat)
+        };
+        boolean[] checked = {true, true, true, true, true};
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
+                .setTitle(R.string.support_preview_title)
+                .setMessage(R.string.support_preview_message)
+                .setMultiChoiceItems(sectionLabels, checked, (dialog, which, isChecked) ->
+                        checked[which] = isChecked)
+                .setPositiveButton(R.string.share, (d, w) -> {
+                    SupportInfoBundle.SectionOptions sections = new SupportInfoBundle.SectionOptions();
+                    sections.includeDevice = checked[0];
+                    sections.includePrivilegeState = checked[1];
+                    sections.includeFeatureFlags = checked[2];
+                    sections.includeCrashSink = checked[3];
+                    sections.includeLogcat = checked[4];
+                    doComposeSupportInfoBundle(sections);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void doComposeSupportInfoBundle(@NonNull SupportInfoBundle.SectionOptions sections) {
+        Context ctx = getContext();
+        if (ctx == null) return;
         Context appContext = ctx.getApplicationContext();
         mSupportInfoPref.setEnabled(false);
         mSupportInfoPref.setSummary(R.string.support_info_bundle_preparing);
         ThreadUtils.postOnBackgroundThread(() -> {
             Path bundlePath = null;
             try {
-                bundlePath = SupportInfoBundle.writeTextBundle(appContext);
+                bundlePath = SupportInfoBundle.writeTextBundle(appContext, null, sections);
             } catch (Exception ignored) {
             }
             Path finalBundlePath = bundlePath;
