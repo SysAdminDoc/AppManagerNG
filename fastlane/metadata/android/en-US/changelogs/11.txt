@@ -1,0 +1,7 @@
+Rootless Power release.
+
+- Component intent-action finder with cross-app filter and per-app search.
+- Tracker report rollup grouped by category with blurbs.
+- Code editor diff view for changes vs saved file.
+- Deep audit hardening across backup, installer, scanner, and terminal surfaces.
+- Premium V2 card and spacing polish across secondary screens.
