@@ -49,6 +49,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsAppOpItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsDefinedPermissionItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.self.pref.TipsPrefs;
@@ -69,6 +70,8 @@ import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
 public class AppDetailsPermissionsFragment extends AppDetailsFragment {
+    private static final String TAG = AppDetailsPermissionsFragment.class.getSimpleName();
+
     @IntDef(value = {
             APP_OPS,
             USES_PERMISSIONS,
@@ -864,7 +867,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                                     AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, permissionItem));
                         } else throw new Exception("Couldn't grant permission: " + permName);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "Could not change permission %s.", e, permName);
                         // togglePermission attempts the opposite of the current state and
                         // leaves it unchanged on failure: a currently-granted permission was
                         // a revoke attempt, a currently-revoked one a grant attempt.
@@ -884,10 +887,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                             String packageName = Objects.requireNonNull(viewModel).getPackageName();
                             startActivity(permissionItem.settingItem.toIntent(Objects.requireNonNull(packageName)));
                         } catch (Exception e) {
-                            e.printStackTrace();
-                            if (e.getLocalizedMessage() != null) {
-                                UIUtils.displayLongToast(e.getLocalizedMessage());
-                            }
+                            Log.e(TAG, "Could not open permission settings for %s.", e, permissionItem.name);
+                            UIUtils.displayLongToast(R.string.permission_settings_unavailable);
                         }
                     });
                 } else {

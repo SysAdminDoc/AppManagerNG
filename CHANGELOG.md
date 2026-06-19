@@ -5,6 +5,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed — Deep audit pass (2026-06-19)
+
+- Replaced raw tracker overlay and permission-settings failure toasts with
+  localized recovery copy while keeping diagnostics in the app log.
+- Moved App Details permission, app-op, component, and signature failure paths
+  from stderr stack traces into structured app logging, with contract coverage.
+
 ### Changed — Premium polish pass (2026-06-19)
 
 - Refined Finder, permission, debloater, profile, operation-history, and

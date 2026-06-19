@@ -629,6 +629,7 @@
     </plurals>
     <string name="failed_to_grant_permission">Could not grant permission</string>
     <string name="failed_to_revoke_permission">Could not revoke permission</string>
+    <string name="permission_settings_unavailable">Cannot open this permission settings screen on this device.</string>
     <string name="failed_to_reset_app_ops">Could not reset app ops</string>
     <string name="failed_to_deny_dangerous_perms">Could not revoke all dangerous permissions</string>
     <string name="failed_to_deny_dangerous_app_ops">Could not revoke all dangerous app ops</string>
@@ -2977,6 +2978,8 @@
     <string name="tracker_window_pause">Pause UI tracker</string>
     <string name="tracker_window_resume">Resume UI tracker</string>
     <string name="tracker_window_close">Close UI tracker</string>
+    <string name="tracker_window_app_details_unavailable">Cannot open details for the tracked app.</string>
+    <string name="tracker_window_disabled_after_errors">UI tracker was disabled after repeated overlay failures. Reopen it after checking overlay and accessibility permissions.</string>
     <string name="open_in_app_store">Open in app store</string>
     <string name="title_terminal_emulator">Terminal (Preview)</string>
     <string name="terminal_preview_notice">Preview: no tab completion, command history, or init scripts.</string>
