@@ -226,7 +226,50 @@ public final class SnapshotBundle {
     }
 
     // -----------------------------------------------------------------------
-    // Import
+    // Import — preview
+    // -----------------------------------------------------------------------
+
+    /**
+     * Read only the manifest entry from a snapshot bundle for preview purposes.
+     * No data is restored; the stream is closed after the manifest is found.
+     */
+    @WorkerThread
+    @NonNull
+    public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn)
+            throws IOException, SnapshotImportException {
+        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
+            ZipEntry entry;
+            int entryCount = 0;
+            while ((entry = zis.getNextEntry()) != null) {
+                assertReasonableEntryCount(++entryCount);
+                if (entry.isDirectory()) {
+                    zis.closeEntry();
+                    continue;
+                }
+                if (ENTRY_MANIFEST.equals(entry.getName())) {
+                    byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, entry.getName());
+                    ManifestSummary manifest = ManifestSummary.parse(
+                            new String(bytes, StandardCharsets.UTF_8));
+                    if (!FORMAT_ID.equals(manifest.format)) {
+                        throw new SnapshotImportException(
+                                "Unexpected bundle format: " + manifest.format);
+                    }
+                    if (manifest.schemaVersion > SCHEMA_VERSION) {
+                        throw new SnapshotImportException(
+                                "Bundle was written by a newer AppManagerNG (schema "
+                                        + manifest.schemaVersion + " > " + SCHEMA_VERSION + ").");
+                    }
+                    return manifest;
+                }
+                zis.closeEntry();
+            }
+        }
+        throw new SnapshotImportException("Bundle is missing " + ENTRY_MANIFEST
+                + "; refusing to import as AppManagerNG snapshot.");
+    }
+
+    // -----------------------------------------------------------------------
+    // Import — full
     // -----------------------------------------------------------------------
 
     @WorkerThread
@@ -951,16 +994,48 @@ public final class SnapshotBundle {
         @Nullable
         public final String sourceVersionName;
         public final int sourceVersionCode;
+        @NonNull
+        public final List<String> contents;
+        public final int prefsCount;
+        public final int profilesCount;
+        public final int rulesCount;
+        public final int opHistoryCount;
 
         ManifestSummary(int schemaVersion, @NonNull String format, long generatedAt,
                         @Nullable String sourcePackage, @Nullable String sourceVersionName,
-                        int sourceVersionCode) {
+                        int sourceVersionCode, @NonNull List<String> contents,
+                        int prefsCount, int profilesCount, int rulesCount, int opHistoryCount) {
             this.schemaVersion = schemaVersion;
             this.format = format;
             this.generatedAt = generatedAt;
             this.sourcePackage = sourcePackage;
             this.sourceVersionName = sourceVersionName;
             this.sourceVersionCode = sourceVersionCode;
+            this.contents = contents;
+            this.prefsCount = prefsCount;
+            this.profilesCount = profilesCount;
+            this.rulesCount = rulesCount;
+            this.opHistoryCount = opHistoryCount;
+        }
+
+        public boolean hasPrefs() {
+            return contents.contains("prefs") && prefsCount > 0;
+        }
+
+        public boolean hasProfiles() {
+            return contents.contains("profiles") && profilesCount > 0;
+        }
+
+        public boolean hasRules() {
+            return contents.contains("rules") && rulesCount > 0;
+        }
+
+        public boolean hasTags() {
+            return contents.contains("tags");
+        }
+
+        public boolean hasOpHistory() {
+            return contents.contains("op_history") && opHistoryCount > 0;
         }
 
         @NonNull
@@ -976,7 +1051,23 @@ public final class SnapshotBundle {
                 if (schema < 0 || format.isEmpty()) {
                     throw new SnapshotImportException("Manifest missing schema_version / format.");
                 }
-                return new ManifestSummary(schema, format, ts, pkg, ver, code);
+                List<String> contents = new ArrayList<>();
+                JSONArray contentsArr = obj.optJSONArray("contents");
+                if (contentsArr != null) {
+                    for (int i = 0; i < contentsArr.length(); i++) {
+                        contents.add(contentsArr.optString(i, ""));
+                    }
+                }
+                int prefsCount = 0, profilesCount = 0, rulesCount = 0, opHistoryCount = 0;
+                JSONObject counts = obj.optJSONObject("counts");
+                if (counts != null) {
+                    prefsCount = counts.optInt("prefs_files", 0);
+                    profilesCount = counts.optInt("profiles", 0);
+                    rulesCount = counts.optInt("rules", 0);
+                    opHistoryCount = counts.optInt("op_history", 0);
+                }
+                return new ManifestSummary(schema, format, ts, pkg, ver, code,
+                        contents, prefsCount, profilesCount, rulesCount, opHistoryCount);
             } catch (JSONException e) {
                 throw new SnapshotImportException("Manifest is not valid JSON: " + e.getMessage());
             }

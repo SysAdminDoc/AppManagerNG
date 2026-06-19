@@ -3467,6 +3467,16 @@
     <string name="snapshot_import_in_progress">Importing snapshot…</string>
     <string name="snapshot_import_done">Snapshot imported · prefs: %1$d · profiles: %2$d · rules: %3$d · history rows: %4$d</string>
     <string name="snapshot_import_failed">Could not import snapshot bundle: %1$s</string>
+    <string name="snapshot_import_preview_title">Snapshot contents</string>
+    <string name="snapshot_preview_source">Source: v%1$s (code %2$d)</string>
+    <string name="snapshot_preview_date">Created: %1$s</string>
+    <string name="snapshot_preview_schema">Schema version: %1$d</string>
+    <string name="snapshot_section_prefs">Preferences (%1$d files)</string>
+    <string name="snapshot_section_profiles">Profiles (%1$d)</string>
+    <string name="snapshot_section_rules">Blocking/freeze rules (%1$d)</string>
+    <string name="snapshot_section_tags">Tags</string>
+    <string name="snapshot_section_op_history">Operation history (%1$d rows)</string>
+    <string name="action_import">Import</string>
     <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
     <plurals name="profiles_external_import_done">

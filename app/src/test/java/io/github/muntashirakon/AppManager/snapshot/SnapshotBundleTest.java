@@ -49,7 +49,8 @@ public class SnapshotBundleTest {
                 + "\"source_package\":\"io.github.sysadmindoc.AppManagerNG\","
                 + "\"source_version_name\":\"0.4.2\","
                 + "\"source_version_code\":6,"
-                + "\"contents\":[\"profiles\",\"op_history\"]"
+                + "\"contents\":[\"profiles\",\"op_history\"],"
+                + "\"counts\":{\"prefs_files\":5,\"profiles\":3,\"rules\":2,\"op_history\":42}"
                 + "}";
         SnapshotBundle.ManifestSummary m = SnapshotBundle.ManifestSummary.parse(json);
         assertEquals(1, m.schemaVersion);
@@ -58,6 +59,42 @@ public class SnapshotBundleTest {
         assertEquals("io.github.sysadmindoc.AppManagerNG", m.sourcePackage);
         assertEquals("0.4.2", m.sourceVersionName);
         assertEquals(6, m.sourceVersionCode);
+        assertEquals(Arrays.asList("profiles", "op_history"), m.contents);
+        assertEquals(5, m.prefsCount);
+        assertEquals(3, m.profilesCount);
+        assertEquals(2, m.rulesCount);
+        assertEquals(42, m.opHistoryCount);
+        assertFalse("prefs not in contents → hasPrefs false", m.hasPrefs());
+        assertTrue(m.hasProfiles());
+        assertTrue(m.hasOpHistory());
+    }
+
+    @Test
+    public void manifestPreviewReadFromBundle() throws Exception {
+        String manifestJson = "{"
+                + "\"schema_version\":2,"
+                + "\"format\":\"appmanagerng-snapshot\","
+                + "\"generated_at\":1700000000000,"
+                + "\"source_version_name\":\"0.5.0\","
+                + "\"source_version_code\":7,"
+                + "\"contents\":[\"prefs\",\"profiles\",\"rules\",\"tags\",\"op_history\"],"
+                + "\"counts\":{\"prefs_files\":10,\"profiles\":2,\"rules\":4,\"op_history\":100}"
+                + "}";
+        byte[] bundle = SnapshotBundle.writeMinimalBundleForTest(
+                manifestJson, "{\"entries\":[]}", Collections.emptyMap());
+        SnapshotBundle.ManifestSummary preview = SnapshotBundle.readManifestOnly(
+                new ByteArrayInputStream(bundle));
+        assertEquals(2, preview.schemaVersion);
+        assertEquals("0.5.0", preview.sourceVersionName);
+        assertEquals(10, preview.prefsCount);
+        assertEquals(2, preview.profilesCount);
+        assertEquals(4, preview.rulesCount);
+        assertEquals(100, preview.opHistoryCount);
+        assertTrue(preview.hasPrefs());
+        assertTrue(preview.hasProfiles());
+        assertTrue(preview.hasRules());
+        assertTrue(preview.hasTags());
+        assertTrue(preview.hasOpHistory());
     }
 
     @Test
@@ -87,6 +124,9 @@ public class SnapshotBundleTest {
         assertNull(m.sourcePackage);
         assertNull(m.sourceVersionName);
         assertEquals(0, m.sourceVersionCode);
+        assertTrue(m.contents.isEmpty());
+        assertEquals(0, m.prefsCount);
+        assertEquals(0, m.profilesCount);
     }
 
     // -----------------------------------------------------------------------
