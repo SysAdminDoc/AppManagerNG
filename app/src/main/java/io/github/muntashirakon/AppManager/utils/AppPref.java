@@ -118,6 +118,8 @@ public class AppPref {
         PREF_ENCRYPTION_STR,
         PREF_LOCAL_CRASH_SINK_ENABLED_BOOL,
 
+        PREF_AUTO_FREEZE_ON_LOCK_BOOL,
+        PREF_AUTO_FREEZE_DELAY_SECONDS_INT,
         PREF_FREEZE_TYPE_INT,
         PREF_EDITOR_WORD_WRAP_BOOL,
         PREF_FM_DISPLAY_IN_LAUNCHER_BOOL,
@@ -587,6 +589,10 @@ public class AppPref {
                 return io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity.STRICT.name();
             case PREF_AUTHORIZATION_KEY_STR:
                 return AuthManager.generateKey();
+            case PREF_AUTO_FREEZE_ON_LOCK_BOOL:
+                return false;
+            case PREF_AUTO_FREEZE_DELAY_SECONDS_INT:
+                return 0;
             case PREF_FREEZE_TYPE_INT:
                 return FreezeUtils.FREEZE_DISABLE;
             case PREF_FM_OPTIONS_INT:
