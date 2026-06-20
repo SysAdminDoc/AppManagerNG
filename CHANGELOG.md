@@ -33,6 +33,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Changed — Build infrastructure (2026-06-20)
+
+- Bumped compileSdk 36 → 37 for Android 17 (API 37) compilation support.
+  AndroidX Core stays at 1.17.0 (core-ktx 1.19.0 raises minSdk to 23,
+  blocked by minsdk-21 policy). Core 1.17.0 added to the pinned-cluster ledger.
+- Disabled AAPT2 PNG crunching (`cruncherEnabled = false`) for deterministic
+  APK output, prerequisite for F-Droid reproducible builds verification.
+
 ### Fixed — Deep audit pass (2026-06-19)
 
 - Replaced raw tracker overlay and permission-settings failure toasts with

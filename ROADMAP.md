@@ -14,26 +14,12 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ### P2
 
-- [ ] P2 — Bump compileSdk 36 → 37 and AndroidX Core 1.17.0 → 1.19.0
-  Why: AndroidX Core 1.19.0 (released 2026-06-03) has API 37 compat fixes needed for proper Android 17 support. compileSdk 37 is the only blocker — no minSdk change needed.
-  Evidence: versions.gradle comment "1.19+ requires compileSdk 37; hold until compileSdk bump"; AndroidX Core 1.19.0 release notes
-  Touches: versions.gradle (compile_sdk, androidx_core_version), build.gradle, lockfiles
-  Acceptance: `compile_sdk = 37`, `androidx_core_version = "1.19.0"`, `./gradlew assembleFlossDebug` succeeds, all existing tests pass
-  Complexity: S
-
 - [ ] P2 — Paparazzi screenshot regression testing
   Why: 143 layouts across 3 themes (AMOLED/dark/light) with ongoing V2 design token work create continuous visual regression risk. Paparazzi (cashapp/paparazzi, JVM-based, no emulator) supports XML Views natively and renders Material Components correctly since v1.2+ — no Compose dependency, unblocking the Roadmap_Blocked.md screenshot testing item.
   Evidence: Paparazzi issue #219 (Material Components rendering) resolved; Roborazzi blocked by Compose transitive deps
   Touches: app/build.gradle (paparazzi plugin), app/src/test/ (screenshot test classes), .github/workflows/tests.yml
   Acceptance: at least 5 screenshot tests cover main list, app details, debloater, settings, and onboarding across dark and light themes; CI runs them on every PR; golden images checked in under app/src/test/snapshots/
   Complexity: M
-
-- [ ] P2 — F-Droid reproducible builds hardening
-  Why: F-Droid reproducible builds require build-tools 34 (35+ breaks apksigcopier verification), disabled VCS info metadata, and disabled PNG crunching. These are prerequisites for IzzyOnDroid/F-Droid distribution.
-  Evidence: F-Droid reproducible builds documentation; apksigcopier build-tools 35 breakage; AGP 8.3+ VCS info auto-bundling
-  Touches: app/build.gradle (buildToolsVersion pin, aaptOptions, vcsInfo), .github/workflows/release.yml
-  Acceptance: `./gradlew assembleFlossRelease` twice from the same clean checkout produces byte-identical APKs; VCS info proto absent from APK; PNG resources are not re-crunched
-  Complexity: S
 
 - [ ] P2 — Main-thread blocking operations audit
   Why: Upstream #1987/#1988 (opened 2026-06-18) flag main-thread keystore reads and time-consuming PackageManager queries. Given shared codebase origin, the same patterns likely exist in NG. ANR risk on low-end devices.

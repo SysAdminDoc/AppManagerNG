@@ -2,7 +2,7 @@
 
 # minSdk 21 Dependency Ceiling Ledger
 
-Last updated: 2026-06-16.
+Last updated: 2026-06-20.
 
 This ledger tracks every dependency pinned to its last API-21-compatible
 release. If any of these pins become untenable (security advisory, blocking
@@ -25,6 +25,7 @@ release.
 | **WebKit** | 1.14.0 | 1.15.x | CrUX-only WebView APIs. Minimal impact for NG's limited WebView use. |
 | **Sora Editor** | 0.24.6 | 0.25.x+ | Newer editor APIs. 0.24.6 is the final API-21-compatible release. |
 | **WorkManager** | 2.10.5 | 2.11.x | minSdk 23 required. Keep 2.10.x for API 21-22 compatibility. |
+| **AndroidX Core** | 1.17.0 | 1.19.0 | core-ktx 1.19.0 raises minSdk to 23. Core (non-ktx) 1.17.0 works with compileSdk 37. |
 
 ## Not pinned (compatible with minSdk 21)
 
@@ -32,7 +33,6 @@ These dependencies currently support API 21 and do not gate the floor
 decision. They are bumped on their normal cadence.
 
 - AppCompat 1.7.1
-- AndroidX Core 1.17.0
 - Annotation 1.9.1
 - BouncyCastle 1.84
 - Desugar JDK Libs 2.1.5
