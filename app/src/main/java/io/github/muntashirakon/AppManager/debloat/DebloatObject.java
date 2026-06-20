@@ -128,6 +128,7 @@ public class DebloatObject {
         }
         switch (mRemoval) {
             case "safe":
+            case "delete":
                 return REMOVAL_SAFE;
             case "replace":
                 return REMOVAL_REPLACE;
