@@ -71,6 +71,7 @@ public class AppManager extends Application {
 
     @Keep
     @Override
+    @SuppressWarnings("deprecation") // addHiddenApiExemptions deprecated in HiddenApiBypass 6.2+; replace when that ships
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !Utils.isRoboUnitTest()) {

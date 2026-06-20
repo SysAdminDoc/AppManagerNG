@@ -33,6 +33,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Security — HiddenApiBypass Android 17 deprecation audit (2026-06-20)
+
+- Audited HiddenApiBypass usage: single call site in AppManager.attachBaseContext()
+  with blanket `"L"` exemption. Documented @SuppressWarnings("deprecation")
+  noting the 6.2+ migration path. Contract test verifies the annotation.
+  When HiddenApiBypass 6.2+ ships (mmap-based approach), updating is a
+  one-commit dep bump + API switch.
+
 ### Security — Android 17/18 forward-compatibility audit (2026-06-20)
 
 - Android 17 BAL hardening audit: clean — no deprecated
