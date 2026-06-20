@@ -77,6 +77,7 @@ public class CommandHistoryTest {
     public void persistenceAcrossInstances() {
         mHistory.add("echo hello");
         mHistory.add("exit");
+        mHistory.flush();
 
         CommandHistory reloaded = new CommandHistory(RuntimeEnvironment.getApplication());
         assertEquals(2, reloaded.size());

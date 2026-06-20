@@ -15,6 +15,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 
@@ -25,6 +27,7 @@ final class CommandHistory {
 
     private final List<String> mEntries = new ArrayList<>();
     private final File mHistoryFile;
+    private final ExecutorService mSaveExecutor = Executors.newSingleThreadExecutor();
     private int mPosition;
 
     CommandHistory(@NonNull Context context) {
@@ -45,7 +48,8 @@ final class CommandHistory {
             mEntries.remove(0);
         }
         mPosition = mEntries.size();
-        save();
+        List<String> snapshot = new ArrayList<>(mEntries);
+        mSaveExecutor.execute(() -> save(snapshot));
     }
 
     @Nullable
@@ -71,6 +75,13 @@ final class CommandHistory {
         return mEntries.size();
     }
 
+    void flush() {
+        try {
+            mSaveExecutor.submit(() -> {}).get();
+        } catch (Exception ignored) {
+        }
+    }
+
     private void load() {
         if (!mHistoryFile.exists()) return;
         try (BufferedReader reader = new BufferedReader(new FileReader(mHistoryFile))) {
@@ -88,11 +99,11 @@ final class CommandHistory {
         }
     }
 
-    private void save() {
+    private void save(@NonNull List<String> entries) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(mHistoryFile))) {
-            int start = Math.max(0, mEntries.size() - MAX_ENTRIES);
-            for (int i = start; i < mEntries.size(); i++) {
-                writer.write(mEntries.get(i));
+            int start = Math.max(0, entries.size() - MAX_ENTRIES);
+            for (int i = start; i < entries.size(); i++) {
+                writer.write(entries.get(i));
                 writer.newLine();
             }
         } catch (IOException e) {

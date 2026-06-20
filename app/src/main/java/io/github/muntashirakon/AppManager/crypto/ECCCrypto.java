@@ -67,7 +67,12 @@ public class ECCCrypto extends AESCrypto {
         try {
             Cipher cipher = Cipher.getInstance(ECC_CIPHER_TYPE, new BouncyCastleProvider());
             cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivateKey());
-            return new SecretKeySpec(cipher.doFinal(encryptedAesKey), "AES");
+            byte[] rawKey = cipher.doFinal(encryptedAesKey);
+            try {
+                return new SecretKeySpec(rawKey, "AES");
+            } finally {
+                java.util.Arrays.fill(rawKey, (byte) 0);
+            }
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | BadPaddingException
                 | IllegalBlockSizeException e) {
             throw new CryptoException(e);
@@ -86,13 +91,16 @@ public class ECCCrypto extends AESCrypto {
         } catch (Exception e) {
             throw new CryptoException(e);
         }
+        byte[] encoded = key.getEncoded();
         try {
             Cipher cipher = Cipher.getInstance(ECC_CIPHER_TYPE, new BouncyCastleProvider());
             cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublicKey());
-            return cipher.doFinal(key.getEncoded());
+            return cipher.doFinal(encoded);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | BadPaddingException
                 | IllegalBlockSizeException e) {
             throw new CryptoException(e);
+        } finally {
+            java.util.Arrays.fill(encoded, (byte) 0);
         }
     }
 }
