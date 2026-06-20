@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 ext {
-    compile_sdk = 36
+    compile_sdk = 37
     // Bumping min_sdk past 21 is a one-way door for users on API 21-22 devices and must follow
     // docs/policy/minsdk-21-ceiling.md. Dependencies that have already dropped API 21-22 support
     // are pinned to their last compatible release; see the ledger before raising any of them.
@@ -16,7 +16,7 @@ ext {
 
     // Library dependencies
     activity_version = "1.11.0" // API 21-22 support dropped in 1.12.x
-    androidx_core_version = "1.17.0" // 1.18+ requires compileSdk 36.1+, 1.19+ requires compileSdk 37; hold until compileSdk bump
+    androidx_core_version = "1.17.0" // 1.18+ requires compileSdk 36.1+; 1.19.0 raises core-ktx minSdk to 23 (blocked by minsdk-21 policy)
     annotation_version = "1.9.1"
     apksig_version = "4.4.0" // https://github.com/MuntashirAkon/apksig-android — v3.2 (hybrid PQC, Android 17) not yet supported; v3.2-signed APKs display as v3 (no crash). Bump when upstream adds isVerifiedUsingV32Scheme().
     appcompat_version = "1.7.1" // https://developer.android.com/jetpack/androidx/releases/appcompat

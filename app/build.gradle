@@ -126,6 +126,7 @@ android {
     }
     aaptOptions {
         noCompress 'jar', 'sh'
+        cruncherEnabled = false
     }
     testOptions {
         unitTests {
