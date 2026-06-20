@@ -171,6 +171,15 @@ ROADMAP.md once the blocker is resolved.
 
 ### P3
 
+- [ ] P3 — IzzyOnDroid repository submission
+  Why: Fastlane metadata is already complete (title, descriptions, icon, 9 screenshots, changelogs); IzzyOnDroid is the fastest path to F-Droid ecosystem visibility in Neo Store and Droid-ify clients.
+  Evidence: fastlane/metadata/android/en-US/ (complete); IzzyOnDroid inclusion policy; upstream App Manager is already listed.
+  Touches: fastlane/metadata/android/en-US/ (verify currency), docs/distribution/ (submission checklist), README.md (add badge after listing)
+  Blocker: requires filing a submission request at codeberg.org/IzzyOnDroid/repo — operator action, not code.
+  Complexity: S
+
+
+
 - [ ] P3 — Version-watch panel (full flavor): installed vs latest from static indexes
   Why: APKUpdater (3.8k stars, active) proves demand for multi-source update awareness without being a store; AppDash paywalls it; checking F-Droid/IzzyOnDroid index-v2 + GitHub releases against installed versions fits the full flavor's opt-in network doctrine and NG stays a manager (notify, don't install).
   Evidence: https://github.com/rumboalla/apkupdater ; https://appdash.app/ ; f-droid index-v2 format (RESEARCH.md Sources)
