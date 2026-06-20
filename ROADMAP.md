@@ -21,19 +21,6 @@ visual verification, privileged-mode testing, or external dependencies.
   Acceptance: audit documents which hidden API exemptions NG actually needs; a version-gated fallback path is ready so that when HiddenApiBypass 6.2+ is released, updating the dep + switching to the new API is a single-commit change.
   Complexity: M
 
-- [ ] P2 — Android 17 Background Activity Launch (BAL) hardening audit
-  Why: `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` is deprecated for apps targeting API 37. NG's routine scheduler, batch operations, and Tasker intent handlers may trigger background activity starts that will be blocked.
-  Evidence: developer.android.com/about/versions/17/behavior-changes-17 (BAL section)
-  Touches: routines/ (RoutineExecutor), batchops/ (BatchOpsManager), intercept/ (ActivityInterceptor), app/src/main/AndroidManifest.xml
-  Acceptance: grep for MODE_BACKGROUND_ACTIVITY_START and all background-to-foreground activity transitions; replace with MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE or add explicit user-visible notification before starting activities from background; test verifies no deprecated BAL mode usage.
-  Complexity: S
-
-- [ ] P2 — Android 18 implicit URI grant preparation
-  Why: Android 18 preview removes auto-grant of URI read/write permissions on ACTION_SEND/ACTION_SEND_MULTIPLE/ACTION_IMAGE_CAPTURE. NG's APK sharing, installer flows, and support bundle sharing use ACTION_SEND and will break without explicit FLAG_GRANT_READ_URI_PERMISSION.
-  Evidence: developer.android.com/about/versions/17/behavior-changes-all (URI grants section — previewed for Android 18)
-  Touches: utils/ (intent builders), apk/ (sharing), misc/SupportInfoBundle (share intent), intercept/ (intent forwarding)
-  Acceptance: every ACTION_SEND/ACTION_SEND_MULTIPLE intent that includes a content:// URI also sets FLAG_GRANT_READ_URI_PERMISSION; a grep-based contract test verifies no ACTION_SEND with content URI lacks the flag.
-  Complexity: S
 
 ### P3
 
