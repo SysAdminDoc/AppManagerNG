@@ -160,11 +160,11 @@ ROADMAP.md once the blocker is resolved.
 
 ### P2
 
-- [ ] P2 — Screenshot regression testing (Roborazzi or alternative)
+- [ ] P2 — Screenshot regression testing (Paparazzi)
   Why: 143 layouts, 3 themes (AMOLED/dark/light), ongoing V2 design token work create continuous visual regression risk with no automated catching.
-  Evidence: Roborazzi 1.64.0 (github.com/takahirom/roborazzi) is the best fit for JUnit 4 + Robolectric, but its core artifact transitively requires Compose's SemanticsNodeInteraction — unusable in this non-Compose project without adding Compose test dependencies.
+  Evidence: Roborazzi blocked by Compose transitive deps. Paparazzi (cashapp/paparazzi) is the best Views-compatible alternative — JVM-only, Material Components rendering works since v1.2+, no Compose dependency needed.
   Touches: app/build.gradle, app/src/test/ (screenshot test classes), .github/workflows/tests.yml
-  Blocker: Roborazzi core requires Compose transitive deps. Alternatives: Paparazzi (JVM-only Layoutlib, may not render Material Components correctly), or wait for a Roborazzi release that separates Compose from View-only usage.
+  Blocker: Paparazzi 2.0.0-alpha05.2 (AGP 9.x support, PR #2318) is expected by 2026-06-25 but not yet published. No released Paparazzi version works with AGP 9.2.1. Retry after the milestone ships.
   Complexity: M
 
 ## External-Service-Gated
