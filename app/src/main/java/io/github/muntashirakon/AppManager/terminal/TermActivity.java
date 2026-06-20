@@ -46,7 +46,6 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
 
-// TODO: 11/9/23 Replace it with an actual terminal
 public class TermActivity extends BaseActivity {
     public static final String TAG = TermActivity.class.getSimpleName();
     private static final String[] SHELL_COMMAND = new String[]{"sh", "-i"};
@@ -63,6 +62,7 @@ public class TermActivity extends BaseActivity {
     private int mDefaultForegroundColor;
     private int mDefaultBackgroundColor;
     private final AnsiState mAnsiState = new AnsiState();
+    private CommandHistory mHistory;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -77,9 +77,12 @@ public class TermActivity extends BaseActivity {
         mCommandOutput.setText("", TextView.BufferType.EDITABLE);
         mDefaultForegroundColor = mCommandInput.getCurrentTextColor();
         mDefaultBackgroundColor = MaterialColors.getColor(mCommandInput, com.google.android.material.R.attr.colorSurface);
+        mHistory = new CommandHistory(this);
         mCommandInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String command = Objects.requireNonNull(mCommandInput.getText()).toString();
+                mHistory.add(command);
+                mCommandInput.setText("");
                 appendBoldOutput(command);
                 appendOutput("\n");
                 mAnsiState.homePosition = mCommandOutput.getEditableText().length();
@@ -93,18 +96,28 @@ public class TermActivity extends BaseActivity {
                 return false;
             }
 
-            // TAB
+            // TAB — send tab character to the shell for built-in completion
             if (keyCode == KeyEvent.KEYCODE_TAB) {
-                // TODO: 7/21/25 Support minimal completion
+                sendToStdin("\t", false);
+                return true;
             }
 
-            // Arrow Keys (UP/DOWN/PGUP/PGDOWN)
-            switch (keyCode) {
-                case KeyEvent.KEYCODE_DPAD_UP:
-                case KeyEvent.KEYCODE_DPAD_DOWN:
-                case KeyEvent.KEYCODE_PAGE_UP:
-                case KeyEvent.KEYCODE_PAGE_DOWN:
-                    // TODO: 7/21/25 Support history
+            // Arrow Keys (UP/DOWN) — local history navigation
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_PAGE_UP) {
+                String prev = mHistory.navigateUp();
+                if (prev != null) {
+                    mCommandInput.setText(prev);
+                    mCommandInput.setSelection(prev.length());
+                }
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_PAGE_DOWN) {
+                String next = mHistory.navigateDown();
+                if (next != null) {
+                    mCommandInput.setText(next);
+                    mCommandInput.setSelection(next.length());
+                }
+                return true;
             }
 
             // CTRL + KEY
@@ -181,7 +194,7 @@ public class TermActivity extends BaseActivity {
                         e.printStackTrace();
                     }
                 });
-                // TODO: 7/21/25 Support init script
+                loadInitScript();
                 int exitCode = mProc.waitFor();
                 TerminalRoute finalRoute = processRoute;
                 runOnUiThread(() -> {
@@ -242,6 +255,22 @@ public class TermActivity extends BaseActivity {
             });
             mProc = ProcessCompat.execLocal(SHELL_COMMAND, SHELL_ENV, null);
             return fallbackRoute;
+        }
+    }
+
+    private void loadInitScript() {
+        java.io.File initFile = new java.io.File(getFilesDir(), "terminal_init.sh");
+        if (!initFile.exists() || !initFile.canRead()) return;
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(initFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty() && !trimmed.startsWith("#")) {
+                    sendToStdin(trimmed, true);
+                }
+            }
+        } catch (java.io.IOException e) {
+            Log.w(TAG, "Failed to load terminal init script", e);
         }
     }
 

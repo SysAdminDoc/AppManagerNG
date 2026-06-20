@@ -156,6 +156,17 @@ ROADMAP.md once the blocker is resolved.
   Blocker: restore UI flow, trash browsing, and auto-empty behavior need on-device testing; touches critical delete paths.
   Complexity: M
 
+## Compose-Dependency-Gated
+
+### P2
+
+- [ ] P2 — Screenshot regression testing (Roborazzi or alternative)
+  Why: 143 layouts, 3 themes (AMOLED/dark/light), ongoing V2 design token work create continuous visual regression risk with no automated catching.
+  Evidence: Roborazzi 1.64.0 (github.com/takahirom/roborazzi) is the best fit for JUnit 4 + Robolectric, but its core artifact transitively requires Compose's SemanticsNodeInteraction — unusable in this non-Compose project without adding Compose test dependencies.
+  Touches: app/build.gradle, app/src/test/ (screenshot test classes), .github/workflows/tests.yml
+  Blocker: Roborazzi core requires Compose transitive deps. Alternatives: Paparazzi (JVM-only Layoutlib, may not render Material Components correctly), or wait for a Roborazzi release that separates Compose from View-only usage.
+  Complexity: M
+
 ## External-Service-Gated
 
 ### P3
