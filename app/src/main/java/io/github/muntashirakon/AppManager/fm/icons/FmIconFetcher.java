@@ -28,8 +28,11 @@ import io.github.muntashirakon.io.PathContentInfo;
 import io.github.muntashirakon.svg.SVG;
 import io.github.muntashirakon.svg.SVGParser;
 import io.github.muntashirakon.util.UiUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
+    private static final String TAG = FmIconFetcher.class.getSimpleName();
+
     private static final Set<String> OPEN_DOCUMENT_FORMAT_MIME_TYPES = new HashSet<String>() {{
         add("application/vnd.oasis.opendocument.text");
         add("application/vnd.oasis.opendocument.spreadsheet");
@@ -115,14 +118,14 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                 Bitmap bitmap = ThumbnailUtilsCompat.createAudioThumbnail(ContextUtils.getContext(), FmProvider.getContentUri(mFmItem.path), size, null);
                 return new ImageLoader.ImageFetcherResult(tag, bitmap, false, true, defaultImage);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         } else if (FmIcons.isVideo(drawableRes)) {
             try {
                 Bitmap bitmap = ThumbnailUtilsCompat.createVideoThumbnail(ContextUtils.getContext(), FmProvider.getContentUri(mFmItem.path), size, null);
                 return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true), false, true, defaultImage);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         } else if (FmIcons.isImage(drawableRes)) {
             if (ContentType.SVG.getMimeType().equals(mimeType)) {
@@ -133,7 +136,7 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true), false, true, defaultImage);
                 } catch (Exception th) {
                     // There can be runtime exceptions
-                    th.printStackTrace();
+                    Log.w(TAG, th);
                 }
             } else {
                 byte[] bytes = mFmItem.path.getContentAsBinary();

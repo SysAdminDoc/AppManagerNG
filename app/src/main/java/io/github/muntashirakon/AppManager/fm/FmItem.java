@@ -15,8 +15,11 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.PathAttributes;
 import io.github.muntashirakon.io.PathContentInfo;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class FmItem implements Comparable<FmItem> {
+    private static final String TAG = FmItem.class.getSimpleName();
+
     public static final int UNRESOLVED = -2;
 
     final boolean isDirectory;
@@ -135,7 +138,7 @@ public class FmItem implements Comparable<FmItem> {
             mAttributes = path.getAttributes();
             mName = mAttributes.name;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             mName = path.getName();
         }
     }

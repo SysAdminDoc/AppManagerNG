@@ -66,8 +66,11 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.util.AdapterUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class FmActivity extends BaseActivity {
+    private static final String TAG = FmActivity.class.getSimpleName();
+
     public static class Options implements Parcelable {
         public static final int OPTION_VFS = 1 << 0;
         public static final int OPTION_RO = 1 << 1; // read-only
@@ -337,7 +340,7 @@ public class FmActivity extends BaseActivity {
                                         | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                 loadDrawerItems();
             } catch (SecurityException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
 

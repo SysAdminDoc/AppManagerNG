@@ -14,8 +14,11 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 class J2meIconExtractor {
+    private static final String TAG = J2meIconExtractor.class.getSimpleName();
+
     @Nullable
     public static Bitmap generateFromFile(@NonNull File file) {
         try(ZipFile zipFile = new ZipFile(file)) {
@@ -29,7 +32,7 @@ class J2meIconExtractor {
                 return BitmapFactory.decodeStream(zipFile.getInputStream(iconEntry));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return null;
     }

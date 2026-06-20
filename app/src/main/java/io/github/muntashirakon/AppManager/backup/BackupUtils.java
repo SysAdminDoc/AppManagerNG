@@ -214,7 +214,7 @@ public final class BackupUtils {
                     validatedBackups.add(backup);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return validatedBackups;

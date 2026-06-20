@@ -19,8 +19,11 @@ import java.util.Locale;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ClipboardUtils {
+    private static final String TAG = ClipboardUtils.class.getSimpleName();
+
     private static final int MAX_CLIPBOARD_SIZE_BYTES = 1024 * 1024;
 
     /**
@@ -42,7 +45,7 @@ public class ClipboardUtils {
                 // Grant temporary read permission
                 clip = ClipData.newUri(context.getContentResolver(), label, contentUri);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 // Fallback: copy truncated text if writing file fails
                 clip = ClipData.newPlainText(label != null ? label : "text", truncateForPlainTextFallback(text));
             }

@@ -31,8 +31,11 @@ import io.github.muntashirakon.AppManager.misc.VMRuntime;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.algo.AhoCorasick;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class StaticDataset {
+    private static final String TAG = StaticDataset.class.getSimpleName();
+
     @Nullable
     private static AhoCorasick sAhoCorasickTrackerCache;
     private static String[] sTrackerNames;
@@ -162,7 +165,7 @@ public class StaticDataset {
             }
             return debloatObjects;
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return Collections.emptyList();
         }
     }
@@ -185,7 +188,7 @@ public class StaticDataset {
                 }
             }
         } catch (Exception th) {
-            th.printStackTrace();
+            Log.w(TAG, th);
         }
         return idSuggestionObjectsMap;
     }

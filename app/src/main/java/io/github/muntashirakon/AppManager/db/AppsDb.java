@@ -24,9 +24,12 @@ import io.github.muntashirakon.AppManager.db.entity.FreezeType;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 @Database(entities = {App.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class}, version = 10)
 public abstract class AppsDb extends RoomDatabase {
+    private static final String TAG = AppsDb.class.getSimpleName();
+
     private static AppsDb sAppsDb;
 
     public static final Migration M_2_3 = new Migration(2, 3) {
@@ -120,7 +123,7 @@ public abstract class AppsDb extends RoomDatabase {
             try {
                 sAppsDb.appDao().getAll();
             } catch (Exception th) {
-                th.printStackTrace();
+                Log.w(TAG, th);
             }
         }
         return sAppsDb;

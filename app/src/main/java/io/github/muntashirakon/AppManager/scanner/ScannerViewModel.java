@@ -62,8 +62,11 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.io.fs.DexFileSystem;
 import io.github.muntashirakon.io.fs.VirtualFileSystem;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ScannerViewModel extends AndroidViewModel implements VirusTotal.FullScanResponseInterface {
+    private static final String TAG = ScannerViewModel.class.getSimpleName();
+
     private static final Pattern SIG_TO_IGNORE = Pattern.compile("^(android(|x)|com\\.android|com\\.google\\.android|java(|x)|j\\$\\.(util|time)|\\w\\d?(\\.\\w\\d?)+)\\..*$");
 
     private File mApkFile;
@@ -110,7 +113,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         try {
             VirtualFileSystem.unmount(mDexVfsId);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
     }
 
@@ -418,7 +421,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             try {
                 mApkFile = mFileCache.getCachedFile(Paths.get(mApkUri));
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
     }
@@ -441,7 +444,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             try {
                 mVt.fetchFileReportOrScan(file, md5, this);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mVtFileReportLiveData.postValue(null);
             }
         } else mVtFileReportLiveData.postValue(null);
@@ -456,7 +459,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             ApkVerifier.Result apkVerifierResult = apkVerifier.verify();
             mApkVerifierResultLiveData.postValue(apkVerifierResult);
         } catch (IOException | ApkFormatException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
     }
 
@@ -499,7 +502,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             mAllClasses = dfs.getDexClasses().getBaseClassNames();
             Collections.sort(mAllClasses);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             mAllClasses = Collections.emptyList();
         }
         mAllClassesLiveData.postValue(mAllClasses);
@@ -636,7 +639,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         try {
             mWaitForFile.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
     }
 

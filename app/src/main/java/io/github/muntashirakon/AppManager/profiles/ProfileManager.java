@@ -25,6 +25,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ProfileManager {
     public static final String TAG = "ProfileManager";
@@ -168,7 +169,7 @@ public class ProfileManager {
         try {
             mLogger = new ProfileLogger(profileId);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         try {
             Path realProfilePath = profilePath != null ? profilePath : findProfilePathById(profileId);

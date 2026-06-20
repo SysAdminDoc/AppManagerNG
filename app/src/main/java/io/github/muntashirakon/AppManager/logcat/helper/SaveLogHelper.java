@@ -127,7 +127,7 @@ public class SaveLogHelper {
             saveLog(null, logString, filename);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return false;
         }
     }
@@ -137,7 +137,7 @@ public class SaveLogHelper {
         try {
             return saveLog(logLines, null, filename);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }

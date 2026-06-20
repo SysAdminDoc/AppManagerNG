@@ -417,7 +417,7 @@ final class FmIcons {
                 return BitmapFactory.decodeStream(zipFile.getInputStream(coverEntry));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         } finally {
             if (file.second) {
                 file.first.delete();
@@ -453,7 +453,7 @@ final class FmIcons {
                 return BitmapFactory.decodeStream(zipFile.getInputStream(iconEntry));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         } finally {
             if (file.second) {
                 file.first.delete();
@@ -480,7 +480,7 @@ final class FmIcons {
                 return getApkIcon(baseEntry.getFile(false));
             }
         } catch (IOException | ApkFile.ApkFileException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         } finally {
             if (file.second) {
                 file.first.delete();

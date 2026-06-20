@@ -138,7 +138,7 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
                 mCustomCommand0.postValue(ServerConfig.getServerRunnerCommand(0));
                 mCustomCommand1.postValue(ServerConfig.getServerRunnerCommand(1));
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mCustomCommand0.postValue(null);
                 mCustomCommand1.postValue(null);
             }
@@ -234,7 +234,7 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
             mSigningKeySha256HashLiveData.postValue(hash);
         });

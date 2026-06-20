@@ -44,6 +44,8 @@ import io.github.muntashirakon.AppManager.utils.MiuiUtils;
 
 @SuppressLint("SoonBlockedPrivateApi")
 public class AppOpsManagerCompat {
+    private static final String TAG = AppOpsManagerCompat.class.getSimpleName();
+
     @IntRange(from = -1, to = 5)
     @Retention(RetentionPolicy.SOURCE)
     public @interface Mode {
@@ -219,7 +221,7 @@ public class AppOpsManagerCompat {
                 sOpToStringField.setAccessible(true);
                 opToString = (String[]) sOpToStringField.get(null);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         sOpToString = opToString;

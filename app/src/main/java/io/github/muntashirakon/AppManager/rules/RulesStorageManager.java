@@ -317,7 +317,7 @@ public class RulesStorageManager implements Closeable {
         try {
             saveEntries(getDesiredFile(true), false);
         } catch (IOException | RemoteException ex) {
-            ex.printStackTrace();
+            Log.w(TAG, ex);
         }
     }
 
@@ -327,7 +327,7 @@ public class RulesStorageManager implements Closeable {
         try {
             saveEntries(tsvRulesFile, true);
         } catch (IOException | RemoteException ex) {
-            ex.printStackTrace();
+            Log.w(TAG, ex);
         }
     }
 

@@ -14,8 +14,11 @@ import java.util.Map;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.compat.system.OsCompat;
 import io.github.muntashirakon.compat.system.StructGroup;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class Groups {
+    private static final String TAG = Groups.class.getSimpleName();
+
     private static final int AID_USER_OFFSET = 100000;
     private static final int AID_APP_START = 10000;
     private static final int AID_APP_END = 19999;
@@ -41,7 +44,7 @@ public class Groups {
                         sGidGroupMap.put(passwd.gr_id, passwd.gr_name);
                     }
                 } catch (ErrnoException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 } finally {
                     ExUtils.exceptionAsIgnored(OsCompat::endgrent);
                 }

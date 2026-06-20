@@ -62,6 +62,8 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.Path;
 
 public class AppsProfileViewModel extends AndroidViewModel {
+    private static final String TAG = AppsProfileViewModel.class.getSimpleName();
+
     private final Object mProfileLock = new Object();
     private final MutableLiveData<Pair<Integer, Boolean>> mToast = new MutableLiveData<>();
     private final MutableLiveData<ArrayList<SelectablePackageItem>> mInstalledApps = new MutableLiveData<>();
@@ -181,7 +183,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
                 });
                 mInstalledApps.postValue(selectableItems);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         });
     }
@@ -248,7 +250,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
             try {
                 mProfile = (AppsBaseProfile) BaseProfile.fromPath(profilePath);
             } catch (IOException | JSONException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
     }
@@ -369,7 +371,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
                         setModified(false);
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     mToast.postValue(new Pair<>(R.string.saving_failed, false));
                 }
             }
@@ -398,7 +400,7 @@ public class AppsProfileViewModel extends AndroidViewModel {
                     }
                     mApplyAfterSave.postValue(mProfile.name);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     mToast.postValue(new Pair<>(R.string.saving_failed, false));
                 }
             }

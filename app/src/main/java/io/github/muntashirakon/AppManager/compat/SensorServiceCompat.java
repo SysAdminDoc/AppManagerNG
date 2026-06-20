@@ -14,9 +14,12 @@ import java.io.IOException;
 
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.utils.BinderShellExecutor;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 @RequiresApi(Build.VERSION_CODES.P)
 public final class SensorServiceCompat {
+    private static final String TAG = SensorServiceCompat.class.getSimpleName();
+
     @RequiresPermission(ManifestCompat.permission.MANAGE_SENSORS)
     public static boolean isSensorEnabled(@NonNull String packageName, @UserIdInt int userId) {
         String[] command;
@@ -27,7 +30,7 @@ public final class SensorServiceCompat {
             BinderShellExecutor.ShellResult result = BinderShellExecutor.execute(getSensorService(), command);
             return "active".equals(result.getStdout().trim());
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return true;
     }

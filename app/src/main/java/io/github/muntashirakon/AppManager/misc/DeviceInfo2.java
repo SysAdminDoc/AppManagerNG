@@ -67,8 +67,11 @@ import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.proc.ProcFs;
 import io.github.muntashirakon.util.LocalizedString;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class DeviceInfo2 implements LocalizedString {
+    private static final String TAG = DeviceInfo2.class.getSimpleName();
+
     public final String osVersion = Build.VERSION.RELEASE;
     public final String bootloader = Build.BOOTLOADER;
     public final String vm = getVmVersion();
@@ -706,7 +709,7 @@ public class DeviceInfo2 implements LocalizedString {
                 } else ++userApps;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return new Pair<>(userApps, systemApps);
     }

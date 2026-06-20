@@ -4,7 +4,6 @@ package io.github.muntashirakon.AppManager.editor;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.inputmethod.BaseInputConnection;
 import android.widget.Toast;
 
@@ -16,6 +15,7 @@ import io.github.rosemoe.sora.text.Cursor;
 import io.github.rosemoe.sora.text.TextRange;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.DirectAccessProps;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class CodeEditorWidget extends CodeEditor {
     public static final String TAG = CodeEditorWidget.class.getSimpleName();
@@ -94,7 +94,7 @@ public class CodeEditorWidget extends CodeEditor {
             // Read the value of the private field for this object
             return (BaseInputConnection) field.get(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }
@@ -113,7 +113,7 @@ public class CodeEditorWidget extends CodeEditor {
             // Read the value of the private field for this object
             return (TextRange) field.get(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }
@@ -132,7 +132,7 @@ public class CodeEditorWidget extends CodeEditor {
             // Read the value of the private field for this object
             return (DirectAccessProps) field.get(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }

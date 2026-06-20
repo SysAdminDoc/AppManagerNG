@@ -96,6 +96,7 @@ import io.github.muntashirakon.widget.FloatingActionButtonGroup;
 import io.github.muntashirakon.widget.MultiSelectionView;
 import io.github.muntashirakon.widget.RecyclerView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQueryTextListener,
         SwipeRefreshLayout.OnRefreshListener, SpeedDialView.OnActionSelectedListener,
@@ -1035,7 +1036,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             UIUtils.displayShortToast(R.string.done);
             mModel.reload(newDir.getName());
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             UIUtils.displayShortToast(R.string.failed);
         }
     }
@@ -1053,7 +1054,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             UIUtils.displayShortToast(R.string.done);
             mModel.reload(newFile.getName());
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             UIUtils.displayShortToast(R.string.failed);
         }
     }
@@ -1092,7 +1093,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                         Path archivePath = basePath.createNewFile(archiveName, null);
                         startArchiveCreation(selectedFiles, archivePath);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         showArchiveErrorDialog(R.string.failed_to_create_archive, e);
                     }
                 })
@@ -1120,7 +1121,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                         Path destinationPath = getArchiveDestination(basePath, displayName);
                         startArchiveExtraction(archivePath, destinationPath);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         showArchiveErrorDialog(R.string.failed_to_extract_archive, e);
                     }
                 })
@@ -1629,7 +1630,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                     newPath.delete();
                     return source.copyTo(newPath) != null;
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     return false;
                 }
             } else {

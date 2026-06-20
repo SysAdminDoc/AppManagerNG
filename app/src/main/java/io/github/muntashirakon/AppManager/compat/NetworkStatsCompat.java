@@ -15,8 +15,11 @@ import androidx.annotation.Nullable;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class NetworkStatsCompat implements AutoCloseable {
+    private static final String TAG = NetworkStatsCompat.class.getSimpleName();
+
     private final NetworkTemplate mTemplate;
     private final long mStartTime;
     private final long mEndTime;
@@ -72,7 +75,7 @@ public class NetworkStatsCompat implements AutoCloseable {
             try {
                 mSession.close();
             } catch (RemoteException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 // Otherwise, meh
             }
         }

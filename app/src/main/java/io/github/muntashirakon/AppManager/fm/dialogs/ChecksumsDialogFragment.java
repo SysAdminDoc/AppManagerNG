@@ -57,6 +57,7 @@ import io.github.muntashirakon.util.AccessibilityUtils;
 import io.github.muntashirakon.view.TextInputLayoutCompat;
 import io.github.muntashirakon.widget.MaterialSpinner;
 import io.github.muntashirakon.widget.TextInputTextView;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ChecksumsDialogFragment extends DialogFragment {
     public static final String TAG = ChecksumsDialogFragment.class.getSimpleName();
@@ -237,7 +238,7 @@ public class ChecksumsDialogFragment extends DialogFragment {
                     }
                     mChecksumLiveData.postValue(new Pair<>(algo, HexEncoding.encodeToString(digest.digest(), false)));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     mChecksumLiveData.postValue(new Pair<>(null, null));
                 }
             });
@@ -248,7 +249,7 @@ public class ChecksumsDialogFragment extends DialogFragment {
                 try {
                     mChecksumsLiveData.postValue(generateChecksums(path));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     mChecksumsLiveData.postValue(Collections.emptyMap());
                 }
             });

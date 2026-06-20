@@ -46,8 +46,11 @@ import io.github.muntashirakon.view.ProgressIndicatorCompat;
 import io.github.muntashirakon.widget.MaterialSpinner;
 import io.github.muntashirakon.widget.RecyclerView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout.OnRefreshListener {
+    private static final String TAG = AppUsageActivity.class.getSimpleName();
+
     private static final int[] sSortMenuItemIdsMap = {
             R.id.action_sort_by_app_label, R.id.action_sort_by_last_used,
             R.id.action_sort_by_mobile_data, R.id.action_sort_by_package_name,
@@ -325,7 +328,7 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
                 os.write(viewModel.buildUsageCsv().getBytes(StandardCharsets.UTF_8));
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.app_usage_export_success));
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.export_failed));
             }
         });

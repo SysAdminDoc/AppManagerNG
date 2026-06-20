@@ -245,7 +245,7 @@ public class ActivityInterceptor extends BaseActivity {
                     refreshUI();
                 } catch (Exception e) {
                     UIUtils.displayShortToast(e.getMessage());
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
         }
@@ -606,7 +606,7 @@ public class ActivityInterceptor extends BaseActivity {
             try {
                 return PackageManagerCompat.queryIntentActivities(this, intent, PackageManager.MATCH_ALL, userHandle);
             } catch (RemoteException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return getPackageManager().queryIntentActivities(intent, 0);
@@ -1225,7 +1225,7 @@ public class ActivityInterceptor extends BaseActivity {
             //  2. Load the source application via the DexClassLoader
             //  3. Use Class.forName() to load the class and it's class loader to recognize the Parcelable
             //  The other option is to skip the problematic classes.
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }
@@ -1245,7 +1245,7 @@ public class ActivityInterceptor extends BaseActivity {
             }
             return clone;
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         } catch (RuntimeException e) {
             // Intent.parseUri can throw BadParcelableException or other runtime
             // exceptions on malformed URIs with unresolvable Parcelable class names.

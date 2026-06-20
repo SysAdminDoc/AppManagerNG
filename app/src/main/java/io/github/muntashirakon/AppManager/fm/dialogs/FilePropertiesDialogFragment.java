@@ -15,7 +15,6 @@ import android.system.ErrnoException;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.Formatter;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,6 +71,7 @@ import io.github.muntashirakon.io.UidGidPair;
 import io.github.muntashirakon.util.LocalizedString;
 import io.github.muntashirakon.view.TextInputLayoutCompat;
 import io.github.muntashirakon.widget.TextInputTextView;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragment {
     public static final String TAG = FilePropertiesDialogFragment.class.getSimpleName();
@@ -548,7 +548,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
                     newProperties.mode = newProperties.path.getMode();
                     mFilePropertiesLiveData.postValue(newProperties);
                 } catch (ErrnoException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             });
         }
@@ -661,7 +661,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
                     newProperties.uidGidPair = newProperties.path.getUidGid();
                     mFilePropertiesLiveData.postValue(newProperties);
                 } catch (ErrnoException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             });
         }
@@ -682,7 +682,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
                     newProperties.uidGidPair = newProperties.path.getUidGid();
                     mFilePropertiesLiveData.postValue(newProperties);
                 } catch (ErrnoException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             });
         }

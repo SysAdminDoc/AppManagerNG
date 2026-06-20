@@ -34,6 +34,8 @@ import io.github.muntashirakon.adb.AdbPairingRequiredException;
 
 // Copyright 2016 Zheng Li
 public class LocalServer {
+    private static final String TAG = LocalServer.class.getSimpleName();
+
     @GuardedBy("lockObject")
     private static final Object sLock = new Object();
 
@@ -268,7 +270,7 @@ public class LocalServer {
             checkConnect();
             return mLocalServerManager.execNew(caller);
         } catch (SocketTimeoutException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             closeBgServer();
             // Retry
             try {

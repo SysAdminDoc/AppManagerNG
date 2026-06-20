@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class SessionMonitoringService extends Service {
     public static final String TAG = SessionMonitoringService.class.getSimpleName();
@@ -57,7 +58,7 @@ public class SessionMonitoringService extends Service {
                     mScreenLockChecker.checkLock();
                 });
             } catch (Exception th) {
-                th.printStackTrace();
+                Log.w(TAG, th);
             }
         }
     };

@@ -512,7 +512,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                     launchInstallConfirmation(confirmIntent);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 String packageName = mPackageName != null ? mPackageName : "";
                 PackageInstallerCompat.sendCompletedBroadcast(this, packageName,
                         PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, mSessionId);

@@ -54,6 +54,7 @@ import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 // Why this class?
 //
@@ -61,6 +62,8 @@ import io.github.muntashirakon.io.Paths;
 // possible to deliver the changes to the settings using lifecycle where required. For example, in the log viewer page,
 // changes to the settings are not immediately reflected unless the settings page is opened from the page itself.
 public final class Prefs {
+    private static final String TAG = Prefs.class.getSimpleName();
+
     private static final String NO_MAIN_WINDOW_USERS_SELECTED = "-";
 
     @Nullable
@@ -558,7 +561,7 @@ public final class Prefs {
                     return new Pair<>(options, uriPositionPair);
                 }
             } catch (JSONException | FileNotFoundException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
             return null;
         }
@@ -580,7 +583,7 @@ public final class Prefs {
                 }
                 AppPref.set(AppPref.PrefKey.PREF_FM_LAST_PATH_STR, object.toString());
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
 

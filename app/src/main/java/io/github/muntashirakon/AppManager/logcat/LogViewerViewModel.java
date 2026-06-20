@@ -343,7 +343,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                 mLogSavedLiveData.postValue(path);
             } catch (IOException e) {
                 mLogSavedLiveData.postValue(null);
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         });
     }
@@ -415,7 +415,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                     sendLogDetails.setAttachmentType("application/zip");
                     sendLogDetails.setAttachment(zipFile);
                 } catch (Exception th) {
-                    th.printStackTrace();
+                    Log.w(TAG, th);
                     sendLogDetails.setAttachmentType(null);
                 }
             }
@@ -442,7 +442,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                     sendLogDetails.setAttachmentName(LogcatStructuredExporter.createExportFilename(format));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 sendLogDetails.setAttachmentType(null);
             }
             mLogToBeSentLiveData.postValue(sendLogDetails);

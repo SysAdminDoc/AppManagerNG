@@ -28,8 +28,11 @@ import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class VirusTotal {
+    private static final String TAG = VirusTotal.class.getSimpleName();
+
     public interface FullScanResponseInterface {
         boolean uploadFile();
 
@@ -408,7 +411,7 @@ public class VirusTotal {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return new VtError(status, response != null ? response.toString() : null);

@@ -100,7 +100,7 @@ public final class FileUtils {
         try (InputStream inputStream = context.getResources().getAssets().open(fileName)) {
             return IoUtils.getInputStreamContent(inputStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return "";
     }

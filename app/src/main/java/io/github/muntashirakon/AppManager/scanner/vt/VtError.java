@@ -9,8 +9,11 @@ import androidx.annotation.Nullable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class VtError {
+    private static final String TAG = VtError.class.getSimpleName();
+
     public final int httpErrorCode;
     public final String code;
     public final String message;
@@ -30,7 +33,7 @@ public class VtError {
                     message = errorObject.getString("message");
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
             this.code = code;
             this.message = message;

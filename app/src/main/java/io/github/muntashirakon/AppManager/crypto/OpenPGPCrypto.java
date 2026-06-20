@@ -74,7 +74,7 @@ public class OpenPGPCrypto implements Crypto {
                         try {
                             doAction(mLastIntent, false);
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            Log.w(TAG, e);
                         }
                     }).start();
                     break;

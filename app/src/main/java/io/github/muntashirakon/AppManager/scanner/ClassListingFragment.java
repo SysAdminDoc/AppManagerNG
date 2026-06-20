@@ -43,8 +43,11 @@ import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.RecyclerView;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ClassListingFragment extends Fragment implements AdvancedSearchView.OnQueryTextListener, MenuProvider {
+    private static final String TAG = ClassListingFragment.class.getSimpleName();
+
     private TextView mEmptyView;
     private boolean mTrackerClassesOnly;
     private ClassListingAdapter mClassListingAdapter;
@@ -227,7 +230,7 @@ public class ClassListingFragment extends Fragment implements AdvancedSearchView
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     mActivity.startActivity(intent);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                     UIUtils.displayLongToast(e.toString());
                 }
             });
