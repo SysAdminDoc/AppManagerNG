@@ -139,6 +139,19 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 alertView.show();
             } else alertView.hide();
         });
+        viewModel.getPermOpResult().observe(getViewLifecycleOwner(), result -> {
+            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            if (result.success) {
+                if (result.changedItem != null) {
+                    AppDetailsAdapterUtils.notifyItemChangedIfPresent(mAdapter, mAdapter.mAdapterList,
+                            (AppDetailsItem<?>) result.changedItem);
+                } else if (isAdded()) {
+                    refreshDetails();
+                }
+            } else if (result.failureMessageRes != 0) {
+                UIUtils.displayShortToast(result.failureMessageRes);
+            }
+        });
     }
 
     @Override
@@ -181,36 +194,13 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
         if (id == R.id.action_refresh_details) {
             refreshDetails();
         } else if (id == R.id.action_reset_to_default) {  // App ops
+            if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            // TODO: 19/3/23 Perform using a ViewModel
-            ThreadUtils.postOnBackgroundThread(() -> {
-                if (viewModel == null || !viewModel.resetAppOps()) {
-                    ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed_to_reset_app_ops));
-                } else {
-                    ThreadUtils.postOnMainThread(() -> {
-                        if (isAdded()) {
-                            refreshDetails();
-                        }
-                    });
-                }
-            });
+            viewModel.resetAppOpsAsync();
         } else if (id == R.id.action_deny_dangerous_app_ops) {  // App ops
+            if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            // TODO: 19/3/23 Perform using a ViewModel
-            ThreadUtils.postOnBackgroundThread(() -> {
-                boolean isSuccessful = ExUtils.requireNonNullElse(() -> viewModel != null
-                        && viewModel.ignoreDangerousAppOps(), false);
-                if (isSuccessful) {
-                    ThreadUtils.postOnMainThread(() -> {
-                        if (isAdded()) {
-                            refreshDetails();
-                        }
-                    });
-                } else {
-                    ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(
-                            R.string.failed_to_deny_dangerous_app_ops));
-                }
-            });
+            viewModel.ignoreDangerousAppOpsAsync();
         } else if (id == R.id.action_toggle_default_app_ops) {  // App ops
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
             // Turn filter on/off
@@ -241,19 +231,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         } catch (IllegalArgumentException e) {
                             return;
                         }
-                        // TODO: 22/5/23 Perform using a ViewModel
-                        ThreadUtils.postOnBackgroundThread(() -> {
-                            if (viewModel != null && viewModel.setAppOp(op, mode)) {
-                                ThreadUtils.postOnMainThread(() -> {
-                                    if (isAdded()) {
-                                        refreshDetails();
-                                    }
-                                });
-                            } else {
-                                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(
-                                        R.string.failed_to_enable_op));
-                            }
-                        });
+                        if (viewModel != null) viewModel.setAppOpAsync(op, mode);
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
@@ -269,35 +247,16 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     .setSelection(AppOpsManager.MODE_ALLOWED)
                     .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
                         int opMode = modes.get(which);
-                        ThreadUtils.postOnBackgroundThread(() -> {
-                            if (viewModel != null && viewModel.setAppOps(audioVolumeOps, opMode)) {
-                                ThreadUtils.postOnMainThread(() -> {
-                                    if (isAdded()) {
-                                        refreshDetails();
-                                    }
-                                });
-                            } else {
-                                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
-                                        R.string.failed_to_change_app_op_mode));
-                            }
-                        });
+                        if (viewModel != null) {
+                            viewModel.setAudioVolumeAppOpsAsync(audioVolumeOps, opMode);
+                        }
                         dialog.dismiss();
                     })
                     .show();
         } else if (id == R.id.action_deny_dangerous_permissions) {  // permissions
+            if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            // TODO: 22/5/23 Perform using a ViewModel
-            ThreadUtils.postOnBackgroundThread(() -> {
-                if (viewModel == null || !viewModel.revokeDangerousPermissions()) {
-                    ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(
-                            R.string.failed_to_deny_dangerous_perms));
-                }
-                ThreadUtils.postOnMainThread(() -> {
-                    if (isAdded()) {
-                        refreshDetails();
-                    }
-                });
-            });
+            viewModel.revokeDangerousPermissionsAsync();
         } else if (id == R.id.action_open_privacy_dashboard) {
             openPrivacyDashboardForInspectedPackage();
             // Sorting
@@ -788,16 +747,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         .setSelection(item.getMode())
                         .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
                             int opMode = modes.get(which);
-                            // TODO: 22/5/23 Perform using a ViewModel
-                            ThreadUtils.postOnBackgroundThread(() -> {
-                                if (viewModel != null && viewModel.setAppOpMode(item, opMode)) {
-                                    ThreadUtils.postOnMainThread(() ->
-                                            AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item));
-                                } else {
-                                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
-                                            R.string.failed_to_change_app_op_mode));
-                                }
-                            });
+                            if (viewModel != null) viewModel.setAppOpModeAsync(item, opMode);
                             dialog.dismiss();
                         })
                         .show();
@@ -859,23 +809,9 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             if (canGrantOrRevokePermission) {
                 holder.toggleSwitch.setVisibility(View.VISIBLE);
                 holder.toggleSwitch.setChecked(permissionItem.isGranted());
-                // TODO: 22/5/23 Perform using a ViewModel
-                holder.itemView.setOnClickListener(v -> ThreadUtils.postOnBackgroundThread(() -> {
-                    try {
-                        if (Objects.requireNonNull(viewModel).togglePermission(permissionItem)) {
-                            ThreadUtils.postOnMainThread(() ->
-                                    AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, permissionItem));
-                        } else throw new Exception("Couldn't grant permission: " + permName);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Could not change permission %s.", e, permName);
-                        // togglePermission attempts the opposite of the current state and
-                        // leaves it unchanged on failure: a currently-granted permission was
-                        // a revoke attempt, a currently-revoked one a grant attempt.
-                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(permissionItem.isGranted()
-                                ? R.string.failed_to_revoke_permission
-                                : R.string.failed_to_grant_permission));
-                    }
-                }));
+                holder.itemView.setOnClickListener(v -> {
+                    if (viewModel != null) viewModel.togglePermissionAsync(permissionItem);
+                });
             } else {
                 holder.toggleSwitch.setVisibility(View.GONE);
                 holder.itemView.setOnClickListener(null);
@@ -897,7 +833,6 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             }
             int flags = permissionItem.permission.getFlags();
             holder.itemView.setOnLongClickListener(flags == 0 ? null : v -> {
-                // TODO: 12/1/22 Use ViewModel
                 SparseArray<String> permissionFlags = PermissionCompat.getPermissionFlagsWithString(flags);
                 String[] flagStrings = new String[permissionFlags.size()];
                 for (int i = 0; i < flagStrings.length; ++i) {
