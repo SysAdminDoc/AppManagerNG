@@ -14,13 +14,6 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ### P2
 
-- [ ] P2 — Paparazzi screenshot regression testing
-  Why: 143 layouts across 3 themes (AMOLED/dark/light) with ongoing V2 design token work create continuous visual regression risk. Paparazzi (cashapp/paparazzi, JVM-based, no emulator) supports XML Views natively and renders Material Components correctly since v1.2+ — no Compose dependency, unblocking the Roadmap_Blocked.md screenshot testing item.
-  Evidence: Paparazzi issue #219 (Material Components rendering) resolved; Roborazzi blocked by Compose transitive deps
-  Touches: app/build.gradle (paparazzi plugin), app/src/test/ (screenshot test classes), .github/workflows/tests.yml
-  Acceptance: at least 5 screenshot tests cover main list, app details, debloater, settings, and onboarding across dark and light themes; CI runs them on every PR; golden images checked in under app/src/test/snapshots/
-  Complexity: M
-
 - [ ] P2 — Main-thread blocking operations audit
   Why: Upstream #1987/#1988 (opened 2026-06-18) flag main-thread keystore reads and time-consuming PackageManager queries. Given shared codebase origin, the same patterns likely exist in NG. ANR risk on low-end devices.
   Evidence: upstream MuntashirAkon/AppManager#1987, #1988; StrictMode ThreadPolicy violations
