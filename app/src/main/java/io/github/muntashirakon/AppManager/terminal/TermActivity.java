@@ -29,6 +29,10 @@ import androidx.appcompat.widget.AppCompatTextView;
 import com.google.android.material.color.MaterialColors;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -260,9 +264,9 @@ public class TermActivity extends BaseActivity {
     }
 
     private void loadInitScript() {
-        java.io.File initFile = new java.io.File(getFilesDir(), "terminal_init.sh");
+        File initFile = new File(getFilesDir(), "terminal_init.sh");
         if (!initFile.exists() || !initFile.canRead()) return;
-        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(initFile))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(initFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String trimmed = line.trim();
@@ -270,7 +274,7 @@ public class TermActivity extends BaseActivity {
                     sendToStdin(trimmed, true);
                 }
             }
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             Log.w(TAG, "Failed to load terminal init script", e);
         }
     }
