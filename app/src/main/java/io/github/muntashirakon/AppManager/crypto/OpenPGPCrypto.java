@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Path;
 
 // Copyright 2018 jensstein
@@ -69,14 +70,13 @@ public class OpenPGPCrypto implements Crypto {
                 case ACTION_OPEN_PGP_INTERACTION_BEGIN:
                     break;
                 case ACTION_OPEN_PGP_INTERACTION_END:
-                    // TODO: 17/12/21 Handle this better by using CountdownLatch
-                    new Thread(() -> {
+                    ThreadUtils.postOnBackgroundThread(() -> {
                         try {
                             doAction(mLastIntent, false);
                         } catch (IOException e) {
                             Log.w(TAG, e);
                         }
-                    }).start();
+                    });
                     break;
             }
         }

@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.IoUtils;
 
 public final class DebloatDefinitionsUpdater {
@@ -60,7 +61,7 @@ public final class DebloatDefinitionsUpdater {
             return;
         }
         Context appContext = context.getApplicationContext();
-        new Thread(() -> {
+        ThreadUtils.postOnBackgroundThread(() -> {
             Prefs.Privacy.setLastDebloatDefinitionsCheckTime(System.currentTimeMillis());
             try {
                 UpdateResult result = updateNow(appContext);
@@ -72,7 +73,7 @@ public final class DebloatDefinitionsUpdater {
             } catch (Exception th) {
                 Log.w(TAG, "Could not update debloat definitions.", th);
             }
-        }, "debloat-definitions-updater").start();
+        });
     }
 
     public static boolean isUpdateAllowed() {

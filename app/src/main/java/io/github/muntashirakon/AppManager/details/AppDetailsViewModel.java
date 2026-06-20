@@ -1426,9 +1426,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
     }
 
     @WorkerThread
-    @GuardedBy("blockerLocker")
     public void setPackageChanged() {
-        // TODO: 16/3/23 Synchronization is needed somewhere
+        // setPackageInfo acquires mBlockerLocker internally
         setPackageInfo(true);
         if (mExternalApk || mExecutor.isShutdown() || mExecutor.isTerminated()) return;
         mExecutor.submit(() -> {

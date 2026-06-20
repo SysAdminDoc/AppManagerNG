@@ -35,20 +35,6 @@ visual verification, privileged-mode testing, or external dependencies.
   Acceptance: every ACTION_SEND/ACTION_SEND_MULTIPLE intent that includes a content:// URI also sets FLAG_GRANT_READ_URI_PERMISSION; a grep-based contract test verifies no ACTION_SEND with content URI lacks the flag.
   Complexity: S
 
-- [ ] P2 — AppDetailsViewModel.setPackageChanged() thread-safety fix
-  Why: Method is annotated `@GuardedBy("blockerLocker")` but does NOT acquire the lock. `setPackageInfo(true)` at line 1432 runs outside the synchronized block that starts at line 1435. This creates a race between component reload and package info refresh.
-  Evidence: AppDetailsViewModel.java:1428-1439 (@GuardedBy annotation vs actual locking)
-  Touches: details/AppDetailsViewModel.java (setPackageChanged method)
-  Acceptance: setPackageInfo(true) call is inside the synchronized(mBlockerLocker) block, or the @GuardedBy annotation is corrected to reflect the actual locking contract; existing tests still pass.
-  Complexity: S
-
-- [ ] P2 — Replace raw Thread() creations with executor/ThreadUtils
-  Why: 6 sites create `new Thread()` bypassing ThreadUtils.postOnBackgroundThread() — no uncaught exception handler, no StrictMode visibility, not lifecycle-aware.
-  Evidence: OpenPGPCrypto.java:73, DebloatDefinitionsUpdater.java:63, TrackerDatabaseFreshnessChecker.java:47, LocalServerManager.java:224+331, OpenPgpKeySelectionDialogFragment.java:54
-  Touches: crypto/OpenPGPCrypto.java, debloat/DebloatDefinitionsUpdater.java, scanner/TrackerDatabaseFreshnessChecker.java, servermanager/LocalServerManager.java, settings/crypto/OpenPgpKeySelectionDialogFragment.java
-  Acceptance: zero `new Thread(` calls in app/src/main/java/io/github/muntashirakon/AppManager/ (excluding vendored code); all replaced with ThreadUtils.postOnBackgroundThread() or an existing ExecutorService; StrictMode debug logging captures the work.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — clearApplicationUserData → IActivityManager migration
