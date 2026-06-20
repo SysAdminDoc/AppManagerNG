@@ -36,7 +36,7 @@ final class CommandHistory {
         mPosition = mEntries.size();
     }
 
-    void add(@NonNull String command) {
+    synchronized void add(@NonNull String command) {
         String trimmed = command.trim();
         if (trimmed.isEmpty()) return;
         if (!mEntries.isEmpty() && mEntries.get(mEntries.size() - 1).equals(trimmed)) {
@@ -53,25 +53,25 @@ final class CommandHistory {
     }
 
     @Nullable
-    String navigateUp() {
+    synchronized String navigateUp() {
         if (mEntries.isEmpty() || mPosition <= 0) return null;
         mPosition--;
         return mEntries.get(mPosition);
     }
 
     @Nullable
-    String navigateDown() {
+    synchronized String navigateDown() {
         if (mEntries.isEmpty() || mPosition >= mEntries.size()) return null;
         mPosition++;
         if (mPosition >= mEntries.size()) return "";
         return mEntries.get(mPosition);
     }
 
-    void resetPosition() {
+    synchronized void resetPosition() {
         mPosition = mEntries.size();
     }
 
-    int size() {
+    synchronized int size() {
         return mEntries.size();
     }
 
@@ -82,7 +82,7 @@ final class CommandHistory {
         }
     }
 
-    private void load() {
+    private synchronized void load() {
         if (!mHistoryFile.exists()) return;
         try (BufferedReader reader = new BufferedReader(new FileReader(mHistoryFile))) {
             String line;

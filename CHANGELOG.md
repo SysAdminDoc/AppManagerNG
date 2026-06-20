@@ -33,6 +33,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Fixed — Main-thread blocking audit (2026-06-20)
+
+- Moved KeyStore password check off the main thread during app startup in both
+  BaseActivity and SplashActivity, eliminating 50-200ms of startup jank from
+  BKS file read + AndroidKeyStore binder IPC.
+- Moved KeyStore load and password validation off the main thread in
+  KeyStoreActivity dialog handlers and KeyStoreManager password input dialog.
+- Moved AES secret key save (disk write + crypto) off the main thread in the
+  AES encryption settings dialog.
+- Added StrictMode ThreadPolicy with detectAll()+penaltyLog() to debug builds
+  so future main-thread violations surface in logcat immediately.
+- Added thread-safety synchronization to CommandHistory for concurrent access
+  between the executor and calling threads.
+
 ### Changed — Build infrastructure (2026-06-20)
 
 - Bumped compileSdk 36 → 37 for Android 17 (API 37) compilation support.

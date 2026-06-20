@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager;
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
+import android.os.StrictMode;
 import android.sun.security.provider.JavaKeyStoreProvider;
 
 import androidx.annotation.Keep;
@@ -44,6 +45,12 @@ public class AppManager extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build());
+        }
         Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
         configureActivityEmbeddingSplits();
         AppearanceUtils.init(this);

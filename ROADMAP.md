@@ -12,15 +12,6 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ## Research-Driven Additions (2026-06-20)
 
-### P2
-
-- [ ] P2 — Main-thread blocking operations audit
-  Why: Upstream #1987/#1988 (opened 2026-06-18) flag main-thread keystore reads and time-consuming PackageManager queries. Given shared codebase origin, the same patterns likely exist in NG. ANR risk on low-end devices.
-  Evidence: upstream MuntashirAkon/AppManager#1987, #1988; StrictMode ThreadPolicy violations
-  Touches: app/src/main/java/ (keystore operations, PackageManager queries, file I/O on UI thread)
-  Acceptance: StrictMode ThreadPolicy set to detectAll()+penaltyLog() in debug builds; zero violations logged during main list load, app details open, and settings navigation; offending operations moved to background threads or ViewModel coroutines
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — UAD-ng debloat safety cross-reference
