@@ -470,6 +470,22 @@ public final class Prefs {
         public static void setDefaultFreezingMethod(@FreezeUtils.FreezeMethod int freezeType) {
             AppPref.set(AppPref.PrefKey.PREF_FREEZE_TYPE_INT, freezeType);
         }
+
+        public static boolean isAutoFreezeOnLockEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_AUTO_FREEZE_ON_LOCK_BOOL);
+        }
+
+        public static void setAutoFreezeOnLock(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_AUTO_FREEZE_ON_LOCK_BOOL, enabled);
+        }
+
+        public static int getAutoFreezeDelaySeconds() {
+            return AppPref.getInt(AppPref.PrefKey.PREF_AUTO_FREEZE_DELAY_SECONDS_INT);
+        }
+
+        public static void setAutoFreezeDelaySeconds(int seconds) {
+            AppPref.set(AppPref.PrefKey.PREF_AUTO_FREEZE_DELAY_SECONDS_INT, Math.max(0, seconds));
+        }
     }
 
     public static final class Encryption {

@@ -61,6 +61,20 @@ public class RulesStorageManager implements Closeable {
     @UserIdInt
     protected int userId;
 
+    @WorkerThread
+    @NonNull
+    public static List<FreezeRule> getAllFreezeRules() {
+        Context context = ContextUtils.getContext();
+        List<String> packages = ComponentUtils.getAllPackagesWithRules(context);
+        List<FreezeRule> result = new ArrayList<>();
+        for (String pkg : packages) {
+            try (RulesStorageManager rsm = new RulesStorageManager(pkg, 0)) {
+                result.addAll(rsm.getAll(FreezeRule.class));
+            }
+        }
+        return result;
+    }
+
     protected RulesStorageManager(@NonNull String packageName, @UserIdInt int userId) {
         this.packageName = packageName;
         this.userId = userId;
