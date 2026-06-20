@@ -182,6 +182,85 @@ public class Android17BehaviorContractTest {
                 || line.contains("\"removeSyncBarrier\"");
     }
 
+    @Test
+    public void noDeprecatedBackgroundActivityLaunchMode() throws IOException {
+        Path root = findProjectRoot();
+        List<String> offenders = new ArrayList<>();
+        for (Path sourceRoot : sourceRoots(root)) {
+            if (!Files.exists(sourceRoot)) continue;
+            try (Stream<Path> stream = Files.walk(sourceRoot)) {
+                stream.filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(path -> {
+                            try {
+                                List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+                                for (int i = 0; i < lines.size(); i++) {
+                                    String line = lines.get(i);
+                                    if (line.contains("MODE_BACKGROUND_ACTIVITY_START_ALLOWED")
+                                            && !line.trim().startsWith("//")
+                                            && !line.trim().startsWith("*")) {
+                                        offenders.add(root.relativize(path) + ":" + (i + 1) + ": " + line.trim());
+                                    }
+                                }
+                            } catch (IOException e) {
+                                offenders.add(root.relativize(path) + ": " + e.getMessage());
+                            }
+                        });
+            }
+        }
+        assertTrue("Android 17 deprecates MODE_BACKGROUND_ACTIVITY_START_ALLOWED; "
+                        + "use MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE instead:\n"
+                        + String.join("\n", offenders),
+                offenders.isEmpty());
+    }
+
+    @Test
+    public void actionSendWithStreamAlwaysGrantsUriPermission() throws IOException {
+        Path root = findProjectRoot();
+        List<String> offenders = new ArrayList<>();
+        for (Path sourceRoot : sourceRoots(root)) {
+            if (!Files.exists(sourceRoot)) continue;
+            try (Stream<Path> stream = Files.walk(sourceRoot)) {
+                stream.filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(path -> {
+                            try {
+                                List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+                                for (int i = 0; i < lines.size(); i++) {
+                                    String line = lines.get(i);
+                                    if ((line.contains("EXTRA_STREAM") || line.contains("ACTION_SEND"))
+                                            && line.contains("new Intent")) {
+                                        boolean hasGrantFlag = false;
+                                        for (int j = i; j < Math.min(i + 15, lines.size()); j++) {
+                                            if (lines.get(j).contains("FLAG_GRANT_READ_URI_PERMISSION")) {
+                                                hasGrantFlag = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!hasGrantFlag && !line.trim().startsWith("//") && !line.trim().startsWith("*")) {
+                                            boolean hasStream = false;
+                                            for (int j = i; j < Math.min(i + 15, lines.size()); j++) {
+                                                if (lines.get(j).contains("EXTRA_STREAM") || lines.get(j).contains("ClipData")) {
+                                                    hasStream = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (hasStream) {
+                                                offenders.add(root.relativize(path) + ":" + (i + 1) + ": " + line.trim());
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (IOException e) {
+                                offenders.add(root.relativize(path) + ": " + e.getMessage());
+                            }
+                        });
+            }
+        }
+        assertTrue("Android 18 removes implicit URI grants on ACTION_SEND; "
+                        + "add FLAG_GRANT_READ_URI_PERMISSION + ClipData:\n"
+                        + String.join("\n", offenders),
+                offenders.isEmpty());
+    }
+
     private static Set<String> setOf(String... values) {
         Set<String> set = new HashSet<>();
         for (String value : values) {

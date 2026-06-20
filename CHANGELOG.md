@@ -33,6 +33,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Security — Android 17/18 forward-compatibility audit (2026-06-20)
+
+- Android 17 BAL hardening audit: clean — no deprecated
+  `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` usage found. All background →
+  foreground transitions use PendingIntentCompat. Contract test added.
+- Android 18 implicit URI grant audit: clean — all ACTION_SEND/
+  ACTION_SEND_MULTIPLE intents with content URIs already set
+  FLAG_GRANT_READ_URI_PERMISSION + ClipData. Contract test added.
+
 ### Fixed — Thread safety and threading hygiene (2026-06-20)
 
 - Fixed `AppDetailsViewModel.setPackageChanged()` misleading `@GuardedBy`
