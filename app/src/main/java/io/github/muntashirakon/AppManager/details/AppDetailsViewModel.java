@@ -35,6 +35,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PermissionInfoCompat;
@@ -135,6 +136,111 @@ public class AppDetailsViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> mTagsAlteredLiveData = new MutableLiveData<>();
     private final MutableLiveData<Integer> mFreezeTypeLiveData = new MutableLiveData<>();
     private final MutableLiveData<AppDetailsComponentItem> mComponentChangedLiveData = new MutableLiveData<>();
+    private final MutableLiveData<PermOpResult> mPermOpResultLiveData = new MutableLiveData<>();
+
+    public static final class PermOpResult {
+        public final boolean success;
+        @StringRes
+        public final int failureMessageRes;
+        @Nullable
+        public final Object changedItem;
+
+        PermOpResult(boolean success, @StringRes int failureMessageRes, @Nullable Object changedItem) {
+            this.success = success;
+            this.failureMessageRes = failureMessageRes;
+            this.changedItem = changedItem;
+        }
+
+        static PermOpResult success() {
+            return new PermOpResult(true, 0, null);
+        }
+
+        static PermOpResult successWithItem(@NonNull Object item) {
+            return new PermOpResult(true, 0, item);
+        }
+
+        static PermOpResult failure(@StringRes int messageRes) {
+            return new PermOpResult(false, messageRes, null);
+        }
+    }
+
+    @NonNull
+    public LiveData<PermOpResult> getPermOpResult() {
+        return mPermOpResultLiveData;
+    }
+
+    public void resetAppOpsAsync() {
+        mExecutor.execute(() -> {
+            boolean ok = resetAppOps();
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.success()
+                    : PermOpResult.failure(R.string.failed_to_reset_app_ops));
+        });
+    }
+
+    public void ignoreDangerousAppOpsAsync() {
+        mExecutor.execute(() -> {
+            boolean ok = ignoreDangerousAppOps();
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.success()
+                    : PermOpResult.failure(R.string.failed_to_deny_dangerous_app_ops));
+        });
+    }
+
+    public void setAppOpAsync(int op, int mode) {
+        mExecutor.execute(() -> {
+            boolean ok = setAppOp(op, mode);
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.success()
+                    : PermOpResult.failure(R.string.failed_to_enable_op));
+        });
+    }
+
+    public void revokeDangerousPermissionsAsync() {
+        mExecutor.execute(() -> {
+            boolean ok = revokeDangerousPermissions();
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.success()
+                    : PermOpResult.failure(R.string.failed_to_deny_dangerous_perms));
+        });
+    }
+
+    public void setAppOpModeAsync(@NonNull AppDetailsAppOpItem item, @AppOpsManagerCompat.Mode int mode) {
+        mExecutor.execute(() -> {
+            boolean ok = setAppOpMode(item, mode);
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.successWithItem(item)
+                    : PermOpResult.failure(R.string.failed_to_change_app_op_mode));
+        });
+    }
+
+    public void setAudioVolumeAppOpsAsync(int[] ops, @AppOpsManagerCompat.Mode int mode) {
+        mExecutor.execute(() -> {
+            boolean ok = setAppOps(ops, mode);
+            mPermOpResultLiveData.postValue(ok
+                    ? PermOpResult.success()
+                    : PermOpResult.failure(R.string.failed_to_change_app_op_mode));
+        });
+    }
+
+    public void togglePermissionAsync(@NonNull AppDetailsPermissionItem item) {
+        mExecutor.execute(() -> {
+            try {
+                if (togglePermission(item)) {
+                    mPermOpResultLiveData.postValue(PermOpResult.successWithItem(item));
+                } else {
+                    mPermOpResultLiveData.postValue(PermOpResult.failure(item.isGranted()
+                            ? R.string.failed_to_revoke_permission
+                            : R.string.failed_to_grant_permission));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Could not change permission %s.", e, item.name);
+                mPermOpResultLiveData.postValue(PermOpResult.failure(item.isGranted()
+                        ? R.string.failed_to_revoke_permission
+                        : R.string.failed_to_grant_permission));
+            }
+        });
+    }
 
     @Nullable
     private PackageInfo mPackageInfo;
