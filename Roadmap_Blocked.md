@@ -181,6 +181,17 @@ ROADMAP.md once the blocker is resolved.
   Blocker: Paparazzi 2.0.0-alpha05.2 (AGP 9.x support, PR #2318) is expected by 2026-06-25 but not yet published. No released Paparazzi version works with AGP 9.2.1. Retry after the milestone ships.
   Complexity: M
 
+## Design-Decision-Gated
+
+### P3
+
+- [ ] P3 — DDG Tracker Radar as supplementary tracker source
+  Why: TrackerControl layers DuckDuckGo's mobile-specific tracker database on top of Exodus for broader coverage. DDG Tracker Radar is MIT-licensed and maintained by DuckDuckGo.
+  Evidence: TrackerControl multi-source approach; DDG Tracker Radar mobile TDS at staticcdn.duckduckgo.com
+  Touches: scanner/ (new domain matching pass), app/src/main/assets/ (DDG data), StaticDataset.java, ScannerViewModel.java
+  Blocker: DDG Tracker Radar is domain-based (tracking which network domains apps contact), while NG's scanner is class-name-based (Aho-Corasick matching against Exodus code signatures). Integration requires a design decision: (a) static domain extraction from DEX string pool + manifest (imprecise, high false-positive risk), (b) runtime network monitoring via VPN/firewall (scope creep for a package manager), or (c) build-time cross-reference of DDG entities with existing libs.json entries to enrich metadata without new detection (low value). The libs.json `network` signature field already exists but is unused at runtime.
+  Complexity: M
+
 ## Dependency-Gated
 
 ### P3

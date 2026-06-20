@@ -14,11 +14,4 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ### P3
 
-- [ ] P3 — DDG Tracker Radar as supplementary tracker source
-  Why: TrackerControl demonstrates that layering DuckDuckGo's mobile-specific tracker database on top of Exodus catches mobile-specific trackers that Exodus misses. DDG Tracker Radar is MIT-licensed, JSON-formatted, and maintained by DuckDuckGo.
-  Evidence: TrackerControl multi-source approach (Disconnect + DDG + in-house); DDG Tracker Radar mobile TDS at staticcdn.duckduckgo.com
-  Touches: app/src/main/assets/ (tracker data), scanner/ (signature matching), full-flavor debloat-definition updater
-  Acceptance: tracker scanner reports trackers found via DDG Tracker Radar alongside Exodus signatures; source attribution visible in tracker detail view; full flavor auto-updates the DDG list; floss flavor ships a bundled snapshot
-  Complexity: M
-
 All remaining blocked items are in `Roadmap_Blocked.md`.
