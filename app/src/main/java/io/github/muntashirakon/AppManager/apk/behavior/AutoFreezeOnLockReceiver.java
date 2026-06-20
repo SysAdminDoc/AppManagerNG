@@ -5,8 +5,9 @@ package io.github.muntashirakon.AppManager.apk.behavior;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.List;
@@ -28,21 +29,16 @@ public class AutoFreezeOnLockReceiver extends BroadcastReceiver {
 
         int delaySeconds = Prefs.Blocking.getAutoFreezeDelaySeconds();
         if (delaySeconds > 0) {
-            ThreadUtils.postOnBackgroundThread(() -> {
-                try {
-                    Thread.sleep(delaySeconds * 1000L);
-                } catch (InterruptedException e) {
-                    return;
-                }
-                freezeAllRuledPackages(context);
-            });
+            new Handler(Looper.getMainLooper()).postDelayed(
+                    () -> ThreadUtils.postOnBackgroundThread(AutoFreezeOnLockReceiver::freezeAllRuledPackages),
+                    delaySeconds * 1000L);
         } else {
-            ThreadUtils.postOnBackgroundThread(() -> freezeAllRuledPackages(context));
+            ThreadUtils.postOnBackgroundThread(AutoFreezeOnLockReceiver::freezeAllRuledPackages);
         }
     }
 
     @VisibleForTesting
-    static void freezeAllRuledPackages(@NonNull Context context) {
+    static void freezeAllRuledPackages() {
         try {
             List<FreezeRule> rules = RulesStorageManager.getAllFreezeRules();
             int frozen = 0;

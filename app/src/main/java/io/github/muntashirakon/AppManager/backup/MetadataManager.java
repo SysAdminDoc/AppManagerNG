@@ -124,7 +124,7 @@ public final class MetadataManager {
             JSONUtils.putAll(metadataObject, metadata.metadata.serializeToJson());
             // Info is a subset of meta_v2.am.json except for backup_name
             metadataObject.remove("backup_name");
-            outputStream.write(metadataObject.toString(4).getBytes());
+            outputStream.write(metadataObject.toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return Collections.singletonMap(metadataFile.getName(), DigestUtils.getHexDigest(
                     metadata.info.checksumAlgo, metadataFile));
         } catch (JSONException e) {
@@ -138,7 +138,7 @@ public final class MetadataManager {
         Map<String, String> filenameChecksumMap = new LinkedHashMap<>(2);
         Path metadataFile = backupFile.getMetadataV5File(true);
         try (OutputStream outputStream = metadataFile.openOutputStream()) {
-            outputStream.write(metadata.metadata.serializeToJson().toString(4).getBytes());
+            outputStream.write(metadata.metadata.serializeToJson().toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } catch (JSONException e) {
             throw new IOException(e.getMessage() + " for file " + metadataFile, e);
         }
@@ -148,7 +148,7 @@ public final class MetadataManager {
                 metadata.info.checksumAlgo, encryptedMetadataFile));
         Path infoFile = backupFile.getInfoFile();
         try (OutputStream outputStream = infoFile.openOutputStream()) {
-            outputStream.write(metadata.info.serializeToJson().toString(4).getBytes());
+            outputStream.write(metadata.info.serializeToJson().toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
             filenameChecksumMap.put(infoFile.getName(), DigestUtils.getHexDigest(
                     metadata.info.checksumAlgo, infoFile));
         } catch (JSONException e) {

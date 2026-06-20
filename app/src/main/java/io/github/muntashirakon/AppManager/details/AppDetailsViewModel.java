@@ -169,6 +169,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return mPermOpResultLiveData;
     }
 
+    public void clearPermOpResult() {
+        mPermOpResultLiveData.setValue(null);
+    }
+
     public void resetAppOpsAsync() {
         mExecutor.execute(() -> {
             boolean ok = resetAppOps();

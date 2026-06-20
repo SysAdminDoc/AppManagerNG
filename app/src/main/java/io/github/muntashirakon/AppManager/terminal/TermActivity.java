@@ -129,9 +129,10 @@ public class TermActivity extends BaseActivity {
                 } else if (c >= 'A' && c <= 'Z') {
                     ctrlChar = (char)(c - 'A' + 1);
                 } else return false;
-                appendBoldOutput("^" + (char) (c + 'A'));
+                appendBoldOutput("^" + Character.toUpperCase((char) c));
                 appendOutput("\n");
                 sendToStdin(String.valueOf(ctrlChar), true);
+                return true;
             }
             return false;
         });
@@ -159,7 +160,7 @@ public class TermActivity extends BaseActivity {
 
     private void initShell() {
         mWakeLock = CpuUtils.getPartialWakeLock("term");
-        mWakeLock.acquire();
+        mWakeLock.acquire(2 * 60 * 60 * 1000L);
         mExecutor.submit(() -> {
             TerminalRoute route = resolveRoute();
             try {
@@ -177,7 +178,7 @@ public class TermActivity extends BaseActivity {
                             }
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, "stdout reader terminated", e);
                     }
                 });
                 mExecutor.submit(() -> {
@@ -191,7 +192,7 @@ public class TermActivity extends BaseActivity {
                             }
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, "stderr reader terminated", e);
                     }
                 });
                 loadInitScript();

@@ -140,6 +140,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else alertView.hide();
         });
         viewModel.getPermOpResult().observe(getViewLifecycleOwner(), result -> {
+            if (result == null) return;
+            viewModel.clearPermOpResult();
             ProgressIndicatorCompat.setVisibility(progressIndicator, false);
             if (result.success) {
                 if (result.changedItem != null) {

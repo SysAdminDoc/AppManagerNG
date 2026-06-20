@@ -66,9 +66,10 @@ public class RulesStorageManager implements Closeable {
     public static List<FreezeRule> getAllFreezeRules() {
         Context context = ContextUtils.getContext();
         List<String> packages = ComponentUtils.getAllPackagesWithRules(context);
+        int userId = android.os.UserHandleHidden.myUserId();
         List<FreezeRule> result = new ArrayList<>();
         for (String pkg : packages) {
-            try (RulesStorageManager rsm = new RulesStorageManager(pkg, 0)) {
+            try (RulesStorageManager rsm = new RulesStorageManager(pkg, userId)) {
                 result.addAll(rsm.getAll(FreezeRule.class));
             }
         }
