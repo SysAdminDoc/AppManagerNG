@@ -598,12 +598,15 @@ public final class PackageInstallerCompat {
     int mAttempts = 1;
     private final Context mContext;
     private final boolean mHasInstallPackagePermission;
+    private static final String PREFS_INSTALLER = "installer_state";
+    private static final String KEY_SAVED_VERIFY_ADB = "saved_verify_adb_installs";
     private int mLastVerifyAdbInstallsResult;
 
     private PackageInstallerCompat() {
         mContext = ContextUtils.getContext();
         mHasInstallPackagePermission = SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES);
         mLastVerifyAdbInstallsResult = -1;
+        restoreVerifySettingsFromCrash();
     }
 
     public void setOnInstallListener(@Nullable OnInstallListener onInstallListener) {
@@ -907,6 +910,8 @@ public final class PackageInstallerCompat {
             if (SelfPermissions.isShell()) {
                 mLastVerifyAdbInstallsResult = Settings.Global.getInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
                 if (mLastVerifyAdbInstallsResult != 0) {
+                    mContext.getSharedPreferences(PREFS_INSTALLER, Context.MODE_PRIVATE)
+                            .edit().putInt(KEY_SAVED_VERIFY_ADB, mLastVerifyAdbInstallsResult).apply();
                     Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 0);
                 }
             }
@@ -975,19 +980,27 @@ public final class PackageInstallerCompat {
     }
 
     private void restoreVerifySettings() {
-        // openSession() disables verification for ANY non-zero original value
-        // (the `!= 0` guard) but stores the true original in
-        // mLastVerifyAdbInstallsResult (sentinel -1 = never modified). Restoring
-        // only when it was exactly 1 left ADB-install verification disabled
-        // system-wide if the original value was a non-zero value other than 1.
-        // Mirror the disable condition and restore the actual saved value.
         if (mLastVerifyAdbInstallsResult > 0) {
             int val = Settings.Global.getInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
             if (val != mLastVerifyAdbInstallsResult) {
-                // Restore value
                 Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, mLastVerifyAdbInstallsResult);
             }
+            mContext.getSharedPreferences(PREFS_INSTALLER, Context.MODE_PRIVATE)
+                    .edit().remove(KEY_SAVED_VERIFY_ADB).apply();
         }
+    }
+
+    private void restoreVerifySettingsFromCrash() {
+        if (!SelfPermissions.isShell()) return;
+        android.content.SharedPreferences prefs = mContext.getSharedPreferences(PREFS_INSTALLER, Context.MODE_PRIVATE);
+        int saved = prefs.getInt(KEY_SAVED_VERIFY_ADB, -1);
+        if (saved <= 0) return;
+        int current = Settings.Global.getInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
+        if (current == 0) {
+            Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, saved);
+            Log.w(TAG, "Restored verifier_verify_adb_installs to %d after prior crash", saved);
+        }
+        prefs.edit().remove(KEY_SAVED_VERIFY_ADB).apply();
     }
 
     @InstallFlags

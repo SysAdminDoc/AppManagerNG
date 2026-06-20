@@ -211,6 +211,10 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         ServiceRecord s = mServices.get(name);
         if (s == null) {
             Class<?> clz = mContext.getClassLoader().loadClass(name.getClassName());
+            if (!RootService.class.isAssignableFrom(clz)) {
+                throw new SecurityException("Refusing to instantiate " + name.getClassName()
+                        + ": not a RootService subclass");
+            }
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
             HiddenAPIs.attachBaseContext(ctor.newInstance(), mContext);

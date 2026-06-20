@@ -107,23 +107,21 @@ class LocalServerManager {
         return mSession != null && mSession.isRunning();
     }
 
-    /**
-     * Close client session
-     */
     @AnyThread
     void closeSession() {
-        IoUtils.closeQuietly(mSession);
-        mSession = null;
+        synchronized (mLock) {
+            IoUtils.closeQuietly(mSession);
+            mSession = null;
+        }
     }
 
-    /**
-     * Stop ADB and then close client session
-     */
     void stop() {
-        IoUtils.closeQuietly(mAdbStream);
-        IoUtils.closeQuietly(mSession);
-        mAdbStream = null;
-        mSession = null;
+        synchronized (mLock) {
+            IoUtils.closeQuietly(mAdbStream);
+            IoUtils.closeQuietly(mSession);
+            mAdbStream = null;
+            mSession = null;
+        }
     }
 
     @WorkerThread
