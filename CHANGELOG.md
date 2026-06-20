@@ -33,6 +33,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Fixed — Debloat safety rating (2026-06-20)
+
+- Fixed UAD-ng "Recommended" packages incorrectly displaying as "Unsafe" in
+  the debloater. The `"delete"` removal string from the UAD-ng→debloat.json
+  pipeline was falling through to the default case instead of mapping to
+  `REMOVAL_SAFE`. Affects ~2000+ packages in the debloat database.
+
 ### Fixed — Main-thread blocking audit (2026-06-20)
 
 - Moved KeyStore password check off the main thread during app startup in both
