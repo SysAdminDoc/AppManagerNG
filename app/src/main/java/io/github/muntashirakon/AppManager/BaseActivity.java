@@ -38,6 +38,7 @@ import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModel;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public abstract class BaseActivity extends PerProcessActivity {
@@ -197,16 +198,19 @@ public abstract class BaseActivity extends PerProcessActivity {
         });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
-            // Check KeyStore
-            if (KeyStoreManager.hasKeyStorePassword()) {
-                // We already have a working keystore password.
-                // Only need authentication and/or verify mode of operation.
-                ensureSecurityAndModeOfOp();
-                return;
-            }
-            Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
-                    .putExtra(KeyStoreActivity.EXTRA_KS, true);
-            mKeyStoreActivity.launch(keyStoreIntent);
+            ThreadUtils.postOnBackgroundThread(() -> {
+                boolean hasPassword = KeyStoreManager.hasKeyStorePassword();
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (hasPassword) {
+                        ensureSecurityAndModeOfOp();
+                    } else {
+                        Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
+                                .putExtra(KeyStoreActivity.EXTRA_KS, true);
+                        mKeyStoreActivity.launch(keyStoreIntent);
+                    }
+                });
+            });
         }
     }
 

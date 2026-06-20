@@ -62,6 +62,7 @@ import io.github.muntashirakon.AppManager.crypto.RandomChar;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
 public class KeyStoreManager {
@@ -172,14 +173,18 @@ public class KeyStoreManager {
                 editable.getChars(0, editable.length(), password, 0);
                 savePass(activity, PREF_AM_KEYSTORE_PASS, password);
                 Utils.clearChars(password);
-                try {
-                    getInstance();
-                } catch (Exception e) {
-                    // Couldn't use the password.
-                    editText.setError(activity.getString(R.string.invalid_password));
-                    return;
-                }
-                d.dismiss();
+                okButton.setEnabled(false);
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    try {
+                        getInstance();
+                        ThreadUtils.postOnMainThread(d::dismiss);
+                    } catch (Exception e) {
+                        ThreadUtils.postOnMainThread(() -> {
+                            okButton.setEnabled(true);
+                            editText.setError(activity.getString(R.string.invalid_password));
+                        });
+                    }
+                });
             });
             deleteButton.setOnClickListener(v -> {
                 AM_KEYSTORE_FILE.delete();

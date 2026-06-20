@@ -83,20 +83,29 @@ public class AESCryptoSelectionDialogFragment extends DialogFragment {
                             return;
                         }
                         SecretKey secretKey = new SecretKeySpec(keyBytes, "AES");
-                        try {
-                            mKeyStoreManager.addSecretKey(AES_KEY_ALIAS, secretKey, true);
-                            Prefs.Encryption.setEncryptionMode(CryptoUtils.MODE_AES);
-                        } catch (Exception e) {
-                            Log.e(TAG, e);
-                            UIUtils.displayLongToast(R.string.failed_to_save_key);
-                        }
-                        Utils.clearBytes(keyBytes);
-                        try {
-                            SecretKeyCompat.destroy(secretKey);
-                        } catch (DestroyFailedException e) {
-                            Log.e(TAG, e);
-                        }
-                        dialog.dismiss();
+                        positiveButton.setEnabled(false);
+                        ThreadUtils.postOnBackgroundThread(() -> {
+                            try {
+                                mKeyStoreManager.addSecretKey(AES_KEY_ALIAS, secretKey, true);
+                                ThreadUtils.postOnMainThread(() -> {
+                                    Prefs.Encryption.setEncryptionMode(CryptoUtils.MODE_AES);
+                                    dialog.dismiss();
+                                });
+                            } catch (Exception e) {
+                                Log.e(TAG, e);
+                                ThreadUtils.postOnMainThread(() -> {
+                                    positiveButton.setEnabled(true);
+                                    UIUtils.displayLongToast(R.string.failed_to_save_key);
+                                });
+                            } finally {
+                                Utils.clearBytes(keyBytes);
+                                try {
+                                    SecretKeyCompat.destroy(secretKey);
+                                } catch (DestroyFailedException e) {
+                                    Log.e(TAG, e);
+                                }
+                            }
+                        });
                     });
                     // Key generator
                     neutralButton.setOnClickListener(v -> new TextInputDropdownDialogBuilder(mActivity, R.string.crypto_key_size)

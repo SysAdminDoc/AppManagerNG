@@ -17,6 +17,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 
@@ -85,25 +86,31 @@ public class KeyStoreActivity extends AppCompatActivity {
     }
 
     private void savePass(@NonNull String prefKey, @Nullable Editable rawPassword) {
-        char[] password;
-        if (TextUtils.isEmpty(rawPassword)) {
-            try {
-                password = KeyStoreManager.getInstance().getAmKeyStorePassword();
-            } catch (Exception e) {
-                Log.e(KeyStoreManager.TAG, "Could not get KeyStore password", e);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            char[] password;
+            if (TextUtils.isEmpty(rawPassword)) {
+                try {
+                    password = KeyStoreManager.getInstance().getAmKeyStorePassword();
+                } catch (Exception e) {
+                    Log.e(KeyStoreManager.TAG, "Could not get KeyStore password", e);
+                    ThreadUtils.postOnMainThread(() -> {
+                        Intent broadcastIntent = new Intent(KeyStoreManager.ACTION_KS_INTERACTION_END);
+                        broadcastIntent.setPackage(getPackageName());
+                        sendBroadcast(broadcastIntent);
+                    });
+                    return;
+                }
+            } else {
+                password = new char[rawPassword.length()];
+                rawPassword.getChars(0, rawPassword.length(), password, 0);
+            }
+            KeyStoreManager.savePass(this, prefKey, password);
+            Utils.clearChars(password);
+            ThreadUtils.postOnMainThread(() -> {
                 Intent broadcastIntent = new Intent(KeyStoreManager.ACTION_KS_INTERACTION_END);
                 broadcastIntent.setPackage(getPackageName());
                 sendBroadcast(broadcastIntent);
-                return;
-            }
-        } else {
-            password = new char[rawPassword.length()];
-            rawPassword.getChars(0, rawPassword.length(), password, 0);
-        }
-        KeyStoreManager.savePass(this, prefKey, password);
-        Utils.clearChars(password);
-        Intent broadcastIntent = new Intent(KeyStoreManager.ACTION_KS_INTERACTION_END);
-        broadcastIntent.setPackage(getPackageName());
-        sendBroadcast(broadcastIntent);
+            });
+        });
     }
 }

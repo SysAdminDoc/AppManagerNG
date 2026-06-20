@@ -212,16 +212,19 @@ public class SplashActivity extends AppCompatActivity {
         });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
-            // Check KeyStore
-            if (KeyStoreManager.hasKeyStorePassword()) {
-                // We already have a working keystore password.
-                // Only need authentication and/or verify mode of operation.
-                ensureSecurityAndModeOfOp();
-                return;
-            }
-            Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
-                    .putExtra(KeyStoreActivity.EXTRA_KS, true);
-            mKeyStoreActivity.launch(keyStoreIntent);
+            ThreadUtils.postOnBackgroundThread(() -> {
+                boolean hasPassword = KeyStoreManager.hasKeyStorePassword();
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (hasPassword) {
+                        ensureSecurityAndModeOfOp();
+                    } else {
+                        Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
+                                .putExtra(KeyStoreActivity.EXTRA_KS, true);
+                        mKeyStoreActivity.launch(keyStoreIntent);
+                    }
+                });
+            });
         }
     }
 
