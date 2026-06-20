@@ -12,16 +12,6 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ## Research-Driven Additions (2026-06-20)
 
-### P2
-
-- [ ] P2 — HiddenApiBypass Android 17 deprecation audit
-  Why: `addHiddenApiExemptions` is deprecated in HiddenApiBypass main (commit bac48e5, 2026-06-05). NG calls it in `AppManager.attachBaseContext()` with a blanket `"L"` exemption. When v6.2+ ships, the old API will break on Android 17.
-  Evidence: LSPosed/AndroidHiddenApiBypass commit bac48e5; AppManager.java:69
-  Touches: AppManager.java (attachBaseContext), versions.gradle (hiddenapibypass_version), hiddenapi/ module
-  Acceptance: audit documents which hidden API exemptions NG actually needs; a version-gated fallback path is ready so that when HiddenApiBypass 6.2+ is released, updating the dep + switching to the new API is a single-commit change.
-  Complexity: M
-
-
 ### P3
 
 - [ ] P3 — clearApplicationUserData → IActivityManager migration

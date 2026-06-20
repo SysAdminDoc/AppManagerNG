@@ -183,6 +183,20 @@ public class Android17BehaviorContractTest {
     }
 
     @Test
+    public void hiddenApiBypassCallSiteIsDocumented() throws IOException {
+        Path source = findProjectRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/AppManager.java");
+        String contents = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue("AppManager.attachBaseContext must call HiddenApiBypass for hidden API access",
+                contents.contains("HiddenApiBypass.addHiddenApiExemptions"));
+
+        assertTrue("The addHiddenApiExemptions call must have a @SuppressWarnings(\"deprecation\") "
+                        + "annotation noting the HiddenApiBypass 6.2+ migration",
+                contents.contains("@SuppressWarnings(\"deprecation\")"));
+    }
+
+    @Test
     public void noDeprecatedBackgroundActivityLaunchMode() throws IOException {
         Path root = findProjectRoot();
         List<String> offenders = new ArrayList<>();
