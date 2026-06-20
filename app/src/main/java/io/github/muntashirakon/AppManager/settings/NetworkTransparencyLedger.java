@@ -111,8 +111,8 @@ public final class NetworkTransparencyLedger {
                             : context.getString(R.string.network_ledger_compiled_out))).append('\n');
             sb.append(context.getString(R.string.network_ledger_toggle,
                     entry.enabled
-                            ? context.getString(R.string.enabled)
-                            : context.getString(R.string.disabled))).append('\n');
+                            ? context.getString(R.string.network_ledger_enabled)
+                            : context.getString(R.string.network_ledger_disabled))).append('\n');
             if (entry.lastRequestMillis > 0) {
                 sb.append(context.getString(R.string.network_ledger_last_fetch,
                         sdf.format(new Date(entry.lastRequestMillis))));

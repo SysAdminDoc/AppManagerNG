@@ -2763,7 +2763,6 @@
     <string name="support_section_features">Feature flags</string>
     <string name="support_section_crash_sink">Crash sink</string>
     <string name="support_section_logcat">Logcat tail</string>
-    <string name="share">Share</string>
     <string name="pref_battery_optimization">Battery optimization</string>
     <string name="pref_battery_optimization_msg">Some scheduled operations (backups, observers, freeze rules) can be paused by Android\'s power-saving heuristics. Tap to manage AppManagerNG\'s exemption.</string>
     <string name="pref_battery_optimization_state_exempt">Exempt — power-saving will not pause AppManagerNG.</string>
@@ -3495,8 +3494,8 @@
     <string name="network_ledger_available">available</string>
     <string name="network_ledger_compiled_out">compiled out (floss)</string>
     <string name="network_ledger_never">never</string>
-    <string name="enabled">enabled</string>
-    <string name="disabled">disabled</string>
+    <string name="network_ledger_enabled">enabled</string>
+    <string name="network_ledger_disabled">disabled</string>
     <!-- External profile importers (Next/T8): Canta + UAD-NG + Hail -->
     <string name="profiles_action_import_external">Import from Canta / UAD-NG / Hail…</string>
     <plurals name="profiles_external_import_done">
