@@ -66,6 +66,20 @@ ROADMAP.md once the blocker is resolved.
   Blocker: requires Android TV emulator or device for focus-traversal testing and banner validation.
   Complexity: M
 
+- [ ] P3 — Transparent launch-through frozen apps
+  Why: Hail's killer UX pattern: tap a frozen app's launcher icon → auto-unfreeze → launch → auto-refreeze when the app closes or screen locks. NG has freeze/unfreeze plumbing and auto-freeze-on-screen-lock, but no transparent launch-through.
+  Evidence: Hail (6k stars) — transparent launch is its most-cited feature; NG freeze data layer + screen-lock receiver already landed
+  Touches: main/ (launcher shortcut handling), freeze/ (unfreeze-then-launch flow), auto-freeze receiver (refreeze-on-close trigger)
+  Blocker: freeze/unfreeze toggle requires root, ADB, or Shizuku privilege modes for device testing; refreeze-on-app-close detection needs UsageStatsManager or ActivityLifecycleCallbacks testing on device.
+  Complexity: M
+
+- [ ] P3 — Samsung "Clear Compiler Artifacts" batch operation
+  Why: Upstream #1989 requests batch dexopt/ART profile clearing on Samsung devices. Samsung One UI shows this option per-app but no package manager exposes it as a batch operation.
+  Evidence: upstream MuntashirAkon/AppManager#1989; Samsung One UI storage management
+  Touches: batchops/BatchOpsManager.java, compat/ (Samsung dexopt clearing API)
+  Blocker: requires Samsung device to test `cmd package compile` and `pm bg-dexopt-job` behavior and verify the correct shell commands for clearing compiler artifacts.
+  Complexity: S
+
 - [ ] P2 — Multi-user/work-profile/private-space capability matrix
   Why: AppManagerNG has broad userId plumbing and hidden-profile permission support, but users need one visible source of truth for which operations work in main, work, hidden, and private profiles under each privilege mode.
   Evidence: app/src/main/AndroidManifest.xml; docs/policy/permissions.md; Canta work-profile issue; Neo Backup multi-profile issue.
@@ -166,6 +180,17 @@ ROADMAP.md once the blocker is resolved.
   Touches: app/build.gradle, app/src/test/ (screenshot test classes), .github/workflows/tests.yml
   Blocker: Paparazzi 2.0.0-alpha05.2 (AGP 9.x support, PR #2318) is expected by 2026-06-25 but not yet published. No released Paparazzi version works with AGP 9.2.1. Retry after the milestone ships.
   Complexity: M
+
+## Dependency-Gated
+
+### P3
+
+- [ ] P3 — APK Signature Scheme v3.2 display
+  Why: Android 17 ships hybrid PQC signing (ML-DSA + classical). The signing cert chip should show "v3.2 (PQC)" for hybrid-signed APKs when the detection API is available.
+  Evidence: PackageUtils.java:882 TODO comment; Android 17 PQC upgrade docs
+  Touches: utils/PackageUtils.java (getSignerInfo), details/info/ (signing cert display), apksig dependency
+  Blocker: apksig-android (MuntashirAkon/apksig-android) does not yet expose `isVerifiedUsingV32Scheme()`. The one-line change is ready — gate behind a version check when upstream ships it.
+  Complexity: S
 
 ## External-Service-Gated
 

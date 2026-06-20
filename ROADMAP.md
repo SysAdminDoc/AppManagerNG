@@ -35,25 +35,4 @@ visual verification, privileged-mode testing, or external dependencies.
   Acceptance: Settings → Rules → Import accepts a MyAndroidTools backup file; rules are converted to NG's IFW format and applied; import report shows converted/skipped/failed counts; round-trip test with a sample MAT export file
   Complexity: S
 
-- [ ] P3 — APK Signature Scheme v3.2 display
-  Why: Android 17 ships hybrid PQC signing (ML-DSA + classical). When apksig-android adds isVerifiedUsingV32Scheme(), NG should display the PQC indicator in the signing cert info chip. Current code shows v3.2-signed APKs as v3 (no crash, but incomplete info).
-  Evidence: PackageUtils.java:882 TODO comment; Android 17 PQC upgrade docs; apksig-android v3.2 version notes
-  Touches: utils/PackageUtils.java (getSignerInfo), details/info/ (signing cert display), apksig dependency
-  Acceptance: when apksig-android supports v3.2 detection, the signing cert chip shows "v3.2 (PQC)" for hybrid-signed APKs; no change needed until upstream adds the API — gate behind version check
-  Complexity: S
-
-- [ ] P3 — Transparent launch-through frozen apps
-  Why: Hail's killer UX pattern: tap a frozen app's launcher icon → auto-unfreeze → launch → auto-refreeze when the app closes or screen locks. NG has freeze/unfreeze plumbing and auto-freeze-on-screen-lock, but no transparent launch-through.
-  Evidence: Hail (6k stars) — transparent launch is its most-cited feature; NG freeze data layer + screen-lock receiver already landed
-  Touches: main/ (launcher shortcut handling), freeze/ (unfreeze-then-launch flow), auto-freeze receiver (refreeze-on-close trigger)
-  Acceptance: user can mark apps for "auto-freeze"; tapping their launcher icon unfreezes, launches, and refreezes when the app leaves foreground or screen locks; works in root, ADB, and Shizuku modes
-  Complexity: M
-
-- [ ] P3 — Samsung "Clear Compiler Artifacts" batch operation
-  Why: Upstream #1989 (opened 2026-06-19) requests "Clear Compiler Artifacts" / "Reset Dexopt" in batch ops for Samsung devices. Samsung One UI's per-app storage screen shows this option but no other package manager exposes it as a batch operation.
-  Evidence: upstream MuntashirAkon/AppManager#1989; Samsung One UI storage management; SD Maid SE Samsung-specific workarounds
-  Touches: batchops/BatchOpsManager.java, compat/ (Samsung dexopt clearing API), main/ (batch ops menu)
-  Acceptance: batch operations menu includes "Clear Compiler Artifacts" on Samsung devices; operation clears dexopt/ART profiles for selected apps; hidden on non-Samsung devices; works via root or ADB
-  Complexity: S
-
 All remaining blocked items are in `Roadmap_Blocked.md`.
