@@ -446,7 +446,7 @@ public class AppUsageStatsManager {
                     dataUsageSparseArray.put(entry.uid, dataUsage);
                 }
             } catch (RemoteException | SecurityException | IllegalStateException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
 
@@ -477,7 +477,7 @@ public class AppUsageStatsManager {
                         }
                     }
                 } catch (RemoteException | SecurityException | IllegalStateException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
         }

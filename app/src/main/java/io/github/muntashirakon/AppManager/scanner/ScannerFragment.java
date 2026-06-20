@@ -67,8 +67,11 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.util.UiUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ScannerFragment extends Fragment {
+    private static final String TAG = ScannerFragment.class.getSimpleName();
+
     private CharSequence mAppName;
     private ScannerViewModel mViewModel;
     private ScannerActivity mActivity;
@@ -724,7 +727,7 @@ public class ScannerFragment extends Fragment {
                             .append(getMonospacedText(digest.second));
                 }
             } catch (CertificateEncodingException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return builder;

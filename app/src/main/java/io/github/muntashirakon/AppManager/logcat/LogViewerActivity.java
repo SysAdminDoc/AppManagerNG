@@ -74,6 +74,7 @@ import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.RecyclerView;
 import io.github.muntashirakon.widget.SearchView;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 // Copyright 2012 Nolan Lawson
 // Copyright 2021 Muntashir Al-Islam
@@ -620,7 +621,7 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
 
             loadNewFragment(SavedLogViewerFragment.getInstance(logFile.getUri()));
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
     }
 

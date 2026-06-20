@@ -315,7 +315,7 @@ public final class ApkUtils {
         try {
             return getObbDir(packageName, userId).listFiles().length > 0;
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return false;
         }
     }

@@ -89,8 +89,11 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class AppInfoViewModel extends AndroidViewModel {
+    private static final String TAG = AppInfoViewModel.class.getSimpleName();
+
     private final MutableLiveData<CharSequence> mAppLabel = new MutableLiveData<>();
     private final MutableLiveData<TagCloud> mTagCloud = new MutableLiveData<>();
     private final MutableLiveData<AppInfo> mAppInfo = new MutableLiveData<>();
@@ -364,7 +367,7 @@ public class AppInfoViewModel extends AndroidViewModel {
                         tagCloud.xposedModuleInfo = new XposedModuleInfo(applicationInfo, isXposedModule == null ? null : zipFile);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
             tagCloud.canWriteAndExecute = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q

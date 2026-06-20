@@ -39,9 +39,12 @@ import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.IoUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 // Copyright 2015 Google, Inc.
 public class ScannerActivity extends BaseActivity {
+    private static final String TAG = ScannerActivity.class.getSimpleName();
+
     public static final String EXTRA_IS_EXTERNAL = "is_external";
 
     @Nullable
@@ -98,7 +101,7 @@ public class ScannerActivity extends BaseActivity {
                     mFd = FileUtils.getFdFromUri(this, mApkUri, "r");
                     apkFile = FileUtils.getFileFromFd(mFd);
                 } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
         } else {
@@ -162,7 +165,7 @@ public class ScannerActivity extends BaseActivity {
                 os.write(model.buildScanReportJson().getBytes(StandardCharsets.UTF_8));
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.scanner_export_success));
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.export_failed));
             }
         });

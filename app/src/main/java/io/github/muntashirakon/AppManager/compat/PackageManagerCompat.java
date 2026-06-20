@@ -658,7 +658,7 @@ public final class PackageManagerCompat {
             clearApplicationUserData(new UserPackagePair(packageName, userId));
             return true;
         } catch (AndroidException | SecurityException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return false;
         }
     }
@@ -697,7 +697,7 @@ public final class PackageManagerCompat {
             deleteApplicationCacheFilesAsUser(new UserPackagePair(packageName, userId));
             return true;
         } catch (AndroidException | SecurityException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return false;
         }
     }

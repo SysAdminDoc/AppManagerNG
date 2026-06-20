@@ -27,8 +27,11 @@ import io.github.muntashirakon.io.AtomicExtendedFile;
 import io.github.muntashirakon.io.ExtendedFile;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.UidGidPair;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class SharedPrefsViewModel extends AndroidViewModel {
+    private static final String TAG = SharedPrefsViewModel.class.getSimpleName();
+
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
     private final MutableLiveData<Map<String, Object>> mSharedPrefsMapLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mSharedPrefsSavedLiveData = new MutableLiveData<>();
@@ -111,7 +114,7 @@ public class SharedPrefsViewModel extends AndroidViewModel {
                 mSharedPrefsSavedLiveData.postValue(true);
                 mSharedPrefsModifiedLiveData.postValue(mModified = false);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mSharedPrefsSavedLiveData.postValue(false);
             }
         });
@@ -205,7 +208,7 @@ public class SharedPrefsViewModel extends AndroidViewModel {
                 mSharedPrefsMap = SharedPrefsUtil.readSharedPref(rulesStream);
                 mSharedPrefsMapLiveData.postValue(mSharedPrefsMap);
             } catch (IOException | XmlPullParserException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mSharedPrefsMap = new HashMap<>();
                 mSharedPrefsMapLiveData.postValue(mSharedPrefsMap);
             }

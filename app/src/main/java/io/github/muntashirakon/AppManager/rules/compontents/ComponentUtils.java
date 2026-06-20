@@ -47,6 +47,8 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
 public final class ComponentUtils {
+    private static final String TAG = ComponentUtils.class.getSimpleName();
+
     /**
      * Escape the five XML predefined entities in a value destined for an
      * attribute or text node. Component and package names that reach the IFW
@@ -149,7 +151,7 @@ public final class ComponentUtils {
             try {
                 blockTrackingComponents(pair);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 failedPkgList.add(pair);
             }
         }
@@ -174,7 +176,7 @@ public final class ComponentUtils {
             try {
                 unblockTrackingComponents(pair);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 failedPkgList.add(pair);
             }
         }
@@ -265,11 +267,11 @@ public final class ComponentUtils {
                         appOpsManager.setMode(entry.getOp(), uid, packageName, AppOpsManager.MODE_DEFAULT);
                         cb.removeEntry(entry);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
             // Grant configured permissions
             for (PermissionRule entry : cb.getAll(PermissionRule.class)) {
@@ -304,7 +306,7 @@ public final class ComponentUtils {
                 // Read rules
                 rules.putAll(readIFWRules(inputStream, packageName));
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return rules;

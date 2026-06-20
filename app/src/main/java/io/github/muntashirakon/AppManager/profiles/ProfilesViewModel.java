@@ -20,8 +20,11 @@ import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ProfilesViewModel extends AndroidViewModel {
+    private static final String TAG = ProfilesViewModel.class.getSimpleName();
+
     private final MutableLiveData<HashMap<BaseProfile, CharSequence>> mProfilesLiveData = new MutableLiveData<>();
     private Future<?> mProfileResult;
     private FileObserver mFileObserver;
@@ -53,7 +56,7 @@ public class ProfilesViewModel extends AndroidViewModel {
                     setUpObserverAndStart();
                     mProfilesLiveData.postValue(profiles);
                 } catch (IOException | JSONException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
         });

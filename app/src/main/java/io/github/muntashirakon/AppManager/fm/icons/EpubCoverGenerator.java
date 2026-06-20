@@ -18,8 +18,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.compat.xml.Xml;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 final class EpubCoverGenerator {
+    private static final String TAG = EpubCoverGenerator.class.getSimpleName();
+
     @Nullable
     public static Bitmap generateFromFile(@NonNull File file) {
         try(ZipFile zipFile = new ZipFile(file)) {
@@ -46,7 +49,7 @@ final class EpubCoverGenerator {
                 return BitmapFactory.decodeStream(zipFile.getInputStream(coverEntry));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return null;
     }

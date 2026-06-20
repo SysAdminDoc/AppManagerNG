@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.adapters.SelectedArrayAdapter;
 import io.github.muntashirakon.widget.MaterialSpinner;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class AddIntentExtraFragment extends DialogFragment {
     public static final String TAG = "AddIntentExtraFragment";
@@ -249,7 +250,7 @@ public class AddIntentExtraFragment extends DialogFragment {
                             newExtraItem.keyValue = parseExtraValue(mCurrentType, mValues[mCurrentType].getText().toString().trim());
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         UIUtils.displayLongToast(R.string.error_evaluating_input);
                         return;
                     }

@@ -306,7 +306,7 @@ public class ApksMetadata {
                 jsonObject.put("dependencies", dependenciesArray);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return jsonObject.toString();
     }

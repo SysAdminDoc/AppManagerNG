@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 @RequiresApi(Build.VERSION_CODES.O)
 public class ChangeSsaidDialog extends DialogFragment {
@@ -112,7 +113,7 @@ public class ChangeSsaidDialog extends DialogFragment {
                             ThreadUtils.postOnMainThread(() -> mSsaidChangedInterface.onSsaidChanged(mSsaid, isSuccess));
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         if (mSsaidChangedInterface != null) {
                             ThreadUtils.postOnMainThread(() -> mSsaidChangedInterface.onSsaidChanged(mSsaid, false));
                         }

@@ -369,7 +369,7 @@ public final class PackageUtils {
                     userHandle);
             return collectComponentClassNames(packageInfo);
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return new HashMap<>();
     }
@@ -425,7 +425,7 @@ public final class PackageUtils {
                     filteredAppOps.add(appOp);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return filteredAppOps;
@@ -643,7 +643,7 @@ public final class PackageUtils {
         try {
             return new SignerInfo(apkVerifier.verify());
         } catch (IOException | ApkFormatException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return null;
         }
     }
@@ -727,7 +727,7 @@ public final class PackageUtils {
                 try {
                     checksums.add(DigestUtils.getHexDigest(algo, signature.getEncoded()));
                 } catch (CertificateEncodingException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
             }
             return checksums.toArray(new String[0]);

@@ -1784,7 +1784,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                             ThreadUtils.postOnMainThread(() ->
                                                     UIUtils.displayShortToast(R.string.done));
                                         } catch (Throwable th) {
-                                            th.printStackTrace();
+                                            Log.w(TAG, th);
                                             ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed));
                                         }
                                     }));

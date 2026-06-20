@@ -342,7 +342,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
                 }
                 mJavaFileLiveData.postValue(Uri.fromFile(cachedFile));
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mJavaFileLiveData.postValue(null);
             }
         });

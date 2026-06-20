@@ -23,6 +23,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.dialog.AlertDialogBuilder;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 /**
  * Shows the latest release's changelog once after an in-place app update.
@@ -38,6 +39,8 @@ import io.github.muntashirakon.dialog.AlertDialogBuilder;
  * setting {@code PREF_DISPLAY_CHANGELOG_BOOL}.
  */
 public final class ChangelogAutoDisplay {
+    private static final String TAG = ChangelogAutoDisplay.class.getSimpleName();
+
     private ChangelogAutoDisplay() {
     }
 
@@ -61,7 +64,7 @@ public final class ChangelogAutoDisplay {
             try {
                 changelog = new ChangelogParser(appContext, R.raw.changelog).parse();
             } catch (IOException | XmlPullParserException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 return;
             }
             ThreadUtils.postOnMainThread(() -> postLatestRelease(activity, changelog));

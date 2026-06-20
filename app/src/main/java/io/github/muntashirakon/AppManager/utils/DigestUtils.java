@@ -29,8 +29,11 @@ import aosp.libcore.util.HexEncoding;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class DigestUtils {
+    private static final String TAG = DigestUtils.class.getSimpleName();
+
     @StringDef({CRC32, MD2, MD5, SHA_1, SHA_224, SHA_256, SHA_384, SHA_512})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Algorithm {
@@ -69,7 +72,7 @@ public class DigestUtils {
             try (InputStream fileInputStream = file.openInputStream()) {
                 hashes.add(getHexDigest(algo, fileInputStream));
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         if (hashes.size() == 0) return HexEncoding.encodeToString(new byte[0], false /* lowercase */);
@@ -93,7 +96,7 @@ public class DigestUtils {
         try {
             return MessageDigest.getInstance(algo).digest(bytes);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return new byte[0];
         }
     }
@@ -105,7 +108,7 @@ public class DigestUtils {
             try {
                 return longToBytes(calculateCrc32(stream));
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 return new byte[0];
             }
         }
@@ -120,7 +123,7 @@ public class DigestUtils {
                 return messageDigest.digest();
             }
         } catch (NoSuchAlgorithmException | IOException e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
             return new byte[0];
         }
     }

@@ -63,6 +63,7 @@ import io.github.muntashirakon.view.TextInputLayoutCompat;
 import io.github.muntashirakon.widget.MaterialSpinner;
 import io.github.muntashirakon.widget.RecyclerView;
 import mobi.upod.timedurationpicker.TimeDurationPickerDialog;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class EditFilterOptionFragment extends DialogFragment {
     public static final String TAG = EditFilterOptionFragment.class.getSimpleName();
@@ -216,7 +217,7 @@ public class EditFilterOptionFragment extends DialogFragment {
                         Objects.requireNonNull(mCurrentKey);
                         mCurrentFilterOption.setKeyValue(mCurrentKey, TextUtils.isEmpty(editable) ? null : editable.toString());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         UIUtils.displayLongToast(R.string.error_evaluating_input);
                         return;
                     }

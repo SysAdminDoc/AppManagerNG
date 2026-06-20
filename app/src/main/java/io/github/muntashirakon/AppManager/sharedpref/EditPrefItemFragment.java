@@ -30,6 +30,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.adapters.SelectedArrayAdapter;
 import io.github.muntashirakon.widget.MaterialSpinner;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class EditPrefItemFragment extends DialogFragment {
     public static final String TAG = EditPrefItemFragment.class.getSimpleName();
@@ -224,7 +225,7 @@ public class EditPrefItemFragment extends DialogFragment {
                                 break;
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.w(TAG, e);
                         UIUtils.displayLongToast(R.string.error_evaluating_input);
                         return;
                     }

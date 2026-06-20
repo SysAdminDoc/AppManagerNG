@@ -30,6 +30,7 @@ import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class AddToProfileDialogFragment extends DialogFragment {
     public static final String TAG = AddToProfileDialogFragment.class.getSimpleName();
@@ -90,7 +91,7 @@ public class AddToProfileDialogFragment extends DialogFragment {
                             profile.write(os);
                         } catch (Exception e) {
                             isSuccess = false;
-                            e.printStackTrace();
+                            Log.w(TAG, e);
                         }
                     }
                     if (isSuccess) {

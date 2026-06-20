@@ -14,8 +14,11 @@ import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public final class DeviceIdleManagerCompat {
+    private static final String TAG = DeviceIdleManagerCompat.class.getSimpleName();
+
     @RequiresPermission(ManifestCompat.permission.DEVICE_POWER)
     public static boolean disableBatteryOptimization(@NonNull String packageName) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -41,7 +44,7 @@ public final class DeviceIdleManagerCompat {
                 ExUtils.rethrowFromSystemServer(e);
             } catch (UnsupportedOperationException e) {
                 // System whitelisted app
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return false;

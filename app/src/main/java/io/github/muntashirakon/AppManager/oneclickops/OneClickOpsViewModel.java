@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
-import android.util.Log;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
@@ -52,6 +51,7 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.StorageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class OneClickOpsViewModel extends AndroidViewModel {
     public static final String TAG = OneClickOpsViewModel.class.getSimpleName();
@@ -423,7 +423,7 @@ public class OneClickOpsViewModel extends AndroidViewModel {
                         }
                     }
                 } catch (PackageManager.NameNotFoundException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 }
                 mTrackerCount.postValue(Collections.emptyList());
                 return;

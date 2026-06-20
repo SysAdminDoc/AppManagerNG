@@ -15,8 +15,11 @@ import java.util.Map;
 import io.github.muntashirakon.AppManager.compat.ProcessCompat;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.compat.system.OsCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 public class Owners {
+    private static final String TAG = Owners.class.getSimpleName();
+
     private static final Map<Integer, String> sUidOwnerMap = new HashMap<>();
     private static final Map<String, Integer> sOwnerUidMap = new HashMap<>();
 
@@ -31,7 +34,7 @@ public class Owners {
                         sOwnerUidMap.put(passwd.pw_name, passwd.pw_uid);
                     }
                 } catch (ErrnoException e) {
-                    e.printStackTrace();
+                    Log.w(TAG, e);
                 } finally {
                     ExUtils.exceptionAsIgnored(OsCompat::endpwent);
                 }

@@ -32,9 +32,12 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 @RequiresApi(Build.VERSION_CODES.O)
 public class SsaidSettings {
+    private static final String TAG = SsaidSettings.class.getSimpleName();
+
     public static final String SSAID_USER_KEY = "userkey";
 
     @SuppressWarnings("FieldCanBeLocal")
@@ -76,7 +79,7 @@ public class SsaidSettings {
         try {
             PackageManagerCompat.forceStopPackage(packageName, UserHandleHidden.getUserId(uid));
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.w(TAG, e);
         }
         return mSettingsState.insertSettingLocked(getName(packageName, uid), ssaid, null, true, packageName);
     }

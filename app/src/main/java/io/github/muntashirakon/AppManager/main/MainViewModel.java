@@ -528,7 +528,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 ListExporter.export(getApplication(), writer, exportType, packageInfoList, includeExtendedMetadata);
                 mOperationStatus.postValue(true);
             } catch (IOException | RemoteException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mOperationStatus.postValue(false);
             }
         });
@@ -541,7 +541,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 int selectedCount = selectImportedPackageNames(packageNames);
                 mAppListImportStatus.postValue(AppListImportStatus.success(selectedCount));
             } catch (IOException | JsonParseException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mAppListImportStatus.postValue(AppListImportStatus.failure());
             }
         });
@@ -892,7 +892,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 BaseProfile profile = BaseProfile.fromPath(profilePath);
                 return ProfileMembershipFilter.fromProfile(profile, mFilterProfileInverse);
             } catch (IOException | JSONException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
         }
         return ProfileMembershipFilter.none();

@@ -55,6 +55,8 @@ import io.github.muntashirakon.proc.ProcFs;
 import io.github.muntashirakon.proc.ProcMemoryInfo;
 
 public class RunningAppsViewModel extends AndroidViewModel {
+    private static final String TAG = RunningAppsViewModel.class.getSimpleName();
+
     @RunningAppsActivity.SortOrder
     private int mSortOrder;
     @RunningAppsActivity.Filter
@@ -139,7 +141,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                     }
                 });
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mVtFileReport.postValue(new Pair<>(processItem, null));
             }
         });
@@ -261,7 +263,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 success = true;
             } catch (SecurityException e) {
                 failure = e;
-                e.printStackTrace();
+                Log.w(TAG, e);
             }
             recordForceStopHistory(info, success, failure);
             mForceStopAppResult.postValue(new Pair<>(info, success));
@@ -319,7 +321,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 }
                 mPreventBackgroundRunResult.postValue(new Pair<>(info, true));
             } catch (RemoteException | SecurityException e) {
-                e.printStackTrace();
+                Log.w(TAG, e);
                 mPreventBackgroundRunResult.postValue(new Pair<>(info, false));
             }
         });
