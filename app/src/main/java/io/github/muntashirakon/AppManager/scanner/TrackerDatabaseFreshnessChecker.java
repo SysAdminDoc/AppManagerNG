@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public final class TrackerDatabaseFreshnessChecker {
     private static final String TAG = TrackerDatabaseFreshnessChecker.class.getSimpleName();
@@ -44,7 +45,7 @@ public final class TrackerDatabaseFreshnessChecker {
         if (lastCheck > 0 && now - lastCheck < CHECK_INTERVAL_MILLIS) {
             return;
         }
-        new Thread(() -> {
+        ThreadUtils.postOnBackgroundThread(() -> {
             Prefs.Privacy.setLastTrackerDatabaseCheckTime(System.currentTimeMillis());
             try {
                 String latestVersion = fetchLatestVersion();
@@ -55,7 +56,7 @@ public final class TrackerDatabaseFreshnessChecker {
             } catch (Exception th) {
                 Log.w(TAG, "Could not check tracker database freshness.", th);
             }
-        }, "tracker-database-freshness").start();
+        });
     }
 
     public static boolean isCheckAllowed() {

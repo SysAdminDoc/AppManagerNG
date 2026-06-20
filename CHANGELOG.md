@@ -33,6 +33,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Fixed — Thread safety and threading hygiene (2026-06-20)
+
+- Fixed `AppDetailsViewModel.setPackageChanged()` misleading `@GuardedBy`
+  annotation — the method's `setPackageInfo()` call acquires the lock
+  internally. Removed stale TODO and corrected the annotation.
+- Replaced 3 raw `new Thread()` creations (OpenPGPCrypto, DebloatDefinitionsUpdater,
+  TrackerDatabaseFreshnessChecker) with `ThreadUtils.postOnBackgroundThread()`.
+  ADB stream reader threads kept as named daemon threads (blocking I/O
+  requires dedicated threads, not a shared pool).
+
 ### Fixed — Debloat safety rating (2026-06-20)
 
 - Fixed UAD-ng "Recommended" packages incorrectly displaying as "Unsafe" in

@@ -221,7 +221,9 @@ class LocalServerManager {
             mAdbStream = manager.openStream("shell:");
             mAdbConnectionWatcher = new CountDownLatch(1);
             mAdbServerStarted = false;
-            new Thread(mAdbOutputThread).start();
+            Thread t = new Thread(mAdbOutputThread, "adb-output-reader");
+            t.setDaemon(true);
+            t.start();
         }
         Log.d(TAG, "useAdbStartServer: Shell opened.");
 
@@ -328,7 +330,9 @@ class LocalServerManager {
                 mAdbStream = manager.openStream("shell:");
                 mAdbConnectionWatcher = new CountDownLatch(1);
                 mAdbServerStarted = false;
-                new Thread(mAdbOutputThread).start();
+                Thread t = new Thread(mAdbOutputThread, "adb-output-reader");
+            t.setDaemon(true);
+            t.start();
             }
             Log.d(TAG, "stopServer (ADB): Shell opened.");
 
