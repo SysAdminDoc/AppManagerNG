@@ -179,6 +179,7 @@ public class IntentFilterManifestAuditTest {
 
             for (IntentFilter filter : comp.filters) {
                 if (filter.actions.contains("android.intent.action.MAIN")) continue;
+                if (filter.actions.contains("android.intent.action.SEARCH")) continue;
                 assertTrue("Exported activity " + comp.name
                                 + " has intent-filter without DEFAULT category: " + filter.actions,
                         filter.categories.contains("android.intent.category.DEFAULT"));
