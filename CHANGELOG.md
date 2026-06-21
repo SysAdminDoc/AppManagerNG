@@ -33,6 +33,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
   all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
 
+### Changed — clearApplicationUserData stability improvement (2026-06-20)
+
+- Data-clear IPC now tries `IActivityManager.clearApplicationUserData()` first
+  (stable across API versions), falling back to `IPackageManager` only on
+  failure. Resolves the API-version-dependent method signature fragility
+  that caused NoSuchMethodError on some Android 14 QPR builds.
+
 ### Security — HiddenApiBypass Android 17 deprecation audit (2026-06-20)
 
 - Audited HiddenApiBypass usage: single call site in AppManager.attachBaseContext()
