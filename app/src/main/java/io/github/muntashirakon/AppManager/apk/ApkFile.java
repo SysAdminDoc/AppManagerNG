@@ -48,6 +48,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -173,19 +174,11 @@ public final class ApkFile implements AutoCloseable {
      */
     public static final int APK_SPLIT = 6;
 
-    public static List<String> SUPPORTED_EXTENSIONS = new ArrayList<>();
-    public static List<String> SUPPORTED_MIMES = new ArrayList<>();
-
-    static {
-        SUPPORTED_EXTENSIONS.add("apk");
-        SUPPORTED_EXTENSIONS.add("apkm");
-        SUPPORTED_EXTENSIONS.add("apks");
-        SUPPORTED_EXTENSIONS.add("xapk");
-        SUPPORTED_MIMES.add("application/x-apks");
-        SUPPORTED_MIMES.add("application/vnd.android.package-archive");
-        SUPPORTED_MIMES.add("application/vnd.apkm");
-        SUPPORTED_MIMES.add("application/xapk-package-archive");
-    }
+    public static final List<String> SUPPORTED_EXTENSIONS = Collections.unmodifiableList(
+            Arrays.asList("apk", "apkm", "apks", "xapk"));
+    public static final List<String> SUPPORTED_MIMES = Collections.unmodifiableList(
+            Arrays.asList("application/x-apks", "application/vnd.android.package-archive",
+                    "application/vnd.apkm", "application/xapk-package-archive"));
 
     private final int mSparseArrayKey;
     @NonNull

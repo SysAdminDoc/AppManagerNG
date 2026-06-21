@@ -67,6 +67,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ADB stream reader threads kept as named daemon threads (blocking I/O
   requires dedicated threads, not a shared pool).
 
+### Fixed — Audit pass (2026-06-20)
+
+- Made `ApkFile.SUPPORTED_EXTENSIONS` and `SUPPORTED_MIMES` unmodifiable
+  (`Collections.unmodifiableList`) to prevent accidental mutation of the
+  shared static file-type registry.
+- Fixed potential NPE in TroubleshootingPreferences replay-onboarding
+  click handler: `getActivity()` was called three times without caching,
+  allowing a race where the first call returns non-null but a subsequent
+  call returns null after fragment detachment.
+
 ### Fixed — Debloat safety rating (2026-06-20)
 
 - Fixed UAD-ng "Recommended" packages incorrectly displaying as "Unsafe" in
