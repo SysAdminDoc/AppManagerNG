@@ -67,6 +67,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ADB stream reader threads kept as named daemon threads (blocking I/O
   requires dedicated threads, not a shared pool).
 
+### Security — Audit pass (2026-06-20)
+
+- Bounded Android backup header line reader to 4096 bytes. A malicious
+  backup file with a header line containing no newline could previously
+  cause unbounded memory allocation in `AndroidBackupHeader.readHeaderLine()`.
+
 ### Fixed — Audit pass (2026-06-20)
 
 - Made `ApkFile.SUPPORTED_EXTENSIONS` and `SUPPORTED_MIMES` unmodifiable
