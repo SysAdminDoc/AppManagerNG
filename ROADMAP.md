@@ -12,13 +12,4 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ## Research-Driven Additions (2026-06-20)
 
-### P3
-
-- [ ] P3 — Gradle 9.5.1 → 9.6.0
-  Why: Gradle 9.6.0 (released 2026-06-19) improves configuration cache hit rates. No security driver but keeps build infra current.
-  Evidence: https://github.com/gradle/gradle/releases/tag/v9.6.0
-  Touches: gradle/wrapper/gradle-wrapper.properties, lockfiles
-  Acceptance: Gradle wrapper updated, ./gradlew assembleFlossDebug succeeds, all tests pass.
-  Complexity: S
-
 All remaining blocked items are in `Roadmap_Blocked.md`.
