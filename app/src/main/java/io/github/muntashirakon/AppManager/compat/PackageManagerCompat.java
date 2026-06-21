@@ -11,6 +11,7 @@ import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.content.pm.PackageManager.SYNCHRONOUS;
 
 import android.Manifest;
+import android.app.IActivityManager;
 import android.annotation.SuppressLint;
 import android.annotation.UserIdInt;
 import android.content.ComponentName;
@@ -578,17 +579,15 @@ public final class PackageManagerCompat {
 
     @RequiresPermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
     private static void clearApplicationUserDataViaIpc(@NonNull UserPackagePair pair) throws AndroidException {
-        IPackageManager pm = getPackageManager();
-        // TODO: 5/25/26 We can use IActivityManager#clearApplicationUserData() instead which is more stable
         ClearDataObserver obs = new ClearDataObserver();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            try {
-                pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId(), false);
-            } catch (NoSuchMethodError e) {
-                // Fall back to the old API
-                pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
-            }
-        } else pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
+        try {
+            IActivityManager am = ActivityManagerCompat.getActivityManager();
+            am.clearApplicationUserData(pair.getPackageName(), false, obs, pair.getUserId());
+        } catch (Exception e) {
+            Log.d(TAG, "IActivityManager.clearApplicationUserData failed, falling back to IPackageManager", e);
+            obs = new ClearDataObserver();
+            clearApplicationUserDataViaPackageManager(pair, obs);
+        }
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (obs) {
             while (!obs.isCompleted()) {
@@ -600,6 +599,20 @@ public final class PackageManagerCompat {
         }
         if (!obs.isSuccessful()) {
             throw new AndroidException("Could not clear data of package " + pair);
+        }
+    }
+
+    private static void clearApplicationUserDataViaPackageManager(
+            @NonNull UserPackagePair pair, @NonNull ClearDataObserver obs) throws RemoteException {
+        IPackageManager pm = getPackageManager();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            try {
+                pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId(), false);
+            } catch (NoSuchMethodError e) {
+                pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
+            }
+        } else {
+            pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
         }
     }
 

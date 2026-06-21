@@ -14,13 +14,6 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ### P3
 
-- [ ] P3 — clearApplicationUserData → IActivityManager migration
-  Why: PackageManagerCompat.java:582 TODO notes that IActivityManager#clearApplicationUserData() is more stable than the current IPackageManager path, which has API-version-dependent method signatures.
-  Evidence: PackageManagerCompat.java:582 TODO comment (dated 5/25/26)
-  Touches: compat/PackageManagerCompat.java (clearApplicationUserDataViaIpc method)
-  Acceptance: data-clear operations use IActivityManager when available (API 30+), falling back to IPackageManager on older APIs; existing backup/clear tests still pass.
-  Complexity: S
-
 - [ ] P3 — ZipFileSystem test stub completion
   Why: 8+ empty test methods in ZipFileSystemTest.java marked TODO since 2022. These represent untested VFS paths that could silently regress.
   Evidence: app/src/test/java/io/github/muntashirakon/io/fs/ZipFileSystemTest.java lines 63-912 (8 TODO markers)
