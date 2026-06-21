@@ -14,13 +14,6 @@ visual verification, privileged-mode testing, or external dependencies.
 
 ### P3
 
-- [ ] P3 — ZipFileSystem test stub completion
-  Why: 8+ empty test methods in ZipFileSystemTest.java marked TODO since 2022. These represent untested VFS paths that could silently regress.
-  Evidence: app/src/test/java/io/github/muntashirakon/io/fs/ZipFileSystemTest.java lines 63-912 (8 TODO markers)
-  Touches: app/src/test/java/io/github/muntashirakon/io/fs/ZipFileSystemTest.java
-  Acceptance: all 8+ stubbed test methods have implementations that exercise the ZipFileSystem paths they were designed to cover; test suite still passes.
-  Complexity: S
-
 - [ ] P3 — Gradle 9.5.1 → 9.6.0
   Why: Gradle 9.6.0 (released 2026-06-19) improves configuration cache hit rates. No security driver but keeps build infra current.
   Evidence: https://github.com/gradle/gradle/releases/tag/v9.6.0
