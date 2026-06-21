@@ -363,15 +363,21 @@ final class AndroidBackupHeader {
         return array;
     }
 
+    private static final int MAX_HEADER_LINE_LENGTH = 4096;
+
     @NonNull
     private static String readHeaderLine(@NonNull InputStream in) throws IOException {
         int c;
         StringBuilder buffer = new StringBuilder(80);
         while ((c = in.read()) >= 0) {
             if (c == '\n') {
-                break;   // consume and discard the newlines
+                break;
             }
             buffer.append((char) c);
+            if (buffer.length() > MAX_HEADER_LINE_LENGTH) {
+                throw new IOException("Backup header line exceeds maximum length ("
+                        + MAX_HEADER_LINE_LENGTH + " bytes)");
+            }
         }
         return buffer.toString();
     }
