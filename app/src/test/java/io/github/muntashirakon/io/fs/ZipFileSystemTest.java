@@ -19,6 +19,7 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -59,18 +60,36 @@ public class ZipFileSystemTest {
     }
 
     @Test
-    public void isHidden() {
-        // TODO: 25/11/22
+    public void isHidden() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_hidden");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        assertTrue("AndroidManifest.xml should exist in the ZIP", mountPoint.findFile("AndroidManifest.xml").exists());
+        assertEquals("AndroidManifest.xml", mountPoint.findFile("AndroidManifest.xml").getName());
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
-    public void lastAccess() {
-        // TODO: 25/11/22
+    public void lastAccess() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_access");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        long access = mountPoint.findFile("AndroidManifest.xml").lastAccess();
+        assertTrue("lastAccess should be non-negative", access >= 0);
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
-    public void creationTime() {
-        // TODO: 25/11/22
+    public void creationTime() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_creation");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        long creation = mountPoint.findFile("AndroidManifest.xml").creationTime();
+        assertTrue("creationTime should be non-negative", creation >= 0);
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
@@ -401,8 +420,23 @@ public class ZipFileSystemTest {
     }
 
     @Test
-    public void list() {
-        // TODO: 25/11/22
+    public void list() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_list");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        Path[] children = mountPoint.listFiles();
+        assertNotNull(children);
+        assertTrue("mount root should have children", children.length > 0);
+        boolean foundManifest = false;
+        for (Path child : children) {
+            if ("AndroidManifest.xml".equals(child.getName())) {
+                foundManifest = true;
+                break;
+            }
+        }
+        assertTrue("listing should include AndroidManifest.xml", foundManifest);
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
@@ -883,33 +917,95 @@ public class ZipFileSystemTest {
     }
 
     @Test
-    public void setLastModified() {
-        // TODO: 25/11/22
+    public void setLastModified() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_setmod");
+        AtomicReference<File> modifiedApk = new AtomicReference<>();
+        VirtualFileSystem.MountOptions options = getRWOptions((fs, cachedFile) -> {
+            modifiedApk.set(cachedFile);
+            return true;
+        });
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        Path manifest = mountPoint.findFile("AndroidManifest.xml");
+        long now = System.currentTimeMillis();
+        assertTrue(manifest.setLastModified(now));
+        assertEquals(now, manifest.lastModified());
+        VirtualFileSystem.unmount(fsId);
+        assertTrue(modifiedApk.get().delete());
     }
 
     @Test
-    public void newOutputStreamAppend() {
-        // TODO: 25/11/22
+    public void newOutputStreamAppend() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_append");
+        AtomicReference<File> modifiedApk = new AtomicReference<>();
+        VirtualFileSystem.MountOptions options = getRWOptions((fs, cachedFile) -> {
+            modifiedApk.set(cachedFile);
+            return true;
+        });
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        mountPoint.createNewFile("append_test.txt", null);
+        Path created = mountPoint.findFile("append_test.txt");
+        try (OutputStream os = created.openOutputStream(true)) {
+            os.write("hello".getBytes());
+        }
+        try (OutputStream os = created.openOutputStream(true)) {
+            os.write(" world".getBytes());
+        }
+        try (InputStream is = created.openInputStream()) {
+            byte[] data = new byte[256];
+            int len = is.read(data);
+            assertEquals("hello world", new String(data, 0, len));
+        }
+        VirtualFileSystem.unmount(fsId);
+        assertTrue(modifiedApk.get().delete());
     }
 
     @Test
-    public void lastModified() {
-        // TODO: 25/11/22
+    public void lastModified() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_lastmod");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        long lastMod = mountPoint.findFile("AndroidManifest.xml").lastModified();
+        assertTrue("lastModified should be positive for a zip entry with a timestamp", lastMod > 0);
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
-    public void length() {
-        // TODO: 25/11/22
+    public void length() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_length");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        long len = mountPoint.findFile("AndroidManifest.xml").length();
+        assertTrue("AndroidManifest.xml should have positive length", len > 0);
+        long dirLen = mountPoint.findFile("res").length();
+        assertTrue("directory length should be non-negative", dirLen >= 0);
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
-    public void checkAccess() {
-        // TODO: 25/11/22
+    public void checkAccess() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_access2");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        assertTrue("existing file should be accessible", mountPoint.findFile("AndroidManifest.xml").canRead());
+        VirtualFileSystem.unmount(fsId);
     }
 
     @Test
-    public void getMode() {
-        // TODO: 25/11/22
+    public void getMode() throws IOException {
+        Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
+        Path apkFile = base.findFile("base.apk");
+        Path mountPoint = Paths.get("/tmp/am_mount_point_mode");
+        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int mode = mountPoint.findFile("AndroidManifest.xml").getMode();
+        assertTrue("file mode should be non-negative", mode >= 0);
+        VirtualFileSystem.unmount(fsId);
     }
 
     private VirtualFileSystem.MountOptions getRWOptions(VirtualFileSystem.OnFileSystemUnmounted event) {
