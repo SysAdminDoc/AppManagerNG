@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 
@@ -48,10 +49,11 @@ public class TroubleshootingPreferences extends PreferenceFragment {
         ((Preference) Objects.requireNonNull(findPreference("replay_onboarding")))
                 .setOnPreferenceClickListener(preference -> {
                     AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, false);
-                    if (getActivity() == null) return true;
-                    if (getActivity().getSupportFragmentManager()
+                    FragmentActivity activity = getActivity();
+                    if (activity == null) return true;
+                    if (activity.getSupportFragmentManager()
                             .findFragmentByTag(OnboardingFragment.TAG) != null) return true;
-                    new OnboardingFragment().show(getActivity().getSupportFragmentManager(),
+                    new OnboardingFragment().show(activity.getSupportFragmentManager(),
                             OnboardingFragment.TAG);
                     return true;
                 });
