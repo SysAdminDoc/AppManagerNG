@@ -87,7 +87,7 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
 
     @SuppressLint("RestrictedApi")
     private void updateUi() {
-        if (mPrefKey != null) {
+        if (mPrefKey != null && getView() != null) {
             Preference prefToNavigate = findPreference(mPrefKey);
             if (prefToNavigate != null) {
                 scrollToPreference(prefToNavigate);
