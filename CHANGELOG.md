@@ -5,6 +5,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed
+- Settings preference navigation now guards against null fragment view, preventing
+  crash on devices where the view is not yet created or has been destroyed during
+  auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
+
 ### Added
 - Snapshot import now shows a preview dialog with source version, date, schema, and
   per-section toggles (preferences, profiles, rules, tags, operation history). Users
