@@ -10,6 +10,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   crash on devices where the view is not yet created or has been destroyed during
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
 
+### Changed
+- Normalized blocked-roadmap tracking into `Roadmap_Blocked.md`, deleted the
+  legacy `Roadmap_Blocks.md` variant, and kept `ROADMAP.md` as the
+  actionable-only checklist.
+
 ### Added
 - Snapshot import now shows a preview dialog with source version, date, schema, and
   per-section toggles (preferences, profiles, rules, tags, operation history). Users
