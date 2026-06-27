@@ -94,3 +94,26 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Touches: `app/src/main/java/io/github/muntashirakon/AppManager/logs/Log.java`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java`; `app/src/main/java/io/github/muntashirakon/proc/ProcMappedFiles.java`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java`; source-contract tests.
   Acceptance: no production `printStackTrace()` remains outside the already-active `server/` and `libserver/` diagnostic item; optional reflection/proc/file failures are logged through an app/libcore logger or intentionally ignored with tests; a source-contract test pins the allowed production exception list.
   Complexity: S
+
+## Research-Driven Additions
+
+- [ ] P2 — Rebaseline packaged offline manual source truth
+  Why: the packaged manual source still says upstream App Manager v4.0.1 and routes reports/translations to upstream destinations, while generated HTML contains a partial AppManagerNG fork notice, so `:docs:buildDocs` can regress fork identity and support guidance.
+  Evidence: `docs/raw/en/intro/main.tex:4`; `docs/raw/en/intro/main.tex:12`; `docs/raw/en/intro/main.tex:40`; `docs/raw/en/intro/main.tex:52`; `docs/raw/en/intro/main.tex:79`; `docs/raw/en/strings.xml:21`; `docs/raw/en/strings.xml:23`; `docs/raw/en/index.html:156`; `docs/raw/en/index.html:185`; `CHANGELOG.md:348`.
+  Touches: `docs/raw/en/intro/main.tex`; generated `docs/raw/en/strings.xml`; generated `docs/raw/en/index.html`; docs build/source-contract tests.
+  Acceptance: packaged English manual source, generated XML, and generated HTML agree on AppManagerNG identity, current support policy, fork-owned issue destinations, distribution links, and translation status; `rtk .\gradlew.bat :docs:buildDocs` preserves those strings; a grep/source-contract test fails on upstream-only support/version links outside historical changelog or explicit upstream-credit sections.
+  Complexity: M
+
+- [ ] P2 — Restore archive-link truth for tracked documentation
+  Why: README/ROADMAP/docs index pages link to archive directories and files that are absent from tracked Git content, so published GitHub docs can point readers at missing history while local archive markdown remains untracked.
+  Evidence: `README.md:96`; `ROADMAP.md:5`; `docs/roadmap/README.md:14`; `docs/roadmap/README.md:16`; `git ls-files docs/archive docs/roadmap/archive docs/patch-references docs/raw/changelog_old.md`; GitHub ignore-file documentation.
+  Touches: `README.md`; `ROADMAP.md`; `docs/roadmap/README.md`; `.gitignore`; docs link/source-contract checks.
+  Acceptance: every tracked link to `docs/archive/`, `docs/roadmap/archive/`, or `docs/patch-references/` either resolves in `git ls-files` or is removed/reworded to local-only; a clean docs build/research pass no longer leaves archive markdown directories as unexpected untracked files; a docs-link/source-contract check covers archive links.
+  Complexity: S
+
+- [ ] P3 — Ignore local JVM crash and replay artifacts under app
+  Why: failed Gradle/test JVM runs leave `hs_err_pid*.log` and `replay_pid*.log` files under `app/`, polluting the worktree and increasing accidental staging risk.
+  Evidence: `app/hs_err_pid10832.log`; `app/replay_pid10832.log`; `.gitignore`; GitHub ignore-file documentation.
+  Touches: `.gitignore`.
+  Acceptance: `.gitignore` excludes `app/hs_err_pid*.log` and `app/replay_pid*.log`; existing local logs remain untracked and ignored after `rtk git status --short --ignored`; no crash/replay logs are staged.
+  Complexity: S
