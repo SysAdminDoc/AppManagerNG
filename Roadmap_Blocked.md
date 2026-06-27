@@ -5,6 +5,123 @@ Items moved here from ROADMAP.md because they cannot be completed without
 device access, external services, or explicit design decisions. Move back to
 ROADMAP.md once the blocker is resolved.
 
+## Device/Privileged-Mode-Gated
+
+### P1
+
+- [ ] P1 — Validate and fix Android 17 app-list enumeration
+  Why: upstream #1948 reports an empty/sparse main app list on Android 17,
+  which could affect NG's PackageManagerCompat/MainViewModel enumeration path.
+  Shizuku and Dhizuku binding should be rechecked in the same pass.
+  Evidence: upstream MuntashirAkon/AppManager#1948; main/MainViewModel.java;
+  compat/PackageManagerCompat.java; servermanager/ privileged-mode binding.
+  Acceptance: on an API-37 emulator or device, the main list enumerates the
+  same package set as API 36; root/Shizuku/Dhizuku bind successfully or fail
+  with surfaced, actionable reasons; local smoke coverage asserts a non-empty
+  package list.
+  Blocker: requires Android 17/API-37 emulator or device runtime access.
+  Complexity: M
+
+- [ ] P1 — Root-detection retune for 2026 root managers
+  Why: upstream #1967 reports root not detected on Android 16, while Magisk
+  30.7 now preserves capabilities by default and KernelSU-Next moved probe
+  paths again.
+  Evidence: upstream MuntashirAkon/AppManager#1967; Magisk 30.7 release notes;
+  runner/RootManagerInfo.java.
+  Acceptance: root is detected on Android 16 with current Magisk and
+  KernelSU-Next; drop-cap diagnostics give correct guidance for Magisk 30.7+;
+  probe matrix is documented.
+  Blocker: requires rooted Android 16 emulator or device with current Magisk
+  and KernelSU-Next.
+  Complexity: M
+
+- [ ] P1 — Backup/restore round-trip integration tests
+  Why: backup/restore has the highest reliability risk and still lacks
+  end-to-end runtime coverage for no-crypto and AES paths.
+  Evidence: backup/adb/AndroidBackupHeader.java; backup/RestoreOp.java; test
+  coverage gaps in backup round-trip behavior.
+  Acceptance: a local emulator suite installs a fixture app, backs it up
+  with no-crypto and AES modes, uninstalls it, restores it, and asserts data
+  equality.
+  Blocker: requires a local emulator/device with enough storage for runtime
+  backup round trips.
+  Complexity: M
+
+- [ ] P1 — Port upstream restore fixes from v4.1.0 milestone
+  Why: upstream v4.1.0 planning includes restore fixes such as non-root
+  restore SecurityException handling on Samsung/API 34; NG's restore path
+  predates those fixes.
+  Evidence: upstream MuntashirAkon/AppManager#1286; backup/RestoreOp.java;
+  apk/installer/; compat/PackageManagerCompat.java.
+  Acceptance: the #1286 reproduction succeeds; ported fixes are listed in
+  CHANGELOG.md with upstream attribution.
+  Blocker: upstream v4.1.0 has not shipped as of 2026-06-27, and final
+  behavior needs Samsung/API 34 device verification.
+  Complexity: M
+
+- [ ] P1 — Port HMAC mutual auth and native run_server for the local privileged channel
+  Why: upstream hardened the app-to-ADB-server channel with HMAC
+  challenge-response and a native run_server executable; NG should evaluate
+  that path as part of privileged local-server secure-session hardening.
+  Evidence: upstream commits 88eb453, 07c7199, b42efbb, f8d3126; libserver/;
+  server/; adb/; servermanager/.
+  Acceptance: unauthenticated server connections are rejected by negative
+  tests; root mode still works on a rooted Android 16 runtime; ported commits
+  are attributed.
+  Blocker: requires rooted device/emulator privileged-mode verification and
+  overlaps the broader secure-session trust-model decision below.
+  Complexity: M
+
+### P2
+
+- [ ] P2 — Dhizuku freeze/suspend executor parity
+  Blocker: requires Dhizuku device-owner delegation on a device.
+  Complexity: M
+
+- [ ] P2 — Wireless-ADB resilience: trusted-network auto-reconnect and pairing-state surface
+  Blocker: requires on-device ADB connection lifecycle testing.
+  Complexity: L
+
+- [ ] P2 — SAF DocumentsProvider exposure of app-private directories
+  Blocker: requires privileged mode plus third-party SAF file-manager testing
+  on device.
+  Complexity: M
+
+- [ ] P2 — Backup overwrite option for custom-name collisions
+  Why: move-aside and rollback semantics differ between file-backed and
+  SAF-backed Path implementations.
+  Blocker: requires SAF storage verification on device.
+  Complexity: M
+
+- [ ] P2 — ApplicationStartInfo "why did this app start" panel
+  Blocker: requires API 35+ device/emulator runtime verification.
+  Complexity: M
+
+- [ ] P2 — Assistant-launched privileged services and broadcasts without root
+  Blocker: requires WRITE_SECURE_SETTINGS mode on device.
+  Complexity: M
+
+- [ ] P2 — Form-factor-aware permission prompt gate
+  Blocker: requires TV and Wear emulator verification.
+  Complexity: M
+
+### Historical INIT Carry-Forward
+
+- [ ] INIT-D1 — Full main-list ListAdapter/DiffUtil migration
+  Blocker: View-ID preservation needs on-device verification.
+
+- [ ] INIT-D3 — HMAC mutual auth and native run_server port
+  Blocker: same as P1 local privileged channel hardening above.
+
+- [ ] INIT-D5 — Backup round-trip emulator coverage
+  Blocker: same as P1 backup/restore round-trip integration tests above.
+
+- [ ] INIT-2b — Backup overwrite-option UI and move-aside for custom-name collisions
+  Blocker: same as P2 backup overwrite option above.
+
+- [ ] INIT-4b — Analytics/discovery dashboard screen
+  Blocker: same as visual/device-gated analytics dashboard below.
+
 ## Device/Design-Verification-Gated
 
 ### P2
@@ -177,8 +294,10 @@ ROADMAP.md once the blocker is resolved.
 - [ ] P2 — Screenshot regression testing (Paparazzi)
   Why: 143 layouts, 3 themes (AMOLED/dark/light), ongoing V2 design token work create continuous visual regression risk with no automated catching.
   Evidence: Roborazzi blocked by Compose transitive deps. Paparazzi (cashapp/paparazzi) is the best Views-compatible alternative — JVM-only, Material Components rendering works since v1.2+, no Compose dependency needed.
-  Touches: app/build.gradle, app/src/test/ (screenshot test classes), .github/workflows/tests.yml
-  Blocker: Paparazzi 2.0.0-alpha05.2 (AGP 9.x support, PR #2318) is expected by 2026-06-25 but not yet published. No released Paparazzi version works with AGP 9.2.1. Retry after the milestone ships.
+  Touches: app/build.gradle, app/src/test/ (screenshot test classes)
+  Blocker: Paparazzi 2.0.0-alpha05.2 (AGP 9.x support, PR #2318) is not
+  published as of 2026-06-27. No released Paparazzi version works with AGP
+  9.2.1. Retry after the milestone ships.
   Complexity: M
 
 ## Design-Decision-Gated
@@ -204,6 +323,16 @@ ROADMAP.md once the blocker is resolved.
   Complexity: S
 
 ## External-Service-Gated
+
+### P2
+
+- [ ] P2 — Fork-owned translation pipeline and NG-string catch-up
+  Why: translation intake needs a hosted Weblate or Crowdin project before
+  repo-side configuration has a real destination.
+  Evidence: README.md translation note; current hosted project is not live.
+  Blocker: requires maintainer/account action to create and operate the
+  hosted translation service.
+  Complexity: M
 
 ### P3
 
