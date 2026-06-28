@@ -34,13 +34,13 @@ build_once() {
     local label="$1"
     local destination_dir="$2"
 
-    echo "::group::Clean build ${label}"
+    echo "=== Clean build ${label} ==="
     "$GRADLE_CMD" --no-daemon --stacktrace clean :app:assembleRelease
-    echo "::endgroup::"
+    echo "=== Clean build ${label} complete ==="
 
     mapfile -t apks < <(find "$APK_ROOT" -path '*/release/*.apk' -type f | sort)
     if (( ${#apks[@]} == 0 )); then
-        echo "::error::No release APKs were produced under $APK_ROOT" >&2
+        echo "ERROR: No release APKs were produced under $APK_ROOT" >&2
         exit 1
     fi
 
@@ -50,7 +50,7 @@ build_once() {
     for apk in "${apks[@]}"; do
         name="$(basename "$apk")"
         if [[ -n "${seen[$name]:-}" ]]; then
-            echo "::error::Duplicate release APK basename '$name' from ${seen[$name]} and $apk" >&2
+            echo "ERROR: Duplicate release APK basename '$name' from ${seen[$name]} and $apk" >&2
             exit 1
         fi
         seen[$name]="$apk"
@@ -71,7 +71,7 @@ FIRST_APKS="$(list_apk_names "$FIRST_DIR")"
 SECOND_APKS="$(list_apk_names "$SECOND_DIR")"
 
 if [[ "$FIRST_APKS" != "$SECOND_APKS" ]]; then
-    echo "::error::Release APK set changed across two clean builds." >&2
+    echo "ERROR: Release APK set changed across two clean builds." >&2
     diff -u <(printf '%s\n' "$FIRST_APKS") <(printf '%s\n' "$SECOND_APKS") > "$OUT_DIR/apk-list.diff" || true
     exit 1
 fi
@@ -86,8 +86,8 @@ while IFS= read -r name; do
     first_hash="$(sha256sum "$first_apk" | awk '{print $1}')"
     second_hash="$(sha256sum "$second_apk" | awk '{print $1}')"
     if [[ "$first_hash" != "$second_hash" ]]; then
-        echo "::error::Release APK $name is not reproducible across two clean builds." >&2
-        echo "::error::first=$first_hash second=$second_hash" >&2
+        echo "ERROR: Release APK $name is not reproducible across two clean builds." >&2
+        echo "ERROR: first=$first_hash second=$second_hash" >&2
         set +o pipefail
         cmp -l "$first_apk" "$second_apk" | head -20 > "$OUT_DIR/${name}.differing-bytes.txt"
         set -o pipefail

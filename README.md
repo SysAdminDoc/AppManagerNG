@@ -96,7 +96,7 @@ items. Historical roadmap and research ledgers are archived under
 [`docs/roadmap/archive/`](docs/roadmap/archive/) and [`docs/archive/`](docs/archive/).
 Version targets:
 
-- **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, GitHub Actions release pipeline, NG CONTRIBUTING.md
+- **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, local release publishing, NG CONTRIBUTING.md
 - **v0.3.0** ✅ — Material 3 dashboard refresh, Pro Mode toggle, edge-to-edge (Android 15/16 compliance), AMOLED/dark/light themes
 - **v0.4.0** ✅ — Permission Inspector (review/bulk-revoke dangerous permissions across all apps; critical-package guard; recovery action) + Onboarding capability wizard
 - **v0.5.0** ✅ 2026-05-25 — Discovery & Polish: in-app changelog viewer + auto-display after update, global in-app Settings search, plus the Iter-91 → Iter-142 batch (scheduled auto-backup polish, AES metadata v7 HKDF per-archive keys, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, Dhizuku detection, Restricted Settings unlock walkthrough, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, Component rules preview, Tasker am:// intents, QS freeze tile, FM recursive search and ZIP create/extract, AGP 9.2.0). See `CHANGELOG.md`.
@@ -158,12 +158,12 @@ Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
 apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
 ```
 
-Release publishing also runs a two-build reproducibility gate: CI builds the
-signed APK twice from a clean checkout, compares the binary SHA-256 hashes, and
-uploads a `.sha256` sidecar only when the bytes match. Maintainers can run the
-same check locally with [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
+Before publishing, maintainers run a local two-build reproducibility gate: the
+signed APK is built twice from a clean checkout, binary SHA-256 hashes are
+compared, and `.sha256` sidecars are produced only when the bytes match. Run the
+check with [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
 on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
-on Linux CI; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+on Linux/macOS shells; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
 
 ### Stable fingerprint URL (for programmatic verification)
 
