@@ -13,7 +13,7 @@ VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' "$BUILD_GRADLE")
 VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' "$BUILD_GRADLE")
 
 if [[ -z "$VERSION_NAME" || -z "$VERSION_CODE" ]]; then
-  echo "::error::Could not extract versionName/versionCode from app/build.gradle"
+  echo "ERROR: Could not extract versionName/versionCode from app/build.gradle" >&2
   exit 1
 fi
 
@@ -25,7 +25,7 @@ README="$REPO_ROOT/README.md"
 if [[ -f "$README" ]]; then
   BADGE_VERSION=$(grep -oP 'version-\K[0-9]+\.[0-9]+\.[0-9]+' "$README" | head -1 || true)
   if [[ "$BADGE_VERSION" != "$VERSION_NAME" ]]; then
-    echo "::error::README badge version ($BADGE_VERSION) != versionName ($VERSION_NAME)"
+    echo "ERROR: README badge version ($BADGE_VERSION) != versionName ($VERSION_NAME)" >&2
     FAIL=1
   else
     echo "OK: README badge matches"
@@ -35,7 +35,7 @@ fi
 # --- Fastlane changelog ---
 FASTLANE="$REPO_ROOT/fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
 if [[ ! -f "$FASTLANE" ]]; then
-  echo "::error::Missing fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
+  echo "ERROR: Missing fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt" >&2
   FAIL=1
 else
   echo "OK: Fastlane changelog exists for versionCode $VERSION_CODE"
@@ -47,16 +47,20 @@ if [[ -f "$CHANGELOG" ]]; then
   if grep -qP "^## v\Q${VERSION_NAME}\E\\b" "$CHANGELOG" || grep -qP "^## Unreleased" "$CHANGELOG"; then
     echo "OK: CHANGELOG.md has entry for v${VERSION_NAME} or Unreleased section"
   else
-    echo "::error::CHANGELOG.md has no entry for v${VERSION_NAME} and no Unreleased section"
+    echo "ERROR: CHANGELOG.md has no entry for v${VERSION_NAME} and no Unreleased section" >&2
     FAIL=1
   fi
 fi
 
-# --- Tag consistency (CI tagged-release context only) ---
-if [[ -n "${GITHUB_REF_NAME:-}" && "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  TAG_VERSION="${GITHUB_REF_NAME#v}"
+# --- Tag consistency (optional local release context) ---
+RELEASE_TAG="${RELEASE_TAG_NAME:-}"
+if [[ -z "$RELEASE_TAG" ]] && git -C "$REPO_ROOT" describe --tags --exact-match HEAD >/dev/null 2>&1; then
+  RELEASE_TAG="$(git -C "$REPO_ROOT" describe --tags --exact-match HEAD)"
+fi
+if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  TAG_VERSION="${RELEASE_TAG#v}"
   if [[ "$TAG_VERSION" != "$VERSION_NAME" ]]; then
-    echo "::error::Git tag ($GITHUB_REF_NAME) version ($TAG_VERSION) != versionName ($VERSION_NAME)"
+    echo "ERROR: Git tag ($RELEASE_TAG) version ($TAG_VERSION) != versionName ($VERSION_NAME)" >&2
     FAIL=1
   else
     echo "OK: Git tag matches versionName"

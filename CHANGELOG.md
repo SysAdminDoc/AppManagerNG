@@ -11,6 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
 
 ### Changed
+- Release and dependency verification docs/scripts now describe local-only
+  maintainer commands and print plain CLI diagnostics instead of GitHub Actions
+  annotations or stale CI workflow references.
 - Normalized blocked-roadmap tracking into `Roadmap_Blocked.md`, deleted the
   legacy `Roadmap_Blocks.md` variant, and kept `ROADMAP.md` as the
   actionable-only checklist.
