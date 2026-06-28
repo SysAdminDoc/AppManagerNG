@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.server;
 import android.os.Looper;
 import android.os.Process;
 import android.os.SystemClock;
+import android.system.ErrnoException;
 import android.system.Os;
 
 import androidx.annotation.NonNull;
@@ -52,7 +53,7 @@ public final class ServerRunner {
             if (args.length > 1) {
                 try {
                     oldPid = Integer.parseInt(args[1]);
-                } catch (Exception ignore) {
+                } catch (NumberFormatException ignore) {
                 }
             }
             // Make it main looper
@@ -91,8 +92,7 @@ public final class ServerRunner {
             thread.setName("AM-IPC");
             thread.start();
             Looper.loop();
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (ReflectiveOperationException | RuntimeException e) {
             FLog.log(e);
         } finally {
             // Exit current process, regardless of whether the server started or not
@@ -114,8 +114,8 @@ public final class ServerRunner {
                 Process.killProcess(oldPid);
                 FLog.log("Killed old server with pid " + oldPid);
             }
-        } catch (Throwable throwable) {
-            FLog.log(throwable);
+        } catch (RuntimeException e) {
+            FLog.log(e);
         }
     }
 
@@ -136,14 +136,14 @@ public final class ServerRunner {
     private static void killProcess(int pid) {
         try {
             Process.killProcess(pid);
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (RuntimeException e) {
+            FLog.log(e);
         } finally {
             try {
                 // Kill using SIGNAL 9
                 Os.execve("/system/bin/kill", new String[]{"-9", String.valueOf(pid)}, null);
-            } catch (Throwable e) {
-                e.printStackTrace();
+            } catch (ErrnoException | RuntimeException e) {
+                FLog.log(e);
             }
         }
     }
@@ -170,8 +170,8 @@ public final class ServerRunner {
                 }
                 return new String(buff, 0, i);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            FLog.log(e);
         }
         return "";
     }

@@ -41,7 +41,7 @@ public class ParamsFixer {
             try {
                 return ParcelFileDescriptor.dup(((FileDescriptor) obj));
             } catch (IOException e) {
-                e.printStackTrace();
+                FLog.log(e);
             }
         }
         return obj;
