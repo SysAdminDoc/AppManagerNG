@@ -1,91 +1,137 @@
-# Research — AppManagerNG
+<!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
+
+# Research - AppManagerNG
 
 ## Executive Summary
-AppManagerNG is a Windows-maintained Android power-user package-manager fork built on Java, Android Views, Material Components, root/Shizuku/ADB privileged helpers, local Gradle builds, and a `floss`-first distribution model. Verified: its strongest current shape is a broad offline app-inspection/control surface with backup, permissions, app-ops, debloat, file-manager, logcat, APK inspection, and local-server tooling; the highest-value direction is to keep tightening trust, recovery, documentation truth, and host-side regression coverage before adding larger device-gated features. Priority opportunities: bound privileged shell output; replace privileged server stack traces with bounded diagnostics; rebaseline packaged manual source/generated docs truth; restore archive-link truth for tracked docs; remove stale CI/release-gate claims; extend release consistency checks to planning docs; re-enable stale ignored Robolectric fixtures; finish app/libcore stack-trace cleanup; make backup delete scope explicit; surface unsupported intent extras; cancel stale file-manager attribute jobs; ignore local JVM crash/replay logs.
+
+AppManagerNG is a Java/Android Views package-management fork aimed at power users who need package inspection, backup/restore, app-ops, component rules, debloat, root/ADB/Shizuku operation, APK installation, file access, and offline-first documentation in one app. Verified local code and docs show recent work already closed the most obvious privileged-output and app-list failure classes, so the strongest next opportunities are trust and recovery improvements: archived-app backup safety, bounded component-rule reset diagnostics, explicit backup deletion scope, restored ignored host tests, documentation truth, structured logging cleanup, unsupported intent-extra reporting, stale file-manager job cancellation, and Gradle/local artifact hygiene.
+
+Top opportunities by expected user impact:
+
+1. Add backup/restore guards for Android archived-app state before APK/data operations.
+2. Add bounded progress, cancellation, and partial-failure reporting to component-rule bulk reset.
+3. Make destructive backup deletion scope explicit for base backups versus all named versions.
+4. Re-enable stale ignored Robolectric fixture tests and keep fixture failures visible.
+5. Rebaseline packaged manual source and archive links so published docs match tracked content.
+6. Replace remaining production `printStackTrace()` calls in app/libcore utility paths.
+7. Report unsupported intent extras instead of silently dropping them from generated commands.
+8. Cancel or generation-skip stale file-manager attribute loads during fast navigation.
+9. Keep the Gradle wrapper current and ignore local JVM crash/replay artifacts.
 
 ## Product Map
-- Core workflows: browse/filter installed apps, inspect manifests/components/trackers/signatures/SDKs, run batch package actions, manage permissions/app-ops/rules, back up/restore APK/data, inspect files/logs/APKs, and operate root/Shizuku/ADB-backed privileged actions.
-- User personas: rooted-device power users, Shizuku/ADB users without root, privacy/debloat operators, Android app reverse-engineering/debug users, and maintainers doing local reproducible builds.
-- Platforms and distribution: Android minSdk 21/targetSdk 36/compileSdk 37, Gradle 9.6.0 wrapper with AGP 9.2.1, Java-only app/lib modules, `floss` and `full` flavors, GitHub/Fastlane/Obtainium docs, local-only build/release workflow.
-- Key integrations and data flows: PackageManager/AppOps/UsageStats/StorageStats/DevicePolicy hidden APIs through compat layers, libserver over local privileged channels, Shizuku/libsu/libadb elevation, Room preferences/state, Gson/JSON static datasets, local/SAF backup paths, generated offline manual assets, and app-private diagnostics/log exports.
+
+Core workflows: main app inventory and search, package detail inspection, APK install/export, one-click operations, batch archive/freeze/backup/delete flows, backup/restore and conversion, app-ops and permission review, component blocking/IFW rules, debloat definitions, Activity Interceptor command generation, file manager browsing, docs/manual access, and privileged-mode diagnostics.
+
+Primary personas: rooted Android power users, ADB/Shizuku users without root, ROM/device maintainers, privacy-focused users auditing permissions and trackers, app developers debugging manifests and intents, and offline users who need FLOSS distribution without network dependencies.
+
+Platforms and distribution: Android minSdk 21 with targetSdk 36 and compileSdk 37, FLOSS and FULL flavors, F-Droid/GitHub-style side loading, GPL-3.0-or-later source obligations, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.0/AGP 9.2.1, native/server helpers, and local-only build/release verification.
+
+Key integrations and data flows: Android package APIs, hidden/privileged compat layers, root/libsu, Shizuku, ADB pairing, Dhizuku, PackageInstaller archive/unarchive APIs, Room metadata, backup archive storage, local docs generation, GitHub-hosted releases and raw docs, optional updater channels, and third-party signature/debloat/reference data where pinned and allowed by flavor.
 
 ## Competitive Landscape
-- Upstream App Manager: does breadth well and remains the closest feature comparator; learn from accepted restore, backup, app-op, and documentation issues; avoid importing upstream privileged-channel changes without NG-specific trust-model and device validation.
-- Canta and UAD-ng: make destructive debloat risk visible through package safety lists, restore warnings, and issue-driven package breakage tracking; learn from unclear uninstall-state and bootloop reports; avoid presenting success when package state cannot be verified.
-- Hail: wins daily freeze/unfreeze ergonomics with a dedicated freeze model; keep that as a device-gated UX reference; avoid moving freeze launch-through into the active queue before root/Shizuku lifecycle verification is available.
-- LibChecker, Inure, and AppVerifier: provide dense APK/library/verification views for power users; learn from aggregate discovery, signature, and source-truth affordances; avoid adding analytics dashboards until charting/tap-through can be visually verified on device.
-- Neo Backup and Swift Backup: show backup/restore is a trust-critical niche with storage, restore, and verification complaints; learn from verify-backup requests and storage warnings; avoid custom backup-schedule expansion until NG's existing restore/delete/fixture coverage is stronger.
-- AppDash: validates paid-market demand for tags, insight cards, versioned backups, widgets, and polished dashboards; learn from explicit insight-to-filter and backup-version affordances; avoid network-backed Play intelligence in the `floss` flavor.
-- SD Maid SE, Amaze, and Material Files: set expectations for resilient file operations, cancellation, staged deletion, and clear recovery; learn from foreground/cancellable operation models; avoid deep file-manager service rewrites without device recovery testing.
 
-## Security, Privacy, and Reliability
-- Verified: active P1 items already cover privileged shell output bounding and `server/`/`libserver/` stack traces; duplicate security roadmap entries would fragment the same fix.
-- Verified: `CHANGELOG.md:348` says packaged manuals were rebased to AppManagerNG, but source docs still route users to upstream and stale version claims: `docs/raw/en/intro/main.tex:4`, `:12`, `:40`, `:52`, `:54`, `:79`; generated XML repeats the same strings at `docs/raw/en/strings.xml:21`, `:23`, `:24`, `:26`; generated HTML is mixed, with a fork notice at `docs/raw/en/index.html:156` and stale supported version at `docs/raw/en/index.html:185`.
-- Verified: tracked documentation links archive paths that are absent from tracked Git content: `README.md:96`, `ROADMAP.md:5`, and `docs/roadmap/README.md:14` reference `docs/archive/` or `docs/roadmap/archive/`, while `git ls-files docs/archive docs/roadmap/archive docs/patch-references docs/raw/changelog_old.md` returns no paths and `git status --short` reports those directories as untracked.
-- Verified: local JVM crash/replay logs are not ignored: `app/hs_err_pid10832.log` and `app/replay_pid10832.log` appear in `git status --short`, while `.gitignore` has no `app/hs_err_pid*.log` or `app/replay_pid*.log` patterns.
-- Verified: five class-level ignored tests still use `@Ignore("env-fixture missing pre-2026-05-25; tracked in ROADMAP.md Test Suite Hygiene")` even though the active roadmap no longer has that item: `ZipDocumentFileTest.java:32`, `ZipFileSystemTest.java:32`, `TarUtilsTest.java:37`, `OABConverterTest.java:31`, and `SettingsSearchIndexTest.java:21`.
-- Verified: production `printStackTrace()` still exists outside the current server-focused roadmap item in app/libcore file, proc, logging, and UI utility paths; the active P2 item correctly scopes that cleanup.
-- Missing guardrails: source-contract tests should enforce no production direct stack traces outside explicitly allowed fixtures, no stale upstream support links in packaged English manual sources, no archive links to untracked paths, and no ignored host tests without an active roadmap reason.
-- Recovery and rollback needs: keep destructive package/backup flows verifiable before user-facing success, preserve local-only release verification, and keep device-gated privileged trust-model work in `Roadmap_Blocked.md` until runtime validation exists.
+- Upstream App Manager - best breadth and issue signal; learn from current bug reports and API coverage; avoid blind upstream ports without NG hardening and minSdk/license review.
+- Canta and UAD-ng - strong debloat safety posture and user-facing package recommendations; learn conservative defaults and reversible operations; avoid network-dependent debloat behavior in FLOSS paths.
+- Neo Backup and Swift Backup - set expectations for clear backup versioning, restore risk, and schedulers; learn visible backup state and delete/version semantics; avoid expanding backup features before archived-state and destructive-scope guards are clear.
+- Hail and Blocker - focused freeze/component ergonomics; learn fast single-purpose controls; avoid adding device-gated UI polish before bulk operations have progress, cancellation, and recovery ledgers.
+- LibChecker, Inure, and AppVerifier - strong inspection, signing, and dense technical presentation; learn scannable evidence-first detail pages; avoid duplicating dashboards without reliable source truth.
+- SD Maid SE, Amaze, and Material Files - mature cancellation, file operation, and local storage patterns; learn stale-job prevention and recoverable operation logs; avoid a file-manager rewrite when targeted adapter lifecycle fixes are enough.
+- AppDash - polished commercial package inventory, notes, tags, backup, and insights; learn organization and operation history affordances; avoid Play/network-backed intelligence in FLOSS builds.
+
+## Security, Privacy, Reliability
+
+Verified high-confidence issues:
+
+- Archived-app backup safety is not yet explicit in backup/restore paths. App archiving is exposed in the main UI and batch operations, and archive state is tested in package-state verification, but backup entry points do not appear to preflight archived package availability before APK/data work. Treating an archived package as fully installed can create incomplete backups or misleading restore choices.
+- Component-rule reset collapses privileged/IFW failures into a boolean. `ComponentsBlocker.applyRules(false)` walks all rules and catches `Throwable` around per-component state changes; failures are not surfaced as a bounded, retryable ledger for users.
+- Backup deletion scope remains destructive and ambiguous where base backup deletion and named backup retention can diverge.
+- Several pre-2026-05-25 `@Ignore` markers still suppress host-side regression coverage, reducing confidence in ZIP/VFS/TAR/OAB/settings-search code.
+- Production `printStackTrace()` calls remain in shared file/proc/UI utility paths, which can leak noisy diagnostics and bypass structured logging.
+- Activity Interceptor drops unsupported extras from command/export output without a user-visible count or key/type warning.
+- File-manager attribute caching can outlive recycled rows or dataset swaps without an owned cancellation/generation token.
+- Local JVM crash/replay logs under `app/` are unignored and easy to stage accidentally.
+
+Rejected as duplicates or already tracked:
+
+- Backup extras warning: already implemented through `BackupExtrasCoverage` strings and tests.
+- Android 17/private-space app-list failures: locally guarded in main-list load status and still tracked as device-gated in `Roadmap_Blocked.md`.
+- Wireless ADB/Quest pairing UX: pairing support exists and reconnect/pairing-state resilience is already in `Roadmap_Blocked.md`.
+- Samsung "Clear Compiler Artifacts": already tracked as device/design-gated in `Roadmap_Blocked.md`.
+- Domain link inspection: code already includes domain verification compat, filters, and detail rendering; no fresh high-confidence gap exceeded the current roadmap items.
+- Compose rewrite, Material 1.14 migration, and minSdk 23 dependency wave: conflict with repo constraints and current minSdk 21 policy.
 
 ## Architecture Assessment
-- Verified: module boundaries are clear but old: app UI/domain code and shared `libcore` Java utilities rely on Views, Java executors, hidden API stubs, and local server/common modules rather than Compose or Kotlin.
-- Verified: the docs module has a source/generated asset boundary problem: `docs/raw/en/intro/main.tex`, generated `docs/raw/en/strings.xml`, and generated `docs/raw/en/index.html` can disagree, so fork identity fixes need source rebuilds plus grep/source-contract coverage rather than generated HTML edits only.
-- Verified: release metadata is split across `app/build.gradle`, `versions.gradle`, README/Fastlane/docs, and planning notes; active roadmap already has the consistency-gate fix, so this pass should not duplicate it.
-- Verified: `versions.gradle` documents deliberate minSdk 21 ceiling pins for Activity, Material, Room, WebKit, WorkManager, Sora editor, and biometric dependencies; large dependency upgrades require the existing minSdk policy rather than opportunistic bumps.
-- Refactor candidates: shared logging/diagnostic abstraction for app/libcore utility paths; fixture-backed test-resource setup for ZIP/VFS/TAR/OAB/settings-search tests; a docs source-contract check for generated manual truth; a docs-link check that treats untracked archive links as failures; `.gitignore` cleanup for repeat JVM crash artifacts.
-- Test gaps: ignored fixture tests mask file-system/archive/backup/settings-search regressions; packaged docs can drift between TeX/XML/HTML; several high-risk runtime flows remain blocked because they require rooted/Shizuku/SAF/multi-profile/device verification.
-- Documentation gaps: README still has stale local/CI wording and planning surfaces have drift; active P2 roadmap items already cover those docs and gate changes, while archive-link truth is a new host-verifiable documentation gap.
-- Category coverage: security, observability, testing, docs, distribution/packaging, offline/resilience, migration, and upgrade strategy map to active host-verifiable items; accessibility, i18n/l10n, mobile/form-factor, multi-user, and screenshot/visual work are already in `Roadmap_Blocked.md`; a plugin ecosystem is not recommended because local privileged APIs and `floss` constraints favor first-party modules over third-party extension loading.
 
-## Rejected Ideas
-- Broad in-app "App Manager" string sweep, source: `app/src/main/res/values/strings.xml` and `Roadmap_Blocked.md`. Reason: many references are inherited/manual/upstream-context strings; the verified user-facing regression is the packaged manual source/generated truth, not a blind rename.
-- Tracking every local archive markdown file as published documentation, source: `docs/archive/`, `docs/roadmap/archive/`, and docs hygiene rules. Reason: implementation should first decide link truth versus local-only archives; committing all local archives would add stale planning surfaces.
-- Deleting local top-level ignored markdown artifacts, source: `.gitignore` and `git status --ignored`. Reason: they are ignored local artifacts, not a tracked product bug; active work should focus on tracked links and generated docs.
-- Compose rewrite or Kotlin-first rewrite, source: Android stack conventions and current Java/View modules. Reason: contradicts the repo architecture and would delay reliability fixes.
-- minSdk 23 dependency wave, source: `versions.gradle` and `docs/policy/minsdk-21-ceiling.md`. Reason: API 21-22 support is an explicit product constraint.
-- Network-backed Play intelligence in `floss`, source: AppDash feature set and fork flavor docs. Reason: `floss` expectations favor offline/no-proprietary-network behavior.
-- New analytics dashboard, freeze widget, TV/D-pad pass, multi-user matrix, screenshot/Paparazzi pass, translation pipeline, and visual token polish, source: `Roadmap_Blocked.md`. Reason: already tracked behind device/design verification or explicit runtime blockers.
-- Privileged-channel HMAC/TLS/native server port, source: upstream App Manager commits and `Roadmap_Blocked.md`. Reason: already blocked pending trust-model and rooted/runtime verification.
+The architecture is intentionally large but coherent: package state is represented through app-detail/main-list models, privileged access is isolated through compat/server/root abstractions, batch operations centralize user-visible work, and host tests increasingly pin behavior that can be verified without a device. The best roadmap items are small seams that strengthen existing paths instead of adding new product surfaces.
+
+Strengths:
+
+- Existing package/archive support is localized enough to add backup preflights without a broad UI rewrite.
+- Recent main-list load status and privileged-output fixes show a pattern for bounded diagnostics that can be reused.
+- Backup extras coverage, storage checks, and convert/verify tests provide a good foundation for more backup truth-state tests.
+- Domain links, freeze/archived filters, app notes/tags, and finder scoring already give the inventory experience depth compared with single-purpose competitors.
+- `ROADMAP.md` and `Roadmap_Blocked.md` split host-verifiable work from device-gated work, which keeps planning actionable.
+
+Risks:
+
+- Many features cross root/ADB/Shizuku/device-policy boundaries; new operations must default to explicit preflights and recoverable errors.
+- Docs generation has multiple source/generated surfaces, so fork identity can regress if only generated HTML is edited.
+- Backlog duplication is easy because upstream issues often map to work already implemented or moved to blocked status.
+- Host tests cannot fully prove multi-user, archived-app, Shizuku, Dhizuku, or OEM behavior; local tests should pin contracts and leave device matrices in `Roadmap_Blocked.md`.
+
+## New Roadmap Additions
+
+The refreshed roadmap adds two items:
+
+- P1 - Guard backups and restores for Android archived-app state.
+- P2 - Add bounded progress and partial-failure reporting to component-rule reset.
+
+Both are high-confidence because they are supported by local code evidence and current platform/upstream signals, while avoiding duplicates already implemented or parked in `Roadmap_Blocked.md`.
 
 ## Sources
-OSS competitors and issue signal:
+
+OSS and upstream:
+
 - https://github.com/MuntashirAkon/AppManager
 - https://github.com/MuntashirAkon/AppManager/issues/1980
+- https://github.com/MuntashirAkon/AppManager/issues/1982
 - https://github.com/MuntashirAkon/AppManager/issues/1986
+- https://github.com/MuntashirAkon/AppManager/issues/1992
 - https://github.com/samolego/Canta
 - https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1315
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1400
 - https://github.com/NeoApplications/Neo-Backup
-- https://github.com/NeoApplications/Neo-Backup/issues/814
 - https://github.com/aistra0528/Hail
 - https://github.com/lihenggui/blocker
 - https://github.com/LibChecker/LibChecker
 - https://github.com/Hamza417/Inure
 - https://github.com/soupslurpr/AppVerifier
-- https://github.com/ImranR98/Obtainium
-- https://github.com/zacharee/InstallWithOptions
 - https://github.com/d4rken-org/sdmaid-se
 - https://github.com/TeamAmaze/AmazeFileManager
 - https://github.com/zhanghai/MaterialFiles
 
-Commercial, adjacent, awesome lists, and community:
-- https://appdash.app/
-- https://www.swiftapps.org/faq
-- https://github.com/timschneeb/awesome-shizuku
-- https://www.reddit.com/r/PocoPhones/comments/1ng1gyi/how_to_debloat_poco_phones_stepbystep_guide_with/
+Commercial:
 
-Platform, testing, dependencies, and security:
+- https://appdash.app/
+- https://www.swiftapps.org/
+
+Platform, build, security, and docs:
+
+- https://developer.android.com/reference/android/content/pm/ApplicationInfo
+- https://developer.android.com/reference/android/content/pm/ArchivedPackageInfo
 - https://developer.android.com/developer-verification
+- https://developer.android.com/about/versions/17/behavior-changes-17
 - https://developer.android.com/build/releases/agp-9-2-0-release-notes
 - https://docs.gradle.org/current/release-notes.html
 - https://robolectric.org/getting-started/
 - https://junit.org/junit4/javadoc/4.13/org/junit/Ignore.html
+- https://docs.github.com/en/get-started/git-basics/ignoring-files
 - https://f-droid.org/en/docs/Reproducible_Builds/
-- https://docs.github.com/articles/ignoring-files
+- https://github.com/jeremylong/DependencyCheck
+- https://github.com/material-components/material-components-android
 
 ## Open Questions
-- Needs live validation: whether API 21-22 usage still justifies holding the minSdk 21 ceiling after the current reliability backlog is drained.
-- Needs live validation: final privileged-channel trust model for non-loopback local-server sessions.
-- Needs live validation: Android developer-verification and Android 17 behavior effects on Obtainium/F-Droid-style installs for this specific package.
+
+- Which archived-app backup behavior should be default for scheduled backups: skip with explicit result, metadata-only capture, or automatic unarchive where the platform permits it?
+- Should component-rule reset failures be stored in existing operation history, a dedicated rule-reset report, or both?
+- Should backup deletion include an authenticated "all versions" path for every storage backend or only for local/backed backup stores that can count named versions reliably?
+- Which ignored host tests need fixture regeneration versus narrower replacement tests?

@@ -96,3 +96,19 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Touches: `.gitignore`.
   Acceptance: `.gitignore` excludes `app/hs_err_pid*.log` and `app/replay_pid*.log`; existing local logs remain untracked and ignored after `rtk git status --short --ignored`; no crash/replay logs are staged.
   Complexity: S
+
+## Research-Driven Additions
+
+- [ ] P1 - Guard backups and restores for Android archived-app state
+  Why: App archiving is now a first-class NG feature, but backup code has no archived-package preflight, so archived packages can be treated like fully installed apps when APK/data availability is different.
+  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/main/ApplicationItem.java:693`; `app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsManager.java:450`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupOp.java:215`; Android app archiving APIs.
+  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/backup/BackupOp.java`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/RestoreOp.java`; backup dialog fragments/ViewModel; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/AppArchiveManager.java`; backup tests.
+  Acceptance: archived packages are detected before manual/scheduled backup and restore; APK/data backup either requires unarchive or records an explicit skipped archived-state result; restore refuses to clobber archived state without an unarchive/confirm path; host tests cover archived, unarchived, and unavailable states.
+  Complexity: M
+
+- [ ] P2 - Add bounded progress and partial-failure reporting to component-rule reset
+  Why: upstream reports "Remove All Rules" freezing; NG's component-rule reset loops every rule through privileged PackageManager/IFW paths and collapses failures into a boolean, leaving users without progress or a recovery ledger.
+  Evidence: upstream MuntashirAkon/AppManager#1986; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:401`; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:417`; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:476`.
+  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java`; component-rule settings UI; operation history; component-rule tests.
+  Acceptance: bulk reset exposes determinate package/component progress, keeps UI cancellable/responsive, records per-component successes/failures with retry data, and tests prove partial failures preserve unapplied rules instead of silently reporting a generic false.
+  Complexity: M
