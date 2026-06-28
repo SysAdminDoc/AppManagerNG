@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P1 — Bound privileged shell result output
-  Why: the privileged server accumulates command output in an unbounded `StringBuilder` before parceling it back to the app, so long-running or noisy shell commands can exhaust memory before IPC frame limits apply.
-  Evidence: `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/Shell.java:201`; `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerHandler.java:134`; Android 17 app memory limits.
-  Touches: `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/Shell.java`; `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerHandler.java`; server/common tests or source-contract tests.
-  Acceptance: shell result text is capped by bytes or lines, includes a clear truncation marker, preserves exit status, and has a host-side regression test proving large output does not grow without bound.
-  Complexity: M
-
 - [ ] P1 — Replace privileged server direct stack traces with bounded diagnostics
   Why: privileged server/common production paths still call `printStackTrace()` directly and catch broad `Throwable`, bypassing structured diagnostics after the app-layer logging cleanup.
   Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerRunner.java`; `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerHandler.java`; `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/FLog.java`; `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/Shell.java`.

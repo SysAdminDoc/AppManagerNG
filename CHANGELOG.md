@@ -27,6 +27,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CHANGELOG entry, or git tag disagree. Runs in both release and PR-check workflows.
 
 ### Security
+- Privileged shell command results are capped before IPC marshalling. Long or
+  noisy commands now preserve exit status and include an explicit truncation
+  marker instead of growing output without bound.
 - Terminal launch now always requires device credential (biometric/PIN/pattern)
   regardless of the global action-auth preference. Privileged routes (root, ADB,
   Shizuku) were previously bypassable when the toggle was disabled (the default).
