@@ -18,9 +18,9 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 - [ ] P2 — Extend version and SDK consistency gates to planning surfaces
   Why: `app/build.gradle` and README report version 0.6.3/compileSdk 37, while ignored planning files still claim older Gradle/AGP/version/SDK state, and the current gate cannot catch that drift.
-  Evidence: `app/build.gradle:18`; `app/build.gradle:19`; `versions.gradle:4`; `README.md:14`; `CLAUDE.md:20`; `CLAUDE.md:131`; `PROJECT_CONTEXT.md:13`; `PROJECT_CONTEXT.md:14`; `scripts/verify-release-consistency.sh`.
-  Touches: `scripts/verify-release-consistency.sh`; `PROJECT_CONTEXT.md`; `CLAUDE.md`; `README.md`; `CHANGELOG.md`.
-  Acceptance: the local consistency script fails when README, CHANGELOG/Fastlane, `versions.gradle`, `PROJECT_CONTEXT.md`, or `CLAUDE.md` disagree with `app/build.gradle` and the current SDK pins; stale planning surfaces are updated.
+  Evidence: `app/build.gradle:18`; `app/build.gradle:19`; `versions.gradle:4`; `README.md:14`; `PROJECT_CONTEXT.md:13`; `PROJECT_CONTEXT.md:14`; `scripts/verify-release-consistency.sh`.
+  Touches: `scripts/verify-release-consistency.sh`; `PROJECT_CONTEXT.md`; `README.md`; `CHANGELOG.md`.
+  Acceptance: the local consistency script fails when README, CHANGELOG/Fastlane, `versions.gradle`, `PROJECT_CONTEXT.md` disagree with `app/build.gradle` and the current SDK pins; stale planning surfaces are updated.
   Complexity: S
 
 - [ ] P2 — Add explicit backup delete scope for base-only versus all versions
