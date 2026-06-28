@@ -164,6 +164,10 @@ compared, and `.sha256` sidecars are produced only when the bytes match. Run the
 check with [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
 on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
 on Linux/macOS shells; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+Run [`scripts/verify-release-consistency.sh`](scripts/verify-release-consistency.sh)
+before release notes or APK publication to confirm the README badges, Fastlane
+changelog, Gradle wrapper, SDK pins, and local `CLAUDE.md` match the build
+metadata.
 
 ### Stable fingerprint URL (for programmatic verification)
 
