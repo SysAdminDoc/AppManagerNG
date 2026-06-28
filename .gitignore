@@ -56,3 +56,7 @@ codexprompt-*.md
 .ai/
 CONTINUATION_PROMPT.md
 RESEARCH_FEATURE_PLAN*.md
+
+# AI config
+AGENTS.md
+.codex/
