@@ -18,6 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 // Copyright 2017 Zheng Li
 public final class Shell {
     private static final String TOKEN = UUID.randomUUID().toString();
+    static final int MAX_OUTPUT_CHARS = 256 * 1024;
+    static final String OUTPUT_TRUNCATED_MARKER =
+            "\n[output truncated after " + MAX_OUTPUT_CHARS + " characters]\n";
 
     private static Shell sShell;
 
@@ -201,44 +204,89 @@ public final class Shell {
     public Result exec(String cmd) {
         Result result = new Result();
         FLog.log("Command:  " + cmd);
-        final StringBuilder outLine = new StringBuilder();
+        BoundedOutput output = new BoundedOutput(MAX_OUTPUT_CHARS);
         try {
-            result.mStatusCode = add(new Command(cmd) {
-                @Override
-                public void onUpdate(int id, String message) {
-                    outLine.append(message).append('\n');
-                }
-
-                @Override
-                public void onFinished(int id) {
-                }
-            }).waitForFinish();
+            result.mStatusCode = executeCommand(cmd, output);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         if (result.mStatusCode == -1) {
+            output = new BoundedOutput(MAX_OUTPUT_CHARS);
             try {
-                outLine.setLength(0);
-                result.mStatusCode = add(new Command(cmd) {
-                    @Override
-                    public void onUpdate(int id, String message) {
-                        outLine.append(message).append('\n');
-                    }
-
-                    @Override
-                    public void onFinished(int id) {
-                    }
-                }).waitForFinish();
+                result.mStatusCode = executeCommand(cmd, output);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        result.mMessage = outLine.toString();
+        result.mMessage = output.toString();
         return result;
+    }
+
+    private int executeCommand(@NonNull String cmd, @NonNull BoundedOutput output)
+            throws InterruptedException {
+        return add(new Command(cmd) {
+            @Override
+            public void onUpdate(int id, String message) {
+                output.appendLine(message);
+            }
+
+            @Override
+            public void onFinished(int id) {
+            }
+        }).waitForFinish();
     }
 
     public int countCommands() {
         return mCommandQueue.size();
+    }
+
+    static final class BoundedOutput {
+        private final StringBuilder mOutput = new StringBuilder();
+        private final int mMaxChars;
+        private boolean mTruncated;
+
+        BoundedOutput(int maxChars) {
+            mMaxChars = Math.max(0, maxChars);
+        }
+
+        void appendLine(String message) {
+            append(message);
+            append("\n");
+        }
+
+        private void append(String value) {
+            if (value == null || value.length() == 0) {
+                return;
+            }
+            if (mTruncated) {
+                return;
+            }
+            int remaining = mMaxChars - mOutput.length();
+            if (remaining > 0) {
+                mOutput.append(value, 0, Math.min(remaining, value.length()));
+            }
+            if (value.length() > remaining) {
+                markTruncated();
+            }
+        }
+
+        private void markTruncated() {
+            if (mTruncated) {
+                return;
+            }
+            mOutput.append(OUTPUT_TRUNCATED_MARKER);
+            mTruncated = true;
+        }
+
+        boolean isTruncated() {
+            return mTruncated;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return mOutput.toString();
+        }
     }
 
 
