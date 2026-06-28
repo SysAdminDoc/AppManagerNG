@@ -11,6 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
 
 ### Changed
+- Release/version consistency checks now validate README SDK badges,
+  `versions.gradle` SDK/AGP pins, and local `CLAUDE.md` against
+  `app/build.gradle` and the Gradle wrapper before local release work.
 - Release and dependency verification docs/scripts now describe local-only
   maintainer commands and print plain CLI diagnostics instead of GitHub Actions
   annotations or stale CI workflow references.
@@ -26,8 +29,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   privilege state, feature flags, crash sink, and logcat before sharing. Excluded
   sections are omitted entirely; redaction still applies to included content.
 - Release/version consistency preflight gate (`scripts/verify-release-consistency.sh`)
-  that fails CI when `versionName`, `versionCode`, README badge, fastlane changelog,
-  CHANGELOG entry, or git tag disagree. Runs in both release and PR-check workflows.
+  that fails local release checks when `versionName`, `versionCode`, README badge,
+  fastlane changelog, CHANGELOG entry, or git tag disagree.
 
 ### Security
 - Privileged server diagnostics now route through bounded `FLog` formatting
@@ -47,10 +50,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   endpoint, payload category, compile availability, toggle state, and last fetch time.
 - Translation and pseudolocale quality gate (`scripts/verify-translation-quality.sh`)
   verifies pseudoLocalesEnabled, detects stale translations, and reports per-locale
-  coverage. Wired into PR checks.
-- Dependency floor drift gate (`scripts/verify-dependency-floor.sh`) fails CI when
-  a minSdk-21-pinned dependency exceeds its documented ceiling version. Verifies
-  all seven pinned-cluster deps, minSdk, and OWASP dependency-check version.
+  coverage for local quality checks.
+- Dependency floor drift gate (`scripts/verify-dependency-floor.sh`) fails local
+  release checks when a minSdk-21-pinned dependency exceeds its documented ceiling
+  version. Verifies all seven pinned-cluster deps, minSdk, and OWASP dependency-check
+  version.
 
 ### Changed — clearApplicationUserData stability improvement (2026-06-20)
 
