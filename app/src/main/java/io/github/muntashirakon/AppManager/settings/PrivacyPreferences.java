@@ -220,7 +220,7 @@ public class PrivacyPreferences extends PreferenceFragment {
         });
         // Permission change monitor (T9). Toggling ON primes the snapshot store so
         // the very next package update has a known-good baseline to diff against.
-        SwitchPreferenceCompat permissionMonitor = requirePreference("permission_change_monitor");
+        SwitchPreferenceCompat permissionMonitor = requirePreference("enable_permission_change_monitor");
         permissionMonitor.setChecked(Prefs.Privacy.isPermissionChangeMonitorEnabled());
         permissionMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
@@ -234,7 +234,7 @@ public class PrivacyPreferences extends PreferenceFragment {
             return true;
         });
         // Signing-cert change monitor (T9 sibling). Same toggle-then-prime pattern.
-        SwitchPreferenceCompat signingCertMonitor = requirePreference("signing_cert_change_monitor");
+        SwitchPreferenceCompat signingCertMonitor = requirePreference("enable_signing_cert_change_monitor");
         signingCertMonitor.setChecked(Prefs.Privacy.isSigningCertChangeMonitorEnabled());
         signingCertMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
@@ -253,7 +253,7 @@ public class PrivacyPreferences extends PreferenceFragment {
             showAppChangeFeed();
             return true;
         });
-        SwitchPreferenceCompat appChangeAuditor = requirePreference("app_change_auditor");
+        SwitchPreferenceCompat appChangeAuditor = requirePreference("enable_app_change_auditor");
         appChangeAuditor.setChecked(Prefs.Privacy.isAppChangeAuditorEnabled());
         appChangeAuditor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;

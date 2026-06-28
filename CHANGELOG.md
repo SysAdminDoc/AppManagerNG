@@ -6,6 +6,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Settings > Privacy no longer crashes on open. Three monitor toggles used
+  `app:key` values (`permission_change_monitor`, `signing_cert_change_monitor`,
+  `app_change_auditor`) that are not registered in `AppPref`, so
+  `SettingsDataStore` threw `IllegalArgumentException: Invalid key` while
+  inflating the screen. Keys now match the registered `enable_*` names.
+- Installed application list now loads on Android 17 (API 37). The hidden
+  `IPackageManager.getInstalled{Packages,Applications}` return type change made the
+  compiled `ParceledListSlice` call fail with a linkage error, leaving the app list
+  empty and crashing the Settings > About device screen (which only caught
+  `Exception`, not the `Error`). The accessors now catch the linkage error, re-dispatch
+  reflectively, and normalize the result whether the platform returns a
+  `ParceledListSlice`, a plain `List`, or `null`.
 - Settings preference navigation now guards against null fragment view, preventing
   crash on devices where the view is not yet created or has been destroyed during
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).

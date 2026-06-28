@@ -275,6 +275,21 @@ public class Android17BehaviorContractTest {
                 offenders.isEmpty());
     }
 
+    @Test
+    public void packageManagerCompatGuardsInstalledListReturnTypeChange() throws IOException {
+        Path source = findProjectRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java");
+        String contents = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue("getInstalled{Packages,Applications} must tolerate the Android 17 return-type"
+                        + " change by catching the linkage error and retrying reflectively",
+                contents.contains("catch (NoSuchMethodError | AbstractMethodError e)")
+                        && contents.contains("invokeListMethodReflectively"));
+        assertTrue("The installed list accessors must normalize their result through extractList()"
+                        + " so a null/List/ParceledListSlice all populate the app list",
+                contents.contains("extractList(result)"));
+    }
+
     private static Set<String> setOf(String... values) {
         Set<String> set = new HashSet<>();
         for (String value : values) {

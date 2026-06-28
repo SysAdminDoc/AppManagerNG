@@ -72,13 +72,13 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
-        app:key="permission_change_monitor"
+        app:key="enable_permission_change_monitor"
         app:title="@string/pref_permission_change_monitor"
         app:summary="@string/pref_permission_change_monitor_msg"
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
-        app:key="signing_cert_change_monitor"
+        app:key="enable_signing_cert_change_monitor"
         app:title="@string/pref_signing_cert_change_monitor"
         app:summary="@string/pref_signing_cert_change_monitor_msg"
         app:iconSpaceReserved="false" />
@@ -90,7 +90,7 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
-        app:key="app_change_auditor"
+        app:key="enable_app_change_auditor"
         app:title="@string/pref_app_change_auditor"
         app:summary="@string/pref_app_change_auditor_msg"
         app:iconSpaceReserved="false" />
