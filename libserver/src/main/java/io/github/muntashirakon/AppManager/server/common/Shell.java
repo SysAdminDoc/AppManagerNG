@@ -58,8 +58,12 @@ public final class Shell {
                         Shell.this.writeCommand(command);
                         Shell.this.readCommand(command);
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    FLog.log(e);
+                    mClosed = true;
+                } catch (IOException | RuntimeException e) {
+                    FLog.log(e);
                 }
             }
             if (mClosed) {
@@ -135,15 +139,15 @@ public final class Shell {
 
                 }
             });
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException | RuntimeException e) {
+            FLog.log(e);
         }
         try {
             if (mIn != null) {
                 mIn.close();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            FLog.log(e);
         }
 
         try {
@@ -151,7 +155,7 @@ public final class Shell {
                 mOut.close();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            FLog.log(e);
         }
 
         if (!mCommandQueue.isEmpty()) {
@@ -205,17 +209,21 @@ public final class Shell {
         Result result = new Result();
         FLog.log("Command:  " + cmd);
         BoundedOutput output = new BoundedOutput(MAX_OUTPUT_CHARS);
+        boolean interrupted = false;
         try {
             result.mStatusCode = executeCommand(cmd, output);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            FLog.log(e);
+            interrupted = true;
         }
-        if (result.mStatusCode == -1) {
+        if (!interrupted && result.mStatusCode == -1) {
             output = new BoundedOutput(MAX_OUTPUT_CHARS);
             try {
                 result.mStatusCode = executeCommand(cmd, output);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                FLog.log(e);
             }
         }
         result.mMessage = output.toString();

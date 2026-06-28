@@ -27,6 +27,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CHANGELOG entry, or git tag disagree. Runs in both release and PR-check workflows.
 
 ### Security
+- Privileged server diagnostics now route through bounded `FLog` formatting
+  instead of direct stack-trace printing, with token-like values redacted and a
+  source-contract test covering `server/` and `libserver/` production code.
 - Privileged shell command results are capped before IPC marshalling. Long or
   noisy commands now preserve exit status and include an explicit truncation
   marker instead of growing output without bound.

@@ -59,7 +59,7 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
             getService = sm.getDeclaredMethod("getService", String.class);
             attachBaseContext = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
             attachBaseContext.setAccessible(true);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             // Shall not happen!
             throw new RuntimeException(e);
         }
@@ -73,7 +73,7 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
             Object activityThread = systemMain.invoke(null);
             Method getSystemContext = atClazz.getMethod("getSystemContext");
             return (Context) getSystemContext.invoke(activityThread);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             throw new RuntimeException(e);
         }
     }
@@ -95,7 +95,7 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
                     .getDeclaredMethod("createPackageContextAsUser",
                             String.class, int.class, UserHandle.class)
                     .invoke(systemContext, packageName, flags, userHandle);
-        } catch (Throwable e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             Log.w("IPC", "Failed to create package context as user: " + userId, e);
             return systemContext.createPackageContext(packageName, flags);
         }
@@ -109,7 +109,7 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
             Method checkSELinuxAccess = SELinuxClass.getMethod("checkSELinuxAccess", String.class, String.class, String.class, String.class);
             return Boolean.TRUE.equals(checkSELinuxAccess.invoke(null, "u:r:untrusted_app:s0", context, "binder", "call"))
                     && Boolean.TRUE.equals(checkSELinuxAccess.invoke(null, "u:r:untrusted_app:s0", context, "binder", "transfer"));
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             throw new RuntimeException(e);
         }
     }
@@ -126,7 +126,9 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
 
         try {
             new RootServiceMain(args);
-        } catch (Throwable e) {
+        } catch (Exception e) {
+            // Root-service launch boundary: ordinary constructor/reflection failures
+            // should reach logcat before the trampoline exits.
             Log.e("IPC", "Error in IPCMain", e);
             System.exit(1);
         }

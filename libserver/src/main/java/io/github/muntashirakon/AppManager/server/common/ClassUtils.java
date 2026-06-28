@@ -79,8 +79,8 @@ public class ClassUtils {
                 sClassCache.put(name, clazz);
             }
             return clazz;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            FLog.log(e);
         }
         return null;
     }

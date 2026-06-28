@@ -243,12 +243,12 @@ public final class DataTransmission implements Closeable {
         try {
             mOutputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            FLog.log(e);
         }
         try {
             mInputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            FLog.log(e);
         }
     }
 
