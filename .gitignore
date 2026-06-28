@@ -51,3 +51,8 @@ codexprompt-*.md
 !/ROADMAP.md
 !/Roadmap_Blocked.md
 !docs/**/*.md
+
+# AI artifacts
+.ai/
+CONTINUATION_PROMPT.md
+RESEARCH_FEATURE_PLAN*.md
