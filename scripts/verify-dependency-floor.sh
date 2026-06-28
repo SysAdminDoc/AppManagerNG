@@ -39,11 +39,11 @@ for key in "${!PINS[@]}"; do
   IFS='|' read -r max_version label <<< "${PINS[$key]}"
   actual=$(extract "$key" || true)
   if [[ -z "$actual" ]]; then
-    echo "::warning::Could not read $key from versions.gradle"
+    echo "WARNING: Could not read $key from versions.gradle" >&2
     continue
   fi
   if [[ "$actual" != "$max_version" ]]; then
-    echo "::error::$label ($key) is $actual but ceiling is $max_version — minSdk-21 floor breached"
+    echo "ERROR: $label ($key) is $actual but ceiling is $max_version — minSdk-21 floor breached" >&2
     FAIL=1
   else
     echo "OK: $label pinned at $actual (ceiling $max_version)"
@@ -53,7 +53,7 @@ done
 # --- minSdk sanity ---
 MIN_SDK=$(extract "min_sdk" || true)
 if [[ -n "$MIN_SDK" && "$MIN_SDK" -ne 21 ]]; then
-  echo "::error::min_sdk is $MIN_SDK, expected 21 per docs/policy/minsdk-21-ceiling.md"
+  echo "ERROR: min_sdk is $MIN_SDK, expected 21 per docs/policy/minsdk-21-ceiling.md" >&2
   FAIL=1
 else
   echo "OK: min_sdk = $MIN_SDK"
@@ -65,9 +65,9 @@ if [[ -n "$DC_VERSION" ]]; then
   DC_MAJOR=$(echo "$DC_VERSION" | cut -d. -f1)
   DC_MINOR=$(echo "$DC_VERSION" | cut -d. -f2)
   # The tool should not lag more than 2 minor versions behind
-  # Current expectation: 10.x line
-  if (( DC_MAJOR < 10 )); then
-    echo "::warning::dependency-check $DC_VERSION is behind the 10.x line"
+  # Current expectation: 12.x line
+  if (( DC_MAJOR < 12 )); then
+    echo "WARNING: dependency-check $DC_VERSION is behind the 12.x line" >&2
   else
     echo "OK: dependency-check at $DC_VERSION"
   fi

@@ -16,7 +16,7 @@ buildscript {
     }
     dependencies {
         classpath "com.android.tools.build:gradle:${agp_version}"
-        // OWASP dependency-check — used by the Dependency CVE Scan CI workflow to surface
+        // OWASP dependency-check - used by local dependency CVE audits to surface
         // known CVEs across the runtime classpath. ROADMAP iter-22 [S274].
         classpath "org.owasp:dependency-check-gradle:${dependency_check_version}"
     }
@@ -49,10 +49,10 @@ allprojects {
     }
 }
 
-// OWASP dependency-check aggregate task. Configured at the root so the CI Dependency CVE
-// Scan workflow can invoke `./gradlew dependencyCheckAggregate` once and capture results
-// from every module. Suppression file documents intentional ignores; format default 'HTML,SARIF'
-// so GitHub upload steps get both human + machine readable artifacts. ROADMAP iter-22 [S274].
+// OWASP dependency-check aggregate task. Configured at the root so maintainers can run
+// `./gradlew dependencyCheckAggregate` once and capture results from every module.
+// Suppression file documents intentional ignores; format default 'HTML,SARIF' so local
+// release/audit runs get both human and machine-readable artifacts. ROADMAP iter-22 [S274].
 apply plugin: 'org.owasp.dependencycheck'
 
 def dependencyCheckFailBuildOnCvss = Float.parseFloat(
@@ -60,8 +60,8 @@ def dependencyCheckFailBuildOnCvss = Float.parseFloat(
 
 dependencyCheck {
     formats = ['HTML', 'SARIF']
-    // Local runs default to report-only (11.0); weekly CI passes 9.0 so CRITICAL
-    // CVEs make the scheduled audit fail while the upload steps still publish artifacts.
+    // Local runs default to report-only (11.0); pass
+    // -PdependencyCheckFailBuildOnCvss=9.0 when a blocking critical-CVE audit is needed.
     failBuildOnCVSS = dependencyCheckFailBuildOnCvss
     // Suppress vendored-AAR false positives via XML at this path; create on first audit pass.
     suppressionFile = file('config/owasp-suppressions.xml').exists()
@@ -69,7 +69,7 @@ dependencyCheck {
             : null
     skipTestGroups = true
     nvd {
-        // CI tooling sets NVD_API_KEY for higher rate limits; falls back to anonymous below.
+        // Set NVD_API_KEY locally for higher rate limits; falls back to anonymous below.
         if (System.getenv('NVD_API_KEY')) {
             apiKey = System.getenv('NVD_API_KEY')
         }

@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Make release verification local-only and remove stale CI claims
-  Why: GitHub Actions workflows were removed, but README/build comments/scripts still describe CI release gates and use GitHub Actions error syntax.
-  Evidence: commit `4ebc3f9ec`; `README.md:161`; `build.gradle:19`; `build.gradle:52`; `build.gradle:63`; `versions.gradle:15`; `scripts/verify-release-consistency.sh:55`; `scripts/verify-dependency-floor.sh:42`.
-  Touches: `README.md`; `CHANGELOG.md`; `build.gradle`; `versions.gradle`; `scripts/verify-release-consistency.sh`; `scripts/verify-dependency-floor.sh`; reproducible-build docs if needed.
-  Acceptance: release/reproducibility/dependency verification is documented as local commands only; scripts print plain CLI-friendly failures; no active docs or build comments claim GitHub Actions/CI runs the gates.
-  Complexity: S
-
 - [ ] P2 — Extend version and SDK consistency gates to planning surfaces
   Why: `app/build.gradle` and README report version 0.6.3/compileSdk 37, while ignored planning files still claim older Gradle/AGP/version/SDK state, and the current gate cannot catch that drift.
   Evidence: `app/build.gradle:18`; `app/build.gradle:19`; `versions.gradle:4`; `README.md:14`; `CLAUDE.md:20`; `CLAUDE.md:131`; `PROJECT_CONTEXT.md:13`; `PROJECT_CONTEXT.md:14`; `scripts/verify-release-consistency.sh`.
