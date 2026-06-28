@@ -45,7 +45,7 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
         int port = -1;
         try {
             if (path != null) port = Integer.parseInt(path);
-        } catch (Exception ignore) {
+        } catch (NumberFormatException ignore) {
         }
         String token = mConfigParams.getToken();
         if (token == null) throw new IOException("Token is not found.");
@@ -87,15 +87,13 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
                 mHandler.removeMessages(MSG_TIMEOUT);
                 mHandler.getLooper().quit();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (RuntimeException e) {
             FLog.log(e);
         }
         try {
             mIsDead = true;
             mServer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException | RuntimeException e) {
             FLog.log(e);
         }
     }
@@ -104,7 +102,7 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
         try {
             mServer.sendResult(ParcelableUtil.marshall(result));
         } catch (IOException e) {
-            e.printStackTrace();
+            FLog.log(e);
         }
     }
 
@@ -142,7 +140,7 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
                         }
                 }
                 LifecycleAgent.sServerInfo.successCount++;
-            } catch (Throwable e) {
+            } catch (IOException | RuntimeException e) {
                 FLog.log(e);
                 result = new CallerResult();
                 result.setThrowable(e);

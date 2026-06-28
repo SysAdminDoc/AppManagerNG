@@ -27,7 +27,7 @@ public final class ServerUtils {
             Object activityThread = systemMain.invoke(null);
             Method getSystemContext = atClazz.getMethod("getSystemContext");
             return (Context) getSystemContext.invoke(activityThread);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
             throw new RuntimeException(e);
         }
     }

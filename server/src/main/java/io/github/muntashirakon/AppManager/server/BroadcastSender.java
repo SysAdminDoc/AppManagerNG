@@ -19,8 +19,7 @@ class BroadcastSender {
                 return;
             }
             app.sendBroadcast(intent);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ReflectiveOperationException | RuntimeException e) {
             FLog.log(e);
         }
     }

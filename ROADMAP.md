@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P1 — Replace privileged server direct stack traces with bounded diagnostics
-  Why: privileged server/common production paths still call `printStackTrace()` directly and catch broad `Throwable`, bypassing structured diagnostics after the app-layer logging cleanup.
-  Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerRunner.java`; `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerHandler.java`; `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/FLog.java`; `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/Shell.java`.
-  Touches: `server/src/main/java/io/github/muntashirakon/AppManager/server/`; `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/`; source-contract tests.
-  Acceptance: no direct `printStackTrace()` remains in production `server/` or `libserver/`; expected broad catches are narrowed or documented; diagnostics route through bounded `FLog` without leaking session tokens or full user data.
-  Complexity: M
-
 - [ ] P2 — Make release verification local-only and remove stale CI claims
   Why: GitHub Actions workflows were removed, but README/build comments/scripts still describe CI release gates and use GitHub Actions error syntax.
   Evidence: commit `4ebc3f9ec`; `README.md:161`; `build.gradle:19`; `build.gradle:52`; `build.gradle:63`; `versions.gradle:15`; `scripts/verify-release-consistency.sh:55`; `scripts/verify-dependency-floor.sh:42`.
