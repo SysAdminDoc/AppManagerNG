@@ -168,6 +168,13 @@ class RestoreOp implements Closeable {
         } catch (Exception ignore) {
         }
         mIsInstalled = mPackageInfo != null;
+        try {
+            BackupArchiveStateGuard.requireRestoreAllowed(mPackageName, mRequestedFlags, mPackageInfo);
+        } catch (BackupException e) {
+            mChecksum.close();
+            mBackupItem.cleanup();
+            throw e;
+        }
         checkApiLevelCompatibility();
     }
 
