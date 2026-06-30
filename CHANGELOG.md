@@ -6,6 +6,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Backup and restore now reject Android archived apps before touching APK,
+  data, extras, or rule payloads that require the installed package state;
+  users get an explicit unarchive-first failure instead of a partial backup or
+  restore attempt.
 - Settings preference navigation now guards against null fragment view, preventing
   crash on devices where the view is not yet created or has been destroyed during
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
