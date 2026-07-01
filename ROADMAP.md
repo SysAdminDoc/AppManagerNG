@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Add explicit backup delete scope for base-only versus all versions
-  Why: destructive backup deletion currently deletes base backups only, while named backups remain without an explicit count or opt-in all-versions action.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupRestoreDialogFragment.java:382`; Neo Backup/AppDash versioned-backup expectations.
-  Touches: `backup/dialog/BackupRestoreDialogFragment.java`; backup dialog ViewModel; `BatchOpsManager` delete-backup path; strings; backup tests.
-  Acceptance: delete confirmation shows base and named-backup counts, defaults to base-only, offers an authenticated all-versions option, records the selected scope in operation history, and tests cover base-only versus all-versions deletion.
-  Complexity: M
-
 - [ ] P2 — Report unsupported intent extras instead of silently dropping them
   Why: Activity Interceptor command/export text skips unsupported extras without warning, so copied commands and descriptions can omit user-visible intent data.
   Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/intercept/IntentCompat.java:538`; `IntentCompat.java:641`; `IntentCompat.java:687`; Android 18 explicit URI grant guidance.

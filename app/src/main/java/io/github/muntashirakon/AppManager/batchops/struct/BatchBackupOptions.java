@@ -40,6 +40,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
     private final boolean mProtectFromPrune;
     @Nullable
     private final String mBackupNote;
+    @DeleteOpOptions.DeleteScope
+    private final int mDeleteScope;
 
     public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
                               @Nullable String[] backupNames,
@@ -60,12 +62,24 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               @Nullable String[] exclusionGlobs,
                               boolean protectFromPrune,
                               @Nullable String backupNote) {
+        this(flags, backupNames, relativeDirs, exclusionGlobs, protectFromPrune, backupNote,
+                inferDeleteScope(backupNames, relativeDirs));
+    }
+
+    public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
+                              @Nullable String[] backupNames,
+                              @Nullable String[] relativeDirs,
+                              @Nullable String[] exclusionGlobs,
+                              boolean protectFromPrune,
+                              @Nullable String backupNote,
+                              @DeleteOpOptions.DeleteScope int deleteScope) {
         mFlags = requireValidFlags(flags);
         mBackupNames = requireValidBackupNames(backupNames);
         mRelativeDirs = requireValidRelativeDirs(relativeDirs);
         mExclusionGlobs = sanitizeExclusionGlobs(exclusionGlobs);
         mProtectFromPrune = protectFromPrune;
         mBackupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
+        mDeleteScope = requireValidDeleteScope(deleteScope, mBackupNames, mRelativeDirs);
     }
 
     public BackupOpOptions getBackupOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -103,6 +117,9 @@ public class BatchBackupOptions implements IBatchOpOptions {
     }
 
     public DeleteOpOptions getDeleteOpOptions(@NonNull String packageName, @UserIdInt int userId) {
+        if (mDeleteScope == DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS) {
+            return new DeleteOpOptions(packageName, userId, null, DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS);
+        }
         // For delete operation, backup names (v4) and relative dirs are only set for single
         // package backups. In all other cases, it only uses base backups.
         String[] relativeDirs;
@@ -124,7 +141,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
                 }
             }
         }
-        return new DeleteOpOptions(packageName, userId, relativeDirs);
+        return new DeleteOpOptions(packageName, userId, relativeDirs,
+                DeleteOpOptions.inferDeleteScope(relativeDirs));
     }
 
     protected BatchBackupOptions(@NonNull Parcel in) {
@@ -134,6 +152,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mExclusionGlobs = sanitizeExclusionGlobs(in.createStringArray());
         mProtectFromPrune = ParcelCompat.readBoolean(in);
         mBackupNote = BackupMetadataV5.Metadata.normalizeNote(in.readString());
+        mDeleteScope = requireValidDeleteScope(in.dataAvail() > 0 ? in.readInt()
+                : inferDeleteScope(mBackupNames, mRelativeDirs), mBackupNames, mRelativeDirs);
     }
 
     public static final Creator<BatchBackupOptions> CREATOR = new Creator<BatchBackupOptions>() {
@@ -163,6 +183,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         dest.writeStringArray(sanitizeExclusionGlobs(mExclusionGlobs));
         ParcelCompat.writeBoolean(dest, mProtectFromPrune);
         dest.writeString(BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
+        dest.writeInt(requireValidDeleteScope(mDeleteScope, mBackupNames, mRelativeDirs));
     }
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -177,6 +198,8 @@ public class BatchBackupOptions implements IBatchOpOptions {
                     false, "exclusion glob"));
             mProtectFromPrune = jsonObject.optBoolean("protect_from_prune", false);
             mBackupNote = BackupMetadataV5.Metadata.normalizeNote(JSONUtils.optString(jsonObject, "backup_note"));
+            mDeleteScope = requireValidDeleteScope(jsonObject.optInt("delete_scope",
+                    inferDeleteScope(mBackupNames, mRelativeDirs)), mBackupNames, mRelativeDirs);
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -196,6 +219,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         jsonObject.put("exclusion_globs", JSONUtils.getJSONArray(sanitizeExclusionGlobs(mExclusionGlobs)));
         jsonObject.put("protect_from_prune", mProtectFromPrune);
         jsonObject.put("backup_note", BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
+        jsonObject.put("delete_scope", requireValidDeleteScope(mDeleteScope, mBackupNames, mRelativeDirs));
         return jsonObject;
     }
 
@@ -273,6 +297,35 @@ public class BatchBackupOptions implements IBatchOpOptions {
             validRelativeDirs[i] = requireValidRelativeDir(relativeDirs[i]);
         }
         return validRelativeDirs;
+    }
+
+    @DeleteOpOptions.DeleteScope
+    private static int inferDeleteScope(@Nullable String[] backupNames, @Nullable String[] relativeDirs) {
+        return (backupNames != null && backupNames.length > 0) || relativeDirs != null
+                ? DeleteOpOptions.DELETE_SCOPE_SELECTED
+                : DeleteOpOptions.DELETE_SCOPE_BASE_ONLY;
+    }
+
+    @DeleteOpOptions.DeleteScope
+    private static int requireValidDeleteScope(@DeleteOpOptions.DeleteScope int deleteScope,
+                                               @Nullable String[] backupNames,
+                                               @Nullable String[] relativeDirs) {
+        boolean hasNamedTargets = backupNames != null && backupNames.length > 0;
+        boolean hasRelativeTargets = relativeDirs != null && relativeDirs.length > 0;
+        if (deleteScope == DeleteOpOptions.DELETE_SCOPE_SELECTED) {
+            if (!hasNamedTargets && !hasRelativeTargets) {
+                throw new IllegalArgumentException("Selected backup delete scope requires named or relative-dir targets.");
+            }
+            return deleteScope;
+        }
+        if (deleteScope == DeleteOpOptions.DELETE_SCOPE_BASE_ONLY
+                || deleteScope == DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS) {
+            if (hasNamedTargets || hasRelativeTargets) {
+                throw new IllegalArgumentException("Backup delete scope conflicts with selected backup targets.");
+            }
+            return deleteScope;
+        }
+        throw new IllegalArgumentException("Invalid backup delete scope: " + deleteScope);
     }
 
     @NonNull

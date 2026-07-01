@@ -12,6 +12,7 @@ import androidx.annotation.StringRes;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 
@@ -93,14 +94,34 @@ public final class DestructiveActionConfirmation {
                 .setPositiveButton(R.string.delete, onConfirm);
     }
 
+    public interface BackupDeleteScopeListener {
+        void onConfirm(@DeleteOpOptions.DeleteScope int deleteScope);
+    }
+
     @NonNull
     public static MaterialAlertDialogBuilder forBaseBackupDelete(@NonNull Context context,
-                                                                 @Nullable DialogInterface.OnClickListener onConfirm) {
+                                                                 int baseBackupCount,
+                                                                 int namedBackupCount,
+                                                                 @NonNull BackupDeleteScopeListener onConfirm) {
+        String baseCount = context.getResources().getQuantityString(
+                R.plurals.delete_base_backup_count, baseBackupCount, baseBackupCount);
+        String namedCount = context.getResources().getQuantityString(
+                R.plurals.delete_named_backup_count, namedBackupCount, namedBackupCount);
+        boolean[] deleteAllVersions = new boolean[]{false};
         return new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.delete_backup)
-                .setMessage(withSafetyNote(context, context.getString(R.string.delete_base_backups_confirmation),
+                .setMessage(withSafetyNote(context,
+                        context.getString(R.string.delete_base_backups_confirmation_with_counts,
+                                baseCount, namedCount),
                         OperationJournalMetadata.RISK_HIGH, false))
-                .setPositiveButton(R.string.delete, onConfirm)
+                .setMultiChoiceItems(new CharSequence[]{
+                                context.getString(R.string.delete_all_backup_versions_option)
+                        }, deleteAllVersions,
+                        (dialog, which, isChecked) -> deleteAllVersions[which] = isChecked)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        onConfirm.onConfirm(deleteAllVersions[0]
+                                ? DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS
+                                : DeleteOpOptions.DELETE_SCOPE_BASE_ONLY))
                 .setNegativeButton(R.string.cancel, null);
     }
 

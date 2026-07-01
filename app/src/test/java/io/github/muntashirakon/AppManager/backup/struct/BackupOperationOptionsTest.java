@@ -86,10 +86,12 @@ public class BackupOperationOptionsTest {
         assertEquals("dnsfilter.android", options.packageName);
         assertArrayEquals(new String[]{"dnsfilter.android/0", "backups/01234567-89ab-cdef-0123-456789abcdef"},
                 options.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_SELECTED, options.deleteScope);
 
         DeleteOpOptions jsonRestored = new DeleteOpOptions(new JSONObject(options.serializeToJson().toString()));
         assertArrayEquals(new String[]{"dnsfilter.android/0", "backups/01234567-89ab-cdef-0123-456789abcdef"},
                 jsonRestored.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_SELECTED, jsonRestored.deleteScope);
 
         Parcel parcel = Parcel.obtain();
         try {
@@ -97,6 +99,31 @@ public class BackupOperationOptionsTest {
             parcel.setDataPosition(0);
             DeleteOpOptions parcelRestored = DeleteOpOptions.CREATOR.createFromParcel(parcel);
             assertNull(parcelRestored.relativeDirs);
+            assertEquals(DeleteOpOptions.DELETE_SCOPE_BASE_ONLY, parcelRestored.deleteScope);
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    @Test
+    public void deleteOptionsRetainAllVersionsScope() throws Exception {
+        DeleteOpOptions options = new DeleteOpOptions("dnsfilter.android", 0, null,
+                DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS);
+
+        assertNull(options.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS, options.deleteScope);
+
+        DeleteOpOptions jsonRestored = new DeleteOpOptions(new JSONObject(options.serializeToJson().toString()));
+        assertNull(jsonRestored.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS, jsonRestored.deleteScope);
+
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            DeleteOpOptions parcelRestored = DeleteOpOptions.CREATOR.createFromParcel(parcel);
+            assertNull(parcelRestored.relativeDirs);
+            assertEquals(DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS, parcelRestored.deleteScope);
         } finally {
             parcel.recycle();
         }
@@ -116,6 +143,9 @@ public class BackupOperationOptionsTest {
                 "dnsfilter.android", 0, "../outside", BackupFlags.BACKUP_INT_DATA));
         assertThrows(IllegalArgumentException.class, () -> new DeleteOpOptions(
                 "dnsfilter.android", 0, new String[]{null}));
+        assertThrows(IllegalArgumentException.class, () -> new DeleteOpOptions(
+                "dnsfilter.android", 0, new String[]{"dnsfilter.android/0"},
+                DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS));
     }
 
     @Test

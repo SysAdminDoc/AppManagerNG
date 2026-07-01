@@ -104,6 +104,50 @@ public class BatchBackupOptionsTest {
     }
 
     @Test
+    public void deleteScopeDefaultsToBaseOnlyAndSerializes() throws Exception {
+        BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, null);
+
+        DeleteOpOptions deleteOpOptions = options.getDeleteOpOptions("example.pkg", 0);
+
+        assertNull(deleteOpOptions.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_BASE_ONLY, deleteOpOptions.deleteScope);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_BASE_ONLY, options.serializeToJson().getInt("delete_scope"));
+    }
+
+    @Test
+    public void deleteScopeCanTargetAllVersionsThroughJsonAndParcel() throws Exception {
+        BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, null, null, false, null, DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS);
+
+        BatchBackupOptions jsonRestored = new BatchBackupOptions(new JSONObject(options.serializeToJson().toString()));
+        DeleteOpOptions jsonDeleteOp = jsonRestored.getDeleteOpOptions("example.pkg", 0);
+        assertNull(jsonDeleteOp.relativeDirs);
+        assertEquals(DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS, jsonDeleteOp.deleteScope);
+
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            DeleteOpOptions parcelDeleteOp = BatchBackupOptions.CREATOR.createFromParcel(parcel)
+                    .getDeleteOpOptions("example.pkg", 0);
+            assertNull(parcelDeleteOp.relativeDirs);
+            assertEquals(DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS, parcelDeleteOp.deleteScope);
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    @Test
+    public void deleteScopeRejectsConflictingTargets() {
+        assertThrows(IllegalArgumentException.class, () -> new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, new String[]{"example.pkg/0"}, null, false, null,
+                DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS));
+        assertThrows(IllegalArgumentException.class, () -> new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
+                null, null, null, false, null, DeleteOpOptions.DELETE_SCOPE_SELECTED));
+    }
+
+    @Test
     public void constructorTrimsBackupNamesRelativeDirsAndExclusionGlobs() {
         BatchBackupOptions options = new BatchBackupOptions(BackupFlags.BACKUP_INT_DATA,
                 new String[]{" nightly "}, new String[]{" dnsfilter.android\\0_test "},

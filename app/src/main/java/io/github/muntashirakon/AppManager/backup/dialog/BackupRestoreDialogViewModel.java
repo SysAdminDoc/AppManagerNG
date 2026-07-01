@@ -29,6 +29,7 @@ import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.BackupStorageCheck;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
+import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
@@ -56,6 +57,8 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
         public boolean protectFromPrune;
         @Nullable
         public String backupNote;
+        @DeleteOpOptions.DeleteScope
+        public int deleteScope = DeleteOpOptions.DELETE_SCOPE_BASE_ONLY;
         @Nullable
         public int[] selectedUsers;
 
@@ -185,6 +188,18 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
             }
         }
         return baseBackupCount;
+    }
+
+    public int getNamedBackupCount() {
+        int namedBackupCount = 0;
+        for (BackupInfo backupInfo : mBackupInfoList) {
+            for (BackupMetadataV5 metadata : backupInfo.getBackupMetadataList()) {
+                if (!metadata.isBaseBackup()) {
+                    ++namedBackupCount;
+                }
+            }
+        }
+        return namedBackupCount;
     }
 
     public int getRestoreCandidateCount() {

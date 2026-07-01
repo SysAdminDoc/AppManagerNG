@@ -373,7 +373,8 @@ public class BackupManagerTest {
         bm.deleteBackup(options);
         assertTrue(amDir.exists());
         Path appBackupPath = amDir.findFile("dnsfilter.android");
-        appBackupPath.findFile("0_test");
+        assertFalse(appBackupPath.hasFile("0"));
+        assertTrue(appBackupPath.hasFile("0_test"));
     }
 
     @Test
@@ -389,7 +390,24 @@ public class BackupManagerTest {
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
         assertTrue(amDir.exists());
         Path appBackupPath = amDir.findFile("dnsfilter.android");
-        appBackupPath.findFile("0_test");
+        assertFalse(appBackupPath.hasFile("0"));
+        assertTrue(appBackupPath.hasFile("0_test"));
+    }
+
+    @Test
+    public void testDeleteV4AllVersions() throws IOException, BackupException {
+        Prefs.Storage.setVolumePath(tmpBackupPath.getUri().toString());
+        assertNotNull(rscBackupPath.findFile("AppManager")
+                .copyTo(tmpBackupPath, true));
+        Path amDir = tmpBackupPath.findFile("AppManager");
+        assertTrue(amDir.exists());
+        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        BackupManager bm = new BackupManager();
+        DeleteOpOptions options = new DeleteOpOptions("dnsfilter.android", 0, null,
+                DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS);
+        bm.deleteBackup(options);
+        assertTrue(amDir.exists());
+        assertFalse(amDir.hasFile("dnsfilter.android"));
     }
 
     @Test

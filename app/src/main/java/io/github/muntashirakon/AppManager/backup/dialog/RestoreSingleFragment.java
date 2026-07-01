@@ -35,6 +35,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
+import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.fm.SharableItems;
@@ -247,6 +248,7 @@ public class RestoreSingleFragment extends Fragment {
                                     operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
                                     operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
                                     operationInfo.relativeDirs = relativeDirs.toArray(new String[0]);
+                                    operationInfo.deleteScope = DeleteOpOptions.DELETE_SCOPE_SELECTED;
                                     mViewModel.prepareForOperation(operationInfo);
                                 }))
                 .show();
