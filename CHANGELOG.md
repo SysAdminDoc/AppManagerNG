@@ -6,6 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Activity Interceptor command/detail exports now report unsupported intent
+  extras by key and runtime type instead of silently omitting Parcelable,
+  Binder, Bundle, or other non-parsable values.
 - Backup and restore now reject Android archived apps before touching APK,
   data, extras, or rule payloads that require the installed package state;
   users get an explicit unarchive-first failure instead of a partial backup or
