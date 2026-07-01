@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.PopupMenu;
@@ -54,6 +56,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
     private final List<FmItem> mAdapterList = Collections.synchronizedList(new ArrayList<>());
     private final FmViewModel mViewModel;
     private final FmActivity mFmActivity;
+    private volatile int mAttributeLoadGeneration;
 
     public FmAdapter(FmViewModel viewModel, FmActivity activity) {
         mViewModel = viewModel;
@@ -61,6 +64,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
     }
 
     public void setFmList(List<FmItem> list) {
+        ++mAttributeLoadGeneration;
         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
         notifySelectionChange();
     }
@@ -81,7 +85,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         holder.itemView.setTag(item.path);
         holder.title.setText(FmUtils.getPathDisplayName(item.path));
         // Load attributes
-        cacheAndLoadAttributes(holder, item);
+        cacheAndLoadAttributes(holder, item, mAttributeLoadGeneration);
         if (item.isDirectory) {
             holder.itemView.setOnClickListener(v -> {
                 if (isInSelectionMode()) {
@@ -141,6 +145,15 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         super.onBindViewHolder(holder, position);
     }
 
+    @Override
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        holder.itemView.setTag(null);
+        holder.icon.setTag(null);
+        holder.icon.setImageDrawable(null);
+        holder.subtitle.setText("");
+        super.onViewRecycled(holder);
+    }
+
     private void openFile(@NonNull Path path) {
         Intent defaultIntent = FmOpenWithDefaults.getDefaultIntent(mFmActivity, path);
         if (defaultIntent != null) {
@@ -155,19 +168,24 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         fragment.show(mFmActivity.getSupportFragmentManager(), OpenWithDialogFragment.TAG);
     }
 
-    private void cacheAndLoadAttributes(@NonNull ViewHolder holder, @NonNull FmItem item) {
+    private void cacheAndLoadAttributes(@NonNull ViewHolder holder, @NonNull FmItem item, int loadGeneration) {
         if (item.isCached()) {
             loadAttributes(holder, item);
         } else {
-            // TODO: 9/9/23 Store these threads in a list and cancel them when not needed
+            loadPendingAttributes(holder, item);
             ThreadUtils.postOnBackgroundThread(() -> {
+                if (loadGeneration != mAttributeLoadGeneration) {
+                    return;
+                }
                 WeakReference<ViewHolder> holderRef = new WeakReference<>(holder);
                 WeakReference<FmItem> itemRef = new WeakReference<>(item);
                 item.cache();
                 ThreadUtils.postOnMainThread(() -> {
                     ViewHolder h = holderRef.get();
                     FmItem i = itemRef.get();
-                    if (h != null && i != null && Objects.equals(h.itemView.getTag(), i.path)) {
+                    if (h != null && i != null
+                            && shouldApplyCachedAttributes(mAttributeLoadGeneration, loadGeneration,
+                            h.itemView.getTag(), i)) {
                         loadAttributes(h, i);
                     }
                 });
@@ -176,11 +194,15 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
     }
 
     @MainThread
+    private void loadPendingAttributes(@NonNull ViewHolder holder, @NonNull FmItem item) {
+        bindIcon(holder, item);
+        holder.subtitle.setText("");
+    }
+
+    @MainThread
     private void loadAttributes(@NonNull ViewHolder holder, @NonNull FmItem item) {
         // Set icon
-        String tag = item.getTag();
-        holder.icon.setTag(tag);
-        ImageLoader.getInstance().displayImage(tag, holder.icon, new FmIconFetcher(item));
+        bindIcon(holder, item);
         // Set sub-icon
         // TODO: 24/5/23 Set sub-icon if needed
         // Attrs
@@ -194,6 +216,27 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
             holder.subtitle.setText(String.format(Locale.getDefault(), "%s%s • %s", prefix,
                     Formatter.formatShortFileSize(mFmActivity, item.getSize()), modificationDate));
         }
+    }
+
+    @MainThread
+    private void bindIcon(@NonNull ViewHolder holder, @NonNull FmItem item) {
+        String tag = item.getTag();
+        if (!Objects.equals(holder.icon.getTag(), tag)) {
+            holder.icon.setImageDrawable(null);
+        }
+        holder.icon.setTag(tag);
+        ImageLoader.getInstance().displayImage(tag, holder.icon, new FmIconFetcher(item));
+    }
+
+    @VisibleForTesting
+    int getAttributeLoadGeneration() {
+        return mAttributeLoadGeneration;
+    }
+
+    @VisibleForTesting
+    static boolean shouldApplyCachedAttributes(int currentGeneration, int loadGeneration, @Nullable Object holderTag,
+                                               @NonNull FmItem item) {
+        return currentGeneration == loadGeneration && Objects.equals(holderTag, item.path);
     }
 
     @Override
