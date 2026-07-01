@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Refresh Gradle wrapper to 9.6.1
-  Why: Gradle 9.6.1 is current and the repo is on 9.6.0; the update is low-risk and keeps the local build baseline current.
-  Evidence: `gradle/wrapper/gradle-wrapper.properties:4`; Gradle 9.6.1 release notes.
-  Touches: `gradle/wrapper/gradle-wrapper.properties`; `gradle/wrapper/gradle-wrapper.jar`; release consistency docs if wrapper SHA handling changes.
-  Acceptance: wrapper points to Gradle 9.6.1 with verified distribution metadata; `rtk .\gradlew.bat --version`, `rtk .\gradlew.bat :app:compileFlossDebugJavaWithJavac`, and release/dependency gates pass.
-  Complexity: S
-
 - [ ] P3 — Migrate remaining non-dedicated UI helper raw threads
   Why: a few UI/helper paths still create raw threads instead of using project executors, leaving uncaught-exception and lifecycle behavior inconsistent with recent threading hygiene.
   Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/OpenPgpKeySelectionDialogFragment.java:54`; `libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableMultiChoiceDialogBuilder.java:270`.

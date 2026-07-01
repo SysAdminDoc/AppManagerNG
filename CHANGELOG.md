@@ -20,6 +20,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
 
 ### Changed
+- Gradle wrapper now points to 9.6.1 with the verified binary distribution
+  checksum, keeping local build and release gates on the current wrapper.
 - Backup deletion now distinguishes base-only, selected, and all-version
   scopes. The base-delete confirmation shows base and named backup counts,
   keeps base-only as the default, and records the selected scope in batch
