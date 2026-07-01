@@ -24,7 +24,7 @@ Core workflows: main app inventory and search, package detail inspection, APK in
 
 Primary personas: rooted Android power users, ADB/Shizuku users without root, ROM/device maintainers, privacy-focused users auditing permissions and trackers, app developers debugging manifests and intents, and offline users who need FLOSS distribution without network dependencies.
 
-Platforms and distribution: Android minSdk 21 with targetSdk 36 and compileSdk 37, FLOSS and FULL flavors, F-Droid/GitHub-style side loading, GPL-3.0-or-later source obligations, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.0/AGP 9.2.1, native/server helpers, and local-only build/release verification.
+Platforms and distribution: Android minSdk 21 with targetSdk 36 and compileSdk 37, FLOSS and FULL flavors, F-Droid/GitHub-style side loading, GPL-3.0-or-later source obligations, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.1/AGP 9.2.1, native/server helpers, and local-only build/release verification.
 
 Key integrations and data flows: Android package APIs, hidden/privileged compat layers, root/libsu, Shizuku, ADB pairing, Dhizuku, PackageInstaller archive/unarchive APIs, Room metadata, backup archive storage, local docs generation, GitHub-hosted releases and raw docs, optional updater channels, and third-party signature/debloat/reference data where pinned and allowed by flavor.
 
