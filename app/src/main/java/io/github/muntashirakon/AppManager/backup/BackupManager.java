@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
@@ -178,25 +179,49 @@ public class BackupManager {
 
     public void deleteBackup(@NonNull DeleteOpOptions options) throws BackupException {
         List<BackupItems.BackupItem> backupItemList;
-        if (options.relativeDirs == null) {
-            // Delete base backup
-            Backup baseBackup = BackupUtils.retrieveBaseBackupFromDb(options.userId, options.packageName);
-            if (baseBackup != null) {
-                try {
-                    backupItemList = Collections.singletonList(baseBackup.getItem());
-                } catch (IOException e) {
-                    throw new BackupException("Could not get backup files.", e);
+        switch (options.deleteScope) {
+            case DeleteOpOptions.DELETE_SCOPE_BASE_ONLY: {
+                Backup baseBackup = BackupUtils.retrieveBaseBackupFromDb(options.userId, options.packageName);
+                if (baseBackup != null) {
+                    try {
+                        backupItemList = Collections.singletonList(baseBackup.getItem());
+                    } catch (IOException e) {
+                        throw new BackupException("Could not get backup files.", e);
+                    }
+                } else {
+                    backupItemList = Collections.emptyList();
                 }
-            } else backupItemList = Collections.emptyList();
-        } else {
-            backupItemList = new ArrayList<>(options.relativeDirs.length);
-            for (String relativeDir : options.relativeDirs) {
-                try {
-                    backupItemList.add(BackupItems.findBackupItem(relativeDir));
-                } catch (IOException e) {
-                    throw new BackupException("Could not get backup files.", e);
-                }
+                break;
             }
+            case DeleteOpOptions.DELETE_SCOPE_ALL_VERSIONS: {
+                List<Backup> backups = BackupUtils.getBackupMetadataFromDbNoLockValidate(options.packageName);
+                backupItemList = new ArrayList<>(backups.size());
+                for (Backup backup : backups) {
+                    if (backup.userId != options.userId) {
+                        continue;
+                    }
+                    try {
+                        backupItemList.add(backup.getItem());
+                    } catch (IOException e) {
+                        throw new BackupException("Could not get backup files.", e);
+                    }
+                }
+                break;
+            }
+            case DeleteOpOptions.DELETE_SCOPE_SELECTED: {
+                String[] relativeDirs = Objects.requireNonNull(options.relativeDirs);
+                backupItemList = new ArrayList<>(relativeDirs.length);
+                for (String relativeDir : relativeDirs) {
+                    try {
+                        backupItemList.add(BackupItems.findBackupItem(relativeDir));
+                    } catch (IOException e) {
+                        throw new BackupException("Could not get backup files.", e);
+                    }
+                }
+                break;
+            }
+            default:
+                throw new BackupException("Unknown backup delete scope: " + options.deleteScope);
         }
         for (BackupItems.BackupItem backupItem : backupItemList) {
             // try-with-resources releases the temp metadata copy + key material getMetadata() opens.

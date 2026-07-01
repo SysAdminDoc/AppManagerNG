@@ -15,6 +15,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   auth flow or process death restore (reported on Xiaomi Redmi M2006C3MNG, API 29).
 
 ### Changed
+- Backup deletion now distinguishes base-only, selected, and all-version
+  scopes. The base-delete confirmation shows base and named backup counts,
+  keeps base-only as the default, and records the selected scope in batch
+  operation options for history/replay.
 - Release/version consistency checks now validate README SDK badges,
   `versions.gradle` SDK/AGP pins, and local `CLAUDE.md` against
   `app/build.gradle` and the Gradle wrapper before local release work.
