@@ -12,7 +12,10 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.SpannableString;
 
 import org.junit.Test;
@@ -21,6 +24,7 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
 public class IntentCompatTest {
@@ -235,6 +239,72 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void getUnsupportedExtras_reportsParcelableBinderAndNestedBundle() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("parcelable", new UnsupportedParcelable("value"));
+        Bundle nestedBundle = new Bundle();
+        nestedBundle.putString("inner", "value");
+        input.putExtra("nested", nestedBundle);
+        Bundle binderBundle = new Bundle();
+        binderBundle.putBinder("binder", new Binder());
+        input.putExtras(binderBundle);
+
+        List<IntentCompat.UnsupportedExtra> unsupportedExtras = IntentCompat.getUnsupportedExtras(input);
+
+        assertEquals(3, unsupportedExtras.size());
+        assertUnsupportedExtra(unsupportedExtras.get(0), "binder", Binder.class.getName());
+        assertUnsupportedExtra(unsupportedExtras.get(1), "nested", Bundle.class.getName());
+        assertUnsupportedExtra(unsupportedExtras.get(2), "parcelable", UnsupportedParcelable.class.getName());
+    }
+
+    @Test
+    public void describeUnsupportedExtras_listsCountAndKeyTypesWithPrefix() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("parcelable", new UnsupportedParcelable("value"));
+        Bundle binderBundle = new Bundle();
+        binderBundle.putBinder("binder", new Binder());
+        input.putExtras(binderBundle);
+
+        String description = IntentCompat.describeUnsupportedExtras(input, "#");
+
+        assertTrue(description.contains("# UNSUPPORTED EXTRAS\t2\n"));
+        assertTrue(description.contains("# UNSUPPORTED EXTRA\tbinder\t" + Binder.class.getName() + "\n"));
+        assertTrue(description.contains("# UNSUPPORTED EXTRA\tparcelable\t"
+                + UnsupportedParcelable.class.getName() + "\n"));
+    }
+
+    @Test
+    public void describeIntent_reportsUnsupportedExtras() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("label", "supported");
+        input.putExtra("parcelable", new UnsupportedParcelable("value"));
+
+        String description = IntentCompat.describeIntent(input, "RESULT");
+
+        assertTrue(description.contains("RESULT EXTRA\tlabel\t" + AddIntentExtraFragment.TYPE_STRING
+                + "\tsupported\n"));
+        assertTrue(description.contains("RESULT UNSUPPORTED EXTRAS\t1\n"));
+        assertTrue(description.contains("RESULT UNSUPPORTED EXTRA\tparcelable\t"
+                + UnsupportedParcelable.class.getName() + "\n"));
+    }
+
+    @Test
+    public void unsupportedExtraWarningLinesDoNotBreakUnflattening() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        input.putExtra("label", "supported");
+        input.putExtra("parcelable", new UnsupportedParcelable("value"));
+
+        String flattened = IntentCompat.flattenToString(input);
+        Intent parsed = IntentCompat.unflattenFromString(flattened
+                + IntentCompat.describeUnsupportedExtras(input, ""));
+
+        assertFalse(flattened.contains("UNSUPPORTED EXTRA"));
+        assertNotNull(parsed);
+        assertEquals("supported", parsed.getStringExtra("label"));
+        assertFalse(parsed.hasExtra("parcelable"));
+    }
+
+    @Test
     public void valueToParsableString_formatsArrayValuesForParser() {
         String rawValue = IntentCompat.valueToParsableString(AddIntentExtraFragment.TYPE_INT_ARR,
                 new int[]{1, 2, 3});
@@ -254,5 +324,45 @@ public class IntentCompatTest {
 
         assertEquals("alpha\\,beta,gamma", rawValue);
         assertEquals(labels, IntentCompat.parseExtraValue(AddIntentExtraFragment.TYPE_STRING_AL, rawValue));
+    }
+
+    private static void assertUnsupportedExtra(IntentCompat.UnsupportedExtra unsupportedExtra,
+                                               String expectedKey, String expectedTypeName) {
+        assertEquals(expectedKey, unsupportedExtra.getKey());
+        assertEquals(expectedTypeName, unsupportedExtra.getTypeName());
+    }
+
+    private static final class UnsupportedParcelable implements Parcelable {
+        private final String value;
+
+        private UnsupportedParcelable(String value) {
+            this.value = value;
+        }
+
+        private UnsupportedParcelable(Parcel in) {
+            value = in.readString();
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(value);
+        }
+
+        public static final Creator<UnsupportedParcelable> CREATOR = new Creator<UnsupportedParcelable>() {
+            @Override
+            public UnsupportedParcelable createFromParcel(Parcel in) {
+                return new UnsupportedParcelable(in);
+            }
+
+            @Override
+            public UnsupportedParcelable[] newArray(int size) {
+                return new UnsupportedParcelable[size];
+            }
+        };
     }
 }

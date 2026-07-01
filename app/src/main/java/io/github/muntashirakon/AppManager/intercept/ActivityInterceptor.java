@@ -879,6 +879,10 @@ public class ActivityInterceptor extends BaseActivity {
         List<String> args = IntentCompat.flattenToCommand(mMutableIntent);
         String command = String.format(Locale.ROOT, "%s start --user %d %s", RunnerUtils.CMD_AM, mUserHandle,
                 TextUtils.join(" ", args));
+        String unsupportedExtras = IntentCompat.describeUnsupportedExtras(mMutableIntent, "#");
+        if (!unsupportedExtras.isEmpty()) {
+            command += "\n" + unsupportedExtras;
+        }
         Utils.copyToClipboard(this, "am command", command);
     }
 
@@ -994,6 +998,7 @@ public class ActivityInterceptor extends BaseActivity {
         result.append("\n");
         // Convert the Intent to parsable string
         result.append(IntentCompat.flattenToString(mMutableIntent)).append("\n");
+        result.append(IntentCompat.describeUnsupportedExtras(mMutableIntent, ""));
         // MATCHING ACTIVITIES <match-count>
         result.append("MATCHING ACTIVITIES\t").append(numberOfMatchingActivities).append("\n");
         // Calculate the number of spaces needed in order to align activity items properly

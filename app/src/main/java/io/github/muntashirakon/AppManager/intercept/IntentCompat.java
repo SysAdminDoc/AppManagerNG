@@ -51,6 +51,28 @@ import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 
 public final class IntentCompat {
+    public static final class UnsupportedExtra {
+        @NonNull
+        private final String key;
+        @NonNull
+        private final String typeName;
+
+        private UnsupportedExtra(@NonNull String key, @NonNull String typeName) {
+            this.key = key;
+            this.typeName = typeName;
+        }
+
+        @NonNull
+        public String getKey() {
+            return key;
+        }
+
+        @NonNull
+        public String getTypeName() {
+            return typeName;
+        }
+    }
+
     public static void putWrappedParcelableExtra(@NonNull Intent intent, @Nullable String name,
                                                  @Nullable Parcelable parcelable) {
         Bundle bundle = new Bundle();
@@ -440,6 +462,75 @@ public final class IntentCompat {
         return null;
     }
 
+    @NonNull
+    public static List<UnsupportedExtra> getUnsupportedExtras(@NonNull Intent intent) {
+        Bundle extras = intent.getExtras();
+        if (extras == null) {
+            return Collections.emptyList();
+        }
+        List<UnsupportedExtra> unsupportedExtras = new ArrayList<>();
+        for (String key : extras.keySet()) {
+            Object value = extras.get(key);
+            if (valueToParsableStringAndType(value) == null) {
+                unsupportedExtras.add(new UnsupportedExtra(key, getExtraValueTypeName(value)));
+            }
+        }
+        unsupportedExtras.sort((first, second) -> first.key.compareTo(second.key));
+        return unsupportedExtras;
+    }
+
+    @NonNull
+    public static String describeUnsupportedExtras(@NonNull Intent intent, @NonNull String prefix) {
+        List<UnsupportedExtra> unsupportedExtras = getUnsupportedExtras(intent);
+        if (unsupportedExtras.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        appendUnsupportedExtras(sb, prefix, unsupportedExtras);
+        return sb.toString();
+    }
+
+    @NonNull
+    private static String getExtraValueTypeName(@Nullable Object value) {
+        if (value == null) {
+            return "null";
+        }
+        Class<?> clazz = value.getClass();
+        if (clazz.isArray()) {
+            Class<?> componentType = clazz.getComponentType();
+            return (componentType != null ? componentType.getName() : clazz.getName()) + "[]";
+        }
+        return clazz.getName();
+    }
+
+    private static void appendUnsupportedExtras(@NonNull StringBuilder sb, @NonNull String prefix,
+                                                @NonNull List<UnsupportedExtra> unsupportedExtras) {
+        if (unsupportedExtras.isEmpty()) {
+            return;
+        }
+        appendPrefixedLabel(sb, prefix, "UNSUPPORTED EXTRAS")
+                .append("\t")
+                .append(unsupportedExtras.size())
+                .append("\n");
+        for (UnsupportedExtra unsupportedExtra : unsupportedExtras) {
+            appendPrefixedLabel(sb, prefix, "UNSUPPORTED EXTRA")
+                    .append("\t")
+                    .append(unsupportedExtra.key)
+                    .append("\t")
+                    .append(unsupportedExtra.typeName)
+                    .append("\n");
+        }
+    }
+
+    @NonNull
+    private static StringBuilder appendPrefixedLabel(@NonNull StringBuilder sb, @NonNull String prefix,
+                                                     @NonNull String label) {
+        if (!prefix.isEmpty()) {
+            sb.append(prefix).append(" ");
+        }
+        return sb.append(label);
+    }
+
     public static void addToIntent(@NonNull Intent intent, @NonNull ExtraItem extraItem) {
         if (extraItem.keyValue == null && extraItem.type != TYPE_NULL) {
             return;
@@ -695,6 +786,7 @@ public final class IntentCompat {
                 // TODO: Add support for more items
             }
         }
+        appendUnsupportedExtras(sb, prefix, getUnsupportedExtras(intent));
         return sb.toString();
     }
 
