@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Cancel or generation-skip stale file-manager attribute loads
-  Why: file-manager rows launch background attribute caching for uncached items, but the adapter does not own or cancel obsolete jobs during fast scrolls or dataset swaps.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmAdapter.java:158`; file-manager responsiveness expectations from SD Maid SE and AppDash.
-  Touches: `fm/FmAdapter.java`; `fm/FmItem`; file-manager adapter tests or Robolectric/source-contract tests.
-  Acceptance: stale attribute jobs are cancelled or skipped by generation, recycled rows never show stale attributes after rapid navigation/scrolling, and a host-side test covers generation mismatch behavior.
-  Complexity: S
-
 - [ ] P2 — Refresh Gradle wrapper to 9.6.1
   Why: Gradle 9.6.1 is current and the repo is on 9.6.0; the update is low-risk and keeps the local build baseline current.
   Evidence: `gradle/wrapper/gradle-wrapper.properties:4`; Gradle 9.6.1 release notes.

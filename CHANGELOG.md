@@ -6,6 +6,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- File Manager rows now clear recycled attribute state and generation-skip
+  stale background attribute loads after fast list swaps or scrolling.
 - Activity Interceptor command/detail exports now report unsupported intent
   extras by key and runtime type instead of silently omitting Parcelable,
   Binder, Bundle, or other non-parsable values.
