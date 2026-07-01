@@ -16,13 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Report unsupported intent extras instead of silently dropping them
-  Why: Activity Interceptor command/export text skips unsupported extras without warning, so copied commands and descriptions can omit user-visible intent data.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/intercept/IntentCompat.java:538`; `IntentCompat.java:641`; `IntentCompat.java:687`; Android 18 explicit URI grant guidance.
-  Touches: `intercept/IntentCompat.java`; `intercept/ActivityInterceptor.java`; shortcut/export strings; intent compat tests.
-  Acceptance: unsupported extras are counted and listed by key/type in command/export descriptions while parsable output remains backwards-compatible; tests cover unsupported Parcelable, Binder, and nested Bundle values.
-  Complexity: S
-
 - [ ] P2 — Cancel or generation-skip stale file-manager attribute loads
   Why: file-manager rows launch background attribute caching for uncached items, but the adapter does not own or cancel obsolete jobs during fast scrolls or dataset swaps.
   Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/fm/FmAdapter.java:158`; file-manager responsiveness expectations from SD Maid SE and AppDash.
