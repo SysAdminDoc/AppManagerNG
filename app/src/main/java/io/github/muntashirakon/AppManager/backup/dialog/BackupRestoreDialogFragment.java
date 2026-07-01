@@ -380,14 +380,15 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
     }
 
     private void handleDeleteBaseBackup() {
-        // TODO: 5/7/22 Display a check box that will include all the backups instead of only base backups.
         DestructiveActionConfirmation
-                .forBaseBackupDelete(mActivity, (dialog, which) ->
+                .forBaseBackupDelete(mActivity, mViewModel.getBaseBackupCount(), mViewModel.getNamedBackupCount(),
+                        deleteScope ->
                         ActionAuthGate.authenticate(mActivity,
                                 R.string.authenticate_to_delete_backups, () -> {
                                     BackupRestoreDialogViewModel.OperationInfo operationInfo = new BackupRestoreDialogViewModel.OperationInfo();
                                     operationInfo.mode = BackupRestoreDialogFragment.MODE_DELETE;
                                     operationInfo.op = BatchOpsManager.OP_DELETE_BACKUP;
+                                    operationInfo.deleteScope = deleteScope;
                                     mViewModel.prepareForOperation(operationInfo);
                                 }))
                 .show();
@@ -403,7 +404,11 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 new IntentFilter(BatchOpsService.ACTION_BATCH_OPS_COMPLETED), ContextCompat.RECEIVER_NOT_EXPORTED);
         mReceiverRegistered = true;
         // Start batch ops service
-        BatchBackupOptions options = new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
+        BatchBackupOptions options = operationInfo.mode == MODE_DELETE
+                ? new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
+                operationInfo.relativeDirs, operationInfo.exclusionGlobs,
+                operationInfo.protectFromPrune, operationInfo.backupNote, operationInfo.deleteScope)
+                : new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
                 operationInfo.relativeDirs, operationInfo.exclusionGlobs,
                 operationInfo.protectFromPrune, operationInfo.backupNote);
         BatchQueueItem queueItem = BatchQueueItem.getBatchOpQueue(operationInfo.op,
