@@ -1086,7 +1086,8 @@ public class ActivityInterceptor extends BaseActivity {
             }
         } catch (Exception th) {
             Log.e(TAG, th);
-            UIUtils.displayLongToast(R.string.error_with_details, th.getClass().getName() + ": " + th.getMessage());
+            UIUtils.displayLongToast(R.string.failed_to_send_intent,
+                    th.getMessage() != null ? th.getMessage() : th.getClass().getSimpleName());
         }
     }
 
@@ -1188,7 +1189,7 @@ public class ActivityInterceptor extends BaseActivity {
                 dialog.show(getSupportFragmentManager(), CreateShortcutDialogFragment.TAG);
             } catch (Exception th) {
                 Log.e(TAG, th);
-                UIUtils.displayLongToast(R.string.error_with_details, th.getClass().getName() + ": " + th.getMessage());
+                UIUtils.displayLongToast(R.string.error_creating_shortcut);
             }
             return true;
         }

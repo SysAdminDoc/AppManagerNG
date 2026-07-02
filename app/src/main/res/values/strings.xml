@@ -590,7 +590,7 @@
     <string name="pref_import_my_android_tools_msg">Import MyAndroidTools text backups or <tt>.ifw</tt> backup archives.</string>
     <string name="component_rules_loading_summary">Scanning AppManagerNG rules and active IFW files.</string>
     <string name="component_rules_overview_title">Component rules overview</string>
-    <string name="component_rules_overview_summary">%1$d packages. %2$d IFW entries, %3$d PackageManager/provider entries. IFW path: %4$s</string>
+    <string name="component_rules_overview_summary">Packages: %1$d · IFW entries: %2$d · PackageManager/provider entries: %3$d. IFW path: %4$s</string>
     <string name="component_rules_refresh_summary">Reload package rule files and active IFW XML.</string>
     <string name="component_rules_empty_title">No component rules</string>
     <string name="component_rules_empty_summary">Block a component from App Details or import a rules file to populate this screen.</string>
@@ -874,8 +874,8 @@
         <item quantity="other">Put back %1$d apps</item>
     </plurals>
     <plurals name="alert_succeeded_dexopt">
-        <item quantity="one">Optimised %1$d app</item>
-        <item quantity="other">Optimised %1$d apps</item>
+        <item quantity="one">Optimized %1$d app</item>
+        <item quantity="other">Optimized %1$d apps</item>
     </plurals>
     <plurals name="alert_failed_to_backup">
         <item quantity="one">Could not back up %1$d app</item>
@@ -1063,7 +1063,7 @@
     <string name="website_message" translatable="false">https://github.com/SysAdminDoc/AppManagerNG</string>
     <string name="discussions_site" translatable="false">https://github.com/SysAdminDoc/AppManagerNG/issues</string>
     <string name="pref_remove_all_rules">Remove all rules</string>
-    <string name="pref_remove_all_rules_msg">Permissions will be granted, app ops and components will return to their default values.</string>
+    <string name="pref_remove_all_rules_msg">Removes every saved rule for all apps: blocked components are re-enabled, denied permissions are re-granted, and app ops return to their default values. This cannot be undone.</string>
     <string name="are_you_sure">Are you sure?</string>
     <string name="hide_app_confirmation">Hidden apps disappear from the launcher and package lists without being uninstalled. Continue?</string>
     <string name="filter_apps_with_activities">With activities</string>
@@ -1531,7 +1531,7 @@
     <string name="v2_scheme">v2 scheme (since Android 7.0)</string>
     <string name="v3_scheme">v3 scheme (since Android 9)</string>
     <string name="v4_scheme">v4 scheme (since Android 11)</string>
-    <string name="pref_signature_schemes_msg">At least v1 and v2 schemes should be selected for a greater compatibility. v4 scheme requires v2 or v3.</string>
+    <string name="pref_signature_schemes_msg">At least the v1 and v2 schemes should be selected for greater compatibility. The v4 scheme requires v2 or v3.</string>
     <string name="verified">Verified</string>
     <string name="not_verified">Not verified</string>
     <string name="source_stamp_verified">SourceStamp verified.</string>
@@ -1544,7 +1544,7 @@
     <string name="keystore_password_input_title">Unlock recovery password</string>
     <string name="keystore_password_field_hint">Recovery password</string>
     <string name="input_keystore_alias_pass">Password for alias <b>%1$s</b></string>
-    <string name="input_keystore_alias_pass_description">Insert password for the alias <b>%1$s</b>. You can leave this empty if the password matches the recovery password.</string>
+    <string name="input_keystore_alias_pass_description">Enter the password for the alias <b>%1$s</b>. You can leave this empty if the password matches the recovery password.</string>
     <string name="input_keystore_alias_pass_msg">Tap here to provide password for %1$s</string>
     <string name="no_app_ops_permission">No permission to display app ops</string>
     <string name="this_action_cannot_be_undone">This action cannot be undone.</string>
@@ -1837,7 +1837,7 @@
     <string name="ssaid_info">SSAID (<tt>Settings.Secure.ANDROID_ID</tt>) is a device identifier assigned to each app (from Android 8 \"Oreo\" onwards). It is widely used by apps to track users.</string>
     <string name="copied_to_clipboard">Copied to clipboard.</string>
     <string name="failed_to_change_ssaid">Could not change SSAID</string>
-    <string name="restart_to_reflect_changes">You must restart the device immediately to use the new changes.</string>
+    <string name="restart_to_reflect_changes">You must restart the device immediately for the changes to take effect.</string>
     <string name="installed_apps">Installed apps</string>
     <string name="enable_disable_features">Enable/disable features</string>
     <string name="pref_enable_disable_features_msg">Enable or disable features in AppManagerNG.</string>
@@ -2066,14 +2066,14 @@
     <string name="added_to_queue">Added to queue</string>
     <string name="pref_selected_users">Selected users</string>
     <string name="pref_selected_users_msg">Restrict AppManagerNG to work with the selected users only.</string>
-    <string name="profile_visibility_not_visible_current_mode">Private Space/hidden profiles may be not visible from current mode/state. Android requires the default launcher role and an unlocked profile to expose them through launcher APIs.</string>
+    <string name="profile_visibility_not_visible_current_mode">Private Space/hidden profiles may not be visible in the current mode/state. Android requires the default launcher role and an unlocked profile to expose them through launcher APIs.</string>
     <string name="profile_visibility_available_when_unlocked">Private Space/hidden profiles are visible when Android exposes the profile and it is unlocked.</string>
     <string name="permission_flags">Permission flags</string>
     <string name="saved_filters">Saved filters</string>
     <string name="error_with_details">Error: %s</string>
     <string name="notice">Notice</string>
-    <string name="notice_saf">Unlike the volumes, the selected directory will be used to store all the files related to App Manager, including saved APKs and backups. Storage Access Framework (SAF) is very slow, therefore, you should only use this option when others cannot be used.</string>
-    <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for App Manager is a subfolder named <tt>AppManager</tt>.</string>
+    <string name="notice_saf">Unlike the volumes, the selected directory will be used to store all the files related to AppManagerNG, including saved APKs and backups. Storage Access Framework (SAF) is very slow, therefore, you should only use this option when others cannot be used.</string>
+    <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for AppManagerNG is a subfolder named <tt>AppManager</tt>.</string>
     <string name="storage">Storage</string>
     <string name="files">Files</string>
     <string name="keystore_password_info">AppManagerNG generated this recovery password for encrypted backups and signing keys. Store it somewhere safe before continuing; AppManagerNG will not show it again.</string>
@@ -2132,13 +2132,13 @@
     <string name="share_backup_empty">No files to share in the selected backup.</string>
     <string name="share_backup_no_handler">No app is registered to receive backup files.</string>
     <string name="next">Next</string>
-    <string name="pref_block_trackers_msg">Block tracking components after installing an app using App Manager.</string>
+    <string name="pref_block_trackers_msg">Block tracking components after installing an app using AppManagerNG.</string>
     <string name="pref_always_on_background">Install in the background</string>
     <string name="pref_always_on_background_msg">Always install apps in the background and display a notification when finished.</string>
     <string name="type_uri_array">Array of URIs</string>
     <string name="type_uri_array_list">List of URIs</string>
     <string name="pref_thread_count">Parallel execution</string>
-    <string name="pref_thread_count_hint">The value must be between 0 to %1$d where 0 means <i>maximum number of operations at the given time</i>.</string>
+    <string name="pref_thread_count_hint">The value must be between 0 and %1$d, where 0 means <i>maximum number of operations at the given time</i>.</string>
     <plurals name="pref_thread_count_msg">
         <item quantity="one">Execute at most %1$d operation in parallel</item>
         <item quantity="other">Execute at most %1$d operations in parallel</item>
@@ -2255,7 +2255,7 @@
     <string name="mode_of_op_with_inferred_mode_of_op">Selected: %1$s. Active now: %2$s</string>
     <string name="mode_of_op_apply_failed_rollback">Could not switch mode. Restored the previous mode.</string>
     <string name="primary_abi">Primary ABI</string>
-    <string name="backup_keep_device_awake_warning">Backup started. Keep the device awake and AppManager open until it finishes — Android 14+ may kill long-running backups in Doze.</string>
+    <string name="backup_keep_device_awake_warning">Backup started. Keep the device awake and AppManagerNG open until it finishes — Android 14+ may kill long-running backups in Doze.</string>
     <string name="device_page_size">Device page size</string>
     <string name="device_page_size_4k">4 KB</string>
     <string name="device_page_size_16k">16 KB (page-size compatibility required)</string>
@@ -2307,7 +2307,7 @@
     <string name="save_and_exit">Save and exit</string>
     <string name="pref_saved_apk_name_format">Saved APK name format</string>
     <string name="pref_saved_apk_name_format_msg">The format to be used for naming the APK files when you save them.</string>
-    <string name="auth_manager_description">Trusted third-party apps can launch App Manager intents only when they include this key in the <tt>auth</tt> extra.</string>
+    <string name="auth_manager_description">Trusted third-party apps can launch AppManagerNG intents only when they include this key in the <tt>auth</tt> extra.</string>
     <string name="auth_manager_key_label">Authorization key</string>
     <string name="auth_manager_title">Authorization manager</string>
     <string name="regenerate_auth_key">Regenerate authorization key</string>
@@ -2361,6 +2361,7 @@
         <item quantity="other">Unblocked <xliff:g id="count" example="4">%1$d</xliff:g> trackers</item>
     </plurals>
     <string name="failed_to_launch_app">Could not launch this app.</string>
+    <string name="failed_to_send_intent">Could not send this intent: %1$s</string>
     <string name="quick_action_block_trackers">Block trackers</string>
     <string name="quick_action_system_settings">Android settings</string>
     <string name="onboarding_title">How will AppManagerNG run?</string>
@@ -2746,10 +2747,12 @@
     <string name="restore_empty_latest_title">No newer backups found</string>
     <string name="restore_empty_latest_summary">No backup version is newer than the installed app.</string>
     <string name="restart_device">Restart device</string>
-    <string name="import_backups_warning_delete_backups_after_import">Delete the backups after importing them to App Manager? Each backup is individually deleted after it is imported with success. Select <b>No</b> if unsure.</string>
+    <string name="import_backups_warning_delete_backups_after_import">Delete each source backup after it is successfully imported into AppManagerNG?</string>
+    <string name="import_backups_delete_after_import">Delete after import</string>
+    <string name="import_backups_keep_source">Keep source backups</string>
     <string name="troubleshooting">Troubleshooting</string>
     <string name="pref_reload_apps">Reload apps</string>
-    <string name="pref_reload_apps_msg">Reload the list of apps stored in App Manager database in case of unexpected behaviour.</string>
+    <string name="pref_reload_apps_msg">Reload the list of apps stored in the AppManagerNG database in case of unexpected behaviour.</string>
     <string name="pref_replay_onboarding">Replay welcome wizard</string>
     <string name="pref_replay_onboarding_msg">Re-open the privilege-mode picker and explainers shown on first launch. Your current mode stays active until you pick another card.</string>
     <string name="pref_replay_tour">Replay quick tour</string>
@@ -2818,7 +2821,7 @@
         <item quantity="other">Could not request unarchive for %1$d apps</item>
     </plurals>
     <string name="suspend_app_description">This is the weakest freezing method. A suspended app may still appear in the launcher but will be grayed out and cannot be launched.</string>
-    <string name="disable_app_description">Recommended freezing method. It disables the app and along with all its components, but all the shortcuts will be lost.</string>
+    <string name="disable_app_description">Recommended freezing method. It disables the app along with all its components; launcher shortcuts will be lost.</string>
     <string name="hide_app_description">This method is only recommended for day to day use. A hidden app appears as if it is uninstalled. But the app could reappear if it is reinstalled or updated.</string>
     <string name="sort_by_frozen_app">Frozen first</string>
     <string name="filter_frozen_apps">Frozen apps</string>
@@ -3137,7 +3140,7 @@
     <string name="search_option_match_case">Match case</string>
     <string name="search_option_whole_word">Whole word</string>
     <string name="search_option_regex">Regex</string>
-    <string name="uninstall_app_again_message">The application was uninstalled without clearing data and signature. Do you want to completely uninstall it?</string>
+    <string name="uninstall_app_again_message">This app was uninstalled but its data and signature were kept. Completely uninstall it and permanently delete the remaining data?</string>
     <string name="uninstall_app">Uninstall %1$s</string>
     <string name="debloat_list_type">List</string>
     <string name="debloat_removal_type">Type</string>
@@ -3146,11 +3149,20 @@
     <string name="debloat_export_preset">Export debloat preset</string>
     <string name="debloat_import_preset">Import debloat preset</string>
     <string name="debloat_export_empty">Select packages to export first</string>
-    <string name="debloat_export_success">Exported %1$d packages</string>
+    <plurals name="debloat_export_success">
+        <item quantity="one">Exported %1$d package</item>
+        <item quantity="other">Exported %1$d packages</item>
+    </plurals>
     <string name="debloat_export_failed">Could not export debloat preset</string>
     <string name="debloat_import_failed">Could not import debloat preset</string>
-    <string name="debloat_import_success">Imported %1$d of %2$d packages</string>
-    <string name="debloat_import_not_found">%1$d packages from the preset were not found on this device</string>
+    <plurals name="debloat_import_success">
+        <item quantity="one">Imported %1$d of %2$d package</item>
+        <item quantity="other">Imported %1$d of %2$d packages</item>
+    </plurals>
+    <plurals name="debloat_import_not_found">
+        <item quantity="one">%1$d package from the preset was not found on this device</item>
+        <item quantity="other">%1$d packages from the preset were not found on this device</item>
+    </plurals>
     <string name="debloat_app_store_unavailable">No compatible app store is available for this package.</string>
     <string name="debloat_presets">Presets</string>
     <string name="debloat_presets_intro">Choose a curated set of installed recommendations. AppManagerNG selects the matching packages first so you can review them before applying changes.</string>
@@ -3372,10 +3384,10 @@
     <string name="tap_to_open_notification_settings">Tap for notification settings</string>
     <string name="app_manager_is_unlocked">AppManagerNG is unlocked</string>
     <string name="action_lock_app">Lock</string>
-    <string name="pref_enable_persistent_session">Run App Manager in the background</string>
-    <string name="pref_enable_persistent_session_msg">Running App Manager in the background reduces initialisation delay. Useful if you use App Manager frequently.</string>
+    <string name="pref_enable_persistent_session">Run AppManagerNG in the background</string>
+    <string name="pref_enable_persistent_session_msg">Running AppManagerNG in the background reduces initialisation delay. Useful if you use AppManagerNG frequently.</string>
     <string name="pref_enable_auto_lock">Automatic lockdown</string>
-    <string name="pref_enable_auto_lock_msg">Lock App Manager when the device is locked.</string>
+    <string name="pref_enable_auto_lock_msg">Lock AppManagerNG when the device is locked.</string>
     <string name="path_does_not_exist">“%1$s” does not exist</string>
     <string name="path_not_a_folder">“%1$s” is not a folder</string>
     <string name="scan_report_from_pithus">Pithus report</string>
@@ -3455,8 +3467,8 @@
     <string name="op_history_filter_last_24h">24 hours</string>
     <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_settings_summary">Review, filter, export, rerun, and clean up saved operation history.</string>
-    <string name="per_app_rollback">Revert AppManager changes</string>
-    <string name="per_app_rollback_confirm_title">Revert AppManager changes?</string>
+    <string name="per_app_rollback">Revert AppManagerNG changes</string>
+    <string name="per_app_rollback_confirm_title">Revert AppManagerNG changes?</string>
     <string name="per_app_rollback_confirm_message">This queues %1$s for %2$s from saved operation history. It does not restore app data, reinstall removed apps, or delete backup files.%3$s</string>
     <string name="per_app_rollback_manual_suffix">\n\nManual review is still required for %1$s because the saved history does not include enough previous-state data for an automatic inverse.</string>
     <string name="per_app_rollback_none">No reversible AppManagerNG changes were found for this app.</string>
@@ -3587,7 +3599,7 @@
         <item quantity="other">%1$s; skipped %2$d recent backups</item>
     </plurals>
     <string name="auto_backup_result_partial">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed</string>
-    <string name="auto_backup_result_partial_with_skipped">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> due apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed; skipped <xliff:g id="skipped" example="3">%4$d</xliff:g> recent backups</string>
+    <string name="auto_backup_result_partial_with_skipped">Backed up <xliff:g id="success" example="11">%1$d</xliff:g> of <xliff:g id="total" example="12">%2$d</xliff:g> scheduled apps; <xliff:g id="failed" example="1">%3$d</xliff:g> failed; skipped <xliff:g id="skipped" example="3">%4$d</xliff:g> recent backups</string>
     <string name="auto_backup_result_failed">Scheduled backup failed: <xliff:g id="reason" example="No backup volume">%1$s</xliff:g></string>
     <string name="auto_backup_result_insufficient_storage">Skipped: not enough free space (estimated <xliff:g id="estimated" example="1.2 GB">%1$s</xliff:g>, free <xliff:g id="free" example="500 MB">%2$s</xliff:g>)</string>
     <string name="auto_backup_result_could_not_start">Couldn\'t start scheduled backup (background restricted); will retry.</string>
@@ -3898,7 +3910,7 @@
     <string name="editor_locked_read_only">Editor locked because the file is read-only</string>
     <!-- Profiles: share-profile-as-JSON popup action -->
     <string name="share_profile_json">Share as JSON</string>
-    <string name="share_profile_subject">AppManager profile · %1$s</string>
+    <string name="share_profile_subject">AppManagerNG profile · %1$s</string>
     <string name="share_profile_chooser_title">Share profile</string>
     <string name="share_failed">Share failed.</string>
     <!-- App Info: compact identity block -->
