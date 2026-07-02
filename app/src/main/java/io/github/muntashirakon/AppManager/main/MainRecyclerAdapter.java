@@ -907,8 +907,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(mActivity.getString(R.string.uninstall_app, item.label))
                     .setMessage(R.string.uninstall_app_again_message)
-                    .setNegativeButton(R.string.no, null)
-                    .setPositiveButton(R.string.yes, (dialog, which) ->
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.uninstall, (dialog, which) ->
                             ActionAuthGate.authenticate(mActivity, R.string.authenticate_to_uninstall,
                                     () -> ThreadUtils.postOnBackgroundThread(() -> {
                                         PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();

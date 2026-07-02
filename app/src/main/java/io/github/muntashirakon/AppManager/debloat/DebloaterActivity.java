@@ -714,7 +714,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 DebloatPresetIO.exportPreset(this, uri, selected);
-                runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_export_success, selected.size()));
+                runOnUiThread(() -> UIUtils.displayShortToast(getResources().getQuantityString(
+                        R.plurals.debloat_export_success, selected.size(), selected.size())));
             } catch (java.io.IOException e) {
                 Log.e(TAG, "Could not export debloat preset.", e);
                 runOnUiThread(() -> UIUtils.displayShortToast(R.string.debloat_export_failed));
@@ -751,9 +752,11 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             mMultiSelectionView.show();
             mMultiSelectionView.updateCounter(false);
         }
-        UIUtils.displayShortToast(R.string.debloat_import_success, matched, total);
+        UIUtils.displayShortToast(getResources().getQuantityString(
+                R.plurals.debloat_import_success, total, matched, total));
         if (notFound > 0) {
-            UIUtils.displayShortToast(R.string.debloat_import_not_found, notFound);
+            UIUtils.displayShortToast(getResources().getQuantityString(
+                    R.plurals.debloat_import_not_found, notFound, notFound));
         }
     }
 
