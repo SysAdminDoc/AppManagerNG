@@ -318,11 +318,11 @@ public class BackupRestorePreferences extends PreferenceFragment {
                                 new MaterialAlertDialogBuilder(mActivity)
                                         .setTitle(R.string.pref_import_backups)
                                         .setMessage(R.string.import_backups_warning_delete_backups_after_import)
-                                        .setPositiveButton(R.string.no, (dialog1, which1) -> {
+                                        .setPositiveButton(R.string.import_backups_keep_source, (dialog1, which1) -> {
                                             mDeleteBackupsAfterImport = false;
                                             mSafSelectImportDirectory.launch(getSafIntent(path));
                                         })
-                                        .setNegativeButton(R.string.yes, (dialog1, which1) -> {
+                                        .setNegativeButton(R.string.import_backups_delete_after_import, (dialog1, which1) -> {
                                             mDeleteBackupsAfterImport = true;
                                             mSafSelectImportDirectory.launch(getSafIntent(path));
                                         })
