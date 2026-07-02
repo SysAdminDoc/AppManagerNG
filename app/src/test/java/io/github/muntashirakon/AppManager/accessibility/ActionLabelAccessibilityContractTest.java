@@ -131,7 +131,7 @@ public class ActionLabelAccessibilityContractTest {
         assertFalse("Debloater preset failures should not fall back to hardcoded English",
                 source.contains("\"Export failed\"") || source.contains("\"Import failed\""));
         assertTrue("Debloater preset export should use localized success copy",
-                source.contains("R.string.debloat_export_success"));
+                source.contains("R.plurals.debloat_export_success"));
         assertTrue("Debloater preset failures should log export diagnostics",
                 source.contains("Log.e(TAG, \"Could not export debloat preset.\", e);"));
         assertTrue("Debloater preset failures should log import diagnostics",
