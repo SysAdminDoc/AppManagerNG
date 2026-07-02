@@ -163,7 +163,7 @@ public class LogcatRecordingService extends ForegroundService {
             String line;
             int lineCount = 0;
             int logLinePeriod = Prefs.LogViewer.getLogWritingInterval();
-            Pattern filterPattern = Pattern.compile(Prefs.LogViewer.getFilterPattern());
+            Pattern filterPattern = Prefs.LogViewer.getCompiledFilterPattern();
             while (mReader != null && (line = mReader.readLine()) != null && !mKilled) {
                 // filter
                 if (!searchCriteriaWillAlwaysMatch || !logLevelAcceptsEverything) {
