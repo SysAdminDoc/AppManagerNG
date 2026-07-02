@@ -910,8 +910,11 @@ public final class PackageInstallerCompat {
             if (SelfPermissions.isShell()) {
                 mLastVerifyAdbInstallsResult = Settings.Global.getInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 1);
                 if (mLastVerifyAdbInstallsResult != 0) {
+                    // commit(), not apply(): the saved original must hit disk BEFORE the
+                    // global setting is flipped, or a hard kill mid-install leaves the
+                    // verifier disabled system-wide with nothing to restore from.
                     mContext.getSharedPreferences(PREFS_INSTALLER, Context.MODE_PRIVATE)
-                            .edit().putInt(KEY_SAVED_VERIFY_ADB, mLastVerifyAdbInstallsResult).apply();
+                            .edit().putInt(KEY_SAVED_VERIFY_ADB, mLastVerifyAdbInstallsResult).commit();
                     Settings.Global.putInt(mContext.getContentResolver(), SETTINGS_VERIFIER_VERIFY_ADB_INSTALLS, 0);
                 }
             }
