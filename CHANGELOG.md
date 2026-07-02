@@ -5,7 +5,61 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- Re-enabled the five Robolectric fixture test classes ignored since
+  2026-05-25 (ZipFileSystem, ZipDocumentFile, TarUtils, OABConverter,
+  SettingsSearchIndex — 79 tests restored) and implemented
+  `ZipFileSystem.setLastModified` so mounted-ZIP timestamps are writable in
+  read-write mounts. The historical crashes were caused by running the suite
+  under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
+
 ### Fixed
+- Deep audit pass (2026-07-02):
+  - Clear Data no longer crashes with an uncatchable `NoSuchMethodError` on
+    API 21–27 — the `IActivityManager` path now falls back to
+    `IPackageManager` on `LinkageError` too (regression from the 2026-06-27
+    IActivityManager preference).
+  - Permission/App Ops operation results are routed to the initiating tab;
+    previously a sibling pager tab could swallow the consume-once LiveData
+    event, leaving a stuck progress indicator and lost failure toasts.
+  - Terminal: init-script failure feedback no longer touches the UI from a
+    background thread (crash); command history loads off the UI thread and
+    its save executor is shut down with the activity (one leaked thread per
+    session); history loaded after early-typed commands is prepended.
+  - An invalid saved Log Viewer filter regex no longer crashes the Log Viewer
+    on every open — the setting is validated on save, and both consumers fall
+    back to the default pattern.
+  - Scanner: a failed APK cache no longer leaves a permanently blank scan
+    with no feedback; VirusTotal report polling is capped (~10 min) instead
+    of spinning forever on quota errors; OAB conversion no longer leaks a
+    cache temp file per skipped entry.
+  - Pure-black (AMOLED) theme survives Material You: dynamic colors were
+    replacing all surface roles with wallpaper-derived greys on API 31+; a
+    re-pin overlay restores true black while keeping dynamic accents.
+  - Dark mode on API 27+/29+ no longer loses the display-cutout and
+    nav-bar-contrast window flags (night qualifier outranked values-v27/v29).
+  - Splash screen background uses concrete surface colors — the
+    `?attr/colorSurface` reference never resolved in the splash theme chain;
+    the AMOLED splash is now actually black.
+  - Home-screen widgets resolve their palette against the widget-container
+    theme under the *system* configuration; the in-app pure-black theme no
+    longer bakes near-white text onto a light launcher surface.
+  - Import-backups delete prompt had swapped Yes/No buttons (the positive
+    slot said "No"); replaced with explicit "Keep source backups" /
+    "Delete after import" actions. "Remove all rules" and second-chance full
+    uninstall now state their consequences and use verb buttons.
+  - Activity Interceptor: "Copy as am command" reports Uri-array extras it
+    cannot represent instead of silently dropping them; raw
+    `Error: java.lang.Foo` toasts replaced with calm copy.
+  - Usage stats no longer issue four redundant IPC retries for intervals
+    with genuinely no usage; the file-manager symlink badge color has a
+    day/night pair with readable light-mode contrast; verifier-restore state
+    is persisted synchronously before the global setting is flipped; the
+    root-service trampoline logs all launch failures (including
+    LinkageErrors) before exit.
+  - Remaining upstream "App Manager" naming in default-locale user-visible
+    copy now says AppManagerNG; "1 packages"-style copy fixed via plurals;
+    assorted grammar cleanups.
 - File Manager rows now clear recycled attribute state and generation-skip
   stale background attribute loads after fast list swaps or scrolling.
 - Activity Interceptor command/detail exports now report unsupported intent
