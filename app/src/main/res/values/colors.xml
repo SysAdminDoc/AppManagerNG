@@ -1,4 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
-    <color name="fm_symbolic_link">#f37785</color>
+    <!-- Day/night pair: the light-mode value needs enough contrast on light surfaces
+         (the original #f37785 is ~2.5:1 on white); values-night keeps the soft rose. -->
+    <color name="fm_symbolic_link">#C4485B</color>
 </resources>

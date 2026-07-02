@@ -1,13 +1,17 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
 
+    <!-- windowSplashScreenBackground must be a concrete color: the splash theme chain
+         (Theme.SplashScreen -> DeviceDefault) never defines the Material colorSurface
+         attr, so a ?attr reference silently falls back to the platform default. -->
     <style name="AppTheme.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">?attr/colorSurface</item>
+        <item name="windowSplashScreenBackground">@color/premium_surface_0</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/AppTheme.V2</item>
     </style>
 
     <style name="AppTheme.Splash.Black" parent="AppTheme.Splash">
+        <item name="windowSplashScreenBackground">@color/premium_surface_0_amoled</item>
         <item name="postSplashScreenTheme">@style/AppTheme.V2.Amoled</item>
     </style>
 

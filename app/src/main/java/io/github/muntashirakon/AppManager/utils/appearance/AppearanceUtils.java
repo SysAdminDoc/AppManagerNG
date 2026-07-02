@@ -36,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.PerProcessActivity;
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 
@@ -78,12 +79,19 @@ public final class AppearanceUtils {
     }
 
     /**
-     * Return a {@link ContextThemeWrapper} with the default locale, layout direction, theme and night mode.
+     * Return a {@link ContextThemeWrapper} for resolving home-screen widget palettes.
+     * <p>
+     * Widgets render on launcher surfaces under the <em>system</em> configuration, and their
+     * XML backgrounds resolve against {@code AppTheme.AppWidgetContainer} in the launcher
+     * process. Baking colors from the in-app theme preference (e.g. the always-dark pure-black
+     * theme) painted near-white text onto a light launcher surface whenever the two disagreed.
+     * Resolve the same widget-container theme under the system uiMode instead.
      */
     @NonNull
-    public static Context getThemedWidgetContext(@NonNull Context context, boolean transparent) {
-        int theme = transparent ? Prefs.Appearance.getTransparentAppTheme() : Prefs.Appearance.getAppTheme();
-        ContextThemeWrapper newCtx = new ContextThemeWrapper(context, theme);
+    public static Context getThemedWidgetContext(@NonNull Context context) {
+        Configuration systemConfig = Resources.getSystem().getConfiguration();
+        ContextThemeWrapper newCtx = new ContextThemeWrapper(
+                context.createConfigurationContext(systemConfig), R.style.AppTheme_AppWidgetContainer);
         return DynamicColors.wrapContextIfAvailable(newCtx);
     }
 
@@ -184,6 +192,12 @@ public final class AppearanceUtils {
             }
             // Theme must be set first because the method below will add dynamic attributes to the theme
             DynamicColors.applyToActivityIfAvailable(activity);
+            if (Prefs.Appearance.isPureBlackTheme()) {
+                // The dynamic overlay replaces every surface role with wallpaper-derived
+                // neutrals, silently turning "pure black" into a grey dynamic theme on
+                // API 31+. Re-pin the black surfaces; dynamic accents survive.
+                activity.getTheme().applyStyle(R.style.ThemeOverlay_AppTheme_V2_AmoledSurfaces, true);
+            }
         }
 
         @Override

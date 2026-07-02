@@ -100,6 +100,29 @@
         <item name="colorOutlineVariant">@color/premium_outline_hairline_amoled</item>
     </style>
 
+    <!-- Applied ON TOP of the Material You dynamic-color overlay when the pure-black
+         theme is selected: dynamic colors replace every surface role with
+         wallpaper-derived neutrals (~#1C1B1F), silently defeating the AMOLED choice
+         on API 31+. Re-pinning the surface/outline/on-surface roles keeps true black
+         while letting the wallpaper-derived accent colors survive. Keep the item list
+         in sync with AppTheme.V2.Amoled + the text/outline roles of AppTheme.V2.Dark. -->
+    <style name="ThemeOverlay.AppTheme.V2.AmoledSurfaces" parent="">
+        <item name="android:colorBackground">@color/premium_surface_0_amoled</item>
+        <item name="colorSurface">@color/premium_surface_0_amoled</item>
+        <item name="colorSurfaceVariant">@color/premium_surface_2_amoled</item>
+        <item name="colorSurfaceContainerLowest">@color/premium_surface_0_amoled</item>
+        <item name="colorSurfaceContainerLow">@color/premium_surface_1_amoled</item>
+        <item name="colorSurfaceContainer">@color/premium_surface_1_amoled</item>
+        <item name="colorSurfaceContainerHigh">@color/premium_surface_2_amoled</item>
+        <item name="colorSurfaceContainerHighest">@color/premium_surface_3_amoled</item>
+        <item name="colorSurfaceDim">@color/premium_surface_0_amoled</item>
+        <item name="colorSurfaceBright">@color/premium_surface_3_amoled</item>
+        <item name="colorOnSurface">@color/premium_text_high_dark</item>
+        <item name="colorOnSurfaceVariant">@color/premium_text_medium_dark</item>
+        <item name="colorOutline">@color/premium_outline_muted_amoled</item>
+        <item name="colorOutlineVariant">@color/premium_outline_hairline_amoled</item>
+    </style>
+
     <style name="Widget.AppTheme.V2.Toolbar" parent="Widget.Material3.Toolbar">
         <item name="android:background">?attr/colorSurface</item>
         <item name="titleTextAppearance">@style/TextAppearance.AppTheme.V2.TitleLarge</item>
