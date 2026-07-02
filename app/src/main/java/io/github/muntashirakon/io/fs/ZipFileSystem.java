@@ -316,6 +316,20 @@ class ZipFileSystem extends VirtualFileSystem {
     }
 
     @Override
+    public boolean setLastModified(String path, long time) {
+        Node<?> targetNode = getNode(path);
+        if (targetNode == null || !targetNode.isFile() || !checkAccess(path, OsConstants.W_OK)) {
+            return false;
+        }
+        try {
+            File cachedFile = getCachedFile(targetNode, true);
+            return cachedFile.setLastModified(time);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    @Override
     public boolean checkAccess(String path, int access) {
         Node<?> targetNode = getNode(path);
         if (access == OsConstants.F_OK) {

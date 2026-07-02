@@ -25,13 +25,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Re-enable pre-2026-05-25 ignored Robolectric fixture tests
-  Why: five host-side tests are still skipped behind stale `@Ignore` markers, masking ZIP/VFS/TAR/OAB/settings-search regressions and referencing a roadmap item that no longer exists.
-  Evidence: `app/src/test/java/androidx/documentfile/provider/ZipDocumentFileTest.java:32`; `app/src/test/java/io/github/muntashirakon/io/fs/ZipFileSystemTest.java:32`; `app/src/test/java/io/github/muntashirakon/AppManager/utils/TarUtilsTest.java:37`; `app/src/test/java/io/github/muntashirakon/AppManager/backup/convert/OABConverterTest.java:31`; `app/src/test/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndexTest.java:21`; JUnit `@Ignore` documentation; Robolectric local-test documentation.
-  Touches: `app/src/test/java/androidx/documentfile/provider/ZipDocumentFileTest.java`; `app/src/test/java/io/github/muntashirakon/io/fs/ZipFileSystemTest.java`; `app/src/test/java/io/github/muntashirakon/AppManager/utils/TarUtilsTest.java`; `app/src/test/java/io/github/muntashirakon/AppManager/backup/convert/OABConverterTest.java`; `app/src/test/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndexTest.java`; related fixture resources under `app/src/test/resources`.
-  Acceptance: no class-level `@Ignore("env-fixture missing pre-2026-05-25; tracked in ROADMAP.md Test Suite Hygiene")` remains; each test either runs deterministically with local fixtures or is split into supported focused tests; `rtk .\gradlew.bat :app:testFlossDebugUnitTest` exercises the restored coverage.
-  Complexity: M
-
 - [ ] P2 — Extend production stack-trace logging cleanup to app and libcore paths
   Why: after app-layer and server-focused logging cleanup, shared file/proc/UI utility paths still print directly to stderr instead of structured or intentionally suppressed diagnostics.
   Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/logs/Log.java:51`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:621`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1494`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:123`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:170`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:189`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:242`; `app/src/main/java/io/github/muntashirakon/proc/ProcMappedFiles.java:49`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:575`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:599`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java:30`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java:45`.
@@ -53,13 +46,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Evidence: `README.md:96`; `ROADMAP.md:5`; `docs/roadmap/README.md:14`; `docs/roadmap/README.md:16`; `git ls-files docs/archive docs/roadmap/archive docs/patch-references docs/raw/changelog_old.md`; GitHub ignore-file documentation.
   Touches: `README.md`; `ROADMAP.md`; `docs/roadmap/README.md`; `.gitignore`; docs link/source-contract checks.
   Acceptance: every tracked link to `docs/archive/`, `docs/roadmap/archive/`, or `docs/patch-references/` either resolves in `git ls-files` or is removed/reworded to local-only; a clean docs build/research pass no longer leaves archive markdown directories as unexpected untracked files; a docs-link/source-contract check covers archive links.
-  Complexity: S
-
-- [ ] P3 — Ignore local JVM crash and replay artifacts under app
-  Why: failed Gradle/test JVM runs leave `hs_err_pid*.log` and `replay_pid*.log` files under `app/`, polluting the worktree and increasing accidental staging risk.
-  Evidence: `app/hs_err_pid10832.log`; `app/replay_pid10832.log`; `.gitignore`; GitHub ignore-file documentation.
-  Touches: `.gitignore`.
-  Acceptance: `.gitignore` excludes `app/hs_err_pid*.log` and `app/replay_pid*.log`; existing local logs remain untracked and ignored after `rtk git status --short --ignored`; no crash/replay logs are staged.
   Complexity: S
 
 ## Research-Driven Additions
