@@ -32,8 +32,9 @@ final class CommandHistory {
 
     CommandHistory(@NonNull Context context) {
         mHistoryFile = new File(context.getFilesDir(), HISTORY_FILE);
-        load();
-        mPosition = mEntries.size();
+        // Load off the UI thread; history navigation simply sees an empty list
+        // until the load completes.
+        mSaveExecutor.execute(this::load);
     }
 
     synchronized void add(@NonNull String command) {
@@ -75,7 +76,16 @@ final class CommandHistory {
         return mEntries.size();
     }
 
-    void flush() {
+    /**
+     * Lets any queued save finish, then releases the worker thread. Without this the
+     * idle non-daemon thread outlives the activity.
+     */
+    void shutdown() {
+        mSaveExecutor.shutdown();
+    }
+
+    /** Blocks until all queued load/save work has completed. Test hook. */
+    void awaitPendingOperations() {
         try {
             mSaveExecutor.submit(() -> {}).get();
         } catch (Exception ignored) {
@@ -83,20 +93,25 @@ final class CommandHistory {
     }
 
     private synchronized void load() {
-        if (!mHistoryFile.exists()) return;
-        try (BufferedReader reader = new BufferedReader(new FileReader(mHistoryFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.isEmpty()) {
-                    mEntries.add(line);
+        if (mHistoryFile.exists()) {
+            List<String> loaded = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new FileReader(mHistoryFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.isEmpty()) {
+                        loaded.add(line);
+                    }
                 }
+            } catch (IOException e) {
+                Log.w(TAG, "Failed to load terminal history", e);
             }
+            // Prepend: commands typed before the async load finished stay newest.
+            mEntries.addAll(0, loaded);
             while (mEntries.size() > MAX_ENTRIES) {
                 mEntries.remove(0);
             }
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to load terminal history", e);
         }
+        mPosition = mEntries.size();
     }
 
     private void save(@NonNull List<String> entries) {

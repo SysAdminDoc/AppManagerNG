@@ -159,6 +159,9 @@ public class TermActivity extends BaseActivity {
             mProc.destroy();
         }
         mExecutor.shutdownNow();
+        if (mHistory != null) {
+            mHistory.shutdown();
+        }
         super.onDestroy();
     }
 
@@ -589,10 +592,14 @@ public class TermActivity extends BaseActivity {
     }
 
     private boolean sendToStdin(@NonNull String command, boolean newLine) {
+        // Called from the UI thread and from the init-script loader on the executor
+        // thread; appendOutput touches the live Editable, so marshal failure feedback
+        // back to the main thread.
         if (mProcessOutputStream != null) {
             if (!ProcessCompat.isAlive(mProc)) {
                 // Process is dead
-                appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n");
+                runOnUiThread(() ->
+                        appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n"));
                 return false;
             }
             try {
@@ -603,7 +610,8 @@ public class TermActivity extends BaseActivity {
                 mProcessOutputStream.flush();
             } catch (Exception e) {
                 Log.e(TAG, e);
-                appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n");
+                runOnUiThread(() ->
+                        appendOutput("\n" + getString(R.string.terminal_process_not_running) + "\n"));
             }
         }
         return true;
