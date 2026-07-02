@@ -35,7 +35,7 @@ public class ScreenTimeAppWidget extends AppWidgetProvider {
             return;
         }
         // Fetch colors
-        context = AppearanceUtils.getThemedWidgetContext(context, false);
+        context = AppearanceUtils.getThemedWidgetContext(context);
         // Fetch screens time
         int[] userIds = Users.getUsersIds();
         List<PackageUsageInfo> packageUsageInfoList = new ArrayList<>();

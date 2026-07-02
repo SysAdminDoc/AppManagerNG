@@ -20,7 +20,7 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 public class ClearCacheAppWidget extends AppWidgetProvider {
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        context = AppearanceUtils.getThemedWidgetContext(context, false);
+        context = AppearanceUtils.getThemedWidgetContext(context);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.app_widget_clear_cache);
         AppWidgetThemeUtils.Palette palette = AppWidgetThemeUtils.getPalette(context);
