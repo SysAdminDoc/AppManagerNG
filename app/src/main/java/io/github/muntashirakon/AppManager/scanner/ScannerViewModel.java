@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.algo.AhoCorasick;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
@@ -422,6 +423,9 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
                 mApkFile = mFileCache.getCachedFile(Paths.get(mApkUri));
             } catch (IOException e) {
                 Log.w(TAG, e);
+                // Every summary loader dereferences mApkFile after waitForFile();
+                // surface the failure instead of silently showing a blank scan.
+                UIUtils.displayLongToast(R.string.failed_to_fetch_package_info);
             }
         }
     }
@@ -429,6 +433,12 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     @WorkerThread
     private void generateApkChecksumsAndFetchScanReports() {
         waitForFile();
+        if (mApkFile == null) {
+            mApkChecksumsLiveData.postValue(null);
+            mPithusReportLiveData.postValue(null);
+            mVtFileReportLiveData.postValue(null);
+            return;
+        }
         Path file = Paths.getUnprivileged(mApkFile);
         String pithusReportUrl = null;
         Pair<String, String>[] digests = ExUtils.exceptionAsNull(() -> DigestUtils.getDigests(file));
@@ -452,13 +462,18 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
 
     private void loadApkVerifierResult() {
         waitForFile();
+        if (mApkFile == null) {
+            return;
+        }
         try {
             ApkVerifier.Builder builder = new ApkVerifier.Builder(mApkFile)
                     .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT);
             ApkVerifier apkVerifier = builder.build();
             ApkVerifier.Result apkVerifierResult = apkVerifier.verify();
             mApkVerifierResultLiveData.postValue(apkVerifierResult);
-        } catch (IOException | ApkFormatException | NoSuchAlgorithmException e) {
+        } catch (Exception e) {
+            // Malformed APKs can throw beyond the declared checked exceptions;
+            // a bad archive must not kill the executor task silently mid-scan.
             Log.w(TAG, e);
         }
     }
@@ -467,6 +482,10 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     private void loadPackageInfo() {
         waitForFile();
         try {
+            if (mApkFile == null) {
+                mPackageInfoLiveData.postValue(null);
+                return;
+            }
             PackageManager pm = getApplication().getPackageManager();
             PackageInfo packageInfo = pm.getPackageArchiveInfo(mApkFile.getAbsolutePath(), 0);
             if (packageInfo != null) {
