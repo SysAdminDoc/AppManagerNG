@@ -140,7 +140,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else alertView.hide();
         });
         viewModel.getPermOpResult().observe(getViewLifecycleOwner(), result -> {
-            if (result == null) return;
+            // Three permission tabs observe this shared LiveData; only the tab that
+            // initiated the operation may consume (and clear) the result, otherwise a
+            // sibling tab swallows the event and the initiating tab's progress
+            // indicator never clears.
+            if (result == null || result.property != mNeededProperty) return;
             viewModel.clearPermOpResult();
             ProgressIndicatorCompat.setVisibility(progressIndicator, false);
             if (result.success) {
@@ -198,11 +202,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
         } else if (id == R.id.action_reset_to_default) {  // App ops
             if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            viewModel.resetAppOpsAsync();
+            viewModel.resetAppOpsAsync(mNeededProperty);
         } else if (id == R.id.action_deny_dangerous_app_ops) {  // App ops
             if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            viewModel.ignoreDangerousAppOpsAsync();
+            viewModel.ignoreDangerousAppOpsAsync(mNeededProperty);
         } else if (id == R.id.action_toggle_default_app_ops) {  // App ops
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
             // Turn filter on/off
@@ -233,7 +237,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         } catch (IllegalArgumentException e) {
                             return;
                         }
-                        if (viewModel != null) viewModel.setAppOpAsync(op, mode);
+                        if (viewModel != null) viewModel.setAppOpAsync(mNeededProperty, op, mode);
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
@@ -250,7 +254,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
                         int opMode = modes.get(which);
                         if (viewModel != null) {
-                            viewModel.setAudioVolumeAppOpsAsync(audioVolumeOps, opMode);
+                            viewModel.setAudioVolumeAppOpsAsync(mNeededProperty, audioVolumeOps, opMode);
                         }
                         dialog.dismiss();
                     })
@@ -258,7 +262,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
         } else if (id == R.id.action_deny_dangerous_permissions) {  // permissions
             if (viewModel == null) return true;
             ProgressIndicatorCompat.setVisibility(progressIndicator, true);
-            viewModel.revokeDangerousPermissionsAsync();
+            viewModel.revokeDangerousPermissionsAsync(mNeededProperty);
         } else if (id == R.id.action_open_privacy_dashboard) {
             openPrivacyDashboardForInspectedPackage();
             // Sorting
@@ -749,7 +753,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         .setSelection(item.getMode())
                         .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
                             int opMode = modes.get(which);
-                            if (viewModel != null) viewModel.setAppOpModeAsync(item, opMode);
+                            if (viewModel != null) viewModel.setAppOpModeAsync(mNeededProperty, item, opMode);
                             dialog.dismiss();
                         })
                         .show();
@@ -812,7 +816,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 holder.toggleSwitch.setVisibility(View.VISIBLE);
                 holder.toggleSwitch.setChecked(permissionItem.isGranted());
                 holder.itemView.setOnClickListener(v -> {
-                    if (viewModel != null) viewModel.togglePermissionAsync(permissionItem);
+                    if (viewModel != null) viewModel.togglePermissionAsync(mNeededProperty, permissionItem);
                 });
             } else {
                 holder.toggleSwitch.setVisibility(View.GONE);
