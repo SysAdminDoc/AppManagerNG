@@ -28,6 +28,10 @@ basement_dist
 *~
 scripts/KeyStore.sh
 
+# JVM crash / replay artifacts from failed Gradle test workers
+hs_err_pid*.log
+replay_pid*.log
+
 # AppManagerNG — local working files (never commit)
 CLAUDE.md
 CODEX_CHANGELOG.md
