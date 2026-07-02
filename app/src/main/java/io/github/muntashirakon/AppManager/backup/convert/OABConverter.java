@@ -336,6 +336,10 @@ public class OABConverter extends Converter {
                     tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
                     ZipEntry zipEntry;
                     while ((zipEntry = zis.getNextEntry()) != null) {
+                        String fileName = ConvertUtils.getRelativeBackupEntryName(zipEntry.getName(), mPackageName + "/");
+                        // Check before creating the temp file: a skipped entry must not
+                        // leak an orphaned cache file.
+                        if (fileName.isEmpty()) continue;
                         File tmpFile = null;
                         if (!zipEntry.isDirectory()) {
                             // We need to use a temporary file
@@ -344,8 +348,6 @@ public class OABConverter extends Converter {
                                 IoUtils.copy(zis, fos);
                             }
                         }
-                        String fileName = ConvertUtils.getRelativeBackupEntryName(zipEntry.getName(), mPackageName + "/");
-                        if (fileName.isEmpty()) continue;
                         // New tar entry
                         TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
                         if (tmpFile != null) {

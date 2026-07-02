@@ -197,7 +197,10 @@ public class AppUsageStatsManager {
             } catch (Exception e) {
                 re = e;
             }
-        } while (0 != --_try && packageUsageInfoList.isEmpty());
+            // Only retry after a failure: an interval with genuinely no usage
+            // (future date, fresh profile) must not trigger four redundant
+            // full queryUsageStats IPC round-trips.
+        } while (0 != --_try && re != null);
         if (re != null) {
             throw (RemoteException) (new RemoteException(re.getMessage()).initCause(re));
         }
