@@ -1,0 +1,8 @@
+Deep audit hardening release.
+
+- Clear Data fallback fixed on Android 5–8 devices.
+- Pure-black theme now survives Material You dynamic colors.
+- Log Viewer no longer crashes on an invalid saved filter pattern.
+- Terminal thread-safety and resource fixes.
+- Clearer destructive-action dialogs and calmer error messages.
+- Widget colors follow the system theme.
