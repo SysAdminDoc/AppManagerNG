@@ -53,7 +53,7 @@ public class WidgetHelper {
     }
 
     private static void updateWidget(Context context, AppWidgetManager manager, int appWidgetId, boolean serviceRunning) {
-        context = AppearanceUtils.getThemedWidgetContext(context, false);
+        context = AppearanceUtils.getThemedWidgetContext(context);
         RemoteViews updateViews = new RemoteViews(context.getPackageName(), R.layout.widget_recording);
         AppWidgetThemeUtils.Palette palette = AppWidgetThemeUtils.getPalette(context);
         AppWidgetThemeUtils.setImageTint(updateViews, palette.primary, R.id.record_badge_image_view);

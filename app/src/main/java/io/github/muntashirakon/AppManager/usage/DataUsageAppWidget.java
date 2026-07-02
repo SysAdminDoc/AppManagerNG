@@ -28,7 +28,7 @@ public class DataUsageAppWidget extends AppWidgetProvider {
             return;
         }
         // Fetch colors
-        context = AppearanceUtils.getThemedWidgetContext(context, false);
+        context = AppearanceUtils.getThemedWidgetContext(context);
         // Fetch data
         TimeInterval interval = UsageUtils.getToday();
         SparseArrayCompat<AppUsageStatsManager.DataUsage> mobileData = AppUsageStatsManager.getMobileData(interval);
