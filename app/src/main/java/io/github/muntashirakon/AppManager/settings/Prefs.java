@@ -26,6 +26,8 @@ import org.json.JSONObject;
 import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
@@ -736,6 +738,23 @@ public final class Prefs {
         @NonNull
         public static String getFilterPattern() {
             return AppPref.getString(AppPref.PrefKey.PREF_LOG_VIEWER_FILTER_PATTERN_STR);
+        }
+
+        /**
+         * Compiles the saved filter pattern, falling back to the default when the
+         * stored value is not a valid regular expression. A bad saved value must not
+         * crash the Log Viewer or the recording service on open.
+         */
+        @NonNull
+        public static Pattern getCompiledFilterPattern() {
+            String saved = getFilterPattern();
+            try {
+                return Pattern.compile(saved);
+            } catch (PatternSyntaxException e) {
+                Log.w("Prefs", "Invalid saved log filter pattern, using the default instead", e);
+                return Pattern.compile((String) AppPref.getInstance()
+                        .getDefaultValue(AppPref.PrefKey.PREF_LOG_VIEWER_FILTER_PATTERN_STR));
+            }
         }
 
         public static void setFilterPattern(@NonNull String filterPattern) {

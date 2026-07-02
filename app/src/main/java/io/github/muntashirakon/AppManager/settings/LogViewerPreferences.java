@@ -19,6 +19,8 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
@@ -86,7 +88,14 @@ public class LogViewerPreferences extends PreferenceFragment {
                     .setInputImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfoCompat.IME_FLAG_NO_PERSONALIZED_LEARNING)
                     .setPositiveButton(R.string.save, (dialog, which, inputText, isChecked) -> {
                         if (inputText == null) return;
-                        Prefs.LogViewer.setFilterPattern(inputText.toString().trim());
+                        String pattern = inputText.toString().trim();
+                        try {
+                            Pattern.compile(pattern);
+                        } catch (PatternSyntaxException e) {
+                            UIUtils.displayLongToast(R.string.invalid_regex);
+                            return;
+                        }
+                        Prefs.LogViewer.setFilterPattern(pattern);
                         UIUtils.displayLongToast(R.string.restart_log_viewer_to_see_changes);
                     })
                     .setNegativeButton(R.string.cancel, null)
