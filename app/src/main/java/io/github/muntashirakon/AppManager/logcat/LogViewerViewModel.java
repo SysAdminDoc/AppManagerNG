@@ -85,7 +85,7 @@ public class LogViewerViewModel extends AndroidViewModel {
 
     public LogViewerViewModel(@NonNull Application application) {
         super(application);
-        mFilterPattern = Pattern.compile(Prefs.LogViewer.getFilterPattern());
+        mFilterPattern = Prefs.LogViewer.getCompiledFilterPattern();
     }
 
     @Override
