@@ -32,6 +32,8 @@ import io.github.muntashirakon.AppManager.logs.Log;
 
 public class VirusTotal {
     private static final String TAG = VirusTotal.class.getSimpleName();
+    // ~10 minutes of 30 s polls after the initial wait.
+    private static final int MAX_POLL_ATTEMPTS = 20;
 
     public interface FullScanResponseInterface {
         boolean uploadFile();
@@ -159,7 +161,14 @@ public class VirusTotal {
         // 240 s, 600 MB also 240 s).
         long firstWaitMs = computeInitialPollWait(file.length());
         long waitDuration = firstWaitMs;
+        int attempts = 0;
         while (queued || responseReport.shouldRetry()) {
+            if (++attempts > MAX_POLL_ATTEMPTS) {
+                // Quota-exceeded / not-available-yet can persist indefinitely on the
+                // free tier; give up instead of holding a scanner thread forever.
+                throw new IOException("Report not available after " + MAX_POLL_ATTEMPTS
+                        + " polls: " + responseReport.error);
+            }
             if (waitFirst) {
                 // Effectively makes it a do-while loop
                 waitFirst = false;
