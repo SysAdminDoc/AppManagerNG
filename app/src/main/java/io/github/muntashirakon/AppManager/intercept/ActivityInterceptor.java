@@ -879,7 +879,7 @@ public class ActivityInterceptor extends BaseActivity {
         List<String> args = IntentCompat.flattenToCommand(mMutableIntent);
         String command = String.format(Locale.ROOT, "%s start --user %d %s", RunnerUtils.CMD_AM, mUserHandle,
                 TextUtils.join(" ", args));
-        String unsupportedExtras = IntentCompat.describeUnsupportedExtras(mMutableIntent, "#");
+        String unsupportedExtras = IntentCompat.describeCommandUnsupportedExtras(mMutableIntent, "#");
         if (!unsupportedExtras.isEmpty()) {
             command += "\n" + unsupportedExtras;
         }

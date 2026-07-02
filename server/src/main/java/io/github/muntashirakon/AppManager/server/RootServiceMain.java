@@ -126,9 +126,10 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
 
         try {
             new RootServiceMain(args);
-        } catch (Exception e) {
-            // Root-service launch boundary: ordinary constructor/reflection failures
-            // should reach logcat before the trampoline exits.
+        } catch (Throwable e) {
+            // Root-service launch boundary: every failure — including LinkageErrors
+            // from a stale dex path after an app update — must reach logcat before
+            // the trampoline exits. The process dies either way; do not narrow.
             Log.e("IPC", "Error in IPCMain", e);
             System.exit(1);
         }
