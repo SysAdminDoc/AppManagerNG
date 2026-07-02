@@ -583,7 +583,9 @@ public final class PackageManagerCompat {
         try {
             IActivityManager am = ActivityManagerCompat.getActivityManager();
             am.clearApplicationUserData(pair.getPackageName(), false, obs, pair.getUserId());
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
+            // LinkageError: the 4-arg AIDL overload is absent below Android P,
+            // so the device proxy throws NoSuchMethodError instead of an Exception.
             Log.d(TAG, "IActivityManager.clearApplicationUserData failed, falling back to IPackageManager", e);
             obs = new ClearDataObserver();
             clearApplicationUserDataViaPackageManager(pair, obs);
