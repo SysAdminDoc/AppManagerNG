@@ -490,6 +490,47 @@ public final class IntentCompat {
         return sb.toString();
     }
 
+    /**
+     * Like {@link #describeUnsupportedExtras(Intent, String)}, but for the {@code am start}
+     * command surface: also reports extras that parse fine for detail export yet have no
+     * {@code am} extra flag (Uri arrays/lists, e.g. {@code EXTRA_STREAM} on
+     * {@code ACTION_SEND_MULTIPLE}), which {@link #flattenToCommand(Intent)} silently skips.
+     */
+    @NonNull
+    public static String describeCommandUnsupportedExtras(@NonNull Intent intent, @NonNull String prefix) {
+        Bundle extras = intent.getExtras();
+        if (extras == null) {
+            return "";
+        }
+        List<UnsupportedExtra> unsupportedExtras = new ArrayList<>();
+        for (String key : extras.keySet()) {
+            Object value = extras.get(key);
+            Pair<Integer, String> typeAndString = valueToParsableStringAndType(value);
+            if (typeAndString == null || !hasAmCommandFlag(typeAndString.first)) {
+                unsupportedExtras.add(new UnsupportedExtra(key, getExtraValueTypeName(value)));
+            }
+        }
+        if (unsupportedExtras.isEmpty()) {
+            return "";
+        }
+        unsupportedExtras.sort((first, second) -> first.key.compareTo(second.key));
+        StringBuilder sb = new StringBuilder();
+        appendUnsupportedExtras(sb, prefix, unsupportedExtras);
+        return sb.toString();
+    }
+
+    /** Whether {@link #flattenToCommand(Intent)} can express this parsable type as an
+     * {@code am} extra flag. Keep in sync with the switch in {@code flattenToCommand}. */
+    private static boolean hasAmCommandFlag(int type) {
+        switch (type) {
+            case TYPE_URI_ARR:
+            case TYPE_URI_AL:
+                return false;
+            default:
+                return true;
+        }
+    }
+
     @NonNull
     private static String getExtraValueTypeName(@Nullable Object value) {
         if (value == null) {
