@@ -6,6 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- Added a dedicated dark-theme preview for the clear-cache home-screen widget.
 - Auto-freeze on screen lock is now a configurable Rules setting backed by a
   cancellable, process-death-safe WorkManager job; waking or unlocking cancels
   pending work, and delay values are bounded to ten minutes.
