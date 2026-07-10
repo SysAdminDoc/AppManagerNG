@@ -53,6 +53,7 @@ import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetPlan;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetResult;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -71,6 +72,8 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     private final MutableLiveData<String> mCustomCommand0 = new SingleLiveEvent<>();
     private final MutableLiveData<String> mCustomCommand1 = new SingleLiveEvent<>();
     private final MutableLiveData<Integer> mModeOfOpsStatus = new SingleLiveEvent<>();
+    private final MutableLiveData<LocalServer.PortRebindResult> mLocalServerPortRebindResult
+            = new SingleLiveEvent<>();
     private final MutableLiveData<ComponentRuleResetState> mComponentRuleResetState = new MutableLiveData<>();
     private final MutableLiveData<ArrayMap<String, Uri>> mStorageVolumesLiveData = new SingleLiveEvent<>();
     private final MutableLiveData<String> mSigningKeySha256HashLiveData = new SingleLiveEvent<>();
@@ -176,6 +179,14 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
             int status = Ops.init(getApplication(), true, mode);
             mModeOfOpsStatus.postValue(status);
         });
+    }
+
+    public LiveData<LocalServer.PortRebindResult> getLocalServerPortRebindResult() {
+        return mLocalServerPortRebindResult;
+    }
+
+    public void rebindLocalServerPort(int port) {
+        mExecutor.submit(() -> mLocalServerPortRebindResult.postValue(LocalServer.rebindPort(port)));
     }
 
     public LiveData<ComponentRuleResetState> getComponentRuleResetState() {

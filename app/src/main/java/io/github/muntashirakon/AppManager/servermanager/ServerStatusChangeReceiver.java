@@ -11,6 +11,8 @@ import android.os.SystemClock;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.IOException;
 
@@ -36,6 +38,13 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
         String token = intent.getStringExtra(ConfigParams.PARAM_TOKEN);
         if (!ServerConfig.getLocalToken().equals(token)) {
             Log.w(TAG, "Rejected server status broadcast with a mismatched token.");
+            return;
+        }
+        String serverPort = intent.getStringExtra(ConfigParams.PARAM_PATH);
+        int configuredPort = ServerConfig.getLocalServerPort();
+        if (!matchesConfiguredPort(serverPort, configuredPort)) {
+            Log.w(TAG, "Ignoring stale server status for port %s; configured port is %d.",
+                    serverPort, configuredPort);
             return;
         }
         String uidString = intent.getStringExtra(ConfigParams.PARAM_UID);
@@ -75,6 +84,19 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
                 // Exited from App Manager
                 Ops.setWorkingUid(Process.myUid());
                 break;
+        }
+    }
+
+    @VisibleForTesting
+    static boolean matchesConfiguredPort(@Nullable String serverPort, int configuredPort) {
+        if (serverPort == null) {
+            // Accept lifecycle broadcasts from an older server while upgrading in place.
+            return true;
+        }
+        try {
+            return Integer.parseInt(serverPort) == configuredPort;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 

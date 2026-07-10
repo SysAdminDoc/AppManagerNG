@@ -3895,7 +3895,9 @@
     <string name="memory_usage_unavailable">Memory usage is unavailable right now.</string>
     <string name="swap_usage_accessibility_description">The system has allocated %1$s for swap and currently using %2$s.</string>
     <string name="adb_local_server_port">ADB local server port</string>
-    <string name="adb_local_server_port_restart_notice">The new port takes effect after the local server restarts.</string>
+    <string name="adb_local_server_port_rebound">Local server moved to port %1$d.</string>
+    <string name="adb_local_server_port_configured">Port %1$d saved for the next local-server connection.</string>
+    <string name="adb_local_server_port_rebind_failed">Could not move the local server. Port %1$d was restored; reconnect the privileged mode if needed.</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
     <!-- Code editor: language / tab-size / go-to-line pickers -->
     <string name="editor_language_picker_title">Language</string>
