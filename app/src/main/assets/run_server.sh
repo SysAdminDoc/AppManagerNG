@@ -35,7 +35,6 @@ chmod 755 ${EXEC_JAR_PATH}
 chown $UID:$GID ${EXEC_JAR_PATH}
 # Debug log
 echo "Jar path: $JAR_PATH"
-echo "Args: $ARGS"
 # Save jar path to environment variable
 export CLASSPATH=${EXEC_JAR_PATH}
 # Execute local server

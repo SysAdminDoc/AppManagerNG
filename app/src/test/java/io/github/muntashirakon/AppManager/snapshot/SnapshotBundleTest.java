@@ -238,6 +238,13 @@ public class SnapshotBundleTest {
     }
 
     @Test
+    public void privilegedServerSecretIsNeverExportedOrImported() {
+        assertTrue(
+                "the local privileged-channel authenticator must stay device-local",
+                SnapshotBundle.EXCLUDED_PREF_NAMES.contains("server_secrets"));
+    }
+
+    @Test
     public void appNotesPrefsAreIncludedInSnapshots() {
         assertFalse(SnapshotBundle.EXCLUDED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
     }
