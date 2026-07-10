@@ -725,7 +725,8 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 Prefs.BackupRestore.getBackupExclusionPatterns());
         preference.setSummary(customCount == 0
                 ? getString(R.string.pref_backup_exclusion_patterns_default_summary)
-                : getString(R.string.pref_backup_exclusion_patterns_summary, customCount));
+                : getResources().getQuantityString(R.plurals.pref_backup_exclusion_patterns_summary,
+                        customCount, customCount));
     }
 
     @Override

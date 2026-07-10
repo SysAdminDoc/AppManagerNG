@@ -905,7 +905,7 @@
     <string name="pref_display_limit_title">Limite d\'affichage des journaux</string>
     <string name="pref_default_log_level_title">Niveau de journalisation par défaut</string>
     <string name="pref_default_log_level_summary">Niveau de journalisation au démarrage, lors de l\'ouverture , et de l\'enregistrement de fichiers.</string>
-    <string name="pref_buffer_title">Tampon(s) de journalisation</string>
+    <string name="pref_buffer_title">Tampons de journalisation</string>
     <string name="open">Ouvrir</string>
     <string name="notification_title">Enregistrement du journal en cours</string>
     <string name="notification_ticker">L\'enregistrement du journal a démarré</string>

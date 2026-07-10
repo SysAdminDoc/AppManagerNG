@@ -1076,7 +1076,7 @@
     <string name="dialog_compiling_log">Compilazione log…</string>
     <string name="open">Apri</string>
     <string name="log_level">Livello log</string>
-    <string name="pref_buffer_title">Buffer(s) log</string>
+    <string name="pref_buffer_title">Buffer di log</string>
     <string name="pref_default_log_level_title">Livello log predefinito</string>
     <string name="pref_display_limit_summary" tools:ignore="PluralsCandidate">Mostra solo gli ultimi log %1$d per evitare errori di memoria insufficiente.</string>
     <string name="pref_log_line_period_error">Inserisci un numero intero compreso tra 1 e 1000.</string>

@@ -224,7 +224,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         switch (result.state) {
             case ACTIVE:
                 mRootModulesPref.setEnabled(true);
-                mRootModulesPref.setSummary(getString(R.string.privilege_health_modules_summary,
+                mRootModulesPref.setSummary(getResources().getQuantityString(
+                        R.plurals.privilege_health_modules_summary, result.modules.size(),
                         result.modules.size(), getRootModuleSummary(result.modules)));
                 break;
             case EMPTY:
@@ -752,8 +753,8 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 if (result.sulogDenials.isEmpty()) {
                     return getString(R.string.privilege_health_kernelsu_sulog_no_denials);
                 }
-                return getString(R.string.privilege_health_kernelsu_sulog_denials,
-                        result.sulogDenials.size());
+                return getResources().getQuantityString(R.plurals.privilege_health_kernelsu_sulog_denials,
+                        result.sulogDenials.size(), result.sulogDenials.size());
             case MISSING:
                 return getString(R.string.privilege_health_kernelsu_sulog_missing);
             case UNAVAILABLE:
@@ -906,8 +907,9 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private String getMagiskPolicyLabel(@NonNull RootCapabilityDiagnostics.Result result) {
         switch (result.magiskPolicyState) {
             case MATCHED:
-                return getString(R.string.privilege_health_capability_dropping_magisk_policy_matched,
-                        result.magiskPolicyRules.size());
+                return getResources().getQuantityString(
+                        R.plurals.privilege_health_capability_dropping_magisk_policy_matched,
+                        result.magiskPolicyRules.size(), result.magiskPolicyRules.size());
             case NO_MATCH:
                 return getString(R.string.privilege_health_capability_dropping_magisk_policy_no_match);
             case UNAVAILABLE:

@@ -793,7 +793,8 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
                 if (!isAdded()) {
                     return;
                 }
-                UIUtils.displayLongToast(getString(R.string.duplicate_apks_deleted, result.first,
+                UIUtils.displayLongToast(getResources().getQuantityString(R.plurals.duplicate_apks_deleted,
+                        result.first, result.first,
                         Formatter.formatShortFileSize(requireContext(), result.second)));
                 mModel.reload();
             });
