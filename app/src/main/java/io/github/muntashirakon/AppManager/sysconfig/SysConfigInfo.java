@@ -14,7 +14,8 @@ class SysConfigInfo {
      * <li> permission name for {@link SysConfigType#TYPE_PERMISSION} and {@link SysConfigType#TYPE_SPLIT_PERMISSION}
      * <li> uid for {@link SysConfigType#TYPE_ASSIGN_PERMISSION}
      * <li> library name for {@link SysConfigType#TYPE_LIBRARY}
-     * <li> feature name for {@link SysConfigType#TYPE_FEATURE} and {@link SysConfigType#TYPE_UNAVAILABLE_FEATURE}
+     * <li> feature name for {@link SysConfigType#TYPE_FEATURE},
+     * {@link SysConfigType#TYPE_UNAVAILABLE_FEATURE}, and {@link SysConfigType#TYPE_UNKNOWN_FEATURE}
      * <li> action name for {@link SysConfigType#TYPE_ALLOW_IMPLICIT_BROADCAST}
      * <li> namespace for {@link SysConfigType#TYPE_NAMED_ACTOR}
      *

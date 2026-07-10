@@ -15,6 +15,7 @@ import androidx.annotation.StringDef;
         SysConfigType.TYPE_LIBRARY,
         SysConfigType.TYPE_FEATURE,
         SysConfigType.TYPE_UNAVAILABLE_FEATURE,
+        SysConfigType.TYPE_UNKNOWN_FEATURE,
         SysConfigType.TYPE_ALLOW_IN_POWER_SAVE_EXCEPT_IDLE,
         SysConfigType.TYPE_ALLOW_IN_POWER_SAVE,
         SysConfigType.TYPE_ALLOW_IN_DATA_USAGE_SAVE,
@@ -49,6 +50,7 @@ import androidx.annotation.StringDef;
     String TYPE_LIBRARY = "library";
     String TYPE_FEATURE = "feature";  // available-feature
     String TYPE_UNAVAILABLE_FEATURE = "unavailable-feature";
+    String TYPE_UNKNOWN_FEATURE = "unknown-feature";
     String TYPE_ALLOW_IN_POWER_SAVE_EXCEPT_IDLE = "allow-in-power-save-except-idle";
     String TYPE_ALLOW_IN_POWER_SAVE = "allow-in-power-save";
     String TYPE_ALLOW_IN_DATA_USAGE_SAVE = "allow-in-data-usage-save";

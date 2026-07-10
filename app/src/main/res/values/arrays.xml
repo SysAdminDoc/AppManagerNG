@@ -88,6 +88,7 @@
         <item>library</item>
         <item>feature</item>
         <item>unavailable-feature</item>
+        <item>unknown-feature</item>
         <item>allow-in-power-save-except-idle</item>
         <item>allow-in-power-save</item>
         <item>allow-in-data-usage-save</item>
