@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.content.IntentHidden;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -41,6 +42,7 @@ import androidx.core.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -70,6 +72,29 @@ public final class IntentCompat {
         @NonNull
         public String getTypeName() {
             return typeName;
+        }
+    }
+
+    public static final class IntentUriSerializationResult {
+        @NonNull
+        private final String uri;
+        @NonNull
+        private final List<UnsupportedExtra> skippedExtras;
+
+        private IntentUriSerializationResult(@NonNull String uri,
+                                             @NonNull List<UnsupportedExtra> skippedExtras) {
+            this.uri = uri;
+            this.skippedExtras = Collections.unmodifiableList(new ArrayList<>(skippedExtras));
+        }
+
+        @NonNull
+        public String getUri() {
+            return uri;
+        }
+
+        @NonNull
+        public List<UnsupportedExtra> getSkippedExtras() {
+            return skippedExtras;
         }
     }
 
@@ -482,6 +507,12 @@ public final class IntentCompat {
     @NonNull
     public static String describeUnsupportedExtras(@NonNull Intent intent, @NonNull String prefix) {
         List<UnsupportedExtra> unsupportedExtras = getUnsupportedExtras(intent);
+        return describeUnsupportedExtras(unsupportedExtras, prefix);
+    }
+
+    @NonNull
+    public static String describeUnsupportedExtras(@NonNull List<UnsupportedExtra> unsupportedExtras,
+                                                   @NonNull String prefix) {
         if (unsupportedExtras.isEmpty()) {
             return "";
         }
@@ -1026,6 +1057,117 @@ public final class IntentCompat {
         toUriFragment(intent, uri, scheme, Intent.ACTION_VIEW, null, flags);
 
         return uri.toString();
+    }
+
+    /**
+     * Serialize an intent without discarding its base fields when a foreign Parcelable prevents
+     * the extras Bundle from being unmarshalled in this process.
+     */
+    @NonNull
+    public static IntentUriSerializationResult toUriSafely(@NonNull Intent intent, int flags) {
+        try {
+            return new IntentUriSerializationResult(toUri(intent, flags), Collections.emptyList());
+        } catch (BadParcelableException e) {
+            List<UnsupportedExtra> skippedExtras = new ArrayList<>();
+            Intent safeIntent = copyForUriFallback(intent, skippedExtras, true);
+            if (skippedExtras.isEmpty()) {
+                skippedExtras.add(new UnsupportedExtra("<unreadable extras>", e.getClass().getName()));
+            }
+            skippedExtras.sort((first, second) -> first.key.compareTo(second.key));
+            return new IntentUriSerializationResult(toUri(safeIntent, flags), skippedExtras);
+        }
+    }
+
+    @NonNull
+    private static Intent copyForUriFallback(@NonNull Intent source,
+                                             @NonNull List<UnsupportedExtra> skippedExtras,
+                                             boolean copySelector) {
+        Intent safe = new Intent();
+        safe.setAction(source.getAction());
+        safe.setDataAndType(source.getData(), source.getType());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            safe.setIdentifier(source.getIdentifier());
+        }
+        Set<String> categories = source.getCategories();
+        if (categories != null) {
+            for (String category : categories) {
+                safe.addCategory(category);
+            }
+        }
+        safe.setFlags(source.getFlags());
+        safe.setPackage(source.getPackage());
+        safe.setComponent(source.getComponent());
+        Rect sourceBounds = source.getSourceBounds();
+        if (sourceBounds != null) {
+            safe.setSourceBounds(new Rect(sourceBounds));
+        }
+        if (copySelector) {
+            Intent selector = source.getSelector();
+            if (selector != null) {
+                safe.setSelector(copyForUriFallback(selector, skippedExtras, false));
+            }
+        }
+        copyUriSafeExtras(source, safe, skippedExtras);
+        return safe;
+    }
+
+    private static void copyUriSafeExtras(@NonNull Intent source, @NonNull Intent destination,
+                                          @NonNull List<UnsupportedExtra> skippedExtras) {
+        Bundle extras;
+        try {
+            extras = source.getExtras();
+        } catch (RuntimeException e) {
+            skippedExtras.add(new UnsupportedExtra("<unreadable extras>", e.getClass().getName()));
+            return;
+        }
+        if (extras == null) {
+            return;
+        }
+        Set<String> keys;
+        try {
+            keys = new HashSet<>(extras.keySet());
+        } catch (RuntimeException e) {
+            skippedExtras.add(new UnsupportedExtra("<unreadable extras>", e.getClass().getName()));
+            return;
+        }
+        for (String key : keys) {
+            Object value;
+            try {
+                value = extras.get(key);
+            } catch (RuntimeException e) {
+                skippedExtras.add(new UnsupportedExtra(key, e.getClass().getName()));
+                continue;
+            }
+            if (!putUriSafeExtra(destination, key, value)) {
+                skippedExtras.add(new UnsupportedExtra(key, getExtraValueTypeName(value)));
+            }
+        }
+    }
+
+    private static boolean putUriSafeExtra(@NonNull Intent intent, @NonNull String key,
+                                           @Nullable Object value) {
+        if (value instanceof String) {
+            intent.putExtra(key, (String) value);
+        } else if (value instanceof Boolean) {
+            intent.putExtra(key, (Boolean) value);
+        } else if (value instanceof Byte) {
+            intent.putExtra(key, (Byte) value);
+        } else if (value instanceof Character) {
+            intent.putExtra(key, (Character) value);
+        } else if (value instanceof Double) {
+            intent.putExtra(key, (Double) value);
+        } else if (value instanceof Float) {
+            intent.putExtra(key, (Float) value);
+        } else if (value instanceof Integer) {
+            intent.putExtra(key, (Integer) value);
+        } else if (value instanceof Long) {
+            intent.putExtra(key, (Long) value);
+        } else if (value instanceof Short) {
+            intent.putExtra(key, (Short) value);
+        } else {
+            return false;
+        }
+        return true;
     }
 
     private static void toUriFragment(Intent intent, StringBuilder uri, @Nullable String scheme, String defAction,

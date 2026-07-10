@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Activity Interceptor URI generation now falls back to a safe base-intent copy
+  when foreign Parcelable extras cannot be unmarshalled, preserves readable
+  primitive extras, reports skipped keys/types, and surfaces malformed paste errors.
 - Published README and roadmap documentation no longer link to maintainer-local
   archive files that are absent from Git; the archive paths are explicitly
   ignored and protected by a documentation-link contract.

@@ -10,7 +10,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -292,6 +291,8 @@ public class ActivityInterceptor extends BaseActivity {
      */
     @Nullable
     private Bundle mAdditionalExtras;
+    @NonNull
+    private List<IntentCompat.UnsupportedExtra> mUnreadableExtras = Collections.emptyList();
     @Nullable
     private Intent mMutableIntent;
     @Nullable
@@ -402,23 +403,31 @@ public class ActivityInterceptor extends BaseActivity {
     }
 
     private void storeOriginalIntent(@NonNull Intent intent) {
+        mAdditionalExtras = null;
+        mUnreadableExtras = Collections.emptyList();
         // Store original intent as URI string
         mOriginalIntent = getUri(intent);
         // Get a new intent from the URI
         Intent copyIntent = cloneIntent(mOriginalIntent);
         // Store extras that are not available in the URI
-        Bundle originalExtras = intent.getExtras();
-        if (copyIntent == null || originalExtras == null) {
-            return;
-        }
-        Bundle additionalExtrasBundle = new Bundle(originalExtras);
-        for (String key : originalExtras.keySet()) {
-            if (copyIntent.hasExtra(key)) {
-                additionalExtrasBundle.remove(key);
+        try {
+            Bundle originalExtras = intent.getExtras();
+            if (copyIntent == null || originalExtras == null) {
+                return;
             }
-        }
-        if (!additionalExtrasBundle.isEmpty()) {
-            mAdditionalExtras = additionalExtrasBundle;
+            Bundle additionalExtrasBundle = new Bundle(originalExtras);
+            for (String key : originalExtras.keySet()) {
+                if (copyIntent.hasExtra(key)) {
+                    additionalExtrasBundle.remove(key);
+                }
+            }
+            if (!additionalExtrasBundle.isEmpty()) {
+                mAdditionalExtras = additionalExtrasBundle;
+            }
+        } catch (RuntimeException e) {
+            // A foreign Parcelable may make the source Bundle unreadable. The safe URI already
+            // preserves base fields and any extras that could be materialized independently.
+            Log.w(TAG, "Could not preserve non-URI intent extras", e);
         }
     }
 
@@ -880,6 +889,7 @@ public class ActivityInterceptor extends BaseActivity {
         String command = String.format(Locale.ROOT, "%s start --user %d %s", RunnerUtils.CMD_AM, mUserHandle,
                 TextUtils.join(" ", args));
         String unsupportedExtras = IntentCompat.describeCommandUnsupportedExtras(mMutableIntent, "#");
+        unsupportedExtras += IntentCompat.describeUnsupportedExtras(mUnreadableExtras, "#");
         if (!unsupportedExtras.isEmpty()) {
             command += "\n" + unsupportedExtras;
         }
@@ -921,6 +931,8 @@ public class ActivityInterceptor extends BaseActivity {
             // Requested component set to NULL in case it was set previously
             mRequestedComponent = null;
             init(intent, false);
+        } else {
+            UIUtils.displayLongToast(R.string.interceptor_intent_parse_failed);
         }
     }
 
@@ -999,6 +1011,7 @@ public class ActivityInterceptor extends BaseActivity {
         // Convert the Intent to parsable string
         result.append(IntentCompat.flattenToString(mMutableIntent)).append("\n");
         result.append(IntentCompat.describeUnsupportedExtras(mMutableIntent, ""));
+        result.append(IntentCompat.describeUnsupportedExtras(mUnreadableExtras, ""));
         // MATCHING ACTIVITIES <match-count>
         result.append("MATCHING ACTIVITIES\t").append(numberOfMatchingActivities).append("\n");
         // Calculate the number of spaces needed in order to align activity items properly
@@ -1222,18 +1235,19 @@ public class ActivityInterceptor extends BaseActivity {
     }
 
     @Nullable
-    private static String getUri(@Nullable Intent src) {
-        try {
-            return (src != null) ? IntentCompat.toUri(src, Intent.URI_INTENT_SCHEME) : null;
-        } catch (BadParcelableException e) {
-            // TODO: 4/2/22 Add support for invalid classes. This could be done in the following way:
-            //  1. Upon detecting a BPE (and the class name), ask the user to select the source application
-            //  2. Load the source application via the DexClassLoader
-            //  3. Use Class.forName() to load the class and it's class loader to recognize the Parcelable
-            //  The other option is to skip the problematic classes.
-            Log.w(TAG, e);
+    private String getUri(@Nullable Intent src) {
+        if (src == null) {
             return null;
         }
+        IntentCompat.IntentUriSerializationResult result = IntentCompat.toUriSafely(
+                src, Intent.URI_INTENT_SCHEME);
+        if (!result.getSkippedExtras().isEmpty()) {
+            mUnreadableExtras = result.getSkippedExtras();
+            int count = mUnreadableExtras.size();
+            UIUtils.displayLongToast(getResources().getQuantityString(
+                    R.plurals.interceptor_unreadable_extras_skipped, count, count));
+        }
+        return result.getUri();
     }
 
     @Nullable
@@ -1252,10 +1266,12 @@ public class ActivityInterceptor extends BaseActivity {
             return clone;
         } catch (URISyntaxException e) {
             Log.w(TAG, e);
+            UIUtils.displayLongToast(R.string.interceptor_intent_parse_failed);
         } catch (RuntimeException e) {
             // Intent.parseUri can throw BadParcelableException or other runtime
             // exceptions on malformed URIs with unresolvable Parcelable class names.
             Log.w(TAG, "cloneIntent: malformed intent URI", e);
+            UIUtils.displayLongToast(R.string.interceptor_intent_parse_failed);
         }
         return null;
     }
