@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import io.github.muntashirakon.AppManager.logcat.helper.WidgetHelper;
 import io.github.muntashirakon.AppManager.oneclickops.ClearCacheAppWidget;
@@ -62,8 +63,28 @@ public class WidgetThemeRefreshTest {
         assertFalse(source.contains("Intent.ACTION_CONFIGURATION_CHANGED"));
     }
 
+    @Test
+    public void clearCacheWidget_hasDistinctNightPreview() throws IOException {
+        Path resources = findRepoRoot().resolve("app/src/main/res");
+        byte[] dayPreview = Files.readAllBytes(
+                resources.resolve("drawable-nodpi/app_widget_preview_clear_cache.png"));
+        byte[] nightPreview = Files.readAllBytes(
+                resources.resolve("drawable-night-nodpi/app_widget_preview_clear_cache.png"));
+
+        assertEquals(readPngInt(dayPreview, 16), readPngInt(nightPreview, 16));
+        assertEquals(readPngInt(dayPreview, 20), readPngInt(nightPreview, 20));
+        assertFalse(Arrays.equals(dayPreview, nightPreview));
+    }
+
     private static String readRepoFile(String relativePath) throws IOException {
         return new String(Files.readAllBytes(findRepoRoot().resolve(relativePath)), StandardCharsets.UTF_8);
+    }
+
+    private static int readPngInt(byte[] png, int offset) {
+        return ((png[offset] & 0xff) << 24)
+                | ((png[offset + 1] & 0xff) << 16)
+                | ((png[offset + 2] & 0xff) << 8)
+                | (png[offset + 3] & 0xff);
     }
 
     private static Path findRepoRoot() {
