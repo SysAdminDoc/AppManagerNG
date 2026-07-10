@@ -52,6 +52,29 @@ public class DocumentationArchiveContractTest {
                 Arrays.asList(rawIgnore.split("\\R")).contains("changelog_old.md"));
     }
 
+    @Test
+    public void englishManualIntroductionUsesForkOwnedSupportTruth() throws IOException {
+        Path repoRoot = findRepoRoot();
+        String tex = read(repoRoot.resolve("docs/raw/en/intro/main.tex"));
+        String xml = read(repoRoot.resolve("docs/raw/en/strings.xml"));
+        String xmlIntroduction = xml.substring(xml.indexOf("<string name=\"intro$main$intro\""),
+                xml.indexOf("<string name=\"pages$main$$pages-chapter-title\""));
+        String html = read(repoRoot.resolve("docs/raw/en/index.html"));
+        String htmlIntroduction = html.substring(html.indexOf("<section id=ch:introduction"),
+                html.indexOf("<section id=ch:pages"));
+
+        for (String source : Arrays.asList(tex, xmlIntroduction, htmlIntroduction)) {
+            assertTrue(source.contains("AppManagerNG"));
+            assertTrue(source.contains("SysAdminDoc/AppManagerNG/issues"));
+            assertTrue(source.contains("SysAdminDoc/AppManagerNG/releases/latest"));
+            assertTrue(source.contains("fork-owned translation platform"));
+            assertFalse(source.contains("MuntashirAkon/AppManager/issues"));
+            assertFalse(source.contains("f-droid.org/packages/io.github.muntashirakon.AppManager"));
+            assertFalse(source.contains("hosted.weblate.org/engage/app-manager"));
+            assertFalse(source.contains("supported version is v4.0.1"));
+        }
+    }
+
     private static Path findRepoRoot() {
         Path cursor = Paths.get("").toAbsolutePath();
         while (cursor != null) {
