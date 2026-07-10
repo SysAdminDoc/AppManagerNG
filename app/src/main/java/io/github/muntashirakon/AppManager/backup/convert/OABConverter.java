@@ -12,8 +12,8 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.json.JSONException;
 import org.json.JSONObject;
 

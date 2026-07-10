@@ -13,10 +13,10 @@ import static io.github.muntashirakon.AppManager.utils.TarUtils.DEFAULT_SPLIT_SI
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarConstants;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarConstants;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
