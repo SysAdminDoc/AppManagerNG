@@ -17,6 +17,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- The vendored archive codec now lives in the app namespace so Android 16's
+  platform Commons Compress classes cannot shadow its extended APIs at runtime.
 - Searchable multi-choice dialogs now populate their initial rows synchronously,
   and OpenPGP key selection uses a lifecycle-owned executor instead of raw UI
   helper threads.

@@ -11,14 +11,14 @@ import androidx.annotation.WorkerThread;
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarConstants;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarConstants;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.jetbrains.annotations.Contract;
 
 import java.io.BufferedInputStream;

@@ -10,9 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.ArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
