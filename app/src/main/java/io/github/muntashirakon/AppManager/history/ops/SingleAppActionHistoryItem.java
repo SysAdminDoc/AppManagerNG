@@ -25,6 +25,7 @@ public final class SingleAppActionHistoryItem implements IJsonSerializer {
     public static final String ACTION_APP_OP_SET = "app_op_set";
     public static final String ACTION_COMPONENT_RULE = "component_rule";
     public static final String ACTION_COMPONENT_ACTION = "component_action";
+    public static final String ACTION_COMPONENT_RULE_RESET = "component_rule_reset";
     public static final String ACTION_FORCE_STOP = "force_stop";
     public static final String ACTION_KILL = "kill";
 

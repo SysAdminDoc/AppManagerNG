@@ -4,18 +4,26 @@ package io.github.muntashirakon.AppManager.settings;
 
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetResult;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -66,12 +74,21 @@ public class RulesPreferences extends PreferenceFragment {
     };
 
     private SettingsActivity mActivity;
+    private MainPreferencesViewModel mModel;
+    @Nullable
+    private AlertDialog mRuleResetProgressDialog;
+    @Nullable
+    private TextView mRuleResetProgressLabel;
+    @Nullable
+    private TextView mRuleResetProgressCount;
+    @Nullable
+    private LinearProgressIndicator mRuleResetProgress;
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.preferences_rules);
         getPreferenceManager().setPreferenceDataStore(new SettingsDataStore());
-        MainPreferencesViewModel model = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
+        mModel = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
         mActivity = (SettingsActivity) requireActivity();
         // Default freezing method
         Preference defaultFreezingMethod = Objects.requireNonNull(findPreference("freeze_type"));
@@ -154,7 +171,7 @@ public class RulesPreferences extends PreferenceFragment {
         gcb.setChecked(Prefs.Blocking.globalBlockingEnabled());
         gcb.setOnPreferenceChangeListener((preference, isEnabled) -> {
             if ((boolean) isEnabled) {
-                model.applyAllRules();
+                mModel.applyAllRules();
             }
             return true;
         });
@@ -164,13 +181,112 @@ public class RulesPreferences extends PreferenceFragment {
                     .setTitle(R.string.pref_remove_all_rules)
                     .setMessage(R.string.pref_remove_all_rules_msg)
                     .setPositiveButton(R.string.pref_remove_all_rules, (dialog, which) -> {
-                        mActivity.progressIndicator.show();
-                        model.removeAllRules();
+                        mModel.removeAllRules();
                     })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
             return true;
         });
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        mModel.getComponentRuleResetState().observe(getViewLifecycleOwner(), this::renderRuleResetState);
+    }
+
+    @Override
+    public void onDestroyView() {
+        dismissRuleResetProgress();
+        super.onDestroyView();
+    }
+
+    private void renderRuleResetState(@Nullable ComponentRuleResetState state) {
+        if (state == null) return;
+        if (state.phase == ComponentRuleResetState.Phase.FINISHED && state.result != null) {
+            dismissRuleResetProgress();
+            showRuleResetResult(state.result);
+            mModel.clearComponentRuleResetResult();
+            return;
+        }
+        ensureRuleResetProgress();
+        if (mRuleResetProgressLabel == null || mRuleResetProgressCount == null
+                || mRuleResetProgress == null) {
+            return;
+        }
+        if (state.phase == ComponentRuleResetState.Phase.PREPARING || state.total == 0) {
+            mRuleResetProgressLabel.setText(R.string.rule_reset_preparing);
+            mRuleResetProgressCount.setText(null);
+            mRuleResetProgress.setIndeterminate(true);
+        } else {
+            mRuleResetProgressLabel.setText(state.packageName == null
+                    ? getString(R.string.rule_reset_preparing)
+                    : getString(R.string.rule_reset_progress_target, state.packageName, state.userId,
+                    state.targetLabel));
+            mRuleResetProgressCount.setText(getString(R.string.rule_reset_progress_count,
+                    state.completed, state.total));
+            mRuleResetProgress.setIndeterminate(false);
+            mRuleResetProgress.setMax(Math.max(1, state.total));
+            mRuleResetProgress.setProgressCompat(state.completed, true);
+        }
+    }
+
+    private void ensureRuleResetProgress() {
+        if (mRuleResetProgressDialog != null && mRuleResetProgressDialog.isShowing()) return;
+        View progressView = LayoutInflater.from(mActivity).inflate(R.layout.dialog_progress, null);
+        mRuleResetProgressLabel = progressView.findViewById(android.R.id.text1);
+        mRuleResetProgressCount = progressView.findViewById(android.R.id.text2);
+        mRuleResetProgress = progressView.findViewById(R.id.progress_linear);
+        mRuleResetProgressDialog = new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.pref_remove_all_rules)
+                .setView(progressView)
+                .setNegativeButton(R.string.cancel, null)
+                .setCancelable(false)
+                .create();
+        mRuleResetProgressDialog.setOnShowListener(dialog -> mRuleResetProgressDialog
+                .getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(button -> {
+                    mModel.cancelRuleReset();
+                    button.setEnabled(false);
+                    ((android.widget.Button) button).setText(R.string.rule_reset_cancelling);
+                }));
+        mRuleResetProgressDialog.show();
+    }
+
+    private void dismissRuleResetProgress() {
+        if (mRuleResetProgressDialog != null) {
+            mRuleResetProgressDialog.dismiss();
+        }
+        mRuleResetProgressDialog = null;
+        mRuleResetProgressLabel = null;
+        mRuleResetProgressCount = null;
+        mRuleResetProgress = null;
+    }
+
+    private void showRuleResetResult(@NonNull ComponentRuleResetResult result) {
+        String message;
+        if (result.getTotal() == 0) {
+            message = getString(R.string.rule_reset_result_empty);
+        } else if (result.isSuccessful()) {
+            message = getString(R.string.rule_reset_result_success, result.getSucceeded());
+        } else if (result.isCancelled()) {
+            message = getString(R.string.rule_reset_result_cancelled, result.getSucceeded(),
+                    result.getTotal(), result.getFailed(), result.getPending());
+        } else {
+            message = getString(R.string.rule_reset_result_partial, result.getSucceeded(),
+                    result.getTotal(), result.getFailed(), result.getPending());
+        }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.rule_reset_result_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.close, null)
+                .setNeutralButton(R.string.rule_reset_view_history, (dialog, which) -> startActivity(
+                        OpHistoryManager.getHistoryActivityIntent(requireContext(),
+                                OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, null)));
+        if (result.getFailed() > 0 || result.getPending() > 0) {
+            builder.setNegativeButton(R.string.rule_reset_retry_failed,
+                    (dialog, which) -> mModel.retryFailedRuleResetTargets());
+        }
+        builder.show();
     }
 
     @Override
