@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.users.ProfileVisibilityDiagnostics;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.settings.crypto.ImportExportKeyStoreDialogFragment;
@@ -54,6 +55,7 @@ public class AdvancedPreferences extends PreferenceFragment {
 
     private int mThreadCount;
     private MainPreferencesViewModel mModel;
+    private Preference mAdbLocalServerPortPreference;
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
@@ -134,13 +136,13 @@ public class AdvancedPreferences extends PreferenceFragment {
             return true;
         });
         // ADB local server port
-        Preference adbLsPort = Objects.requireNonNull(findPreference("adb_local_server_port"));
-        int port = Prefs.Misc.getAdbLocalServerPort();
-        adbLsPort.setSummary(String.valueOf(port));
-        adbLsPort.setOnPreferenceClickListener(pref -> {
+        mAdbLocalServerPortPreference = Objects.requireNonNull(findPreference("adb_local_server_port"));
+        mAdbLocalServerPortPreference.setSummary(String.valueOf(Prefs.Misc.getAdbLocalServerPort()));
+        mAdbLocalServerPortPreference.setOnPreferenceClickListener(pref -> {
+            int currentPort = Prefs.Misc.getAdbLocalServerPort();
             new TextInputDialogBuilder(requireActivity(), null)
                     .setTitle(R.string.adb_local_server_port)
-                    .setInputText(String.valueOf(port))
+                    .setInputText(String.valueOf(currentPort))
                     .setInputInputType(InputType.TYPE_CLASS_NUMBER)
                     .setInputImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfoCompat.IME_FLAG_NO_PERSONALIZED_LEARNING)
                     .setNegativeButton(R.string.cancel, null)
@@ -150,10 +152,8 @@ public class AdvancedPreferences extends PreferenceFragment {
                             UIUtils.displayShortToast(R.string.port_number_invalid);
                             return;
                         }
-                        // TODO: 10/18/25 If the port number is different, restart the local server with this new port if possible.
-                        Prefs.Misc.setAdbLocalServerPort(c);
-                        adbLsPort.setSummary(String.valueOf((int) c));
-                        UIUtils.displayShortToast(R.string.adb_local_server_port_restart_notice);
+                        mAdbLocalServerPortPreference.setEnabled(false);
+                        mModel.rebindLocalServerPort(c);
                     })
                     .show();
             return true;
@@ -208,6 +208,21 @@ public class AdvancedPreferences extends PreferenceFragment {
                         Utils.relaunchApp(activity);
                     })
                     .show();
+        });
+        mModel.getLocalServerPortRebindResult().observe(getViewLifecycleOwner(), result -> {
+            if (result == null || mAdbLocalServerPortPreference == null) return;
+            mAdbLocalServerPortPreference.setEnabled(true);
+            mAdbLocalServerPortPreference.setSummary(String.valueOf(result.getEffectivePort()));
+            if (result.getStatus() == LocalServer.PortRebindResult.Status.REBOUND) {
+                UIUtils.displayLongToast(R.string.adb_local_server_port_rebound,
+                        result.getEffectivePort());
+            } else if (result.getStatus() == LocalServer.PortRebindResult.Status.CONFIGURED) {
+                UIUtils.displayLongToast(R.string.adb_local_server_port_configured,
+                        result.getEffectivePort());
+            } else if (!result.isSuccessful()) {
+                UIUtils.displayLongToast(R.string.adb_local_server_port_rebind_failed,
+                        result.getEffectivePort());
+            }
         });
     }
 

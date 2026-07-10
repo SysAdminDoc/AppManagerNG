@@ -12,6 +12,7 @@ import io.github.muntashirakon.AppManager.server.common.ServerInfo;
 
 import static io.github.muntashirakon.AppManager.server.common.ConfigParams.PARAM_TOKEN;
 import static io.github.muntashirakon.AppManager.server.common.ConfigParams.PARAM_UID;
+import static io.github.muntashirakon.AppManager.server.common.ConfigParams.PARAM_PATH;
 
 // Copyright 2017 Zheng Li
 final class LifecycleAgent {
@@ -50,6 +51,7 @@ final class LifecycleAgent {
         return new Intent(action)
                 .setClassName(mConfigParams.getAppName(), ServerActions.PACKAGE_NAME + ".servermanager.ServerStatusChangeReceiver")
                 .putExtra(PARAM_TOKEN, mConfigParams.getToken())
-                .putExtra(PARAM_UID, mConfigParams.getUid());
+                .putExtra(PARAM_UID, mConfigParams.getUid())
+                .putExtra(PARAM_PATH, mConfigParams.getPath());
     }
 }

@@ -82,15 +82,30 @@ public final class ServerConfig {
     @AnyThread
     @NonNull
     public static String getServerRunnerCommand(int index) throws IndexOutOfBoundsException {
+        return getServerRunnerCommand(index, getLocalServerPort());
+    }
+
+    @AnyThread
+    @NonNull
+    public static String getServerRunnerCommand(int index,
+                                                @IntRange(from = 1, to = 65535) int localServerPort)
+            throws IndexOutOfBoundsException {
         Log.e(TAG, "Classpath: %s", SERVER_RUNNER_JAR[index]);
         Log.e(TAG, "Exec path: %s", SERVER_RUNNER_EXEC[index]);
-        return "sh " + SERVER_RUNNER_EXEC[index] + " " + getLocalServerPort() + " " + getLocalToken();
+        return "sh " + SERVER_RUNNER_EXEC[index] + " " + localServerPort + " " + getLocalToken();
     }
 
     @AnyThread
     @NonNull
     public static String getServerRunnerAdbCommand() throws IndexOutOfBoundsException {
-        return getServerRunnerCommand(1);
+        return getServerRunnerAdbCommand(getLocalServerPort());
+    }
+
+    @AnyThread
+    @NonNull
+    public static String getServerRunnerAdbCommand(@IntRange(from = 1, to = 65535) int localServerPort)
+            throws IndexOutOfBoundsException {
+        return getServerRunnerCommand(1, localServerPort);
     }
 
     /**

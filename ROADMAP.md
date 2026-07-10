@@ -46,13 +46,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Reconcile local privileged-server port changes with live server state
-  Why: the advanced setting saves a new ADB local-server port but only tells the user to restart, while the running server/session and UI status can remain bound to stale state.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AdvancedPreferences.java:153`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServer.java`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerStatusChangeReceiver.java:63`; Thor and Hail working-mode reliability signals.
-  Touches: `AdvancedPreferences.java`; `LocalServer.java`; `LocalServerManager.java`; `ServerStatusChangeReceiver.java`; `Ops.java`; privilege health UI/tests.
-  Acceptance: changing the local-server port either restarts/rebinds the local server safely or marks the current server stale with actionable status; UI receives a fresh server-state update; tests pin port-change behavior without requiring a device.
-  Complexity: M
-
 - [ ] P3 — Codify the Robolectric SDK36 and JDK test matrix
   Why: Robolectric 4.16 supports SDK36 but documents JDK21 as required for SDK36-target tests, while project setup docs still say JDK 17+.
   Evidence: `BUILDING.rst:12`; `app/build.gradle`; `versions.gradle`; Robolectric 4.16 release notes.
