@@ -28,13 +28,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P3 — Migrate remaining non-dedicated UI helper raw threads
-  Why: a few UI/helper paths still create raw threads instead of using project executors, leaving uncaught-exception and lifecycle behavior inconsistent with recent threading hygiene.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/OpenPgpKeySelectionDialogFragment.java:54`; `libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableMultiChoiceDialogBuilder.java:270`.
-  Touches: `settings/crypto/OpenPgpKeySelectionDialogFragment.java`; `libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableMultiChoiceDialogBuilder.java`; related unit/Robolectric tests.
-  Acceptance: non-dedicated UI helper work uses `ThreadUtils` or an owned executor with clear main-thread handoff and cancellation/lifecycle behavior; no raw `new Thread()` remains in those UI helper paths.
-  Complexity: S
-
 ## Research-Driven Additions
 
 ## Research-Driven Additions

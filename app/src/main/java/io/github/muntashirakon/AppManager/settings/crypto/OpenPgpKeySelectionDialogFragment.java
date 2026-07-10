@@ -50,11 +50,7 @@ public class OpenPgpKeySelectionDialogFragment extends DialogFragment {
                     getUserId(result.getData());
                 }
             });
-    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor(runnable -> {
-        Thread thread = new Thread(runnable);
-        thread.setDaemon(true);
-        return thread;
-    });
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
     @NonNull
     @Override

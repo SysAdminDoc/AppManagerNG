@@ -267,13 +267,9 @@ public class SearchableMultiChoiceDialogBuilder<T> {
             mItemNames = itemNames;
             mItems = items;
             mLayoutId = layoutId;
-            new Thread(() -> {
-                synchronized (mFilteredItems) {
-                    for (int i = 0; i < items.size(); ++i) {
-                        mFilteredItems.add(i);
-                    }
-                }
-            }, "searchable_multi_choice_dialog").start();
+            for (int i = 0; i < items.size(); ++i) {
+                mFilteredItems.add(i);
+            }
         }
 
         void setFilteredItems(CharSequence constraint) {
