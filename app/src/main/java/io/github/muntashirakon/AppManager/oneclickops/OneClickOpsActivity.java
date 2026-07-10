@@ -124,22 +124,25 @@ public class OneClickOpsActivity extends BaseActivity {
         mViewModel.watchLeftoverDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(appendFailures(getString(R.string.leftover_files_deleted, result.deleted,
+            UIUtils.displayLongToast(appendFailures(getResources().getQuantityString(R.plurals.leftover_files_deleted,
+                    result.deleted, result.deleted,
                     Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
         mViewModel.watchApkDuplicates().observe(this, this::reviewApkDuplicates);
         mViewModel.watchApkDuplicateDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(appendFailures(getString(R.string.duplicate_apks_deleted, result.deleted,
+            UIUtils.displayLongToast(appendFailures(getResources().getQuantityString(R.plurals.duplicate_apks_deleted,
+                    result.deleted, result.deleted,
                     Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
         mViewModel.watchDuplicateBackupPlan().observe(this, this::reviewDuplicateBackups);
         mViewModel.watchDuplicateBackupDeleteResult().observe(this, result -> {
             CpuUtils.releaseWakeLock(wakeLock);
             setBusy(false);
-            UIUtils.displayLongToast(appendFailures(getString(R.string.duplicate_backups_pruned_with_reclaim,
-                    result.deleted, Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
+            UIUtils.displayLongToast(appendFailures(getResources().getQuantityString(
+                    R.plurals.duplicate_backups_pruned_with_reclaim, result.deleted, result.deleted,
+                    Formatter.formatShortFileSize(this, result.reclaimedBytes)), result.failed));
         });
     }
 
@@ -698,8 +701,9 @@ public class OneClickOpsActivity extends BaseActivity {
         String reclaimable = Formatter.formatShortFileSize(this, plan.reclaimableBytes);
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.delete_duplicate_backups)
-                .setMessage(getString(R.string.delete_duplicate_backups_confirm_with_reclaim,
-                        plan.entries.size(), reclaimable))
+                .setMessage(getResources().getQuantityString(
+                        R.plurals.delete_duplicate_backups_confirm_with_reclaim,
+                        plan.entries.size(), plan.entries.size(), reclaimable))
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) ->
                         ActionAuthGate.authenticate(this, R.string.authenticate_to_delete_backups, () -> {

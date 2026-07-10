@@ -18,6 +18,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Replaced parenthesized English plural shortcuts with quantity-aware copy at
+  package visibility, cleanup, backup, keystore, privilege-health, credential,
+  and permission-monitor call sites; settings and exit labels now use sentence
+  case consistently.
 - Home-screen widgets now refresh their baked colors in the background as soon
   as the running app observes a system light/dark mode change.
 - System Config now merges PackageManager's runtime feature inventory after all

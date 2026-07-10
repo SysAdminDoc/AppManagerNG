@@ -161,11 +161,11 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
                 int failCount = result.failed.size();
                 ThreadUtils.postOnMainThread(() -> {
                     if (failCount > 0) {
-                        UIUtils.displayLongToast(R.string.keystore_import_partial,
-                                successCount, failCount);
+                        UIUtils.displayLongToast(getResources().getQuantityString(
+                                R.plurals.keystore_import_partial, successCount, successCount, failCount));
                     } else {
-                        UIUtils.displayShortToast(R.string.keystore_import_success,
-                                successCount);
+                        UIUtils.displayShortToast(getResources().getQuantityString(
+                                R.plurals.keystore_import_success, successCount, successCount));
                     }
                     ExUtils.exceptionAsIgnored(this::dismiss);
                 });

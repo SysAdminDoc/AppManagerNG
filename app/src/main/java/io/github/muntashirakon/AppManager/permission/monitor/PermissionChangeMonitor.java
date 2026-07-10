@@ -102,8 +102,8 @@ public final class PermissionChangeMonitor {
         if (diff.isInteresting()) {
             String label = resolveLabel(appContext, packageName);
             String title = appContext.getString(R.string.permission_change_monitor_title, label);
-            String body = appContext.getString(R.string.permission_change_monitor_body,
-                    diff.added.size(), shortJoin(diff.added));
+            String body = appContext.getResources().getQuantityString(R.plurals.permission_change_monitor_body,
+                    diff.added.size(), diff.added.size(), shortJoin(diff.added));
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("permissions", packageName, title, body));
             try {
                 postNotification(appContext, packageName, title, body);
