@@ -8,14 +8,29 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
+import android.os.Looper;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @RunWith(RobolectricTestRunner.class)
 public class SecurityAndOpsViewModelTest {
+    private SecurityAndOpsViewModel mViewModel;
+
+    @After
+    public void tearDown() {
+        if (mViewModel != null) {
+            mViewModel.onCleared();
+        }
+    }
+
     @Test
     public void currentAttemptStatusUpdatesStartupStateAndLegacyStatus() {
         SecurityAndOpsViewModel viewModel = newViewModel();
@@ -98,8 +113,36 @@ public class SecurityAndOpsViewModelTest {
                 viewModel.startupInitState().getValue().getStage());
     }
 
-    private static SecurityAndOpsViewModel newViewModel() {
+    @Test
+    public void keyStorePasswordProbeSurvivesObserverReplacementAndRunsOnce() throws Exception {
         Application application = RuntimeEnvironment.getApplication();
-        return new SecurityAndOpsViewModel(application);
+        CountDownLatch probeCompleted = new CountDownLatch(1);
+        AtomicInteger probeCount = new AtomicInteger();
+        mViewModel = new SecurityAndOpsViewModel(application, () -> {
+            probeCount.incrementAndGet();
+            probeCompleted.countDown();
+            return true;
+        });
+
+        mViewModel.checkKeyStorePassword();
+        mViewModel.checkKeyStorePassword();
+        assertTrue(probeCompleted.await(5, TimeUnit.SECONDS));
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (mViewModel.keyStorePasswordStatus().getValue() == null
+                && System.nanoTime() < deadline) {
+            org.robolectric.Shadows.shadowOf(Looper.getMainLooper()).idle();
+            Thread.sleep(10);
+        }
+
+        assertEquals(Boolean.TRUE, mViewModel.keyStorePasswordStatus().getValue());
+        assertEquals(Boolean.TRUE, mViewModel.claimKeyStorePasswordStatus());
+        assertNull(mViewModel.claimKeyStorePasswordStatus());
+        assertEquals(1, probeCount.get());
+    }
+
+    private SecurityAndOpsViewModel newViewModel() {
+        Application application = RuntimeEnvironment.getApplication();
+        mViewModel = new SecurityAndOpsViewModel(application);
+        return mViewModel;
     }
 }
