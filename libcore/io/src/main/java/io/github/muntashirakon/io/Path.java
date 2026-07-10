@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
+import android.util.Log;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
@@ -30,6 +31,8 @@ import java.util.Objects;
  * Provide an interface to {@link File} and {@link DocumentFile} with basic functionalities.
  */
 public abstract class Path implements Comparable<Path> {
+    private static final String TAG = Path.class.getSimpleName();
+
     @NonNull
     protected final Context context;
     @NonNull
@@ -572,7 +575,7 @@ public abstract class Path implements Comparable<Path> {
         } catch (IOException e) {
             if (!(e.getCause() instanceof ErrnoException)) {
                 // This isn't just another EACCESS exception
-                e.printStackTrace();
+                Log.w(TAG, "Could not read path content as binary.", e);
             }
         }
         return emptyValue;
@@ -596,7 +599,7 @@ public abstract class Path implements Comparable<Path> {
         try (InputStream inputStream = openInputStream()) {
             return new String(IoUtils.readFully(inputStream, -1, true), charset);
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not read path content as text.", e);
             return emptyValue;
         }
     }
