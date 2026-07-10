@@ -18,8 +18,8 @@ import android.os.UserHandleHidden;
 import androidx.annotation.NonNull;
 import androidx.core.content.pm.PackageInfoCompat;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

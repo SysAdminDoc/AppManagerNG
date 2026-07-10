@@ -9,8 +9,8 @@ import static org.junit.Assert.assertThrows;
 
 import androidx.annotation.NonNull;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
