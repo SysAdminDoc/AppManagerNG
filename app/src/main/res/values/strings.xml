@@ -1612,6 +1612,11 @@
     <string name="interceptor_add_category">Add category</string>
     <string name="interceptor_add_flag">Add flag</string>
     <string name="interceptor_add_extra">Add extra</string>
+    <string name="interceptor_intent_parse_failed">Could not read this intent. Check the pasted data and try again.</string>
+    <plurals name="interceptor_unreadable_extras_skipped">
+        <item quantity="one">Skipped %1$d unreadable intent extra. Base intent data is still available.</item>
+        <item quantity="other">Skipped %1$d unreadable intent extras. Base intent data is still available.</item>
+    </plurals>
     <string name="interceptor_no_matching_activities">No installed activity can handle this intent. Adjust the action, data, type, package, or user and try again.</string>
     <string name="share">Share</string>
     <string name="install_selected_apks">Install selected APKs</string>

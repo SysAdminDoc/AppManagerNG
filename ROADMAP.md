@@ -70,13 +70,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Acceptance: changing the local-server port either restarts/rebinds the local server safely or marks the current server stale with actionable status; UI receives a fresh server-state update; tests pin port-change behavior without requiring a device.
   Complexity: M
 
-- [ ] P2 — Preserve Activity Interceptor output when extras contain unknown Parcelables
-  Why: one `BadParcelableException` currently nulls the entire generated intent URI, so users lose actionable action/data/component output when only an extra is unreadable.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/intercept/ActivityInterceptor.java:1227`; Android `BadParcelableException` documentation; Android Parcelables and Bundles documentation.
-  Touches: `ActivityInterceptor.java`; `IntentCompat.java`; interceptor UI strings; unit/Robolectric tests for unknown Parcelable extras.
-  Acceptance: an intercepted intent with an unknown Parcelable still displays/export base action, data, component, categories, and safe extras; skipped extras are counted and named when possible; cloning malformed intent URIs fails visibly without crashing.
-  Complexity: M
-
 - [ ] P3 — Codify the Robolectric SDK36 and JDK test matrix
   Why: Robolectric 4.16 supports SDK36 but documents JDK21 as required for SDK36-target tests, while project setup docs still say JDK 17+.
   Evidence: `BUILDING.rst:12`; `app/build.gradle`; `versions.gradle`; Robolectric 4.16 release notes.
