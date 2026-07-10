@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.server.common;
 import androidx.annotation.NonNull;
 
 public final class ConfigParams {
+    private static final String REDACTED = "<redacted>";
     public static final String PARAM_DEBUG = "debug";
     public static final String PARAM_APP = "app";
     public static final String PARAM_PATH = "path";
@@ -69,13 +70,29 @@ public final class ConfigParams {
     }
 
     @NonNull
+    public static String redact(@NonNull String serializedParams) {
+        String[] params = serializedParams.split(",", -1);
+        StringBuilder redacted = new StringBuilder(serializedParams.length());
+        for (int i = 0; i < params.length; ++i) {
+            if (params[i].startsWith(PARAM_TOKEN + ":")) {
+                params[i] = PARAM_TOKEN + ":" + REDACTED;
+            }
+            if (i > 0) {
+                redacted.append(',');
+            }
+            redacted.append(params[i]);
+        }
+        return redacted.toString();
+    }
+
+    @NonNull
     @Override
     public String toString() {
         return "ConfigParam{" +
                 "mIsDebug=" + mIsDebug +
                 ", mPath='" + mPath + '\'' +
                 ", mRunInBackground=" + mRunInBackground +
-                ", mToken='" + mToken + '\'' +
+                ", mToken='" + (mToken == null ? null : REDACTED) + '\'' +
                 ", mUid='" + mUid + '\'' +
                 '}';
     }
