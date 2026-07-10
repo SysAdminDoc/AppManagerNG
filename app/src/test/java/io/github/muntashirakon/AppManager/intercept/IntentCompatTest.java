@@ -10,8 +10,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.BadParcelableException;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Parcel;
@@ -305,6 +307,46 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void toUriSafely_preservesBaseFieldsAndReadableExtrasAfterParcelableFailure() throws Exception {
+        Bundle extras = new Bundle();
+        extras.putString("safe", "value");
+        extras.putParcelable("parcelable", new UnsupportedParcelable("unreadable"));
+        Intent input = new ThrowingToUriIntent(extras);
+        input.setAction(Intent.ACTION_VIEW);
+        input.setData(Uri.parse("content://example/items/42"));
+        input.setComponent(new ComponentName("com.example", "com.example.TargetActivity"));
+        input.addCategory(Intent.CATEGORY_BROWSABLE);
+
+        IntentCompat.IntentUriSerializationResult result = IntentCompat.toUriSafely(
+                input, Intent.URI_INTENT_SCHEME);
+        Intent parsed = Intent.parseUri(result.getUri(), Intent.URI_INTENT_SCHEME);
+
+        assertEquals(Intent.ACTION_VIEW, parsed.getAction());
+        assertEquals(Uri.parse("content://example/items/42"), parsed.getData());
+        assertEquals(new ComponentName("com.example", "com.example.TargetActivity"), parsed.getComponent());
+        assertTrue(parsed.hasCategory(Intent.CATEGORY_BROWSABLE));
+        assertEquals("value", parsed.getStringExtra("safe"));
+        assertEquals(1, result.getSkippedExtras().size());
+        assertUnsupportedExtra(result.getSkippedExtras().get(0),
+                "parcelable", UnsupportedParcelable.class.getName());
+    }
+
+    @Test
+    public void toUriSafely_reportsBundleWhenExtraNamesCannotBeRead() throws Exception {
+        Intent input = new ThrowingExtrasIntent();
+        input.setAction(Intent.ACTION_SEND);
+
+        IntentCompat.IntentUriSerializationResult result = IntentCompat.toUriSafely(
+                input, Intent.URI_INTENT_SCHEME);
+        Intent parsed = Intent.parseUri(result.getUri(), Intent.URI_INTENT_SCHEME);
+
+        assertEquals(Intent.ACTION_SEND, parsed.getAction());
+        assertEquals(1, result.getSkippedExtras().size());
+        assertUnsupportedExtra(result.getSkippedExtras().get(0),
+                "<unreadable extras>", BadParcelableException.class.getName());
+    }
+
+    @Test
     public void valueToParsableString_formatsArrayValuesForParser() {
         String rawValue = IntentCompat.valueToParsableString(AddIntentExtraFragment.TYPE_INT_ARR,
                 new int[]{1, 2, 3});
@@ -364,5 +406,34 @@ public class IntentCompatTest {
                 return new UnsupportedParcelable[size];
             }
         };
+    }
+
+    private static class ThrowingToUriIntent extends Intent {
+        private final Bundle extras;
+
+        private ThrowingToUriIntent(Bundle extras) {
+            this.extras = extras;
+        }
+
+        @Override
+        public String toUri(int flags) {
+            throw new BadParcelableException("unknown Parcelable class");
+        }
+
+        @Override
+        public Bundle getExtras() {
+            return extras;
+        }
+    }
+
+    private static final class ThrowingExtrasIntent extends ThrowingToUriIntent {
+        private ThrowingExtrasIntent() {
+            super(null);
+        }
+
+        @Override
+        public Bundle getExtras() {
+            throw new BadParcelableException("unreadable extras Bundle");
+        }
     }
 }
