@@ -17,6 +17,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- ZipFileSystem tests now assert real hidden, timestamp, and POSIX-mode
+  behavior and always unmount tracked virtual filesystems after failures.
 - Changing the privileged local-server port now performs a serialized stop,
   rebind, session refresh, and service rebind with automatic preference and
   listener rollback; port-tagged lifecycle events cannot stale the new state.

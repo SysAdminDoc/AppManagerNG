@@ -2,6 +2,9 @@
 
 package io.github.muntashirakon.io.fs;
 
+import android.net.Uri;
+import android.system.OsConstants;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -21,6 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,6 +36,8 @@ import io.github.muntashirakon.io.Paths;
 @RunWith(RobolectricTestRunner.class)
 public class ZipFileSystemTest {
     private final ClassLoader classLoader = Objects.requireNonNull(getClass().getClassLoader());
+    private final List<Integer> mountedFileSystems = new ArrayList<>();
+    private final List<File> temporaryArchives = new ArrayList<>();
     private Path tmpPath;
 
     @Before
@@ -40,6 +47,21 @@ public class ZipFileSystemTest {
 
     @After
     public void tearDown() throws Exception {
+        IOException unmountFailure = null;
+        for (int i = mountedFileSystems.size() - 1; i >= 0; --i) {
+            try {
+                VirtualFileSystem.unmount(mountedFileSystems.get(i));
+            } catch (IOException e) {
+                if (unmountFailure == null) unmountFailure = e;
+                else unmountFailure.addSuppressed(e);
+            }
+        }
+        mountedFileSystems.clear();
+        for (File archive : temporaryArchives) {
+            if (archive.exists() && !archive.delete()) archive.deleteOnExit();
+        }
+        temporaryArchives.clear();
+        if (unmountFailure != null) throw unmountFailure;
     }
 
     @Test
@@ -47,14 +69,14 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_1");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -62,10 +84,16 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_hidden");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
-        assertTrue("AndroidManifest.xml should exist in the ZIP", mountPoint.findFile("AndroidManifest.xml").exists());
-        assertEquals("AndroidManifest.xml", mountPoint.findFile("AndroidManifest.xml").getName());
-        VirtualFileSystem.unmount(fsId);
+        VirtualFileSystem.MountOptions options = getRWOptions((fs, cachedFile) -> {
+            temporaryArchives.add(cachedFile);
+            return true;
+        });
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
+        VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
+        mountPoint.createNewFile(".hidden", null);
+        assertFalse("AndroidManifest.xml should not be hidden", fs.isHidden("/AndroidManifest.xml"));
+        assertTrue("dot-prefixed ZIP entries should be hidden", fs.isHidden("/.hidden"));
+        unmountTracked(fsId);
     }
 
     @Test
@@ -73,10 +101,10 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_access");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         long access = mountPoint.findFile("AndroidManifest.xml").lastAccess();
-        assertTrue("lastAccess should be non-negative", access >= 0);
-        VirtualFileSystem.unmount(fsId);
+        assertTrue("lastAccess should use the ZIP entry timestamp", access > 0);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -84,10 +112,10 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_creation");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         long creation = mountPoint.findFile("AndroidManifest.xml").creationTime();
-        assertTrue("creationTime should be non-negative", creation >= 0);
-        VirtualFileSystem.unmount(fsId);
+        assertTrue("creationTime should use the ZIP entry timestamp", creation > 0);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -95,7 +123,7 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_2");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         assertThrows(IOException.class, () -> mountPoint.createNewFile("test.txt", null));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
@@ -103,7 +131,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -116,14 +144,14 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNull(modifiedApk.get());
     }
 
@@ -137,7 +165,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         Path testText = mountPoint.createNewFile("test.txt", null);
         try (OutputStream os = testText.openOutputStream()) {
             os.write("This is a test file".getBytes(StandardCharsets.UTF_8));
@@ -148,10 +176,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -160,7 +188,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test.txt").isFile());
         assertEquals("This is a test file", mountPoint.findFile("test.txt").getContentAsString());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -172,7 +200,7 @@ public class ZipFileSystemTest {
         assertNotNull(tmpApkFile);
         Path mountPoint = Paths.get("/tmp/am_mount_point_5");
         VirtualFileSystem.MountOptions options = getRWOptions((fs, cachedFile) -> false);
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), tmpApkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), tmpApkFile, "application/zip", options);
         Path testText = mountPoint.createNewFile("test.txt", null);
         try (OutputStream os = testText.openOutputStream()) {
             os.write("This is a test file".getBytes(StandardCharsets.UTF_8));
@@ -183,9 +211,9 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), tmpApkFile, "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), tmpApkFile, "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -194,7 +222,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test.txt").isFile());
         assertEquals("This is a test file", mountPoint.findFile("test.txt").getContentAsString());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(tmpApkFile.delete());
     }
 
@@ -203,14 +231,14 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_6");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         assertFalse(mountPoint.findFile("resources.arsc").delete());
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -223,24 +251,24 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         assertTrue(mountPoint.findFile("resources.arsc").delete());
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertFalse(mountPoint.hasFile("resources.arsc"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -254,7 +282,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         assertNotEquals(0, mountPoint.findFile("resources.arsc").length());
         assertTrue(mountPoint.findFile("resources.arsc").delete());
         Path arsc = mountPoint.createNewFile("resources.arsc", null);
@@ -264,10 +292,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -275,7 +303,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertEquals(0, mountPoint.findFile("resources.arsc").length());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -289,7 +317,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         assertNotEquals(0, mountPoint.findFile("resources.arsc").length());
         assertTrue(mountPoint.findFile("resources.arsc").delete());
         Path arsc = mountPoint.createNewDirectory("resources.arsc");
@@ -299,10 +327,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -310,7 +338,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isDirectory());
         assertEquals(0, mountPoint.findFile("resources.arsc").length());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -324,7 +352,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         assertNotEquals(0, mountPoint.findFile("resources.arsc").length());
         assertTrue(mountPoint.findFile("resources.arsc").delete());
         Path arsc = mountPoint.createNewFile("resources.arsc", null);
@@ -335,17 +363,17 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertFalse(mountPoint.hasFile("resources.arsc"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -359,7 +387,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         Path testText = mountPoint.createNewFile("test.txt", null);
         assertTrue(testText.delete());
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -368,10 +396,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -379,7 +407,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertFalse(mountPoint.hasFile("test.txt"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -393,7 +421,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         Path testDir = mountPoint.createNewDirectory("test_dir");
         assertTrue(testDir.delete());
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -402,10 +430,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -413,7 +441,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertFalse(mountPoint.hasFile("test_dir"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -422,7 +450,7 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_list");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         Path[] children = mountPoint.listFiles();
         assertNotNull(children);
         assertTrue("mount root should have children", children.length > 0);
@@ -434,7 +462,7 @@ public class ZipFileSystemTest {
             }
         }
         assertTrue("listing should include AndroidManifest.xml", foundManifest);
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -447,7 +475,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.mkdir("/test_dir"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -457,10 +485,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -468,7 +496,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -482,7 +510,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertFalse(fs.mkdir("/test_dir/test_dir_2"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -492,7 +520,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertFalse(mountPoint.hasFile("test_dir"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNull(modifiedApk.get());
     }
 
@@ -506,7 +534,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertFalse(fs.mkdir("/assets"));
         assertFalse(fs.mkdir("/classes.dex"));
@@ -517,7 +545,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertFalse(mountPoint.hasFile("test_dir"));
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNull(modifiedApk.get());
     }
 
@@ -531,7 +559,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.mkdirs("/test_dir/test_dir_2"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -542,10 +570,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
         assertTrue(mountPoint.findFile("test_dir").findFile("test_dir_2").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -554,7 +582,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
         assertTrue(mountPoint.findFile("test_dir").findFile("test_dir_2").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -568,7 +596,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.mkdirs("/assets/test_dir_2"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -578,10 +606,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("assets").findFile("test_dir_2").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -589,7 +617,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("assets").findFile("test_dir_2").isDirectory());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -603,7 +631,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertFalse(fs.mkdirs("/assets/dnsfilter.conf"));
         assertFalse(fs.mkdirs("/res/layout"));
@@ -613,7 +641,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNull(modifiedApk.get());
     }
 
@@ -627,7 +655,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.renameTo("/AndroidManifest.xml", "/Manifest.xml"));
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
@@ -637,10 +665,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
         assertTrue(mountPoint.findFile("Manifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
@@ -648,7 +676,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -662,7 +690,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.renameTo("/AndroidManifest.xml", "/assets/Manifest.xml"));
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
@@ -674,10 +702,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("assets").findFile("Manifest.xml").isFile());
@@ -687,7 +715,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -701,7 +729,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.renameTo("/AndroidManifest.xml", "/test_dir/Manifest.xml"));
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
@@ -712,10 +740,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
         assertTrue(mountPoint.findFile("test_dir").findFile("Manifest.xml").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -724,7 +752,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test_dir").isDirectory());
         assertTrue(mountPoint.findFile("test_dir").findFile("Manifest.xml").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -738,7 +766,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         String manifestContents = mountPoint.findFile("AndroidManifest.xml").getContentAsString();
         assertTrue(fs.renameTo("/AndroidManifest.xml", "/assets/dnsfilter.conf"));
@@ -749,9 +777,9 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertFalse(mountPoint.hasFile("AndroidManifest.xml"));
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertTrue(mountPoint.findFile("assets").findFile("dnsfilter.conf").isFile());
@@ -760,7 +788,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertEquals(manifestContents, mountPoint.findFile("assets").findFile("dnsfilter.conf").getContentAsString());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -773,7 +801,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         Path testText = mountPoint.createNewFile("test.txt", null);
         try (OutputStream os = testText.openOutputStream()) {
@@ -790,10 +818,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test.txt").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertTrue(mountPoint.findFile("assets").isDirectory());
         assertFalse(mountPoint.findFile("assets").hasFile("test.txt"));
@@ -805,7 +833,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
         assertTrue(mountPoint.findFile("test.txt").isFile());
         assertEquals("This is a test file", mountPoint.findFile("test.txt").getContentAsString());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -819,7 +847,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.renameTo("/assets", "/abs"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -831,10 +859,10 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertFalse(mountPoint.hasFile("assets"));
         assertTrue(mountPoint.findFile("abs").isDirectory());
@@ -844,7 +872,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -858,7 +886,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertFalse(fs.renameTo("/assets", "/res"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -869,7 +897,7 @@ public class ZipFileSystemTest {
         assertTrue(mountPoint.findFile("META-INF").isDirectory());
         assertTrue(mountPoint.findFile("res").isDirectory());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNull(modifiedApk.get());
     }
 
@@ -883,7 +911,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
         assertTrue(fs.renameTo("/assets", "/res/new"));
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
@@ -896,10 +924,10 @@ public class ZipFileSystemTest {
         assertTrue(res.findFile("new").findFile("dnsfilter.conf").isFile());
         assertTrue(res.findFile("new").findFile("additionalHosts.txt").isFile());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertNotNull(modifiedApk.get());
         // Remount to verify contents
-        fsId = VirtualFileSystem.mount(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
+        fsId = mountTracked(mountPoint.getUri(), Paths.get(modifiedApk.get()), "application/zip");
         assertTrue(mountPoint.findFile("AndroidManifest.xml").isFile());
         assertFalse(mountPoint.hasFile("assets"));
         assertTrue(mountPoint.findFile("classes.dex").isFile());
@@ -910,7 +938,7 @@ public class ZipFileSystemTest {
         assertTrue(res.findFile("new").findFile("dnsfilter.conf").isFile());
         assertTrue(res.findFile("new").findFile("additionalHosts.txt").isFile());
         assertTrue(mountPoint.findFile("resources.arsc").isFile());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -924,12 +952,12 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         Path manifest = mountPoint.findFile("AndroidManifest.xml");
         long now = System.currentTimeMillis();
         assertTrue(manifest.setLastModified(now));
         assertEquals(now, manifest.lastModified());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -943,7 +971,7 @@ public class ZipFileSystemTest {
             modifiedApk.set(cachedFile);
             return true;
         });
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip", options);
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip", options);
         mountPoint.createNewFile("append_test.txt", null);
         Path created = mountPoint.findFile("append_test.txt");
         try (OutputStream os = created.openOutputStream(true)) {
@@ -957,7 +985,7 @@ public class ZipFileSystemTest {
             int len = is.read(data);
             assertEquals("hello world", new String(data, 0, len));
         }
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
         assertTrue(modifiedApk.get().delete());
     }
 
@@ -966,10 +994,10 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_lastmod");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         long lastMod = mountPoint.findFile("AndroidManifest.xml").lastModified();
         assertTrue("lastModified should be positive for a zip entry with a timestamp", lastMod > 0);
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -977,12 +1005,12 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_length");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         long len = mountPoint.findFile("AndroidManifest.xml").length();
         assertTrue("AndroidManifest.xml should have positive length", len > 0);
         long dirLen = mountPoint.findFile("res").length();
         assertTrue("directory length should be non-negative", dirLen >= 0);
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -990,9 +1018,9 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_access2");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         assertTrue("existing file should be accessible", mountPoint.findFile("AndroidManifest.xml").canRead());
-        VirtualFileSystem.unmount(fsId);
+        unmountTracked(fsId);
     }
 
     @Test
@@ -1000,10 +1028,29 @@ public class ZipFileSystemTest {
         Path base = Paths.get(classLoader.getResource("oandbackups/dnsfilter.android").getFile());
         Path apkFile = base.findFile("base.apk");
         Path mountPoint = Paths.get("/tmp/am_mount_point_mode");
-        int fsId = VirtualFileSystem.mount(mountPoint.getUri(), apkFile, "application/zip");
+        int fsId = mountTracked(mountPoint.getUri(), apkFile, "application/zip");
         int mode = mountPoint.findFile("AndroidManifest.xml").getMode();
-        assertTrue("file mode should be non-negative", mode >= 0);
+        assertTrue("ZIP entry should report a regular-file mode", OsConstants.S_ISREG(mode));
+        assertEquals("read-only ZIP entry should expose 0444 permissions", 0444, mode & 0777);
+        unmountTracked(fsId);
+    }
+
+    private int mountTracked(Uri mountPoint, Path file, String type) throws IOException {
+        int fsId = VirtualFileSystem.mount(mountPoint, file, type);
+        mountedFileSystems.add(fsId);
+        return fsId;
+    }
+
+    private int mountTracked(Uri mountPoint, Path file, String type,
+                             VirtualFileSystem.MountOptions options) throws IOException {
+        int fsId = VirtualFileSystem.mount(mountPoint, file, type, options);
+        mountedFileSystems.add(fsId);
+        return fsId;
+    }
+
+    private void unmountTracked(int fsId) throws IOException {
         VirtualFileSystem.unmount(fsId);
+        mountedFileSystems.remove(Integer.valueOf(fsId));
     }
 
     private VirtualFileSystem.MountOptions getRWOptions(VirtualFileSystem.OnFileSystemUnmounted event) {
