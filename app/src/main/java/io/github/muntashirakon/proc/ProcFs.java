@@ -15,11 +15,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.PathReader;
 import io.github.muntashirakon.io.Paths;
 
 public class ProcFs {
+    private static final String TAG = ProcFs.class.getSimpleName();
+
     // Files in /proc/ directory
     private static final String CPU_INFO = "cpuinfo";
     private static final String MEM_INFO = "meminfo";
@@ -120,7 +123,7 @@ public class ProcFs {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not read process status.", e);
         }
         return null;
     }
@@ -167,7 +170,7 @@ public class ProcFs {
             try {
                 return cwdPath.getRealFilePath();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not resolve process working directory.", e);
             }
         }
         return null;
@@ -186,7 +189,7 @@ public class ProcFs {
             try {
                 return exePath.getRealFilePath();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not resolve process executable.", e);
             }
         }
         return null;
@@ -239,7 +242,7 @@ public class ProcFs {
             try {
                 return rootPath.getRealFilePath();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not resolve process root.", e);
             }
         }
         return null;

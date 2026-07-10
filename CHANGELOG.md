@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Production app, file, process, and UI helper failures now use structured
+  logging instead of writing stack traces directly to stderr; a source contract
+  prevents no-argument `printStackTrace()` calls from returning.
 - Local privileged-server authentication tokens now live in a device-local,
   backup-excluded preference file, rotate away from legacy restored values,
   stay out of snapshot bundles, and are redacted from app/server diagnostics.
