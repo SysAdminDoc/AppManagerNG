@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
 # ROADMAP
 
-Live checklist of incomplete work. Historical surfaces are archived under
-`docs/roadmap/archive/`. Research backing the items below: `RESEARCH.md`.
+Live checklist of incomplete work. Maintainer-local historical archives are not
+published with the repository. Research backing the items below: `RESEARCH.md`.
 
 If a live copy of this file exists on another machine, merge these additions
 into it — existing items take precedence over duplicates.
@@ -43,13 +43,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Extend production stack-trace logging cleanup to app and libcore paths
-  Why: after app-layer and server-focused logging cleanup, shared file/proc/UI utility paths still print directly to stderr instead of structured or intentionally suppressed diagnostics.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/logs/Log.java:51`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:621`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1494`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:123`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:170`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:189`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java:242`; `app/src/main/java/io/github/muntashirakon/proc/ProcMappedFiles.java:49`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:575`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:599`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java:30`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java:45`.
-  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/logs/Log.java`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java`; `app/src/main/java/io/github/muntashirakon/proc/ProcFs.java`; `app/src/main/java/io/github/muntashirakon/proc/ProcMappedFiles.java`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java`; `libcore/ui/src/main/java/io/github/muntashirakon/view/AutoCompleteTextViewCompat.java`; source-contract tests.
-  Acceptance: no production `printStackTrace()` remains outside the already-active `server/` and `libserver/` diagnostic item; optional reflection/proc/file failures are logged through an app/libcore logger or intentionally ignored with tests; a source-contract test pins the allowed production exception list.
-  Complexity: S
-
 ## Research-Driven Additions
 
 - [ ] P2 — Rebaseline packaged offline manual source truth
@@ -58,13 +51,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Touches: `docs/raw/en/intro/main.tex`; generated `docs/raw/en/strings.xml`; generated `docs/raw/en/index.html`; docs build/source-contract tests.
   Acceptance: packaged English manual source, generated XML, and generated HTML agree on AppManagerNG identity, current support policy, fork-owned issue destinations, distribution links, and translation status; `rtk .\gradlew.bat :docs:buildDocs` preserves those strings; a grep/source-contract test fails on upstream-only support/version links outside historical changelog or explicit upstream-credit sections.
   Complexity: M
-
-- [ ] P2 — Restore archive-link truth for tracked documentation
-  Why: README/ROADMAP/docs index pages link to archive directories and files that are absent from tracked Git content, so published GitHub docs can point readers at missing history while local archive markdown remains untracked.
-  Evidence: `README.md:96`; `ROADMAP.md:5`; `docs/roadmap/README.md:14`; `docs/roadmap/README.md:16`; `git ls-files docs/archive docs/roadmap/archive docs/patch-references docs/raw/changelog_old.md`; GitHub ignore-file documentation.
-  Touches: `README.md`; `ROADMAP.md`; `docs/roadmap/README.md`; `.gitignore`; docs link/source-contract checks.
-  Acceptance: every tracked link to `docs/archive/`, `docs/roadmap/archive/`, or `docs/patch-references/` either resolves in `git ls-files` or is removed/reworded to local-only; a clean docs build/research pass no longer leaves archive markdown directories as unexpected untracked files; a docs-link/source-contract check covers archive links.
-  Complexity: S
 
 ## Research-Driven Additions
 
@@ -76,13 +62,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
   Complexity: M
 
 ## Research-Driven Additions
-
-- [ ] P1 — Exclude or rotate local privileged-server secrets from Android backup and transfer
-  Why: Android cloud/D2D backup rules include all shared preferences, but the local privileged-server handshake token is persisted in `server_config` shared preferences.
-  Evidence: `app/src/main/res/xml/backup_rules.xml`; `app/src/main/res/xml/full_backup_rules.xml`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerConfig.java`; Android Auto Backup documentation.
-  Touches: `app/src/main/res/xml/backup_rules.xml`; `app/src/main/res/xml/full_backup_rules.xml`; `app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerConfig.java`; backup-rule/source-contract tests.
-  Acceptance: local server authentication tokens are never restored unchanged from cloud/D2D backup; non-secret preferences are intentionally preserved or intentionally excluded; a host/source-contract test fails if secret-bearing preference files become backup-eligible again.
-  Complexity: S
 
 - [ ] P2 — Reconcile local privileged-server port changes with live server state
   Why: the advanced setting saves a new ADB local-server port but only tells the user to restart, while the running server/session and UI status can remain bound to stale state.

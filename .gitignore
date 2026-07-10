@@ -56,6 +56,12 @@ codexprompt-*.md
 !/Roadmap_Blocked.md
 !docs/**/*.md
 
+# Maintainer-local documentation archives (not published with the repository)
+docs/archive/
+docs/roadmap/archive/
+docs/patch-references/
+docs/raw/changelog_old.md
+
 # AI artifacts
 .ai/
 CONTINUATION_PROMPT.md

@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Published README and roadmap documentation no longer link to maintainer-local
+  archive files that are absent from Git; the archive paths are explicitly
+  ignored and protected by a documentation-link contract.
 - Production app, file, process, and UI helper failures now use structured
   logging instead of writing stack traces directly to stderr; a source contract
   prevents no-argument `printStackTrace()` calls from returning.
@@ -4627,7 +4630,7 @@ UI lifecycle / crashes
   pass-2 NF/EI backlog, v0.6.0 blockers, distribution tasks, platform
   verification, and accessibility audits.
 - Archived the previous long-form roadmap and both 2026-05-25 research feature
-  plans under [`docs/roadmap/archive/`](docs/roadmap/archive/) so completed
+  plans in the maintainer-local `docs/roadmap/archive/` directory so completed
   work lives in the changelog and open work lives in one file.
 - Refreshed `README.md` and `PROJECT_CONTEXT.md` to point at v0.5.0 and the
   consolidated roadmap/archive split.
@@ -4925,7 +4928,7 @@ Full per-slice notes follow.
   v0.1.0 -> v0.4.2 plus a note that `Unreleased` work lands as v0.5.0; the parser
   no longer references the upstream DTD URL at runtime.
 - README `Roadmap` block pointed at the then-active backlog
-  (`docs/roadmap/archive/RESEARCH_FEATURE_PLAN_2026-05-25.md` after the
+  (maintainer-local `docs/roadmap/archive/RESEARCH_FEATURE_PLAN_2026-05-25.md` after the
   2026-05-26 consolidation), marked v0.5.0 as in flight with the Iter-91 ->
   Iter-142 batch summary, and billed v0.6.0 as Rootless Power.
 - `CLAUDE.md` `Status` section now points at `PROJECT_CONTEXT.md` /
@@ -6241,7 +6244,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
 - Sui has no `moe.shizuku.privileged.api` package install, so the Magisk-module marker is the only authoritative signal — the iter-20 `PackageManager` enumeration approach the row originally proposed is unnecessary once the marker is read directly. The "prefer Sui over Shizuku" routing decision is deferred to the still-pending Privilege Health-Check screen (T5); `info.suiPresent` is the wire for it. Reference: [S178]. Closes the iter-20 Now/T5 row.
 
 ### Docs — GrapheneOS A16 background-install fix patch reference (2026-05-08)
-- New [`docs/patch-references/2026-05-08-grapheneos-a16-background-install.md`](docs/patch-references/2026-05-08-grapheneos-a16-background-install.md) captures both fixes from GrapheneOS AppStore Release 36: (a) wrap user-confirmation `startActivity()` in an `isResumed` check + defer to `onPostResume()` when paused (Android 16 `IllegalStateException: Can not perform this action after onSaveInstanceState`), and (b) audit `getCallingPackage()` + `getReferrer()` and drop queued `PendingActions` when an external untrusted caller re-targets the activity.
+- A maintainer-local `docs/patch-references/2026-05-08-grapheneos-a16-background-install.md` note captured both fixes from GrapheneOS AppStore Release 36: (a) wrap user-confirmation `startActivity()` in an `isResumed` check + defer to `onPostResume()` when paused (Android 16 `IllegalStateException: Can not perform this action after onSaveInstanceState`), and (b) audit `getCallingPackage()` + `getReferrer()` and drop queued `PendingActions` when an external untrusted caller re-targets the activity.
 - Port deferred until an Android 16 test device is available; doc lists the exact NG site ([`PackageInstallerActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerActivity.java)) and validation steps. Closes the iter-20 Now/T11 row in patch-reference form.
 
 ### Fixed — Debloater shortcut crash on pre-A13 / Unisoc devices (2026-05-08)
