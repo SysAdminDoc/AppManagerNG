@@ -6,6 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- Auto-freeze on screen lock is now a configurable Rules setting backed by a
+  cancellable, process-death-safe WorkManager job; waking or unlocking cancels
+  pending work, and delay values are bounded to ten minutes.
 - Re-enabled the five Robolectric fixture test classes ignored since
   2026-05-25 (ZipFileSystem, ZipDocumentFile, TarUtils, OABConverter,
   SettingsSearchIndex — 79 tests restored) and implemented

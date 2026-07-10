@@ -7,6 +7,23 @@
         app:title="@string/pref_default_freezing_method"
         app:iconSpaceReserved="false" />
 
+    <SwitchPreferenceCompat
+        app:key="auto_freeze_on_lock"
+        app:title="@string/pref_auto_freeze_on_lock"
+        app:summary="@string/pref_auto_freeze_on_lock_summary"
+        app:iconSpaceReserved="false" />
+
+    <SeekBarPreference
+        app:key="auto_freeze_delay_seconds"
+        app:title="@string/pref_auto_freeze_delay"
+        app:summary="@string/pref_auto_freeze_delay_summary"
+        app:dependency="auto_freeze_on_lock"
+        app:min="0"
+        android:max="600"
+        app:showSeekBarValue="true"
+        app:updatesContinuously="false"
+        app:iconSpaceReserved="false" />
+
     <Preference
         app:key="default_blocking_method"
         app:title="@string/pref_default_blocking_method"

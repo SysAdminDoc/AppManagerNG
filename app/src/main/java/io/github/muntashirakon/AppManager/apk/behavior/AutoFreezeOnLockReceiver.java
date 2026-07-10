@@ -5,56 +5,44 @@ package io.github.muntashirakon.AppManager.apk.behavior;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
-import android.os.Looper;
 
-import androidx.annotation.VisibleForTesting;
+import androidx.annotation.NonNull;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import io.github.muntashirakon.AppManager.logs.Log;
-import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
-import io.github.muntashirakon.AppManager.rules.struct.FreezeRule;
 import io.github.muntashirakon.AppManager.settings.Prefs;
-import io.github.muntashirakon.AppManager.utils.FreezeUtils;
-import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 public class AutoFreezeOnLockReceiver extends BroadcastReceiver {
-    private static final String TAG = AutoFreezeOnLockReceiver.class.getSimpleName();
+    static final String UNIQUE_WORK_NAME = "auto-freeze-on-screen-lock";
+    static final String WORK_TAG = "auto-freeze";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (!Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) return;
-        if (!Prefs.Blocking.isAutoFreezeOnLockEnabled()) return;
-
-        int delaySeconds = Prefs.Blocking.getAutoFreezeDelaySeconds();
-        if (delaySeconds > 0) {
-            new Handler(Looper.getMainLooper()).postDelayed(
-                    () -> ThreadUtils.postOnBackgroundThread(AutoFreezeOnLockReceiver::freezeAllRuledPackages),
-                    delaySeconds * 1000L);
-        } else {
-            ThreadUtils.postOnBackgroundThread(AutoFreezeOnLockReceiver::freezeAllRuledPackages);
+        String action = intent.getAction();
+        if (Intent.ACTION_SCREEN_ON.equals(action) || Intent.ACTION_USER_PRESENT.equals(action)) {
+            cancel(context);
+            return;
+        }
+        if (Intent.ACTION_SCREEN_OFF.equals(action) && Prefs.Blocking.isAutoFreezeOnLockEnabled()) {
+            schedule(context, Prefs.Blocking.getAutoFreezeDelaySeconds());
         }
     }
 
-    @VisibleForTesting
-    static void freezeAllRuledPackages() {
-        try {
-            List<FreezeRule> rules = RulesStorageManager.getAllFreezeRules();
-            int frozen = 0;
-            for (FreezeRule rule : rules) {
-                try {
-                    FreezeUtils.freeze(rule.packageName, rule.getFreezeType());
-                    frozen++;
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed to freeze %s", e, rule.packageName);
-                }
-            }
-            if (frozen > 0) {
-                Log.i(TAG, "Auto-freeze on lock: froze %d/%d packages", frozen, rules.size());
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Auto-freeze on lock failed", e);
+    static void schedule(@NonNull Context context, int delaySeconds) {
+        int boundedDelay = AutoFreezeOnLockWorker.sanitizeDelaySeconds(delaySeconds);
+        OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(AutoFreezeOnLockWorker.class)
+                .addTag(WORK_TAG);
+        if (boundedDelay > 0) {
+            builder.setInitialDelay(boundedDelay, TimeUnit.SECONDS);
         }
+        WorkManager.getInstance(context.getApplicationContext()).enqueueUniqueWork(
+                UNIQUE_WORK_NAME, ExistingWorkPolicy.REPLACE, builder.build());
+    }
+
+    public static void cancel(@NonNull Context context) {
+        WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork(UNIQUE_WORK_NAME);
     }
 }
