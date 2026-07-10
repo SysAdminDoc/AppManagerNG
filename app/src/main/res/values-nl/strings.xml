@@ -881,7 +881,7 @@
     <string name="toast_invalid_level">Ongeldige niveaunaam: %s</string>
     <string name="no_changes">Geen wijzigingen</string>
     <string name="open">Openen</string>
-    <string name="pref_buffer_title">Logboekbuffer(s)</string>
+    <string name="pref_buffer_title">Logboekbuffers</string>
     <string name="type_uri_array">Reeks van URI\'s</string>
     <string name="primary_abi">Primaire ABI</string>
     <string name="filter_choice_pid">PID</string>

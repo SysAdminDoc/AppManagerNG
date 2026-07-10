@@ -2446,8 +2446,14 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } else if (!info.hasProviderServices()) {
             body = getString(R.string.credential_provider_dialog_none);
         } else {
+            int providerCount = info.providerServices.size();
+            int systemActionCount = info.getSystemProviderServiceCount();
+            String providerCountLabel = getResources().getQuantityString(
+                    R.plurals.credential_provider_service_count, providerCount, providerCount);
+            String systemActionCountLabel = getResources().getQuantityString(
+                    R.plurals.credential_provider_system_action_count, systemActionCount, systemActionCount);
             StringBuilder builder = new StringBuilder(getString(R.string.credential_provider_dialog_header,
-                    info.providerServices.size(), info.getSystemProviderServiceCount()));
+                    providerCountLabel, systemActionCountLabel));
             for (CredentialProviderManifestInfo.ServiceDeclaration service : info.providerServices) {
                 builder.append("\n  - ").append(service.toDisplayString());
             }
@@ -2632,7 +2638,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 if (callers.isEmpty()) {
                     body.append(getString(R.string.package_visibility_no_callers));
                 } else {
-                    body.append(getString(R.string.package_visibility_callers_header, callers.size()));
+                    body.append(getResources().getQuantityString(R.plurals.package_visibility_callers_header,
+                            callers.size(), callers.size()));
                     for (String pkg : callers) {
                         body.append("\n  • ").append(pkg);
                     }

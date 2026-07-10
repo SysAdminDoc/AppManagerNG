@@ -761,7 +761,10 @@
     <string name="package_visibility_find_callers">Find callers</string>
     <string name="package_visibility_searching_callers">Scanning installed apps…</string>
     <string name="package_visibility_callers_title">Apps that query this package</string>
-    <string name="package_visibility_callers_header">Found %1$d installed app(s) listing this package in &lt;queries&gt;:</string>
+    <plurals name="package_visibility_callers_header">
+        <item quantity="one">Found %1$d installed app listing this package in &lt;queries&gt;:</item>
+        <item quantity="other">Found %1$d installed apps listing this package in &lt;queries&gt;:</item>
+    </plurals>
     <string name="package_visibility_no_callers">No installed app declares this package in its &lt;queries&gt; manifest block.</string>
 
     <!-- NF-07 Tracker blocking intensity policy -->
@@ -956,7 +959,10 @@
     <string name="leftover_files_found_title">Review leftover folders</string>
     <string name="no_leftover_files_found_message">No leftover folders from uninstalled apps were found.</string>
     <string name="delete_leftover_files_confirm">Permanently delete the selected leftover folders? This cannot be undone.</string>
-    <string name="leftover_files_deleted">Deleted <xliff:g id="count" example="5">%1$d</xliff:g> folder(s), reclaimed <xliff:g id="size" example="12 MB">%2$s</xliff:g>.</string>
+    <plurals name="leftover_files_deleted">
+        <item quantity="one">Deleted <xliff:g id="count" example="1">%1$d</xliff:g> folder, reclaimed <xliff:g id="size" example="12 MB">%2$s</xliff:g>.</item>
+        <item quantity="other">Deleted <xliff:g id="count" example="5">%1$d</xliff:g> folders, reclaimed <xliff:g id="size" example="12 MB">%2$s</xliff:g>.</item>
+    </plurals>
     <string name="leftover_files_export_results">Export results</string>
     <string name="leftover_files_export_subject">AppManagerNG leftover folders</string>
     <string name="find_duplicate_apks">Find duplicate APK files</string>
@@ -968,7 +974,10 @@
     <string name="duplicate_apks_review_title">Review duplicate APKs</string>
     <string name="apk_duplicate_keeping">keeping <xliff:g id="name" example="base.apk">%1$s</xliff:g></string>
     <string name="delete_duplicate_apks_confirm">Permanently delete the selected duplicate APK files? The kept copy of each app version is preserved.</string>
-    <string name="duplicate_apks_deleted">Deleted <xliff:g id="count" example="3">%1$d</xliff:g> APK file(s), reclaimed <xliff:g id="size" example="80 MB">%2$s</xliff:g>.</string>
+    <plurals name="duplicate_apks_deleted">
+        <item quantity="one">Deleted <xliff:g id="count" example="1">%1$d</xliff:g> APK file, reclaimed <xliff:g id="size" example="80 MB">%2$s</xliff:g>.</item>
+        <item quantity="other">Deleted <xliff:g id="count" example="3">%1$d</xliff:g> APK files, reclaimed <xliff:g id="size" example="80 MB">%2$s</xliff:g>.</item>
+    </plurals>
     <!-- T20-C Memory allocations inspector (App Details) -->
     <string name="action_memory_snapshot">Memory snapshot</string>
     <string name="memory_snapshot_permission_required">Reading another app\'s memory needs root or ADB access.</string>
@@ -1352,7 +1361,10 @@
     <string name="pref_compression_method">Compression method</string>
     <string name="pref_backup_flags_msg">Adding a preset for backup options removes the burden of selecting flags every time you back up/restore.</string>
     <string name="pref_backup_exclusion_patterns">Backup path exclusions</string>
-    <string name="pref_backup_exclusion_patterns_summary">Default temporary folders are skipped. %1$d custom pattern(s) configured.</string>
+    <plurals name="pref_backup_exclusion_patterns_summary">
+        <item quantity="one">Default temporary folders are skipped. %1$d custom pattern configured.</item>
+        <item quantity="other">Default temporary folders are skipped. %1$d custom patterns configured.</item>
+    </plurals>
     <string name="pref_backup_exclusion_patterns_default_summary">Default temporary folders are skipped. No custom patterns configured.</string>
     <string name="pref_backup_exclusion_patterns_helper">One glob per line. Examples: **/cache/**, **/.thumbnails/**, databases/*.db-journal</string>
     <string name="backup_exclusion_patterns">Path exclusions</string>
@@ -1412,7 +1424,7 @@
     <string name="am_crashed">AppManagerNG has just crashed</string>
     <string name="tap_to_submit_crash_report">Tap to submit the crash report.</string>
     <string name="send_crash_report">Send crash report</string>
-    <string name="pref_export_diagnostics">Export Diagnostic Report</string>
+    <string name="pref_export_diagnostics">Export diagnostic report</string>
     <string name="pref_export_diagnostics_summary">Bundle device info, recent crash logs, and logcat into a ZIP for bug reports</string>
     <string name="diagnostic_report_subject">AppManagerNG: Diagnostic Report</string>
     <string name="diagnostic_preparing">Collecting diagnostic data…</string>
@@ -1948,7 +1960,7 @@
     <string name="notification_ticker">Log recording started</string>
     <string name="notification_title">Log recording in progress</string>
     <string name="open">Open</string>
-    <string name="pref_buffer_title">Log buffer(s)</string>
+    <string name="pref_buffer_title">Log buffers</string>
     <string name="pref_cat_advanced">Advanced</string>
     <string name="pref_cat_appearance">Appearance</string>
     <string name="pref_cat_configuration">Configuration</string>
@@ -2027,8 +2039,14 @@
     <string name="keystore_export_failed">Could not export AppManagerNG keystore.</string>
     <string name="keystore_import_failed">Could not import AppManagerNG keystore.</string>
     <string name="keystore_import_no_am_aliases">No AppManagerNG keys found in the imported keystore.</string>
-    <string name="keystore_import_success">Imported <xliff:g id="count" example="3">%1$d</xliff:g> key(s) successfully.</string>
-    <string name="keystore_import_partial">Imported <xliff:g id="success" example="2">%1$d</xliff:g> key(s); <xliff:g id="failed" example="1">%2$d</xliff:g> failed.</string>
+    <plurals name="keystore_import_success">
+        <item quantity="one">Imported <xliff:g id="count" example="1">%1$d</xliff:g> key successfully.</item>
+        <item quantity="other">Imported <xliff:g id="count" example="3">%1$d</xliff:g> keys successfully.</item>
+    </plurals>
+    <plurals name="keystore_import_partial">
+        <item quantity="one">Imported <xliff:g id="success" example="1">%1$d</xliff:g> key; <xliff:g id="failed" example="1">%2$d</xliff:g> failed.</item>
+        <item quantity="other">Imported <xliff:g id="success" example="2">%1$d</xliff:g> keys; <xliff:g id="failed" example="1">%2$d</xliff:g> failed.</item>
+    </plurals>
     <string name="failed">Failed</string>
     <string name="pref_rules_msg">Component blocking, import/export, and rule reset controls.</string>
     <string name="saf">SAF</string>
@@ -2281,23 +2299,23 @@
     <string name="standby_bucket_rare">Rare</string>
     <string name="standby_bucket_restricted">Restricted</string>
     <string name="standby_bucket_unknown">Unknown (%d)</string>
-    <string name="exit_history">Recent Exits</string>
-    <string name="exit_reason_exit_self">Exited Normally</string>
-    <string name="exit_reason_signaled">Killed by Signal</string>
-    <string name="exit_reason_low_memory">Low Memory</string>
+    <string name="exit_history">Recent exits</string>
+    <string name="exit_reason_exit_self">Exited normally</string>
+    <string name="exit_reason_signaled">Killed by signal</string>
+    <string name="exit_reason_low_memory">Low memory</string>
     <string name="exit_reason_crash">Crash</string>
-    <string name="exit_reason_crash_native">Native Crash</string>
-    <string name="exit_reason_anr">ANR (Not Responding)</string>
-    <string name="exit_reason_initialization_failure">Initialization Failure</string>
-    <string name="exit_reason_permission_change">Permission Change</string>
-    <string name="exit_reason_excessive_resource">Excessive Resources</string>
-    <string name="exit_reason_user_requested">Force Stopped</string>
-    <string name="exit_reason_user_stopped">User Stopped</string>
-    <string name="exit_reason_dependency_died">Dependency Died</string>
+    <string name="exit_reason_crash_native">Native crash</string>
+    <string name="exit_reason_anr">ANR (not responding)</string>
+    <string name="exit_reason_initialization_failure">Initialization failure</string>
+    <string name="exit_reason_permission_change">Permission change</string>
+    <string name="exit_reason_excessive_resource">Excessive resources</string>
+    <string name="exit_reason_user_requested">Force stopped</string>
+    <string name="exit_reason_user_stopped">User stopped</string>
+    <string name="exit_reason_dependency_died">Dependency died</string>
     <string name="exit_reason_other">Other</string>
     <string name="exit_reason_freezer">Frozen</string>
-    <string name="exit_reason_package_state_change">Package State Change</string>
-    <string name="exit_reason_package_updated">Package Updated</string>
+    <string name="exit_reason_package_state_change">Package state change</string>
+    <string name="exit_reason_package_updated">Package updated</string>
     <string name="exit_reason_unknown">Unknown (%d)</string>
     <string name="binary_32_bit">32 Bit</string>
     <string name="binary_64_bit">64 Bit</string>
@@ -2498,7 +2516,10 @@
     <string name="privilege_health_modules_title">Modules</string>
     <string name="privilege_health_modules_loading">Loading module list…</string>
     <string name="privilege_health_modules_empty">No Magisk/MMRL or LSPosed modules found.</string>
-    <string name="privilege_health_modules_summary"><xliff:g id="count" example="3">%1$d</xliff:g> module(s): <xliff:g id="modules" example="Zygisk - LSPosed, Sui">%2$s</xliff:g></string>
+    <plurals name="privilege_health_modules_summary">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> module: <xliff:g id="modules" example="Sui">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> modules: <xliff:g id="modules" example="Zygisk - LSPosed, Sui">%2$s</xliff:g></item>
+    </plurals>
     <string name="privilege_health_modules_unknown">Could not read module metadata: <xliff:g id="error" example="permission denied">%1$s</xliff:g></string>
     <string name="privilege_health_modules_dialog_title">Installed modules</string>
     <string name="privilege_health_capability_dropping_title">Capability dropping (--drop-cap)</string>
@@ -2512,14 +2533,17 @@
     <string name="privilege_health_capability_dropping_magisk_drop_cap_opt_in">v30.7+ keeps Linux capabilities unless su is launched with --drop-cap.</string>
     <string name="privilege_health_capability_dropping_magisk_drop_cap_legacy">This Magisk version predates the v30.7 opt-in --drop-cap change.</string>
     <string name="privilege_health_capability_dropping_magisk_drop_cap_unknown">Unable to determine this Magisk build\'s --drop-cap default.</string>
-    <string name="privilege_health_capability_dropping_magisk_policy_matched">matched <xliff:g id="count" example="2">%1$d</xliff:g> relevant rule(s)</string>
+    <plurals name="privilege_health_capability_dropping_magisk_policy_matched">
+        <item quantity="one">matched <xliff:g id="count" example="1">%1$d</xliff:g> relevant rule</item>
+        <item quantity="other">matched <xliff:g id="count" example="2">%1$d</xliff:g> relevant rules</item>
+    </plurals>
     <string name="privilege_health_capability_dropping_magisk_policy_no_match">readable, no matching Magisk capability rule printed</string>
     <string name="privilege_health_capability_dropping_magisk_policy_unavailable">magiskpolicy live dump unavailable</string>
     <string name="privilege_health_capability_dropping_magisk_policy_not_magisk">not detected</string>
     <string name="privilege_health_kernelsu_title">KernelSU status</string>
     <string name="privilege_health_kernelsu_not_detected">KernelSU is not the active root provider.</string>
     <string name="privilege_health_kernelsu_unavailable">KernelSU was detected via <xliff:g id="source" example="installed package">%1$s</xliff:g>, but root-marker access is not available. Grant root and refresh to read sulog and seccomp status.</string>
-    <string name="privilege_health_kernelsu_summary">Seccomp: <xliff:g id="seccomp" example="filter (2)">%1$s</xliff:g>. Sulog: <xliff:g id="sulog" example="2 recent denial(s)">%2$s</xliff:g>. App profile: <xliff:g id="profile" example="root UID/GID with expected capabilities">%3$s</xliff:g>.</string>
+    <string name="privilege_health_kernelsu_summary">Seccomp: <xliff:g id="seccomp" example="filter (2)">%1$s</xliff:g>. Sulog: <xliff:g id="sulog" example="2 recent denials">%2$s</xliff:g>. App profile: <xliff:g id="profile" example="root UID/GID with expected capabilities">%3$s</xliff:g>.</string>
     <string name="privilege_health_kernelsu_unknown">KernelSU probe failed: <xliff:g id="reason" example="missing Seccomp">%1$s</xliff:g>.</string>
     <string name="privilege_health_kernelsu_request_root_grant">Request root grant</string>
     <string name="privilege_health_kernelsu_regrant_started">Requesting a fresh KernelSU root grant…</string>
@@ -2528,7 +2552,10 @@
     <string name="privilege_health_kernelsu_recovery_request_root">Request a fresh root grant, then refresh diagnostics.</string>
     <string name="privilege_health_kernelsu_recovery_review_profile">Open KernelSU Manager and review AppManagerNG\'s App Profile or root policy.</string>
     <string name="privilege_health_kernelsu_sulog_no_denials">readable, no recent denials</string>
-    <string name="privilege_health_kernelsu_sulog_denials"><xliff:g id="count" example="2">%1$d</xliff:g> recent denial(s)</string>
+    <plurals name="privilege_health_kernelsu_sulog_denials">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> recent denial</item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> recent denials</item>
+    </plurals>
     <string name="privilege_health_kernelsu_sulog_missing">sulog not readable</string>
     <string name="privilege_health_kernelsu_sulog_unavailable">unavailable</string>
     <string name="privilege_health_kernelsu_app_profile_default_root">root UID/GID with expected capabilities</string>
@@ -3104,7 +3131,15 @@
     <string name="credential_provider_dialog_title">Credential provider</string>
     <string name="credential_provider_dialog_unsupported">Android exposes Credential Manager providers starting with Android 14. This device is API %1$d.</string>
     <string name="credential_provider_dialog_none">No manifest Credential Manager provider services were found for this package.</string>
-    <string name="credential_provider_dialog_header">Manifest Credential Manager provider services: %1$d total, %2$d system-provider action(s).</string>
+    <string name="credential_provider_dialog_header">Manifest Credential Manager: %1$s, including %2$s.</string>
+    <plurals name="credential_provider_service_count">
+        <item quantity="one">%1$d provider service</item>
+        <item quantity="other">%1$d provider services</item>
+    </plurals>
+    <plurals name="credential_provider_system_action_count">
+        <item quantity="one">%1$d system-provider action</item>
+        <item quantity="other">%1$d system-provider actions</item>
+    </plurals>
     <string name="credential_provider_dialog_scope_note">This is target package manifest metadata. It does not reveal saved credentials, passkeys, passwords, federated accounts, or whether this provider is enabled for the current user.</string>
     <string name="credential_provider_open_settings">Open credential settings</string>
     <string name="credential_provider_settings_unavailable">Cannot open Credential Manager settings on this device.</string>
@@ -3643,18 +3678,30 @@
     <string name="delete_duplicate_backups_keep_newest">Keep the newest copy</string>
     <string name="delete_duplicate_backups_keep_oldest">Keep the oldest copy</string>
     <string name="delete_duplicate_backups_confirm">Delete the redundant same-version backup copies, keeping your chosen copy of each package? This cannot be undone.</string>
-    <string name="delete_duplicate_backups_confirm_with_reclaim">Delete <xliff:g id="count" example="4">%1$d</xliff:g> redundant same-version backup(s), reclaiming about <xliff:g id="size" example="400 MB">%2$s</xliff:g>? The kept copy of each app version is preserved.</string>
+    <plurals name="delete_duplicate_backups_confirm_with_reclaim">
+        <item quantity="one">Delete <xliff:g id="count" example="1">%1$d</xliff:g> redundant same-version backup, reclaiming about <xliff:g id="size" example="400 MB">%2$s</xliff:g>? The kept copy of each app version is preserved.</item>
+        <item quantity="other">Delete <xliff:g id="count" example="4">%1$d</xliff:g> redundant same-version backups, reclaiming about <xliff:g id="size" example="400 MB">%2$s</xliff:g>? The kept copy of each app version is preserved.</item>
+    </plurals>
     <string name="no_duplicate_backups_found_message">No duplicate backups were found.</string>
     <string name="duplicate_backup_scan_failed_message">The duplicate backup scan could not be completed. Please try again.</string>
-    <string name="duplicate_backups_pruned">Removed <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s).</string>
-    <string name="duplicate_backups_pruned_with_reclaim">Deleted <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backup(s), reclaimed <xliff:g id="size" example="400 MB">%2$s</xliff:g>.</string>
+    <plurals name="duplicate_backups_pruned">
+        <item quantity="one">Removed <xliff:g id="count" example="1">%1$d</xliff:g> duplicate backup.</item>
+        <item quantity="other">Removed <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backups.</item>
+    </plurals>
+    <plurals name="duplicate_backups_pruned_with_reclaim">
+        <item quantity="one">Deleted <xliff:g id="count" example="1">%1$d</xliff:g> duplicate backup, reclaimed <xliff:g id="size" example="400 MB">%2$s</xliff:g>.</item>
+        <item quantity="other">Deleted <xliff:g id="count" example="4">%1$d</xliff:g> duplicate backups, reclaimed <xliff:g id="size" example="400 MB">%2$s</xliff:g>.</item>
+    </plurals>
     <string name="authenticate_to_delete_backups">Authenticate to delete backups</string>
     <string name="authenticate_to_open_terminal">Authenticate to open terminal</string>
     <!-- Permission Change Monitor (T9/Next) -->
     <string name="pref_permission_change_monitor">Permission change monitor</string>
     <string name="pref_permission_change_monitor_msg">Notify when an updated app gains a new dangerous permission compared to the previously installed version. Opt-in; runs locally with no network use.</string>
     <string name="permission_change_monitor_title">%1$s requests new permissions</string>
-    <string name="permission_change_monitor_body">%1$d new dangerous permission(s): %2$s</string>
+    <plurals name="permission_change_monitor_body">
+        <item quantity="one">%1$d new dangerous permission: %2$s</item>
+        <item quantity="other">%1$d new dangerous permissions: %2$s</item>
+    </plurals>
     <string name="app_change_feed_title">App change feed</string>
     <string name="app_change_feed_summary">Review local app update audit events from permission, signing-key, component, and tracker monitors.</string>
     <string name="app_change_feed_empty">No app change events recorded yet.</string>

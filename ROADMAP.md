@@ -16,9 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Deep Audit Follow-ups (2026-07-02)
 
-- [ ] P3 — Convert remaining "(s)" pluralization hacks to plurals
-  Why: user-visible strings still render "1 backup(s)"-style copy: strings.xml lines with "app(s)", "folder(s)", "APK file(s)", "pattern(s)", "key(s)", "module(s)", "rule(s)", "backup(s)", "permission(s)", "action(s)"; also Title Case drift in `pref_export_diagnostics` and exit-reason labels.
-  Where: `app/src/main/res/values/strings.xml` + each consumer call site.
 
 ## Research-Driven Additions
 
