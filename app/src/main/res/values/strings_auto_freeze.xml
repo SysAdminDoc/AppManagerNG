@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="pref_auto_freeze_on_lock">Auto-freeze on screen lock</string>
+    <string name="pref_auto_freeze_on_lock_summary">Freeze apps with saved freeze rules after the screen turns off. Keep Privacy &gt; Persistent session enabled for reliable lock detection.</string>
+    <string name="pref_auto_freeze_delay">Delay before auto-freeze</string>
+    <string name="pref_auto_freeze_delay_summary">Seconds to wait before freezing. Unlocking cancels pending work.</string>
+</resources>

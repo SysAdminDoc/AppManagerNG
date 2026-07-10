@@ -4,11 +4,14 @@ package io.github.muntashirakon.AppManager;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.StrictMode;
 import android.sun.security.provider.JavaKeyStoreProvider;
 
 import androidx.annotation.Keep;
+import androidx.core.content.ContextCompat;
 import androidx.window.embedding.RuleController;
 
 import com.topjohnwu.superuser.Shell;
@@ -19,6 +22,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass;
 import java.security.Security;
 
 import dalvik.system.ZipPathValidator;
+import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
@@ -30,6 +34,8 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class AppManager extends Application {
+    private AutoFreezeOnLockReceiver mAutoFreezeOnLockReceiver;
+
     static {
         Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.setDefaultBuilder(Shell.Builder.create()
@@ -54,6 +60,7 @@ public class AppManager extends Application {
         Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
         configureActivityEmbeddingSplits();
         AppearanceUtils.init(this);
+        registerAutoFreezeOnLockReceiver();
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new JavaKeyStoreProvider());
         Security.addProvider(new BouncyCastleProvider());
@@ -67,6 +74,16 @@ public class AppManager extends Application {
     private void configureActivityEmbeddingSplits() {
         RuleController.getInstance(this)
                 .setRules(RuleController.parseRules(this, R.xml.main_activity_splits));
+    }
+
+    private void registerAutoFreezeOnLockReceiver() {
+        mAutoFreezeOnLockReceiver = new AutoFreezeOnLockReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
+        ContextCompat.registerReceiver(this, mAutoFreezeOnLockReceiver, filter,
+                ContextCompat.RECEIVER_EXPORTED);
     }
 
     @Keep
@@ -96,6 +113,10 @@ public class AppManager extends Application {
     @Override
     public void onTerminate() {
         super.onTerminate();
+        if (mAutoFreezeOnLockReceiver != null) {
+            unregisterReceiver(mAutoFreezeOnLockReceiver);
+            mAutoFreezeOnLockReceiver = null;
+        }
         StaticDataset.cleanup();
     }
 }
