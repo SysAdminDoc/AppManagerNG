@@ -1,0 +1,7 @@
+Roadmap reliability and Android 16 readiness release.
+
+- Privileged-server lifecycle, authentication, and secret handling hardened.
+- Startup, component reset, and archive handling made more resilient.
+- Android 16 test matrix and runtime feature reporting strengthened.
+- Widgets now refresh on theme changes and include a dark clear-cache preview.
+- Count-aware copy replaces parenthesized plural shortcuts.
