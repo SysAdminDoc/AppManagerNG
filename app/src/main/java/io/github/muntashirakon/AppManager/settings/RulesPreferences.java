@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -103,6 +104,17 @@ public class RulesPreferences extends PreferenceFragment {
                     })
                     .setNegativeButton(R.string.close, null)
                     .show();
+            return true;
+        });
+        // Auto-freeze saved freeze rules after the screen turns off.
+        SwitchPreferenceCompat autoFreezeOnLock = Objects.requireNonNull(
+                findPreference("auto_freeze_on_lock"));
+        autoFreezeOnLock.setChecked(Prefs.Blocking.isAutoFreezeOnLockEnabled());
+        autoFreezeOnLock.setEnabled(SelfPermissions.canFreezeUnfreezePackages());
+        autoFreezeOnLock.setOnPreferenceChangeListener((preference, enabled) -> {
+            if (!(boolean) enabled) {
+                AutoFreezeOnLockReceiver.cancel(requireContext());
+            }
             return true;
         });
         // Default component blocking method

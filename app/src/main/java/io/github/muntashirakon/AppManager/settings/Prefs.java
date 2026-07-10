@@ -432,6 +432,8 @@ public final class Prefs {
     }
 
     public static final class Blocking {
+        public static final int MAX_AUTO_FREEZE_DELAY_SECONDS = 600;
+
         public static boolean globalBlockingEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_GLOBAL_BLOCKING_ENABLED_BOOL);
         }
@@ -489,7 +491,8 @@ public final class Prefs {
         }
 
         public static void setAutoFreezeDelaySeconds(int seconds) {
-            AppPref.set(AppPref.PrefKey.PREF_AUTO_FREEZE_DELAY_SECONDS_INT, Math.max(0, seconds));
+            AppPref.set(AppPref.PrefKey.PREF_AUTO_FREEZE_DELAY_SECONDS_INT,
+                    Math.max(0, Math.min(MAX_AUTO_FREEZE_DELAY_SECONDS, seconds)));
         }
     }
 

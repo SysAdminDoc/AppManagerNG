@@ -16,9 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Deep Audit Follow-ups (2026-07-02)
 
-- [ ] P2 — Wire up or remove the auto-freeze-on-screen-lock feature
-  Why: `AutoFreezeOnLockReceiver` and its `PREF_AUTO_FREEZE_ON_LOCK_BOOL`/`PREF_AUTO_FREEZE_DELAY_SECONDS_INT` prefs shipped with no manifest/dynamic registration and no settings UI — the feature is dead code. ACTION_SCREEN_OFF cannot be manifest-registered, so wiring needs a persistent-process receiver (persistent session already exists) plus a settings toggle; the Handler-based delay also does not survive process death.
-  Where: `apk/behavior/AutoFreezeOnLockReceiver.java`; `settings/Prefs.java`; settings UI; `AppManager.onCreate()`.
 - [ ] P3 — Update home-screen widgets on system theme flips
   Why: baked RemoteViews colors go stale until the next widget update (up to 30 min; indefinitely for the clear-cache widget) when the system light/dark mode changes. Needs a CONFIGURATION_CHANGED-driven refresh while the process lives; verify on-device.
   Where: `usage/ScreenTimeAppWidget.java`; `usage/DataUsageAppWidget.java`; `oneclickops/ClearCacheAppWidget.java`; `logcat/helper/WidgetHelper.java`.
