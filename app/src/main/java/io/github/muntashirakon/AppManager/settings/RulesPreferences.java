@@ -237,19 +237,20 @@ public class RulesPreferences extends PreferenceFragment {
         mRuleResetProgressLabel = progressView.findViewById(android.R.id.text1);
         mRuleResetProgressCount = progressView.findViewById(android.R.id.text2);
         mRuleResetProgress = progressView.findViewById(R.id.progress_linear);
-        mRuleResetProgressDialog = new MaterialAlertDialogBuilder(mActivity)
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.pref_remove_all_rules)
                 .setView(progressView)
                 .setNegativeButton(R.string.cancel, null)
                 .setCancelable(false)
                 .create();
-        mRuleResetProgressDialog.setOnShowListener(dialog -> mRuleResetProgressDialog
+        mRuleResetProgressDialog = progressDialog;
+        progressDialog.setOnShowListener(dialog -> progressDialog
                 .getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(button -> {
                     mModel.cancelRuleReset();
                     button.setEnabled(false);
                     ((android.widget.Button) button).setText(R.string.rule_reset_cancelling);
                 }));
-        mRuleResetProgressDialog.show();
+        progressDialog.show();
     }
 
     private void dismissRuleResetProgress() {

@@ -32,6 +32,9 @@ public class ComponentRuleResetContractTest {
         assertTrue(rules.contains("getComponentRuleResetState().observe(getViewLifecycleOwner()"));
         assertTrue(rules.contains("setIndeterminate(false)"));
         assertTrue(rules.contains("setProgressCompat(state.completed, true)"));
+        assertTrue(rules.contains("AlertDialog progressDialog ="));
+        assertTrue(rules.contains("dialog -> progressDialog"));
+        assertTrue(rules.contains(".getButton(AlertDialog.BUTTON_NEGATIVE)"));
         assertTrue(rules.contains("mModel.cancelRuleReset()"));
         assertTrue(rules.contains("retryFailedRuleResetTargets()"));
         assertTrue(rules.contains("OpHistoryManager.getHistoryActivityIntent"));
