@@ -20,6 +20,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Startup authentication now keeps its asynchronous keystore probe in the
   retained view model, preventing an appearance-triggered activity relaunch
   from leaving the app permanently stuck on the initializing dialog.
+- Empty component-rule resets no longer crash when they finish before the
+  progress dialog's deferred show callback runs.
 - Removing all component rules now snapshots every user before mutation,
   reports bounded per-target progress, stays cancellable, preserves failed or
   unattempted rules for one-tap retry, and records package/user outcomes in
