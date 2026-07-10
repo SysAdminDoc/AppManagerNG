@@ -44,13 +44,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 - Add bounded progress and partial-failure reporting to component-rule reset
-  Why: upstream reports "Remove All Rules" freezing; NG's component-rule reset loops every rule through privileged PackageManager/IFW paths and collapses failures into a boolean, leaving users without progress or a recovery ledger.
-  Evidence: upstream MuntashirAkon/AppManager#1986; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:401`; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:417`; `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java:476`.
-  Touches: `app/src/main/java/io/github/muntashirakon/AppManager/rules/compontents/ComponentsBlocker.java`; component-rule settings UI; operation history; component-rule tests.
-  Acceptance: bulk reset exposes determinate package/component progress, keeps UI cancellable/responsive, records per-component successes/failures with retry data, and tests prove partial failures preserve unapplied rules instead of silently reporting a generic false.
-  Complexity: M
-
 ## Research-Driven Additions
 
 - [ ] P2 — Reconcile local privileged-server port changes with live server state

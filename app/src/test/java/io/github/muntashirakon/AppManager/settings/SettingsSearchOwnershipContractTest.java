@@ -49,11 +49,11 @@ public class SettingsSearchOwnershipContractTest {
     }
 
     @Test
-    public void mainPreferencesObservesAfterViewLifecycleExists() throws IOException {
-        String source = readRepoFile("app/src/main/java/io/github/muntashirakon/AppManager/settings/MainPreferences.java");
+    public void rulesPreferencesObservesResetAfterViewLifecycleExists() throws IOException {
+        String source = readRepoFile("app/src/main/java/io/github/muntashirakon/AppManager/settings/RulesPreferences.java");
         int createPreferences = source.indexOf("public void onCreatePreferences(");
         int viewCreated = source.indexOf("public void onViewCreated(");
-        int lifecycleObserver = source.indexOf("getOperationCompletedLiveData().observe(getViewLifecycleOwner()");
+        int lifecycleObserver = source.indexOf("getComponentRuleResetState().observe(getViewLifecycleOwner()");
 
         assertTrue(createPreferences >= 0);
         assertTrue(viewCreated >= 0);

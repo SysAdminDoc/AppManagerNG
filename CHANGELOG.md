@@ -17,6 +17,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Removing all component rules now snapshots every user before mutation,
+  reports bounded per-target progress, stays cancellable, preserves failed or
+  unattempted rules for one-tap retry, and records package/user outcomes in
+  Operation History instead of always claiming success on the wrong screen.
 - The packaged English manual now uses fork-owned identity, release, support,
   contribution, and translation guidance consistently across its source and
   generated HTML instead of routing users to stale upstream destinations.
