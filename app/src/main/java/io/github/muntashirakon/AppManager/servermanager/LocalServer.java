@@ -9,6 +9,7 @@ import android.os.Process;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.GuardedBy;
+import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -19,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 
+import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.misc.SystemProperties;
@@ -27,6 +29,7 @@ import io.github.muntashirakon.AppManager.server.common.CallerResult;
 import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.server.common.ShellCaller;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -38,6 +41,7 @@ public class LocalServer {
 
     @GuardedBy("lockObject")
     private static final Object sLock = new Object();
+    private static final Object sPortRebindLock = new Object();
 
     @SuppressLint("StaticFieldLeak")
     @Nullable
@@ -75,9 +79,15 @@ public class LocalServer {
     @WorkerThread
     @NoOps
     public static boolean alive(Context context) {
+        return alive(context, ServerConfig.getLocalServerPort());
+    }
+
+    @WorkerThread
+    @NoOps
+    public static boolean alive(Context context, @IntRange(from = 1, to = 65535) int port) {
         try (ServerSocket socket = new ServerSocket()) {
             socket.bind(new InetSocketAddress(ServerConfig.getLocalServerHost(context),
-                    ServerConfig.getLocalServerPort()), 1);
+                    port), 1);
             return false;
         } catch (IOException e) {
             return true;
@@ -98,6 +108,11 @@ public class LocalServer {
         ServerConfig.init(mContext);
         // Start server if not already
         checkConnect();
+    }
+
+    private LocalServer(@NonNull Context context, @NonNull LocalServerManager localServerManager) {
+        mContext = context;
+        mLocalServerManager = localServerManager;
     }
 
     private final Object mConnectLock = new Object();
@@ -309,6 +324,128 @@ public class LocalServer {
             manager.start();
         } else {
             getInstance();
+        }
+    }
+
+    @WorkerThread
+    @NonNull
+    public static PortRebindResult rebindPort(@IntRange(from = 1, to = 65535) int newPort) {
+        synchronized (sPortRebindLock) {
+            int oldPort = ServerConfig.getLocalServerPort();
+            if (newPort == oldPort) {
+                return new PortRebindResult(oldPort, newPort, oldPort,
+                        PortRebindResult.Status.UNCHANGED);
+            }
+            boolean canStartLocalServer = Ops.isDirectRoot() || Ops.isAdb();
+            Context context = ContextUtils.getDeContext(ContextUtils.getContext());
+            LocalServerManager manager = LocalServerManager.getInstance(context);
+            try {
+                ServerConfig.init(context);
+                manager.closeBgServer(oldPort);
+                manager.stop();
+            } catch (Exception stopFailure) {
+                Log.e(TAG, "Could not stop the local server on port " + oldPort + '.', stopFailure);
+                manager.stop();
+                boolean restored = restorePort(manager, oldPort);
+                return new PortRebindResult(oldPort, newPort, oldPort, restored
+                        ? PortRebindResult.Status.ROLLED_BACK
+                        : PortRebindResult.Status.FAILED);
+            }
+
+            Prefs.Misc.setAdbLocalServerPort(newPort);
+            if (!canStartLocalServer) {
+                return new PortRebindResult(oldPort, newPort, newPort,
+                        PortRebindResult.Status.CONFIGURED);
+            }
+            try {
+                manager.start();
+                ensureLocalServerWrapper(context, manager);
+                LocalServices.bindServices();
+                return new PortRebindResult(oldPort, newPort, newPort,
+                        PortRebindResult.Status.REBOUND);
+            } catch (Exception startFailure) {
+                Log.e(TAG, "Could not start the local server on port " + newPort + '.', startFailure);
+                try {
+                    manager.closeBgServer(newPort);
+                } catch (Exception cleanupFailure) {
+                    Log.w(TAG, "Could not clean up the failed replacement server.", cleanupFailure);
+                }
+                manager.stop();
+                Prefs.Misc.setAdbLocalServerPort(oldPort);
+                boolean restored = restorePort(manager, oldPort);
+                return new PortRebindResult(oldPort, newPort, oldPort, restored
+                        ? PortRebindResult.Status.ROLLED_BACK
+                        : PortRebindResult.Status.FAILED);
+            }
+        }
+    }
+
+    private static boolean restorePort(@NonNull LocalServerManager manager, int oldPort) {
+        Prefs.Misc.setAdbLocalServerPort(oldPort);
+        try {
+            manager.start();
+            ensureLocalServerWrapper(ContextUtils.getDeContext(ContextUtils.getContext()), manager);
+            LocalServices.bindServices();
+            return true;
+        } catch (Exception rollbackFailure) {
+            Log.e(TAG, "Could not restore the local server on port " + oldPort + '.', rollbackFailure);
+            manager.stop();
+            return false;
+        }
+    }
+
+    private static void ensureLocalServerWrapper(@NonNull Context context,
+                                                 @NonNull LocalServerManager manager) {
+        synchronized (sLock) {
+            if (sLocalServer == null) {
+                sLocalServer = new LocalServer(context, manager);
+            }
+        }
+    }
+
+    public static final class PortRebindResult {
+        public enum Status {
+            UNCHANGED,
+            CONFIGURED,
+            REBOUND,
+            ROLLED_BACK,
+            FAILED
+        }
+
+        private final int mOldPort;
+        private final int mRequestedPort;
+        private final int mEffectivePort;
+        @NonNull
+        private final Status mStatus;
+
+        PortRebindResult(int oldPort, int requestedPort, int effectivePort,
+                         @NonNull Status status) {
+            mOldPort = oldPort;
+            mRequestedPort = requestedPort;
+            mEffectivePort = effectivePort;
+            mStatus = status;
+        }
+
+        public int getOldPort() {
+            return mOldPort;
+        }
+
+        public int getRequestedPort() {
+            return mRequestedPort;
+        }
+
+        public int getEffectivePort() {
+            return mEffectivePort;
+        }
+
+        @NonNull
+        public Status getStatus() {
+            return mStatus;
+        }
+
+        public boolean isSuccessful() {
+            return mStatus == Status.UNCHANGED || mStatus == Status.CONFIGURED
+                    || mStatus == Status.REBOUND;
         }
     }
 }
