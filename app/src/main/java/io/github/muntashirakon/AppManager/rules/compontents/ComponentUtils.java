@@ -2,6 +2,9 @@
 
 package io.github.muntashirakon.AppManager.rules.compontents;
 
+import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
+import static android.content.pm.PackageManager.DONT_KILL_APP;
+
 import android.annotation.UserIdInt;
 import android.app.AppOpsManager;
 import android.content.ComponentName;
@@ -33,6 +36,7 @@ import java.util.stream.Collectors;
 
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
+import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -250,38 +254,125 @@ public final class ComponentUtils {
     }
 
     @WorkerThread
-    public static void removeAllRules(@NonNull String packageName, int userHandle) {
-        int uid = PackageUtils.getAppUid(new UserPackagePair(packageName, userHandle));
-        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(packageName, userHandle)) {
-            // Remove all blocking rules
-            for (ComponentRule entry : cb.getAllComponents()) {
-                cb.removeComponent(entry.name);
+    @NonNull
+    public static List<ComponentRuleResetPlan> snapshotAllRules(@NonNull Context context,
+                                                                 @NonNull int[] userIds) {
+        if (userIds.length == 0) {
+            return Collections.emptyList();
+        }
+        List<ComponentRuleResetPlan> plans = new ArrayList<>();
+        for (String packageName : getAllPackagesWithComponentRuleFiles(context)) {
+            try (ComponentsBlocker blocker = ComponentsBlocker.getInstance(packageName, userIds[0], true)) {
+                ComponentRuleResetPlan plan = ComponentRuleResetPlan.fromRules(packageName, userIds,
+                        new ArrayList<>(blocker.getAll()));
+                if (plan.size() > 0) {
+                    plans.add(plan);
+                }
+            } catch (Throwable e) {
+                Log.e(TAG, "Could not snapshot rules for package %s.", e, packageName);
             }
-            cb.applyRules(true);
-            // Reset configured app ops
-            AppOpsManagerCompat appOpsManager = new AppOpsManagerCompat();
+        }
+        return plans;
+    }
+
+    @WorkerThread
+    @NonNull
+    public static ComponentRuleResetResult resetRules(@NonNull List<ComponentRuleResetPlan> plans,
+                                                       @NonNull ComponentRuleResetRunner.CancellationChecker cancellationChecker,
+                                                       @NonNull ComponentRuleResetRunner.ProgressListener progressListener) {
+        Map<String, Boolean> ifwClearStatus = new HashMap<>();
+        ComponentRuleResetResult result = ComponentRuleResetRunner.run(plans, cancellationChecker, target -> {
+            ComponentRuleResetPlan.RuleSpec rule = target.getRule();
             try {
-                appOpsManager.resetAllModes(userHandle, packageName);
-                for (AppOpRule entry : cb.getAll(AppOpRule.class)) {
-                    try {
-                        appOpsManager.setMode(entry.getOp(), uid, packageName, AppOpsManager.MODE_DEFAULT);
-                        cb.removeEntry(entry);
-                    } catch (Exception e) {
-                        Log.w(TAG, e);
+                boolean ifwCleared = true;
+                if (rule.isIfw()) {
+                    Boolean cachedStatus = ifwClearStatus.get(target.getPackageName());
+                    if (cachedStatus == null) {
+                        try (ComponentsBlocker blocker = ComponentsBlocker.getMutableInstance(
+                                target.getPackageName(), target.getUserId())) {
+                            cachedStatus = blocker.clearIntentFirewallRules();
+                            blocker.setReadOnly();
+                        }
+                        ifwClearStatus.put(target.getPackageName(), cachedStatus);
+                    }
+                    ifwCleared = cachedStatus;
+                }
+                if (rule.isComponent()) {
+                    PackageManagerCompat.setComponentEnabledSetting(
+                            new ComponentName(target.getPackageName(), rule.getLabel()),
+                            COMPONENT_ENABLED_STATE_DEFAULT, DONT_KILL_APP, target.getUserId());
+                    if (!ifwCleared) {
+                        return ComponentRuleResetResult.Outcome.failure(target,
+                                "The Intent Firewall rule file could not be cleared.");
+                    }
+                } else if (rule.isAppOp()) {
+                    int uid = PackageUtils.getAppUid(new UserPackagePair(target.getPackageName(),
+                            target.getUserId()));
+                    new AppOpsManagerCompat().setMode(rule.getAppOp(), uid, target.getPackageName(),
+                            AppOpsManager.MODE_DEFAULT);
+                } else if (rule.isPermission()) {
+                    PermissionCompat.grantPermission(target.getPackageName(), rule.getPermissionName(),
+                            target.getUserId());
+                }
+                return ComponentRuleResetResult.Outcome.success(target);
+            } catch (Throwable e) {
+                Log.e(TAG, "Could not reset %s for package %s and user %d.", e, target.getLabel(),
+                        target.getPackageName(), target.getUserId());
+                String message = e.getMessage();
+                return ComponentRuleResetResult.Outcome.failure(target,
+                        e.getClass().getSimpleName() + (message != null ? ": " + message : ""));
+            }
+        }, progressListener);
+        persistRetryRules(plans, result.getSuccessfulTargetIds());
+        return result;
+    }
+
+    @NonNull
+    public static List<ComponentRuleResetPlan> getRetryPlans(@NonNull List<ComponentRuleResetPlan> plans,
+                                                              @NonNull ComponentRuleResetResult result) {
+        Set<String> retryTargetIds = new LinkedHashSet<>();
+        Set<String> successfulTargetIds = result.getSuccessfulTargetIds();
+        for (ComponentRuleResetPlan plan : plans) {
+            for (ComponentRuleResetPlan.Target target : plan.getTargets()) {
+                if (!successfulTargetIds.contains(target.getId())) {
+                    retryTargetIds.add(target.getId());
+                }
+            }
+        }
+        List<ComponentRuleResetPlan> retryPlans = new ArrayList<>();
+        for (ComponentRuleResetPlan plan : plans) {
+            ComponentRuleResetPlan retryPlan = plan.retainTargets(retryTargetIds);
+            if (retryPlan.size() > 0) {
+                retryPlans.add(retryPlan);
+            }
+        }
+        return retryPlans;
+    }
+
+    @WorkerThread
+    private static void persistRetryRules(@NonNull List<ComponentRuleResetPlan> plans,
+                                          @NonNull Set<String> successfulTargetIds) {
+        for (ComponentRuleResetPlan plan : plans) {
+            Set<ComponentRuleResetPlan.RuleSpec> retryRules = new LinkedHashSet<>();
+            for (ComponentRuleResetPlan.Target target : plan.getTargets()) {
+                if (!successfulTargetIds.contains(target.getId())) {
+                    retryRules.add(target.getRule());
+                }
+            }
+            int userId = plan.getTargets().isEmpty() ? 0 : plan.getTargets().get(0).getUserId();
+            try (ComponentsBlocker blocker = ComponentsBlocker.getMutableInstance(plan.getPackageName(), userId)) {
+                for (RuleEntry entry : new ArrayList<>(blocker.getAll())) {
+                    if (entry instanceof ComponentRule || entry instanceof AppOpRule
+                            || entry instanceof PermissionRule) {
+                        blocker.removeEntry(entry);
                     }
                 }
-            } catch (Exception e) {
-                Log.w(TAG, e);
-            }
-            // Grant configured permissions
-            for (PermissionRule entry : cb.getAll(PermissionRule.class)) {
-                try {
-                    PermissionCompat.grantPermission(packageName, entry.name, userHandle);
-                    cb.removeEntry(entry);
-                } catch (RemoteException e) {
-                    Log.e("ComponentUtils", "Cannot revoke permission %s for package %s", e, entry.name,
-                            packageName);
+                for (ComponentRuleResetPlan.RuleSpec retryRule : retryRules) {
+                    retryRule.restoreTo(blocker);
                 }
+            } catch (Throwable e) {
+                Log.e(TAG, "Could not persist the retry ledger for package %s.", e,
+                        plan.getPackageName());
             }
         }
     }

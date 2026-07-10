@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="rule_reset_preparing">Preparing the rule reset…</string>
+    <string name="rule_reset_progress_target">%1$s · user %2$d · %3$s</string>
+    <string name="rule_reset_progress_count">%1$d / %2$d</string>
+    <string name="rule_reset_cancelling">Cancelling…</string>
+    <string name="rule_reset_result_title">Rule reset finished</string>
+    <string name="rule_reset_result_empty">No stored rules were found.</string>
+    <string name="rule_reset_result_success">Reset %1$d rule targets.</string>
+    <string name="rule_reset_result_partial">Reset %1$d of %2$d rule targets. %3$d failed; %4$d remain pending for retry.</string>
+    <string name="rule_reset_result_cancelled">Reset cancelled after %1$d of %2$d rule targets succeeded. %3$d failed; %4$d remain pending for retry.</string>
+    <string name="rule_reset_retry_failed">Retry remaining</string>
+    <string name="rule_reset_view_history">Operation history</string>
+</resources>

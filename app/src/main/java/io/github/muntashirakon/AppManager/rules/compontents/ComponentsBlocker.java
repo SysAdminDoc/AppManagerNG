@@ -368,6 +368,16 @@ public final class ComponentsBlocker extends RulesStorageManager {
         }
     }
 
+    /** Remove this package's privileged IFW file without mutating its local retry ledger. */
+    @WorkerThread
+    boolean clearIntentFirewallRules() {
+        if (!SelfPermissions.canBlockByIFW()) {
+            return !mRulesFile.exists();
+        }
+        mRulesFile.delete();
+        return !mRulesFile.exists();
+    }
+
     /**
      * Find if there is any component that needs blocking. Previous implementations checked for
      * rules file in the system IFW directory as well, but since all controls are now inside the app

@@ -9,8 +9,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.UserHandleHidden;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.collection.ArrayMap;
 import androidx.core.util.Pair;
@@ -27,21 +29,29 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.changelog.Changelog;
 import io.github.muntashirakon.AppManager.changelog.ChangelogParser;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
+import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.misc.DeviceInfo2;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetPlan;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetResult;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.users.UserInfo;
@@ -61,11 +71,16 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     private final MutableLiveData<String> mCustomCommand0 = new SingleLiveEvent<>();
     private final MutableLiveData<String> mCustomCommand1 = new SingleLiveEvent<>();
     private final MutableLiveData<Integer> mModeOfOpsStatus = new SingleLiveEvent<>();
-    private final MutableLiveData<Boolean> mOperationCompletedLiveData = new SingleLiveEvent<>();
+    private final MutableLiveData<ComponentRuleResetState> mComponentRuleResetState = new MutableLiveData<>();
     private final MutableLiveData<ArrayMap<String, Uri>> mStorageVolumesLiveData = new SingleLiveEvent<>();
     private final MutableLiveData<String> mSigningKeySha256HashLiveData = new SingleLiveEvent<>();
     private final MutableLiveData<List<Pair<String, CharSequence>>> mPackageNameLabelPairLiveData = new SingleLiveEvent<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(1);
+    private final AtomicBoolean mRuleResetCancelled = new AtomicBoolean();
+    private final Object mRuleResetLock = new Object();
+    private Future<?> mRuleResetFuture;
+    @NonNull
+    private volatile List<ComponentRuleResetPlan> mRuleResetRetryPlans = Collections.emptyList();
 
     public MainPreferencesViewModel(@NonNull Application application) {
         super(application);
@@ -163,8 +178,8 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
         });
     }
 
-    public LiveData<Boolean> getOperationCompletedLiveData() {
-        return mOperationCompletedLiveData;
+    public LiveData<ComponentRuleResetState> getComponentRuleResetState() {
+        return mComponentRuleResetState;
     }
 
     public void applyAllRules() {
@@ -177,16 +192,95 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     }
 
     public void removeAllRules() {
-        ThreadUtils.postOnBackgroundThread(() -> {
-            int[] userHandles = Users.getUsersIds();
-            List<String> packages = ComponentUtils.getAllPackagesWithRules(getApplication());
-            for (int userHandle : userHandles) {
-                for (String packageName : packages) {
-                    ComponentUtils.removeAllRules(packageName, userHandle);
+        startRuleReset(null);
+    }
+
+    public void retryFailedRuleResetTargets() {
+        startRuleReset(new ArrayList<>(mRuleResetRetryPlans));
+    }
+
+    public void cancelRuleReset() {
+        mRuleResetCancelled.set(true);
+    }
+
+    public void clearComponentRuleResetResult() {
+        mComponentRuleResetState.setValue(null);
+    }
+
+    private void startRuleReset(@Nullable List<ComponentRuleResetPlan> requestedPlans) {
+        synchronized (mRuleResetLock) {
+            if (mRuleResetFuture != null && !mRuleResetFuture.isDone()) {
+                return;
+            }
+            mRuleResetCancelled.set(false);
+            mComponentRuleResetState.postValue(ComponentRuleResetState.preparing());
+            mRuleResetFuture = mExecutor.submit(() -> {
+                List<ComponentRuleResetPlan> plans = requestedPlans != null
+                        ? requestedPlans
+                        : ComponentUtils.snapshotAllRules(getApplication(), Users.getUsersIds());
+                int total = 0;
+                for (ComponentRuleResetPlan plan : plans) total += plan.size();
+                mComponentRuleResetState.postValue(ComponentRuleResetState.running(0, total,
+                        null, 0, null));
+                ComponentRuleResetResult result = ComponentUtils.resetRules(plans,
+                        mRuleResetCancelled::get,
+                        (completed, targetCount, target) -> mComponentRuleResetState.postValue(
+                                ComponentRuleResetState.running(completed, targetCount,
+                                        target.getPackageName(), target.getUserId(), target.getLabel())));
+                mRuleResetRetryPlans = ComponentUtils.getRetryPlans(plans, result);
+                recordRuleResetHistory(plans, result);
+                mComponentRuleResetState.postValue(ComponentRuleResetState.finished(result));
+            });
+        }
+    }
+
+    private void recordRuleResetHistory(@NonNull List<ComponentRuleResetPlan> plans,
+                                        @NonNull ComponentRuleResetResult result) {
+        Map<String, List<ComponentRuleResetResult.Outcome>> outcomesByTarget = new LinkedHashMap<>();
+        for (ComponentRuleResetResult.Outcome outcome : result.getOutcomes()) {
+            ComponentRuleResetPlan.Target target = outcome.getTarget();
+            String key = target.getPackageName() + ':' + target.getUserId();
+            outcomesByTarget.computeIfAbsent(key, ignored -> new ArrayList<>()).add(outcome);
+        }
+        for (ComponentRuleResetPlan plan : plans) {
+            Map<Integer, List<ComponentRuleResetPlan.Target>> targetsByUser = new LinkedHashMap<>();
+            for (ComponentRuleResetPlan.Target target : plan.getTargets()) {
+                targetsByUser.computeIfAbsent(target.getUserId(), ignored -> new ArrayList<>()).add(target);
+            }
+            for (Map.Entry<Integer, List<ComponentRuleResetPlan.Target>> entry : targetsByUser.entrySet()) {
+                int userId = entry.getKey();
+                List<ComponentRuleResetResult.Outcome> outcomes = outcomesByTarget.getOrDefault(
+                        plan.getPackageName() + ':' + userId, Collections.emptyList());
+                int succeeded = 0;
+                List<String> failures = new ArrayList<>();
+                for (ComponentRuleResetResult.Outcome outcome : outcomes) {
+                    if (outcome.isSuccess()) {
+                        ++succeeded;
+                    } else if (failures.size() < 3) {
+                        failures.add(outcome.getTarget().getLabel() + ": " + outcome.getError());
+                    }
+                }
+                int total = entry.getValue().size();
+                int failed = outcomes.size() - succeeded;
+                int pending = total - outcomes.size();
+                String detail = "targets=" + total + "; succeeded=" + succeeded + "; failed="
+                        + failed + "; pending=" + pending
+                        + (failures.isEmpty() ? "" : "; retry=" + TextUtils.join(" | ", failures));
+                boolean success = failed == 0 && pending == 0;
+                try {
+                    SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
+                            SingleAppActionHistoryItem.ACTION_COMPONENT_RULE_RESET,
+                            getApplication().getString(R.string.pref_remove_all_rules),
+                            plan.getPackageName(), userId,
+                            getApplication().getString(R.string.rules), detail);
+                    OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION,
+                            item, success, OperationJournalMetadata.forSingleAppAction(getApplication(),
+                                    item, success, OperationJournalMetadata.RISK_HIGH, false, null));
+                } catch (Exception e) {
+                    Log.e(TAG, "Could not record component-rule reset history.", e);
                 }
             }
-            mOperationCompletedLiveData.postValue(true);
-        });
+        }
     }
 
     public LiveData<ArrayMap<String, Uri>> getStorageVolumesLiveData() {
@@ -293,6 +387,12 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     @Override
     protected void onCleared() {
         super.onCleared();
+        mRuleResetCancelled.set(true);
+        synchronized (mRuleResetLock) {
+            if (mRuleResetFuture != null) {
+                mRuleResetFuture.cancel(true);
+            }
+        }
         mExecutor.shutdownNow();
     }
 }

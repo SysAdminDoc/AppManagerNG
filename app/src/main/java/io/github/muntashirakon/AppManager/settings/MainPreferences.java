@@ -2,9 +2,7 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,7 +18,6 @@ import java.util.Locale;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
-import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.preference.WarningAlertPreference;
 
 public class MainPreferences extends PreferenceFragment {
@@ -67,19 +64,6 @@ public class MainPreferences extends PreferenceFragment {
         mGuidedModePref.setOnPreferenceChangeListener((preference, newValue) -> {
             Prefs.Experience.setGuidedModeEnabled((boolean) newValue);
             return true;
-        });
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        MainPreferencesViewModel model = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
-        model.getOperationCompletedLiveData().observe(getViewLifecycleOwner(), completed -> {
-            Activity activity = getActivity();
-            if (activity instanceof SettingsActivity) {
-                ((SettingsActivity) activity).progressIndicator.hide();
-            }
-            UIUtils.displayShortToast(R.string.the_operation_was_successful);
         });
     }
 
