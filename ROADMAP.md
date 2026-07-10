@@ -36,13 +36,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P3 — Codify the Robolectric SDK36 and JDK test matrix
-  Why: Robolectric 4.16 supports SDK36 but documents JDK21 as required for SDK36-target tests, while project setup docs still say JDK 17+.
-  Evidence: `BUILDING.rst:12`; `app/build.gradle`; `versions.gradle`; Robolectric 4.16 release notes.
-  Touches: `BUILDING.rst`; Gradle test configuration; local verification scripts/docs; test source-contract checks.
-  Acceptance: contributors get a single documented JVM requirement for app builds versus SDK36 Robolectric tests; local test commands fail early with an actionable message or pin compatible SDK/toolchain behavior; `:app:testFlossDebugUnitTest` requirements are unambiguous.
-  Complexity: S
-
 - [ ] P3 — Complete runtime feature truth in the System Config viewer
   Why: the root-only system configuration surface still has commented AOSP runtime feature additions for encryption, adoptable storage, incremental delivery, and app enumeration.
   Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/sysconfig/SystemConfig.java:1248`; upstream App Manager system-configuration feature documentation; Android `PackageManager` feature documentation.

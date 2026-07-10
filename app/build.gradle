@@ -157,6 +157,18 @@ android {
     }
 }
 
+tasks.withType(Test).configureEach {
+    // SDK 36's instrumented framework is large enough to make Gradle's default
+    // 512 MiB test-worker heap spend most of a full-suite run in GC.
+    maxHeapSize = "1024m"
+    doFirst {
+        if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+            throw new GradleException("${path} runs Robolectric against Android SDK 36 and requires JDK 21 or newer. "
+                    + "Gradle is using ${System.getProperty('java.version')}; update JAVA_HOME or the IDE Gradle JDK.")
+        }
+    }
+}
+
 dependencies {
     compileOnly project(path: ':hiddenapi')
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:${desugar_jdk_version}"
