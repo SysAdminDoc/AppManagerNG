@@ -18,6 +18,7 @@ import android.util.Xml;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -70,6 +71,21 @@ public class SystemConfig {
 
     // property for runtime configuration differentiation in vendor
     private static final String VENDOR_SKU_PROPERTY = "ro.boot.product.vendor.sku";
+
+    // These feature names have runtime probes in system_server, but their probe APIs are hidden.
+    // PackageManager's public runtime inventory is authoritative when it is available.
+    static final String FEATURE_FILE_BASED_ENCRYPTION = "android.software.file_based_encryption";
+    static final String FEATURE_SECURELY_REMOVES_USERS = "android.software.securely_removes_users";
+    static final String FEATURE_ADOPTABLE_STORAGE = "android.software.adoptable_storage";
+    static final String FEATURE_INCREMENTAL_DELIVERY = "android.software.incremental_delivery";
+    static final String FEATURE_APP_ENUMERATION = "android.software.app_enumeration";
+    private static final String[] RUNTIME_PROBED_FEATURES = {
+            FEATURE_FILE_BASED_ENCRYPTION,
+            FEATURE_SECURELY_REMOVES_USERS,
+            FEATURE_ADOPTABLE_STORAGE,
+            FEATURE_INCREMENTAL_DELIVERY,
+            FEATURE_APP_ENUMERATION,
+    };
 
     // Group-ids that are given to all packages as read from etc/permissions/*.xml.
     int[] mGlobalGids;
@@ -167,6 +183,9 @@ public class SystemConfig {
     // These are the features which this device doesn't support; the OEM
     // partition uses these to opt-out of features from the system image.
     final Set<String> mUnavailableFeatures = new HashSet<>();
+
+    // Runtime-probed features whose status could not be obtained from PackageManager.
+    final Set<String> mUnknownFeatures = new HashSet<>();
 
     public static final class PermissionEntry {
         public final String name;
@@ -582,6 +601,15 @@ public class SystemConfig {
         // Allow /system_ext to customize all system configs
         readPermissions(Paths.build(OsEnvironment.getSystemExtDirectory(), "etc", "sysconfig"), ALLOW_ALL);
         readPermissions(Paths.build(OsEnvironment.getSystemExtDirectory(), "etc", "permissions"), ALLOW_ALL);
+
+        addRamFeature(isLowRamDevice());
+        mergeRuntimeFeatures(getRuntimeFeatures());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            addFeature(PackageManager.FEATURE_IPSEC_TUNNELS, 0);
+        }
+
+        applyUnavailableFeatures();
     }
 
     public void readPermissions(@Nullable Path libraryDir, int permissionFlag) {
@@ -1241,37 +1269,6 @@ public class SystemConfig {
             IoUtils.closeQuietly(permReader);
         }
 
-        addRamFeature(isLowRamDevice());
-
-        // Some devices can be field-converted to FBE, so offer to splice in
-        // those features if not already defined by the static config.
-        // FIXME: implement the remaining storage, incremental, and app enumeration
-        // runtime features when public APIs are available.
-//        if (StorageManager.isFileEncryptedNativeOnly()) {
-//            addFeature(PackageManager.FEATURE_FILE_BASED_ENCRYPTION, 0);
-//            addFeature(PackageManager.FEATURE_SECURELY_REMOVES_USERS, 0);
-//        }
-//
-//        // Help legacy devices that may not have updated their static config
-//        if (StorageManager.hasAdoptable()) {
-//            addFeature(PackageManager.FEATURE_ADOPTABLE_STORAGE, 0);
-//        }
-//
-//        if (IncrementalManager.isFeatureEnabled()) {
-//            addFeature(PackageManager.FEATURE_INCREMENTAL_DELIVERY, 0);
-//        }
-//
-//        if (PackageManager.APP_ENUMERATION_ENABLED_BY_DEFAULT) {
-//            addFeature(PackageManager.FEATURE_APP_ENUMERATION, 0);
-//        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            addFeature(PackageManager.FEATURE_IPSEC_TUNNELS, 0);
-        }
-
-        for (String featureName : mUnavailableFeatures) {
-            removeFeature(featureName);
-        }
     }
 
     static boolean shouldAddFeature(@NonNull XmlPullParser parser, boolean lowRam) {
@@ -1291,6 +1288,46 @@ public class SystemConfig {
         ActivityManager activityManager = (ActivityManager) ContextUtils.getContext()
                 .getSystemService(Context.ACTIVITY_SERVICE);
         return activityManager != null && activityManager.isLowRamDevice();
+    }
+
+    @Nullable
+    private static FeatureInfo[] getRuntimeFeatures() {
+        try {
+            return ContextUtils.getContext().getPackageManager().getSystemAvailableFeatures();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not query runtime system features", e);
+            return null;
+        }
+    }
+
+    @VisibleForTesting
+    void mergeRuntimeFeatures(@Nullable FeatureInfo[] runtimeFeatures) {
+        mUnknownFeatures.clear();
+        if (runtimeFeatures == null) {
+            for (String featureName : RUNTIME_PROBED_FEATURES) {
+                if (!mAvailableFeatures.containsKey(featureName)
+                        && !mUnavailableFeatures.contains(featureName)) {
+                    mUnknownFeatures.add(featureName);
+                }
+            }
+            return;
+        }
+        for (FeatureInfo featureInfo : runtimeFeatures) {
+            // A null name denotes the OpenGL ES version record, not a named feature.
+            if (featureInfo == null || TextUtils.isEmpty(featureInfo.name)) {
+                continue;
+            }
+            int version = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? featureInfo.version : 0;
+            addFeature(featureInfo.name, version);
+        }
+    }
+
+    @VisibleForTesting
+    void applyUnavailableFeatures() {
+        for (String featureName : mUnavailableFeatures) {
+            removeFeature(featureName);
+            mUnknownFeatures.remove(featureName);
+        }
     }
 
     private void addFeature(String name, int version) {

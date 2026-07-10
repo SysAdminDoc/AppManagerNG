@@ -101,6 +101,11 @@ class SysConfigWrapper {
                     list.add(new SysConfigInfo(SysConfigType.TYPE_UNAVAILABLE_FEATURE, feature, false));
                 }
                 break;
+            case SysConfigType.TYPE_UNKNOWN_FEATURE:
+                for (String feature : config.mUnknownFeatures) {
+                    list.add(new SysConfigInfo(SysConfigType.TYPE_UNKNOWN_FEATURE, feature, false));
+                }
+                break;
             case SysConfigType.TYPE_ALLOW_IN_POWER_SAVE_EXCEPT_IDLE:
                 for (String packageName : config.getAllowInPowerSaveExceptIdle()) {
                     list.add(new SysConfigInfo(SysConfigType.TYPE_ALLOW_IN_POWER_SAVE_EXCEPT_IDLE, packageName, true));

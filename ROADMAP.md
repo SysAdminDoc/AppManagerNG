@@ -35,10 +35,3 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 ## Research-Driven Additions
 
 ## Research-Driven Additions
-
-- [ ] P3 — Complete runtime feature truth in the System Config viewer
-  Why: the root-only system configuration surface still has commented AOSP runtime feature additions for encryption, adoptable storage, incremental delivery, and app enumeration.
-  Evidence: `app/src/main/java/io/github/muntashirakon/AppManager/sysconfig/SystemConfig.java:1248`; upstream App Manager system-configuration feature documentation; Android `PackageManager` feature documentation.
-  Touches: `SystemConfig.java`; `SysConfigWrapper.java`; `SystemConfigTest.java`; any sysconfig UI labels for unknown/runtime-only features.
-  Acceptance: available public/compat runtime feature sources are added with API guards, unavailable hidden-only checks are represented as unknown instead of silently absent, and tests pin low-RAM plus runtime feature behavior.
-  Complexity: M
