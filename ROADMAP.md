@@ -16,9 +16,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Deep Audit Follow-ups (2026-07-02)
 
-- [ ] P3 — Update home-screen widgets on system theme flips
-  Why: baked RemoteViews colors go stale until the next widget update (up to 30 min; indefinitely for the clear-cache widget) when the system light/dark mode changes. Needs a CONFIGURATION_CHANGED-driven refresh while the process lives; verify on-device.
-  Where: `usage/ScreenTimeAppWidget.java`; `usage/DataUsageAppWidget.java`; `oneclickops/ClearCacheAppWidget.java`; `logcat/helper/WidgetHelper.java`.
 - [ ] P3 — Add a night-mode preview for the clear-cache widget
   Why: `drawable-night-nodpi/` has night previews for the screen-time and data-usage widgets but not clear-cache, so the dark widget picker mixes light and dark previews. Needs an asset render.
   Where: `app/src/main/res/drawable-nodpi/app_widget_preview_clear_cache.png`.
