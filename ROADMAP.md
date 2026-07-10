@@ -42,13 +42,6 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-- [ ] P2 — Rebaseline packaged offline manual source truth
-  Why: the packaged manual source still says upstream App Manager v4.0.1 and routes reports/translations to upstream destinations, while generated HTML contains a partial AppManagerNG fork notice, so `:docs:buildDocs` can regress fork identity and support guidance.
-  Evidence: `docs/raw/en/intro/main.tex:4`; `docs/raw/en/intro/main.tex:12`; `docs/raw/en/intro/main.tex:40`; `docs/raw/en/intro/main.tex:52`; `docs/raw/en/intro/main.tex:79`; `docs/raw/en/strings.xml:21`; `docs/raw/en/strings.xml:23`; `docs/raw/en/index.html:156`; `docs/raw/en/index.html:185`; `CHANGELOG.md:348`.
-  Touches: `docs/raw/en/intro/main.tex`; generated `docs/raw/en/strings.xml`; generated `docs/raw/en/index.html`; docs build/source-contract tests.
-  Acceptance: packaged English manual source, generated XML, and generated HTML agree on AppManagerNG identity, current support policy, fork-owned issue destinations, distribution links, and translation status; `rtk .\gradlew.bat :docs:buildDocs` preserves those strings; a grep/source-contract test fails on upstream-only support/version links outside historical changelog or explicit upstream-credit sections.
-  Complexity: M
-
 ## Research-Driven Additions
 
 - [ ] P2 - Add bounded progress and partial-failure reporting to component-rule reset

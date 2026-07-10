@@ -17,6 +17,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- The packaged English manual now uses fork-owned identity, release, support,
+  contribution, and translation guidance consistently across its source and
+  generated HTML instead of routing users to stale upstream destinations.
 - Activity Interceptor URI generation now falls back to a safe base-intent copy
   when foreign Parcelable extras cannot be unmarshalled, preserves readable
   primitive extras, reports skipped keys/types, and surfaces malformed paste errors.
