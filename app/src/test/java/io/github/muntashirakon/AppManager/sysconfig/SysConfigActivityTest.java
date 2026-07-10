@@ -3,13 +3,27 @@
 package io.github.muntashirakon.AppManager.sysconfig;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.RobolectricTestRunner;
+
+import java.util.Arrays;
+
+import io.github.muntashirakon.AppManager.R;
 
 @RunWith(RobolectricTestRunner.class)
 public class SysConfigActivityTest {
+    @Test
+    public void configurationPicker_exposesUnknownRuntimeFeatures() {
+        String[] types = RuntimeEnvironment.getApplication().getResources()
+                .getStringArray(R.array.sys_config_names);
+
+        assertTrue(Arrays.asList(types).contains(SysConfigType.TYPE_UNKNOWN_FEATURE));
+    }
+
     @Test
     public void formatPackageReference_includesResolvedLabel() {
         CharSequence reference = SysConfigActivity.SysConfigRecyclerAdapter.formatPackageReference(

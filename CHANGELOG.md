@@ -17,6 +17,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- System Config now merges PackageManager's runtime feature inventory after all
+  partition XML, preserves the highest feature version, applies unavailable
+  overrides last, and distinguishes failed hidden-probe discovery as unknown.
 - Local Robolectric tests now run against Android SDK 36 and fail with an
   actionable preflight when Gradle is not using the documented JDK 21 runtime.
 - The vendored archive codec now lives in the app namespace so Android 16's
