@@ -18,7 +18,6 @@ import android.provider.DocumentsContract;
 import android.system.ErrnoException;
 import android.system.OsConstants;
 import android.text.TextUtils;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import androidx.annotation.CheckResult;
@@ -46,6 +45,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.compat.StorageManagerCompat;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -618,7 +618,7 @@ class PathImpl extends Path {
             try {
                 return Objects.requireNonNull(getFile()).createNewSymlink(target);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not create symbolic link.", e);
             }
         }
         return false;
@@ -1491,7 +1491,7 @@ class PathImpl extends Path {
             try {
                 mChannel.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not close file channel.", e);
             }
         }
 

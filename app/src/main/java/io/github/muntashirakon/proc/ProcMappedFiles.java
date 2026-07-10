@@ -12,10 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.io.Path;
 import kotlin.collections.ArrayDeque;
 
 public class ProcMappedFiles {
+    private static final String TAG = ProcMappedFiles.class.getSimpleName();
+
     public static class MappedFile {
         public final Path memoryPath;
         public final String realPath;
@@ -46,7 +49,7 @@ public class ProcMappedFiles {
                 }
                 mappedFileList.add(mappedFile);
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.w(TAG, "Could not resolve mapped process file.", e);
             }
         }
     }

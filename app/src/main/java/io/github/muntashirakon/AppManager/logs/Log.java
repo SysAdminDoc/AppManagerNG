@@ -25,6 +25,8 @@ import static android.util.Log.VERBOSE;
 import static android.util.Log.WARN;
 
 public class Log extends Logger {
+    private static final String TAG = Log.class.getSimpleName();
+
     @IntDef(value = {VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Level {
@@ -48,7 +50,7 @@ public class Log extends Logger {
         try {
             sInstance = new Log();
         } catch (IOException e) {
-            e.printStackTrace();
+            android.util.Log.e(TAG, "Could not initialize the file logger.", e);
         }
     }
 

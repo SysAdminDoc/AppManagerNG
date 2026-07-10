@@ -4,6 +4,7 @@ package io.github.muntashirakon.view;
 
 import android.annotation.SuppressLint;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.widget.AutoCompleteTextView;
 import android.widget.ListPopupWindow;
 
@@ -15,6 +16,8 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import java.lang.reflect.Field;
 
 public final class AutoCompleteTextViewCompat {
+    private static final String TAG = AutoCompleteTextViewCompat.class.getSimpleName();
+
     @SuppressWarnings("JavaReflectionMemberAccess")
     @SuppressLint("DiscouragedPrivateApi")
     public static void setListSelector(@NonNull AutoCompleteTextView view, @Nullable Drawable listSelector) {
@@ -27,7 +30,7 @@ public final class AutoCompleteTextViewCompat {
                 popupWindow.setListSelector(listSelector);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not set the platform autocomplete list selector.", e);
         }
     }
 
@@ -42,7 +45,7 @@ public final class AutoCompleteTextViewCompat {
                 popupWindow.setListSelector(listSelector);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.w(TAG, "Could not set the Material autocomplete list selector.", e);
         }
     }
 }
