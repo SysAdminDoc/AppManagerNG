@@ -10,6 +10,7 @@
 !*.xml
 !*.lua
 !*.md
+changelog_old.md
 !*.sh
 en/svg-inkscape
 en/main_vanilla.pdf

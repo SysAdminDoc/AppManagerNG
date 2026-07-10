@@ -92,8 +92,8 @@ Reclaim storage without losing anything: archiving removes an app's APK and cach
 See [ROADMAP.md](ROADMAP.md) for planned work, [RESEARCH.md](RESEARCH.md) for
 the current research backing, and
 [`docs/roadmap/COMPLETED.md`](docs/roadmap/COMPLETED.md) for completed or stale
-items. Historical roadmap and research ledgers are archived under
-[`docs/roadmap/archive/`](docs/roadmap/archive/) and [`docs/archive/`](docs/archive/).
+items. Maintainer-local historical archives are intentionally excluded from
+published checkouts; shipped work remains traceable through this changelog and Git history.
 Version targets:
 
 - **v0.2.0** ✅ — applicationId rename to `io.github.sysadmindoc.AppManagerNG`, fresh keystore, local release publishing, NG CONTRIBUTING.md
