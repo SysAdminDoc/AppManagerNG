@@ -5,11 +5,13 @@ package io.github.muntashirakon.AppManager.oneclickops;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
@@ -18,6 +20,15 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppWidgetThemeUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class ClearCacheAppWidget extends AppWidgetProvider {
+
+    public static void updateWidgets(@NonNull Context context) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(
+                new ComponentName(context, ClearCacheAppWidget.class));
+        for (int appWidgetId : appWidgetIds) {
+            updateAppWidget(context, appWidgetManager, appWidgetId);
+        }
+    }
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         context = AppearanceUtils.getThemedWidgetContext(context);

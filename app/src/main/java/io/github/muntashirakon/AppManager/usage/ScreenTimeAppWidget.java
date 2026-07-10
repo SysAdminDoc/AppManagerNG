@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.usage;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -30,6 +31,15 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppWidgetThemeUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class ScreenTimeAppWidget extends AppWidgetProvider {
+    public static void updateWidgets(@NonNull Context context) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(
+                new ComponentName(context, ScreenTimeAppWidget.class));
+        for (int appWidgetId : appWidgetIds) {
+            updateAppWidget(context, appWidgetManager, appWidgetId);
+        }
+    }
+
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         if (!FeatureController.isUsageAccessEnabled() || !SelfPermissions.checkUsageStatsPermission()) {
             return;
