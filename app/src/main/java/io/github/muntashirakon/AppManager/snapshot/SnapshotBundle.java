@@ -105,10 +105,12 @@ public final class SnapshotBundle {
      * SharedPreferences names that must NEVER be exported. {@code keystore} holds
      * the local keystore password derived from Android Keystore; transferring it
      * across devices does not decrypt anything and only widens the leak surface.
+     * {@code server_secrets} holds the sole authenticator for the local privileged
+     * channel and must be regenerated independently on every installation.
      */
     @VisibleForTesting
     static final Set<String> EXCLUDED_PREF_NAMES = Collections.unmodifiableSet(
-            new HashSet<>(Collections.singletonList("keystore")));
+            new HashSet<>(Arrays.asList("keystore", "server_secrets")));
 
     /**
      * Hard limit on bundled entry size to bound memory during import. 64 MB is

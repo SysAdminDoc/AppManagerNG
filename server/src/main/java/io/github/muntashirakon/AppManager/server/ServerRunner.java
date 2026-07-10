@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 import io.github.muntashirakon.AppManager.server.common.ConfigParams;
 import io.github.muntashirakon.AppManager.server.common.Constants;
@@ -43,12 +42,13 @@ public final class ServerRunner {
     public static void main(String[] args) {
         try {
             FLog.writeLog = true;
-            FLog.log("Arguments: " + Arrays.toString(args));
             if (args == null || args.length == 0) {
                 return;
             }
             // Get arguments
             String paramsStr = args[0];
+            FLog.log("Arguments: [" + ConfigParams.redact(paramsStr)
+                    + (args.length > 1 ? ", " + args[1] : "") + "]");
             int oldPid = -1;
             if (args.length > 1) {
                 try {
@@ -71,7 +71,7 @@ public final class ServerRunner {
             }
             configParams.put(PARAM_UID, "" + Process.myUid());
             // Set server info
-            LifecycleAgent.sServerInfo.startArgs = paramsStr;
+            LifecycleAgent.sServerInfo.startArgs = ConfigParams.redact(paramsStr);
             LifecycleAgent.sServerInfo.startTime = System.currentTimeMillis();
             LifecycleAgent.sServerInfo.startRealTime = SystemClock.elapsedRealtime();
             // Print debug

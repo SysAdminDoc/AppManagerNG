@@ -35,7 +35,7 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
         // Verify token before doing action
         String token = intent.getStringExtra(ConfigParams.PARAM_TOKEN);
         if (!ServerConfig.getLocalToken().equals(token)) {
-            Log.d(TAG, "Mismatch token. Expected: %s, Received: %s", ServerConfig.getLocalToken(), token);
+            Log.w(TAG, "Rejected server status broadcast with a mismatched token.");
             return;
         }
         String uidString = intent.getStringExtra(ConfigParams.PARAM_UID);

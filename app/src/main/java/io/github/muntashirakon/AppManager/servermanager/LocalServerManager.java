@@ -231,7 +231,7 @@ class LocalServerManager {
             os.write("id\n".getBytes());
             // ADB may require a fallback method
             String command = ServerConfig.getServerRunnerAdbCommand();
-            Log.d(TAG, "useAdbStartServer: %s", command);
+            Log.d(TAG, "useAdbStartServer: Launching privileged server.");
             os.write((command + "\n").getBytes());
         }
 
@@ -252,7 +252,7 @@ class LocalServerManager {
         // with external-storage write access swaps the JAR/script that root then executes.
         String command = ServerConfig.getServerRunnerCommand(1);
         // + "\n" + "supolicy --live 'allow qti_init_shell zygote_exec file execute'";
-        Log.d(TAG, "useRootStartServer: %s", command);
+        Log.d(TAG, "useRootStartServer: Launching privileged server.");
         Runner.Result result = Runner.runCommand(command);
 
         Log.d(TAG, "useRootStartServer: %s", result.getOutput());

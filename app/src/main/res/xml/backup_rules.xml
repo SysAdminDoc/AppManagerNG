@@ -10,6 +10,7 @@
 
         <include domain="sharedpref" path="." />
         <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
+        <exclude domain="sharedpref" path="server_secrets.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="root" path="." />
@@ -22,5 +23,6 @@
 
         <include domain="sharedpref" path="." />
         <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
+        <exclude domain="sharedpref" path="server_secrets.xml" />
     </device-transfer>
 </data-extraction-rules>

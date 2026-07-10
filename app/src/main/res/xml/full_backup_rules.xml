@@ -9,4 +9,5 @@
 
     <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
+    <exclude domain="sharedpref" path="server_secrets.xml" />
 </full-backup-content>

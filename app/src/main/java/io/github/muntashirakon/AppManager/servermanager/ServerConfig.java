@@ -31,6 +31,7 @@ public final class ServerConfig {
     public static final String TAG = ServerConfig.class.getSimpleName();
 
     public static final int DEFAULT_ADB_PORT = 5555;
+    public static final String SECRET_PREFS_NAME = "server_secrets";
     static final String SERVER_RUNNER_EXEC_NAME = "run_server.sh";
     private static final String LOCAL_TOKEN = "l_token";
     private static final String ADB_LAST_PAIRING_HOST = "adb_last_pairing_host";
@@ -38,8 +39,6 @@ public final class ServerConfig {
     private static final String ADB_LAST_PAIRING_TIME = "adb_last_pairing_time";
     private static final File[] SERVER_RUNNER_EXEC = new File[2];
     private static final File[] SERVER_RUNNER_JAR = new File[2];
-    private static final SharedPreferences sPreferences = ContextUtils.getContext()
-            .getSharedPreferences("server_config", Context.MODE_PRIVATE);
     private static volatile boolean sInitialised = false;
 
     @WorkerThread
@@ -95,43 +94,54 @@ public final class ServerConfig {
     }
 
     /**
-     * Get existing or generate new 16-digit token for client session
+     * Get the existing device-local token or generate a new 256-bit token for the client session.
      *
      * @return Existing or new token
      */
     @AnyThread
     @NonNull
-    public static String getLocalToken() {
-        String token = sPreferences.getString(LOCAL_TOKEN, null);
+    public static synchronized String getLocalToken() {
+        SharedPreferences preferences = getPreferences();
+        SharedPreferences secretPreferences = getSecretPreferences();
+        // The legacy preference is Android-backup eligible in older releases. Never migrate its
+        // value: a restored authenticator must not remain valid on another device.
+        if (preferences.contains(LOCAL_TOKEN)) {
+            if (!preferences.edit().remove(LOCAL_TOKEN).commit()) {
+                Log.w(TAG, "Could not remove the legacy local-server token.");
+            }
+        }
+        String token = secretPreferences.getString(LOCAL_TOKEN, null);
         if (TextUtils.isEmpty(token)) {
             token = generateToken();
-            sPreferences.edit().putString(LOCAL_TOKEN, token).apply();
+            if (!secretPreferences.edit().putString(LOCAL_TOKEN, token).commit()) {
+                Log.w(TAG, "Could not persist the local-server token.");
+            }
         }
         return token;
     }
 
     @AnyThread
     public static boolean getAllowBgRunning() {
-        return sPreferences.getBoolean("allow_bg_running", true);
+        return getPreferences().getBoolean("allow_bg_running", true);
     }
 
     @AnyThread
     @IntRange(from = 0, to = 65535)
     @NoOps
     public static int getAdbPort() {
-        return sPreferences.getInt("adb_port", DEFAULT_ADB_PORT);
+        return getPreferences().getInt("adb_port", DEFAULT_ADB_PORT);
     }
 
     @AnyThread
     @NoOps
     public static void setAdbPort(@IntRange(from = 0, to = 65535) int port) {
-        sPreferences.edit().putInt("adb_port", port).apply();
+        getPreferences().edit().putInt("adb_port", port).apply();
     }
 
     @AnyThread
     @NoOps
     public static void setLastAdbPairing(@NonNull String host, @IntRange(from = 0, to = 65535) int port) {
-        sPreferences.edit()
+        getPreferences().edit()
                 .putString(ADB_LAST_PAIRING_HOST, host)
                 .putInt(ADB_LAST_PAIRING_PORT, port)
                 .putLong(ADB_LAST_PAIRING_TIME, System.currentTimeMillis())
@@ -141,13 +151,23 @@ public final class ServerConfig {
     @AnyThread
     @NoOps
     public static boolean hasPairedAdbDevice() {
-        return sPreferences.getLong(ADB_LAST_PAIRING_TIME, 0) > 0;
+        return getPreferences().getLong(ADB_LAST_PAIRING_TIME, 0) > 0;
     }
 
     @AnyThread
     @NoOps
     public static int getLastAdbPairingPort() {
-        return sPreferences.getInt(ADB_LAST_PAIRING_PORT, DEFAULT_ADB_PORT);
+        return getPreferences().getInt(ADB_LAST_PAIRING_PORT, DEFAULT_ADB_PORT);
+    }
+
+    @NonNull
+    private static SharedPreferences getPreferences() {
+        return ContextUtils.getContext().getSharedPreferences("server_config", Context.MODE_PRIVATE);
+    }
+
+    @NonNull
+    private static SharedPreferences getSecretPreferences() {
+        return ContextUtils.getContext().getSharedPreferences(SECRET_PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     @AnyThread

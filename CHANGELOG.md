@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Local privileged-server authentication tokens now live in a device-local,
+  backup-excluded preference file, rotate away from legacy restored values,
+  stay out of snapshot bundles, and are redacted from app/server diagnostics.
 - Deep audit pass (2026-07-02):
   - Clear Data no longer crashes with an uncatchable `NoSuchMethodError` on
     API 21–27 — the `IActivityManager` path now falls back to
