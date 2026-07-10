@@ -9,7 +9,7 @@ Requirements
 
 * **Hardware:** Any computer with 8 GB RAM and 20 GB storage
 * **Operating system:** Windows, Linux, macOS, or WSL
-* **Software:** Android Studio/IntelliJ IDEA, Gradle, Latex, pandoc, JDK 17+
+* **Software:** Android Studio/IntelliJ IDEA, Gradle, Latex, pandoc, JDK 21+
 * **Active network connection:** Depending on your development environment,
   you may need at least 20 GB data package.
 
@@ -75,6 +75,14 @@ Clone and Build AppManagerNG
      ./gradlew :app:assembleFlossDebug
 
    On Windows, use ``gradlew.bat`` instead of ``./gradlew``.
+
+4. Run the Floss unit-test suite before submitting changes::
+
+     ./gradlew :app:testFlossDebugUnitTest
+
+   Robolectric runs against Android SDK 36. The test task requires JDK 21 or
+   newer and reports the active Java version with remediation instructions when
+   Gradle is using an older JVM. Check the Gradle JVM with ``./gradlew --version``.
 
 Create Bundled App
 ==================
