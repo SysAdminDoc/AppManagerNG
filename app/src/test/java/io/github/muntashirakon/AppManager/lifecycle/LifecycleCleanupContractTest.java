@@ -38,9 +38,21 @@ public class LifecycleCleanupContractTest {
     @Test
     public void openPgpKeySelectionUnbindsAndStopsExecutor() throws IOException {
         assertContains("app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/OpenPgpKeySelectionDialogFragment.java",
+                "Executors.newSingleThreadExecutor()",
                 "public void onDestroy()",
                 "mServiceConnection.unbindFromService();",
                 "mExecutor.shutdownNow();");
+    }
+
+    @Test
+    public void uiHelpersDoNotSpawnUnmanagedThreads() throws IOException {
+        assertNotContains("app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/OpenPgpKeySelectionDialogFragment.java",
+                "new Thread(");
+        assertNotContains("libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableMultiChoiceDialogBuilder.java",
+                "new Thread(");
+        assertContains("libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableMultiChoiceDialogBuilder.java",
+                "for (int i = 0; i < items.size(); ++i)",
+                "mFilteredItems.add(i);");
     }
 
     @Test
@@ -77,6 +89,11 @@ public class LifecycleCleanupContractTest {
         for (String snippet : snippets) {
             assertTrue(relativePath + " should contain " + snippet, source.contains(snippet));
         }
+    }
+
+    private static void assertNotContains(String relativePath, String snippet) throws IOException {
+        String source = readRepoFile(relativePath);
+        assertFalse(relativePath + " should not contain " + snippet, source.contains(snippet));
     }
 
     private static String readRepoFile(String relativePath) throws IOException {

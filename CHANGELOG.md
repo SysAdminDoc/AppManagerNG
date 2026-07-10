@@ -17,6 +17,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
 
 ### Fixed
+- Searchable multi-choice dialogs now populate their initial rows synchronously,
+  and OpenPGP key selection uses a lifecycle-owned executor instead of raw UI
+  helper threads.
 - ZipFileSystem tests now assert real hidden, timestamp, and POSIX-mode
   behavior and always unmount tracked virtual filesystems after failures.
 - Changing the privileged local-server port now performs a serialized stop,
