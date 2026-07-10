@@ -29,7 +29,6 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.compat.BiometricAuthenticatorsCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreActivity;
-import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -38,7 +37,6 @@ import io.github.muntashirakon.AppManager.self.life.BuildExpiryChecker;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModel;
-import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public abstract class BaseActivity extends PerProcessActivity {
@@ -196,22 +194,22 @@ public abstract class BaseActivity extends PerProcessActivity {
                     InternalCacheCleanerService.scheduleAlarm(getApplicationContext());
             }
         });
+        mViewModel.keyStorePasswordStatus().observe(this, status -> {
+            if (status == null || isFinishing() || isDestroyed()) return;
+            Boolean hasPassword = mViewModel.claimKeyStorePasswordStatus();
+            if (hasPassword == null) return;
+            if (hasPassword) {
+                ensureSecurityAndModeOfOp();
+            } else {
+                Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
+                        .putExtra(KeyStoreActivity.EXTRA_KS, true);
+                mKeyStoreActivity.launch(keyStoreIntent);
+            }
+        });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
-            ThreadUtils.postOnBackgroundThread(() -> {
-                boolean hasPassword = KeyStoreManager.hasKeyStorePassword();
-                ThreadUtils.postOnMainThread(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    if (hasPassword) {
-                        ensureSecurityAndModeOfOp();
-                    } else {
-                        Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
-                                .putExtra(KeyStoreActivity.EXTRA_KS, true);
-                        mKeyStoreActivity.launch(keyStoreIntent);
-                    }
-                });
-            });
         }
+        mViewModel.checkKeyStorePassword();
     }
 
     private void ensureSecurityAndModeOfOp() {

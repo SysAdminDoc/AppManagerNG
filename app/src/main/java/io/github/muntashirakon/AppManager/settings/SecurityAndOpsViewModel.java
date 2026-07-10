@@ -16,6 +16,7 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.Migrations;
 import io.github.muntashirakon.AppManager.utils.AppPref;
@@ -28,15 +29,27 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
 
     private boolean mIsAuthenticating = false;
     private final MutableLiveData<Integer> mAuthenticationStatus = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> mKeyStorePasswordStatus = new MutableLiveData<>();
+    private final Object mKeyStorePasswordLock = new Object();
     private final MutableLiveData<StartupInitState> mStartupInitState = new MutableLiveData<>(StartupInitState.idle());
     private final Object mStartupInitLock = new Object();
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
     @NonNull
     private StartupInitState mStartupInitSnapshot = StartupInitState.idle();
     private long mStartupInitAttemptId;
+    private boolean mKeyStorePasswordCheckStarted;
+    private boolean mKeyStorePasswordStatusClaimed;
+    @NonNull
+    private final KeyStorePasswordChecker mKeyStorePasswordChecker;
 
     public SecurityAndOpsViewModel(@NonNull Application application) {
+        this(application, KeyStoreManager::hasKeyStorePassword);
+    }
+
+    SecurityAndOpsViewModel(@NonNull Application application,
+                            @NonNull KeyStorePasswordChecker keyStorePasswordChecker) {
         super(application);
+        mKeyStorePasswordChecker = keyStorePasswordChecker;
     }
 
     @Override
@@ -55,6 +68,30 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
 
     public LiveData<Integer> authenticationStatus() {
         return mAuthenticationStatus;
+    }
+
+    public LiveData<Boolean> keyStorePasswordStatus() {
+        return mKeyStorePasswordStatus;
+    }
+
+    @AnyThread
+    public void checkKeyStorePassword() {
+        synchronized (mKeyStorePasswordLock) {
+            if (mKeyStorePasswordCheckStarted) return;
+            mKeyStorePasswordCheckStarted = true;
+        }
+        mExecutor.submit(() -> publishLiveData(mKeyStorePasswordStatus,
+                mKeyStorePasswordChecker.hasKeyStorePassword()));
+    }
+
+    @Nullable
+    public Boolean claimKeyStorePasswordStatus() {
+        synchronized (mKeyStorePasswordLock) {
+            Boolean status = mKeyStorePasswordStatus.getValue();
+            if (status == null || mKeyStorePasswordStatusClaimed) return null;
+            mKeyStorePasswordStatusClaimed = true;
+            return status;
+        }
     }
 
     public LiveData<StartupInitState> startupInitState() {
@@ -229,5 +266,9 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
         } else {
             liveData.postValue(value);
         }
+    }
+
+    interface KeyStorePasswordChecker {
+        boolean hasKeyStorePassword();
     }
 }
