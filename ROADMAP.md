@@ -23,18 +23,6 @@ v4.1.0, 2026-06-29, and Android 17 / API 37, stable since June 2026). All items
 below are host-verifiable (buildable + unit-testable offline); runtime confirmation
 that requires an API-37 device stays in `Roadmap_Blocked.md`.
 
-### P2
-
-- [ ] P2 — Consolidate and pin Android 17 (targetSdk 37) behavior-change readiness
-  Why: Android 17 is stable and compileSdk is already 37, but the individual A17 behavior-change
-  audits (static-final immutability, `System.load` read-only, MessageQueue reflection, Keystore
-  key cap, implicit-URI grants) are not tied to a single regression gate, leaving the eventual
-  targetSdk 36→37 bump without a host-verifiable readiness pin.
-  Evidence: RESEARCH.md Architecture Assessment; docs/audits/2026-06-13-*; developer.android.com/about/versions/17/behavior-changes-17.
-  Touches: app/src/test/ (a consolidated A17 readiness assertion), docs/audits/ (refresh against stable A17), versions.gradle comment ledger.
-  Acceptance: a single test/gate re-asserts each A17 targetSdk-37 audit is still clean and fails if a new violation is introduced; the readiness ledger names each audit and its status. (The bump itself stays device-gated in `Roadmap_Blocked.md`.)
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Confirm parity for non-default-user inactive-app check
