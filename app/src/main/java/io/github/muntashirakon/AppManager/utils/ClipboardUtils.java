@@ -3,9 +3,12 @@
 package io.github.muntashirakon.AppManager.utils;
 
 import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
+import android.os.PersistableBundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -49,6 +52,21 @@ public class ClipboardUtils {
                 // Fallback: copy truncated text if writing file fails
                 clip = ClipData.newPlainText(label != null ? label : "text", truncateForPlainTextFallback(text));
             }
+        }
+        clipboard.setPrimaryClip(clip);
+    }
+
+    /**
+     * Copies a short secret while asking Android to suppress clipboard previews.
+     */
+    public static void copySensitiveText(@NonNull Context context, @Nullable CharSequence label,
+                                         @NonNull String text) {
+        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText(label, text);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            PersistableBundle extras = new PersistableBundle();
+            extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+            clip.getDescription().setExtras(extras);
         }
         clipboard.setPrimaryClip(clip);
     }
