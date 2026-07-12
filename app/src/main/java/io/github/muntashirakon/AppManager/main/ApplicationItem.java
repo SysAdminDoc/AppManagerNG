@@ -96,6 +96,11 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
         public boolean isAppInactive(@NonNull String packageName, int userId) {
             return UsageStatsManagerCompat.isAppInactive(packageName, userId);
         }
+
+        @Override
+        public boolean checkCrossUserPermission(int userId) {
+            return SelfPermissions.checkCrossUserPermission(userId, false);
+        }
     };
 
     @VisibleForTesting
@@ -103,6 +108,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
         int checkPermission(@NonNull String permissionName, @NonNull String packageName, int userId);
 
         boolean isAppInactive(@NonNull String packageName, int userId);
+
+        boolean checkCrossUserPermission(int userId);
     }
 
     /**
@@ -352,6 +359,11 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
 
     private boolean isAppInactive(@NonNull OtherInfoResolver resolver, int userId) {
         try {
+            if (!resolver.checkCrossUserPermission(userId)) {
+                // Without cross-user permission the per-user inactive query would fall back to the
+                // calling user's state, so a non-default user could be misreported as inactive.
+                return false;
+            }
             return resolver.isAppInactive(packageName, userId);
         } catch (RuntimeException e) {
             Log.w(TAG, "Could not read inactive state for %s (user %d).", e, packageName, userId);

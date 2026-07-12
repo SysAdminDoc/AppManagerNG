@@ -15,6 +15,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through `IPackageManagerV37`.
 
 ### Fixed
+- Inactive-app state is no longer read for a non-default user (work/private
+  profile, secondary user) without cross-user permission. The per-user
+  `isAppInactive` query now checks `SelfPermissions.checkCrossUserPermission`
+  first, so an app in another profile can't be misreported as inactive from the
+  calling user's state. Aligns with upstream App Manager (`916eeb85d5`).
 - Installed-app enumeration now handles Android 17 (API 37), where
   `getInstalledPackages(long, int)` returns the new paginated `PackageInfoList`
   instead of a bare `ParceledListSlice`. Without the new API-37 branch the main
