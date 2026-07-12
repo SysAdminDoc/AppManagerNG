@@ -2099,7 +2099,11 @@
     <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for AppManagerNG is a subfolder named <tt>AppManager</tt>.</string>
     <string name="storage">Storage</string>
     <string name="files">Files</string>
-    <string name="keystore_password_info">AppManagerNG generated this recovery password for encrypted backups and signing keys. Store it somewhere safe before continuing; AppManagerNG will not show it again.</string>
+    <string name="keystore_password_info">AppManagerNG created this password to protect encrypted backups and signing keys. This is the only time it will be shown. Save it in a password manager or another secure place before continuing.</string>
+    <string name="recovery_password_helper">Keep this password private. AppManagerNG cannot recover it for you.</string>
+    <string name="recovery_password_copy_and_continue">Copy &amp; continue</string>
+    <string name="recovery_password_saved_continue">I’ve saved it</string>
+    <string name="recovery_password_copied">Recovery password copied securely.</string>
     <string name="keystore_pass_cannot_be_empty">Recovery password cannot be empty.</string>
     <string name="invalid_password">Invalid password, try again.</string>
     <string name="adb_pair">Pair</string>

@@ -60,9 +60,11 @@ import io.github.muntashirakon.AppManager.crypto.AESCrypto;
 import io.github.muntashirakon.AppManager.crypto.RSACrypto;
 import io.github.muntashirakon.AppManager.crypto.RandomChar;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
 public class KeyStoreManager {
@@ -120,12 +122,20 @@ public class KeyStoreManager {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_keystore_password, null);
         TextInputEditText editText = view.findViewById(R.id.ks_pass);
         editText.setText(password, 0, password.length);
+        editText.setKeyListener(null);
+        editText.setTextIsSelectable(true);
         TextInputLayout tv = view.findViewById(android.R.id.text2);
         tv.setHint(R.string.keystore_password_field_hint);
         return new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.keystore_password_generated_title)
                 .setView(view)
-                .setNegativeButton(R.string.close, null)
+                .setPositiveButton(R.string.recovery_password_copy_and_continue, (dialog, which) -> {
+                    ClipboardUtils.copySensitiveText(activity,
+                            activity.getString(R.string.keystore_password_generated_title),
+                            new String(password));
+                    UIUtils.displayShortToast(R.string.recovery_password_copied);
+                })
+                .setNegativeButton(R.string.recovery_password_saved_continue, null)
                 .setCancelable(false)
                 .setOnDismissListener(dialog -> {
                     Utils.clearChars(password);

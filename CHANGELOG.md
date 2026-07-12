@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- The generated keystore recovery-password dialog can now copy the password
+  with a dedicated "Copy & continue" action. The value is placed on the
+  clipboard flagged sensitive (`ClipDescription.EXTRA_IS_SENSITIVE` on Android
+  13+) so the OS suppresses clipboard previews, the field is read-only but
+  selectable, and helper text plus clearer copy explain that the password is
+  shown only once and cannot be recovered.
+
 ### Changed
 - Consolidated the Android 17 (targetSdk 37) behavior-change readiness ledger
   into one host-verifiable gate. `Android17BehaviorContractTest` now also pins
