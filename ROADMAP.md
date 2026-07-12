@@ -35,14 +35,6 @@ that requires an API-37 device stays in `Roadmap_Blocked.md`.
   Acceptance: a single test/gate re-asserts each A17 targetSdk-37 audit is still clean and fails if a new violation is introduced; the readiness ledger names each audit and its status. (The bump itself stays device-gated in `Roadmap_Blocked.md`.)
   Complexity: S
 
-- [ ] P2 — Evaluate and port upstream Searchable choice-dialog fix
-  Why: upstream fixed single/multiple-choice selection behavior in the shared libcore/ui dialog
-  builders NG also ships; the fix is in a shared, host-testable component.
-  Evidence: upstream MuntashirAkon/AppManager@ca038d6611; libcore/ui/src/main/java/io/github/muntashirakon/dialog/SearchableSingleChoiceDialogBuilder.java, SearchableMultiChoiceDialogBuilder.java.
-  Touches: libcore/ui/.../SearchableSingleChoiceDialogBuilder.java, SearchableMultiChoiceDialogBuilder.java, related Robolectric coverage.
-  Acceptance: NG's builders match the fixed upstream selection semantics with a Robolectric test covering the corrected single/multi-select case; no regression in existing dialog usages.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Confirm parity for non-default-user inactive-app check
