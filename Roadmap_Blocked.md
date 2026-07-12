@@ -9,18 +9,21 @@ ROADMAP.md once the blocker is resolved.
 
 ### P1
 
-- [ ] P1 — Validate and fix Android 17 app-list enumeration
-  Why: upstream #1948 reports an empty/sparse main app list on Android 17,
-  which could affect NG's PackageManagerCompat/MainViewModel enumeration path.
-  Shizuku and Dhizuku binding should be rechecked in the same pass.
-  Evidence: upstream MuntashirAkon/AppManager#1948; main/MainViewModel.java;
-  compat/PackageManagerCompat.java; servermanager/ privileged-mode binding.
+- [ ] P1 — Validate Android 17 app-list enumeration on-device
+  Why: the structural fix has landed (PackageManagerCompat now routes API 37+
+  through the paginated `PackageInfoList`/`IPackageManagerV37` path, ported from
+  upstream `836c7248ea`, host-verified by compile + contract test). Only runtime
+  validation of the real paginated binder call remains, plus a recheck of
+  Shizuku/Dhizuku binding on API 37.
+  Evidence: main/MainViewModel.java; compat/PackageManagerCompat.java
+  (`getInstalledPackagesInternal` API-37 branch); servermanager/ privileged-mode
+  binding.
   Acceptance: on an API-37 emulator or device, the main list enumerates the
   same package set as API 36; root/Shizuku/Dhizuku bind successfully or fail
   with surfaced, actionable reasons; local smoke coverage asserts a non-empty
   package list.
   Blocker: requires Android 17/API-37 emulator or device runtime access.
-  Complexity: M
+  Complexity: S
 
 - [ ] P1 — Root-detection retune for 2026 root managers
   Why: upstream #1967 reports root not detected on Android 16, while Magisk

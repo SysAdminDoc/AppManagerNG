@@ -23,17 +23,6 @@ v4.1.0, 2026-06-29, and Android 17 / API 37, stable since June 2026). All items
 below are host-verifiable (buildable + unit-testable offline); runtime confirmation
 that requires an API-37 device stays in `Roadmap_Blocked.md`.
 
-### P1
-
-- [ ] P1 — Port upstream Android 17 `getInstalledPackages`/`PackageInfoList` enumeration fix
-  Why: on now-stable Android 17, `getInstalledPackages(long,int)` returns a paginated
-  `PackageInfoList` (a `ParceledListSlice` subclass); NG's reflected `.getList()` path has
-  no API-37 branch, so the main app list comes back empty on API 37.
-  Evidence: upstream MuntashirAkon/AppManager@836c7248ea; app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java:173-180 (highest branch is TIRAMISU); hiddenapi/ stubs.
-  Touches: compat/PackageManagerCompat.java (`getInstalledPackagesInternal` — add `SDK_INT >= 37` branch), hiddenapi/ (new `IPackageManagerV37` @RefineAs + `PackageInfoList`), a `VersionCodes`/constant for API 37.
-  Acceptance: a Robolectric/JVM unit test with a fake `IPackageManager` asserts the API-37 branch is selected and returns the full list for SDK_INT 37 while SDK_INT ≤ 36 behavior is unchanged; project compiles against compileSdk 37; the ≤36 path is byte-identical. (Real binder call stays device-gated — see the A17 enumeration item in `Roadmap_Blocked.md`.)
-  Complexity: M
-
 ### P2
 
 - [ ] P2 — Consolidate and pin Android 17 (targetSdk 37) behavior-change readiness
