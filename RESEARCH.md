@@ -2,169 +2,167 @@
 
 # Research - AppManagerNG
 
-Pass date: 2026-07-12. Baseline: v0.6.5 (versionCode 13), compileSdk 37 / targetSdk 36 /
-minSdk 21. This pass re-diffs against upstream App Manager **v4.1.0 (shipped 2026-06-29)**
-and against Android 17 (API 37), which reached **stable in June 2026**.
+Pass date: 2026-07-12 (second pass). Baseline: v0.6.5 (versionCode 13), compileSdk 37 /
+targetSdk 36 / minSdk 21. The earlier pass today (upstream v4.1.0 + Android 17 re-diff) was
+fully drained into shipped commits; this pass shifts from platform/competitor scanning to a
+code-level correctness audit, the complete upstream v4.1.0 commit set, and dependency currency.
 
 ## Executive Summary
 
 AppManagerNG is a GPL Android package-manager fork for power users who inventory, install,
 freeze, archive, back up, restore, block, and audit apps across normal, root, ADB, Shizuku,
-and Dhizuku paths. The prior research cycle (through 2026-07-02) was fully drained into
-v0.6.4/v0.6.5 — privileged-server secret exclusion, port-rebind reconciliation, interceptor
-recovery, structured logging, the SDK36/JDK21 test matrix, and runtime system-feature truth
-all shipped. The project is strongest where it keeps privileged work offline-first, testable,
-and reversible.
+and Dhizuku paths. The codebase is mature and genuinely well-tested (SSRF/path-traversal/
+checksum hardening, broad Robolectric coverage); the platform-facing and competitor-facing
+opportunity surface is drained, and everything left in `Roadmap_Blocked.md` is device/external
+gated. The remaining host-verifiable value is a short list of concrete parsing/serialization
+correctness bugs, latent contract hazards, and one clean upstream port — not new subsystems.
 
-The one high-value regression risk introduced by the calendar: **Android 17 is now stable and
-`getInstalledPackages` returns a new paginated `PackageInfoList` type on API 37.** NG's
-`PackageManagerCompat` has no API-37 branch (highest TIRAMISU branch), so on Android 17 the
-reflected `.getList()` call returns the wrong type / an empty set — an **empty main app list**.
-Upstream fixed this in commit `836c7248ea`; the structural port (hidden-API stubs + an
-`SDK_INT >= 37` branch) is host-buildable and unit-testable, with only runtime confirmation
-device-gated. This is the single highest-value item this pass.
-
-Dependency posture is verified clean (no CVE action). The competitive "rule/policy engine"
-the whole field is converging on is already largely built here (profiles + routine triggers +
-rules export/import + tags), so the remaining opportunities are targeted upstream ports and an
-Android-17 targetSdk-readiness consolidation, not new subsystems.
+Highest-value direction: close the two confirmed data-correctness bugs (backup import abort on
+a corrupt icon; intent-extra array corruption on a trailing backslash), then harden the binary-XML
+and search regex paths that are currently latent traps, then take the one drop-in upstream fix.
 
 Top opportunities (priority order):
-1. Port upstream Android 17 `getInstalledPackages`/`PackageInfoList` enumeration fix (`836c7248ea`).
-2. Consolidate and pin the Android 17 (targetSdk 37) behavior-change audit coverage to de-risk the eventual bump.
-3. Evaluate/port upstream `Searchable{Single,Multi}ChoiceDialogBuilder` fix (`ca038d6611`, shared libcore/ui).
-4. Confirm parity / add multi-user coverage for the non-default-user inactive-app check (`916eeb85d5`).
+1. TBConverter: a single malformed Titanium-Backup icon aborts the entire package import (P2, data-import correctness).
+2. IntentCompat: string/URI-array extras whose element ends in `\` corrupt on interceptor round-trip (P2, data correctness).
+3. Port upstream `133b5acb7f`: correct Wireless-Debugging dialog copy + deep-link to the developer-options toggle (P3, clean drop-in).
+4. AdvancedSearchView single-string regex overload: uncaught `PatternSyntaxException` + semantics divergence from the collection overloads (P3, latent crash trap).
+5. Binary-XML `ByteBuffer.array()` ignores offset/limit and fails on direct/read-only buffers (P3, contract landmine).
+6. `AndroidBinXmlDecoder` framework-package-block lazy static init is an unsynchronized data race (P3, thread-safety).
+7. `DebloatObject.fillInstallInfo` overwrites instead of accumulating per-user state (P3, multi-user correctness; extract a pure, testable merge).
 
 ## Product Map
 
 - Core workflows: app inventory/search/filter/sort, app details, APK install/export/verify,
-  Activity Interceptor command generation, backup/restore/conversion, archive/freeze/unfreeze,
-  component/app-op/permission rules, debloat guidance, profiles + routine triggers, file
-  management, local docs, and privilege health diagnostics.
+  Activity Interceptor command generation, backup/restore/conversion (incl. Titanium/Swift
+  Backup import), archive/freeze/unfreeze, component/app-op/permission rules, profiles + routine
+  triggers, debloat guidance, file management, privilege health diagnostics.
 - User personas: rooted power users, Shizuku/ADB/Dhizuku users without root, ROM/device
   maintainers, privacy auditors, APK/app developers, offline FLOSS users.
 - Platforms and distribution: Android minSdk 21 / targetSdk 36 / compileSdk 37, FLOSS+FULL
   flavors, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.1 / AGP 9.2.1,
   native + server helper modules, GPL-3.0-or-later.
-- Key integrations and data flows: PackageManager/PackageInstaller, root/libsu, Shizuku,
-  ADB pairing/local server, Dhizuku, app archiving, Room metadata, backup archives/manifests,
+- Key integrations and data flows: PackageManager/PackageInstaller, root/libsu, Shizuku, ADB
+  pairing/local server, Dhizuku, app archiving, Room metadata, backup archives/manifests,
   OpenPGP/Bouncy Castle, tracker/library scanners, optional FULL-flavor network sources.
 
 ## Competitive Landscape
 
-- **Upstream App Manager (v4.1.0, 2026-06-29):** breadth benchmark; the release is mostly a
-  4.0.x rollup NG already tracks, but carries three host-relevant fixes worth porting — the
-  Android 17 enumeration fix (`836c7248ea`), a Searchable choice-dialog fix in shared libcore/ui
-  (`ca038d6611`), and a non-default-user inactive-app fix (`916eeb85d5`). Avoid blind ports of
-  the visual/scroll commits (NG already reworked scroll-restore and the Log Viewer).
-- **Hail (1.10.0) + Process Warden + blocker:** the field is converging on a rule/policy layer
-  (rule-based auto-freeze, auto-apply-on-install, "temporary lift then re-restrict", per-tag
-  actions). Learn the ergonomics; NG already has the substrate (profiles, `RoutinePackageChangeReceiver`,
-  rules export/import, tags) so this is extension work, not a new subsystem. Avoid untestable
-  device-coupled features — keep privileged apply behind the existing Ops adapter.
-- **Canta (3.2.2) / Thor / UAD-NG (1.2.0):** debloat lesson remains reversible, risk-labeled,
-  pinned presets with a guaranteed restore path. NG already ships risk chips + dependency edges;
-  avoid mutable/auto-fetched safety data in FLOSS builds (already a rejected idea — pinned data
-  contract only).
-- **Neo Backup (8.3.15):** users want rolling/versioned/mirror backups, filter-by-last-backup,
-  and restore that survives a locked screen. NG's backup trust work is the durable value center;
-  avoid cloud/sync expansion.
-- **LibChecker (2.5.4) / Inure (build107):** dense inspection stays usable when evidence is
-  grouped and source is explicit; both shipped Android 17 adaptation — a currency signal NG
-  should match. Avoid duplicate dashboards where the scanner already covers detection.
-- **PermissionManagerX (1.31):** focused, idempotent "already applied" feedback and per-mode
-  clarity; NG should keep collapsing partial privileged failures into booleans off the table.
+- **Upstream App Manager (v4.1.0, 2026-06-29):** the full post-baseline commit set (16 commits)
+  is now accounted for. Three host-verifiable fixes were already handled (`836c7248ea` A17
+  enumeration ported, `916eeb85d5` non-default-user inactive ported, `ca038d6611` choice-dialog
+  ruled N/A). The only remaining clean drop-in is `133b5acb7f` (Wireless-Debugging copy +
+  deep-link). Learn: upstream's log-viewer/scroll/highlight fixes are all coupled to its
+  `ListAdapter`/`DiffUtil` migration (`8cf2c1ef11`/`69b28cbe51`) — a direction NG deliberately
+  did not take. Avoid: porting those as cherry-picks; they are architecture-divergent rewrites,
+  and their payoff (scroll feel, highlight) is device-gated anyway.
+- **Titanium Backup / Swift Backup (import targets):** NG imports both formats. The lesson from
+  their real-world archives is that a non-essential field (icon) must never fail a whole import;
+  NG's `SBConverter.backupIcon` already treats the icon as best-effort but `TBConverter` does not
+  (the bug below). Match the best-effort contract across both converters.
+- **Hail / Canta / Neo Backup / LibChecker / Inure:** unchanged from the prior pass — the
+  rule/policy layer the field converges on is already built here (profiles + `RoutinePackageChangeReceiver`
+  + rules export/import + tags). No new net-new subsystem is warranted.
 
 ## Security, Privacy, and Reliability
 
-- Verified: `PackageManagerCompat.getInstalledPackagesInternal` (app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java:173-180)
-  has no API-37 branch. On Android 17 the hidden `getInstalledPackages(long,int)` returns a
-  `PackageInfoList` (paginated `ParceledListSlice` subclass); the current reflected `.getList()`
-  path yields an empty/wrong result → empty main list. Upstream fix: `836c7248ea`.
-- Verified: dependency stack is CVE-clean at current pins. BouncyCastle 1.84 is the latest tag
-  and already carries the 2026 OpenPGP/timing fixes; gson 2.14.0, Guava 32.1.3, zstd-jni 1.5.7-11,
-  libsu 6.0.0, Room 2.7.2 have no applicable open CVE. jadx advisories are jadx-gui only (NG ships
-  jadx-core/dex-input). No security-driven bump is warranted; the weekly OWASP dependency-check
-  gate remains the right guard.
-- Verified: no APK Signature Scheme v3.2 / ML-DSA path exists in AOSP as of mid-2026 (only v3/v3.1);
-  the existing blocked "v3.2 display" item remains correctly gated on apksig upstream, not urgent.
-- Reliability: backup/restore round-trip and privileged-mode paths remain the highest device-gated
-  risk (tracked in `Roadmap_Blocked.md`); nothing new host-verifiable surfaced there this pass.
+- Verified (P2, data-import correctness): `backup/convert/TBConverter.java` calls `readPropFile()`
+  at `convert():134` — outside the surrounding try — and `readPropFile()` decodes the icon with
+  `Base64.decode(base64Icon, 0)` at line 451, which throws unchecked `IllegalArgumentException`
+  on malformed base64 (the `catch` at 455 only handles `IOException`). A Titanium Backup with a
+  valid APK + data but one corrupt `app_gui_icon` fails the whole package import. `backupIcon()`
+  (line 157) and `SBConverter.backupIcon` already treat the icon as best-effort; `readPropFile`
+  must too.
+- Verified (P2, data correctness): `intercept/IntentCompat.java` `escapeComma` (line 350) escapes
+  `,`→`\,` but not the escape char itself, while `splitEscapedComma` (line 345) splits on
+  `(?<!\\),`. An array element ending in `\` (e.g. `["a\\","b"]`) flattens to `a\,b` and parses
+  back as one element `a,b`. Reachable through the interceptor save/paste/share round-trip for
+  `TYPE_STRING_ARR`/`TYPE_STRING_AL`/`TYPE_URI_ARR`/`TYPE_URI_AL`.
+- Verified (P3, latent crash trap): `misc/AdvancedSearchView.java` single-string
+  `matches(String, String, int)` (lines 334-346) runs the `SEARCH_TYPE_REGEX` case via
+  `text.matches(query)` with no `try/catch`, unlike the two collection overloads which guard
+  `PatternSyntaxException` and use `matcher.find()` (substring) rather than full-match. No current
+  caller routes a regex here, so it is latent, but the divergent semantics + crash risk are a trap.
+- Verified (P3, contract landmine): `apk/parser/ManifestParser.java:176`,
+  `apk/parser/AndroidBinXmlDecoder.java:73`, and `apk/ApkUtils.java:255` read `ByteBuffer.array()`,
+  which ignores `arrayOffset()`/`position()`/`limit()` and throws `UnsupportedOperationException`
+  on direct/read-only buffers. Every current caller passes `ByteBuffer.wrap(byte[])` so it works
+  today, but the public `decode(ByteBuffer,...)` API silently mis-reads a sliced/mmapped buffer.
+- Verified (P3, thread-safety): `apk/parser/AndroidBinXmlDecoder.java:135-144`
+  `getFrameworkPackageBlock()` lazily initializes a non-volatile static without synchronization;
+  concurrent manifest parsing (per-app detail loaders, filters) can double-run the heavy framework
+  table init and observe a partially published reference.
 
 ## Architecture Assessment
 
-- The A17 enumeration fix should live behind the existing compat boundary: add hidden-API stubs
-  (`IPackageManagerV37`, `PackageInfoList`) mirroring upstream, a `VersionCodes` constant for 37,
-  and an `SDK_INT >= 37` branch in `getInstalledPackagesInternal`. Gating behind 37 keeps ≤36
-  behavior byte-identical (zero regression), and the branch selection is unit-testable with a
-  fake `IPackageManager`.
-- Choice-dialog fix (`ca038d6611`) touches shared `libcore/ui` builders that already exist in NG
-  (`SearchableSingleChoiceDialogBuilder`, `SearchableMultiChoiceDialogBuilder`); a diff-and-port
-  is low-risk and Robolectric-testable.
-- Doc truth is already current: `BUILDING.rst` states JDK 21+ and documents the Robolectric
-  SDK36/JDK21 requirement — no action (prior gap closed).
-- Test/readiness gap: there is no consolidated assertion tying the Android 17 targetSdk behavior
-  audits (static-final immutability, `System.load` read-only, MessageQueue reflection, Keystore
-  key cap, implicit-URI grants) to a single regression gate, so the eventual targetSdk 36→37 bump
-  lacks a host-verifiable readiness pin.
+- `TBConverter`/`SBConverter` should share one best-effort icon contract: extract the
+  base64→Bitmap decode into a guarded helper that returns null on failure, so neither converter
+  can abort an import on a non-essential field. Unit-testable with a corrupt-icon `.properties`
+  fixture (the existing `TBConverterTest` already drives real fixtures).
+- `IntentCompat` escape/unescape should be a symmetric codec: escape `\` before `,`, unescape
+  `\,` before `\\`. Extend `IntentCompatTest`'s existing comma round-trip cases with a
+  trailing-backslash case (currently fails).
+- Binary-XML entry points should read the buffer's logical window
+  (`byte[] b = new byte[buf.remaining()]; buf.duplicate().get(b);`) instead of `array()`, and the
+  framework-block init should be `synchronized`/holder-class/`volatile`-DCL.
+- `debloat/DebloatObject.java:244-264` `fillInstallInfo` accumulates `mInstalled` with `|=` then
+  overwrites it with `=` inside the icon block, and overwrites `mSystemApp`/`mFrozen`/`mLabel`
+  per-iteration, so on a multi-user device the last-iterated user's state wins. It reads
+  `AppDb`/`PackageManager`, so make the per-user merge a pure function and unit-test the
+  accumulate-vs-overwrite semantics offline.
+- Test/toolchain: Robolectric has no SDK-37 release yet (tracking `robolectric#11239`; 4.17 is
+  snapshot-only), so the A17 enumeration branch stays compile-verified until 4.17 ships — a
+  dependency-gated future, not actionable now.
 
 ## Rejected Ideas
 
-- targetSdk 36→37 bump itself (this pass): the behavior-change audits are host-verifiable and can
-  be pinned now, but the bump's runtime effects require an API-37 device/emulator — the bump stays
-  in `Roadmap_Blocked.md`; only the readiness consolidation is actionable. (Source: Android 17
-  behavior-change docs.)
-- Dependency/CVE-driven bumps: rejected — stack is verified clean at current pins; BouncyCastle
-  1.84 is latest. (Source: GHSA/NVD advisories for BC/gson/Guava/jadx/libsu.)
-- APK Signature Scheme v3.2 / PQC (ML-DSA) code path: rejected — AOSP APK signing is still v3/v3.1;
-  the premise is unsubstantiated. Keep the display item blocked on apksig. (Source: source.android.com apksigning v3-1.)
-- New rule/policy "engine" subsystem: rejected as largely duplicate — NG already ships profiles,
-  `RoutinePackageChangeReceiver`, rules export/import, and tags; extend those, don't rebuild.
-  (Source: rules/RulesExporter.java, profiles/trigger/RoutinePackageChangeReceiver.java.)
-- Frozen-list export as a new feature: rejected as duplicate — rules export + snapshot import with
-  selective section restore already cover portable managed state. (Source: rules/, prior snapshot work.)
-- Log Viewer scroll/filter rewrite port (`936cb3021b`): rejected — NG already reworked the Log
-  Viewer (regex-brick + supersede-loop fixes); porting upstream's rewrite risks conflict for
-  marginal gain. (Source: upstream commit, NG CHANGELOG.)
-- Compose rewrite / Material 1.14+ migration: rejected — CONTRIBUTING forbids Compose; minSdk-21
-  policy pins Material 1.13.0. (Source: CONTRIBUTING.md, docs/policy/minsdk-21-ceiling.md.)
-- Cloud backup/sync, plugin marketplace, broad mutable UAD ingestion: rejected as before — conflict
-  with the FLOSS/offline privacy model and pinned-data doctrine.
+- Port upstream log-viewer scroll/filter fix `936cb3021b`: rejected as a drop-in — it is built on
+  upstream's `ListAdapter`/`DiffUtil` migration that NG deliberately did not adopt; the fork's
+  `LogViewerRecyclerAdapter extends MultiSelectionView.Adapter` has no `submitList`/`ItemCallback`,
+  so it is an architecture-divergent rewrite whose real payoff (autoscroll feel) is device-gated.
+  (Source: upstream `936cb3021b`, `8cf2c1ef11`, `69b28cbe51`.)
+- Port upstream `daa54ac02b` (custom-expression filter-profile fetch): rejected as already fixed —
+  NG's `MainViewModel.filterItemsByFlags` already sums `getTimesUsageInfoUsed()` across the flag
+  and profile-membership filters and applies both per item. (Source: upstream `daa54ac02b`;
+  main/MainViewModel.java.)
+- Port upstream ListAdapter migration / scroll-restore / highlight (`8cf2c1ef11`, `69b28cbe51`,
+  `54180381e3`, `886ad90d31`): rejected — reverses a deliberate fork architecture decision across
+  ~50 files for device-gated payoff. (Source: those commits.)
+- Dependency bumps for currency: rejected as roadmap items — every pin is already at its minSdk-21
+  ceiling (Room 2.7.2, WorkManager 2.10.5, Material 1.13.0, Biometric 1.4.0-alpha04 are hard
+  ceilings; Gson 2.14.0, zstd-jni 1.5.7-11 already latest). The only headroom is androidx.core
+  1.17→1.18 (compileSdk gate met), but NG consumes none of 1.18's new APIs (PiP-UI-state, projected
+  notifications), so it is a no-consumer currency bump; core 1.19 raises core-ktx minSdk to 23
+  (blocked). BouncyCastle 1.85 (2026-07-12) is all security hardening (excluded per prior clean
+  audit). (Source: AndroidX/Material/BC release notes.)
+- Compose / Material 1.14 migration: rejected — CONTRIBUTING forbids Compose; minSdk-21 policy
+  pins Material 1.13.0. (Source: CONTRIBUTING.md, docs/policy/minsdk-21-ceiling.md.)
 
 ## Sources
 
-Upstream:
+Upstream commits:
+- https://github.com/MuntashirAkon/AppManager/commit/133b5acb7f
+- https://github.com/MuntashirAkon/AppManager/commit/936cb3021b
+- https://github.com/MuntashirAkon/AppManager/commit/daa54ac02b
 - https://github.com/MuntashirAkon/AppManager/releases/tag/v4.1.0
-- https://github.com/MuntashirAkon/AppManager/commit/836c7248eafe5d7b73e21d919eb31c34dd06a348
-- https://github.com/MuntashirAkon/AppManager/commit/ca038d6611
-- https://github.com/MuntashirAkon/AppManager/commit/916eeb85d5
 
-Platform:
-- https://developer.android.com/about/versions/17/behavior-changes-all
-- https://developer.android.com/about/versions/17/behavior-changes-17
-- https://android-developers.googleblog.com/2026/06/Android-17.html
-- https://developer.android.com/guide/practices/page-sizes
-- https://source.android.com/docs/security/features/apksigning/v3-1
+Dependencies:
+- https://developer.android.com/jetpack/androidx/releases/core
+- https://developer.android.com/jetpack/androidx/releases/room
+- https://developer.android.com/jetpack/androidx/releases/work
+- https://github.com/material-components/material-components-android/releases
+- https://github.com/robolectric/robolectric/issues/11239
+- https://github.com/bcgit/bc-java/blob/main/docs/releasenotes.html
 
-Competitors/community:
-- https://github.com/samolego/Canta
-- https://github.com/aistra0528/Hail
-- https://github.com/NeoApplications/Neo-Backup
-- https://github.com/LibChecker/LibChecker
-- https://github.com/Hamza417/Inure
-- https://github.com/lihenggui/blocker
-- https://github.com/trinadhthatakula/Thor
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
-- https://github.com/RikkaApps/Shizuku/discussions/462
-
-Security:
-- https://github.com/advisories/GHSA-c3fc-8qff-9hwx
-- https://nvd.nist.gov/vuln/detail/cve-2023-2976
-- https://github.com/skylot/jadx/security/advisories/GHSA-hvp5-5x4f-33fq
-- https://github.com/topjohnwu/libsu/releases
+Code (this repo):
+- app/src/main/java/io/github/muntashirakon/AppManager/backup/convert/TBConverter.java
+- app/src/main/java/io/github/muntashirakon/AppManager/intercept/IntentCompat.java
+- app/src/main/java/io/github/muntashirakon/AppManager/misc/AdvancedSearchView.java
+- app/src/main/java/io/github/muntashirakon/AppManager/apk/parser/AndroidBinXmlDecoder.java
+- app/src/main/java/io/github/muntashirakon/AppManager/apk/parser/ManifestParser.java
+- app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatObject.java
 
 ## Open Questions
 
-- After the A17 enumeration port lands structurally, which single privileged mode (root vs
-  Shizuku vs Dhizuku) should be the first device/emulator validation target, given the paginated
-  `PackageInfoList` binder call cannot be exercised offline?
+- None that block the items above — all are host-verifiable against existing test infrastructure.
+  The only external dependency is Robolectric 4.17's SDK-37 support (tracked upstream), which gates
+  runtime-level testing of the already-shipped A17 enumeration branch, not any item in this pass.
