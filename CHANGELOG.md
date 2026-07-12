@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed
+- Installed-app enumeration now handles Android 17 (API 37), where
+  `getInstalledPackages(long, int)` returns the new paginated `PackageInfoList`
+  instead of a bare `ParceledListSlice`. Without the new API-37 branch the main
+  app list came back empty on Android 17. Ported from upstream App Manager
+  (`836c7248ea`); adds the `IPackageManagerV37`/`PackageInfoList` hidden-API
+  stubs and a `VersionCodes.CINNAMON_BUN` gate, with a host-verifiable structural
+  contract test. Behavior on API ≤ 36 is unchanged.
+
 ## v0.6.5 — 2026-07-09
 
 ### Added
