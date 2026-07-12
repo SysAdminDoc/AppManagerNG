@@ -2,99 +2,169 @@
 
 # Research - AppManagerNG
 
+Pass date: 2026-07-12. Baseline: v0.6.5 (versionCode 13), compileSdk 37 / targetSdk 36 /
+minSdk 21. This pass re-diffs against upstream App Manager **v4.1.0 (shipped 2026-06-29)**
+and against Android 17 (API 37), which reached **stable in June 2026**.
+
 ## Executive Summary
 
-AppManagerNG is a GPL Android package-manager fork for power users who inspect, install, freeze, archive, back up, restore, and repair apps through normal, root, ADB, Shizuku, and Dhizuku paths. Verified: the project is strongest where it keeps privileged Android work offline-first, testable, and reversible; recent code already covers native 16 KB library alignment, Android 17 local-network permission handling, installer transcripts, backup archive guards, unsupported-extra reporting, and multiple release gates. Highest-value direction: drain the remaining trust gaps around Android backup/restore, privileged-server state, intent parsing recovery, and host-test/build truth before adding new surfaces. Top opportunities: 1. exclude or rotate local privileged-server secrets from Android cloud/D2D backup; 2. add bounded component-rule reset progress and partial-failure recovery already tracked in `ROADMAP.md`; 3. reconcile local-server port changes with live server/session state; 4. preserve Activity Interceptor output when unknown Parcelables are present; 5. re-enable ignored Robolectric fixture tests already tracked in `ROADMAP.md`; 6. finish docs/archive truth already tracked in `ROADMAP.md`; 7. codify the Robolectric SDK36/JDK matrix; 8. complete runtime feature truth in System Config.
+AppManagerNG is a GPL Android package-manager fork for power users who inventory, install,
+freeze, archive, back up, restore, block, and audit apps across normal, root, ADB, Shizuku,
+and Dhizuku paths. The prior research cycle (through 2026-07-02) was fully drained into
+v0.6.4/v0.6.5 — privileged-server secret exclusion, port-rebind reconciliation, interceptor
+recovery, structured logging, the SDK36/JDK21 test matrix, and runtime system-feature truth
+all shipped. The project is strongest where it keeps privileged work offline-first, testable,
+and reversible.
+
+The one high-value regression risk introduced by the calendar: **Android 17 is now stable and
+`getInstalledPackages` returns a new paginated `PackageInfoList` type on API 37.** NG's
+`PackageManagerCompat` has no API-37 branch (highest TIRAMISU branch), so on Android 17 the
+reflected `.getList()` call returns the wrong type / an empty set — an **empty main app list**.
+Upstream fixed this in commit `836c7248ea`; the structural port (hidden-API stubs + an
+`SDK_INT >= 37` branch) is host-buildable and unit-testable, with only runtime confirmation
+device-gated. This is the single highest-value item this pass.
+
+Dependency posture is verified clean (no CVE action). The competitive "rule/policy engine"
+the whole field is converging on is already largely built here (profiles + routine triggers +
+rules export/import + tags), so the remaining opportunities are targeted upstream ports and an
+Android-17 targetSdk-readiness consolidation, not new subsystems.
+
+Top opportunities (priority order):
+1. Port upstream Android 17 `getInstalledPackages`/`PackageInfoList` enumeration fix (`836c7248ea`).
+2. Consolidate and pin the Android 17 (targetSdk 37) behavior-change audit coverage to de-risk the eventual bump.
+3. Evaluate/port upstream `Searchable{Single,Multi}ChoiceDialogBuilder` fix (`ca038d6611`, shared libcore/ui).
+4. Confirm parity / add multi-user coverage for the non-default-user inactive-app check (`916eeb85d5`).
 
 ## Product Map
 
-- Core workflows: app inventory/search/filter/sort, app details, APK install/export/verify, Activity Interceptor command generation, backup/restore/conversion, archive/freeze/unfreeze, component/app-op/permission rules, debloat guidance, file management, local docs, and privilege health diagnostics.
-- User personas: rooted Android power users, Shizuku/ADB users without root, ROM/device maintainers, privacy auditors, APK/app developers, and offline FLOSS users who cannot rely on hosted services.
-- Platforms and distribution: Android minSdk 21, targetSdk 36, compileSdk 37, FLOSS/FULL flavors, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.1, AGP 9.2.1, native/server helper modules, GPL-3.0-or-later.
-- Key integrations and data flows: PackageManager/PackageInstaller, root/libsu, Shizuku, ADB pairing/local server, Dhizuku, Android app archiving, Room-backed metadata, backup archives/manifests, OpenPGP/Bouncy Castle, tracker/library scanners, optional FULL network sources, and local documentation generation.
+- Core workflows: app inventory/search/filter/sort, app details, APK install/export/verify,
+  Activity Interceptor command generation, backup/restore/conversion, archive/freeze/unfreeze,
+  component/app-op/permission rules, debloat guidance, profiles + routine triggers, file
+  management, local docs, and privilege health diagnostics.
+- User personas: rooted power users, Shizuku/ADB/Dhizuku users without root, ROM/device
+  maintainers, privacy auditors, APK/app developers, offline FLOSS users.
+- Platforms and distribution: Android minSdk 21 / targetSdk 36 / compileSdk 37, FLOSS+FULL
+  flavors, Java/Kotlin Android Views, Material Components 1.13.0, Gradle 9.6.1 / AGP 9.2.1,
+  native + server helper modules, GPL-3.0-or-later.
+- Key integrations and data flows: PackageManager/PackageInstaller, root/libsu, Shizuku,
+  ADB pairing/local server, Dhizuku, app archiving, Room metadata, backup archives/manifests,
+  OpenPGP/Bouncy Castle, tracker/library scanners, optional FULL-flavor network sources.
 
 ## Competitive Landscape
 
-- Upstream App Manager: breadth benchmark for app ops, backups, system config, ADB backups, filter profiles, installer options, and accessibility; learn API coverage and bug signals; avoid blind upstream ports without NG privacy, minSdk, and source-contract review.
-- Canta and Thor: strongest debloat lesson is safety labeling plus reversible `pm uninstall --user`/`install-existing` flows; learn explicit risk chips and privilege-mode clarity; avoid downloading or trusting mutable safety data in FLOSS paths.
-- Neo Backup, Swift Backup, and Titanium Backup: backup users expect clear versioning, schedulers, batch restore, and special-data transparency; learn state visibility and restore caveats; avoid cloud/sync expansion until local Android backup and archived-app semantics are unambiguous.
-- Hail, Blocker, and PermissionManagerX: focused controls make permission/app-op/component changes understandable; learn idempotent "already applied" feedback and backup/restore of reference states; avoid collapsing privileged partial failures into generic booleans.
-- LibChecker and Inure: dense inspection surfaces can stay usable when evidence is grouped and source is explicit; learn scannable technical detail and reproducible-build trust cues; avoid extra dashboards where AppManagerNG already has scanner coverage.
-- SD Maid SE and adjacent file managers: mature file tools emphasize SAF setup, cancellation, and recoverable cleanup; learn operation lifecycle guards; avoid a file-manager rewrite when targeted cancellation/logging items remain.
-- AppDash: commercial signal for organization, notes/tags, watchlists, and operation history; learn compact inventory ergonomics; avoid Play/network-backed intelligence in FLOSS builds.
+- **Upstream App Manager (v4.1.0, 2026-06-29):** breadth benchmark; the release is mostly a
+  4.0.x rollup NG already tracks, but carries three host-relevant fixes worth porting — the
+  Android 17 enumeration fix (`836c7248ea`), a Searchable choice-dialog fix in shared libcore/ui
+  (`ca038d6611`), and a non-default-user inactive-app fix (`916eeb85d5`). Avoid blind ports of
+  the visual/scroll commits (NG already reworked scroll-restore and the Log Viewer).
+- **Hail (1.10.0) + Process Warden + blocker:** the field is converging on a rule/policy layer
+  (rule-based auto-freeze, auto-apply-on-install, "temporary lift then re-restrict", per-tag
+  actions). Learn the ergonomics; NG already has the substrate (profiles, `RoutinePackageChangeReceiver`,
+  rules export/import, tags) so this is extension work, not a new subsystem. Avoid untestable
+  device-coupled features — keep privileged apply behind the existing Ops adapter.
+- **Canta (3.2.2) / Thor / UAD-NG (1.2.0):** debloat lesson remains reversible, risk-labeled,
+  pinned presets with a guaranteed restore path. NG already ships risk chips + dependency edges;
+  avoid mutable/auto-fetched safety data in FLOSS builds (already a rejected idea — pinned data
+  contract only).
+- **Neo Backup (8.3.15):** users want rolling/versioned/mirror backups, filter-by-last-backup,
+  and restore that survives a locked screen. NG's backup trust work is the durable value center;
+  avoid cloud/sync expansion.
+- **LibChecker (2.5.4) / Inure (build107):** dense inspection stays usable when evidence is
+  grouped and source is explicit; both shipped Android 17 adaptation — a currency signal NG
+  should match. Avoid duplicate dashboards where the scanner already covers detection.
+- **PermissionManagerX (1.31):** focused, idempotent "already applied" feedback and per-mode
+  clarity; NG should keep collapsing partial privileged failures into booleans off the table.
 
 ## Security, Privacy, and Reliability
 
-- Verified: `app/src/main/res/xml/backup_rules.xml` and `app/src/main/res/xml/full_backup_rules.xml` include all shared preferences except Chromium prefs, while `ServerConfig` stores a local privileged-server token in `server_config` shared preferences (`app/src/main/java/io/github/muntashirakon/AppManager/servermanager/ServerConfig.java`). Android Auto Backup includes shared preferences by default and restores before first launch, so volatile privileged-server secrets need exclusion or rotation.
-- Verified: local ADB server port changes only save the new preference and show a restart notice (`AdvancedPreferences.java`), while `LocalServer`/`LocalServerManager` bind and handshake using `ServerConfig.getLocalServerPort()`/`getLocalToken()`. `ServerStatusChangeReceiver` also has a TODO to broadcast started-state updates, leaving settings and live privilege state weakly coupled.
-- Verified: Activity Interceptor catches `BadParcelableException` in `getUri()` and returns `null` (`ActivityInterceptor.java`), losing the whole generated intent URI when one unknown extra cannot be unmarshalled. Android documents this exception as typical when a custom Parcelable crosses into a process without its class.
-- Verified: `SystemConfig.java` still comments out runtime feature additions for file-based encryption, adoptable storage, incremental delivery, and app enumeration. Upstream App Manager exposes system configuration as a root-only feature, so unknown/stale feature truth should be explicit.
-- Verified existing roadmap coverage remains valid: component-rule reset needs bounded progress/partial-failure reporting; ignored Robolectric fixtures hide ZIP/VFS/TAR/OAB/settings-search regressions; production `printStackTrace()` cleanup, offline manual truth, archive-link truth, and crash/replay ignore rules are still active in `ROADMAP.md`.
-- Likely: dependency posture is current but brittle at edges. Bouncy Castle 1.84 fixes recent OpenPGP/CVE issues and is already adopted; Robolectric 4.16 supports SDK36 but documents a JDK21 requirement for SDK36-target tests, while `BUILDING.rst` still says JDK 17+.
+- Verified: `PackageManagerCompat.getInstalledPackagesInternal` (app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java:173-180)
+  has no API-37 branch. On Android 17 the hidden `getInstalledPackages(long,int)` returns a
+  `PackageInfoList` (paginated `ParceledListSlice` subclass); the current reflected `.getList()`
+  path yields an empty/wrong result → empty main list. Upstream fix: `836c7248ea`.
+- Verified: dependency stack is CVE-clean at current pins. BouncyCastle 1.84 is the latest tag
+  and already carries the 2026 OpenPGP/timing fixes; gson 2.14.0, Guava 32.1.3, zstd-jni 1.5.7-11,
+  libsu 6.0.0, Room 2.7.2 have no applicable open CVE. jadx advisories are jadx-gui only (NG ships
+  jadx-core/dex-input). No security-driven bump is warranted; the weekly OWASP dependency-check
+  gate remains the right guard.
+- Verified: no APK Signature Scheme v3.2 / ML-DSA path exists in AOSP as of mid-2026 (only v3/v3.1);
+  the existing blocked "v3.2 display" item remains correctly gated on apksig upstream, not urgent.
+- Reliability: backup/restore round-trip and privileged-mode paths remain the highest device-gated
+  risk (tracked in `Roadmap_Blocked.md`); nothing new host-verifiable surfaced there this pass.
 
 ## Architecture Assessment
 
-- Boundary improvements: privileged-server lifecycle should own config-change reconciliation instead of leaving settings toasts, receiver TODOs, and `LocalServer` liveness checks as separate behavior. Candidate files: `AdvancedPreferences.java`, `LocalServer.java`, `LocalServerManager.java`, `ServerStatusChangeReceiver.java`, `Ops.java`.
-- Refactor candidates: Android backup eligibility needs a source-contract test around `backup_rules.xml`, `full_backup_rules.xml`, and secret-bearing preference names; the implementation can either move local tokens to `noBackupFilesDir`, exclude `server_config.xml`, or rotate token on restore.
-- Refactor candidates: Activity Interceptor should serialize safe base fields even when extras contain unknown Parcelables, then report skipped keys/types through the existing unsupported-extra warning surface. Candidate files: `ActivityInterceptor.java`, `IntentCompat.java`, related interceptor tests.
-- Refactor candidates: System Config runtime features should use public/compat APIs where available and mark unavailable/unknown runtime-only features deliberately instead of leaving commented AOSP code.
-- Test gaps: ignored Robolectric fixture tests, no backup-rule secret contract, no local-server port-change unit contract, no BadParcelable interceptor fallback test, and no JDK/toolchain guard for SDK36 Robolectric execution.
-- Documentation gaps: existing `ROADMAP.md` already tracks manual source truth and archive-link truth; add only the JVM/toolchain matrix if tests require JDK21.
+- The A17 enumeration fix should live behind the existing compat boundary: add hidden-API stubs
+  (`IPackageManagerV37`, `PackageInfoList`) mirroring upstream, a `VersionCodes` constant for 37,
+  and an `SDK_INT >= 37` branch in `getInstalledPackagesInternal`. Gating behind 37 keeps ≤36
+  behavior byte-identical (zero regression), and the branch selection is unit-testable with a
+  fake `IPackageManager`.
+- Choice-dialog fix (`ca038d6611`) touches shared `libcore/ui` builders that already exist in NG
+  (`SearchableSingleChoiceDialogBuilder`, `SearchableMultiChoiceDialogBuilder`); a diff-and-port
+  is low-risk and Robolectric-testable.
+- Doc truth is already current: `BUILDING.rst` states JDK 21+ and documents the Robolectric
+  SDK36/JDK21 requirement — no action (prior gap closed).
+- Test/readiness gap: there is no consolidated assertion tying the Android 17 targetSdk behavior
+  audits (static-final immutability, `System.load` read-only, MessageQueue reflection, Keystore
+  key cap, implicit-URI grants) to a single regression gate, so the eventual targetSdk 36→37 bump
+  lacks a host-verifiable readiness pin.
 
 ## Rejected Ideas
 
-- Compose rewrite or dependency-led Material migration: rejected because `CONTRIBUTING.md` says no Compose and the repo still targets minSdk 21 with Material Components pinned in `versions.gradle`.
-- Native 16 KB library alignment item: rejected as duplicate; `NativeLibraries.java`, strings, changelog, and release verifier scripts already expose/check this.
-- Android 17 local-network permission item: rejected as duplicate; manifest, strings, startup recovery, `Ops`, and `WifiWaitService` already handle `ACCESS_LOCAL_NETWORK`.
-- Installer transcript/gentle-update surface: rejected for now; installer status transcripts, update ownership, background install behavior, and session failure mapping already exist, while `InstallConstraints.GENTLE_UPDATE` is more relevant to app-store auto-update flows than AppManagerNG's explicit installs.
-- Emergency jadx CVE item: rejected after source review; the cited jadx package-name shell injection affects `jadx-gui` ADB launch before 1.5.0, while this project uses jadx core/dex input paths and already has dependency-check gates.
-- Cloud-backup/sync provider expansion: rejected because Neo Backup/Swift Backup make it attractive, but AppManagerNG's FLOSS/offline privacy model and current trust gaps make local correctness higher value.
-- Plugin ecosystem/marketplace: rejected because no plugin boundary exists, package-manager operations are privilege-sensitive, and current architecture favors pinned local data over runtime extension loading.
-- Broad UAD model ingestion: rejected until a pinned data contract exists; Canta/Thor show the value, but mutable OEM safety data can turn destructive if stale.
-- Accessibility/i18n mega-pass: rejected as a new roadmap item because recent code already added pseudolocales, Android 13 language support, and multiple accessibility passes; keep targeted fixes tied to concrete UI bugs.
+- targetSdk 36→37 bump itself (this pass): the behavior-change audits are host-verifiable and can
+  be pinned now, but the bump's runtime effects require an API-37 device/emulator — the bump stays
+  in `Roadmap_Blocked.md`; only the readiness consolidation is actionable. (Source: Android 17
+  behavior-change docs.)
+- Dependency/CVE-driven bumps: rejected — stack is verified clean at current pins; BouncyCastle
+  1.84 is latest. (Source: GHSA/NVD advisories for BC/gson/Guava/jadx/libsu.)
+- APK Signature Scheme v3.2 / PQC (ML-DSA) code path: rejected — AOSP APK signing is still v3/v3.1;
+  the premise is unsubstantiated. Keep the display item blocked on apksig. (Source: source.android.com apksigning v3-1.)
+- New rule/policy "engine" subsystem: rejected as largely duplicate — NG already ships profiles,
+  `RoutinePackageChangeReceiver`, rules export/import, and tags; extend those, don't rebuild.
+  (Source: rules/RulesExporter.java, profiles/trigger/RoutinePackageChangeReceiver.java.)
+- Frozen-list export as a new feature: rejected as duplicate — rules export + snapshot import with
+  selective section restore already cover portable managed state. (Source: rules/, prior snapshot work.)
+- Log Viewer scroll/filter rewrite port (`936cb3021b`): rejected — NG already reworked the Log
+  Viewer (regex-brick + supersede-loop fixes); porting upstream's rewrite risks conflict for
+  marginal gain. (Source: upstream commit, NG CHANGELOG.)
+- Compose rewrite / Material 1.14+ migration: rejected — CONTRIBUTING forbids Compose; minSdk-21
+  policy pins Material 1.13.0. (Source: CONTRIBUTING.md, docs/policy/minsdk-21-ceiling.md.)
+- Cloud backup/sync, plugin marketplace, broad mutable UAD ingestion: rejected as before — conflict
+  with the FLOSS/offline privacy model and pinned-data doctrine.
 
 ## Sources
 
-OSS and upstream:
+Upstream:
+- https://github.com/MuntashirAkon/AppManager/releases/tag/v4.1.0
+- https://github.com/MuntashirAkon/AppManager/commit/836c7248eafe5d7b73e21d919eb31c34dd06a348
+- https://github.com/MuntashirAkon/AppManager/commit/ca038d6611
+- https://github.com/MuntashirAkon/AppManager/commit/916eeb85d5
 
-- https://github.com/MuntashirAkon/AppManager
-- https://github.com/MuntashirAkon/AppManager/releases
+Platform:
+- https://developer.android.com/about/versions/17/behavior-changes-all
+- https://developer.android.com/about/versions/17/behavior-changes-17
+- https://android-developers.googleblog.com/2026/06/Android-17.html
+- https://developer.android.com/guide/practices/page-sizes
+- https://source.android.com/docs/security/features/apksigning/v3-1
+
+Competitors/community:
 - https://github.com/samolego/Canta
-- https://github.com/trinadhthatakula/Thor
+- https://github.com/aistra0528/Hail
 - https://github.com/NeoApplications/Neo-Backup
-- https://github.com/aistra0528/Hail/blob/master/README_EN.md
-- https://github.com/aistra0528/Hail/issues/398
-- https://github.com/lihenggui/blocker
-- https://github.com/mirfatif/PermissionManagerX
 - https://github.com/LibChecker/LibChecker
 - https://github.com/Hamza417/Inure
-- https://github.com/d4rken-org/sdmaid-se
-- https://github.com/timschneeb/awesome-shizuku
-- https://github.com/awesome-android-root/awesome-android-root
+- https://github.com/lihenggui/blocker
+- https://github.com/trinadhthatakula/Thor
+- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
+- https://github.com/RikkaApps/Shizuku/discussions/462
 
-Commercial and community:
-
-- https://appdash.app/
-- https://play.google.com/store/apps/details?hl=en_US&id=org.swiftapps.swiftbackup
-- https://www.titaniumtrack.com/titanium-backup.html
-- https://www.reddit.com/r/fossdroid/comments/1syj7lt/best_app_to_freezedisable_with_shizuku/
-
-Platform, dependency, and security:
-
-- https://developer.android.com/identity/data/autobackup
-- https://developer.android.com/reference/android/os/BadParcelableException
-- https://developer.android.com/guide/components/activities/parcelables-and-bundles
-- https://developer.android.com/reference/android/content/pm/PackageManager
-- https://developer.android.com/reference/android/content/pm/ArchivedPackageInfo
-- https://developer.android.com/reference/android/content/pm/PackageInstaller.InstallConstraints
-- https://developer.android.com/about/versions/17/behavior-changes-17
-- https://support.google.com/android-developer-console/answer/16650243?hl=en
-- https://github.com/robolectric/robolectric/releases/
-- https://docs.gradle.org/current/release-notes.html
-- https://developer.android.com/build/releases/agp-9-2-0-release-notes
-- https://www.bouncycastle.org/resources/new-releases-bouncy-castle-java-1-84-and-bouncy-castle-java-lts-2-73-11/
+Security:
+- https://github.com/advisories/GHSA-c3fc-8qff-9hwx
+- https://nvd.nist.gov/vuln/detail/cve-2023-2976
+- https://github.com/skylot/jadx/security/advisories/GHSA-hvp5-5x4f-33fq
+- https://github.com/topjohnwu/libsu/releases
 
 ## Open Questions
 
-- Should the local privileged-server token be excluded entirely from backup or rotated after restore while preserving non-secret server preferences?
-- Should a local-server port change automatically restart the server in every privilege mode, or mark the current server stale when a safe restart is not possible?
+- After the A17 enumeration port lands structurally, which single privileged mode (root vs
+  Shizuku vs Dhizuku) should be the first device/emulator validation target, given the paginated
+  `PackageInfoList` binder call cannot be exercised offline?
