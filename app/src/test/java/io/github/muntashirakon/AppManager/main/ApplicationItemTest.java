@@ -35,6 +35,11 @@ public class ApplicationItemTest {
                 }
                 return userId == 11;
             }
+
+            @Override
+            public boolean checkCrossUserPermission(int userId) {
+                return true;
+            }
         });
 
         assertTrue(item.canReadLogs);
@@ -55,10 +60,42 @@ public class ApplicationItemTest {
             public boolean isAppInactive(@NonNull String packageName, int userId) {
                 throw new IllegalStateException("profile unavailable");
             }
+
+            @Override
+            public boolean checkCrossUserPermission(int userId) {
+                return true;
+            }
         });
 
         assertFalse(item.canReadLogs);
         assertFalse(item.isAppInactive);
+    }
+
+    @Test
+    public void generateOtherInfoSkipsInactiveCheckForUsersWithoutCrossUserPermission() {
+        ApplicationItem item = app(new int[]{0, 11});
+
+        item.generateOtherInfo(new ApplicationItem.OtherInfoResolver() {
+            @Override
+            public int checkPermission(@NonNull String permissionName, @NonNull String packageName, int userId) {
+                return PackageManager.PERMISSION_DENIED;
+            }
+
+            @Override
+            public boolean isAppInactive(@NonNull String packageName, int userId) {
+                // Would report the non-default user as inactive if it were ever consulted.
+                return userId != 0;
+            }
+
+            @Override
+            public boolean checkCrossUserPermission(int userId) {
+                // No cross-user permission for the non-default user.
+                return userId == 0;
+            }
+        });
+
+        assertFalse("Inactive state for a non-default user must not be read without cross-user permission",
+                item.isAppInactive);
     }
 
     @NonNull
