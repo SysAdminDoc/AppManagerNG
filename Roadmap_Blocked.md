@@ -58,8 +58,10 @@ ROADMAP.md once the blocker is resolved.
   apk/installer/; compat/PackageManagerCompat.java.
   Acceptance: the #1286 reproduction succeeds; ported fixes are listed in
   CHANGELOG.md with upstream attribution.
-  Blocker: upstream v4.1.0 has not shipped as of 2026-06-27, and final
-  behavior needs Samsung/API 34 device verification.
+  Blocker: upstream v4.1.0 shipped 2026-06-29, so the restore commits are now
+  available to port, but the #1286 reproduction and final restore behavior
+  need Samsung/API 34 device verification — restore is the highest data-loss
+  risk path and must not ship unexercised on an offline host.
   Complexity: M
 
 - [ ] P1 — Port HMAC mutual auth and native run_server for the local privileged channel
