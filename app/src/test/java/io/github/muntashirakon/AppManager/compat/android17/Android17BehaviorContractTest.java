@@ -275,6 +275,74 @@ public class Android17BehaviorContractTest {
                 offenders.isEmpty());
     }
 
+    @Test
+    public void nativeLibrariesUseReadOnlyLoadLibrary() throws IOException {
+        // Android 17 targetSdk 37 requires System.load() to reference a read-only file or it
+        // throws UnsatisfiedLinkError. NG must load native code via System.loadLibrary(), which
+        // resolves the packaged, read-only extracted lib dir — never System.load(<writable path>).
+        Path root = findProjectRoot();
+        List<String> offenders = new ArrayList<>();
+        for (Path sourceRoot : sourceRoots(root)) {
+            if (!Files.exists(sourceRoot)) continue;
+            try (Stream<Path> stream = Files.walk(sourceRoot)) {
+                stream.filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(path -> {
+                            try {
+                                List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+                                for (int i = 0; i < lines.size(); i++) {
+                                    String line = lines.get(i);
+                                    if (line.contains("System.load(")
+                                            && !line.trim().startsWith("//")
+                                            && !line.trim().startsWith("*")) {
+                                        offenders.add(root.relativize(path) + ":" + (i + 1) + ": " + line.trim());
+                                    }
+                                }
+                            } catch (IOException e) {
+                                offenders.add(root.relativize(path) + ": " + e.getMessage());
+                            }
+                        });
+            }
+        }
+        assertTrue("Android 17 rejects System.load() on writable .so files; use System.loadLibrary():\n"
+                + String.join("\n", offenders), offenders.isEmpty());
+    }
+
+    @Test
+    public void androidKeyStoreKeyGenerationUsesBoundedFixedAliases() throws IOException {
+        // Android 17 targetSdk 37 caps a targeting app at 50,000 AndroidKeyStore keys before
+        // ERROR_TOO_MANY_KEYS. NG stays far under it by generating at most one AES key and one
+        // legacy RSA wrap key, each keyed to a compile-time-constant alias and guarded so it is
+        // generated only once. Pin that shape so no per-item/looped alias generation creeps in.
+        Path source = findProjectRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/crypto/ks/CompatUtil.java");
+        String contents = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue("AES keystore alias must stay a compile-time constant",
+                contents.contains("private static final String AES_LOCAL_PROTECTION_KEY_ALIAS ="));
+        assertTrue("RSA wrap keystore alias must stay a compile-time constant",
+                contents.contains("private static final String RSA_WRAP_LOCAL_PROTECTION_KEY_ALIAS ="));
+        assertTrue("AES keystore generation must target the fixed alias",
+                contents.contains("new KeyGenParameterSpec.Builder(AES_LOCAL_PROTECTION_KEY_ALIAS"));
+        assertTrue("AES keystore key must be generated only when its fixed alias is absent",
+                contents.contains("keyStore.containsAlias(AES_LOCAL_PROTECTION_KEY_ALIAS)"));
+    }
+
+    @Test
+    public void installedPackageEnumerationHandlesApi37() throws IOException {
+        // Android 17 (API 37 / Cinnamon Bun) getInstalledPackages(long,int) returns the paginated
+        // PackageInfoList; PackageManagerCompat must route API 37+ through IPackageManagerV37 so the
+        // main app list is not empty on Android 17.
+        Path source = findProjectRoot().resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java");
+        String contents = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+
+        assertTrue("Enumeration must gate the API 37 path on VersionCodes.CINNAMON_BUN",
+                contents.contains("Build.VERSION.SDK_INT >= VersionCodes.CINNAMON_BUN"));
+        assertTrue("API 37 enumeration must cast to IPackageManagerV37 and read the PackageInfoList",
+                contents.contains("Refine.<IPackageManagerV37>unsafeCast(pm)")
+                        && contents.contains(".getInstalledPackages(flags, userId)"));
+    }
+
     private static Set<String> setOf(String... values) {
         Set<String> set = new HashSet<>();
         for (String value : values) {

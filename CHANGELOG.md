@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Changed
+- Consolidated the Android 17 (targetSdk 37) behavior-change readiness ledger
+  into one host-verifiable gate. `Android17BehaviorContractTest` now also pins
+  that native code loads via read-only `System.loadLibrary` (never
+  `System.load(<writable path>)`), that AndroidKeyStore keys use bounded
+  compile-time-constant aliases generated once (immune to the API-37 50,000
+  per-app key cap), and that installed-package enumeration routes API 37+
+  through `IPackageManagerV37`.
+
 ### Fixed
 - Installed-app enumeration now handles Android 17 (API 37), where
   `getInstalledPackages(long, int)` returns the new paginated `PackageInfoList`
