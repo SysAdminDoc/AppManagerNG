@@ -252,7 +252,7 @@ public final class ApkUtils {
     @NonNull
     public static HashMap<String, String> getManifestAttributes(@NonNull ByteBuffer manifestBytes)
             throws ApkFile.ApkFileException {
-        try (BlockReader reader = new BlockReader(manifestBytes.array())) {
+        try (BlockReader reader = new BlockReader(AndroidBinXmlDecoder.toByteArray(manifestBytes))) {
             HashMap<String, String> manifestAttrs = new HashMap<>();
             ResXmlDocument xmlBlock = new ResXmlDocument();
             try {

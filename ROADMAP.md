@@ -77,35 +77,6 @@ refresh, which needs a capture environment.
   Acceptance: the connect and pair dialogs show the dedicated titles/instructions; the developer-options intents carry `:settings:fragment_args_key`=`toggle_adb_wireless`; only the two mapped title sites change (not the third unrelated one); build + string-presence test green.
   Complexity: S
 
-- [ ] P3 — AdvancedSearchView single-string regex overload: catch PatternSyntaxException + align find() semantics
-  Why: the `matches(String, String, int)` `SEARCH_TYPE_REGEX` case calls `text.matches(query)`
-  with no `try/catch` (crash on a bad pattern) and uses full-match semantics, while the two
-  collection overloads guard `PatternSyntaxException` and use `matcher.find()` (substring) — a
-  latent crash/behavior-divergence trap for any future caller.
-  Evidence: misc/AdvancedSearchView.java:334-346 (string overload) vs :362-374, :393-411 (collection overloads).
-  Touches: misc/AdvancedSearchView.java (compile once in try/catch → return false; use matcher(text).find()), app/src/test/ (new AdvancedSearchView regex tests).
-  Acceptance: `matches("[", "abc", SEARCH_TYPE_REGEX)` returns false without throwing; a substring case agrees between the string and collection overloads.
-  Complexity: S
-
-- [ ] P3 — Binary-XML decoders read the ByteBuffer window, not the whole backing array
-  Why: `ByteBuffer.array()` ignores `arrayOffset()`/`position()`/`limit()` and throws
-  `UnsupportedOperationException` on direct/read-only buffers, so the public
-  `decode(ByteBuffer,...)`/`ManifestParser(ByteBuffer)` APIs silently mis-read a sliced or
-  mmapped buffer; works today only because every caller passes `ByteBuffer.wrap(byte[])`.
-  Evidence: apk/parser/AndroidBinXmlDecoder.java:73; apk/parser/ManifestParser.java:176; apk/ApkUtils.java:255.
-  Touches: apk/parser/AndroidBinXmlDecoder.java, apk/parser/ManifestParser.java (read `buf.remaining()` via `duplicate().get(...)`), app/src/test/ (sliced-buffer parity test).
-  Acceptance: parsing a known-good binary AndroidManifest from a non-zero-offset `.slice()` buffer yields the same result as the zero-offset case.
-  Complexity: S
-
-- [ ] P3 — AndroidBinXmlDecoder framework-package-block lazy init is an unsynchronized race
-  Why: `getFrameworkPackageBlock()` lazily initializes a non-volatile static without
-  synchronization; concurrent manifest parsing (per-app loaders, filters) can double-run the
-  heavy framework-table init and observe a partially published reference.
-  Evidence: apk/parser/AndroidBinXmlDecoder.java:135-144.
-  Touches: apk/parser/AndroidBinXmlDecoder.java (synchronized / holder class / volatile DCL), app/src/test/ (concurrent-callers return same instance).
-  Acceptance: N threads calling `getFrameworkPackageBlock()` all receive the same (`==`) instance; init runs once.
-  Complexity: S
-
 - [ ] P3 — DebloatObject.fillInstallInfo accumulates instead of overwriting per-user state
   Why: it accumulates `mInstalled` with `|=` then overwrites it with `=` inside the icon block,
   and overwrites `mSystemApp`/`mUpdatedSystemApp`/`mFrozen`/`mLabel` per user, so on a multi-user
