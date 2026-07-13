@@ -18,11 +18,37 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-Backing research: `RESEARCH.md` (2026-07-12 second pass — code-level correctness audit,
-complete upstream v4.1.0 commit set, dependency currency). All items below are
-host-verifiable (fixable and unit-testable offline, no device/emulator).
+Backing research: `RESEARCH.md` (2026-07-12 — code-level correctness audit across the
+intercept/backup-convert/apk-parser/search/debloat and crypto/backup-core/filters/scanner/
+rules/uri subsystems, plus the complete upstream v4.1.0 commit set and dependency currency).
+All items below are host-verifiable (fixable and unit-testable offline, no device/emulator).
+
+### P1
+
+- [ ] P1 — URI-permission grants are silently dropped on restore (modern-Android round-trip)
+  Why: on current Android, captured grants carry `userHandle == USER_NULL (-1)` (the legacy
+  `ATTR_USER_HANDLE` is absent), `UriGrant.flattenToString` writes `-1` at field 2, and restore's
+  `unflattenFromString` runs `parseNonNegativeInt(parts[2])` which rejects negatives — so the
+  rule line throws and the loader silently skips every URI grant. Backup reports success; the
+  grant data class is lost on restore.
+  Evidence: uri/UriManager.java:137-138 (USER_NULL default), :206 (serialize field 2), :219 + parseNonNegativeInt (rejects -1); rules/struct/UriGrantRule.java:25 (tokenizer ctor); rules/RulesStorageManager.java:300-305 (per-line IllegalArgumentException skip).
+  Touches: uri/UriManager.java (permit USER_NULL/-1 for the `userHandle` field only, or stop persisting/validating it since restore reconstructs user IDs), app/src/test/ (UriGrant round-trip test).
+  Acceptance: `UriGrant.unflattenFromString(g.flattenToString())` round-trips a grant with `userHandle == -1` without throwing; a crafted `-1` rule line loads instead of being skipped; other negative fields still rejected.
+  Complexity: S
 
 ### P2
+
+- [ ] P2 — FilterPresetStore: one corrupt/forward-incompatible preset crashes the whole store
+  Why: the per-entry guard catches only `JSONException`, but `new FilterItem(json)` →
+  `FilterOption.setKeyValue`/`FilterOptions.create` throw unchecked `NumberFormatException`/
+  `IllegalArgumentException` (bad numeric value, unknown/removed filter type, bad regex). These
+  escape both catches, so `readMap()` throws and every caller (`all()`/`find()`/`hasAny()`/`save()`)
+  crashes on access — a persistent feature-level DoS, contrary to the code's stated "do not crash /
+  reset to empty" intent.
+  Evidence: filters/preset/FilterPresetStore.java:188 (inner `catch (JSONException)`) vs FilterOption.java:126,132,142 (unchecked throws), FilterOptions.java:43 (unknown type); same latent gap in FilterItem.java:307-317 and FilterOption.fromJson:222-230.
+  Touches: filters/preset/FilterPresetStore.java (widen inner catch to `JSONException | RuntimeException`), optionally harden `FilterOption.fromJson`, app/src/test/ (bad-value preset skipped, not thrown).
+  Acceptance: a preset blob with one valid entry and one whose option value is non-numeric for an int/long/size key returns only the valid preset; no exception escapes `readMap()`.
+  Complexity: S
 
 - [ ] P2 — TBConverter: a corrupt backup icon aborts the whole Titanium Backup import
   Why: `readPropFile()` runs outside `convert()`'s try and decodes the icon with
@@ -91,4 +117,15 @@ host-verifiable (fixable and unit-testable offline, no device/emulator).
   Evidence: debloat/DebloatObject.java:244-264.
   Touches: debloat/DebloatObject.java (extract a pure per-user merge that accumulates installed/system/frozen correctly), app/src/test/ (unit test the merge across multiple users).
   Acceptance: a unit test of the extracted merge asserts `installed` stays true if any user has it installed, and system/frozen flags reflect the intended accumulation rather than last-write-wins.
+  Complexity: S
+
+- [ ] P3 — Backup checksum writer swallows I/O errors (fail-open integrity)
+  Why: `Checksum` wraps a `PrintWriter`, whose `IOException`s are only visible via `checkError()`,
+  which is never called; if the stream fails mid-backup (disk full, revoked SAF permission),
+  `checksums.txt` is silently truncated but the backup reports success, and later verify/restore
+  treats the missing entries as "no checksum recorded" — a fail-open integrity path that hides the
+  original write failure.
+  Evidence: backup/BackupItems.java:699 (PrintWriter), :731-733 (println/flush unchecked), :745-751 (close discards error).
+  Touches: backup/BackupItems.java (call `checkError()` after write/flush and in close → throw IOException, or use a Writer that propagates), app/src/test/ (failing OutputStream surfaces an error).
+  Acceptance: a `Checksum` over a stream that throws IOException on write surfaces the failure from `add()`/`close()` instead of returning normally.
   Complexity: S
