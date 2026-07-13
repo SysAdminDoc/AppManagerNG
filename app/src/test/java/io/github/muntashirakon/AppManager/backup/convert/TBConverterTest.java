@@ -86,6 +86,36 @@ public class TBConverterTest {
         }
     }
 
+    @Test
+    public void convertToleratesCorruptIcon() throws Exception {
+        File propFile = File.createTempFile("has.badicon-20210529-164214", ".properties");
+        try {
+            Properties prop = new Properties();
+            prop.setProperty("app_label", "Icon App");
+            prop.setProperty("app_version_name", "1.0");
+            prop.setProperty("app_version_code", "42");
+            prop.setProperty("app_apk_md5", "deadbeef");
+            prop.setProperty("app_apk_codec", "BZIP2");
+            // Malformed base64 — Base64.decode throws unchecked IllegalArgumentException.
+            prop.setProperty("app_gui_icon", "!!!not-valid-base64!!!");
+            try (FileOutputStream os = new FileOutputStream(propFile)) {
+                prop.store(os, null);
+            }
+
+            try {
+                new TBConverter(Paths.get(propFile)).convert();
+            } catch (IllegalArgumentException e) {
+                fail("A corrupt icon must not abort the whole import: " + e);
+            } catch (BackupException expected) {
+                // Acceptable: a later stage (e.g. missing APK payload in this fixture) can still
+                // fail — the point is that the icon no longer throws before readPropFile returns.
+            }
+        } finally {
+            //noinspection ResultOfMethodCallIgnored
+            propFile.delete();
+        }
+    }
+
     @Before
     public void setUp() {
         Prefs.Storage.setVolumePath("file:///tmp");
