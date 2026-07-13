@@ -32,6 +32,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through `IPackageManagerV37`.
 
 ### Fixed
+- The debloater now reports a package's installed / system / frozen state
+  correctly on multi-user devices. State was overwritten per user (last user
+  wins), and an accumulated "installed" could be cleared by the per-user icon
+  lookup, so a package installed for one user could show as not installed. These
+  flags are now OR-accumulated across all users.
+- Backup no longer silently truncates `checksums.txt` on a write failure. The
+  checksum writer wrapped a `PrintWriter`, which swallows I/O errors, so a
+  mid-backup disk-full or revoked-permission failure produced an incomplete
+  checksum file while the backup reported success, weakening later verification.
+  Write failures are now surfaced as the backup fails.
 - Binary-XML parsing (app manifests) now reads a `ByteBuffer`'s logical window
   instead of its whole backing array, so a sliced, offset, or read-only/direct
   buffer decodes correctly instead of silently mis-reading or throwing. The

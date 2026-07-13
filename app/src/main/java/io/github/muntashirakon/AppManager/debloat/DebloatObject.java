@@ -234,33 +234,65 @@ public class DebloatObject {
                 }
             }
         }
-        // Update application data
-        mInstalled = false;
+        // Update application data. Flags are accumulated across every user record (a
+        // package can be installed for one user and not another, or frozen for only some),
+        // so a later user must never clobber an earlier user's state — in particular an
+        // accumulated installed=true must survive the per-user icon-load fallback below.
         mUsers = null;
-        mSystemApp = null;
-        mUpdatedSystemApp = null;
-        mFrozen = null;
+        InstallFlags flags = new InstallFlags();
         List<App> apps = appDb.getAllApplications(packageName);
         for (App app : apps) {
-            mInstalled |= app.isInstalled;
             addUser(app.userId);
-            mUpdatedSystemApp = (app.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
-            mSystemApp = app.isSystemApp() || mUpdatedSystemApp;
-            mFrozen = !app.isEnabled;
+            boolean updatedSystem = (app.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+            flags.accumulate(app.isInstalled, app.isSystemApp() || updatedSystem, updatedSystem,
+                    !app.isEnabled);
             mLabel = app.packageLabel;
             if (getIcon() == null) {
                 try {
                     ApplicationInfo ai = PackageManagerCompat.getApplicationInfo(packageName,
                             MATCH_UNINSTALLED_PACKAGES | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, app.userId);
-                    mInstalled = (ai.flags & ApplicationInfo.FLAG_INSTALLED) != 0;
-                    mUpdatedSystemApp = (ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
-                    mSystemApp = ApplicationInfoCompat.isSystemApp(ai) || mUpdatedSystemApp;
+                    boolean aiUpdatedSystem = (ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
+                    flags.accumulate((ai.flags & ApplicationInfo.FLAG_INSTALLED) != 0,
+                            ApplicationInfoCompat.isSystemApp(ai) || aiUpdatedSystem, aiUpdatedSystem,
+                            FreezeUtils.isFrozen(ai));
                     mLabel = ai.loadLabel(pm);
                     mIcon = ai.loadIcon(pm);
-                    mFrozen = FreezeUtils.isFrozen(ai);
                 } catch (RemoteException | PackageManager.NameNotFoundException ignore) {
                 }
             }
+        }
+        mInstalled = flags.installed;
+        mSystemApp = flags.systemApp;
+        mUpdatedSystemApp = flags.updatedSystemApp;
+        mFrozen = flags.frozen;
+    }
+
+    /**
+     * Per-user install-state aggregate. {@code installed}/{@code systemApp}/
+     * {@code updatedSystemApp}/{@code frozen} are OR-accumulated across every user record
+     * so the package is reported installed/system/frozen if it is so for any user, rather
+     * than reflecting only the last user iterated.
+     */
+    @VisibleForTesting
+    static final class InstallFlags {
+        boolean installed;
+        @Nullable
+        Boolean systemApp;
+        @Nullable
+        Boolean updatedSystemApp;
+        @Nullable
+        Boolean frozen;
+
+        void accumulate(boolean installed, boolean systemApp, boolean updatedSystemApp, boolean frozen) {
+            this.installed |= installed;
+            this.systemApp = or(this.systemApp, systemApp);
+            this.updatedSystemApp = or(this.updatedSystemApp, updatedSystemApp);
+            this.frozen = or(this.frozen, frozen);
+        }
+
+        @NonNull
+        private static Boolean or(@Nullable Boolean accumulated, boolean value) {
+            return (accumulated != null && accumulated) || value;
         }
     }
 }

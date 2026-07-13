@@ -76,23 +76,3 @@ refresh, which needs a capture environment.
   Touches: settings/Ops.java (connectWirelessDebugging + pairAdbInput titles/messages + deep-link extra), res/values/strings.xml (adb_pairing_title, manual_wireless_debugging_title, manual_wireless_debugging_instructions).
   Acceptance: the connect and pair dialogs show the dedicated titles/instructions; the developer-options intents carry `:settings:fragment_args_key`=`toggle_adb_wireless`; only the two mapped title sites change (not the third unrelated one); build + string-presence test green.
   Complexity: S
-
-- [ ] P3 — DebloatObject.fillInstallInfo accumulates instead of overwriting per-user state
-  Why: it accumulates `mInstalled` with `|=` then overwrites it with `=` inside the icon block,
-  and overwrites `mSystemApp`/`mUpdatedSystemApp`/`mFrozen`/`mLabel` per user, so on a multi-user
-  device the last-iterated user's state wins and an accumulated `installed=true` is clobbered.
-  Evidence: debloat/DebloatObject.java:244-264.
-  Touches: debloat/DebloatObject.java (extract a pure per-user merge that accumulates installed/system/frozen correctly), app/src/test/ (unit test the merge across multiple users).
-  Acceptance: a unit test of the extracted merge asserts `installed` stays true if any user has it installed, and system/frozen flags reflect the intended accumulation rather than last-write-wins.
-  Complexity: S
-
-- [ ] P3 — Backup checksum writer swallows I/O errors (fail-open integrity)
-  Why: `Checksum` wraps a `PrintWriter`, whose `IOException`s are only visible via `checkError()`,
-  which is never called; if the stream fails mid-backup (disk full, revoked SAF permission),
-  `checksums.txt` is silently truncated but the backup reports success, and later verify/restore
-  treats the missing entries as "no checksum recorded" — a fail-open integrity path that hides the
-  original write failure.
-  Evidence: backup/BackupItems.java:699 (PrintWriter), :731-733 (println/flush unchecked), :745-751 (close discards error).
-  Touches: backup/BackupItems.java (call `checkError()` after write/flush and in close → throw IOException, or use a Writer that propagates), app/src/test/ (failing OutputStream surfaces an error).
-  Acceptance: a `Checksum` over a stream that throws IOException on write surfaces the failure from `add()`/`close()` instead of returning normally.
-  Complexity: S
