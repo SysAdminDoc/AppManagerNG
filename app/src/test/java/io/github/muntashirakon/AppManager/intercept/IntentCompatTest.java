@@ -89,6 +89,21 @@ public class IntentCompatTest {
     }
 
     @Test
+    public void flattenToString_roundTripsStringArrayValuesContainingBackslashes() {
+        Intent input = new Intent(Intent.ACTION_VIEW);
+        // A value ending in a backslash used to make the following real delimiter look
+        // escaped, collapsing two elements into one on parse. Also cover an escaped comma
+        // adjacent to a backslash and a literal backslash-comma sequence.
+        input.putExtra("labels", new String[]{"a\\", "b", "c\\,d", "e\\\\"});
+
+        Intent parsed = IntentCompat.unflattenFromString(IntentCompat.flattenToString(input));
+
+        assertNotNull(parsed);
+        assertEquals(Arrays.asList("a\\", "b", "c\\,d", "e\\\\"),
+                Arrays.asList(parsed.getStringArrayExtra("labels")));
+    }
+
+    @Test
     public void flattenToString_roundTripsEmptyStringExtra() {
         Intent input = new Intent(Intent.ACTION_VIEW);
         input.putExtra("empty", "");
