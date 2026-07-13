@@ -2,12 +2,18 @@
 
 package io.github.muntashirakon.AppManager.snapshot;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.test.core.app.ApplicationProvider;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -28,11 +35,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.tags.AppNoteStore;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 
 @RunWith(RobolectricTestRunner.class)
 public class SnapshotBundleTest {
@@ -247,6 +256,90 @@ public class SnapshotBundleTest {
     @Test
     public void appNotesPrefsAreIncludedInSnapshots() {
         assertFalse(SnapshotBundle.EXCLUDED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
+    }
+
+    // -----------------------------------------------------------------------
+    // Sensitive-key boundary (P0): secrets must never be exported or imported
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void exportStripsSensitiveKeysButKeepsOrdinaryOnes() throws Exception {
+        StringBuilder xml = new StringBuilder(
+                "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n");
+        for (String sensitive : AppPref.SENSITIVE_PREF_KEYS) {
+            xml.append("<string name=\"").append(sensitive).append("\">SECRET-")
+                    .append(sensitive).append("</string>\n");
+        }
+        xml.append("<int name=\"app_theme\" value=\"2\" />\n")
+                .append("<boolean name=\"app_op_show_default\" value=\"true\" />\n")
+                .append("</map>");
+
+        byte[] filtered = SnapshotBundle.filterSensitivePrefXml(
+                xml.toString().getBytes(StandardCharsets.UTF_8));
+        String out = new String(filtered, StandardCharsets.UTF_8);
+
+        for (String sensitive : AppPref.SENSITIVE_PREF_KEYS) {
+            assertFalse("secret key name must be stripped: " + sensitive, out.contains(sensitive));
+            assertFalse("secret value must be stripped", out.contains("SECRET-" + sensitive));
+        }
+        assertTrue("ordinary keys must survive", out.contains("app_theme"));
+        assertTrue(out.contains("app_op_show_default"));
+    }
+
+    @Test
+    public void exportLeavesPrefsWithoutSecretsByteIdentical() throws Exception {
+        byte[] in = ("<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map>"
+                + "<int name=\"app_theme\" value=\"2\" /></map>").getBytes(StandardCharsets.UTF_8);
+        assertArrayEquals("prefs with no secret must pass through unchanged",
+                in, SnapshotBundle.filterSensitivePrefXml(in));
+    }
+
+    @Test
+    public void importNeitherOverwritesNorClearsSensitiveKeys() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        String sensitive = AppPref.SENSITIVE_PREF_KEYS.iterator().next();
+        SharedPreferences sp = context.getSharedPreferences(
+                AppPref.getSharedPreferencesName(), Context.MODE_PRIVATE);
+        sp.edit().clear()
+                .putString(sensitive, "REAL-DEVICE-SECRET")
+                .putInt("app_theme", 1)
+                .commit();
+
+        // Crafted bundle: poison the secret and change an ordinary key, in REPLACE mode.
+        String prefsXml = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map>"
+                + "<string name=\"" + sensitive + "\">POISON</string>"
+                + "<int name=\"app_theme\" value=\"3\" /></map>";
+        byte[] bundle = bundleWithPrefEntry("preferences.xml", prefsXml);
+
+        SnapshotBundle.ImportOptions opts = new SnapshotBundle.ImportOptions();
+        opts.restoreProfiles = false;
+        opts.restoreRules = false;
+        opts.restoreTags = false;
+        opts.restoreOpHistory = false;
+        opts.mergePrefs = false; // replace mode exercises editor.clear()
+        SnapshotBundle.readFrom(context, new ByteArrayInputStream(bundle), opts);
+
+        assertEquals("import must not overwrite a live secret",
+                "REAL-DEVICE-SECRET", sp.getString(sensitive, null));
+        assertEquals("ordinary key must still be restored under replace mode",
+                3, sp.getInt("app_theme", -1));
+    }
+
+    private static byte[] bundleWithPrefEntry(String leaf, String xml) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            String manifest = new JSONObject()
+                    .put("schema_version", SnapshotBundle.SCHEMA_VERSION)
+                    .put("format", SnapshotBundle.FORMAT_ID)
+                    .toString();
+            zos.putNextEntry(new ZipEntry("manifest.json"));
+            zos.write(manifest.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("prefs/" + leaf));
+            zos.write(xml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
     }
 
     // -----------------------------------------------------------------------
