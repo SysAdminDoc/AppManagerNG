@@ -32,6 +32,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through `IPackageManagerV37`.
 
 ### Fixed
+- Activity Interceptor string and URI array extras whose element contains a
+  trailing backslash now round-trip correctly. The comma-escaping did not escape
+  the escape character, so an element ending in `\` made the following real
+  delimiter look escaped and two array elements silently collapsed into one on
+  parse. Escaping and splitting are now backslash-aware.
 - Backed-up URI-permission grants restore correctly on modern Android. The
   grant `userHandle` field is `USER_NULL` there (grants are keyed by explicit
   source/target user IDs), which the restore parser rejected as a negative

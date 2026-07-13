@@ -339,20 +339,49 @@ public final class IntentCompat {
 
     @NonNull
     private static String[] splitEscapedComma(@NonNull String rawValue) {
-        // Split on commas unless they are preceded by an escape.
-        // The escape character must be escaped for the string and again for the
-        // regex, thus four escape characters become one.
-        return rawValue.split("(?<!\\\\),", -1);
+        // Split on commas that are NOT escaped. A backslash escapes the next character
+        // (an escaped comma "\," or an escaped backslash "\\"), so escape sequences must
+        // be consumed whole. A single-char lookbehind is wrong here: it mistakes the
+        // second backslash of an escaped backslash for an escape of a following real
+        // delimiter, corrupting any element that ends in a backslash.
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (int i = 0; i < rawValue.length(); ++i) {
+            char c = rawValue.charAt(i);
+            if (c == '\\' && i + 1 < rawValue.length()) {
+                current.append(c).append(rawValue.charAt(++i));
+            } else if (c == ',') {
+                parts.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        parts.add(current.toString());
+        return parts.toArray(new String[0]);
     }
 
     @NonNull
     private static String escapeComma(@NonNull String value) {
-        return value.replace(",", "\\,");
+        // Escape the escape char first, then the delimiter, so a value that ends in a
+        // backslash cannot make the following real delimiter look escaped on split.
+        return value.replace("\\", "\\\\").replace(",", "\\,");
     }
 
     @NonNull
     private static String unescapeComma(@NonNull String value) {
-        return value.replace("\\,", ",");
+        // Reverse of escapeComma: a backslash consumes the next char literally, resolving
+        // "\," back to "," and "\\" back to "\".
+        StringBuilder sb = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); ++i) {
+            char c = value.charAt(i);
+            if (c == '\\' && i + 1 < value.length()) {
+                sb.append(value.charAt(++i));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     @Nullable
