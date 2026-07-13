@@ -65,6 +65,7 @@ import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.io.Path;
 
 /**
@@ -77,10 +78,12 @@ import io.github.muntashirakon.io.Path;
  * restore on a different applicationId (e.g. upstream App Manager →
  * AppManagerNG) does not need to rewrite the SQLite owner identity.
  *
- * <p>{@code keystore} preferences are deliberately excluded from export. They
- * contain password material tied to the local Android Keystore that would not
- * decrypt anything on another device anyway, and exporting them widens the
- * attack surface against a leaked bundle.
+ * <p>{@code keystore} and {@code server_secrets} preference files are excluded
+ * from export wholesale, and the individual secret keys inside the main
+ * {@code preferences} file (authorization key, Tasker signing secret, VirusTotal
+ * API key — see {@link AppPref#SENSITIVE_PREF_KEYS}) are stripped on export and
+ * never applied on import, so a leaked or crafted bundle can neither disclose nor
+ * overwrite live credentials.
  */
 public final class SnapshotBundle {
     public static final String TAG = "SnapshotBundle";
@@ -151,7 +154,17 @@ public final class SnapshotBundle {
                     continue;
                 }
                 if (!prefFile.isFile()) continue;
-                writeFileEntry(zos, ENTRY_PREFS_DIR + prefFile.getName(), prefFile);
+                byte[] filtered;
+                try {
+                    filtered = filterSensitivePrefXml(readFileBytes(prefFile));
+                } catch (Exception e) {
+                    // A preferences file that appears to carry a secret but could not be
+                    // sanitized is skipped rather than exported verbatim — never leak.
+                    Log.w(TAG, "Skipping preferences \"" + name + "\" from snapshot: could not sanitize.", e);
+                    excluded.add("prefs/" + name);
+                    continue;
+                }
+                writeBytesEntry(zos, ENTRY_PREFS_DIR + prefFile.getName(), filtered, prefFile.lastModified());
                 ++prefsCount;
             }
             if (prefsCount > 0) {
@@ -629,23 +642,31 @@ public final class SnapshotBundle {
         // coherent, so the import actually takes effect with no restart required.
         try {
             Map<String, Object> entries = parsePrefEntries(pf.bytes);
+            // An imported bundle must never set a live secret; drop any sensitive keys
+            // it carries (a malicious or pre-fix bundle could still contain them).
+            for (String sensitive : AppPref.SENSITIVE_PREF_KEYS) {
+                entries.remove(sensitive);
+            }
             SharedPreferences sp = appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
+            // Preserve the device's own sensitive values so a replace-mode import
+            // (editor.clear()) cannot wipe them out from under the user.
+            Map<String, Object> preserved = new LinkedHashMap<>();
+            Map<String, ?> current = sp.getAll();
+            for (String sensitive : AppPref.SENSITIVE_PREF_KEYS) {
+                Object v = current.get(sensitive);
+                if (v != null) preserved.put(sensitive, v);
+            }
             SharedPreferences.Editor editor = sp.edit();
             if (!merge) {
                 // Replace semantics: drop existing keys, then load the imported set.
                 editor.clear();
             }
             for (Map.Entry<String, Object> e : entries.entrySet()) {
-                Object v = e.getValue();
-                if (v instanceof Boolean) editor.putBoolean(e.getKey(), (Boolean) v);
-                else if (v instanceof Integer) editor.putInt(e.getKey(), (Integer) v);
-                else if (v instanceof Long) editor.putLong(e.getKey(), (Long) v);
-                else if (v instanceof Float) editor.putFloat(e.getKey(), (Float) v);
-                else if (v instanceof String) editor.putString(e.getKey(), (String) v);
-                else if (v instanceof Set) {
-                    //noinspection unchecked
-                    editor.putStringSet(e.getKey(), (Set<String>) v);
-                }
+                putTypedPref(editor, e.getKey(), e.getValue());
+            }
+            // Re-apply preserved secrets last so clear() above cannot have dropped them.
+            for (Map.Entry<String, Object> e : preserved.entrySet()) {
+                putTypedPref(editor, e.getKey(), e.getValue());
             }
             // commit() (synchronous) so the restore is durable before we report
             // success; this runs on the snapshot-import background thread.
@@ -653,6 +674,19 @@ public final class SnapshotBundle {
         } catch (Exception e) {
             Log.w(TAG, "Could not apply imported preferences from " + pf.leaf + " during snapshot import.", e);
             return false;
+        }
+    }
+
+    private static void putTypedPref(@NonNull SharedPreferences.Editor editor,
+                                     @NonNull String key, @Nullable Object v) {
+        if (v instanceof Boolean) editor.putBoolean(key, (Boolean) v);
+        else if (v instanceof Integer) editor.putInt(key, (Integer) v);
+        else if (v instanceof Long) editor.putLong(key, (Long) v);
+        else if (v instanceof Float) editor.putFloat(key, (Float) v);
+        else if (v instanceof String) editor.putString(key, (String) v);
+        else if (v instanceof Set) {
+            //noinspection unchecked
+            editor.putStringSet(key, (Set<String>) v);
         }
     }
 
@@ -762,6 +796,50 @@ public final class SnapshotBundle {
             }
         }
         zos.closeEntry();
+    }
+
+    private static void writeBytesEntry(@NonNull ZipOutputStream zos,
+                                        @NonNull String entryName,
+                                        @NonNull byte[] bytes,
+                                        long time) throws IOException {
+        ZipEntry entry = new ZipEntry(entryName);
+        entry.setTime(time);
+        zos.putNextEntry(entry);
+        zos.write(bytes);
+        zos.closeEntry();
+    }
+
+    /**
+     * Strip {@link AppPref#SENSITIVE_PREF_KEYS} entries from a SharedPreferences
+     * {@code <map>} document so live secrets (authorization key, Tasker signing
+     * secret, VirusTotal API key) never enter an exported bundle. Files that carry
+     * no sensitive key are returned byte-for-byte unchanged, so ordinary preferences
+     * still round-trip exactly.
+     */
+    @VisibleForTesting
+    @NonNull
+    static byte[] filterSensitivePrefXml(@NonNull byte[] xmlBytes)
+            throws IOException, ParserConfigurationException, SAXException,
+            SnapshotImportException, TransformerException {
+        if (!mayContainSensitiveKey(xmlBytes)) {
+            return xmlBytes;
+        }
+        Document doc = parseXmlMap(xmlBytes);
+        Element map = doc.getDocumentElement();
+        for (String key : AppPref.SENSITIVE_PREF_KEYS) {
+            removePreferenceNode(map, key);
+        }
+        return toXmlBytes(doc);
+    }
+
+    private static boolean mayContainSensitiveKey(@NonNull byte[] xmlBytes) {
+        String text = new String(xmlBytes, StandardCharsets.UTF_8);
+        for (String key : AppPref.SENSITIVE_PREF_KEYS) {
+            if (text.contains(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void writeStringEntry(@NonNull ZipOutputStream zos,

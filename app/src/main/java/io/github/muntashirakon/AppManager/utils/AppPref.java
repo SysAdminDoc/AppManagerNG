@@ -23,9 +23,12 @@ import androidx.appcompat.app.AppCompatDelegate;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -229,6 +232,12 @@ public class AppPref {
             return ArrayUtils.indexOf(sKeys, key);
         }
 
+        /** Persisted SharedPreferences key string for a {@link PrefKey}. */
+        @NonNull
+        public static String getKey(@NonNull PrefKey key) {
+            return sKeys[key.ordinal()];
+        }
+
         @Type
         private static int inferType(@NonNull String typeName) {
             switch (typeName) {
@@ -264,6 +273,23 @@ public class AppPref {
     public static final int TYPE_INTEGER = 2;
     public static final int TYPE_LONG = 3;
     public static final int TYPE_STRING = 4;
+
+    /**
+     * Persisted keys in {@link #PREF_NAME} that hold live secrets. They must never
+     * leave the device inside a snapshot bundle, and an imported bundle must never
+     * be allowed to set or clear them. Derived from the enum so this denylist cannot
+     * drift from the key names.
+     */
+    public static final Set<String> SENSITIVE_PREF_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            PrefKey.getKey(PrefKey.PREF_AUTHORIZATION_KEY_STR),
+            PrefKey.getKey(PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR),
+            PrefKey.getKey(PrefKey.PREF_VIRUS_TOTAL_API_KEY_STR))));
+
+    /** Name of the SharedPreferences file backing {@link AppPref}. */
+    @NonNull
+    public static String getSharedPreferencesName() {
+        return PREF_NAME;
+    }
 
     @SuppressLint("StaticFieldLeak")
     private static AppPref sAppPref;
