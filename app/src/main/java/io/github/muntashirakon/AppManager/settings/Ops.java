@@ -547,9 +547,10 @@ public class Ops {
             return;
         }
         DialogTitleBuilder builder = new DialogTitleBuilder(activity)
-                .setTitle(R.string.wireless_debugging)
+                .setTitle(R.string.manual_wireless_debugging_title)
                 .setEndIcon(R.drawable.ic_open_in_new, v -> {
                     Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                            .putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     activity.startActivity(intent);
                 })
@@ -557,7 +558,7 @@ public class Ops {
 
         new MaterialAlertDialogBuilder(activity)
                 .setCustomTitle(builder.build())
-                .setMessage(R.string.choose_what_to_do)
+                .setMessage(R.string.manual_wireless_debugging_instructions)
                 .setCancelable(false)
                 .setPositiveButton(R.string.adb_connect, (dialog1, which1) -> callback.onStatusReceived(STATUS_ADB_CONNECT_REQUIRED))
                 .setNeutralButton(R.string.adb_pair, (dialog1, which1) -> callback.onStatusReceived(STATUS_ADB_PAIRING_REQUIRED))
@@ -666,12 +667,13 @@ public class Ops {
         };
         Runnable openDeveloperOptionsAndPair = () -> {
             Intent developerOptionsIntent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                    .putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             activity.startActivity(developerOptionsIntent);
             startNotificationPairing.run();
         };
         new MaterialAlertDialogBuilder(activity)
-                .setTitle(R.string.wireless_debugging)
+                .setTitle(R.string.adb_pairing_title)
                 .setMessage(R.string.adb_pairing_instruction)
                 .setCancelable(false)
                 .setNeutralButton(R.string.action_manual, (dialog, which) -> startInAppPairing.run())

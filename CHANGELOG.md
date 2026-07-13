@@ -31,6 +31,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   per-app key cap), and that installed-package enumeration routes API 37+
   through `IPackageManagerV37`.
 
+### Changed
+- The Wireless-Debugging connect and pair dialogs now have dedicated, clearer
+  titles and instructions instead of a generic reused message, and the "open
+  developer options" buttons deep-link straight to the Wireless-Debugging toggle.
+  Ported from upstream App Manager (`133b5acb7f`).
+
 ### Fixed
 - The debloater now reports a package's installed / system / frozen state
   correctly on multi-user devices. State was overwritten per user (last user
