@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security
+- Snapshot bundles no longer export or import live credential keys. The
+  authorization key, Tasker plugin signing secret, and VirusTotal API key
+  (stored inside the main `preferences` file) are stripped on export and can
+  never be set or cleared by an imported bundle, so a leaked or crafted snapshot
+  cannot disclose or overwrite device secrets. Ordinary preferences still
+  round-trip byte-for-byte, and a replace-mode import preserves the device's own
+  secret values instead of wiping them.
+
 ### Added
 - The generated keystore recovery-password dialog can now copy the password
   with a dedicated "Copy & continue" action. The value is placed on the

@@ -27,13 +27,6 @@ refresh, which needs a capture environment.
 
 ### P0
 
-- [ ] P0 — Enforce a sensitive-preference boundary for snapshot export and import
-  Why: `SnapshotBundle` copies `preferences.xml` into a plaintext ZIP and accepts it back, so live authorization, Tasker-signing, and VirusTotal credentials are currently exported and can be overwritten on import.
-  Evidence: `snapshot/SnapshotBundle.java` (`EXCLUDED_PREF_NAMES`, `writeTo`, `restorePrefFile`); `utils/AppPref.java` (`PREF_AUTHORIZATION_KEY_STR`, `PREF_TASKER_PLUGIN_SIGNING_SECRET_STR`, `PREF_VIRUS_TOTAL_API_KEY_STR`); OWASP Cryptographic Storage guidance; USENIX Security 2023 TOTP-backup study.
-  Touches: `snapshot/SnapshotBundle.java` (central typed denylist and XML filtering), `utils/AppPref.java` (sensitivity metadata or key registry), `snapshot/SnapshotBundleTest.java`, snapshot copy in `res/values/strings.xml`.
-  Acceptance: an exported legacy ZIP contains none of `authorization_key`, `tasker_plugin_signing_secret`, or `virus_total_api_key`; importing a crafted ZIP cannot change those values; a table-driven test covers every registered sensitive key while ordinary preferences still round-trip.
-  Complexity: S
-
 - [ ] P0 — Replace destructive AppsDb fallback with a complete, preservation-tested migration ladder
   Why: schema 10 has no 1→2 migration and enables destructive forward and downgrade fallbacks even though the database contains filters, history, favorites, freeze choices, and backup state that cannot all be rebuilt.
   Evidence: `db/AppsDb.java`; `app/schemas/io.github.muntashirakon.AppManager.db.AppsDb/1.json` through `10.json`; Android Room migration documentation; current `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` coverage.
