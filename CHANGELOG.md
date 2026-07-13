@@ -32,6 +32,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through `IPackageManagerV37`.
 
 ### Fixed
+- Binary-XML parsing (app manifests) now reads a `ByteBuffer`'s logical window
+  instead of its whole backing array, so a sliced, offset, or read-only/direct
+  buffer decodes correctly instead of silently mis-reading or throwing. The
+  framework package-block used during parsing is now initialized thread-safely,
+  preventing duplicate heavy initialization and a data race under concurrent
+  manifest parsing.
+- The regex search matcher no longer crashes on a malformed pattern and now uses
+  the same substring semantics as the multi-item search paths, removing a latent
+  inconsistency.
 - Activity Interceptor string and URI array extras whose element contains a
   trailing backslash now round-trip correctly. The comma-escaping did not escape
   the escape character, so an element ending in `\` made the following real

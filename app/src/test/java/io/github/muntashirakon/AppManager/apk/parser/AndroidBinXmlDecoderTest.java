@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.apk.parser;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -57,5 +58,36 @@ public class AndroidBinXmlDecoderTest {
         Path xmlPlainManifest = Paths.get(classLoader.getResource("xml/test_layout.plain.xml").getFile());
         String xml = AndroidBinXmlDecoder.decode(xmlBinary.getContentAsBinary());
         assertEquals(xmlPlainManifest.getContentAsString(), xml);
+    }
+
+    @Test
+    public void decodeReadsSlicedBufferWindowNotWholeBackingArray() throws IOException {
+        Path xmlBinary = Paths.get(classLoader.getResource("xml/HMS_Core_Android_Manifest.bin.xml").getFile());
+        byte[] content = xmlBinary.getContentAsBinary();
+        String baseline = AndroidBinXmlDecoder.decode(ByteBuffer.wrap(content));
+
+        // Same bytes living at a non-zero offset inside a larger array, exposed through a
+        // sliced buffer. ByteBuffer.array() would return the whole padded array and corrupt
+        // the parse; the decoder must read only the [position, limit) window.
+        int pad = 7;
+        byte[] backing = new byte[pad + content.length + 5];
+        System.arraycopy(content, 0, backing, pad, content.length);
+        ByteBuffer sliced = ByteBuffer.wrap(backing, pad, content.length).slice();
+
+        assertEquals(baseline, AndroidBinXmlDecoder.decode(sliced));
+    }
+
+    @Test
+    public void toByteArrayReadsOnlyTheSlicedWindow() {
+        byte[] backing = {9, 9, 1, 2, 3, 9, 9, 9};
+        ByteBuffer sliced = ByteBuffer.wrap(backing, 2, 3).slice();
+        assertArrayEquals(new byte[]{1, 2, 3}, AndroidBinXmlDecoder.toByteArray(sliced));
+    }
+
+    @Test
+    public void toByteArrayHandlesReadOnlyBuffer() {
+        byte[] data = {1, 2, 3, 4, 5};
+        // array() throws UnsupportedOperationException on a read-only buffer; toByteArray must not.
+        assertArrayEquals(data, AndroidBinXmlDecoder.toByteArray(ByteBuffer.wrap(data).asReadOnlyBuffer()));
     }
 }

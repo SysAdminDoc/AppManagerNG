@@ -340,7 +340,14 @@ public class AdvancedSearchView extends SearchView {
             case SEARCH_TYPE_SUFFIX:
                 return text.endsWith(query);
             case SEARCH_TYPE_REGEX:
-                return text.matches(query);
+                // Guard a malformed pattern (never crash the caller) and use find() so this
+                // overload matches the substring semantics of the collection overloads below
+                // instead of diverging into full-match.
+                try {
+                    return Pattern.compile(query).matcher(text).find();
+                } catch (PatternSyntaxException e) {
+                    return false;
+                }
         }
         return false;
     }

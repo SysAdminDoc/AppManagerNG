@@ -70,7 +70,7 @@ public class AndroidBinXmlDecoder {
     }
 
     public static void decode(@NonNull ByteBuffer byteBuffer, @NonNull OutputStream os) throws IOException {
-        try (BlockReader reader = new BlockReader(byteBuffer.array());
+        try (BlockReader reader = new BlockReader(toByteArray(byteBuffer));
              PrintStream out = new PrintStream(os, false, StandardCharsets.UTF_8.name())) {
             ResXmlDocument resXmlDocument = new ResXmlDocument();
             resXmlDocument.readBytes(reader);
@@ -132,12 +132,28 @@ public class AndroidBinXmlDecoder {
         return prefix + ":";
     }
 
+    /**
+     * Copy a {@link ByteBuffer}'s remaining window into a fresh array. Unlike
+     * {@link ByteBuffer#array()} this respects {@code position}/{@code limit}/
+     * {@code arrayOffset} and works for read-only and direct (e.g. mmapped) buffers,
+     * so callers can safely pass a sliced buffer.
+     */
     @NonNull
-    public static PackageBlock getFrameworkPackageBlock() {
-        if (sFrameworkPackageBlock != null) {
-            return sFrameworkPackageBlock;
+    public static byte[] toByteArray(@NonNull ByteBuffer byteBuffer) {
+        ByteBuffer dup = byteBuffer.duplicate();
+        byte[] out = new byte[dup.remaining()];
+        dup.get(out);
+        return out;
+    }
+
+    @NonNull
+    public static synchronized PackageBlock getFrameworkPackageBlock() {
+        // Lazily built and cached; synchronized so concurrent manifest parsing (per-app
+        // loaders, filters) cannot double-run the heavy framework-table init or observe a
+        // partially published reference.
+        if (sFrameworkPackageBlock == null) {
+            sFrameworkPackageBlock = AndroidFrameworks.getLatest().getTableBlock().getAllPackages().next();
         }
-        sFrameworkPackageBlock = AndroidFrameworks.getLatest().getTableBlock().getAllPackages().next();
         return sFrameworkPackageBlock;
     }
 

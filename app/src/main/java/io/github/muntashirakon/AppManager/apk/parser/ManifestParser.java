@@ -173,7 +173,7 @@ public class ManifestParser {
 
     @NonNull
     private ResXmlElement readManifestElement() throws IOException {
-        try (BlockReader reader = new BlockReader(mManifestBytes.array())) {
+        try (BlockReader reader = new BlockReader(AndroidBinXmlDecoder.toByteArray(mManifestBytes))) {
             ResXmlDocument xmlBlock = new ResXmlDocument();
             xmlBlock.readBytes(reader);
             xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
