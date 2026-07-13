@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.snapshot;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -352,6 +353,50 @@ public class SnapshotBundleTest {
             assertEquals(1, db.freezeTypeDao().get("com.keep").type); // not overwritten with 9
             assertEquals(2, db.freezeTypeDao().get("com.new").type);
             clearPortableTables(db);
+            return null;
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Encrypted bundles (schema 3, authenticated envelope)
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void encryptedBundleRoundTripsWithPassphrase() throws Exception {
+        runOnBackground(() -> {
+            Context context = ApplicationProvider.getApplicationContext();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            SnapshotBundle.writeEncryptedTo(context, out, "correct passphrase".toCharArray());
+            byte[] envelope = out.toByteArray();
+            assertTrue(SnapshotCrypto.looksEncrypted(envelope));
+
+            SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(
+                    new ByteArrayInputStream(envelope), "correct passphrase".toCharArray());
+            assertEquals(SnapshotBundle.FORMAT_ID, manifest.format);
+            assertEquals(SnapshotBundle.SCHEMA_VERSION, manifest.schemaVersion);
+
+            SnapshotBundle.ImportResult result = SnapshotBundle.readFrom(context,
+                    new ByteArrayInputStream(envelope), onlyPortableSections(),
+                    "correct passphrase".toCharArray());
+            assertNotNull(result);
+            return null;
+        });
+    }
+
+    @Test
+    public void encryptedBundleWithoutPassphraseReportsPassphraseRequired() throws Exception {
+        runOnBackground(() -> {
+            Context context = ApplicationProvider.getApplicationContext();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            SnapshotBundle.writeEncryptedTo(context, out, "pw".toCharArray());
+            byte[] envelope = out.toByteArray();
+
+            assertThrows(SnapshotBundle.PassphraseRequiredException.class,
+                    () -> SnapshotBundle.readFrom(context, new ByteArrayInputStream(envelope),
+                            new SnapshotBundle.ImportOptions(), null));
+            assertThrows(SnapshotImportException.class,
+                    () -> SnapshotBundle.readFrom(context, new ByteArrayInputStream(envelope),
+                            new SnapshotBundle.ImportOptions(), "wrong".toCharArray()));
             return null;
         });
     }

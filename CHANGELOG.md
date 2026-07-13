@@ -6,6 +6,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- Snapshots can now be encrypted with a passphrase. Export offers an optional
+  passphrase (or plaintext), and an encrypted bundle is wrapped in an
+  authenticated envelope — Argon2id key derivation (m=19456, t=2, p=1, random
+  16-byte salt) plus AES-256-GCM (random 12-byte nonce, 128-bit tag, header
+  bound as additional authenticated data). A wrong passphrase or any tampering
+  fails before a single byte of state is written or previewed; import prompts for
+  the passphrase and the passphrase is zeroed after use.
 - Snapshot bundles now carry the durable DB-backed user state that Android
   transfer excludes: saved log filters, file-manager favorites, and per-package
   freeze methods (snapshot schema 3). Import previews and reports them alongside
