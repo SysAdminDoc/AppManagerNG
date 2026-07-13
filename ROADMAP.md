@@ -67,12 +67,3 @@ refresh, which needs a capture environment.
   Complexity: M
 
 ### P3
-
-- [ ] P3 — Port upstream Wireless-Debugging instructions + developer-options deep link
-  Why: the connect/pair dialogs reuse a generic title/message and the developer-options intent
-  does not deep-link to the Wireless-Debugging toggle; upstream `133b5acb7f` adds dedicated copy
-  and the `:settings:fragment_args_key` = `toggle_adb_wireless` extra. Confirmed unported.
-  Evidence: upstream MuntashirAkon/AppManager@133b5acb7f; settings/Ops.java (still uses R.string.wireless_debugging for the connect + pair dialogs); res/values/strings.xml (new strings absent).
-  Touches: settings/Ops.java (connectWirelessDebugging + pairAdbInput titles/messages + deep-link extra), res/values/strings.xml (adb_pairing_title, manual_wireless_debugging_title, manual_wireless_debugging_instructions).
-  Acceptance: the connect and pair dialogs show the dedicated titles/instructions; the developer-options intents carry `:settings:fragment_args_key`=`toggle_adb_wireless`; only the two mapped title sites change (not the third unrelated one); build + string-presence test green.
-  Complexity: S
