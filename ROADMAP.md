@@ -27,13 +27,6 @@ refresh, which needs a capture environment.
 
 ### P1
 
-- [ ] P1 — Add authenticated, passphrase-encrypted snapshot bundles
-  Why: even after credentials are excluded, plaintext snapshots expose app notes, profiles, rules, tags, preferences, and operation history, and ZIP integrity does not authenticate the bundle before restore.
-  Evidence: `snapshot/SnapshotBundle.java` (plain `ZipOutputStream`); `settings/PrivacyPreferences.java` (direct SAF export/import); OWASP Password Storage and Cryptographic Storage guidance; USENIX Security 2023 backup findings.
-  Touches: `snapshot/SnapshotBundle.java` (versioned envelope), a focused snapshot-crypto helper using Bouncy Castle, `settings/PrivacyPreferences.java` (passphrase and warning flows), strings, unit/Robolectric tests.
-  Acceptance: the default new format uses a magic/version header, Argon2id (`m=19456`, `t=2`, `p=1`, random 16-byte salt) and AES-256-GCM (random 12-byte nonce, 128-bit tag, authenticated header); wrong passwords or one-byte tampering fail before any state is written; passphrases are clearable and never persisted; legacy ZIPs remain importable only after a plaintext warning.
-  Complexity: L
-
 ### P2
 
 - [ ] P2 — Expand the release-consistency gate to distribution packets and canonical documentation

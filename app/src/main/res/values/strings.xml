@@ -3552,6 +3552,14 @@
     <string name="snapshot_section_log_filters">Saved log filters (%1$d)</string>
     <string name="snapshot_section_fm_favorites">File-manager favorites (%1$d)</string>
     <string name="snapshot_section_freeze_types">Freeze methods (%1$d)</string>
+    <string name="snapshot_encrypt_title">Encrypt snapshot?</string>
+    <string name="snapshot_encrypt_message">Enter a passphrase to encrypt this snapshot with AES-256, or leave it blank to save it unencrypted. The passphrase can\'t be recovered — store it somewhere safe.</string>
+    <string name="snapshot_passphrase_hint">Passphrase</string>
+    <string name="snapshot_encrypt_action">Encrypt</string>
+    <string name="snapshot_export_plaintext">Save unencrypted</string>
+    <string name="snapshot_decrypt_title">Encrypted snapshot</string>
+    <string name="snapshot_decrypt_message">This snapshot is encrypted. Enter its passphrase to preview and import it.</string>
+    <string name="snapshot_passphrase_empty">Enter the passphrase to continue.</string>
     <string name="action_import">Import</string>
     <string name="pref_network_transparency">Network transparency</string>
     <string name="pref_network_transparency_summary">View what can talk to the network, endpoint details, and last fetch time.</string>
