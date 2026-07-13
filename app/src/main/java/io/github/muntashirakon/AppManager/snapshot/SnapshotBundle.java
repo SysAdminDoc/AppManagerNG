@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -142,6 +143,20 @@ public final class SnapshotBundle {
     static final long MAX_ENTRY_BYTES = 64L * 1024 * 1024;
     @VisibleForTesting
     static final int MAX_BUNDLE_ENTRIES = 10_000;
+
+    /**
+     * Hard cap on a whole (possibly encrypted) bundle we buffer in memory to check for the
+     * encryption envelope. Per-entry and entry-count bounds still apply after decompression.
+     */
+    @VisibleForTesting
+    static final long MAX_BUNDLE_BYTES = 256L * 1024 * 1024;
+
+    /** Thrown when an encrypted bundle is opened without (or with a wrong) passphrase. */
+    public static final class PassphraseRequiredException extends SnapshotImportException {
+        public PassphraseRequiredException(@NonNull String message) {
+            super(message);
+        }
+    }
 
     private SnapshotBundle() {
     }
@@ -282,6 +297,29 @@ public final class SnapshotBundle {
                 logFiltersCount, fmFavoritesCount, freezeTypesCount);
     }
 
+    /**
+     * Export a snapshot encrypted with {@code passphrase}: build the plaintext ZIP in memory,
+     * then wrap it in the authenticated {@link SnapshotCrypto} envelope. The plaintext bytes are
+     * zeroed before returning; the caller should clear the passphrase.
+     */
+    @WorkerThread
+    @NonNull
+    public static ExportResult writeEncryptedTo(@NonNull Context context, @NonNull OutputStream rawOut,
+                                                 @NonNull char[] passphrase)
+            throws IOException, GeneralSecurityException {
+        ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
+        ExportResult result = writeTo(context, plaintext);
+        byte[] zipBytes = plaintext.toByteArray();
+        try {
+            byte[] envelope = SnapshotCrypto.encrypt(zipBytes, passphrase);
+            rawOut.write(envelope);
+            rawOut.flush();
+        } finally {
+            java.util.Arrays.fill(zipBytes, (byte) 0);
+        }
+        return result;
+    }
+
     private interface SectionSerializer {
         @NonNull
         SectionExport serialize();
@@ -350,9 +388,54 @@ public final class SnapshotBundle {
                 + "; refusing to import as AppManagerNG snapshot.");
     }
 
+    /**
+     * Preview a bundle that may be encrypted. A plaintext bundle is previewed directly; an
+     * encrypted one is decrypted with {@code passphrase} first ({@link PassphraseRequiredException}
+     * is thrown when the passphrase is missing or wrong).
+     */
+    @WorkerThread
+    @NonNull
+    public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn,
+                                                   @Nullable char[] passphrase)
+            throws IOException, SnapshotImportException, GeneralSecurityException {
+        byte[] plaintext = decryptIfNeeded(readAllBounded(rawIn), passphrase);
+        return readManifestOnly(new ByteArrayInputStream(plaintext));
+    }
+
     // -----------------------------------------------------------------------
     // Import — full
     // -----------------------------------------------------------------------
+
+    /**
+     * Import a bundle that may be encrypted. A plaintext bundle is imported directly; an
+     * encrypted one is decrypted with {@code passphrase} first ({@link PassphraseRequiredException}
+     * is thrown when the passphrase is missing or wrong).
+     */
+    @WorkerThread
+    @NonNull
+    public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
+                                        @NonNull ImportOptions options, @Nullable char[] passphrase)
+            throws IOException, SnapshotImportException, GeneralSecurityException {
+        byte[] plaintext = decryptIfNeeded(readAllBounded(rawIn), passphrase);
+        return readFrom(context, new ByteArrayInputStream(plaintext), options);
+    }
+
+    @NonNull
+    private static byte[] decryptIfNeeded(@NonNull byte[] data, @Nullable char[] passphrase)
+            throws SnapshotImportException, GeneralSecurityException {
+        if (!SnapshotCrypto.looksEncrypted(data)) {
+            return data;
+        }
+        if (passphrase == null || passphrase.length == 0) {
+            throw new PassphraseRequiredException("This snapshot is encrypted; a passphrase is required.");
+        }
+        return SnapshotCrypto.decrypt(data, passphrase);
+    }
+
+    @NonNull
+    private static byte[] readAllBounded(@NonNull InputStream in) throws IOException, SnapshotImportException {
+        return readEntryBounded(in, MAX_BUNDLE_BYTES, "bundle");
+    }
 
     @WorkerThread
     @NonNull

@@ -8,7 +8,12 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.Editable;
+import android.text.InputType;
 import android.widget.Toast;
+
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -51,31 +56,14 @@ public class PrivacyPreferences extends PreferenceFragment {
             new ActivityResultContracts.CreateDocument(MIME_ZIP),
             uri -> {
                 if (uri == null) return; // user cancelled
-                Context appContext = requireContext().getApplicationContext();
-                Toast.makeText(appContext, R.string.snapshot_export_preparing, Toast.LENGTH_SHORT).show();
-                ThreadUtils.postOnBackgroundThread(() -> exportSnapshot(appContext, uri));
+                showExportPassphraseDialog(uri);
             });
 
     private final ActivityResultLauncher<String[]> mImportSnapshot = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
             uri -> {
                 if (uri == null) return;
-                Context appContext = requireContext().getApplicationContext();
-                ThreadUtils.postOnBackgroundThread(() -> {
-                    try (InputStream in = appContext.getContentResolver().openInputStream(uri)) {
-                        if (in == null) {
-                            ThreadUtils.postOnMainThread(() ->
-                                    UIUtils.displayLongToast(R.string.snapshot_import_failed, "Cannot open file"));
-                            return;
-                        }
-                        SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(in);
-                        ThreadUtils.postOnMainThread(() -> showImportPreview(manifest, uri));
-                    } catch (Exception e) {
-                        String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                        ThreadUtils.postOnMainThread(() ->
-                                UIUtils.displayLongToast(R.string.snapshot_import_failed, msg));
-                    }
-                });
+                beginImportPreview(uri, null);
             });
 
     @Override
@@ -328,17 +316,22 @@ public class PrivacyPreferences extends PreferenceFragment {
         return builder.toString();
     }
 
-    private void exportSnapshot(@NonNull Context appContext, @NonNull Uri target) {
+    private void exportSnapshot(@NonNull Context appContext, @NonNull Uri target,
+                                @Nullable char[] passphrase) {
         SnapshotBundle.ExportResult result = null;
         Throwable failure = null;
         try (OutputStream out = appContext.getContentResolver().openOutputStream(target)) {
             if (out == null) {
                 failure = new IOException("Cannot open output stream for " + target);
+            } else if (passphrase != null && passphrase.length > 0) {
+                result = SnapshotBundle.writeEncryptedTo(appContext, out, passphrase);
             } else {
                 result = SnapshotBundle.writeTo(appContext, out);
             }
         } catch (Exception t) {
             failure = t;
+        } finally {
+            if (passphrase != null) java.util.Arrays.fill(passphrase, '\0');
         }
         final SnapshotBundle.ExportResult finalResult = result;
         final Throwable finalFailure = failure;
@@ -362,7 +355,7 @@ public class PrivacyPreferences extends PreferenceFragment {
     }
 
     private void showImportPreview(@NonNull SnapshotBundle.ManifestSummary manifest,
-                                   @NonNull Uri source) {
+                                   @NonNull Uri source, @Nullable char[] passphrase) {
         Context context = requireContext();
         String[] sectionLabels = {
                 getString(R.string.snapshot_section_prefs, manifest.prefsCount),
@@ -421,27 +414,30 @@ public class PrivacyPreferences extends PreferenceFragment {
                     Toast.makeText(appContext, R.string.snapshot_import_in_progress,
                             Toast.LENGTH_SHORT).show();
                     ThreadUtils.postOnBackgroundThread(
-                            () -> importSnapshot(appContext, source, options));
+                            () -> importSnapshot(appContext, source, options, passphrase));
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
     private void importSnapshot(@NonNull Context appContext, @NonNull Uri source,
-                                @NonNull SnapshotBundle.ImportOptions options) {
+                                @NonNull SnapshotBundle.ImportOptions options,
+                                @Nullable char[] passphrase) {
         SnapshotBundle.ImportResult result = null;
         String failureMessage = null;
         try (InputStream in = appContext.getContentResolver().openInputStream(source)) {
             if (in == null) {
                 failureMessage = "Cannot open input stream";
             } else {
-                result = SnapshotBundle.readFrom(appContext, in, options);
+                result = SnapshotBundle.readFrom(appContext, in, options, passphrase);
             }
         } catch (SnapshotImportException e) {
             failureMessage = e.getMessage();
         } catch (Exception t) {
             failureMessage = t.getClass().getSimpleName()
                     + (t.getMessage() != null ? ": " + t.getMessage() : "");
+        } finally {
+            if (passphrase != null) java.util.Arrays.fill(passphrase, '\0');
         }
         final SnapshotBundle.ImportResult finalResult = result;
         final String finalFailure = failureMessage;
@@ -460,6 +456,87 @@ public class PrivacyPreferences extends PreferenceFragment {
                     finalResult.fmFavoritesRestored,
                     finalResult.freezeTypesRestored);
         });
+    }
+
+    // Offer optional passphrase encryption before writing the snapshot to the chosen file.
+    private void showExportPassphraseDialog(@NonNull Uri target) {
+        Context context = requireContext();
+        TextInputLayout input = buildPassphraseInput(context);
+        TextInputEditText edit = (TextInputEditText) input.getEditText();
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.snapshot_encrypt_title)
+                .setMessage(R.string.snapshot_encrypt_message)
+                .setView(input)
+                .setPositiveButton(R.string.snapshot_encrypt_action, (d, w) ->
+                        dispatchExport(context, target, extractPassphrase(edit)))
+                .setNeutralButton(R.string.snapshot_export_plaintext, (d, w) ->
+                        dispatchExport(context, target, null))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void dispatchExport(@NonNull Context context, @NonNull Uri target,
+                                @Nullable char[] passphrase) {
+        Context appContext = context.getApplicationContext();
+        Toast.makeText(appContext, R.string.snapshot_export_preparing, Toast.LENGTH_SHORT).show();
+        ThreadUtils.postOnBackgroundThread(() -> exportSnapshot(appContext, target, passphrase));
+    }
+
+    // Read the manifest (decrypting first if the bundle is encrypted) and show the preview.
+    private void beginImportPreview(@NonNull Uri uri, @Nullable char[] passphrase) {
+        Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try (InputStream in = appContext.getContentResolver().openInputStream(uri)) {
+                if (in == null) {
+                    ThreadUtils.postOnMainThread(() ->
+                            UIUtils.displayLongToast(R.string.snapshot_import_failed, "Cannot open file"));
+                    return;
+                }
+                SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(in, passphrase);
+                ThreadUtils.postOnMainThread(() -> showImportPreview(manifest, uri, passphrase));
+            } catch (SnapshotBundle.PassphraseRequiredException e) {
+                ThreadUtils.postOnMainThread(() -> showDecryptPassphraseDialog(uri));
+            } catch (Exception e) {
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                ThreadUtils.postOnMainThread(() ->
+                        UIUtils.displayLongToast(R.string.snapshot_import_failed, msg));
+            }
+        });
+    }
+
+    private void showDecryptPassphraseDialog(@NonNull Uri uri) {
+        Context context = requireContext();
+        TextInputLayout input = buildPassphraseInput(context);
+        TextInputEditText edit = (TextInputEditText) input.getEditText();
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.snapshot_decrypt_title)
+                .setMessage(R.string.snapshot_decrypt_message)
+                .setView(input)
+                .setPositiveButton(R.string.ok, (d, w) -> beginImportPreview(uri, extractPassphrase(edit)))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @NonNull
+    private TextInputLayout buildPassphraseInput(@NonNull Context context) {
+        TextInputLayout layout = new TextInputLayout(context);
+        layout.setHint(getString(R.string.snapshot_passphrase_hint));
+        TextInputEditText edit = new TextInputEditText(layout.getContext());
+        edit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(edit);
+        layout.setEndIconMode(TextInputLayout.END_ICON_PASSWORD_TOGGLE);
+        int pad = Math.round(24 * context.getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad / 2, pad, 0);
+        return layout;
+    }
+
+    @NonNull
+    private static char[] extractPassphrase(@Nullable TextInputEditText edit) {
+        Editable text = edit != null ? edit.getText() : null;
+        if (text == null) return new char[0];
+        char[] out = new char[text.length()];
+        text.getChars(0, text.length(), out, 0);
+        return out;
     }
 
     @Override
