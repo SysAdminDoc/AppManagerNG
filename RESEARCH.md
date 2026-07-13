@@ -31,7 +31,7 @@
 - [Verified] The same ZIP contains preferences, app notes, profiles, rules, tags, and operation history without authenticated encryption. `settings/PrivacyPreferences.java` launches the SAF export immediately and only says keystore secrets are excluded (`res/values/strings.xml`); it does not warn that the remaining bundle is plaintext. Secret minimization is P0; a passphrase-derived AEAD envelope is the follow-up.
 - [Verified] `db/AppsDb.java` declares schema 10 and migrations 2→3 through 9→10, but no 1→2 migration, then enables both `fallbackToDestructiveMigration()` and downgrade destruction. Room explicitly defines this as permanent table deletion. The claim that `apps.db` is rebuildable is false for `log_filter`, `op_history`, `fm_favorite`, `freeze_type`, and user-relevant backup rows.
 - [Verified] `res/xml/backup_rules.xml` and `full_backup_rules.xml` exclude the entire database from cloud backup and device transfer. Manual `SnapshotBundle` preserves operation history but not log filters, file-manager favorites, or per-package freeze methods. Cached inventory and scan results should remain excluded; portable user-authored tables need stable, typed snapshot sections.
-- [Verified] Recovery coverage is incomplete: `androidTest/.../db/MigrationTest.java` covers 7→8, 8→9, and 7→9, not 1→current, 9→10, every start schema, downgrade behavior, or preservation of user-owned rows. Migration failure should preserve the original DB and fail closed, never recreate it silently.
+- [Verified] Recovery coverage is incomplete: `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` covers 7→8, 8→9, and 7→9, not 1→current, 9→10, every start schema, downgrade behavior, or preservation of user-owned rows. Migration failure should preserve the original DB and fail closed, never recreate it silently.
 
 ## Architecture Assessment
 
@@ -41,7 +41,7 @@
 - **Make release truth single-sourced:** `scripts/verify-release-consistency.sh` checks build pins, README badges, changelog presence, and selected `CLAUDE.md` strings, but misses the three distribution packets, removed-workflow claims, missing local links, and storefront images. Consequently, `docs/distribution/{fdroid,izzyondroid,accrescent}-listing.md` still describe v0.5.0/versionCode 7 while `app/build.gradle` and the latest tag are v0.6.5/versionCode 13; `CLAUDE.md` and `CONTRIBUTING.md` link to absent `PROJECT_CONTEXT.md`.
 - **Refresh external UI evidence:** all nine `fastlane/metadata/android/en-US/images/phoneScreenshots/*.png` files predate the NG v0.6.x UI and visibly show legacy upstream-era identity/data. Capture deterministic, privacy-safe current screens for onboarding, app list, app details, permissions/AppOps, scanner, backup/restore, installer preflight, file manager, and settings/search across light and dark themes.
 - **Test gaps:** add exhaustive Room migration fixtures, sensitive-key snapshot tests, encrypted-format wrong-password/tamper tests, portable-section merge tests, and release-doc contract tests. Existing support bundles, local crash capture, operation history, and diagnostics cover observability sufficiently; no new telemetry service is justified.
-- **Dependency ceiling:** API 21 keeps Room at 2.7.x, WorkManager at 2.10.x, and Material at 1.13.x; current AndroidX defaults and Material 1.14 require API 23, and Material Views is in maintenance mode. Do not raise minSdk or rewrite in Compose without active-install evidence. Accessibility, i18n service integration, live-device UI validation, Android 17, TV, and broader multi-user validation already exist in `Roadmap_Blocked.md` and are intentionally not duplicated.
+- **Dependency ceiling:** API 21 keeps Room at 2.7.x, WorkManager at 2.10.x, and Material at 1.13.x; the next stable lines require API 23, and Material Views is in maintenance mode. Do not raise minSdk or rewrite in Compose without active-install evidence. Accessibility, i18n service integration, live-device UI validation, Android 17, TV, and broader multi-user validation already exist in `Roadmap_Blocked.md` and are intentionally not duplicated.
 
 ## Rejected Ideas
 
@@ -83,14 +83,14 @@
 
 - https://developer.android.com/training/data-storage/room/migrating-db-versions
 - https://developer.android.com/identity/data/autobackup
-- https://developer.android.com/about/versions/17/behavior-changes-17
 - https://f-droid.org/en/docs/All_About_Descriptions_Graphics_and_Screenshots/
 - https://f-droid.org/docs/Reproducible_Builds/
 - https://developer.android.com/jetpack/androidx/releases/room
 - https://developer.android.com/jetpack/androidx/releases/work
-- https://github.com/material-components/material-components-android/releases
+- https://github.com/material-components/material-components-android
 - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+- https://nvd.nist.gov/vuln/detail/CVE-2023-33201
 
 ### Research and update-system design
 
