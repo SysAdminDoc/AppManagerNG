@@ -38,6 +38,9 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.AppManager.db.AppsDb;
+import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
+import io.github.muntashirakon.AppManager.db.entity.FreezeType;
+import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.tags.AppNoteStore;
@@ -233,6 +236,140 @@ public class SnapshotBundleTest {
             }
             return null;
         });
+    }
+
+    // -----------------------------------------------------------------------
+    // Portable DB sections (schema 3): log filters, FM favorites, freeze methods
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void portableDbSectionsRoundTripThroughBundle() throws Exception {
+        runOnBackground(() -> {
+            AppsDb db = AppsDb.getInstance();
+            clearPortableTables(db);
+
+            db.logFilterDao().insert("errors-only");
+            FmFavorite fav = new FmFavorite();
+            fav.name = "Downloads";
+            fav.uri = "content://com.example.docs/tree/Downloads";
+            fav.options = 1;
+            fav.order = 5;
+            fav.type = 2;
+            db.fmFavoriteDao().insert(fav);
+            db.freezeTypeDao().insert(new FreezeType("com.example.app", 3));
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            SnapshotBundle.ExportResult exported = SnapshotBundle.writeTo(
+                    ApplicationProvider.getApplicationContext(), out);
+            assertEquals(1, exported.logFiltersCount);
+            assertEquals(1, exported.fmFavoritesCount);
+            assertEquals(1, exported.freezeTypesCount);
+
+            clearPortableTables(db);
+
+            SnapshotBundle.ImportOptions opts = onlyPortableSections();
+            SnapshotBundle.ImportResult imported = SnapshotBundle.readFrom(
+                    ApplicationProvider.getApplicationContext(),
+                    new ByteArrayInputStream(out.toByteArray()), opts);
+            assertEquals(1, imported.logFiltersRestored);
+            assertEquals(1, imported.fmFavoritesRestored);
+            assertEquals(1, imported.freezeTypesRestored);
+
+            assertEquals("errors-only", db.logFilterDao().getAll().get(0).name);
+            FmFavorite restoredFav = db.fmFavoriteDao().getAll().get(0);
+            assertEquals("content://com.example.docs/tree/Downloads", restoredFav.uri);
+            assertEquals(2, restoredFav.type);
+            assertEquals(5L, restoredFav.order);
+            FreezeType restoredFreeze = db.freezeTypeDao().get("com.example.app");
+            assertNotNull(restoredFreeze);
+            assertEquals(3, restoredFreeze.type);
+
+            clearPortableTables(db);
+            return null;
+        });
+    }
+
+    @Test
+    public void importLogFiltersSkipsDuplicatesAndIsIdempotent() throws Exception {
+        runOnBackground(() -> {
+            AppsDb db = AppsDb.getInstance();
+            clearPortableTables(db);
+            db.logFilterDao().insert("existing");
+
+            String json = new JSONObject()
+                    .put("schema_version", SnapshotBundle.SCHEMA_VERSION)
+                    .put("entries", new JSONArray()
+                            .put(new JSONObject().put("name", "existing"))
+                            .put(new JSONObject().put("name", "fresh-a"))
+                            .put(new JSONObject().put("name", "fresh-b"))
+                            .put(new JSONObject().put("name", "  ")))
+                    .toString();
+
+            assertEquals(2, SnapshotBundle.importLogFilters(json)); // existing + blank skipped
+            assertEquals(0, SnapshotBundle.importLogFilters(json)); // idempotent
+            assertEquals(3, db.logFilterDao().getAll().size());
+            clearPortableTables(db);
+            return null;
+        });
+    }
+
+    @Test
+    public void importFmFavoritesSkipsInvalidUrisAndDuplicates() throws Exception {
+        runOnBackground(() -> {
+            AppsDb db = AppsDb.getInstance();
+            clearPortableTables(db);
+
+            String json = new JSONObject()
+                    .put("entries", new JSONArray()
+                            .put(new JSONObject().put("name", "Docs").put("uri", "content://x/Docs"))
+                            .put(new JSONObject().put("name", "Bad").put("uri", "not-a-uri-no-scheme"))
+                            .put(new JSONObject().put("name", "Blank").put("uri", " "))
+                            .put(new JSONObject().put("name", "Docs").put("uri", "content://x/Docs")))
+                    .toString();
+
+            assertEquals(1, SnapshotBundle.importFmFavorites(json)); // only the valid, non-dup one
+            assertEquals(1, db.fmFavoriteDao().getAll().size());
+            assertEquals("content://x/Docs", db.fmFavoriteDao().getAll().get(0).uri);
+            clearPortableTables(db);
+            return null;
+        });
+    }
+
+    @Test
+    public void importFreezeTypesDoesNotOverwriteExistingDeviceChoices() throws Exception {
+        runOnBackground(() -> {
+            AppsDb db = AppsDb.getInstance();
+            clearPortableTables(db);
+            db.freezeTypeDao().insert(new FreezeType("com.keep", 1));
+
+            String json = new JSONObject()
+                    .put("entries", new JSONArray()
+                            .put(new JSONObject().put("package_name", "com.keep").put("type", 9))
+                            .put(new JSONObject().put("package_name", "com.new").put("type", 2)))
+                    .toString();
+
+            assertEquals(1, SnapshotBundle.importFreezeTypes(json)); // com.keep preserved, com.new added
+            assertEquals(1, db.freezeTypeDao().get("com.keep").type); // not overwritten with 9
+            assertEquals(2, db.freezeTypeDao().get("com.new").type);
+            clearPortableTables(db);
+            return null;
+        });
+    }
+
+    private static void clearPortableTables(AppsDb db) {
+        for (LogFilter f : db.logFilterDao().getAll()) db.logFilterDao().delete(f);
+        for (FmFavorite f : db.fmFavoriteDao().getAll()) db.fmFavoriteDao().delete(f.id);
+        for (FreezeType f : db.freezeTypeDao().getAll()) db.freezeTypeDao().delete(f.packageName);
+    }
+
+    private static SnapshotBundle.ImportOptions onlyPortableSections() {
+        SnapshotBundle.ImportOptions opts = new SnapshotBundle.ImportOptions();
+        opts.restorePrefs = false;
+        opts.restoreProfiles = false;
+        opts.restoreRules = false;
+        opts.restoreTags = false;
+        opts.restoreOpHistory = false;
+        return opts;
     }
 
     // -----------------------------------------------------------------------
