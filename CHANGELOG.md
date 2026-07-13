@@ -5,6 +5,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- Snapshot bundles now carry the durable DB-backed user state that Android
+  transfer excludes: saved log filters, file-manager favorites, and per-package
+  freeze methods (snapshot schema 3). Import previews and reports them alongside
+  the existing sections; a favorite with a blank or scheme-less URI is skipped
+  rather than trusted, an existing freeze choice is never overwritten, and
+  duplicates are deduped. Older (schema 2) bundles still import; cached/
+  device-specific tables (app inventory, scan results, backup rows) stay excluded.
+
 ### Security
 - Snapshot bundles no longer export or import live credential keys. The
   authorization key, Tasker plugin signing secret, and VirusTotal API key

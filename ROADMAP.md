@@ -27,13 +27,6 @@ refresh, which needs a capture environment.
 
 ### P1
 
-- [ ] P1 — Complete snapshot portability for DB-backed user state
-  Why: Android transfer excludes `apps.db`, while manual snapshots preserve operation history but omit saved log filters, file-manager favorites, and per-package freeze methods, leaving migrations and device replacement incomplete.
-  Evidence: `res/xml/backup_rules.xml`; `res/xml/full_backup_rules.xml`; `snapshot/SnapshotBundle.java`; `db/entity/{LogFilter,FmFavorite,FreezeType}.java`; Swift Backup and Neo Backup portability/recovery patterns.
-  Touches: `snapshot/SnapshotBundle.java` (versioned JSON sections and deterministic merge rules), affected DAOs/entities, `settings/PrivacyPreferences.java`, snapshot strings, `snapshot/SnapshotBundleTest.java`.
-  Acceptance: preview/export/import reports and round-trips log filters, favorites, and freeze methods; invalid or unavailable favorite paths are surfaced and skipped rather than trusted; cached app/scan tables remain excluded; backup metadata is rebuilt from archive manifests instead of copying device-specific rows.
-  Complexity: M
-
 - [ ] P1 — Add authenticated, passphrase-encrypted snapshot bundles
   Why: even after credentials are excluded, plaintext snapshots expose app notes, profiles, rules, tags, preferences, and operation history, and ZIP integrity does not authenticate the bundle before restore.
   Evidence: `snapshot/SnapshotBundle.java` (plain `ZipOutputStream`); `settings/PrivacyPreferences.java` (direct SAF export/import); OWASP Password Storage and Cryptographic Storage guidance; USENIX Security 2023 backup findings.

@@ -354,7 +354,10 @@ public class PrivacyPreferences extends PreferenceFragment {
                     finalResult.prefsCount,
                     finalResult.profilesCount,
                     finalResult.rulesCount,
-                    finalResult.opHistoryCount);
+                    finalResult.opHistoryCount,
+                    finalResult.logFiltersCount,
+                    finalResult.fmFavoritesCount,
+                    finalResult.freezeTypesCount);
         });
     }
 
@@ -366,11 +369,15 @@ public class PrivacyPreferences extends PreferenceFragment {
                 getString(R.string.snapshot_section_profiles, manifest.profilesCount),
                 getString(R.string.snapshot_section_rules, manifest.rulesCount),
                 getString(R.string.snapshot_section_tags),
-                getString(R.string.snapshot_section_op_history, manifest.opHistoryCount)
+                getString(R.string.snapshot_section_op_history, manifest.opHistoryCount),
+                getString(R.string.snapshot_section_log_filters, manifest.logFiltersCount),
+                getString(R.string.snapshot_section_fm_favorites, manifest.fmFavoritesCount),
+                getString(R.string.snapshot_section_freeze_types, manifest.freezeTypesCount)
         };
         boolean[] available = {
                 manifest.hasPrefs(), manifest.hasProfiles(), manifest.hasRules(),
-                manifest.hasTags(), manifest.hasOpHistory()
+                manifest.hasTags(), manifest.hasOpHistory(),
+                manifest.hasLogFilters(), manifest.hasFmFavorites(), manifest.hasFreezeTypes()
         };
         boolean[] checked = available.clone();
 
@@ -407,6 +414,9 @@ public class PrivacyPreferences extends PreferenceFragment {
                     options.restoreRules = checked[2];
                     options.restoreTags = checked[3];
                     options.restoreOpHistory = checked[4];
+                    options.restoreLogFilters = checked[5];
+                    options.restoreFmFavorites = checked[6];
+                    options.restoreFreezeTypes = checked[7];
                     Context appContext = context.getApplicationContext();
                     Toast.makeText(appContext, R.string.snapshot_import_in_progress,
                             Toast.LENGTH_SHORT).show();
@@ -445,7 +455,10 @@ public class PrivacyPreferences extends PreferenceFragment {
                     finalResult.prefsRestored,
                     finalResult.profilesRestored,
                     finalResult.rulesRestored,
-                    finalResult.opHistoryRestored);
+                    finalResult.opHistoryRestored,
+                    finalResult.logFiltersRestored,
+                    finalResult.fmFavoritesRestored,
+                    finalResult.freezeTypesRestored);
         });
     }
 
