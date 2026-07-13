@@ -9,7 +9,7 @@ identity and release channels.
 
 ## Before Opening Work
 
-- Read `README.md`, `PROJECT_CONTEXT.md`, `ROADMAP.md`, and any linked doc under
+- Read `README.md`, `ROADMAP.md`, `RESEARCH.md`, and any linked doc under
   `docs/` that matches your change.
 - Search existing issues and roadmap entries before proposing a new feature.
 - Keep changes focused. Do not mix unrelated roadmap, formatting, and dependency
