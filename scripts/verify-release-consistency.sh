@@ -143,6 +143,50 @@ if [[ -f "$SBOM_SCRIPT" ]]; then
   echo "OK: SBOM script present (reads versionName dynamically from build.gradle)"
 fi
 
+# --- Distribution listing packets must describe the CURRENT release ---
+DIST_DIR="$REPO_ROOT/docs/distribution"
+for packet in fdroid-listing izzyondroid-listing accrescent-listing; do
+  f="$DIST_DIR/$packet.md"
+  if [[ ! -f "$f" ]]; then
+    echo "SKIP: $packet.md not present"
+    continue
+  fi
+  if ! grep -qF "$VERSION_NAME" "$f"; then
+    echo "ERROR: $packet.md does not mention current versionName $VERSION_NAME" >&2
+    FAIL=1
+  fi
+  STALE_TAGS=$(grep -oP 'releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' "$f" | grep -vxF "$VERSION_NAME" || true)
+  if [[ -n "$STALE_TAGS" ]]; then
+    echo "ERROR: $packet.md references stale release tag(s): $(echo "$STALE_TAGS" | tr '\n' ' ')" >&2
+    FAIL=1
+  fi
+  STALE_CODES=$(grep -oP '(?:[Vv]ersionCode|CurrentVersionCode):\s*\K[0-9]+' "$f" | grep -vxF "$VERSION_CODE" || true)
+  if [[ -n "$STALE_CODES" ]]; then
+    echo "ERROR: $packet.md references stale versionCode(s): $(echo "$STALE_CODES" | tr '\n' ' ')" >&2
+    FAIL=1
+  fi
+  # This project builds and releases locally; it has no GitHub Actions workflows.
+  if grep -qiP 'CI release workflow|\.github/workflows|GitHub Actions' "$f"; then
+    echo "ERROR: $packet.md claims a CI/GitHub-Actions workflow, but this project has none" >&2
+    FAIL=1
+  fi
+  if [[ -z "$STALE_TAGS" && -z "$STALE_CODES" ]] && grep -qF "$VERSION_NAME" "$f"; then
+    echo "OK: $packet.md describes v$VERSION_NAME (code $VERSION_CODE)"
+  fi
+done
+
+# --- Canonical release-facing docs must not link to absent files (e.g. the removed
+# PROJECT_CONTEXT.md). ROADMAP.md / RESEARCH.md are excluded: they are working trackers that
+# may legitimately name a missing file as a task rather than link to it. ---
+for doc in "$REPO_ROOT/README.md" "$REPO_ROOT/CONTRIBUTING.md" \
+           "$DIST_DIR/fdroid-listing.md" "$DIST_DIR/izzyondroid-listing.md" "$DIST_DIR/accrescent-listing.md"; do
+  [[ -f "$doc" ]] || continue
+  if grep -qF "PROJECT_CONTEXT.md" "$doc" && [[ ! -f "$REPO_ROOT/PROJECT_CONTEXT.md" ]]; then
+    echo "ERROR: $(basename "$doc") references PROJECT_CONTEXT.md which does not exist" >&2
+    FAIL=1
+  fi
+done
+
 if (( FAIL )); then
   echo ""
   echo "FAILED: version surfaces are inconsistent - fix before release."

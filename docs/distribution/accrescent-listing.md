@@ -15,13 +15,13 @@ product flavor or an explicit policy exception.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.5.0`
+- Tag: `v0.6.5`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.5.0`
+- Version name: `0.6.5`
 - Version code: `7`
 - Target SDK: `36`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.5.0`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
 - Signing certificate SHA-256:
   `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
 
@@ -54,8 +54,8 @@ signing fields used by the Gradle release build.
 Expected output:
 
 ```text
-app/build/outputs/accrescent/AppManagerNG-0.5.0-floss-accrescent.apks
-app/build/outputs/accrescent/AppManagerNG-0.5.0-floss-accrescent.apks.sha256
+app/build/outputs/accrescent/AppManagerNG-0.6.5-floss-accrescent.apks
+app/build/outputs/accrescent/AppManagerNG-0.6.5-floss-accrescent.apks.sha256
 ```
 
 ## Automated Checks
