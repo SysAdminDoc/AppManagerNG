@@ -7,6 +7,16 @@ ROADMAP.md once the blocker is resolved.
 
 ## Device/Privileged-Mode-Gated
 
+### P0
+
+- [ ] P0 — Replace destructive AppsDb fallback with a complete, preservation-tested migration ladder
+  Why: schema 10 has no 1→2 migration and enables destructive forward and downgrade fallbacks even though the database contains filters, history, favorites, freeze choices, and backup state that cannot all be rebuilt.
+  Evidence: `db/AppsDb.java`; `app/schemas/io.github.muntashirakon.AppManager.db.AppsDb/1.json` through `10.json`; Android Room migration documentation; current `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` coverage.
+  Touches: `db/AppsDb.java` (add 1→2 and remove unrestricted destructive fallbacks), `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` (every start version through current plus downgrade/failure cases), exported Room schemas, database-open recovery UI/logging.
+  Acceptance: fixtures from every schema version 1–10 open at the current schema and preserve representative rows from every durable table; an unknown/missing path or downgrade fails closed with the original DB copied intact to a recoverable location and never recreates tables silently.
+  Blocker: Room migration verification runs as an instrumented `androidTest` (`MigrationTestHelper` needs a device/emulator), and removing `fallbackToDestructiveMigration()` without on-device upgrade testing risks a crash-loop on real devices. The fail-closed DB-open recovery path also needs runtime verification. Not host-verifiable offline.
+  Complexity: M
+
 ### P1
 
 - [ ] P1 — Validate Android 17 app-list enumeration on-device
@@ -227,6 +237,16 @@ ROADMAP.md once the blocker is resolved.
   Complexity: L
 
 ## Visual/Device-Verification-Gated (2026-06-17)
+
+### P2
+
+- [ ] P2 — Replace legacy storefront screenshots with deterministic current NG captures
+  Why: all nine Fastlane phone images predate the v0.6.x UI and show upstream-era identity/data, weakening F-Droid listing accuracy and release trust even though store graphics are an explicit F-Droid discovery input.
+  Evidence: `fastlane/metadata/android/en-US/images/phoneScreenshots/{1..9}.png`; current V2 layouts/themes; F-Droid graphics and screenshots documentation.
+  Touches: Fastlane phone screenshots, a privacy-safe debug/demo data fixture or capture setup, Fastlane metadata, release-consistency image checks.
+  Acceptance: nine 1080×2160 captures show current NG onboarding, app list, app details, permissions/AppOps, scanner, backup/restore, installer preflight, file manager, and settings/search across both themes; no upstream package identity, real user/device data, stale version copy, clipping, or unreadable contrast remains; dimensions and count are mechanically validated.
+  Blocker: capturing the nine screens requires running the app on a device/emulator across light and dark themes; not producible on an offline host. (The mechanical dimension/count validation half can ship with the release-consistency gate.)
+  Complexity: M
 
 ### P3
 
