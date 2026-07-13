@@ -415,8 +415,12 @@ class BackupOp implements Closeable {
         } catch (IOException e) {
             throw new BackupException("Failed to encrypt " + Arrays.toString(sourceFiles), e);
         }
-        for (Path file : sourceFiles) {
-            mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+        try {
+            for (Path file : sourceFiles) {
+                mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+            }
+        } catch (IOException e) {
+            throw new BackupException("Failed to write source checksums.", e);
         }
     }
 
@@ -436,8 +440,12 @@ class BackupOp implements Closeable {
             } catch (IOException e) {
                 throw new BackupException("Failed to encrypt " + Arrays.toString(dataFiles), e);
             }
-            for (Path file : dataFiles) {
-                mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+            try {
+                for (Path file : dataFiles) {
+                    mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+                }
+            } catch (IOException e) {
+                throw new BackupException("Failed to write data checksums.", e);
             }
         }
     }
@@ -515,8 +523,13 @@ class BackupOp implements Closeable {
         try {
             Path masterKeyFile = KeyStoreUtils.getMasterKey(mUserId);
             // Master key exists, so take its checksum to verify it during the restore
-            mChecksum.add(MASTER_KEY, DigestUtils.getHexDigest(mMetadata.info.checksumAlgo,
-                    masterKeyFile.getContentAsString().getBytes()));
+            String masterKeyChecksum = DigestUtils.getHexDigest(mMetadata.info.checksumAlgo,
+                    masterKeyFile.getContentAsString().getBytes());
+            try {
+                mChecksum.add(MASTER_KEY, masterKeyChecksum);
+            } catch (IOException e) {
+                throw new BackupException("Failed to write master key checksum.", e);
+            }
         } catch (FileNotFoundException ignore) {
         }
         // Store the KeyStore files
@@ -558,8 +571,12 @@ class BackupOp implements Closeable {
         } catch (IOException e) {
             throw new BackupException("Failed to encrypt " + Arrays.toString(backedUpKeyStoreFiles), e);
         }
-        for (Path file : backedUpKeyStoreFiles) {
-            mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+        try {
+            for (Path file : backedUpKeyStoreFiles) {
+                mChecksum.add(file.getName(), DigestUtils.getHexDigest(mMetadata.info.checksumAlgo, file));
+            }
+        } catch (IOException e) {
+            throw new BackupException("Failed to write KeyStore checksums.", e);
         }
     }
 

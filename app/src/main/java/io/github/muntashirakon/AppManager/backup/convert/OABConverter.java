@@ -288,8 +288,12 @@ public class OABConverter extends Converter {
         } catch (IOException e) {
             throw new BackupException("Failed to encrypt " + Arrays.toString(sourceFiles), e);
         }
-        for (Path file : sourceFiles) {
-            mChecksum.add(file.getName(), DigestUtils.getHexDigest(mDestMetadata.info.checksumAlgo, file));
+        try {
+            for (Path file : sourceFiles) {
+                mChecksum.add(file.getName(), DigestUtils.getHexDigest(mDestMetadata.info.checksumAlgo, file));
+            }
+        } catch (IOException e) {
+            throw new BackupException("Failed to write source checksums.", e);
         }
     }
 

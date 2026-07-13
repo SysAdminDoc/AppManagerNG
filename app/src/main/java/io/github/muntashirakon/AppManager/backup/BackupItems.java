@@ -8,6 +8,7 @@ import android.annotation.UserIdInt;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -15,6 +16,7 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -716,11 +718,18 @@ public class BackupItems {
             } else throw new IOException("Unknown mode: " + mode);
         }
 
+        @VisibleForTesting
+        Checksum(@NonNull Writer writer) {
+            mFile = null;
+            mMode = "w";
+            mWriter = new PrintWriter(writer);
+        }
+
         public Path getFile() {
             return mFile;
         }
 
-        public void add(@NonNull String fileName, @NonNull String checksum) {
+        public void add(@NonNull String fileName, @NonNull String checksum) throws IOException {
             synchronized (mChecksums) {
                 if (!"w".equals(mMode)) {
                     throw new IllegalStateException("add is inaccessible in mode " + mMode);
@@ -729,8 +738,14 @@ public class BackupItems {
                     throw new IllegalArgumentException("Illegal checksum entry.");
                 }
                 mWriter.println(String.format("%s\t%s", checksum, fileName));
-                mChecksums.put(fileName, checksum);
                 mWriter.flush();
+                // PrintWriter swallows IOExceptions; surface them so a mid-backup write
+                // failure (disk full, revoked SAF permission) is reported instead of
+                // silently truncating checksums.txt and weakening later verification.
+                if (mWriter.checkError()) {
+                    throw new IOException("Failed to write checksum entry for " + fileName);
+                }
+                mChecksums.put(fileName, checksum);
             }
         }
 
@@ -745,8 +760,15 @@ public class BackupItems {
         public void close() {
             synchronized (mChecksums) {
                 if (mWriter != null) {
+                    // add() already surfaces per-write failures; log any residual error at
+                    // close as a backstop rather than throwing from a Closeable used in
+                    // cleanup/finally paths (which would mask the original failure).
+                    boolean hadError = mWriter.checkError();
                     mWriter.close();
                     mWriter = null;
+                    if (hadError) {
+                        Log.w("Checksum", "Checksum file " + mFile + " may be incomplete: a write error occurred.");
+                    }
                 }
             }
         }
