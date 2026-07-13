@@ -11,13 +11,13 @@ not proof that the external issue has been filed.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.5.0`
+- Tag: `v0.6.5`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Preferred APK: `AppManagerNG-0.5.0-floss-release.apk`
+- Preferred APK: `AppManagerNG-0.6.5-floss-release.apk`
 - APK size: 29,331,150 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
 - SHA-256: `d4ad0cdbf7505dcff4b6f03d1018021f8e9395b98c0028e65751cb106a83ecde`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.5.0`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
 
 The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
@@ -28,7 +28,7 @@ surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 The build produces per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`)
 plus a universal APK. Per-ABI splits contain only the native libraries for one
 architecture and are strictly smaller than the universal APK (29.3 MB measured at
-v0.5.0). The CI release workflow enforces a hard size gate
+v0.6.5). The local release build enforces a hard size gate
 (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK — any split exceeding it fails
 the build. IzzyOnDroid should be configured to match the universal
 `AppManagerNG-*-floss-release.apk` artifact (sub-30 MB) or the `arm64-v8a` split
@@ -67,13 +67,13 @@ Repository:
 https://github.com/SysAdminDoc/AppManagerNG
 
 Latest release:
-https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.5.0
+https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5
 
 Package:
 io.github.sysadmindoc.AppManagerNG
 
 Preferred APK:
-AppManagerNG-0.5.0-floss-release.apk
+AppManagerNG-0.6.5-floss-release.apk
 
 APK SHA-256:
 d4ad0cdbf7505dcff4b6f03d1018021f8e9395b98c0028e65751cb106a83ecde
