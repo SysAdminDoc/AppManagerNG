@@ -36,17 +36,6 @@ refresh, which needs a capture environment.
 
 ### P1
 
-- [ ] P1 — URI-permission grants are silently dropped on restore (modern-Android round-trip)
-  Why: on current Android, captured grants carry `userHandle == USER_NULL (-1)` (the legacy
-  `ATTR_USER_HANDLE` is absent), `UriGrant.flattenToString` writes `-1` at field 2, and restore's
-  `unflattenFromString` runs `parseNonNegativeInt(parts[2])` which rejects negatives — so the
-  rule line throws and the loader silently skips every URI grant. Backup reports success; the
-  grant data class is lost on restore.
-  Evidence: uri/UriManager.java:137-138 (USER_NULL default), :206 (serialize field 2), :219 + parseNonNegativeInt (rejects -1); rules/struct/UriGrantRule.java:25 (tokenizer ctor); rules/RulesStorageManager.java:300-305 (per-line IllegalArgumentException skip).
-  Touches: uri/UriManager.java (permit USER_NULL/-1 for the `userHandle` field only, or stop persisting/validating it since restore reconstructs user IDs), app/src/test/ (UriGrant round-trip test).
-  Acceptance: `UriGrant.unflattenFromString(g.flattenToString())` round-trips a grant with `userHandle == -1` without throwing; a crafted `-1` rule line loads instead of being skipped; other negative fields still rejected.
-  Complexity: S
-
 - [ ] P1 — Complete snapshot portability for DB-backed user state
   Why: Android transfer excludes `apps.db`, while manual snapshots preserve operation history but omit saved log filters, file-manager favorites, and per-package freeze methods, leaving migrations and device replacement incomplete.
   Evidence: `res/xml/backup_rules.xml`; `res/xml/full_backup_rules.xml`; `snapshot/SnapshotBundle.java`; `db/entity/{LogFilter,FmFavorite,FreezeType}.java`; Swift Backup and Neo Backup portability/recovery patterns.
@@ -62,29 +51,6 @@ refresh, which needs a capture environment.
   Complexity: L
 
 ### P2
-
-- [ ] P2 — FilterPresetStore: one corrupt/forward-incompatible preset crashes the whole store
-  Why: the per-entry guard catches only `JSONException`, but `new FilterItem(json)` →
-  `FilterOption.setKeyValue`/`FilterOptions.create` throw unchecked `NumberFormatException`/
-  `IllegalArgumentException` (bad numeric value, unknown/removed filter type, bad regex). These
-  escape both catches, so `readMap()` throws and every caller (`all()`/`find()`/`hasAny()`/`save()`)
-  crashes on access — a persistent feature-level DoS, contrary to the code's stated "do not crash /
-  reset to empty" intent.
-  Evidence: filters/preset/FilterPresetStore.java:188 (inner `catch (JSONException)`) vs FilterOption.java:126,132,142 (unchecked throws), FilterOptions.java:43 (unknown type); same latent gap in FilterItem.java:307-317 and FilterOption.fromJson:222-230.
-  Touches: filters/preset/FilterPresetStore.java (widen inner catch to `JSONException | RuntimeException`), optionally harden `FilterOption.fromJson`, app/src/test/ (bad-value preset skipped, not thrown).
-  Acceptance: a preset blob with one valid entry and one whose option value is non-numeric for an int/long/size key returns only the valid preset; no exception escapes `readMap()`.
-  Complexity: S
-
-- [ ] P2 — TBConverter: a corrupt backup icon aborts the whole Titanium Backup import
-  Why: `readPropFile()` runs outside `convert()`'s try and decodes the icon with
-  `Base64.decode(...)`, which throws unchecked `IllegalArgumentException` on malformed
-  base64 (only `IOException` is caught), so one bad `app_gui_icon` fails an otherwise
-  valid package import; the icon is best-effort everywhere else.
-  Evidence: backup/convert/TBConverter.java:134 (call site outside try), :449-452 (decode),
-  :455 (only IOException caught); contrast backup/convert/SBConverter.java backupIcon (best-effort).
-  Touches: backup/convert/TBConverter.java (guard the icon decode → null on failure), app/src/test/ (TBConverterTest corrupt-icon fixture).
-  Acceptance: a Robolectric test feeding a `.properties` fixture with invalid base64 `app_gui_icon` imports the package without throwing and populates the rest of the metadata; icon is null.
-  Complexity: S
 
 - [ ] P2 — IntentCompat: array extras with a trailing backslash corrupt on interceptor round-trip
   Why: `escapeComma` escapes `,`→`\,` but not the escape char, while `splitEscapedComma`
