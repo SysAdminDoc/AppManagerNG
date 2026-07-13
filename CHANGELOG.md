@@ -32,6 +32,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through `IPackageManagerV37`.
 
 ### Fixed
+- Backed-up URI-permission grants restore correctly on modern Android. The
+  grant `userHandle` field is `USER_NULL` there (grants are keyed by explicit
+  source/target user IDs), which the restore parser rejected as a negative
+  value, so every URI grant was silently skipped on restore even though the
+  backup reported success. `USER_NULL` is now accepted while other negatives
+  stay invalid.
+- A single corrupt or forward-incompatible saved Finder filter preset no longer
+  crashes the entire preset store. Reading presets now skips an unparsable entry
+  (including unchecked errors from an unknown/removed filter type or a bad
+  numeric/regex value) instead of throwing on every access.
+- Converting a Titanium Backup with a malformed app icon no longer aborts the
+  whole package import; the unreadable icon is dropped (best-effort, matching
+  the backup path) and the rest of the metadata imports normally.
 - Inactive-app state is no longer read for a non-default user (work/private
   profile, secondary user) without cross-user permission. The per-user
   `isAppInactive` query now checks `SelfPermissions.checkCrossUserPermission`

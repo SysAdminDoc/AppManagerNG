@@ -8,12 +8,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import androidx.test.core.app.ApplicationProvider;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+
+import java.util.List;
 
 import io.github.muntashirakon.AppManager.filters.FilterItem;
 
@@ -101,6 +108,36 @@ public class FilterPresetStoreTest {
     @Test
     public void removeReturnsFalseWhenAbsent() {
         assertFalse(mStore.remove("does-not-exist"));
+    }
+
+    @Test
+    public void readSkipsCorruptPresetInsteadOfCrashingWholeStore() throws Exception {
+        // Save one valid preset so the store writes a well-formed blob we can extend.
+        FilterPresetStore.Preset valid = mStore.save("keep me", new FilterItem());
+        assertNotNull(valid);
+
+        Context ctx = ApplicationProvider.getApplicationContext();
+        SharedPreferences sp = ctx.getSharedPreferences(
+                FilterPresetStore.PREFS_NAME, Context.MODE_PRIVATE);
+        JSONArray array = new JSONArray(sp.getString(FilterPresetStore.KEY_ALL, "[]"));
+
+        // A filter option with an unknown/removed type throws an unchecked
+        // IllegalArgumentException during FilterItem construction — not a JSONException.
+        JSONObject badOption = new JSONObject()
+                .put("type", "__removed_option_type__").put("id", 1).put("key", "eq").put("value", "x");
+        JSONObject badFilter = new JSONObject()
+                .put("name", "f").put("expr", "").put("custom_expr", false)
+                .put("options", new JSONArray().put(badOption));
+        array.put(new JSONObject().put("id", "corrupt").put("name", "bad")
+                .put("createdAt", 1L).put("filter", badFilter));
+        sp.edit().putString(FilterPresetStore.KEY_ALL, array.toString()).commit();
+
+        // A fresh store must not crash and must return only the valid preset.
+        FilterPresetStore reread = new FilterPresetStore(ctx);
+        List<FilterPresetStore.Preset> all = reread.all();
+        assertEquals(1, all.size());
+        assertEquals("keep me", all.get(0).name);
+        assertTrue(reread.hasAny());
     }
 
     @Test

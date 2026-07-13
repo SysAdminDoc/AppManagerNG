@@ -42,9 +42,11 @@ import io.github.muntashirakon.AppManager.filters.FilterItem;
  * exposed for UI input validation.</p>
  */
 public final class FilterPresetStore {
-    private static final String PREFS_NAME = "filter_presets";
+    @VisibleForTesting
+    static final String PREFS_NAME = "filter_presets";
     private static final String KEY_VERSION = "_schema";
-    private static final String KEY_ALL = "presets";
+    @VisibleForTesting
+    static final String KEY_ALL = "presets";
     private static final int SCHEMA_VERSION = 1;
     private static final int MAX_NAME_LEN = 64;
     private static final java.util.regex.Pattern VALID_NAME = java.util.regex.Pattern.compile(
@@ -186,8 +188,13 @@ public final class FilterPresetStore {
                     if (id.isEmpty() || name == null || filterJson == null) continue;
                     FilterItem filter = new FilterItem(filterJson);
                     out.put(id, new Preset(id, name, filter, createdAt));
-                } catch (JSONException ignored) {
+                } catch (JSONException | RuntimeException ignored) {
                     // Skip malformed individual entries; corrupted prefs do not crash startup.
+                    // FilterItem construction can throw unchecked NumberFormatException /
+                    // IllegalArgumentException (bad numeric value, unknown/removed filter type,
+                    // bad regex) which are not JSONException, so the whole store would otherwise
+                    // crash on every access. Catch RuntimeException too to honour the reset-to-
+                    // empty intent below.
                 }
             }
         } catch (JSONException ignored) {

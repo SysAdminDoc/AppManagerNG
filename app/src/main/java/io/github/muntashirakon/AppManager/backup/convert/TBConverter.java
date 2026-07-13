@@ -448,8 +448,17 @@ public class TBConverter extends Converter {
             metadataV2.installer = Prefs.Installer.getInstallerPackageName();
             String base64Icon = prop.getProperty("app_gui_icon");
             if (base64Icon != null) {
-                byte[] decodedBytes = Base64.decode(base64Icon, 0);
-                mIcon = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                // The icon is best-effort metadata. Base64.decode throws unchecked
+                // IllegalArgumentException on malformed input (and BitmapFactory can also
+                // fail), so a single corrupt icon must not abort the whole package import —
+                // mirror the best-effort handling in backupIcon().
+                try {
+                    byte[] decodedBytes = Base64.decode(base64Icon, 0);
+                    mIcon = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                } catch (Exception e) {
+                    Log.w(TAG, "Ignoring unreadable Titanium Backup icon.", e);
+                    mIcon = null;
+                }
             }
             return metadataV2;
         } catch (IOException e) {

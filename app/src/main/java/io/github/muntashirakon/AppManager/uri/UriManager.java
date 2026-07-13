@@ -216,7 +216,7 @@ public class UriManager {
             }
             int sourceUserId = parseNonNegativeInt(parts[0], "sourceUserId");
             int targetUserId = parseNonNegativeInt(parts[1], "targetUserId");
-            int userHandle = parseNonNegativeInt(parts[2], "userHandle");
+            int userHandle = parseUserHandle(parts[2]);
             String sourcePkg = parts[3];
             String targetPkg = parts[4];
             boolean prefix = parseBoolean(parts[5], "prefix");
@@ -225,6 +225,25 @@ public class UriManager {
             Uri uri = Uri.parse(parts[8]);
             return new UriGrant(sourceUserId, targetUserId, userHandle, sourcePkg, targetPkg, uri,
                     prefix, modeFlags, createdTime);
+        }
+
+        /**
+         * The {@code userHandle} field is legacy/optional: on modern Android it is
+         * {@link UserHandleHidden#USER_NULL} because grants are keyed by explicit
+         * source/target user IDs. Accept a non-negative user id or exactly USER_NULL so a
+         * backed-up grant restores instead of being silently skipped on load; still reject
+         * any other negative value and non-numeric input.
+         */
+        private static int parseUserHandle(@NonNull String value) {
+            try {
+                int parsedValue = Integer.parseInt(value.trim());
+                if (parsedValue < 0 && parsedValue != UserHandleHidden.USER_NULL) {
+                    throw new IllegalArgumentException("Invalid URI grant userHandle.");
+                }
+                return parsedValue;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid URI grant userHandle.", e);
+            }
         }
 
         private static int parseNonNegativeInt(@NonNull String value, @NonNull String fieldName) {
