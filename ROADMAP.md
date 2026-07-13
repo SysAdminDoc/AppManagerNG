@@ -52,15 +52,6 @@ refresh, which needs a capture environment.
 
 ### P2
 
-- [ ] P2 — IntentCompat: array extras with a trailing backslash corrupt on interceptor round-trip
-  Why: `escapeComma` escapes `,`→`\,` but not the escape char, while `splitEscapedComma`
-  splits on `(?<!\\),`, so an element ending in `\` (e.g. `["a\\","b"]`) flattens to `a\,b`
-  and parses back as a single element `a,b` — silent data corruption in string/URI array extras.
-  Evidence: intercept/IntentCompat.java:345 (split regex), :349-351 (escapeComma), :353-356 (unescapeComma).
-  Touches: intercept/IntentCompat.java (escape `\` before `,`; unescape `\,` before `\\`), app/src/test/ (IntentCompatTest trailing-backslash round-trip).
-  Acceptance: `flattenToString`/`unflattenFromString` round-trips `new String[]{"a\\","b"}` back to the identical array; existing comma round-trip tests still pass.
-  Complexity: S
-
 - [ ] P2 — Expand the release-consistency gate to distribution packets and canonical documentation
   Why: the current gate passes while three listing packets still advertise v0.5.0/versionCode 7, Izzy documentation claims a removed CI workflow, and canonical contributor docs link to missing `PROJECT_CONTEXT.md`.
   Evidence: `scripts/verify-release-consistency.sh`; `docs/distribution/{fdroid,izzyondroid,accrescent}-listing.md`; `CLAUDE.md`; `CONTRIBUTING.md`; current v0.6.5 tag and `app/build.gradle` versionCode 13; F-Droid metadata/reproducible-build documentation.
