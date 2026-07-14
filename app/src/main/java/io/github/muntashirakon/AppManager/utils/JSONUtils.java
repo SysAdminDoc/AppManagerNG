@@ -60,7 +60,17 @@ public final class JSONUtils {
         if (jsonArray == null) return null;
         //noinspection unchecked
         T[] typicalArray = (T[]) Array.newInstance(clazz, jsonArray.length());
-        for (int i = 0; i < jsonArray.length(); ++i) typicalArray[i] = clazz.cast(jsonArray.get(i));
+        for (int i = 0; i < jsonArray.length(); ++i) {
+            Object element = jsonArray.get(i);
+            // clazz.cast throws an UNCHECKED ClassCastException on a type mismatch, which would
+            // escape callers that only catch JSONException and crash the whole profiles list on one
+            // malformed element. Convert it to JSONException so the bad item/profile is skipped.
+            if (!clazz.isInstance(element)) {
+                throw new JSONException("Array element " + i + " is not a " + clazz.getSimpleName()
+                        + " (was " + (element == null ? "null" : element.getClass().getSimpleName()) + ")");
+            }
+            typicalArray[i] = clazz.cast(element);
+        }
         return typicalArray;
     }
 

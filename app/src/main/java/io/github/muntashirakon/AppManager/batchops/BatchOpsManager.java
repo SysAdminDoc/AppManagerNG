@@ -541,6 +541,7 @@ public class BatchOpsManager {
         MultithreadedExecutor executor = MultithreadedExecutor.getNewInstance();
         AtomicInteger counter = new AtomicInteger(0);
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
+        int nextToSubmit = 0;
         try {
             BatchBackupOptions options = Objects.requireNonNull((BatchBackupOptions) info.options);
             int max = info.size();
@@ -573,9 +574,15 @@ public class BatchOpsManager {
                         }
                     }
                 });
+                nextToSubmit = i + 1;
             }
         } catch (Exception th) {
             log("====> op=BACKUP_RESTORE, mode=BACKUP", th);
+            // A failure mid-setup (options cast, executor rejection) leaves the remaining targets
+            // unsubmitted; mark them failed so the op isn't wrongly reported successful.
+            for (int i = nextToSubmit; i < info.size(); ++i) {
+                failedPackages.add(info.getPair(i));
+            }
         }
         executor.awaitCompletion();
         return new Result(failedPackages);
@@ -594,6 +601,7 @@ public class BatchOpsManager {
         List<String> restoreExtraWarnings = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger count = new AtomicInteger(0);
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
+        int nextToSubmit = 0;
         try {
             BatchBackupOptions options = Objects.requireNonNull((BatchBackupOptions) info.options);
             int max = info.size();
@@ -611,7 +619,11 @@ public class BatchOpsManager {
                     try {
                         BackupManager backupManager = new BackupManager();
                         backupManager.restore(options.getRestoreOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
-                        requiresRestart.set(requiresRestart.get() | backupManager.requiresRestart());
+                        // Idempotent set-true: a get()|set() read-modify-write can lose a concurrent
+                        // worker's true, dropping a needed "restart required" prompt after restore.
+                        if (backupManager.requiresRestart()) {
+                            requiresRestart.set(true);
+                        }
                         pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
                         restoreExtraWarnings.addAll(backupManager.getRestoreExtraWarnings());
                     } catch (Throwable e) {
@@ -624,9 +636,14 @@ public class BatchOpsManager {
                         ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
                     }
                 });
+                nextToSubmit = i + 1;
             }
         } catch (Exception th) {
             log("====> op=BACKUP_RESTORE, mode=RESTORE", th);
+            // Mark the unsubmitted tail failed so a mid-setup failure isn't reported as success.
+            for (int i = nextToSubmit; i < info.size(); ++i) {
+                failedPackages.add(info.getPair(i));
+            }
         }
         executor.awaitCompletion();
         Result result = new Result(failedPackages);
