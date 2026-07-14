@@ -370,6 +370,44 @@ ROADMAP.md once the blocker is resolved.
 
 
 
+## Device/Privileged-Mode-Gated (2026-07-14 research)
+
+### P2
+
+- [ ] P2 — Conditional auto-freeze predicates (skip charging / foreground / active notifications)
+  Why: Hail's loudest 2026 complaint is that unconditional auto-freeze kills apps users still want alive; conditional guards (skip while charging, skip the foreground app, skip apps with active notifications) are the requested fix and fit NG's routine-ops model.
+  Evidence: Hail issues #186/#222 (auto-freeze reliability + skip guards); NG routine/scheduler executor.
+  Touches: routines/ (new predicate types), freeze/ (guard evaluation), settings/ (defaults).
+  Acceptance: a routine can freeze a package set except while charging, except when foreground, or except when it holds an active notification; each guard verified against the real system state.
+  Blocker: freeze execution and foreground/notification/charging state require root/ADB/Shizuku and on-device runtime verification.
+  Complexity: M
+
+- [ ] P2 — Event-driven leftover sweep after any uninstall (CorpseFinder pattern)
+  Why: NG's LeftoverScanner is manual; SD Maid SE's CorpseFinder offers to sweep orphaned data dirs immediately after any uninstall (including uninstalls by other apps), which is when the mistake cost is highest.
+  Evidence: SD Maid SE changelog (CorpseFinder); NG LeftoverScanner (manual/one-click only).
+  Touches: new PACKAGE_FULLY_REMOVED receiver, backup/scanner/LeftoverScanner reuse, notification + confirm flow.
+  Acceptance: uninstalling an app (or observing another app's uninstall) surfaces an actionable "found N orphaned dirs — review" prompt that routes into the existing leftover UI.
+  Blocker: orphaned-dir enumeration and deletion require root/privileged mode and on-device broadcast-timing verification.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Installer preflight: show the initiating package and select-all splits
+  Why: InstallerX-Revived surfaces which app requested an install and offers select-all in the split chooser; both are transparency/UX wins NG's SplitApkChooser lacks.
+  Evidence: InstallerX-Revived 2026 repo/docs; NG apk/installer/ + SplitApkChooser.
+  Touches: apk/installer/ (SessionInfo initiator lookup), SplitApkChooser (select-all).
+  Acceptance: the install preflight shows the originating/installer package where available and offers a select-all toggle for split sets.
+  Blocker: PackageInstaller SessionInfo initiator data and install flow require on-device verification across API levels.
+  Complexity: S
+
+- [ ] P3 — Persistent removal/debloat ledger surface
+  Why: Canta keeps a durable record of what the user removed that survives across reinstalls of the manager; NG has op_history but no dedicated "what I removed and when" audit view users can revisit or restore from.
+  Evidence: Canta 2026 (uninstall history); NG op_history/db.
+  Touches: new removal-ledger fragment (reuse op_history), db/ (query), main menu entry.
+  Acceptance: a screen lists removed/debloated packages with timestamp and mode, and offers reinstall/restore where data allows.
+  Blocker: reinstall/restore actions require privileged mode; ledger persistence across reinstall needs on-device verification.
+  Complexity: M
+
 - [ ] P3 — Version-watch panel (full flavor): installed vs latest from static indexes
   Why: APKUpdater (3.8k stars, active) proves demand for multi-source update awareness without being a store; AppDash paywalls it; checking F-Droid/IzzyOnDroid index-v2 + GitHub releases against installed versions fits the full flavor's opt-in network doctrine and NG stays a manager (notify, don't install).
   Evidence: https://github.com/rumboalla/apkupdater ; https://appdash.app/ ; f-droid index-v2 format (RESEARCH.md Sources)
