@@ -38,15 +38,6 @@ upstream/ecosystem sweep (App Manager v4.1.0, LibChecker/Hail/Canta/InstallerX/S
 dependency CVEs, Android 16/17 APIs). All items below are host-verifiable and unit-testable
 offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
-### P1
-
-- [ ] P1 — Fix log scrubber redacting only whole-line IPs and phone numbers (PII leak)
-  Why: `PHONE_NUMBER_PATTERN` and `IP_ADDRESS_PATTERN` are `^...$`-anchored but applied with `replaceAll` on log lines, so an IP/phone embedded in a longer line (the common case) is never scrubbed and leaks into displayed/saved/shared logs.
-  Evidence: `logcat/reader/ScrubberUtils.java:10,12` (anchored) used at `:28,:30`; sibling EMAIL/WEB_URL patterns are correctly un-anchored.
-  Touches: `logcat/reader/ScrubberUtils.java`, new `app/src/test/` scrubber test.
-  Acceptance: `scrubLine("Connected to 8.8.8.8:443 for +1 415 555 0132")` redacts both the IP and the phone number; unit tests cover embedded and whole-line cases.
-  Complexity: S
-
 ### P2
 
 - [ ] P2 — Guard intent-extra inspection against BadParcelableException

@@ -22,6 +22,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- The logcat privacy scrubber now redacts IP addresses and phone numbers that
+  appear inside a longer log line, not just lines that consist entirely of one.
+  The `IP_ADDRESS_PATTERN` and `PHONE_NUMBER_PATTERN` were `^...$`-anchored while
+  applied with `replaceAll`, so the common case (an IP/phone embedded in a
+  message, e.g. `Connected to 8.8.8.8:443`) leaked into displayed, saved, and
+  shared logs. The patterns are now boundary-matched like the existing e-mail and
+  URL patterns.
 - Snapshot bundles no longer export or import live credential keys. The
   authorization key, Tasker plugin signing secret, and VirusTotal API key
   (stored inside the main `preferences` file) are stripped on export and can
