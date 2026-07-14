@@ -132,6 +132,17 @@ public class AESCrypto implements Crypto {
     }
 
     /**
+     * Test-only constructor that injects a raw AES key directly, bypassing the Android KeyStore.
+     * Used to exercise the streaming encrypt/decrypt round trip on a host JVM.
+     */
+    @VisibleForTesting
+    AESCrypto(@NonNull byte[] iv, @NonNull SecretKey secretKey) {
+        mIv = iv;
+        mParentMode = CryptoUtils.MODE_AES;
+        mSecretKey = secretKey;
+    }
+
+    /**
      * Backup-metadata version that first authenticated ciphertext with a full
      * 128-bit GCM tag. Anything older used a 32-bit tag (see {@link #MAC_SIZE_BITS_OLD}).
      */
