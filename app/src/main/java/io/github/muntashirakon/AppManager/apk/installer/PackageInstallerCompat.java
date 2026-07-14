@@ -845,6 +845,8 @@ public final class PackageInstallerCompat {
         } catch (Throwable e) {  // primarily RemoteException
             callFinish(STATUS_FAILURE_SESSION_COMMIT);
             Log.e(TAG, "Commit: Could not commit session.", e);
+            // Discard the staged session so its written APK bytes don't linger on disk.
+            abandon();
             return false;
         }
         if (intentReceiver == null) {
@@ -976,6 +978,9 @@ public final class PackageInstallerCompat {
         } catch (RemoteException e) {
             callFinish(STATUS_FAILURE_SESSION_CREATE);
             Log.e(TAG, "OpenSession: Failed to open install session.", e);
+            // createSession already allocated mSessionId; discard it so the created session
+            // (and any staged bytes) don't linger.
+            abandon();
             return false;
         }
         sendStartedBroadcast(mPackageName, mSessionId);

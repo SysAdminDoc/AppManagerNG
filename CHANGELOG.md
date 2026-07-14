@@ -70,6 +70,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Opening a malformed APK bundle (`.apks`/`.xapk`/`.apkm` with a duplicate base,
+  missing package name, or no base APK) no longer leaks the open archive file
+  handle — repeatedly trying such files could previously exhaust file descriptors.
+  Those parse failures now also surface as a handled install error rather than an
+  unchecked exception. A failed install session (commit or open failure) is now
+  abandoned so its staged APK bytes don't linger on disk.
+- `android:versionMajor` on a `uses-sdk-library` is now parsed correctly instead
+  of always resolving to the default, and a manifest with no root element reports
+  a clear "No manifest found" error instead of relying on a masked NPE.
 - A single malformed profile no longer breaks the whole Profiles list. A
   type-mismatched JSON array element (e.g. a number where a string is expected in
   a corrupt/hand-edited `*.am.json`) now surfaces as a handled `JSONException`

@@ -262,8 +262,9 @@ public final class ApkUtils {
             }
             xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
             ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
-            // manifest
-            if (!"manifest".equals(resManifestElement.getName())) {
+            // manifest — getDocumentElement() can return null for a manifest with no root element;
+            // guard it instead of relying on the broad RuntimeException catch to mask the NPE.
+            if (resManifestElement == null || !"manifest".equals(resManifestElement.getName())) {
                 throw new ApkFile.ApkFileException("No manifest found.");
             }
             Iterator<ResXmlAttribute> attrIt = resManifestElement.getAttributes();
