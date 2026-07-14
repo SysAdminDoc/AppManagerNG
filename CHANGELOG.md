@@ -61,6 +61,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- The Activity Interceptor no longer crashes when inspecting an intent that
+  carries a Parcelable extra whose class cannot be loaded in this process.
+  `IntentCompat.getUnsupportedExtras` unparceled extras without guarding against
+  `BadParcelableException`, unlike the sibling URI-copy path; it now reports an
+  `<unreadable extras>` marker (or a per-key type marker) instead of propagating.
+- The Finder signature filter no longer aborts with `ArrayIndexOutOfBoundsException`
+  on a SHA-256 checksum match when a certificate produced a checksum but no
+  parsable subject line (independent arrays of different lengths). The subject
+  index is bounds-guarded and falls back to an empty subject.
 - The debloater now reports a package's installed / system / frozen state
   correctly on multi-user devices. State was overwritten per user (last user
   wins), and an accumulated "installed" could be cleared by the per-user icon
