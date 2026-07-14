@@ -51,7 +51,7 @@ public class IntentCompatUnsupportedExtrasTest {
         assertFalse(extras.isEmpty());
         boolean reported = false;
         for (IntentCompat.UnsupportedExtra extra : extras) {
-            if ("<unreadable extras>".equals(extra.key) || "bad".equals(extra.key)) {
+            if ("<unreadable extras>".equals(extra.getKey()) || "bad".equals(extra.getKey())) {
                 reported = true;
                 break;
             }
