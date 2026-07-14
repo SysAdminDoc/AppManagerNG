@@ -289,7 +289,7 @@ public final class ApkFile implements AutoCloseable {
             ByteBuffer manifest = getManifestFromApk(mCacheFilePath);
             HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
             if (!manifestAttrs.containsKey(ATTR_PACKAGE)) {
-                throw new IllegalArgumentException("Manifest doesn't contain any package name.");
+                throw new ApkFileException("Manifest doesn't contain any package name.");
             }
             packageName = manifestAttrs.get(ATTR_PACKAGE);
             mBaseEntry = new Entry(mCacheFilePath, manifest, manifestAttrs);
@@ -300,67 +300,76 @@ public final class ApkFile implements AutoCloseable {
             } catch (IOException e) {
                 throw new ApkFileException(e);
             }
-            Enumeration<? extends ZipEntry> zipEntries = mZipFile.entries();
-            Set<String> splitNames = new HashSet<>();
-            int entryCount = 0;
-            while (zipEntries.hasMoreElements()) {
-                assertReasonableBundleEntryCount(++entryCount);
-                ZipEntry zipEntry = zipEntries.nextElement();
-                if (zipEntry.isDirectory()) continue;
-                String fileName = FileUtils.getFilenameFromZipEntry(zipEntry);
-                if (fileName.endsWith(".apk")) { // APK is more likely to match
-                    try (InputStream zipInputStream = mZipFile.getInputStream(zipEntry)) {
-                        // Get manifest attributes
-                        ByteBuffer manifest = getManifestFromApk(zipInputStream);
-                        HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
-                        if (manifestAttrs.containsKey("split")) {
-                            recordSplitName(manifestAttrs, splitNames, fileName);
-                            Entry entry = new Entry(fileName, zipEntry, APK_SPLIT, manifest, manifestAttrs);
-                            mEntries.add(entry);
-                        } else {
-                            if (mBaseEntry != null) {
-                                throw new RuntimeException("Duplicate base apk found.");
+            // Any failure while parsing a (possibly malformed) bundle must not leak the open
+            // ZipFile / file descriptor: this instance is only registered after the constructor
+            // returns, so close() would never run to release the native handles.
+            try {
+                Enumeration<? extends ZipEntry> zipEntries = mZipFile.entries();
+                Set<String> splitNames = new HashSet<>();
+                int entryCount = 0;
+                while (zipEntries.hasMoreElements()) {
+                    assertReasonableBundleEntryCount(++entryCount);
+                    ZipEntry zipEntry = zipEntries.nextElement();
+                    if (zipEntry.isDirectory()) continue;
+                    String fileName = FileUtils.getFilenameFromZipEntry(zipEntry);
+                    if (fileName.endsWith(".apk")) { // APK is more likely to match
+                        try (InputStream zipInputStream = mZipFile.getInputStream(zipEntry)) {
+                            // Get manifest attributes
+                            ByteBuffer manifest = getManifestFromApk(zipInputStream);
+                            HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
+                            if (manifestAttrs.containsKey("split")) {
+                                recordSplitName(manifestAttrs, splitNames, fileName);
+                                Entry entry = new Entry(fileName, zipEntry, APK_SPLIT, manifest, manifestAttrs);
+                                mEntries.add(entry);
+                            } else {
+                                if (mBaseEntry != null) {
+                                    throw new ApkFileException("Duplicate base apk found.");
+                                }
+                                mBaseEntry = new Entry(fileName, zipEntry, APK_BASE, manifest, manifestAttrs);
+                                mEntries.add(mBaseEntry);
+                                if (manifestAttrs.containsKey(ATTR_PACKAGE)) {
+                                    packageName = manifestAttrs.get(ATTR_PACKAGE);
+                                } else throw new ApkFileException("Package name not found.");
                             }
-                            mBaseEntry = new Entry(fileName, zipEntry, APK_BASE, manifest, manifestAttrs);
-                            mEntries.add(mBaseEntry);
-                            if (manifestAttrs.containsKey(ATTR_PACKAGE)) {
-                                packageName = manifestAttrs.get(ATTR_PACKAGE);
-                            } else throw new RuntimeException("Package name not found.");
+                        } catch (IOException e) {
+                            throw new ApkFileException(e);
                         }
-                    } catch (IOException e) {
-                        throw new ApkFileException(e);
-                    }
-                } else if (fileName.equals(ApksMetadata.META_FILE)) {
-                    try (InputStream metaIs = mZipFile.getInputStream(zipEntry)) {
-                        String jsonString = readBoundedUtf8Entry(metaIs, zipEntry, MAX_BUNDLE_METADATA_BYTES,
-                                ApksMetadata.META_FILE);
-                        mApksMetadata = new ApksMetadata();
-                        mApksMetadata.readMetadata(jsonString);
-                    } catch (IOException | JSONException e) {
-                        mApksMetadata = null;
-                        Log.w(TAG, "The contents of info.json in the bundle is invalid", e);
-                    }
-                } else if (fileName.endsWith(".obb")) {
-                    mObbFiles.add(zipEntry);
-                } else if (fileName.endsWith(".idsig")) {
-                    try (InputStream idsigIs = mZipFile.getInputStream(zipEntry)) {
-                        mIdsigFile = cacheBoundedEntry(idsigIs, zipEntry, "idsig", MAX_IDSIG_BYTES);
-                    } catch (IOException e) {
-                        throw new ApkFileException(e);
+                    } else if (fileName.equals(ApksMetadata.META_FILE)) {
+                        try (InputStream metaIs = mZipFile.getInputStream(zipEntry)) {
+                            String jsonString = readBoundedUtf8Entry(metaIs, zipEntry, MAX_BUNDLE_METADATA_BYTES,
+                                    ApksMetadata.META_FILE);
+                            mApksMetadata = new ApksMetadata();
+                            mApksMetadata.readMetadata(jsonString);
+                        } catch (IOException | JSONException e) {
+                            mApksMetadata = null;
+                            Log.w(TAG, "The contents of info.json in the bundle is invalid", e);
+                        }
+                    } else if (fileName.endsWith(".obb")) {
+                        mObbFiles.add(zipEntry);
+                    } else if (fileName.endsWith(".idsig")) {
+                        try (InputStream idsigIs = mZipFile.getInputStream(zipEntry)) {
+                            mIdsigFile = cacheBoundedEntry(idsigIs, zipEntry, "idsig", MAX_IDSIG_BYTES);
+                        } catch (IOException e) {
+                            throw new ApkFileException(e);
+                        }
                     }
                 }
+                if (mBaseEntry == null) throw new ApkFileException("No base apk found.");
+                // Sort the entries based on type and rank
+                Collections.sort(mEntries, (o1, o2) -> {
+                    Integer int1 = o1.type;
+                    int int2 = o2.type;
+                    int typeCmp;
+                    if ((typeCmp = int1.compareTo(int2)) != 0) return typeCmp;
+                    int1 = o1.rank;
+                    int2 = o2.rank;
+                    return int1.compareTo(int2);
+                });
+            } catch (Throwable th) {
+                IoUtils.closeQuietly(mZipFile);
+                IoUtils.closeQuietly(mFd);
+                throw th;
             }
-            if (mBaseEntry == null) throw new ApkFileException("No base apk found.");
-            // Sort the entries based on type and rank
-            Collections.sort(mEntries, (o1, o2) -> {
-                Integer int1 = o1.type;
-                int int2 = o2.type;
-                int typeCmp;
-                if ((typeCmp = int1.compareTo(int2)) != 0) return typeCmp;
-                int1 = o1.rank;
-                int2 = o2.rank;
-                return int1.compareTo(int2);
-            });
         }
         if (packageName == null) throw new ApkFileException("Package name not found.");
         mPackageName = packageName;

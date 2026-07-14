@@ -357,7 +357,16 @@ public class ManifestParser {
     }
 
     private long getLongAttributeValue(@NonNull ResXmlElement element, @NonNull String attrName, long defaultValue) {
-        String value = getAttributeValue(element, attrName);
+        ResXmlAttribute attribute = getAttribute(element, attrName);
+        if (attribute == null) {
+            return defaultValue;
+        }
+        // getValueAsString() returns null for integer-typed attributes (e.g. android:versionMajor);
+        // decodeValue() yields their textual form, mirroring the metadata value parsing above.
+        String value = attribute.getValueAsString();
+        if (value == null) {
+            value = attribute.decodeValue();
+        }
         if (value == null) {
             return defaultValue;
         }
