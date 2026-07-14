@@ -40,13 +40,6 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
 ### P2
 
-- [ ] P2 — Regression test locking in AES-GCM reuse immunity
-  Why: upstream #1958 ("GCM cipher cannot be reused for encryption") breaks large-app backups; NG's streaming `GCMBlockCipher.newInstance()` + `CipherInputStream` design is structurally immune but nothing pins that, so a future refactor to the JCE `Cipher` API could silently reintroduce it.
-  Evidence: `crypto/AESCrypto.java` (BC streaming GCM); upstream `MuntashirAkon/AppManager#1958`.
-  Touches: `app/src/test/` AES round-trip test.
-  Acceptance: a large (>2 GiB simulated / multi-block) encrypt→decrypt round trip through `AESCrypto` succeeds without a cipher-reuse exception; test fails if the crypto path is swapped to a non-reusable single-shot `Cipher`.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Harden dex header detection against partial reads and odex fallback
