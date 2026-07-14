@@ -70,6 +70,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Importing an encrypted OAndBackup no longer leaks the decrypted key material /
+  OpenPGP binding on the common "keep imported files" path — the source crypto is
+  now always released when the conversion finishes (which also removes a latent
+  null-dereference in cleanup). Decrypting a backup file whose name only contains
+  (rather than ends with) the crypto extension no longer mis-derives the output
+  filename.
 - Opening a malformed APK bundle (`.apks`/`.xapk`/`.apkm` with a duplicate base,
   missing package name, or no base APK) no longer leaks the open archive file
   handle — repeatedly trying such files could previously exhaust file descriptors.
