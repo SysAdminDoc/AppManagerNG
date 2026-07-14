@@ -42,13 +42,6 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
 ### P3
 
-- [ ] P3 — Fix small correctness defects: profile null-path NPE, FmItem compareTo/equals, search hint "null"
-  Why: three low-risk offline bugs — `ProfileManager` can pass a `@Nullable` resolved path into `@NonNull` `BaseProfile.fromPath` (NPE outside the caught exceptions); `FmItem.compareTo` returns 0 for unequal items (breaks the `TreeSet`/`TreeMap` contract, can silently drop items); `AdvancedSearchView` renders a literal `"null (Contains)"` hint when no query hint is set.
-  Evidence: `profiles/ProfileManager.java:174-176`; `fm/FmItem.java:160-166`; `misc/AdvancedSearchView.java:439`.
-  Touches: those three files, targeted unit tests.
-  Acceptance: a missing profile path fails with a clear `IOException`; `FmItem.compareTo` is consistent with `equals` (full-path tie-break); the search hint coalesces null to empty; tests cover each.
-  Complexity: S
-
 - [ ] P3 — Surface low-cost inspection signals from data NG already computes
   Why: cheap power-user differentiators that require no new data source — a weak-signature flag (v1-scheme-only APKs) as an at-a-glance security signal; the Android 16 `BODY_SENSORS → android.permissions.health` granular mapping in the permission catalog; and LibChecker-class signals (modern-vs-legacy Xposed API, live-update-notification capability, themed-icon/alias detection) as App Details / Finder rows.
   Evidence: LibChecker 2026 releases; Android 16 behavior-changes (health permissions); `utils/PackageUtils.java` signing-scheme data; existing `XposedModuleInfo`/permission parsing.

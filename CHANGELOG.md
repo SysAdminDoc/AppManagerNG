@@ -61,6 +61,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- File-manager sort is now stable for distinct files that share a name (for
+  example the same filename in two directories). `FmItem.compareTo` could return
+  0 for unequal items, which is inconsistent with `equals` and let a
+  `TreeSet`/`TreeMap` silently drop one; it now falls back to a full-path
+  tie-break.
+- The advanced search box no longer shows a literal `null (…)` hint when no
+  query hint is configured; the type hint is shown on its own in that case.
 - Dex detection and parsing are now resilient to short reads. `DexUtils.isDex`
   looped past partial `InputStream.read` results so a genuine `.dex` on a
   SAF/remote source could be misidentified, and `loadDexContainer` retried the
