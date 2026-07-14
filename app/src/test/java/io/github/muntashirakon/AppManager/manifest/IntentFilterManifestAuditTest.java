@@ -55,6 +55,27 @@ public class IntentFilterManifestAuditTest {
     }
 
     @Test
+    public void activityInterceptorKeepsLinkInterceptionFilter() {
+        // Regression guard for upstream #2001 ("Links Are Not Being Intercepted"): the
+        // interceptor must expose a DEFAULT-category VIEW filter covering http/https so it can
+        // still resolve `am start -d <link>` and shared web links.
+        ExportedComponent comp = sComponents.get(SOURCE_PKG + ".intercept.ActivityInterceptor");
+        assertNotNull("ActivityInterceptor must be exported", comp);
+        boolean hasWebViewFilter = false;
+        for (IntentFilter filter : comp.filters) {
+            if (filter.actions.contains("android.intent.action.VIEW")
+                    && filter.categories.contains("android.intent.category.DEFAULT")
+                    && filter.dataSchemes.contains("http")
+                    && filter.dataSchemes.contains("https")) {
+                hasWebViewFilter = true;
+                break;
+            }
+        }
+        assertTrue("ActivityInterceptor must keep a DEFAULT VIEW filter covering http/https",
+                hasWebViewFilter);
+    }
+
+    @Test
     public void automationUriAcceptsOnlyKnownHosts() {
         ExportedComponent comp = sComponents.get(SOURCE_PKG + ".automation.AutomationUriActivity");
         assertNotNull("AutomationUriActivity must be exported", comp);

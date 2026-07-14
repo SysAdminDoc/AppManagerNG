@@ -40,13 +40,6 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
 ### P2
 
-- [ ] P2 — Port upstream host-verifiable fixes shipped after our base commit
-  Why: upstream shipped these after base `3d11bcb`; each is unit-testable offline and closes a correctness/compat gap: TarUtils integer-overflow guard; A12+ keystore-entry backup gate (keystore can't be backed up on Android 12+); `am start -d <link>` / link-interception intent resolution (open issue #2001); report install result via `EXTRA_RETURN_RESULT` to match the stock-installer contract (#2003).
-  Evidence: upstream commits `3899dca0a` (TarUtils), `bdb293626` (keystore A12+), `4a25c3f0f` (link interception, #2001), issue #2003 (`EXTRA_RETURN_RESULT`).
-  Touches: `backup/tar/` or `utils/TarUtils`, backup keystore-entry path, `intercept/`/manifest intent-filter, `apk/installer/` result reporting; CHANGELOG.md with upstream attribution.
-  Acceptance: TarUtils rejects overflowing sizes; keystore backup is skipped/labeled on API 31+ without error; a `<link>` intent resolves through the interceptor; the installer returns `EXTRA_RETURN_RESULT` on session finish; each has a host test.
-  Complexity: M
-
 - [ ] P2 — Regression test locking in AES-GCM reuse immunity
   Why: upstream #1958 ("GCM cipher cannot be reused for encryption") breaks large-app backups; NG's streaming `GCMBlockCipher.newInstance()` + `CipherInputStream` design is structurally immune but nothing pins that, so a future refactor to the JCE `Cipher` API could silently reintroduce it.
   Evidence: `crypto/AESCrypto.java` (BC streaming GCM); upstream `MuntashirAkon/AppManager#1958`.
