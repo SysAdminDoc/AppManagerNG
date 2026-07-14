@@ -436,7 +436,12 @@ public class AdvancedSearchView extends SearchView {
     }
 
     private void updateQueryHint() {
-        CharSequence hintText = mQueryHint + " (" + getQueryHint(mType) + ")";
+        // mQueryHint is null when no queryHint attribute or setQueryHint() was supplied; concatenating
+        // it directly would render a literal "null (...)" hint.
+        CharSequence typeHint = "(" + getQueryHint(mType) + ")";
+        CharSequence hintText = mQueryHint != null && mQueryHint.length() > 0
+                ? mQueryHint + " " + typeHint
+                : typeHint;
         if (!isIconfiedByDefault() && mSearchHintIcon != null) {
             // Search icon isn't displayed when it is iconified by default.
             final int textSize = (int) (mSearchSrcTextView.getTextSize() * 1.25);

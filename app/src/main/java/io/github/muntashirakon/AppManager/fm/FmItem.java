@@ -160,8 +160,16 @@ public class FmItem implements Comparable<FmItem> {
     public int compareTo(FmItem o) {
         if (equals(o)) return 0;
         int typeComp = -Boolean.compare(isDirectory, o.isDirectory);
-        if (typeComp == 0) {
-            return path.getName().compareToIgnoreCase(o.path.getName());
-        } else return typeComp;
+        if (typeComp != 0) {
+            return typeComp;
+        }
+        int nameComp = path.getName().compareToIgnoreCase(o.path.getName());
+        if (nameComp != 0) {
+            return nameComp;
+        }
+        // Keep compareTo consistent with equals: two distinct paths whose names are equal under
+        // case-insensitive comparison (e.g. differing only in case on a case-sensitive VFS) must
+        // still order deterministically, otherwise a TreeSet/TreeMap silently drops one of them.
+        return path.toString().compareTo(o.path.toString());
     }
 }
