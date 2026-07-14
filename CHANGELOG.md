@@ -70,6 +70,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Log Viewer search filters now work correctly. A quoted multi-word filter value
+  (e.g. `tag=:"Foo Bar"`) is no longer truncated or crashed by a wrong length
+  variable, and a regex filter (`tag~:pattern`) now matches as a real regex
+  instead of being quoted into a literal string (invalid patterns fall back to a
+  literal match instead of crashing). Tag colouring no longer risks an
+  out-of-bounds crash for a tag hashing to `Integer.MIN_VALUE`.
+- An exported scanner report generated from a cached scan now reports its class
+  counts as unavailable rather than a misleading `0` (the full class dump is not
+  cached, only the tracker/library signature matches).
 - File-manager sort is now stable for distinct files that share a name (for
   example the same filename in two directories). `FmItem.compareTo` could return
   0 for unequal items, which is inconsistent with `equals` and let a

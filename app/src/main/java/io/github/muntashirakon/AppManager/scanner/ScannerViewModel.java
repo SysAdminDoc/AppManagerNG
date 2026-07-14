@@ -550,9 +550,12 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
             if (cached == null) return false;
             List<SignatureInfo> trackers = ScanResultCache.deserializeTrackers(cached.trackersJson);
             List<SignatureInfo> libraries = ScanResultCache.deserializeLibraries(cached.librariesJson);
-            mAllClasses = Collections.emptyList();
-            mTrackerClasses = Collections.emptyList();
-            mAllClassesLiveData.postValue(mAllClasses);
+            // The full class dump and the flat tracker-class list are not cached (only the
+            // tracker/library signature matches are). Leave them null so an exported report marks
+            // all_class_count / tracker_class_count as unavailable rather than a misleading 0.
+            mAllClasses = null;
+            mTrackerClasses = null;
+            mAllClassesLiveData.postValue(Collections.emptyList());
             mTrackerClassesLiveData.postValue(trackers);
             mLibraryClassesLiveData.postValue(libraries);
             return true;
