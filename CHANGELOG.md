@@ -38,6 +38,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   secret values instead of wiping them.
 
 ### Added
+- App Details now flags weak APK signing. An app that verifies using only the
+  legacy v1 (JAR) scheme — with none of the stronger v2/v3/v3.1/v4 schemes — shows
+  a "Weak signature" warning under its signature schemes, because v1-only APKs
+  have no whole-file integrity protection and are exposed to the Janus
+  (CVE-2017-13156) tampering class.
 - The generated keystore recovery-password dialog can now copy the password
   with a dedicated "Copy & continue" action. The value is placed on the
   clipboard flagged sensitive (`ClipDescription.EXTRA_IS_SENSITIVE` on Android

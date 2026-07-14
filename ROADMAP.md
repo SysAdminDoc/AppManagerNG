@@ -41,11 +41,3 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 ### P2
 
 ### P3
-
-- [ ] P3 — Surface low-cost inspection signals from data NG already computes
-  Why: cheap power-user differentiators that require no new data source — a weak-signature flag (v1-scheme-only APKs) as an at-a-glance security signal; the Android 16 `BODY_SENSORS → android.permissions.health` granular mapping in the permission catalog; and LibChecker-class signals (modern-vs-legacy Xposed API, live-update-notification capability, themed-icon/alias detection) as App Details / Finder rows.
-  Evidence: LibChecker 2026 releases; Android 16 behavior-changes (health permissions); `utils/PackageUtils.java` signing-scheme data; existing `XposedModuleInfo`/permission parsing.
-  Touches: `details/info/` (signing + capability chips), `permission/` catalog, `filters/options/` (new predicates), `scanner/`/`details/` Xposed/icon inspection.
-  Acceptance: an app signed only with scheme v1 shows a weak-signature chip; health permissions map to the granular group; at least one new LibChecker-class signal appears in App Details and is filterable in the Finder; all verified by host unit tests over fixture package data.
-  Complexity: M
-

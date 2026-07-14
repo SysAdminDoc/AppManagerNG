@@ -400,6 +400,45 @@ ROADMAP.md once the blocker is resolved.
   Blocker: PackageInstaller SessionInfo initiator data and install flow require on-device verification across API levels.
   Complexity: S
 
+- [ ] P3 — Weak-signature Finder filter and App Details chip
+  Why: the host-verifiable classifier (`PackageUtils.isV1SchemeOnlySigning`) and the App Details
+  signature-schemes warning text have shipped; a dedicated Finder predicate ("weak / v1-only
+  signing") and a compact at-a-glance chip on the app row remain, so users can filter the whole
+  device for weakly-signed apps.
+  Evidence: `utils/PackageUtils.java` (isV1SchemeOnlySigning); `filters/options/SignatureOption.java`;
+  main-list row badges; LibChecker weak-signature surfacing.
+  Touches: filters/options/ (new scheme predicate over IFilterableAppInfo signing data), details/ and
+  main/ row badge layouts.
+  Acceptance: a Finder filter lists only v1-only-signed apps; the app row shows a weak-signature badge.
+  Blocker: IFilterableAppInfo does not currently expose signature-scheme flags (only subjects/sha256),
+  and the badge/chip needs on-device visual verification across themes.
+  Complexity: M
+
+- [ ] P3 — Health-permission granular mapping (Android 16 android.permissions.health)
+  Why: Android 16 splits several BODY_SENSORS capabilities into the granular
+  `android.permissions.health` group; the permission views should map and label these so
+  health-sensor access is legible instead of showing raw permission names.
+  Evidence: Android 16 behaviour changes (health permissions); permission/ has no permission-group
+  catalog to extend yet.
+  Touches: permission/ (new group catalog + mapping table), details permission views.
+  Acceptance: apps requesting the split health permissions show them grouped/labelled under a health
+  category; a host test covers the mapping table.
+  Blocker: needs a new permission-group catalog and API-36 runtime permission data to verify the
+  grouping on-device.
+  Complexity: M
+
+- [ ] P3 — LibChecker-class static inspection signals (modern Xposed API, live-update capability, themed-icon/alias)
+  Why: LibChecker surfaces cheap static signals AppManagerNG already has the data for — modern vs
+  legacy Xposed API usage, Android 16 live-update-notification capability, and themed-icon/launcher
+  alias detection — as differentiating App Details / Finder rows.
+  Evidence: LibChecker 2026 releases; existing XposedModuleInfo parsing; manifest/resource parsing.
+  Touches: details/ (new capability rows), scanner/ or a new inspection pass, filters/options/.
+  Acceptance: at least one new signal appears in App Details and is filterable in the Finder, over
+  fixture package data.
+  Blocker: the display rows and Finder chips need on-device visual verification; multi-file feature
+  spanning parsing + UI.
+  Complexity: M
+
 - [ ] P3 — Persistent removal/debloat ledger surface
   Why: Canta keeps a durable record of what the user removed that survives across reinstalls of the manager; NG has op_history but no dedicated "what I removed and when" audit view users can revisit or restore from.
   Evidence: Canta 2026 (uninstall history); NG op_history/db.
