@@ -433,16 +433,20 @@ public final class ComponentUtils {
                             String fullKey = parser.getAttributeValue(null, "name");
                             ComponentName cn = ComponentName.unflattenFromString(fullKey);
                             // Skip malformed entries individually instead of letting the NPE
-                            // bubble to the outer catch and truncate the rest of the file.
-                            if (cn != null && packageName.equals(cn.getPackageName())) {
+                            // bubble to the outer catch and truncate the rest of the file. A
+                            // component-filter with no recognized enclosing tag leaves componentType
+                            // null; storing that would NPE later (ComponentRule.flattenToString).
+                            if (cn != null && componentType != null && packageName.equals(cn.getPackageName())) {
                                 rules.put(cn.getClassName(), componentType);
                             }
                         }
                 }
                 event = parser.nextTag();
             }
-        } catch (Exception ignore) {
-            // The file contains errors, simply ignore
+        } catch (Exception e) {
+            // A malformed/truncated IFW file: keep whatever parsed so far, but log it — silently
+            // under-reporting blocked components is a security-relevant downgrade.
+            Log.w(TAG, "Failed to fully parse IFW rules for " + packageName, e);
         }
         return rules;
     }
