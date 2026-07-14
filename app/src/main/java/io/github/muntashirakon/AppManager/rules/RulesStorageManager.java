@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -339,8 +340,14 @@ public class RulesStorageManager implements Closeable {
                 tsvRulesFile.delete();
                 return;
             }
+            // Serialize fully into memory BEFORE touching the on-disk file: openOutputStream()
+            // truncates on open, so a failure mid-serialization (a malformed entry) would otherwise
+            // leave a truncated .tsv and silently drop every rule after the failure point.
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            ComponentUtils.storeRules(buffer, mEntries, isExternal);
+            byte[] data = buffer.toByteArray();
             try (OutputStream TSVFile = tsvRulesFile.openOutputStream()) {
-                ComponentUtils.storeRules(TSVFile, mEntries, isExternal);
+                TSVFile.write(data);
             }
         }
     }
