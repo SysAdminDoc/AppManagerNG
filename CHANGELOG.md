@@ -46,6 +46,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shown only once and cannot be recovered.
 
 ### Changed
+- Bumped the ARSCLib (binary XML / ARSC parser) dependency from the pinned
+  commit `66051037ef` to the tagged `V1.4.0` release. The app compiles against it
+  and the binary-XML decoder/encoder and manifest-parser test suites pass
+  unchanged.
 - Consolidated the Android 17 (targetSdk 37) behavior-change readiness ledger
   into one host-verifiable gate. `Android17BehaviorContractTest` now also pins
   that native code loads via read-only `System.loadLibrary` (never

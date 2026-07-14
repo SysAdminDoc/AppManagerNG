@@ -49,9 +49,3 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
   Acceptance: an app signed only with scheme v1 shows a weak-signature chip; health permissions map to the granular group; at least one new LibChecker-class signal appears in App Details and is filterable in the Finder; all verified by host unit tests over fixture package data.
   Complexity: M
 
-- [ ] P3 — Evaluate ARSCLib V1.4.0 pin bump
-  Why: ARSCLib is currently pinned to a commit; a tagged `V1.4.0` release (2026-07-01) supersedes it and may carry arsc-parsing fixes relevant to the manifest/resource viewer.
-  Evidence: https://github.com/REAndroid/ARSCLib/releases/tag/V1.4.0; current pin in `versions.gradle`.
-  Touches: `versions.gradle`, resource/manifest parsing tests.
-  Acceptance: the pin moves to `V1.4.0`, the project builds, and existing manifest/resource-parsing tests pass; any behavior delta is noted in CHANGELOG.md.
-  Complexity: S
