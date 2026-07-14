@@ -6,6 +6,7 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,18 +125,34 @@ public class SignatureOption extends FilterOption {
                         .setMatchedSubjectLines(matchedSubjectLines);
             }
             case "sha256": {
-                String[] sha256sums = info.getSignatureSha256Checksums();
-                for (int i = 0; i < sha256sums.length; ++i) {
-                    if (sha256sums[i].equals(value)) {
-                        return result.setMatched(true)
-                                .setMatchedSubjectLines(Collections.singletonList(info.getSignatureSubjectLines()[i]));
-                    }
+                String matchedSubject = matchSha256Subject(info.getSignatureSha256Checksums(),
+                        info.getSignatureSubjectLines(), value);
+                if (matchedSubject != null) {
+                    return result.setMatched(true)
+                            .setMatchedSubjectLines(Collections.singletonList(matchedSubject));
                 }
                 return result.setMatched(false).setMatchedSubjectLines(Collections.emptyList());
             }
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
+    }
+
+    /**
+     * Returns the certificate subject line matching {@code value} in the SHA-256 checksum array, or
+     * {@code null} if no checksum matches. The checksum and subject-line arrays are produced
+     * independently, so the subject array can be shorter when a certificate yields a checksum but no
+     * parsable subject; the index is guarded rather than throwing {@link ArrayIndexOutOfBoundsException}.
+     */
+    @Nullable
+    static String matchSha256Subject(@NonNull String[] sha256sums, @NonNull String[] subjectLines,
+                                     @NonNull String value) {
+        for (int i = 0; i < sha256sums.length; ++i) {
+            if (sha256sums[i].equals(value)) {
+                return i < subjectLines.length ? subjectLines[i] : "";
+            }
+        }
+        return null;
     }
 
     @NonNull
