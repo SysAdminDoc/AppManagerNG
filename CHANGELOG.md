@@ -70,6 +70,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- A single malformed profile no longer breaks the whole Profiles list. A
+  type-mismatched JSON array element (e.g. a number where a string is expected in
+  a corrupt/hand-edited `*.am.json`) now surfaces as a handled `JSONException`
+  instead of an unchecked `ClassCastException`, so only the bad profile is
+  skipped. A batch backup/restore that fails during setup now marks the
+  unsubmitted packages as failed (rather than reporting success), a profile
+  sub-operation that fails with no per-package attribution is now counted as a
+  failure, and a multi-package restore no longer loses a concurrent worker's
+  "restart required" signal.
 - Importing a component-blocking rule file is more robust. An IFW
   `<component-filter>` with no recognized enclosing tag is now skipped instead of
   being stored with a null type (which later crashed rule serialization and could
