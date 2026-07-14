@@ -70,6 +70,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Importing a component-blocking rule file is more robust. An IFW
+  `<component-filter>` with no recognized enclosing tag is now skipped instead of
+  being stored with a null type (which later crashed rule serialization and could
+  wipe the rest of a package's rules), and a malformed/truncated IFW file is
+  logged instead of silently under-reporting blocked components. Rule `.tsv`
+  files are now serialized fully in memory before the on-disk file is opened, so a
+  mid-write failure can no longer truncate and drop existing rules.
 - Log Viewer search filters now work correctly. A quoted multi-word filter value
   (e.g. `tag=:"Foo Bar"`) is no longer truncated or crashed by a wrong length
   variable, and a regex filter (`tag~:pattern`) now matches as a real regex
