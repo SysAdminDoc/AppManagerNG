@@ -24,6 +24,7 @@ import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.CommonTreeNodeStream;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,12 +32,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 import jadx.api.JadxArgs;
 import jadx.api.JadxDecompiler;
@@ -71,13 +72,23 @@ public final class DexUtils {
 
     @AnyThread
     public static boolean isDex(@NonNull Path path) throws IOException {
-        int header;
+        byte[] headerBytes = new byte[4];
         try (InputStream is = path.openInputStream()) {
-            byte[] headerBytes = new byte[4];
-            is.read(headerBytes);
-            header = new BigInteger(headerBytes).intValue();
+            // InputStream.read(byte[]) may return a short read on SAF/remote streams; loop until the
+            // full magic is read (or EOF) so a genuine dex is not misidentified from trailing zeros.
+            int total = 0;
+            int read;
+            while (total < headerBytes.length
+                    && (read = is.read(headerBytes, total, headerBytes.length - total)) != -1) {
+                total += read;
+            }
+            if (total < headerBytes.length) {
+                return false;
+            }
         }
-        return header == 0x6465780A;
+        // dex magic: 64 65 78 0A ("dex\n")
+        return headerBytes[0] == (byte) 0x64 && headerBytes[1] == (byte) 0x65
+                && headerBytes[2] == (byte) 0x78 && headerBytes[3] == (byte) 0x0A;
     }
 
     public static MultiDexContainer<? extends DexBackedDexFile> loadApk(File apkFile, int apiLevel) throws IOException {
@@ -216,13 +227,17 @@ public final class DexUtils {
     @NonNull
     public static DexBackedDexFile loadDexContainer(@NonNull InputStream inputStream, int api) throws IOException {
         Opcodes opcodes = api < 0 ? Opcodes.getDefault() : Opcodes.forApi(api);
+        // Both smali parsers consume the stream while sniffing the header, so the odex fallback would
+        // otherwise read from EOF and always fail even for a valid .odex. Buffer the bytes once and
+        // hand each parser a fresh mark-supporting stream from offset 0.
+        byte[] bytes = IoUtils.readFully(inputStream, -1, true);
         try {
-            return DexBackedDexFile.fromInputStream(opcodes, inputStream);
+            return DexBackedDexFile.fromInputStream(opcodes, new ByteArrayInputStream(bytes));
         } catch (DexBackedDexFile.NotADexFile ex) {
             // just eat it
         }
         try {
-            return DexBackedOdexFile.fromInputStream(opcodes, inputStream);
+            return DexBackedOdexFile.fromInputStream(opcodes, new ByteArrayInputStream(bytes));
         } catch (DexBackedOdexFile.NotAnOdexFile ex) {
             // just eat it
         }

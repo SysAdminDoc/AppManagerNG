@@ -42,13 +42,6 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
 ### P3
 
-- [ ] P3 — Harden dex header detection against partial reads and odex fallback
-  Why: `isDex` discards the `read()` return so a short read (SAF/remote streams) misidentifies a real `.dex`; the odex fallback then retries the parser on the same already-consumed, non-resettable stream so a valid `.odex` always fails.
-  Evidence: `dex/DexUtils.java:77` (ignored partial read), `dex/DexUtils.java:216-230` (consumed-stream odex retry) via `dex/DexClasses.java`.
-  Touches: `dex/DexUtils.java`, dex detection/parse test.
-  Acceptance: header detection fully reads (or EOFs) before comparing; the odex fallback parses from offset 0 (buffered/re-readable stream); tests cover a short-read dex and a valid odex.
-  Complexity: S
-
 - [ ] P3 — Fix small correctness defects: profile null-path NPE, FmItem compareTo/equals, search hint "null"
   Why: three low-risk offline bugs — `ProfileManager` can pass a `@Nullable` resolved path into `@NonNull` `BaseProfile.fromPath` (NPE outside the caught exceptions); `FmItem.compareTo` returns 0 for unequal items (breaks the `TreeSet`/`TreeMap` contract, can silently drop items); `AdvancedSearchView` renders a literal `"null (Contains)"` hint when no query hint is set.
   Evidence: `profiles/ProfileManager.java:174-176`; `fm/FmItem.java:160-166`; `misc/AdvancedSearchView.java:439`.
