@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 
@@ -66,7 +67,9 @@ public class SearchCriteria {
                 // This part belongs to the last filter
                 if (part.endsWith("\"")) {
                     Filter filter = mFilters.get(mFilters.size() - 1);
-                    filter.setValue(lastString + " " + part.substring(0, parts.length - 1));
+                    // Strip the trailing quote from THIS token; must use the token's own length,
+                    // not the number of space-split tokens (parts.length) which truncates/crashes.
+                    filter.setValue(lastString + " " + part.substring(0, part.length() - 1));
                     lastString = null;
                 } else lastString.append(" ").append(part);
                 continue;
@@ -251,7 +254,15 @@ public class SearchCriteria {
                 return null;
             }
             if (mRegex) {
-                return Pattern.compile(Pattern.quote(value));
+                try {
+                    // The ~: filter is a real regex; Pattern.quote would make it match only the
+                    // literal string, defeating regex mode. Fall back to a literal match only when
+                    // the user's regex is syntactically invalid, so a bad pattern degrades instead
+                    // of crashing filter parsing.
+                    return Pattern.compile(value);
+                } catch (PatternSyntaxException e) {
+                    return Pattern.compile(Pattern.quote(value));
+                }
             }
             switch (mType) {
                 case TYPE_UID: {

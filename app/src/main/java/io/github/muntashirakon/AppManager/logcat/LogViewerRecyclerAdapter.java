@@ -93,9 +93,10 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         if (sTagColors == null) {
             sTagColors = context.getResources().getIntArray(R.array.random_colors);
         }
-        // Ensure consistency
+        // Ensure consistency. Use floorMod, not Math.abs(%): Math.abs(Integer.MIN_VALUE) is still
+        // negative, so a tag hashing to Integer.MIN_VALUE would index the array out of bounds.
         int hashCode = (tag == null) ? 0 : tag.hashCode();
-        int smear = Math.abs(hashCode) % sTagColors.length;
+        int smear = Math.floorMod(hashCode, sTagColors.length);
         return sTagColors[smear];
     }
 
