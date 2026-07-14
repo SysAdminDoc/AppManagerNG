@@ -257,7 +257,9 @@ public class SnapshotBundleTest {
             fav.order = 5;
             fav.type = 2;
             db.fmFavoriteDao().insert(fav);
-            db.freezeTypeDao().insert(new FreezeType("com.example.app", 3));
+            // FREEZE_SUSPEND (2): a defined freeze method. Import validation rejects out-of-range
+            // values, so use a real one.
+            db.freezeTypeDao().insert(new FreezeType("com.example.app", 2));
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             SnapshotBundle.ExportResult exported = SnapshotBundle.writeTo(
@@ -283,7 +285,7 @@ public class SnapshotBundleTest {
             assertEquals(5L, restoredFav.order);
             FreezeType restoredFreeze = db.freezeTypeDao().get("com.example.app");
             assertNotNull(restoredFreeze);
-            assertEquals(3, restoredFreeze.type);
+            assertEquals(2, restoredFreeze.type);
 
             clearPortableTables(db);
             return null;
