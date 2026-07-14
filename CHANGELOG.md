@@ -61,6 +61,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Dex detection and parsing are now resilient to short reads. `DexUtils.isDex`
+  looped past partial `InputStream.read` results so a genuine `.dex` on a
+  SAF/remote source could be misidentified, and `loadDexContainer` retried the
+  odex parser on an already-consumed stream so a valid `.odex` always failed.
+  The header is now fully read and the bytes are buffered once so both parsers
+  see the stream from offset 0.
 - The Activity Interceptor no longer crashes when inspecting an intent that
   carries a Parcelable extra whose class cannot be loaded in this process.
   `IntentCompat.getUnsupportedExtras` unparceled extras without guarding against
