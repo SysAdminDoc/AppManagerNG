@@ -518,13 +518,32 @@ public final class IntentCompat {
 
     @NonNull
     public static List<UnsupportedExtra> getUnsupportedExtras(@NonNull Intent intent) {
-        Bundle extras = intent.getExtras();
+        Bundle extras;
+        try {
+            extras = intent.getExtras();
+        } catch (RuntimeException e) {
+            // A Parcelable extra whose class cannot be loaded in this process throws
+            // BadParcelableException during lazy unparceling. Report it instead of crashing.
+            return Collections.singletonList(new UnsupportedExtra("<unreadable extras>", e.getClass().getName()));
+        }
         if (extras == null) {
             return Collections.emptyList();
         }
+        Set<String> keys;
+        try {
+            keys = new HashSet<>(extras.keySet());
+        } catch (RuntimeException e) {
+            return Collections.singletonList(new UnsupportedExtra("<unreadable extras>", e.getClass().getName()));
+        }
         List<UnsupportedExtra> unsupportedExtras = new ArrayList<>();
-        for (String key : extras.keySet()) {
-            Object value = extras.get(key);
+        for (String key : keys) {
+            Object value;
+            try {
+                value = extras.get(key);
+            } catch (RuntimeException e) {
+                unsupportedExtras.add(new UnsupportedExtra(key, e.getClass().getName()));
+                continue;
+            }
             if (valueToParsableStringAndType(value) == null) {
                 unsupportedExtras.add(new UnsupportedExtra(key, getExtraValueTypeName(value)));
             }

@@ -40,20 +40,6 @@ offline. Device-gated feature ideas from this pass are in `Roadmap_Blocked.md`.
 
 ### P2
 
-- [ ] P2 — Guard intent-extra inspection against BadParcelableException
-  Why: `getUnsupportedExtras` calls `intent.getExtras()`/`extras.get(key)` unguarded and is reached by the public `describeUnsupportedExtras(Intent, ...)`; a foreign Parcelable extra whose class is unloadable in-process crashes the interceptor during lazy unparceling, while sibling methods already guard this.
-  Evidence: `intercept/IntentCompat.java:520-534`, reached from `:537-540`; guarded pattern in `copyUriSafeExtras` (`:1143-1174`) and `ActivityInterceptor.storeOriginalIntent`.
-  Touches: `intercept/IntentCompat.java`, interceptor extras test.
-  Acceptance: an intent with an unloadable Parcelable extra yields an `<unreadable extras>` marker instead of throwing; regression test asserts no exception propagates.
-  Complexity: S
-
-- [ ] P2 — Bounds-fix SignatureOption sha256 subject-line indexing
-  Why: the `sha256` case indexes `getSignatureSubjectLines()[i]` by the length of the independent `getSignatureSha256Checksums()` array; a shorter subject-line array (one cert parse fault) throws `ArrayIndexOutOfBoundsException` and aborts the whole filter run.
-  Evidence: `filters/options/SignatureOption.java:126-134`.
-  Touches: `filters/options/SignatureOption.java`, filter option test.
-  Acceptance: matching a sha256 checksum when the subject-line array is shorter returns the match with an empty/placeholder subject instead of throwing; unit test covers the mismatched-length case.
-  Complexity: S
-
 - [ ] P2 — Port upstream host-verifiable fixes shipped after our base commit
   Why: upstream shipped these after base `3d11bcb`; each is unit-testable offline and closes a correctness/compat gap: TarUtils integer-overflow guard; A12+ keystore-entry backup gate (keystore can't be backed up on Android 12+); `am start -d <link>` / link-interception intent resolution (open issue #2001); report install result via `EXTRA_RETURN_RESULT` to match the stock-installer contract (#2003).
   Evidence: upstream commits `3899dca0a` (TarUtils), `bdb293626` (keystore A12+), `4a25c3f0f` (link interception, #2001), issue #2003 (`EXTRA_RETURN_RESULT`).
