@@ -67,6 +67,7 @@ import io.github.muntashirakon.AppManager.db.dao.FreezeTypeDao;
 import io.github.muntashirakon.AppManager.db.dao.LogFilterDao;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
+import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
@@ -911,7 +912,10 @@ public final class SnapshotBundle {
             FmFavorite favorite = new FmFavorite();
             favorite.name = name;
             favorite.uri = uri;
-            favorite.initUri = getNonBlankString(o, "init_uri");
+            // Validate init_uri like uri: a malformed initial path would only fail later when the
+            // File Manager tries to navigate to it, so drop it instead of trusting it.
+            String initUri = getNonBlankString(o, "init_uri");
+            favorite.initUri = (initUri != null && isValidFavoriteUri(initUri)) ? initUri : null;
             favorite.options = o.optInt("options", 0);
             favorite.order = o.optLong("order", 0);
             favorite.type = o.optInt("type", 0);
@@ -942,8 +946,12 @@ public final class SnapshotBundle {
             if (o == null) continue;
             String pkg = getNonBlankString(o, "package_name");
             if (pkg == null || !seen.add(pkg)) continue;
+            int type = o.optInt("type", 0);
+            // Reject out-of-range freeze methods (the column is an IntDef of 1/2/4/8); a bad value
+            // would apply an undefined freeze method later.
+            if (!FreezeUtils.isValidFreezeMethod(type)) continue;
             try {
-                dao.insert(new FreezeType(pkg, o.optInt("type", 0)));
+                dao.insert(new FreezeType(pkg, type));
                 ++restored;
             } catch (Exception e) {
                 Log.w(TAG, "Skipping un-insertable freeze method during snapshot import.", e);

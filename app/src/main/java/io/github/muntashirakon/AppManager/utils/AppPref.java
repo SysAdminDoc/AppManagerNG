@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -430,27 +431,54 @@ public class AppPref {
 
     private void init() {
         SharedPreferences.Editor editor = mPreferences.edit();
+        Map<String, ?> all = mPreferences.getAll();
         for (int i = 0; i < PrefKey.sKeys.length; ++i) {
-            if (!mPreferences.contains(PrefKey.sKeys[i])) {
-                switch (PrefKey.sTypes[i]) {
-                    case TYPE_BOOLEAN:
-                        editor.putBoolean(PrefKey.sKeys[i], (boolean) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
-                        break;
-                    case TYPE_FLOAT:
-                        editor.putFloat(PrefKey.sKeys[i], (float) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
-                        break;
-                    case TYPE_INTEGER:
-                        editor.putInt(PrefKey.sKeys[i], (int) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
-                        break;
-                    case TYPE_LONG:
-                        editor.putLong(PrefKey.sKeys[i], (long) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
-                        break;
-                    case TYPE_STRING:
-                        editor.putString(PrefKey.sKeys[i], (String) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
-                }
+            String key = PrefKey.sKeys[i];
+            int type = PrefKey.sTypes[i];
+            // (Re)write the default when the key is missing OR stored with the wrong value type.
+            // A corrupt/hand-edited/snapshot-imported preferences file can hold a registered key
+            // with a mismatched type (e.g. an int key stored as a String); the strongly-typed
+            // getters would then throw ClassCastException on every read and brick that screen. This
+            // previously only seeded defaults for absent keys, so such a key was never repaired.
+            if (mPreferences.contains(key) && isCorrectType(all.get(key), type)) {
+                continue;
+            }
+            switch (type) {
+                case TYPE_BOOLEAN:
+                    editor.putBoolean(key, (boolean) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                    break;
+                case TYPE_FLOAT:
+                    editor.putFloat(key, (float) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                    break;
+                case TYPE_INTEGER:
+                    editor.putInt(key, (int) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                    break;
+                case TYPE_LONG:
+                    editor.putLong(key, (long) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
+                    break;
+                case TYPE_STRING:
+                    editor.putString(key, (String) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
             }
         }
         editor.apply();
+    }
+
+    private static boolean isCorrectType(@Nullable Object value, int type) {
+        if (value == null) return false;
+        switch (type) {
+            case TYPE_BOOLEAN:
+                return value instanceof Boolean;
+            case TYPE_FLOAT:
+                return value instanceof Float;
+            case TYPE_INTEGER:
+                return value instanceof Integer;
+            case TYPE_LONG:
+                return value instanceof Long;
+            case TYPE_STRING:
+                return value instanceof String;
+            default:
+                return false;
+        }
     }
 
     @NonNull

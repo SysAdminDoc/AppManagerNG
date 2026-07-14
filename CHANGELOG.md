@@ -22,6 +22,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- A corrupt or crafted imported snapshot can no longer brick a settings screen.
+  Preference initialization now detects a registered key stored with the wrong
+  value type (e.g. an integer key written as a string) and resets it to its
+  default, instead of only seeding absent keys — previously such a value made the
+  strongly-typed getter throw on every read with no self-repair. Imported
+  file-manager favorites now validate their initial-directory URI, and imported
+  per-package freeze methods reject out-of-range values.
 - The logcat privacy scrubber now redacts IP addresses and phone numbers that
   appear inside a longer log line, not just lines that consist entirely of one.
   The `IP_ADDRESS_PATTERN` and `PHONE_NUMBER_PATTERN` were `^...$`-anchored while

@@ -107,8 +107,10 @@ public class SplitInputStream extends InputStream {
             // Don't need a separate buffer
             mMarkBufSize = 0;
         } else {
-            // Extra buffer required is remain + n * buf.length
-            mMarkBufSize = remain + ((readlimit - remain) / mBuf.length) * mBuf.length;
+            // Extra buffer required is remain + n * buf.length. Round the extra UP to a whole
+            // multiple of buf.length: flooring made mMarkBufSize smaller than readlimit, so reset()
+            // could fail after fewer than readlimit bytes were read (e.g. readlimit=5000, buf=4096).
+            mMarkBufSize = remain + ((readlimit - remain + mBuf.length - 1) / mBuf.length) * mBuf.length;
         }
     }
 

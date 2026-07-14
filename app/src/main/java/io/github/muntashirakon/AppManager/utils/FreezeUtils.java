@@ -38,6 +38,15 @@ public final class FreezeUtils {
     public static final int FREEZE_HIDE = 1 << 2;
     public static final int FREEZE_ADV_SUSPEND = 1 << 3;
 
+    /**
+     * Whether {@code method} is exactly one of the defined freeze methods. Used to reject an
+     * out-of-range value from an imported snapshot before it is written to the database.
+     */
+    public static boolean isValidFreezeMethod(int method) {
+        return method == FREEZE_DISABLE || method == FREEZE_SUSPEND
+                || method == FREEZE_HIDE || method == FREEZE_ADV_SUSPEND;
+    }
+
     @WorkerThread
     public static void storeFreezeMethod(@NonNull String packageName, @FreezeMethod int freezeType) {
         AppsDb.getInstance().freezeTypeDao().insert(new FreezeType(packageName, freezeType));
