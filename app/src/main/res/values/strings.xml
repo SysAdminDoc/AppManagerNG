@@ -1537,6 +1537,7 @@
     <string name="pref_sign_apk">Sign APK</string>
     <string name="pref_sign_apk_msg">Sign APK files before installing them.</string>
     <string name="app_signing_signature_schemes">Signature schemes</string>
+    <string name="app_signing_v1_scheme_only_weak">Weak signature: signed only with the legacy v1 (JAR) scheme, which offers no whole-file integrity protection. Prefer apps also signed with v2 or newer.</string>
     <string name="apk_signing">APK signing</string>
     <string name="pref_apk_signing_msg">Signature schemes, signing key, zip alignment, and APK verification controls.</string>
     <string name="v1_scheme">v1 scheme (since Android 1.0)</string>

@@ -884,6 +884,12 @@ public final class PackageUtils {
             builder.append("\n").append(getPrimaryText(ctx, ctx.getResources()
                     .getQuantityString(R.plurals.app_signing_signature_schemes_pl, sigSchemes.size()) + LangUtils.getSeparatorString()));
             builder.append(TextUtilsCompat.joinSpannable(", ", sigSchemes));
+            if (isV1SchemeOnlySigning(result.isVerifiedUsingV1Scheme(), result.isVerifiedUsingV2Scheme(),
+                    result.isVerifiedUsingV3Scheme(), result.isVerifiedUsingV31Scheme(),
+                    result.isVerifiedUsingV4Scheme())) {
+                builder.append("\n").append(getColoredText(getTitleText(ctx,
+                        "⚠ " + ctx.getString(R.string.app_signing_v1_scheme_only_weak)), colorFailure));
+            }
         } else {
             builder.append(getColoredText(getTitleText(ctx, "✘ " + ctx.getString(R.string.not_verified)), colorFailure));
         }
@@ -891,6 +897,16 @@ public final class PackageUtils {
         // If there are errors, no certificate info will be loaded
         builder.append(TextUtilsCompat.joinSpannable("\n", errors)).append("\n");
         return builder;
+    }
+
+    /**
+     * Whether an APK is verified using only the legacy v1 (JAR) signature scheme with none of the
+     * stronger APK Signature Scheme v2/v3/v3.1/v4 present. v1-only APKs have no whole-file integrity
+     * protection and are exposed to the Janus (CVE-2017-13156) class of tampering, so this is a
+     * weak-signature signal worth surfacing to the user.
+     */
+    public static boolean isV1SchemeOnlySigning(boolean v1, boolean v2, boolean v3, boolean v31, boolean v4) {
+        return v1 && !v2 && !v3 && !v31 && !v4;
     }
 
     public static void ensurePackageStagingDirectoryPrivileged() throws ErrnoException {
