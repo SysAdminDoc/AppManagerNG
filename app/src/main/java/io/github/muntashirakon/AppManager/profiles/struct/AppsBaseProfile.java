@@ -342,6 +342,10 @@ public abstract class AppsBaseProfile extends BaseProfile {
                                      @NonNull BatchOpsManager.Result result) {
         if (!result.isSuccessful()) {
             Log.d(TAG, "Failed packages: %s", result);
+            // Mark failed independently of the failed-package list: a sub-result can be
+            // unsuccessful with an empty failed-package list (e.g. a whole-op failure with no
+            // per-package attribution), which recordFailedPackages alone would not flag.
+            aggregate.markFailed();
             aggregate.recordFailedPackages(result.getFailedPackages());
         }
     }
