@@ -163,6 +163,12 @@ public class OABConverter extends Converter {
         } catch (Exception th) {
             throw new BackupException("Unknown error occurred.", th);
         } finally {
+            // Always release the source crypto here: cleanup() (which used to close it) is only
+            // invoked when the imported directory is being removed, so on the common "keep imported
+            // files" path the decrypted AES key / OpenPGP binding would otherwise leak.
+            if (mSourceCrypto != null) {
+                mSourceCrypto.close();
+            }
             mBackupItem.cleanup();
             if (backupSuccess) {
                 BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), mDestMetadata);
@@ -172,7 +178,6 @@ public class OABConverter extends Converter {
 
     @Override
     public void cleanup() {
-        mSourceCrypto.close();
         mBackupLocation.delete();
     }
 

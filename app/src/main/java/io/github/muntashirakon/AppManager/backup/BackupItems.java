@@ -350,8 +350,12 @@ public class BackupItems {
                 for (Path inputFile : files) {
                     Path parent = getUnencryptedBackupPath();
                     String filename = inputFile.getName();
-                    int extIdx = filename.lastIndexOf(ext);
-                    String outputFilename = extIdx > 0 ? filename.substring(0, extIdx) : filename;
+                    // Strip the crypto extension only when it is a genuine suffix. lastIndexOf + >0
+                    // could mis-truncate a name that merely contains the extension, and dropped a
+                    // name that starts with it.
+                    String outputFilename = (!ext.isEmpty() && filename.endsWith(ext))
+                            ? filename.substring(0, filename.length() - ext.length())
+                            : filename;
                     Path outputPath = parent.createNewFile(outputFilename, null);
                     newFileList.add(outputPath);
                     Log.i(TAG, "Input: %s\nOutput: %s", inputFile, outputPath);
