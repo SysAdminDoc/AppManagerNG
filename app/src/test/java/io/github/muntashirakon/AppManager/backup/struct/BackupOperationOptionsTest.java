@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.backup.struct;
 import static org.junit.Assert.*;
 
 import android.os.Parcel;
+import android.net.Uri;
 
 import androidx.core.os.ParcelCompat;
 
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 
 @RunWith(RobolectricTestRunner.class)
 public class BackupOperationOptionsTest {
@@ -49,6 +51,33 @@ public class BackupOperationOptionsTest {
             assertArrayEquals(new String[]{"cache/tmp"}, parcelRestored.exclusionGlobs);
             assertTrue(parcelRestored.protectFromPrune);
             assertEquals("Before upgrade\nKeep", parcelRestored.backupNote);
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    @Test
+    public void backupPolicyFieldsSurviveJsonAndParcel() throws Exception {
+        Uri destination = Uri.parse("content://provider/tree/backups");
+        BackupOpOptions options = new BackupOpOptions("example.pkg", 0,
+                BackupFlags.BACKUP_APK_FILES, "nightly", false, null, false, null,
+                CryptoUtils.MODE_AES, 4, 21, destination);
+
+        BackupOpOptions json = new BackupOpOptions(options.serializeToJson());
+        assertEquals(CryptoUtils.MODE_AES, json.cryptoMode);
+        assertEquals(4, json.retentionMaxCount);
+        assertEquals(21, json.retentionMaxAgeDays);
+        assertEquals(destination, json.destination);
+
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            BackupOpOptions restored = BackupOpOptions.CREATOR.createFromParcel(parcel);
+            assertEquals(CryptoUtils.MODE_AES, restored.cryptoMode);
+            assertEquals(4, restored.retentionMaxCount);
+            assertEquals(21, restored.retentionMaxAgeDays);
+            assertEquals(destination, restored.destination);
         } finally {
             parcel.recycle();
         }

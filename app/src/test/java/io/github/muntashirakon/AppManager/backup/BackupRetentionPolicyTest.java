@@ -111,6 +111,19 @@ public class BackupRetentionPolicyTest {
     }
 
     @Test
+    public void retentionDoesNotCrossPolicyDestinations() {
+        Backup firstVolume = backup("com.foo", 0, "auto", NOW - DAY);
+        firstVolume.relativeDir = "policy_volume/volume-a/backups/old";
+        Backup secondVolume = backup("com.foo", 0, "auto", NOW);
+        secondVolume.relativeDir = "policy_volume/volume-b/backups/new";
+
+        List<Backup> stale = BackupRetentionPolicy.selectStaleBackups(
+                Arrays.asList(firstVolume, secondVolume), 1, 0, NOW);
+
+        assertTrue("each destination owns an independent retention bucket", stale.isEmpty());
+    }
+
+    @Test
     public void ageCapIgnoresBackupsWithUnknownTimestamp() {
         // backupTime == 0 (legacy / unknown) must NOT be considered "infinitely old".
         List<Backup> backups = Arrays.asList(

@@ -131,7 +131,8 @@ public class BackupRestoreDialogViewModel extends AndroidViewModel {
                     packageNames.add(info.packageName);
                 }
             }
-            BackupStorageCheck.Result result = BackupStorageCheck.evaluateAggregate(packageNames);
+            BackupStorageCheck.Result result = BackupStorageCheck.evaluateAggregateWithTagPolicies(
+                    packageNames, operationInfo.flags);
             mStoragePreflightLiveData.postValue(result);
         });
     }

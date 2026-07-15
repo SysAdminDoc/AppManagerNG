@@ -139,7 +139,9 @@ public class AutoBackupWorker extends Worker {
             for (UserPackagePair pair : pairs) {
                 packageNames.add(pair.getPackageName());
             }
-            BackupStorageCheck.Result storageResult = BackupStorageCheck.evaluateAggregate(packageNames);
+            int flags = Prefs.BackupRestore.getBackupFlags() | BackupFlags.BACKUP_MULTIPLE;
+            BackupStorageCheck.Result storageResult = BackupStorageCheck.evaluateAggregateWithTagPolicies(
+                    packageNames, flags);
             if (storageResult.status == BackupStorageCheck.Status.INSUFFICIENT) {
                 String message = context.getString(R.string.auto_backup_result_insufficient_storage,
                         Formatter.formatFileSize(context, storageResult.estimatedBytes),
@@ -158,8 +160,8 @@ public class AutoBackupWorker extends Worker {
                         + " (estimated=" + storageResult.estimatedBytes
                         + ", free=" + storageResult.freeBytes + ")");
             }
-            int flags = Prefs.BackupRestore.getBackupFlags() | BackupFlags.BACKUP_MULTIPLE;
-            BatchBackupOptions options = new BatchBackupOptions(flags, null, null);
+            BatchBackupOptions options = BatchBackupOptions.forTagPolicies(flags, null, null,
+                    null, false, null);
             AutoBackupProgressHandler progressHandler = new AutoBackupProgressHandler(context);
             progressHandler.onProgressStart(pairs.size(), 0,
                     context.getString(R.string.auto_backup_progress_preparing));

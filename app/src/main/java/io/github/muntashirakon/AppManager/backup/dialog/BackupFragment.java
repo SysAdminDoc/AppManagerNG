@@ -36,11 +36,14 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupStorageCheck;
+import io.github.muntashirakon.AppManager.backup.BackupTagPolicyStore;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
+import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
 import io.github.muntashirakon.widget.MaterialAlertView;
 
 public class BackupFragment extends Fragment {
@@ -78,6 +81,8 @@ public class BackupFragment extends Fragment {
         MaterialButton backupButton = view.findViewById(R.id.action_backup);
         MaterialButton exclusionsButton = view.findViewById(R.id.action_backup_exclusions);
         MaterialButton noteButton = view.findViewById(R.id.action_backup_note);
+        View tagPolicyPreviewRow = view.findViewById(R.id.backup_tag_policy_preview_row);
+        MaterialButton tagPolicyPreviewButton = view.findViewById(R.id.action_backup_tag_policy_preview);
         MaterialCheckBox protectCheckBox = view.findViewById(R.id.action_backup_protect);
         RecyclerView recyclerView = view.findViewById(android.R.id.list);
         AtomicReference<String[]> exclusionGlobs = new AtomicReference<>(new String[0]);
@@ -91,6 +96,12 @@ public class BackupFragment extends Fragment {
         }
         FlagsAdapter adapter = new FlagsAdapter(mContext, BackupFlags.fromPref().getFlags(), supportedFlags);
         recyclerView.setAdapter(adapter);
+        BackupTagPolicyStore tagPolicyStore = new BackupTagPolicyStore(mContext);
+        if (!tagPolicyStore.getPolicies().isEmpty()) {
+            tagPolicyPreviewRow.setVisibility(View.VISIBLE);
+            tagPolicyPreviewButton.setOnClickListener(v ->
+                    showTagPolicyPreview(tagPolicyStore, adapter.getSelectedFlags()));
+        }
         summaryTitle.setText(R.string.backup_dialog_summary_title);
         summaryMeta.setText(getString(R.string.backup_dialog_meta,
                 getResources().getQuantityString(R.plurals.backup_dialog_installed_app_count,
@@ -139,6 +150,41 @@ public class BackupFragment extends Fragment {
                         backupNote.set(null))
                 .setNegativeButton(R.string.cancel, null)
                 .show());
+    }
+
+    private void showTagPolicyPreview(@NonNull BackupTagPolicyStore store,
+                                      @BackupFlags.BackupFlag int defaultFlags) {
+        List<BackupInfo> backupInfos = new ArrayList<>(mViewModel.getBackupInfoList());
+        ThreadUtils.postOnBackgroundThread(() -> {
+            StringBuilder message = new StringBuilder();
+            for (BackupInfo info : backupInfos) {
+                if (!info.isInstalled()) continue;
+                BackupTagPolicyStore.Resolution resolution = store.resolve(info.packageName, defaultFlags);
+                String rule = resolution.policy != null ? "#" + resolution.policy.tag
+                        : mContext.getString(R.string.backup_tag_policy_default);
+                if (resolution.partsFallback) {
+                    rule += " · " + mContext.getString(R.string.backup_tag_policy_parts_warning);
+                }
+                if (resolution.cryptoFallback) {
+                    rule += " · " + mContext.getString(R.string.backup_tag_policy_crypto_warning);
+                }
+                if (resolution.destinationFallback) {
+                    rule += " · " + mContext.getString(R.string.backup_tag_policy_destination_warning);
+                }
+                if (message.length() > 0) message.append('\n');
+                message.append(mContext.getString(R.string.backup_tag_policy_manual_preview_line,
+                        info.packageName, rule,
+                        new BackupFlags(resolution.flags).toLocalisedString(mContext)));
+            }
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) return;
+                new ScrollableDialogBuilder(requireActivity())
+                        .setTitle(R.string.backup_tag_policy_manual_preview_title)
+                        .setMessage(message)
+                        .setPositiveButton(R.string.close, null)
+                        .show();
+            });
+        });
     }
 
     private void handleBackup(@NonNull BackupFlags flags, @Nullable String[] exclusionGlobs,

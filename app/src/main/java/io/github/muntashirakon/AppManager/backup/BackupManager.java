@@ -94,9 +94,11 @@ public class BackupManager {
         BackupItems.BackupItem backupItem;
         try {
             if (options.override) {
-                backupItem = BackupItems.findOrCreateBackupItem(options.userId, options.backupName, options.packageName);
+                backupItem = BackupItems.findOrCreateBackupItem(options.userId, options.backupName,
+                        options.packageName, options.destination);
             } else {
-                backupItem = BackupItems.createBackupItemGracefully(options.userId, options.backupName, options.packageName);
+                backupItem = BackupItems.createBackupItemGracefully(options.userId, options.backupName,
+                        options.packageName, options.destination);
             }
         } catch (IOException e) {
             throw new BackupException("Could not create BackupItem.", e);
@@ -110,21 +112,22 @@ public class BackupManager {
         // backup that would almost certainly fail mid-way for lack of disk space.
         // Returns OK on any classification it can't make (missing PACKAGE_USAGE_STATS
         // grant, SAF volume, etc.) so it never gates on unreliable input.
-        BackupStorageCheck.Result storageStatus = BackupStorageCheck.evaluate(options.packageName);
+        BackupStorageCheck.Result storageStatus = BackupStorageCheck.evaluate(options.packageName, options.destination);
         if (storageStatus.status == BackupStorageCheck.Status.INSUFFICIENT) {
             throw new BackupException("Insufficient free space on the backup volume: "
                     + "estimated " + storageStatus.estimatedBytes + " bytes required, "
                     + storageStatus.freeBytes + " bytes free.");
         }
         try (BackupOp backupOp = new BackupOp(options.packageName, options.flags, backupItem, options.userId,
-                options.exclusionGlobs, options.protectFromPrune, options.backupNote)) {
+                options.exclusionGlobs, options.protectFromPrune, options.backupNote, options.cryptoMode)) {
             backupOp.runBackup(progressHandler);
             BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), backupOp.getMetadata());
         }
         // Apply user-configured retention policy after a successful backup so the
         // count / age caps are enforced incrementally rather than only on app launch.
         // No-op when both caps are 0 (unlimited).
-        BackupRetentionPolicy.pruneForPackage(options.packageName);
+        BackupRetentionPolicy.pruneForPackage(options.packageName, options.retentionMaxCount,
+                options.retentionMaxAgeDays, backupItem.getRelativeDir());
     }
 
     /**
