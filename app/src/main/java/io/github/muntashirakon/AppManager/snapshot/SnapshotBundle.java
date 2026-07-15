@@ -75,6 +75,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
 import io.github.muntashirakon.io.Path;
 
 /**
@@ -151,6 +152,8 @@ public final class SnapshotBundle {
      */
     @VisibleForTesting
     static final long MAX_BUNDLE_BYTES = 256L * 1024 * 1024;
+    @VisibleForTesting
+    static final long MAX_BUNDLE_EXPANDED_BYTES = 256L * 1024 * 1024;
 
     /** Thrown when an encrypted bundle is opened without (or with a wrong) passphrase. */
     public static final class PassphraseRequiredException extends SnapshotImportException {
@@ -358,17 +361,20 @@ public final class SnapshotBundle {
     @NonNull
     public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn)
             throws IOException, SnapshotImportException {
+        ArchiveExtractionGuard guard = createImportGuard();
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
             ZipEntry entry;
             int entryCount = 0;
             while ((entry = zis.getNextEntry()) != null) {
                 assertReasonableEntryCount(++entryCount);
+                guard.onNewEntry();
+                guard.assertEntrySize(entry.getSize());
                 if (entry.isDirectory()) {
                     zis.closeEntry();
                     continue;
                 }
                 if (ENTRY_MANIFEST.equals(entry.getName())) {
-                    byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, entry.getName());
+                    byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, entry.getName(), guard);
                     ManifestSummary manifest = ManifestSummary.parse(
                             new String(bytes, StandardCharsets.UTF_8));
                     if (!FORMAT_ID.equals(manifest.format)) {
@@ -382,6 +388,7 @@ public final class SnapshotBundle {
                     }
                     return manifest;
                 }
+                guard.drain(zis);
                 zis.closeEntry();
             }
         }
@@ -453,11 +460,14 @@ public final class SnapshotBundle {
         List<PendingFile> pendingRules = new ArrayList<>();
         List<PendingFile> pendingTags = new ArrayList<>();
 
+        ArchiveExtractionGuard guard = createImportGuard();
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
             ZipEntry entry;
             int entryCount = 0;
             while ((entry = zis.getNextEntry()) != null) {
                 assertReasonableEntryCount(++entryCount);
+                guard.onNewEntry();
+                guard.assertEntrySize(entry.getSize());
                 String name = entry.getName();
                 // Hard rejections.
                 if (name.contains("..") || name.startsWith("/") || name.startsWith("\\")
@@ -469,7 +479,7 @@ public final class SnapshotBundle {
                     zis.closeEntry();
                     continue;
                 }
-                byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, name);
+                byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, name, guard);
                 if (ENTRY_MANIFEST.equals(name)) {
                     manifest = ManifestSummary.parse(new String(bytes, StandardCharsets.UTF_8));
                 } else if (name.startsWith(ENTRY_PREFS_DIR) && name.endsWith(".xml")) {
@@ -596,6 +606,12 @@ public final class SnapshotBundle {
         if (entryCount > MAX_BUNDLE_ENTRIES) {
             throw new SnapshotImportException("Snapshot bundle has too many entries.");
         }
+    }
+
+    @NonNull
+    private static ArchiveExtractionGuard createImportGuard() {
+        return new ArchiveExtractionGuard(MAX_BUNDLE_EXPANDED_BYTES, MAX_BUNDLE_ENTRIES,
+                MAX_ENTRY_BYTES, MAX_BUNDLE_EXPANDED_BYTES);
     }
 
     // -----------------------------------------------------------------------
@@ -1226,6 +1242,14 @@ public final class SnapshotBundle {
     @NonNull
     private static byte[] readEntryBounded(@NonNull InputStream in, long maxBytes,
                                            @NonNull String entryName) throws IOException, SnapshotImportException {
+        return readEntryBounded(in, maxBytes, entryName, null);
+    }
+
+    @NonNull
+    private static byte[] readEntryBounded(@NonNull InputStream in, long maxBytes,
+                                           @NonNull String entryName,
+                                           @Nullable ArchiveExtractionGuard guard)
+            throws IOException, SnapshotImportException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         byte[] chunk = new byte[8192];
         long total = 0;
@@ -1236,6 +1260,7 @@ public final class SnapshotBundle {
                 throw new SnapshotImportException(
                         "Bundle entry " + entryName + " exceeded the safe size limit (" + maxBytes + " bytes).");
             }
+            if (guard != null) guard.addBytes(n);
             buf.write(chunk, 0, n);
         }
         return buf.toByteArray();

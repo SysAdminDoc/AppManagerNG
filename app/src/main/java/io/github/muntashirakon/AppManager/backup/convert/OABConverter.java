@@ -45,6 +45,7 @@ import io.github.muntashirakon.AppManager.crypto.CryptoException;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
@@ -91,6 +92,7 @@ public class OABConverter extends Converter {
     private Crypto mSourceCrypto;
     private BackupMetadataV5 mDestMetadata;
     private BackupItems.BackupItem mBackupItem;
+    private ArchiveExtractionGuard mExtractionGuard;
 
     /**
      * @param backupLocation E.g. {@code /sdcard/oandbackups/package.name}
@@ -109,6 +111,13 @@ public class OABConverter extends Converter {
         }
         // Source metadata
         mSourceMetadata = readLogFile();
+        List<Path> guardedSources = new ArrayList<>();
+        guardedSources.addAll(Arrays.asList(mBackupLocation.listFiles()));
+        try {
+            guardedSources.addAll(Arrays.asList(mBackupLocation.findFile(EXTERNAL_FILES).listFiles()));
+        } catch (FileNotFoundException ignore) {
+        }
+        mExtractionGuard = createExtractionGuard(guardedSources);
         // Simulate a backup creation
         try {
             mBackupItem = BackupItems.createBackupItemGracefully(mUserId, "OAndBackup", mPackageName);
@@ -345,33 +354,43 @@ public class OABConverter extends Converter {
                     tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
                     ZipEntry zipEntry;
                     while ((zipEntry = zis.getNextEntry()) != null) {
+                        mExtractionGuard.onNewEntry();
+                        mExtractionGuard.assertEntrySize(zipEntry.getSize());
                         String fileName = ConvertUtils.getRelativeBackupEntryName(zipEntry.getName(), mPackageName + "/");
                         // Check before creating the temp file: a skipped entry must not
                         // leak an orphaned cache file.
-                        if (fileName.isEmpty()) continue;
+                        if (fileName.isEmpty()) {
+                            if (!zipEntry.isDirectory()) mExtractionGuard.drain(zis);
+                            continue;
+                        }
                         File tmpFile = null;
-                        if (!zipEntry.isDirectory()) {
-                            // We need to use a temporary file
-                            tmpFile = FileCache.getGlobalFileCache().createCachedFile(files[0].getExtension());
-                            try (OutputStream fos = new FileOutputStream(tmpFile)) {
-                                IoUtils.copy(zis, fos);
+                        try {
+                            if (!zipEntry.isDirectory()) {
+                                // We need to use a temporary file so tar entry size is known.
+                                tmpFile = FileCache.getGlobalFileCache()
+                                        .createCachedFile(files[0].getExtension());
+                                try (OutputStream fos = new FileOutputStream(tmpFile)) {
+                                    mExtractionGuard.copyToTemporary(zis, fos);
+                                }
                             }
-                        }
-                        // New tar entry
-                        TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
-                        if (tmpFile != null) {
-                            tarArchiveEntry.setSize(tmpFile.length());
-                        }
-                        tos.putArchiveEntry(tarArchiveEntry);
-                        if (tmpFile != null) {
-                            // Copy from the temporary file
-                            try (FileInputStream fis = new FileInputStream(tmpFile)) {
-                                IoUtils.copy(fis, tos);
-                            } finally {
+                            TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
+                            if (tmpFile != null) {
+                                tarArchiveEntry.setSize(tmpFile.length());
+                            }
+                            tos.putArchiveEntry(tarArchiveEntry);
+                            if (tmpFile != null) {
+                                try (FileInputStream fis = new FileInputStream(tmpFile)) {
+                                    IoUtils.copy(fis, tos);
+                                }
+                            }
+                            tos.closeArchiveEntry();
+                        } finally {
+                            if (tmpFile != null) {
+                                long tempBytes = tmpFile.length();
                                 FileCache.getGlobalFileCache().delete(tmpFile);
+                                mExtractionGuard.releaseTemporaryBytes(tempBytes);
                             }
                         }
-                        tos.closeArchiveEntry();
                     }
                     tos.finish();
                 }

@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -77,6 +78,7 @@ public class SBConverter extends Converter {
     private BackupItems.BackupItem mBackupItem;
     private PackageInfo mPackageInfo;
     private Path mCachedApk;
+    private ArchiveExtractionGuard mExtractionGuard;
 
     public SBConverter(@NonNull Path xmlFile) {
         mBackupLocation = xmlFile.getParent();
@@ -94,12 +96,26 @@ public class SBConverter extends Converter {
 
     @Override
     public void convert() throws BackupException {
+        List<Path> sourceFiles = new ArrayList<>();
+        for (Path file : mBackupLocation.listFiles()) {
+            if (file.getName().startsWith(mPackageName + ".")) {
+                sourceFiles.add(file);
+            }
+        }
+        mExtractionGuard = createExtractionGuard(sourceFiles);
         // Source metadata
-        BackupMetadataV2 sourceMetadata = generateMetadata();
+        BackupMetadataV2 sourceMetadata;
+        try {
+            sourceMetadata = generateMetadata();
+        } catch (BackupException e) {
+            cleanupCachedApk();
+            throw e;
+        }
         // Simulate a backup creation
         try {
             mBackupItem = BackupItems.createBackupItemGracefully(mUserId, "SB", mPackageName);
         } catch (IOException e) {
+            cleanupCachedApk();
             throw new BackupException("Could not get backup files.", e);
         }
         boolean backupSuccess = false;
@@ -152,7 +168,7 @@ public class SBConverter extends Converter {
             throw new BackupException("Unknown error occurred.", th);
         } finally {
             mBackupItem.cleanup();
-            mCachedApk.requireParent().delete();
+            cleanupCachedApk();
             if (backupSuccess) {
                 BackupUtils.putBackupToDbAndBroadcast(ContextUtils.getContext(), mDestMetadata);
             }
@@ -230,31 +246,42 @@ public class SBConverter extends Converter {
                     tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
                     ZipEntry zipEntry;
                     while ((zipEntry = zis.getNextEntry()) != null) {
+                        mExtractionGuard.onNewEntry();
+                        mExtractionGuard.assertEntrySize(zipEntry.getSize());
+                        String fileName = ConvertUtils.getRelativeBackupEntryName(
+                                zipEntry.getName(), mPackageName + "/");
+                        if (fileName.isEmpty()) {
+                            if (!zipEntry.isDirectory()) mExtractionGuard.drain(zis);
+                            continue;
+                        }
                         File tmpFile = null;
-                        if (!zipEntry.isDirectory()) {
-                            // We need to use a temporary file
-                            tmpFile = FileCache.getGlobalFileCache().createCachedFile(dataFile.getExtension());
-                            try (OutputStream fos = new FileOutputStream(tmpFile)) {
-                                IoUtils.copy(zis, fos);
+                        try {
+                            if (!zipEntry.isDirectory()) {
+                                // We need to use a temporary file so tar entry size is known.
+                                tmpFile = FileCache.getGlobalFileCache()
+                                        .createCachedFile(dataFile.getExtension());
+                                try (OutputStream fos = new FileOutputStream(tmpFile)) {
+                                    mExtractionGuard.copyToTemporary(zis, fos);
+                                }
                             }
-                        }
-                        String fileName = ConvertUtils.getRelativeBackupEntryName(zipEntry.getName(), mPackageName + "/");
-                        if (fileName.isEmpty()) continue;
-                        // New tar entry
-                        TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
-                        if (tmpFile != null) {
-                            tarArchiveEntry.setSize(tmpFile.length());
-                        }
-                        tos.putArchiveEntry(tarArchiveEntry);
-                        if (tmpFile != null) {
-                            // Copy from the temporary file
-                            try (FileInputStream fis = new FileInputStream(tmpFile)) {
-                                IoUtils.copy(fis, tos);
-                            } finally {
+                            TarArchiveEntry tarArchiveEntry = new TarArchiveEntry(fileName);
+                            if (tmpFile != null) {
+                                tarArchiveEntry.setSize(tmpFile.length());
+                            }
+                            tos.putArchiveEntry(tarArchiveEntry);
+                            if (tmpFile != null) {
+                                try (FileInputStream fis = new FileInputStream(tmpFile)) {
+                                    IoUtils.copy(fis, tos);
+                                }
+                            }
+                            tos.closeArchiveEntry();
+                        } finally {
+                            if (tmpFile != null) {
+                                long tempBytes = tmpFile.length();
                                 FileCache.getGlobalFileCache().delete(tmpFile);
+                                mExtractionGuard.releaseTemporaryBytes(tempBytes);
                             }
                         }
-                        tos.closeArchiveEntry();
                     }
                     tos.finish();
                 }
@@ -276,7 +303,9 @@ public class SBConverter extends Converter {
         mCachedApk = FileUtils.getTempPath(mPackageName, "base.apk");
         try (InputStream pis = getApkFile().openInputStream()) {
             try (OutputStream fos = mCachedApk.openOutputStream()) {
-                IoUtils.copy(pis, fos);
+                mExtractionGuard.onNewEntry();
+                mExtractionGuard.assertEntrySize(getApkFile().length());
+                mExtractionGuard.copyToTemporary(pis, fos);
             }
             mFilesToBeDeleted.add(getApkFile());
         } catch (IOException e) {
@@ -383,19 +412,29 @@ public class SBConverter extends Converter {
              ZipInputStream zis = new ZipInputStream(bis)) {
             ZipEntry zipEntry;
             while ((zipEntry = zis.getNextEntry()) != null) {
+                mExtractionGuard.onNewEntry();
+                mExtractionGuard.assertEntrySize(zipEntry.getSize());
                 if (zipEntry.isDirectory()) continue;
                 String splitName = FileUtils.getFilenameFromZipEntry(zipEntry);
                 splits.add(splitName);
                 Path file = mCachedApk.requireParent().findOrCreateFile(splitName, null);
                 try (OutputStream fos = file.openOutputStream()) {
-                    IoUtils.copy(zis, fos);
+                    mExtractionGuard.copyToTemporary(zis, fos);
                 } catch (IOException e) {
+                    long tempBytes = file.length();
                     file.delete();
+                    mExtractionGuard.releaseTemporaryBytes(tempBytes);
                     throw e;
                 }
             }
         }
         return splits.toArray(new String[0]);
+    }
+
+    private void cleanupCachedApk() {
+        if (mCachedApk != null && mCachedApk.getParent() != null) {
+            mCachedApk.getParent().delete();
+        }
     }
 
     private void backupIcon() {

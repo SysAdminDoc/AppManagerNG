@@ -54,6 +54,7 @@ import io.github.muntashirakon.AppManager.crypto.CryptoException;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -87,6 +88,7 @@ public class TBConverter extends Converter {
     private BackupItems.BackupItem mBackupItem;
     @Nullable
     private Bitmap mIcon;
+    private ArchiveExtractionGuard mExtractionGuard;
 
     /**
      * A documentation about Titanium Backup is located at
@@ -132,6 +134,7 @@ public class TBConverter extends Converter {
         }
         // Source metadata
         mSourceMetadata = readPropFile();
+        mExtractionGuard = createExtractionGuard(mFilesToBeDeleted);
         // Simulate a backup creation
         try {
             mBackupItem = BackupItems.createBackupItemGracefully(mUserId, "TB", mPackageName);
@@ -225,12 +228,15 @@ public class TBConverter extends Converter {
             }
             try (OutputStream fos = baseApkFile.openOutputStream()) {
                 // The whole file is the APK
-                IoUtils.copy(is, fos);
+                mExtractionGuard.onNewEntry();
+                mExtractionGuard.copyToTemporary(is, fos);
             } finally {
                 is.close();
             }
         } catch (IOException e) {
+            long tempBytes = baseApkFile.length();
             baseApkFile.requireParent().delete();
+            mExtractionGuard.releaseTemporaryBytes(tempBytes);
             throw new BackupException("Couldn't decompress " + mSourceMetadata.apkName, e);
         }
         // Get certificate checksums
@@ -251,7 +257,9 @@ public class TBConverter extends Converter {
         } catch (Exception th) {
             throw new BackupException("APK files backup is requested but no APK files have been backed up.", th);
         } finally {
+            long tempBytes = baseApkFile.length();
             baseApkFile.requireParent().delete();
+            mExtractionGuard.releaseTemporaryBytes(tempBytes);
         }
         // Overwrite with the new files
         try {
@@ -318,47 +326,32 @@ public class TBConverter extends Converter {
             // Add files
             TarArchiveEntry inTarEntry;
             while ((inTarEntry = tis.getNextEntry()) != null) {
+                mExtractionGuard.onNewEntry();
+                mExtractionGuard.assertEntrySize(inTarEntry.getSize());
                 String fileName = inTarEntry.getName();
                 boolean isExternal = fileName.startsWith(EXTERNAL_PREFIX);
                 // Get new file name
                 fileName = ConvertUtils.getRelativeBackupEntryName(fileName,
                         (isExternal ? EXTERNAL_PREFIX : INTERNAL_PREFIX) + mPackageName + "/./");
-                if (fileName.isEmpty()) continue;
+                if (fileName.isEmpty()) {
+                    if (!inTarEntry.isDirectory() && !inTarEntry.isSymbolicLink()) {
+                        mExtractionGuard.drain(tis);
+                    }
+                    continue;
+                }
                 // New tar entry
                 TarArchiveEntry outTarEntry = new TarArchiveEntry(fileName);
                 outTarEntry.setMode(inTarEntry.getMode());
                 outTarEntry.setUserId(inTarEntry.getUserId());
                 outTarEntry.setGroupId(inTarEntry.getGroupId());
                 outTarEntry.setSize(inTarEntry.getSize());
-                if (isExternal) {
-                    if (extTos != null) {
-                        extTos.putArchiveEntry(outTarEntry);
-                    }
-                } else {
-                    if (intTos != null) {
-                        intTos.putArchiveEntry(outTarEntry);
-                    }
-                }
+                TarArchiveOutputStream targetTos = isExternal ? extTos : intTos;
+                if (targetTos != null) targetTos.putArchiveEntry(outTarEntry);
                 if (!inTarEntry.isDirectory() && !inTarEntry.isSymbolicLink()) {
-                    if (isExternal) {
-                        if (extTos != null) {
-                            IoUtils.copy(tis, extTos);
-                        }
-                    } else {
-                        if (intTos != null) {
-                            IoUtils.copy(tis, intTos);
-                        }
-                    }
+                    if (targetTos != null) mExtractionGuard.copy(tis, targetTos);
+                    else mExtractionGuard.drain(tis);
                 }
-                if (isExternal) {
-                    if (extTos != null) {
-                        extTos.closeArchiveEntry();
-                    }
-                } else {
-                    if (intTos != null) {
-                        intTos.closeArchiveEntry();
-                    }
-                }
+                if (targetTos != null) targetTos.closeArchiveEntry();
             }
             // Archiving finished. Finish + close the output tars so the split
             // files are fully flushed to disk BEFORE the encrypt step reads them.
