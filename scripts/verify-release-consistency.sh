@@ -143,35 +143,34 @@ if [[ -f "$SBOM_SCRIPT" ]]; then
   echo "OK: SBOM script present (reads versionName dynamically from build.gradle)"
 fi
 
-# --- Distribution listing packets must describe the CURRENT release ---
+# --- Distribution listing packets must match the published-release receipt ---
 DIST_DIR="$REPO_ROOT/docs/distribution"
+RELEASE_METADATA_VERIFIER="$REPO_ROOT/scripts/verify_release_metadata.py"
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN=python
+else
+  echo "ERROR: Python 3 is required to verify the release receipt" >&2
+  FAIL=1
+  PYTHON_BIN=""
+fi
+if [[ -n "$PYTHON_BIN" ]] && ! "$PYTHON_BIN" "$RELEASE_METADATA_VERIFIER" \
+    --receipt "$DIST_DIR/release-receipt.json" \
+    --distribution-dir "$DIST_DIR" \
+    --build-gradle "$BUILD_GRADLE" \
+    --versions-gradle "$VERSIONS_GRADLE" \
+    --repo-root "$REPO_ROOT"; then
+  FAIL=1
+fi
+
+# This project builds and releases locally; it has no GitHub Actions workflows.
 for packet in fdroid-listing izzyondroid-listing accrescent-listing; do
   f="$DIST_DIR/$packet.md"
-  if [[ ! -f "$f" ]]; then
-    echo "SKIP: $packet.md not present"
-    continue
-  fi
-  if ! grep -qF "$VERSION_NAME" "$f"; then
-    echo "ERROR: $packet.md does not mention current versionName $VERSION_NAME" >&2
-    FAIL=1
-  fi
-  STALE_TAGS=$(grep -oP 'releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' "$f" | grep -vxF "$VERSION_NAME" || true)
-  if [[ -n "$STALE_TAGS" ]]; then
-    echo "ERROR: $packet.md references stale release tag(s): $(echo "$STALE_TAGS" | tr '\n' ' ')" >&2
-    FAIL=1
-  fi
-  STALE_CODES=$(grep -oP '(?:[Vv]ersionCode|CurrentVersionCode):\s*\K[0-9]+' "$f" | grep -vxF "$VERSION_CODE" || true)
-  if [[ -n "$STALE_CODES" ]]; then
-    echo "ERROR: $packet.md references stale versionCode(s): $(echo "$STALE_CODES" | tr '\n' ' ')" >&2
-    FAIL=1
-  fi
-  # This project builds and releases locally; it has no GitHub Actions workflows.
+  [[ -f "$f" ]] || continue
   if grep -qiP 'CI release workflow|\.github/workflows|GitHub Actions' "$f"; then
     echo "ERROR: $packet.md claims a CI/GitHub-Actions workflow, but this project has none" >&2
     FAIL=1
-  fi
-  if [[ -z "$STALE_TAGS" && -z "$STALE_CODES" ]] && grep -qF "$VERSION_NAME" "$f"; then
-    echo "OK: $packet.md describes v$VERSION_NAME (code $VERSION_CODE)"
   fi
 done
 

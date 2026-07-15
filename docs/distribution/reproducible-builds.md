@@ -44,6 +44,19 @@ Both scripts:
 - Run native page-alignment and SBOM generation/validation
 - Write `release-assets.txt` listing all publishable artifacts
 
+## Published Release Receipt
+
+`docs/distribution/release-receipt.json` records the selected published APK's
+tag commit, version name/code, artifact name/size/SHA-256, and signing
+certificate SHA-256. After publishing, verify the downloaded artifact and
+update that receipt once; `scripts/verify-release-consistency.sh` then rejects
+drift in the Accrescent, F-Droid, and IzzyOnDroid packets. The parser's host
+tests deliberately inject stale Markdown, YAML, and hash values:
+
+```bash
+python -m unittest scripts.tests.test_verify_release_metadata
+```
+
 ## Why Reproducibility Matters
 
 - **F-Droid / IzzyOnDroid** - reproducible builds are a prerequisite for

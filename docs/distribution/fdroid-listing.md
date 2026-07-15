@@ -3,7 +3,7 @@
 # F-Droid Listing Packet
 
 Status: ready for fdroiddata merge-request preparation.
-Checked: 2026-05-26.
+Checked: 2026-07-15.
 
 This packet is the source-of-truth for preparing AppManagerNG's F-Droid.org
 submission. It is not proof that an external fdroiddata merge request has been
@@ -13,11 +13,11 @@ filed or accepted.
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
 - Tag: `v0.6.5`
-- Commit: `e46ea2615ea6e035eea41d50e88a731ec36a7c1d`
+- Commit: `fc03e0332c834c161fcd419525e8530c23f22706`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
 - Version name: `0.6.5`
-- Version code: `7`
+- Version code: `13`
 - Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
 - License: `GPL-3.0-or-later`
 
@@ -53,7 +53,7 @@ Repo: https://github.com/SysAdminDoc/AppManagerNG.git
 Builds:
   - versionName: 0.6.5
     versionCode: 13
-    commit: e46ea2615ea6e035eea41d50e88a731ec36a7c1d
+    commit: fc03e0332c834c161fcd419525e8530c23f22706
     submodules: true
     gradle:
       - floss
@@ -86,7 +86,11 @@ debug keystore is ignored and not present in the tracked source tree.
 - AppManagerNG does not require root to launch; root, Shizuku, Sui, ADB, and
   related privileged providers unlock optional power-user actions.
 
-Relevant F-Droid references checked on 2026-05-26:
+Published release metadata is pinned in
+`docs/distribution/release-receipt.json`; the local consistency verifier checks
+every version, code, commit, and tag occurrence above against that receipt.
+
+Relevant F-Droid references checked on 2026-07-15:
 
 - `https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/`
 - `https://f-droid.org/en/docs/Inclusion_Policy/`
